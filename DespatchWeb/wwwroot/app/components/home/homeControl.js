@@ -1,6 +1,6 @@
 angular.module("uDispatch")
-    .controller("HomeControl", ['$document', "$filter", 'greetingService', "JobDetailService", "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService', "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", "versionUrl", "hotkeys", "APP_CONFIG", "JobTableService", "materialSidenavService", "AppPages", "$rootScope", "$stateParams",
-        ($document, $filter, greetingService, JobDetailService, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService, materialSidenavService, AppPages, $rootScope, $stateParams) => {
+    .controller("HomeControl", ['$document', "$filter", 'greetingService', "JobDetailService", "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService', "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", "versionUrl", "hotkeys", "APP_CONFIG", "JobTableService", "$mdSidenav", "AppPages", "$rootScope", "$stateParams",
+        ($document, $filter, greetingService, JobDetailService, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService, $mdSidenav, AppPages, $rootScope, $stateParams) => {
             // Initialize variables and scope properties
             function initializeVariables() {
                 $scope.name = "Home";
@@ -481,7 +481,9 @@ angular.module("uDispatch")
             /**
              * Toggles the sidenav.
              */
-            $scope.toggleSidenav = () => materialSidenavService.toggle();
+            $scope.toggleSidenav = () => {
+                $mdSidenav('right').toggle();
+            };
 
             /**
              * Greets the user using the greeting service.
