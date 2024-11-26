@@ -13,6 +13,7 @@ public partial class TucContact
 
     public int? UccoClientId { get; set; }
 
+    public virtual ICollection<TucJobBooking> TucJobBookings { get; set; } = new List<TucJobBooking>();
+
     public virtual TucClient UccoClient { get; set; }
-    public virtual ICollection<TucJobBooking> TucJobBookings { get; set; }
 }

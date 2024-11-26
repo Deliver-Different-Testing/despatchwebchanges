@@ -732,57 +732,8 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 ToAddress = j.UcbkToAddr,
                 JobNo = j.UcbkJobNumber,
                 ClientId = j.UcbkClientId,
-                Courier = j.Code,
-                Speed = j.UcjtName
-            }).ToList();
-        return jobList;
-    }
-
-    public async Task<List<JobViewModel>> CurrentJobList(int courierId, bool done)
-    {
-        return await Context.TucCouriers
-            .Where(c => c.UccrId == courierId)
-            .SelectMany(c => c.TucJobUcjbCouriers)
-            .Where(j => j.UcjbJobDone == done)
-            .Select(j => new JobViewModel
-            {
-                ClientId = j.UcjbClientId,
-                Id = j.UcjbId,
-                JobNo = j.UcjbNumber,
-                Time = j.UcjbTime,
-                RootParentId = j.RootParentId,
-                Date = j.UcjbDate.ToString("MM/dd/yyyy"),
-                Booked =
-                    DateTime.Parse(j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime.Value.ToString("HH:mm:ss")),
-                DispatchTime = j.UcjbDispTime,
-                CreatedDate = j.UcjbDate,
-                ScheduleName = j.ScheduleName,
-
-                PickupTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.PickupTime : null,
-                DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime : null,
-
-                // Courier
-                Courier = j.UcjbCourier != null ? j.UcjbCourier.Code : null,
-                CourierData = j.UcjbCourier != null
-                    ? new CourierData
-                    {
-                        Courier = string.IsNullOrEmpty(j.UcjbCourier.Code)
-                            ? string.Empty
-                            : j.UcjbCourier.Code + " " + j.UcjbCourier.UccrName,
-                        CourierId = j.UcjbCourierId,
-                        CourierMobile = j.UcjbCourier.UccrMobile,
-                        CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
-                    }
-                    : null,
-                AssignedCourier = j.UcjbCourier != null
-                    ? new Suggestion
-                    {
-                        Id = j.UcjbCourier.UccrId,
-                        Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
-                    }
-                    : null,
-
-                // Address information
+                Courier = j.Courier.Code,
+                Speed = j.UcbkSpeedNavigation.UcjtName,
                 PickupAddress = new AddressViewModel
                 {
                     AddressLine1 = j.PickupAddressLine1,

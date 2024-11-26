@@ -125,13 +125,13 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
     {
         try
         {
-            _logger.LogInformation("Getting price breakdown for job {JobId}", jobId);
-            var priceComponents = await _jobRepo.GetJobPriceBreakdownAsync(jobId);
+            Log.Information("Getting price breakdown for job {JobId}", jobId);
+            var priceComponents = await jobRepository.GetJobPriceBreakdownAsync(jobId);
             return Json(priceComponents);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting price breakdown for job {JobId}", jobId);
+            Log.Error(ex, "Error getting price breakdown for job {JobId}", jobId);
             return StatusCode(500, "An error occurred while retrieving the pricing breakdown");
         }
     }
@@ -354,7 +354,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         DateTime fromDate,
         DateTime toDate)
     {
-        var data = await _jobRepo.PodSearchDownloadAsync(courierId, wild ?? "", job ?? "",
+        var data = await jobRepository.PodSearchDownloadAsync(courierId, wild ?? "", job ?? "",
             fromDate.ResetTimeToStartOfDay(),
             toDate.ResetTimeToEndOfDay(), clientId);
 
@@ -371,56 +371,52 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
                 : formatted;
         };
 
-            using var stream = new MemoryStream();
-            await using (var writer = new StreamWriter(stream, Encoding.UTF8))
+        using var stream = new MemoryStream();
+        await using (var writer = new StreamWriter(stream, Encoding.UTF8))
+        {
+            await writer.WriteLineAsync(
+                "Id,JobNumber,BookDate,Amount,Fuel,Ppd,CourierPayment,CourierFuel,CourierBonus,Quantity,Weight,Size,PickupAddressLine1,PickupAddressLine2,PickupAddressLine3,PickupAddressLine4,PickupAddressLine5,PickupAddressLine6,PickupAddressLine7,PickupAddressLine8,DeliveryAddressLine1,DeliveryAddressLine2,DeliveryAddressLine3,DeliveryAddressLine4,DeliveryAddressLine5,DeliveryAddressLine6,DeliveryAddressLine7,DeliveryAddressLine8,ClientReferenceA,ClientReferenceB,ClientReferenceC");
+            foreach (var x in data)
             {
                 await writer.WriteLineAsync(
-                    "Id,JobNumber,BookDate,Amount,Fuel,Ppd,CourierPayment,CourierFuel,CourierBonus,Quantity,Weight,Size,PickupAddressLine1,PickupAddressLine2,PickupAddressLine3,PickupAddressLine4,PickupAddressLine5,PickupAddressLine6,PickupAddressLine7,PickupAddressLine8,DeliveryAddressLine1,DeliveryAddressLine2,DeliveryAddressLine3,DeliveryAddressLine4,DeliveryAddressLine5,DeliveryAddressLine6,DeliveryAddressLine7,DeliveryAddressLine8,ClientReferenceA,ClientReferenceB,ClientReferenceC");
-                foreach (var x in data)
-                {
-                    await writer.WriteLineAsync(
-                        $"{x.Id},{formatField(x.JobNumber)},{x.BookDate.ToString("yyyy-MM-dd HH:mm:ss")},{x.Amount},{x.Fuel},{x.Ppd},{x.CourierPayment},{x.CourierFuel},{x.CourierBonus},{x.Quantity},{x.Weight},{x.Size},{formatField(x.PickupAddressLine1)},{formatField(x.PickupAddressLine2)},{formatField(x.PickupAddressLine3)},{formatField(x.PickupAddressLine4)},{formatField(x.PickupAddressLine5)},{formatField(x.PickupAddressLine6)},{formatField(x.PickupAddressLine7)},{formatField(x.PickupAddressLine8)},{formatField(x.DeliveryAddressLine1)},{formatField(x.DeliveryAddressLine2)},{formatField(x.DeliveryAddressLine3)},{formatField(x.DeliveryAddressLine4)},{formatField(x.DeliveryAddressLine5)},{formatField(x.DeliveryAddressLine6)},{formatField(x.DeliveryAddressLine7)},{formatField(x.DeliveryAddressLine8)},{formatField(x.ClientReferenceA)},{formatField(x.ClientReferenceB)},{formatField(x.ClientReferenceC)}");
-                }
+                    $"{x.Id},{formatField(x.JobNumber)},{x.BookDate:yyyy-MM-dd HH:mm:ss},{x.Amount},{x.Fuel},{x.Ppd},{x.CourierPayment},{x.CourierFuel},{x.CourierBonus},{x.Quantity},{x.Weight},{x.Size},{formatField(x.PickupAddressLine1)},{formatField(x.PickupAddressLine2)},{formatField(x.PickupAddressLine3)},{formatField(x.PickupAddressLine4)},{formatField(x.PickupAddressLine5)},{formatField(x.PickupAddressLine6)},{formatField(x.PickupAddressLine7)},{formatField(x.PickupAddressLine8)},{formatField(x.DeliveryAddressLine1)},{formatField(x.DeliveryAddressLine2)},{formatField(x.DeliveryAddressLine3)},{formatField(x.DeliveryAddressLine4)},{formatField(x.DeliveryAddressLine5)},{formatField(x.DeliveryAddressLine6)},{formatField(x.DeliveryAddressLine7)},{formatField(x.DeliveryAddressLine8)},{formatField(x.ClientReferenceA)},{formatField(x.ClientReferenceB)},{formatField(x.ClientReferenceC)}");
             }
-
-            var bytes = stream.ToArray();
-            var filename = $"Jobs {DateTime.Now:yyyyMMddHHmmssfff}.csv";
-            var folder = DateTime.UtcNow.ToString("yyyyMM");
-            var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
-            var key = $"Jobs/{folder}/Jobs-{timestamp}";
-
-            using var ms = new MemoryStream(bytes);
-            try
-            {
-                var putRequest = new PutObjectRequest
-                {
-                    BucketName = Environment.GetEnvironmentVariable("S3Bucket"),
-                    Key = key,
-                    ContentType = "text/csv",
-                    InputStream = ms
-                };
-                await s3Client.PutObjectAsync(putRequest);
-
-            }
-            catch (AmazonS3Exception e)
-            {
-                Log.Error(e, $"{nameof(PodSearchDownload)} Error encountered when writing jobs download object to S3: ");
-
-            }
-            catch (Exception e)
-            {
-                Log.Error(e, $"{nameof(PodSearchDownload)} Error encountered when writing jobs download object to S3: ");
-
-            }
-
-
-            return File(bytes, "text/csv", filename);
         }
-        catch (Exception ex)
+
+        var bytes = stream.ToArray();
+        var filename = $"Jobs {DateTime.Now:yyyyMMddHHmmssfff}.csv";
+        var folder = DateTime.UtcNow.ToString("yyyyMM");
+        var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+        var key = $"Jobs/{folder}/Jobs-{timestamp}";
+
+        using var ms = new MemoryStream(bytes);
+        try
         {
-            Log.Error(ex, $"Download error: {ex.Message}");
-            throw;
+            var putRequest = new PutObjectRequest
+            {
+                BucketName = Environment.GetEnvironmentVariable("S3Bucket"),
+                Key = key,
+                ContentType = "text/csv",
+                InputStream = ms
+            };
+            await s3Client.PutObjectAsync(putRequest);
+
         }
+        catch (AmazonS3Exception e)
+        {
+            Log.Error(e, $"{nameof(PodSearchDownload)} Error encountered when writing jobs download object to S3: ");
+
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, $"{nameof(PodSearchDownload)} Error encountered when writing jobs download object to S3: ");
+
+        }
+
+
+        return File(bytes, "text/csv", filename);
+
+
     }
 
     [HttpPost]

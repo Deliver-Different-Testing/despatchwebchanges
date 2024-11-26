@@ -83,7 +83,7 @@ public partial class TblJob
 
     public string Recipient { get; set; }
 
-    public short? Size { get; set; }
+    public int? Size { get; set; }
 
     public string ClientNotes { get; set; }
 
@@ -359,5 +359,5 @@ public partial class TblJob
 
     public int? AgentId { get; set; }
 
-    public DateTime? OutForDelivery { get; set; }
+    public string Connote { get; set; }
 }

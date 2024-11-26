@@ -2188,7 +2188,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.OperatorId).HasColumnName("OperatorID");
             entity.Property(e => e.OriginalSpeedId).HasColumnName("OriginalSpeedID");
             entity.Property(e => e.OurRef).HasMaxLength(20);
-            entity.Property(e => e.OutForDelivery).HasColumnType("datetime");
             entity.Property(e => e.ParentId).HasColumnName("ParentID");
             entity.Property(e => e.PickUpLatitude).HasColumnType("decimal(18, 9)");
             entity.Property(e => e.PickUpLongitude).HasColumnType("decimal(18, 9)");

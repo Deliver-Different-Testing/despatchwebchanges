@@ -441,6 +441,8 @@ public partial class TucJobArchive
 
     public int? AgentId { get; set; }
 
+    public string Connote { get; set; }
+
     public virtual TucAgent Agent { get; set; }
 
     public virtual TblAirport FromAirport { get; set; }
