@@ -27,9 +27,15 @@ angular.module('uDispatch')
                  * @property {string} controller - The controller for this state
                  */
                 .state('home', {
-                    url: '/',
+                    url: '/?jobId',
                     templateUrl: versionUrl('app/components/home/homeView.html'),
-                    controller: 'HomeControl'
+                    controller: 'HomeControl',
+                    params: {
+                        jobId: {
+                            value: null,
+                            squash: true
+                        }
+                    }
                 })
                 /**
                  * Nationwide state

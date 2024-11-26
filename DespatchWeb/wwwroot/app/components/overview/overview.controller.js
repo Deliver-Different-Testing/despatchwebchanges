@@ -3,7 +3,7 @@
  * @description Controller for delivery overview page
  */
 class OverviewController {
-    constructor($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment) {
+    constructor($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state) {
         this.$mdDialog = $mdDialog;
         this.materialSidenavService = materialSidenavService;
         this.overviewService = overviewService;
@@ -12,6 +12,7 @@ class OverviewController {
         this.$timeout = $timeout;
         this.toastrService = toastrService;
         this.moment = moment;
+        this.$state = $state;
 
         this.statistics = {
             active: 0,
@@ -19,7 +20,6 @@ class OverviewController {
             completed: 0
         };
 
-        this.selected = [];
         this.query = {
             order: 'jobName',    // Default sort field
             direction: 'asc',    // Default sort direction
@@ -425,18 +425,10 @@ class OverviewController {
         await this.refreshData();
     }
 
-    async exportJobs() {
-        // Show feature in development dialog
-        await this.$mdDialog.show({
-            controller: 'FeatureInDevelopmentDialogController',
-            controllerAs: 'ctrl',
-            templateUrl: this.versionUrl('app/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.html'),
-            parent: angular.element(this.$document.body),
-            clickOutsideToClose: true,
-            bindToController: true
-        });
-    }
-
+    /**
+     * Open map for select parent and child jobs
+     * @param {OverviewTableParentJob} delivery The delivery job to view
+     */
     async showMap(delivery) {
         // Show feature in development dialog
         await this.$mdDialog.show({
@@ -451,6 +443,20 @@ class OverviewController {
             },
             bindToController: true
         });
+    }
+
+
+    /**
+     * Open job detail in dispatch screen
+     * @param {OverviewTableParentJob} delivery The delivery job to view
+     */
+    openJobDetail(delivery) {
+        if (delivery && delivery.jobId) {
+            // Navigate to home state with jobId parameter
+            this.$state.go('home', {jobId: delivery.jobId});
+        } else {
+            this.toastrService.showErrorToast("Cannot open job details: Invalid job ID");
+        }
     }
 
     /**
@@ -514,4 +520,4 @@ class OverviewController {
     }
 }
 
-angular.module('uDispatch').controller('deliveryOverview', ['$mdDialog', 'materialSidenavService', 'overviewService', 'versionUrl', '$document', '$scope', '$timeout', 'toastrService', 'moment', ($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment) => new OverviewController($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment)]);
+angular.module('uDispatch').controller('deliveryOverview', ['$mdDialog', 'materialSidenavService', 'overviewService', 'versionUrl', '$document', '$scope', '$timeout', 'toastrService', 'moment', '$state', ($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state) => new OverviewController($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state)]);
