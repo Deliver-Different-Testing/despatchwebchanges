@@ -224,7 +224,7 @@ class OverviewController {
         }
     }
 
-    toggleRegion(region) {
+    async toggleRegion(region) {
         const idx = this.selectedRegions.indexOf(region);
 
         if (region.selected && idx === -1) {
@@ -235,12 +235,15 @@ class OverviewController {
 
         // Update allRegionsSelected state
         this.allRegionsSelected = this.regions.length === this.selectedRegions.length;
-        console.log('All regions selected is ' + this.allRegionsSelected);
-        console.log('Selected regions: ' + this.selectedRegions);
+
+        // Reset to first page when filter changes
+        this.query.page = 1;
+
+        // Refresh data with new region filter
+        await this.refreshData();
     }
 
-    toggleAllRegions() {
-        // Use arrow function to preserve 'this' context
+    async toggleAllRegions() {
         this.regions.forEach((region) => {
             region.selected = this.allRegionsSelected;
         });
@@ -250,6 +253,12 @@ class OverviewController {
         } else {
             this.selectedRegions = []; // Clear selections
         }
+
+        // Reset to first page when filter changes
+        this.query.page = 1;
+
+        // Refresh data with new region filter
+        await this.refreshData();
     }
 
     async getSpeeds() {
@@ -424,7 +433,8 @@ class OverviewController {
                 startDate: this.dateRange.start,
                 endDate: this.dateRange.end,
                 orderBy,
-                orderDirection
+                orderDirection,
+                regions: this.selectedRegions.length > 0 ? this.selectedRegions : null // Only send if regions are selected
             });
 
             const response = await this.promise;
@@ -433,10 +443,12 @@ class OverviewController {
             this.deliveries = response.items.map(delivery => ({
                 ...delivery,
                 status: this.transformStatus(delivery.status),
-                childJobs: Array.isArray(delivery.childJobs) ? delivery.childJobs.map(childJob => ({
-                    ...childJob,
-                    status: this.transformStatus(childJob.status)
-                })) : []
+                childJobs: Array.isArray(delivery.childJobs)
+                    ? delivery.childJobs.map(childJob => ({
+                        ...childJob,
+                        status: this.transformStatus(childJob.status)
+                    }))
+                    : []
             }));
 
             // Update query metadata

@@ -34,6 +34,7 @@ public class OverviewController : Controller
             var statusEnum = (JobStatusGroup)parameters.StatusGroup;
 
             // Get paginated jobs
+            // Get paginated jobs
             var paginatedJobs = await _jobRepository.GetJobsForOverviewPageAsync(
                 statusEnum,
                 parameters.Page,
@@ -42,7 +43,8 @@ public class OverviewController : Controller
                 parameters.StartDate,
                 parameters.EndDate,
                 parameters.OrderBy,
-                parameters.OrderDirection
+                parameters.OrderDirection,
+                parameters.Regions
             );
 
             return Json(paginatedJobs);

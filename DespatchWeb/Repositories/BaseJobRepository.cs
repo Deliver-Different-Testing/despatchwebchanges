@@ -816,7 +816,8 @@ public class BaseJobRepository
         DateTime? startDate = null,
         DateTime? endDate = null,
         string orderBy = "jobName",
-        string orderDirection = "asc")
+        string orderDirection = "asc",
+        string regions = null)
     {
         // Base query
         var query = _context.TucJobs
@@ -835,6 +836,17 @@ public class BaseJobRepository
 
             _ => query
         };
+
+        // Apply region filter if provided
+        if (!string.IsNullOrWhiteSpace(regions))
+        {
+            var regionIds = regions.Split(',')
+                .Select(int.Parse)
+                .ToList();
+
+            query = query.Where(j => j.TblBulkJobs
+                .Any(b => regionIds.Contains(b.Region.BulkRegionId)));
+        }
 
         // Apply search filter if provided
         if (!string.IsNullOrWhiteSpace(search))
@@ -967,7 +979,6 @@ public class BaseJobRepository
             {
                 Center = new Coordinates
                 {
-                    // Calculate center point between pickup and delivery locations
                     Lat = (decimal)39.8097343,
                     Lng = (decimal)-98.5556199
                 },

@@ -170,7 +170,8 @@ public interface IJobRepository
         DateTime? startDate = null,
         DateTime? endDate = null,
         string orderBy = "jobName",
-        string orderDirection = "asc");
+        string orderDirection = "asc",
+        string regions = null);
 
     Task<OverviewStatsViewModel> GetOverviewStatsAsync();
 

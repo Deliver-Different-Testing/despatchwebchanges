@@ -12,4 +12,5 @@ public class OverviewJobsRequest
     public DateTime? EndDate { get; set; }
     public string OrderBy { get; set; } = "jobName";
     public string OrderDirection { get; set; } = "asc";
+    public string Regions { get; set; } // Comma-separated region IDs
 }

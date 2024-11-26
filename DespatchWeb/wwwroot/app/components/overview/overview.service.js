@@ -18,9 +18,13 @@ class OverviewService {
      * @param {Date} [params.endDate] - End date filter
      * @param {string} [params.orderBy] - Field to sort by
      * @param {string} [params.orderDirection] - Sort direction ('asc' or 'desc')
+     * @param {Array} [params.regions] - Array of selected region IDs
      * @returns {Promise<Object>} Object containing jobs array and pagination metadata
      */
     async getAllJobs(params) {
+        // Convert regions array to comma-separated string if present
+        const regionIds = params.regions?.map(r => r.id).join(',');
+
         const response = await this._http.get('/overview', {
             params: {
                 statusGroup: params.statusGroup,
@@ -30,7 +34,8 @@ class OverviewService {
                 startDate: params.startDate ? params.startDate.toISOString() : null,
                 endDate: params.endDate ? params.endDate.toISOString() : null,
                 orderBy: params.orderBy || 'jobName',
-                orderDirection: params.orderDirection
+                orderDirection: params.orderDirection,
+                regions: regionIds || null
             }
         });
 
@@ -41,6 +46,7 @@ class OverviewService {
             pages: response.data.pages || Math.ceil((response.data.total || 0) / params.limit)
         };
     }
+
 
     /**
      * Get all available regions
