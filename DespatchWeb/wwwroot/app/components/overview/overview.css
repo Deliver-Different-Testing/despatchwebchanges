@@ -1,23 +1,22 @@
 .delivery-dashboard md-card {
   margin: 8px;
+  background: black;
 }
 
-.delivery-dashboard md-progress-linear {
-  margin: 8px 0;
-}
-
-.delivery-dashboard md-progress-linear.progress-low .md-bar {
+.delivery-dashboard md-progress-linear.md-low .md-bar,
+.delivery-dashboard md-progress-linear.md-default-theme.md-low .md-bar {
   background-color: #BBF7D0 !important;
 }
 
-.delivery-dashboard md-progress-linear.progress-medium .md-bar {
+.delivery-dashboard md-progress-linear.md-medium .md-bar,
+.delivery-dashboard md-progress-linear.md-default-theme.md-medium .md-bar {
   background-color: #86EFAC !important;
 }
 
-.delivery-dashboard md-progress-linear.progress-high .md-bar {
+.delivery-dashboard md-progress-linear.md-high .md-bar,
+.delivery-dashboard md-progress-linear.md-default-theme.md-high .md-bar {
   background-color: #9CA3AF !important;
 }
-
 .delivery-dashboard md-progress-linear .md-container {
   background-color: rgba(0, 0, 0, 0.05);
 }
