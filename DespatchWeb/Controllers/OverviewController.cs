@@ -99,4 +99,19 @@ public class OverviewController : Controller
             return StatusCode(500);
         }
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAllSpeeds()
+    {
+        try
+        {
+            var speeds = await _courierRepository.GetAllSpeedsAsync();
+            return Json(speeds);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting speeds");
+            return StatusCode(500);
+        }
+    }
 }

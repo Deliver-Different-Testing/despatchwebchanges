@@ -329,6 +329,18 @@ public class CourierRepository : ICourierRepository
         return regions;
     }
 
+    public async Task<List<Suggestion>> GetAllSpeedsAsync()
+    {
+        var speeds = await _context.TucJobTypes
+            .Select(r => new Suggestion
+            {
+                Id = r.UcjtId,
+                Text = r.UcjtName
+            }).AsNoTracking().ToListAsync();
+
+        return speeds;
+    }
+
     public async Task<string> GetAirportCodeByIdAsync(int airportId)
     {
         try

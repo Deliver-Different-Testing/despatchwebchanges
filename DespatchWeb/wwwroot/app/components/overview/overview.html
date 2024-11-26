@@ -111,12 +111,12 @@
                                 <p class="empty-text">No regions found</p>
                             </div>
 
-                            <div layout="row" layout-wrap ng-if="ctrl.regions.length">
+                            <div class="regions-container" layout="row" layout-wrap ng-if="ctrl.regions.length">
                                 <div flex="50" ng-repeat="region in ctrl.regions">
                                     <md-checkbox
                                             ng-change="ctrl.toggleRegion(region)"
                                             ng-model="region.selected">
-                                        {{region.name}}
+                                        {{region.text}}
                                     </md-checkbox>
                                 </div>
                             </div>
@@ -125,7 +125,42 @@
 
                     <md-divider></md-divider>
 
-                    <!-- Speeds go here-->
+                    <div class="filter-section">
+                        <div class="statistics-header">
+                            <h4>Speeds</h4>
+                        </div>
+                        <div class="loader-container"
+                             ng-if="ctrl.speedsLoading">
+                            <div class="full-height" layout="row" layout-align="center center">
+                                <div class="material-icon-loader">
+                                    <md-progress-circular md-diameter="60"
+                                                          md-mode="indeterminate"></md-progress-circular>
+                                    <md-icon class="loader-icon" md-font-set="material-symbols-outlined">speed
+                                    </md-icon>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div ng-if="!ctrl.speedsLoading">
+                            <div class="empty-state" layout="column" layout-align="center center"
+                                 ng-if="!ctrl.speeds.length">
+                                <md-icon class="empty-icon" md-font-set="material-symbols-outlined">speed</md-icon>
+                                <p class="empty-text">No speeds found</p>
+                            </div>
+
+                            <div class="regions-container" layout="row" layout-wrap ng-if="ctrl.speeds.length">
+                                <div flex="50" ng-repeat="speed in ctrl.speeds">
+                                    <md-checkbox
+                                            ng-change="ctrl.toggleSpeed(speed)"
+                                            ng-model="speed.selected">
+                                        {{speed.text}}
+                                    </md-checkbox>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
                 </div>
             </md-card>
 

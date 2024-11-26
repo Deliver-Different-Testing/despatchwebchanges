@@ -51,6 +51,15 @@ class OverviewService {
         return response.data;
     }
 
+    /**
+     * Get all available regions
+     * @returns {Promise<Array>} Array of region objects
+     */
+    async getAllSpeeds() {
+        const response = await this._http.get('/overview/GetAllSpeeds');
+        return response.data;
+    }
+
     async getStats() {
         const response = await this._http.get('/overview/GetStats');
         return response.data;

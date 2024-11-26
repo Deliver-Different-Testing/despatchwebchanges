@@ -35,4 +35,6 @@ public interface ICourierRepository
     Task<List<Suggestion>> GetVehicleSizesAsync();
 
     Task<List<Suggestion>> GetAllRegionsAsync();
+
+    Task<List<Suggestion>> GetAllSpeedsAsync();
 }

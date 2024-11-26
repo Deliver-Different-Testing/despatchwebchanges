@@ -30,10 +30,12 @@ class OverviewController {
 
         // Loaders
         this.regionsLoading = false;
+        this.speedsLoading = false;
 
         // Initialize data containers
         this.deliveries = [];
         this.regions = [];
+        this.speeds = [];
         this.promise = null;
 
         // Search properties
@@ -82,8 +84,18 @@ class OverviewController {
         });
 
         // Initial data load
-        this.loadStats();
-        this.refreshData();
+        Promise.all([
+            this.loadStats(),
+            this.getRegions(),
+            this.getSpeeds(),
+            this.refreshData()
+        ])
+            .then(() => {
+                console.log('All data loaded successfully');
+            })
+            .catch(error => {
+                console.error('Error loading data:', error);
+            });
     }
 
     /**
@@ -212,10 +224,24 @@ class OverviewController {
         region.selected = !region.selected;
     }
 
+    async getSpeeds() {
+        try {
+            this.speedsLoading = true;
+            this.speeds = await this.overviewService.getAllSpeeds();
+        } catch (error) {
+            console.error('An error occured getting speeds.');
+        } finally {
+            this.speedsLoading = false;
+        }
+    }
+
+    toggleSpeed(speed) {
+        speed.selected = !speed.selected;
+    }
+
     toggleSidenav() {
         this.materialSidenavService.toggle();
     }
-
 
     /**
      * Transform raw status to valid CSS class
