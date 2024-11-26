@@ -320,6 +320,7 @@ public class CourierRepository : ICourierRepository
     public async Task<List<Suggestion>> GetAllRegionsAsync()
     {
         var regions = await _context.TblBulkRegions
+            .OrderBy(r => r.Name)
             .Select(r => new Suggestion
             {
                 Id = r.BulkRegionId,
@@ -332,6 +333,7 @@ public class CourierRepository : ICourierRepository
     public async Task<List<Suggestion>> GetAllSpeedsAsync()
     {
         var speeds = await _context.TucJobTypes
+            .OrderBy(r => r.UcjtName)
             .Select(r => new Suggestion
             {
                 Id = r.UcjtId,
