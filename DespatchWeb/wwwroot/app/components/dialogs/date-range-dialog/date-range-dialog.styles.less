@@ -1,0 +1,110 @@
+// Variables
+@dialog-max-width: 900px;
+@dialog-width: 90%;
+@calendar-min-width: 300px;
+@summary-min-width: 250px;
+@spacing-xs: 7px;
+@spacing-sm: 8px;
+@spacing-md: 16px;
+@spacing-lg: 24px;
+@font-size-small: 12px;
+@font-size-normal: 14px;
+@font-size-medium: 16px;
+@font-size-large: 20px;
+@breakpoint-md: 959px;
+@text-primary: rgba(0, 0, 0, 0.87);
+@text-secondary: rgba(0, 0, 0, 0.54);
+@divider-color: rgba(0, 0, 0, 0.12);
+@background-hover: rgba(0, 0, 0, 0.04);
+
+.date-range-dialog {
+  max-width: @dialog-max-width;
+  width: @dialog-width;
+
+  .md-subheader {
+    background-color: transparent;
+    padding-left: 0;
+
+    .material-icons {
+      margin-right: @spacing-sm;
+    }
+
+    .subheader-text {
+      font-size: @font-size-normal;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  .calendar-container {
+    margin: @spacing-sm;
+    min-width: @calendar-min-width;
+
+    @media screen and (max-width: @breakpoint-md) {
+      margin-bottom: @spacing-lg;
+    }
+  }
+
+  .date-summary {
+    margin: @spacing-sm;
+    min-width: @summary-min-width;
+
+    .summary-card {
+      background: white;
+      margin-top: @spacing-sm;
+    }
+
+    .date-item {
+      padding: @spacing-md;
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background-color: @background-hover;
+      }
+
+      .date-header {
+        margin-bottom: @spacing-xs;
+      }
+
+      .date-icon {
+        margin-right: @spacing-sm;
+        color: @text-secondary;
+        font-size: @font-size-large;
+      }
+
+      .date-label {
+        color: @text-secondary;
+        font-size: @font-size-normal;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .date-value {
+        color: @text-primary;
+        font-size: @font-size-medium;
+        margin-left: @spacing-lg + @spacing-sm; // Icon width + margin
+        font-weight: 400;
+        transition: color 0.2s ease;
+
+        &.selected {
+          color: @text-primary;
+        }
+      }
+    }
+
+    md-divider {
+      margin: 0;
+    }
+  }
+}
+
+// Dialog animations
+.date-range-dialog.md-transition-in {
+  transition: all 0.3s ease-out;
+}
+
+.date-range-dialog.md-transition-out {
+  transition: all 0.2s ease-in;
+}

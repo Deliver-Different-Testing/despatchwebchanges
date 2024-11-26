@@ -467,9 +467,9 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
 
         using (var reader = (fileExtension == ".csv" ? ExcelReaderFactory.CreateCsvReader(memoryStream) : ExcelReaderFactory.CreateReader(memoryStream)))
         {
-            var output = reader.AsDataSet(new ExcelDataSetConfiguration()
+            var output = reader.AsDataSet(new ExcelDataSetConfiguration
             {
-                ConfigureDataTable = (_) => new ExcelDataTableConfiguration()
+                ConfigureDataTable = (_) => new ExcelDataTableConfiguration
                 {
                     UseHeaderRow = true
                 }
@@ -854,7 +854,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
             "Basic", Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($"{un}:{pw}"))
         );
 
-        var body = new ExsalerateActivity()
+        var body = new ExsalerateActivity
         {
             SiteOwnerID = 11,
             CustomerRefCode = clientId.ToString(),

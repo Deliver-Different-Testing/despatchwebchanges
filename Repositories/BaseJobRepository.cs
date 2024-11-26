@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -778,5 +780,250 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             Log.Error(ex, "Error updating connote for job {JobId}", jobId);
             throw;
         }
+    }
+
+    public async Task<OverviewStatsViewModel> GetOverviewStatsAsync()
+    {
+        var baseQuery = _context.TucJobs.Where(j => j.InverseParent.Any());
+
+        var stats = await baseQuery
+            .GroupBy(j => true) // Group all records together
+            .Select(g => new OverviewStatsViewModel
+            {
+                Active = g.Count(j =>
+                    j.UcjbStatus.HasValue && JobStatusGroups.Active.Contains(j.UcjbStatus.Value) && !j.UcjbVoid),
+                Completed = g.Count(j =>
+                    j.UcjbStatus.HasValue && JobStatusGroups.Completed.Contains(j.UcjbStatus.Value) && !j.UcjbVoid),
+                Inactive = g.Count(j => j.UcjbVoid)
+            })
+            .FirstOrDefaultAsync();
+
+        return stats ?? new OverviewStatsViewModel
+        {
+            Active = 0,
+            Inactive = 0,
+            Completed = 0
+        };
+    }
+
+    public async Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(
+        JobStatusGroup statusGroup,
+        int page,
+        int limit,
+        string search = null,
+        DateTime? startDate = null,
+        DateTime? endDate = null,
+        string orderBy = "jobName",
+        string orderDirection = "asc",
+        string regions = null,
+        string speeds = null)
+    {
+        // Base query
+        var query = _context.TucJobs
+            .Where(j => j.InverseParent.Any());
+
+        // Apply status group
+        query = statusGroup switch
+        {
+            JobStatusGroup.Active => query.Where(j =>
+                j.UcjbStatus.HasValue && JobStatusGroups.Active.Contains(j.UcjbStatus.Value) && !j.UcjbVoid),
+
+            JobStatusGroup.Completed => query.Where(j =>
+                j.UcjbStatus.HasValue && JobStatusGroups.Completed.Contains(j.UcjbStatus.Value) && !j.UcjbVoid),
+
+            JobStatusGroup.Inactive => query.Where(j => j.UcjbVoid),
+
+            _ => query
+        };
+
+        // Apply region filter if provided
+        if (!string.IsNullOrWhiteSpace(regions))
+        {
+            var regionIds = regions.Split(',')
+                .Select(int.Parse)
+                .ToList();
+
+            query = query.Where(j => j.TblBulkJobs
+                .Any(b => regionIds.Contains(b.Region.BulkRegionId)));
+        }
+
+        // Apply speed filter if provided
+        if (!string.IsNullOrWhiteSpace(speeds))
+        {
+            var speedIds = speeds.Split(',')
+                .Select(int.Parse)
+                .ToList();
+
+            query = query.Where(j => speedIds.Contains(j.UcjbSpeedNavigation.UcjtId));
+        }
+
+        // Apply search filter if provided
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.ToLower().Trim();
+            query = query.Where(j =>
+                EF.Functions.Like(j.UcjbNumber.ToLower(), $"%{search}%") ||
+                EF.Functions.Like(j.UcjbStatusNavigation.UcjsName.ToLower(), $"%{search}%") ||
+                j.TblBulkJobs.Any(b => EF.Functions.Like(b.Region.Name.ToLower(), $"%{search}%")) ||
+                EF.Functions.Like(j.PickupAddressLine5.ToLower(), $"%{search}%") ||
+                EF.Functions.Like(j.PickupAddressLine6.ToLower(), $"%{search}%") ||
+                EF.Functions.Like(j.DeliveryAddressLine5.ToLower(), $"%{search}%") ||
+                EF.Functions.Like(j.DeliveryAddressLine6.ToLower(), $"%{search}%") ||
+                (j.UcjbCourier != null && (
+                    EF.Functions.Like(j.UcjbCourier.UccrName.ToLower(), $"%{search}%") ||
+                    EF.Functions.Like(j.UcjbCourier.UccrSurname.ToLower(), $"%{search}%")
+                ))
+            );
+        }
+
+        // Apply date range filter
+        if (startDate.HasValue) query = query.Where(j => j.UcjbDate >= startDate);
+        if (endDate.HasValue) query = query.Where(j => j.UcjbDate <= endDate);
+
+        // Apply sorting
+        query = ApplySorting(query, orderBy, orderDirection);
+
+        // Get total count for pagination
+        var total = await query.CountAsync();
+        var pages = (int)Math.Ceiling(total / (double)limit);
+
+        // Apply pagination
+        var jobs = await query
+            .Skip((page - 1) * limit)
+            .Take(limit)
+            .Select(j => new DeliveryJob
+            {
+                JobId = j.UcjbId,
+                JobName = j.UcjbNumber,
+                Status = j.UcjbStatusNavigation.UcjsName,
+                Region =
+                    j.TblBulkJobs.FirstOrDefault() != null ? j.TblBulkJobs.FirstOrDefault().Region.Name : null,
+                Pickup = j.PickupAddressLine5 + ", " + j.PickupAddressLine6,
+                Delivery = j.DeliveryAddressLine5 + ", " + j.DeliveryAddressLine6,
+                Driver = j.UcjbCourier != null ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname : null,
+                Completion = j.InverseParent.Any()
+                    ? (int)Math.Round(
+                        (double)j.InverseParent.Count(c =>
+                            c.UcjbJobDone || (c.UcjbStatus.HasValue &&
+                                              JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))) /
+                        j.InverseParent.Count * 100)
+                    : 0,
+                ChildJobs = j.InverseParent.Select(c => new ChildDeliveryJob
+                {
+                    JobId = c.UcjbId,
+                    JobName = c.UcjbNumber,
+                    Status = c.UcjbStatusNavigation.UcjsName,
+                    Region = c.TblBulkJobs.FirstOrDefault() != null
+                        ? c.TblBulkJobs.FirstOrDefault().Region.Name
+                        : null,
+                    Pickup = c.PickupAddressLine5 + ", " + c.PickupAddressLine6,
+                    Delivery = c.DeliveryAddressLine5 + ", " + c.DeliveryAddressLine6,
+                    Driver = c.UcjbCourier != null
+                        ? c.UcjbCourier.UccrName + " " + c.UcjbCourier.UccrSurname
+                        : null,
+                    Completion = c.UcjbJobDone || c.UcjbStatus == (int)JobStatus.Completed ? 100 : 0
+                }).ToList()
+            }).AsNoTracking().ToListAsync();
+
+        return new PaginatedResponse<DeliveryJob>
+        {
+            Items = jobs,
+            Total = total,
+            Page = page,
+            Pages = pages
+        };
+    }
+
+    private static IQueryable<TucJob> ApplySorting(IQueryable<TucJob> query, string orderBy, string orderDirection)
+    {
+        var isAscending = orderDirection.ToLower() != "desc";
+
+        query = orderBy?.ToLower() switch
+        {
+            "jobname" => isAscending
+                ? query.OrderBy(j => j.UcjbNumber)
+                : query.OrderByDescending(j => j.UcjbNumber),
+
+            "status" => isAscending
+                ? query.OrderBy(j => j.UcjbStatusNavigation.UcjsName)
+                : query.OrderByDescending(j => j.UcjbStatusNavigation.UcjsName),
+
+            "completion" => isAscending
+                ? query.OrderBy(j => j.InverseParent.Count(c =>
+                        c.UcjbJobDone || (c.UcjbStatus.HasValue &&
+                                          JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))) /
+                    (double)j.InverseParent.Count * 100)
+                : query.OrderByDescending(j => j.InverseParent.Count(c =>
+                        c.UcjbJobDone || (c.UcjbStatus.HasValue &&
+                                          JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))) /
+                    (double)j.InverseParent.Count * 100),
+
+            "pickup" => isAscending
+                ? query.OrderBy(j => j.PickupAddressLine5)
+                : query.OrderByDescending(j => j.PickupAddressLine5),
+
+            "delivery" => isAscending
+                ? query.OrderBy(j => j.DeliveryAddressLine5)
+                : query.OrderByDescending(j => j.DeliveryAddressLine5),
+
+            "driver" => isAscending
+                ? query.OrderBy(j => j.UcjbCourier.UccrName)
+                : query.OrderByDescending(j => j.UcjbCourier.UccrName),
+
+            "region" => isAscending
+                ? query.OrderBy(j => j.TblBulkJobs.FirstOrDefault().Region.Name)
+                : query.OrderByDescending(j => j.TblBulkJobs.FirstOrDefault().Region.Name),
+
+            _ => query.OrderBy(j => j.UcjbNumber) // Default sort
+        };
+
+        return query;
+    }
+
+    public async Task<OverviewDeliveryMapResponse> GetOverviewLocationDataAsync(int jobId)
+    {
+        var locations = await _context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new OverviewDeliveryMapResponse
+            {
+                Center = new Coordinates
+                {
+                    Lat = (decimal)39.8097343,
+                    Lng = (decimal)-98.5556199
+                },
+                Zoom = 5,
+                Job = new OverviewJobLocation
+                {
+                    Id = j.UcjbId,
+                    Pickup = new Coordinates
+                    {
+                        Lat = j.PickUpLatitude != null ? j.PickUpLatitude.Value : 0,
+                        Lng = j.PickUpLongitude != null ? j.PickUpLongitude.Value : 0,
+                    },
+                    Delivery = new Coordinates
+                    {
+                        Lat = j.DeliveryLatitude != null ? j.DeliveryLatitude.Value : 0,
+                        Lng = j.DeliveryLongitude != null ? j.DeliveryLongitude.Value : 0,
+                    },
+                    ChildJobs = j.InverseParent.Select(c => new OverviewChildJobLocation
+                    {
+                        Id = c.UcjbId,
+                        Pickup = new Coordinates
+                        {
+                            Lat = c.PickUpLatitude != null ? c.PickUpLatitude.Value : 0,
+                            Lng = c.PickUpLongitude != null ? c.PickUpLongitude.Value : 0,
+                        },
+                        Delivery = new Coordinates
+                        {
+                            Lat = c.DeliveryLatitude != null ? c.DeliveryLatitude.Value : 0,
+                            Lng = c.DeliveryLongitude != null ? c.DeliveryLongitude.Value : 0,
+                        },
+                        Flight = j.TucJobNationwides.FirstOrDefault() != null
+                    }).ToList(),
+                    SelectedJobIndex = 1
+                }
+            }).AsNoTracking().FirstOrDefaultAsync();
+
+        return locations;
     }
 }

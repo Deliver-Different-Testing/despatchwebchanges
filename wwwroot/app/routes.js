@@ -27,9 +27,15 @@ angular.module('uDispatch')
                  * @property {string} controller - The controller for this state
                  */
                 .state('home', {
-                    url: '/',
+                    url: '/?jobId',
                     templateUrl: versionUrl('app/components/home/homeView.html'),
-                    controller: 'HomeControl'
+                    controller: 'HomeControl',
+                    params: {
+                        jobId: {
+                            value: null,
+                            squash: true
+                        }
+                    }
                 })
                 /**
                  * Nationwide state
@@ -69,5 +75,18 @@ angular.module('uDispatch')
                     templateUrl: versionUrl('app/components/prebooks/prebookView.html'),
                     controller: 'PBControl',
                     reloadOnSearch: false
+                })
+                /**
+                 * Prebooks state
+                 * @property {string} url - The URL for this state
+                 * @property {string} templateUrl - The URL for the template file
+                 * @property {string} controller - The controller for this state
+                 * @property {boolean} reloadOnSearch - Whether to reload the state on search change
+                 */
+                .state('overview', {
+                    url: '/overview',
+                    templateUrl: versionUrl('app/components/overview/overview.html'),
+                    controller: 'deliveryOverview',
+                    reloadOnSearch: false,
                 });
         }]);

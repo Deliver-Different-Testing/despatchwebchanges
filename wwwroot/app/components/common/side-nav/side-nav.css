@@ -1,0 +1,14 @@
+md-list-item.md-active {
+    font-weight: bold;
+    background-color: rgba(158, 158, 158, 0.2);
+}
+
+md-list-item.md-active p {
+    font-weight: bold;
+}
+
+md-list-item.md-active md-icon {
+    color: #2196F3;
+}
+
+/*# sourceMappingURL=side-nav.css.map */

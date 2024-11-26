@@ -1,0 +1,456 @@
+// Status color variables
+@status-blue: #BFDBFE; // New, Preassigned
+@status-green: #BBF7D0; // Despatched, Accepted
+@status-green-dark: #86EFAC; // Picked up, In Transit, Out for Delivery
+@status-red-light: #FCA5A5; // Rejected, Late Pickup, Late Delivery, Warning
+@status-red: #EF4444; // Undeliverable
+@status-gray: #9CA3AF; // Completed, Awaiting POD, Assuming Completed
+
+// Text colors
+@text-dark: black;
+@text-light: white;
+
+// Your existing chip colors...
+@chip-height: 32px;
+@chip-background: rgba(0, 0, 0, 0.08);
+@chip-active-background: #E3F2FD;
+@chip-active-color: #1976D2;
+@transition-duration: 0.2s;
+
+md-progress-linear.md-low .md-bar,
+md-progress-linear.md-default-theme.md-low .md-bar {
+  background-color: @status-green !important;
+}
+
+md-progress-linear.md-medium .md-bar,
+md-progress-linear.md-default-theme.md-medium .md-bar {
+  background-color: @status-green-dark !important;
+}
+
+md-progress-linear.md-high .md-bar,
+md-progress-linear.md-default-theme.md-high .md-bar {
+  background-color: @status-gray !important;
+}
+
+// Optional: style the background track
+md-progress-linear .md-container {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.delivery-dashboard {
+  md-card {
+    margin: 8px;
+  }
+
+  .status-chip {
+    padding: 4px 8px;
+    border-radius: 16px;
+    font-size: 12px;
+    text-transform: capitalize;
+    font-weight: 500;
+
+    // Blue status chips - black text
+    &.NEW,
+    &.PREASSIGNED {
+      background-color: @status-blue;
+      color: @text-dark;
+    }
+
+    // Light green status chips - black text
+    &.DESPATCHED,
+    &.ACCEPTED {
+      background-color: @status-green;
+      color: @text-dark;
+    }
+
+    // Dark green status chips - black text
+    &.PICKED_UP,
+    &.IN_TRANSIT,
+    &.OUT_FOR_DELIVERY {
+      background-color: @status-green-dark;
+      color: @text-dark;
+    }
+
+    // Light red status chips - black text
+    &.REJECTED,
+    &.LATE_PICKUP,
+    &.LATE_DELIVERY,
+    &.WARNING {
+      background-color: @status-red-light;
+      color: @text-dark;
+    }
+
+    // Red status chips - white text
+    &.UNDELIVERABLE {
+      background-color: @status-red;
+      color: @text-light;
+    }
+
+    // Gray status chips - white text
+    &.COMPLETED,
+    &.AWAITING_POD,
+    &.ASSUMING_COMPLETED {
+      background-color: @status-gray;
+      color: @text-light;
+    }
+  }
+
+  // Update progress bar styles
+  md-progress-linear {
+    margin: 8px 0;
+
+    &.md-warn .md-bar {
+      background-color: @status-red-light !important;
+    }
+
+    &.md-accent .md-bar {
+      background-color: @status-blue !important;
+    }
+
+    &.md-primary .md-bar {
+      background-color: @status-green-dark !important;
+    }
+
+    // Make the background track slightly transparent version of the bar color
+    .md-container {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  // Search Section Styles
+  .search-section {
+    margin: 8px 0 24px 0;
+    position: relative;
+
+    .search-container {
+      max-width: 600px;
+
+      md-input-container {
+        margin: 0;
+        padding: 0;
+        background-color: rgba(0, 0, 0, 0.02);
+        border-radius: 24px;
+        transition: background-color 0.2s ease;
+
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.04);
+        }
+
+        &.md-input-focused {
+          background-color: rgba(0, 0, 0, 0.06);
+        }
+
+        .md-errors-spacer {
+          display: none;
+        }
+      }
+
+      md-icon.search-icon {
+        color: rgba(0, 0, 0, 0.54);
+        padding: 5px;
+        margin: 0;
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+      }
+
+      .search-input,
+      input {
+        border: none;
+        height: 48px;
+        line-height: 48px;
+        padding: 0 16px 0 44px;
+        margin: 0;
+        background: transparent;
+        border-radius: 24px;
+
+        &:focus {
+          outline: none;
+        }
+      }
+    }
+
+    .filter-indicators {
+      margin-left: 16px;
+    }
+  }
+
+  .filter-section {
+    margin-bottom: 24px;
+
+
+    .date-range-button {
+      width: 100%;
+      margin: 0;
+      padding: 8px 16px;
+      height: auto;
+      border-radius: 4px;
+      background-color: rgba(0, 0, 0, 0.04);
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.08);
+      }
+
+      &.active {
+        background-color: #E3F2FD;
+        color: @primary-color;
+
+        md-icon {
+          color: @primary-color;
+        }
+      }
+
+      .md-button-content {
+        width: 100%;
+      }
+
+      md-icon {
+        margin-right: 8px;
+        font-size: 18px;
+        min-width: 18px;
+        min-height: 18px;
+        width: 18px;
+        height: 18px;
+        color: rgba(0, 0, 0, 0.54);
+
+        &.clear-icon {
+          margin-right: 0;
+          margin-left: 8px;
+          font-size: 16px;
+          opacity: 0.7;
+
+          &:hover {
+            opacity: 1;
+          }
+        }
+      }
+
+      .date-label {
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+
+  .status-chip {
+    padding: 4px 8px;
+    border-radius: 16px;
+    font-size: 12px;
+    text-transform: capitalize;
+
+    &.on-track {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    &.delayed {
+      background-color: #F44336;
+      color: white;
+    }
+  }
+
+  md-progress-linear {
+    margin: 8px 0;
+  }
+
+  .child-job-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr;
+    gap: 16px;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.02);
+    padding: 8px 16px;
+    margin: 4px 0;
+    border-radius: 4px;
+  }
+
+  .empty-state {
+    padding: 24px;
+    text-align: center;
+
+    .empty-icon {
+      font-size: 42px;
+      height: 42px;
+      width: 42px;
+      color: #9e9e9e;
+    }
+
+    .empty-text {
+      margin: 8px 0 0;
+      color: #757575;
+    }
+  }
+}
+
+@primary-color: #3EAFC2;
+@hover-color: rgba(0, 150, 136, 0.04);
+@active-color: rgba(0, 150, 136, 0.12);
+
+.stats-tabs-container {
+  background: white;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 8px 0;
+}
+
+.stats-tabs {
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.stat-tab {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 8px;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: @hover-color;
+  }
+
+  &.active {
+    background-color: @active-color;
+
+    .stat-circle {
+      background-color: @primary-color;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
+      .stat-value {
+        color: white;
+      }
+    }
+
+    .stat-icon {
+      background-color: @primary-color;
+      color: white;
+      border: 2px solid white;
+    }
+
+    .stat-label {
+      color: @primary-color;
+      font-weight: 500;
+    }
+
+    .tab-indicator {
+      opacity: 1;
+      transform: scaleX(1);
+    }
+  }
+}
+
+.stat-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  background-color: rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  .stat-value {
+    font-size: 20px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.87);
+    transition: color 0.2s ease;
+  }
+}
+
+.stat-icon {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 24px;
+  height: 24px;
+  font-size: 16px;
+  padding: 4px;
+  background: white;
+  border-radius: 50%;
+  color: rgba(0, 0, 0, 0.54);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 1;
+}
+
+.stat-label {
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(0, 0, 0, 0.64);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: color 0.2s ease;
+}
+
+.tab-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: @primary-color;
+  transform-origin: left;
+  transform: scaleX(0);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// Responsive adjustments
+@media screen and (max-width: 599px) {
+  .stat-tab {
+    min-width: 100px;
+    padding: 12px 4px;
+  }
+
+  .stat-circle {
+    width: 48px;
+    height: 48px;
+
+    .stat-value {
+      font-size: 18px;
+    }
+  }
+
+  .stat-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+  }
+}
+
+.regions-container {
+  max-height: 300px; // Adjust this value as needed
+  overflow-y: auto;
+  padding-right: 10px; // Add some padding for the scrollbar
+
+  // Scrollbar styling
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+}

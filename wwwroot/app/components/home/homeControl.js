@@ -1,6 +1,6 @@
 angular.module("uDispatch")
-    .controller("HomeControl", ['$document', "$filter", 'greetingService', "JobDetailService", "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService', "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", "versionUrl", "hotkeys", "APP_CONFIG", "JobTableService", "materialSidenavService", "AppPages", "$rootScope",
-        ($document, $filter, greetingService, JobDetailService, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService, materialSidenavService, AppPages, $rootScope) => {
+    .controller("HomeControl", ['$document', "$filter", 'greetingService', "JobDetailService", "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService', "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", "versionUrl", "hotkeys", "APP_CONFIG", "JobTableService", "materialSidenavService", "AppPages", "$rootScope", "$stateParams",
+        ($document, $filter, greetingService, JobDetailService, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService, materialSidenavService, AppPages, $rootScope, $stateParams) => {
             // Initialize variables and scope properties
             function initializeVariables() {
                 $scope.name = "Home";
@@ -3587,14 +3587,59 @@ angular.module("uDispatch")
                 }
             };
 
-//Init the controller
             function init() {
                 initializeVariables();
                 initLayoutSystem($scope, ContactID);
 
-                loadPageViews().then(() => {
-                    console.log('Loaded Page Views and Data!');
-                });
+                // Load page views first
+                loadPageViews()
+                    .then(async () => {
+                        console.log('Loaded Page Views and Data!');
+
+                        // Show specific job if jobId is provided
+                        const jobId = $stateParams.jobId;
+
+                        if (jobId) {
+                            try {
+                                // Wait for initial data load
+                                await $scope.getData();
+
+                                // Get and select the job
+                                const job = await DispatchData.getJobDetail(jobId);
+                                await $scope.selectJob(job);
+
+                                // Wait for DOM to update
+                                await $timeout(() => {
+                                    // Find and scroll to the job row
+                                    const jobElement = angular.element(`#jobList tr[data-jobid='${jobId}']`);
+                                    if (jobElement.length) {
+                                        const parentDiv = jobElement.parent().hasClass('box-content')
+                                            ? jobElement.parent()
+                                            : jobElement.parent().closest('.box-content');
+
+                                        let goTop = jobElement[0].getBoundingClientRect().top;
+
+                                        try {
+                                            goTop = goTop - parentDiv.offset().top + parentDiv.scrollTop() - 28;
+                                            parentDiv.scrollTop(goTop);
+
+                                            // Highlight the selected job
+                                            jobElement.addClass('active');
+                                        } catch (e) {
+                                            console.warn('Error scrolling to job:', e);
+                                        }
+                                    }
+                                }, 500);
+
+                            } catch (error) {
+                                console.error('Error loading initial job:', error);
+                                toastrService.showErrorToast("Error loading job details");
+                            }
+                        } else {
+                            // Normal initialization without specific job
+                            await $scope.getData();
+                        }
+                    });
             }
 
             init();

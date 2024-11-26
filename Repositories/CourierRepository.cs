@@ -311,6 +311,32 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
         }).ToListAsync();
     }
 
+    public async Task<List<Suggestion>> GetAllRegionsAsync()
+    {
+        var regions = await _context.TblBulkRegions
+            .OrderBy(r => r.Name)
+            .Select(r => new Suggestion
+            {
+                Id = r.BulkRegionId,
+                Text = r.Name
+            }).AsNoTracking().ToListAsync();
+
+        return regions;
+    }
+
+    public async Task<List<Suggestion>> GetAllSpeedsAsync()
+    {
+        var speeds = await _context.TucJobTypes
+            .OrderBy(r => r.UcjtName)
+            .Select(r => new Suggestion
+            {
+                Id = r.UcjtId,
+                Text = r.UcjtName
+            }).AsNoTracking().ToListAsync();
+
+        return speeds;
+    }
+
     public async Task<string> GetAirportCodeByIdAsync(int airportId)
     {
         try

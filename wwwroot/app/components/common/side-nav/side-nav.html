@@ -1,3 +1,5 @@
+<link href="app/components/common/side-nav/side-nav.min.css" rel="stylesheet">
+
 <md-sidenav class="md-sidenav-right" md-component-id="right">
     <md-toolbar>
         <h1 class="md-toolbar-tools">
@@ -16,20 +18,43 @@
         <md-divider></md-divider>
         <!-- Navigation menu items -->
         <md-list>
-            <md-list-item ng-class="{'md-active': materialSidenavService.isActive('home')}" ui-sref="home">
+            <md-list-item class="side-nav-item"
+                          md-selected="isActive('home')"
+                          ng-class="{'active': isActive('home')}"
+                          ui-sref="home">
                 <md-icon md-font-set="material-symbols-outlined">dashboard</md-icon>
                 <p>Dispatch</p>
             </md-list-item>
-            <md-list-item ng-class="{'md-active': materialSidenavService.isActive('nw')}" ui-sref="nw">
+
+            <md-list-item class="side-nav-item"
+                          md-selected="isActive('nw')"
+                          ng-class="{'active': isActive('nw')}"
+                          ui-sref="nw">
                 <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
                 <p ng-if="isUsCustomer">Domestic</p>
                 <p ng-if="!isUsCustomer">Nationwide</p>
             </md-list-item>
-            <md-list-item ng-class="{'md-active': materialSidenavService.isActive('cs')}" ui-sref="cs">
+
+            <md-list-item class="side-nav-item"
+                          md-selected="isActive('overview')"
+                          ng-class="{'active': isActive('overview')}"
+                          ui-sref="overview">
+                <md-icon md-font-set="material-symbols-outlined">inventory_2</md-icon>
+                <p>Overview</p>
+            </md-list-item>
+
+            <md-list-item class="side-nav-item"
+                          md-selected="isActive('cs')"
+                          ng-class="{'active': isActive('cs')}"
+                          ui-sref="cs">
                 <md-icon md-font-set="material-symbols-outlined">search</md-icon>
                 <p>Job Search</p>
             </md-list-item>
-            <md-list-item ng-class="{'md-active': materialSidenavService.isActive('prebooks')}" ui-sref="prebooks">
+
+            <md-list-item class="side-nav-item"
+                          md-selected="isActive('prebooks')"
+                          ng-class="{'active': isActive('prebooks')}"
+                          ui-sref="prebooks">
                 <md-icon md-font-set="material-symbols-outlined">event</md-icon>
                 <p>PreBooks</p>
             </md-list-item>
