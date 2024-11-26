@@ -451,3 +451,70 @@
  * @property {number} [depth] - Depth of the parcel in the specified unit
  * @property {string} [dimensions] - Formatted string of dimensions in 'LxDxH' format
  */
+
+/**
+ * @typedef {Object} Coordinates
+ *
+ * @property {number} lat - The latitude coordinate
+ * @property {number} lng - The longitude coordinate
+ */
+
+/**
+ * @typedef {Object} OverviewChildJobLocation
+ *
+ * @property {number} id - The unique identifier for the child job
+ * @property {Coordinates} pickup - The pickup location coordinates
+ * @property {Coordinates} delivery - The delivery location coordinates
+ * @property {boolean} flight - Indicates if this is a flight delivery
+ */
+
+/**
+ * @typedef {Object} OverviewJobLocation
+ *
+ * @property {number} id - The unique identifier for the job
+ * @property {Coordinates} pickup - The pickup location coordinates
+ * @property {Coordinates} delivery - The delivery location coordinates
+ * @property {Array<OverviewChildJobLocation>} childJobs - List of associated child jobs
+ * @property {number} selectedJobIndex - Index of the currently selected job
+ * @property {Coordinates} courierLocation - Current coordinates of the courier
+ */
+
+/**
+ * Represents the response object for the delivery map overview
+ * @typedef {Object} MapConfig
+ *
+ * @property {Coordinates} center - The center coordinates for the map view
+ * @property {number} zoom - The zoom level for the map
+ * @property {OverviewJobLocation} job - The main job information including locations
+ */
+
+/**
+ * Represents a child delivery job within a parent delivery
+ *
+ * @typedef {Object} OverviewTableChildJob
+ *
+ * @property {number} jobId - The unique identifier for the child job
+ * @property {string} jobName - The name or reference of the child job
+ * @property {string} status - The current status of the child job
+ * @property {number} completion - The completion percentage of the child job
+ * @property {string} pickup - The pickup location or address
+ * @property {string} delivery - The delivery location or address
+ * @property {string} driver - The assigned driver's name or identifier
+ * @property {string} region - The geographical region for the delivery
+ */
+
+/**
+ * Represents a main delivery job that may contain child deliveries
+ *
+ * @typedef {Object} OverviewTableParentJob
+ *
+ * @property {number} jobId - The unique identifier for the job
+ * @property {string} jobName - The name or reference of the job
+ * @property {string} status - The current status of the job
+ * @property {number} completion - The completion percentage of the job
+ * @property {string} pickup - The pickup location or address
+ * @property {string} delivery - The delivery location or address
+ * @property {string} driver - The assigned driver's name or identifier
+ * @property {string} region - The geographical region for the delivery
+ * @property {Array<OverviewTableChildJob>} childJobs - List of associated child delivery jobs
+ */

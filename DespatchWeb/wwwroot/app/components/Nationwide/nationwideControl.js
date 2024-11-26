@@ -395,6 +395,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 }
 
                 await $scope.getEventTypes();
+                await $scope.getData();
 
                 $timeout(() => sizeHeadings(), 1000);
             } catch (error) {
@@ -458,16 +459,15 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 const selectedFilterObj = $scope.filters.find(filter => filter.value === selectedFilter);
                 if (selectedFilterObj) {
                     selectedFilterObj.active = true;
-                    $scope.selectedFilter = selectedFilter; // Update selected filter
+                    $scope.selectedFilter = selectedFilter;
                 }
 
                 // Save the selected filter
                 saveFilterToStorage(selectedFilter);
 
-                // Pass the numeric value directly to setFilters
+                // Pass the numeric value directly to setFilters without the timeout
                 await setFilters({ 'status': selectedFilter });
 
-                // Ensure Angular updates the UI
                 if (!$scope.$$phase) {
                     $scope.$apply();
                 }
@@ -477,50 +477,48 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         async function setFilters(data) {
-            await $timeout(async () => {
-                // Ensure data is an object
-                data = data || {};
+            // Ensure data is an object
+            data = data || {};
 
-                if (data.status) {
-                    // Set numeric status directly
-                    $scope.queryParams.status = data.status;
+            if (data.status) {
+                // Set numeric status directly
+                $scope.queryParams.status = data.status;
+            } else {
+                // Use current selectedFilter if no status provided
+                $scope.queryParams.status = $scope.selectedFilter || 3; // Default to 3 (Active)
+            }
+
+            if (data.area) {
+                let selected = angular.element("#area-group > .btn.topBarActive").length;
+                if (selected > 1) {
+                    $scope.queryParams.area += "," + data.area;
                 } else {
-                    // Use current selectedFilter if no status provided
-                    $scope.queryParams.status = $scope.selectedFilter || 3; // Default to 3 (Active)
+                    $scope.queryParams.area = data.area;
                 }
+            }
 
-                if (data.area) {
-                    let selected = angular.element("#area-group > .btn.topBarActive").length;
-                    if (selected > 1) {
-                        $scope.queryParams.area += "," + data.area;
-                    } else {
-                        $scope.queryParams.area = data.area;
-                    }
+            if (data.clearList) {
+                let clSelected = angular.element("#driverLocations").find('.listActive').length;
+                if (clSelected > 1) {
+                    $scope.queryParams.area += "," + data.clearList;
+                } else {
+                    $scope.queryParams.area = data.clearList;
                 }
+            }
 
-                if (data.clearList) {
-                    let clSelected = angular.element("#driverLocations").find('.listActive').length;
-                    if (clSelected > 1) {
-                        $scope.queryParams.area += "," + data.clearList;
-                    } else {
-                        $scope.queryParams.area = data.clearList;
-                    }
-                }
+            if (data.order) {
+                $scope.queryParams.order = data.order;
+            }
 
-                if (data.order) {
-                    $scope.queryParams.order = data.order;
-                }
+            // Save filters to storage if available
+            if (Modernizr.localstorage) {
+                localStorage.setItem(
+                    `nw-filters-${ContactID}`,
+                    JSON.stringify($scope.queryParams)
+                );
+            }
 
-                // Save filters to storage if available
-                if (Modernizr.localstorage) {
-                    localStorage.setItem(
-                        `nw-filters-${ContactID}`,
-                        JSON.stringify($scope.queryParams)
-                    );
-                }
-
-                await $scope.getData();
-            }, 300);
+            return $scope.getData();
         }
 
         $scope.setActiveArea = selectedArea => {

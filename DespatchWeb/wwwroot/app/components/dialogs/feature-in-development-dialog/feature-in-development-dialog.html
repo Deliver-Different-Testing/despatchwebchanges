@@ -1,14 +1,10 @@
+<link href="/app/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.styles.min.css"
+      rel="stylesheet">
+
 <md-dialog aria-label="Feature in Development" class="feature-dialog">
     <md-toolbar>
         <div class="md-toolbar-tools">
             <h2>Feature in Development</h2>
-            <span flex></span>
-            <md-button class="md-icon-button" ng-click="ctrl.close()">
-                <md-tooltip md-direction="bottom">Close</md-tooltip>
-                <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
-                    close
-                </md-icon>
-            </md-button>
         </div>
     </md-toolbar>
 
@@ -33,26 +29,3 @@
         </md-button>
     </md-dialog-actions>
 </md-dialog>
-
-<style>
-    .feature-dialog {
-        min-width: 300px;
-    }
-
-    .feature-dialog .development-icon {
-        color: #2196F3; /* Material Blue */
-    }
-
-    .feature-dialog .md-dialog-content {
-        padding: 24px;
-    }
-
-    .feature-dialog .md-title {
-        margin-bottom: 16px;
-    }
-
-    .feature-dialog .md-body-1 {
-        color: rgba(0, 0, 0, 0.87);
-        margin-bottom: 8px;
-    }
-</style>
