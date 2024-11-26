@@ -136,7 +136,7 @@
                         <div class="statistics-header" layout="row" layout-align="space-between center">
                             <h4>Speeds</h4>
                             <md-checkbox
-                                    aria-label="{{ctrl.allSpeedsSelected ? 'Unselect All Regions' : 'Select All Regions'}}"
+                                    aria-label="{{ctrl.allSpeedsSelected ? 'Unselect All Speeds' : 'Select All Speeds'}}"
                                     ng-change="ctrl.toggleAllSpeeds()"
                                     ng-model="ctrl.allSpeedsSelected">
                                 {{ctrl.allSpeedsSelected ? 'Unselect All' : 'Select All'}}
@@ -250,11 +250,18 @@
                                 <td md-cell>{{delivery.driver}}</td>
                                 <td md-cell>{{delivery.region}}</td>
                                 <td md-cell>
-                                    <md-button aria-label="Show on map" class="md-icon-button"
-                                               ng-click="ctrl.showMap(delivery)">
-                                        <md-icon md-font-set="material-symbols-outlined">map</md-icon>
-                                        <md-tooltip md-direction="bottom">Open Map</md-tooltip>
-                                    </md-button>
+                                    <div layout="row">
+                                        <md-button aria-label="Show on map" class="md-icon-button"
+                                                   ng-click="ctrl.showMap(delivery)">
+                                            <md-icon md-font-set="material-symbols-outlined">map</md-icon>
+                                            <md-tooltip md-direction="bottom">Open Map</md-tooltip>
+                                        </md-button>
+                                        <md-button aria-label="View job details" class="md-icon-button"
+                                                   ng-click="ctrl.openJobDetail(delivery)">
+                                            <md-icon md-font-set="material-symbols-outlined">visibility</md-icon>
+                                            <md-tooltip md-direction="bottom">View Job Details</md-tooltip>
+                                        </md-button>
+                                    </div>
                                 </td>
                             </tr>
                             <!-- Child rows -->

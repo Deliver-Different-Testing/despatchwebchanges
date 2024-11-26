@@ -345,11 +345,11 @@ class OverviewController {
      */
     getProgressClass(completion) {
         if (completion < 30) {
-            return 'md-warn';      // Red for low progress
+            return 'md-low';      // Light green for low progress
         } else if (completion < 70) {
-            return 'md-accent';    // Blue for medium progress
+            return 'md-medium';   // Medium green for medium progress
         }
-        return 'md-primary';       // Green for high progress
+        return 'md-high';        // Gray for high progress
     }
 
     async showDateRangeDialog($event) {

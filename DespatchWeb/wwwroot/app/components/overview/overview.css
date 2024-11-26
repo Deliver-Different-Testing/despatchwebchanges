@@ -1,6 +1,26 @@
 .delivery-dashboard md-card {
   margin: 8px;
 }
+
+.delivery-dashboard md-progress-linear {
+  margin: 8px 0;
+}
+
+.delivery-dashboard md-progress-linear.progress-low .md-bar {
+  background-color: #BBF7D0 !important;
+}
+
+.delivery-dashboard md-progress-linear.progress-medium .md-bar {
+  background-color: #86EFAC !important;
+}
+
+.delivery-dashboard md-progress-linear.progress-high .md-bar {
+  background-color: #9CA3AF !important;
+}
+
+.delivery-dashboard md-progress-linear .md-container {
+  background-color: rgba(0, 0, 0, 0.05);
+}
 .delivery-dashboard .status-chip {
   padding: 4px 8px;
   border-radius: 16px;
