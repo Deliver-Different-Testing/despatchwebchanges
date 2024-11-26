@@ -50,6 +50,7 @@ class OverviewController {
         this.selectedRegions = [];
         this.allRegionsSelected = false;
         this.selectedSpeeds = [];
+        this.allSpeedsSelected = false;
 
         this.activeTab = 0;
 
@@ -224,6 +225,10 @@ class OverviewController {
         }
     }
 
+    /**
+     * Toggle region selection
+     * @param {Object} region The region to toggle
+     */
     async toggleRegion(region) {
         const idx = this.selectedRegions.indexOf(region);
 
@@ -239,10 +244,13 @@ class OverviewController {
         // Reset to first page when filter changes
         this.query.page = 1;
 
-        // Refresh data with new region filter
+        // Refresh data with new filter
         await this.refreshData();
     }
 
+    /**
+     * Toggle all regions selection
+     */
     async toggleAllRegions() {
         this.regions.forEach((region) => {
             region.selected = this.allRegionsSelected;
@@ -257,7 +265,7 @@ class OverviewController {
         // Reset to first page when filter changes
         this.query.page = 1;
 
-        // Refresh data with new region filter
+        // Refresh data with new filter
         await this.refreshData();
     }
 
@@ -272,8 +280,48 @@ class OverviewController {
         }
     }
 
-    toggleSpeed(speed) {
-        speed.selected = !speed.selected;
+    /**
+     * Toggle speed selection
+     * @param {Object} speed The speed to toggle
+     */
+    async toggleSpeed(speed) {
+        const idx = this.selectedSpeeds.indexOf(speed);
+
+        if (speed.selected && idx === -1) {
+            this.selectedSpeeds.push(speed);
+        } else if (!speed.selected && idx !== -1) {
+            this.selectedSpeeds.splice(idx, 1);
+        }
+
+        // Update allSpeedsSelected state
+        this.allSpeedsSelected = this.speeds.length === this.selectedSpeeds.length;
+
+        // Reset to first page when filter changes
+        this.query.page = 1;
+
+        // Refresh data with new filter
+        await this.refreshData();
+    }
+
+    /**
+     * Toggle all speeds selection
+     */
+    async toggleAllSpeeds() {
+        this.speeds.forEach((speed) => {
+            speed.selected = this.allSpeedsSelected;
+        });
+
+        if (this.allSpeedsSelected) {
+            this.selectedSpeeds = this.speeds.slice(); // Copy all speeds
+        } else {
+            this.selectedSpeeds = []; // Clear selections
+        }
+
+        // Reset to first page when filter changes
+        this.query.page = 1;
+
+        // Refresh data with new filter
+        await this.refreshData();
     }
 
     toggleSidenav() {
@@ -434,7 +482,8 @@ class OverviewController {
                 endDate: this.dateRange.end,
                 orderBy,
                 orderDirection,
-                regions: this.selectedRegions.length > 0 ? this.selectedRegions : null // Only send if regions are selected
+                regions: this.selectedRegions.length > 0 ? this.selectedRegions : null,
+                speeds: this.selectedSpeeds.length > 0 ? this.selectedSpeeds : null
             });
 
             const response = await this.promise;

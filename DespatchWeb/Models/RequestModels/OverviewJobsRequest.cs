@@ -13,4 +13,5 @@ public class OverviewJobsRequest
     public string OrderBy { get; set; } = "jobName";
     public string OrderDirection { get; set; } = "asc";
     public string Regions { get; set; } // Comma-separated region IDs
+    public string Speeds { get; set; } // Comma-separated speed IDs
 }

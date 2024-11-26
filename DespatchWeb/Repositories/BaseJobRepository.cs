@@ -817,7 +817,8 @@ public class BaseJobRepository
         DateTime? endDate = null,
         string orderBy = "jobName",
         string orderDirection = "asc",
-        string regions = null)
+        string regions = null,
+        string speeds = null)
     {
         // Base query
         var query = _context.TucJobs
@@ -846,6 +847,16 @@ public class BaseJobRepository
 
             query = query.Where(j => j.TblBulkJobs
                 .Any(b => regionIds.Contains(b.Region.BulkRegionId)));
+        }
+
+        // Apply speed filter if provided
+        if (!string.IsNullOrWhiteSpace(speeds))
+        {
+            var speedIds = speeds.Split(',')
+                .Select(int.Parse)
+                .ToList();
+
+            query = query.Where(j => speedIds.Contains(j.UcjbSpeedNavigation.UcjtId));
         }
 
         // Apply search filter if provided

@@ -19,11 +19,13 @@ class OverviewService {
      * @param {string} [params.orderBy] - Field to sort by
      * @param {string} [params.orderDirection] - Sort direction ('asc' or 'desc')
      * @param {Array} [params.regions] - Array of selected region IDs
+     * @param {Array} [params.speeds] - Array of selected speed IDs
      * @returns {Promise<Object>} Object containing jobs array and pagination metadata
      */
     async getAllJobs(params) {
-        // Convert regions array to comma-separated string if present
+        // Convert regions and speeds arrays to comma-separated strings if present
         const regionIds = params.regions?.map(r => r.id).join(',');
+        const speedIds = params.speeds?.map(s => s.id).join(',');
 
         const response = await this._http.get('/overview', {
             params: {
@@ -35,7 +37,8 @@ class OverviewService {
                 endDate: params.endDate ? params.endDate.toISOString() : null,
                 orderBy: params.orderBy || 'jobName',
                 orderDirection: params.orderDirection,
-                regions: regionIds || null
+                regions: regionIds || null,
+                speeds: speedIds || null
             }
         });
 
@@ -46,7 +49,6 @@ class OverviewService {
             pages: response.data.pages || Math.ceil((response.data.total || 0) / params.limit)
         };
     }
-
 
     /**
      * Get all available regions

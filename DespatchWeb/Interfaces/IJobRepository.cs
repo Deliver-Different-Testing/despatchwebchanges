@@ -171,7 +171,8 @@ public interface IJobRepository
         DateTime? endDate = null,
         string orderBy = "jobName",
         string orderDirection = "asc",
-        string regions = null);
+        string regions = null,
+        string speeds = null);
 
     Task<OverviewStatsViewModel> GetOverviewStatsAsync();
 

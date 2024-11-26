@@ -133,9 +133,16 @@
                     <md-divider></md-divider>
 
                     <div class="filter-section">
-                        <div class="statistics-header">
+                        <div class="statistics-header" layout="row" layout-align="space-between center">
                             <h4>Speeds</h4>
+                            <md-checkbox
+                                    aria-label="{{ctrl.allSpeedsSelected ? 'Unselect All Regions' : 'Select All Regions'}}"
+                                    ng-change="ctrl.toggleAllSpeeds()"
+                                    ng-model="ctrl.allSpeedsSelected">
+                                {{ctrl.allSpeedsSelected ? 'Unselect All' : 'Select All'}}
+                            </md-checkbox>
                         </div>
+
                         <div class="loader-container"
                              ng-if="ctrl.speedsLoading">
                             <div class="full-height" layout="row" layout-align="center center">
