@@ -379,8 +379,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $timeout(() => sizeHeadings(), 1000);
             } catch (error) {
                 console.error('Error fetching dispatch views:', error);
+                $scope.views = [];
                 await initializeViews();
-                console.log("Failed to load dispatch views. Please try refreshing the page.");
             }
         }
 
@@ -406,22 +406,22 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         }
 
         $scope.toggleView = async view => {
-            // Toggle the selected state
-            view.selected = !view.selected;
-
-            // Update selectedViews array
-            const index = $scope.selectedViews.indexOf(view);
-            if (view.selected && index === -1) {
-                $scope.selectedViews.push(view);
-            } else if (!view.selected && index > -1) {
-                $scope.selectedViews.splice(index, 1);
+            if (view.selected) {
+                if (!$scope.selectedViews.some(v => v.id === view.id)) {
+                    $scope.selectedViews.push(view);
+                }
+            } else {
+                const index = $scope.selectedViews.findIndex(v => v.id === view.id);
+                if (index > -1) {
+                    $scope.selectedViews.splice(index, 1);
+                }
             }
 
-            // Save to storage
+            // Save filtered views
             saveViewsToStorage($scope.selectedViews);
 
-            // Update data
-            await $scope.updateFilters();
+            await
+                $scope.getData();
         };
 
         $scope.updateFilters = async (selectedFilter) => {
@@ -2319,7 +2319,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 job: {
                     id: job.id,
                     pickup: pickupCoords,
-                    delivery: deliveryCoords
+                    delivery: deliveryCoords,
+                    childJobs: {}
                 },
                 selectedJobIndex: 0
             };
@@ -2914,51 +2915,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             await $scope.getSupports();
         };
 
-        $scope.getAvailableCourierLocation = async () => {
-            if (!$scope.allCouriers.display) {
-                map.clearLabels();
-                map.clearFlags();
-                return;
-            }
-
-            const areas = $scope.views;
-            const channels = [];
-            let trucks = false;
-
-            areas.forEach(area => {
-                switch (area) {
-                    case "main1":
-                    case "main2":
-                        if (!channels.includes(1)) {
-                            channels.push(1);
-                        }
-                        break;
-                    case "city":
-                        if (!channels.includes(2)) {
-                            channels.push(2);
-                        }
-                        break;
-                    case "truck":
-                        trucks = true;
-                        break;
-                    default:
-                    // code block
-                }
-            });
-
-            try {
-                const bounds = map.getBounds();
-                const sw = bounds.getSouthWest();
-                const ne = bounds.getNorthEast();
-
-                const returnData = await NWData.getAvailableCourierLocation(sw.lng(), sw.lat(), ne.lng(), ne.lat());
-
-                const currentCourierNum = $scope.currentCourier === false || $scope.currentCourier === null ? 0 : $scope.currentCourier.courier.split(" ")[0].trim();
-
-                displayAvailableCouriers(returnData, currentCourierNum, channels, trucks, $scope.truckMode, $scope.allCouriers.includeUA);
-            } catch (error) {
-                console.error("Error fetching available courier locations:", error);
-            }
+        $scope.getAvailableCourierLocation = () => {
+            // Todo: Update courier location for new US based implementation
         };
 
         /**
