@@ -450,7 +450,7 @@ class OverviewController {
         await this.$mdDialog.show({
             controller: 'MapDialogController',
             controllerAs: 'ctrl',
-            templateUrl: this.versionUrl('app/components/dialogs/map-dialog/map-dialog.html'),
+            templateUrl: this.versionUrl('app/components/dialogs/map-dialog/map-dialog.template.html'),
             parent: angular.element(this.$document.body),
             clickOutsideToClose: true,
             fullscreen: true,
