@@ -4,7 +4,7 @@ angular.module('uDispatch')
             restrict: 'E',
             templateUrl: versionUrl('app/components/common/side-nav/side-nav.html'),
             scope: true,
-            controller: ['$scope', function ($scope) {
+            controller: ['$scope', $scope => {
                 $scope.isActive = stateName => $state.current.name === stateName;
             }],
             link: (scope, element, attrs) => {

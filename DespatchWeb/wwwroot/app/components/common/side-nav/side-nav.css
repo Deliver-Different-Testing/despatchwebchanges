@@ -1,14 +1,16 @@
-md-list-item.md-active {
-    font-weight: bold;
-    background-color: rgba(158, 158, 158, 0.2);
+.side-nav-item.active {
+    background-color: rgba(33, 150, 243, 0.1);
 }
 
-md-list-item.md-active p {
-    font-weight: bold;
-}
-
-md-list-item.md-active md-icon {
+.side-nav-item.active .md-button {
     color: #2196F3;
 }
 
+.side-nav-item.active .md-button p {
+    font-weight: 500;
+}
+
+.side-nav-item.active .md-button md-icon {
+    color: #2196F3;
+}
 /*# sourceMappingURL=side-nav.css.map */

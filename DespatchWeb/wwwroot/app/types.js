@@ -475,8 +475,6 @@
  * @property {Coordinates} pickup - The pickup location coordinates
  * @property {Coordinates} delivery - The delivery location coordinates
  * @property {Array<OverviewChildJobLocation>} childJobs - List of associated child jobs
- * @property {number} selectedJobIndex - Index of the currently selected job
- * @property {Coordinates} courierLocation - Current coordinates of the courier
  */
 
 /**
@@ -486,6 +484,8 @@
  * @property {Coordinates} center - The center coordinates for the map view
  * @property {number} zoom - The zoom level for the map
  * @property {OverviewJobLocation} job - The main job information including locations
+ *  @property {number} selectedJobIndex - Index of the currently selected job
+ * @property {Coordinates} courierLocation - Current coordinates of the courier
  */
 
 /**
