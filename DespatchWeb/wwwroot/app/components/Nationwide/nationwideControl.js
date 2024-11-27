@@ -164,52 +164,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $scope.internalStatusOptions = [];
             });
 
-            $scope.allCouriers = {display: true, includeUA: false};
-            $scope.mapZoom = {display: true};
 
-            $scope.options = {
-                "detail": {
-                    "size": [{
-                        "id": 1, "label": "Bike"
-                    }, {
-                        "id": 2, "label": "Car"
-                    }, {
-                        "id": 3, "label": "Van"
-                    }, {
-                        "id": 4, "label": "Truck"
-                    }, {
-                        "id": 5, "label": "Scooter"
-                    }], "tracking": [{
-                        "id": 1, "label": "Email"
-                    }, {
-                        "id": 2, "label": "Mobile"
-                    }, {
-                        "id": 3, "label": "Email & Mobile"
-                    }], "DGClass": [{
-                        "id": 0, "label": "0"
-                    }, {
-                        "id": 1, "label": "1"
-                    }, {
-                        "id": 2, "label": "2"
-                    }, {
-                        "id": 3, "label": "3"
-                    }, {
-                        "id": 4, "label": "4"
-                    }, {
-                        "id": 5, "label": "5"
-                    }, {
-                        "id": 6, "label": "6"
-                    }, {
-                        "id": 7, "label": "7"
-                    }, {
-                        "id": 8, "label": "8"
-                    }, {
-                        "id": 9, "label": "9"
-                    }]
-                }
-            };
-
-            $scope.markers = [];
             $scope.truckCourierStatus = [];
             $scope.getJobStyle = assigned => {
                 const normal = {
@@ -275,7 +230,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     "showRefresh": 0,
                     "showDetailButtons": 1
                 }, "map": {
-                    "title": "Google Map",
+                    "title": "Map",
                     "icon": "pin_drop",
                     "templateUrl": versionUrl("app/components/Nationwide/partials/map.html"),
                     "showSearch": 0,
@@ -331,6 +286,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
         function init() {
             initializeVariables();
+            initHereMaps();
 
             // Initialize layouts through the service
             try {
@@ -377,6 +333,20 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             });
         }
 
+        function initHereMaps() {
+            $scope.hereCredentials = {
+                apiKey: 'KedIcK-HWes4X4mqtK64i4jrxTkD7tAWfJdLCXwGPD8'
+            };
+
+            /** @type {MapConfig} */
+            $scope.mapConfig = {
+                center: {lat: 39.8097343, lng: -98.5556199},
+                zoom: 7,
+                job: null,
+                selectedJobIndex: 0 // Default to parent job view
+            };
+        }
+
         init();
 
         /**
@@ -392,7 +362,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         $scope.greetUser = () => {
             return greetingService.greetUser(FirstName);
         }
-
 
         async function loadPageViews() {
             try {
@@ -410,8 +379,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $timeout(() => sizeHeadings(), 1000);
             } catch (error) {
                 console.error('Error fetching dispatch views:', error);
+                $scope.views = [];
                 await initializeViews();
-                console.log("Failed to load dispatch views. Please try refreshing the page.");
             }
         }
 
@@ -437,22 +406,22 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         }
 
         $scope.toggleView = async view => {
-            // Toggle the selected state
-            view.selected = !view.selected;
-
-            // Update selectedViews array
-            const index = $scope.selectedViews.indexOf(view);
-            if (view.selected && index === -1) {
-                $scope.selectedViews.push(view);
-            } else if (!view.selected && index > -1) {
-                $scope.selectedViews.splice(index, 1);
+            if (view.selected) {
+                if (!$scope.selectedViews.some(v => v.id === view.id)) {
+                    $scope.selectedViews.push(view);
+                }
+            } else {
+                const index = $scope.selectedViews.findIndex(v => v.id === view.id);
+                if (index > -1) {
+                    $scope.selectedViews.splice(index, 1);
+                }
             }
 
-            // Save to storage
+            // Save filtered views
             saveViewsToStorage($scope.selectedViews);
 
-            // Update data
-            await $scope.updateFilters();
+            await
+                $scope.getData();
         };
 
         $scope.updateFilters = async (selectedFilter) => {
@@ -476,7 +445,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 saveFilterToStorage(selectedFilter);
 
                 // Pass the numeric value directly to setFilters without the timeout
-                await setFilters({ 'status': selectedFilter });
+                await setFilters({'status': selectedFilter});
 
                 if (!$scope.$$phase) {
                     $scope.$apply();
@@ -2293,46 +2262,68 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
          * @private
          */
         function _displayJobOnMap(job) {
-            // Verify we have valid coordinates before displaying
-            if (isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude)) {
-                // Create array with single job
-                const jobsToDisplay = [job];
-
-                // Display the pickup point
-                displayPickupPoints(jobsToDisplay, true, job);
-
-                // Set bounds for pickup point
-                const bounds = new google.maps.LatLngBounds();
-                bounds.extend(new google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
-
-                // If delivery coordinates are valid, include them too
-                if (isValidCoordinates(job.deliveryLatitude, job.deliveryAddress.longitude)) {
-                    bounds.extend(new google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude));
-                }
-
-                map.fitBounds(bounds);
-
-                // Adjust zoom if too close
-                const listener = google.maps.event.addListener(map, "idle", () => {
-                    if (map.getZoom() > 16) {
-                        map.setZoom(16);
-                    }
-                    google.maps.event.removeListener(listener);
-                });
-            } else {
-                console.warn('Invalid pickup coordinates for job:', job);
+            try {
+                $scope.mapConfig = calculateMapBounds(job);
+                console.log('Calculated map bounds!');
+                console.log($scope.mapConfig);
+            } catch (error) {
+                console.error(error);
+                toastrService.showErrorToast('An unexpected error occured displaying this job on the map');
             }
         }
 
         /**
-         * @param {number|null} lat
-         * @param {number} lng
+         * @param {Job} job
+         * @private
          */
-        function isValidCoordinates(lat, lng) {
-            return lat !== null && lng !== null &&
-                !isNaN(lat) && !isNaN(lng) &&
-                lat !== 0 && lng !== 0 &&
-                Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+        function calculateMapBounds(job) {
+            // Extract coordinates
+            const pickupCoords = {
+                lat: job.pickUpLatitude,
+                lng: job.pickUpLongitude
+            };
+            const deliveryCoords = {
+                lat: job.deliveryLatitude,
+                lng: job.deliveryLongitude
+            };
+
+            // Calculate the center point between pickup and delivery
+            const centerLat = (pickupCoords.lat + deliveryCoords.lat) / 2;
+            const centerLng = (pickupCoords.lng + deliveryCoords.lng) / 2;
+
+            // Calculate the appropriate zoom level
+            const latDiff = Math.abs(pickupCoords.lat - deliveryCoords.lat);
+            const lngDiff = Math.abs(pickupCoords.lng - deliveryCoords.lng);
+
+            // Use the larger difference to determine zoom
+            const maxDiff = Math.max(latDiff, lngDiff);
+
+            // Zoom calculation - adjusted for larger distances
+            let zoom;
+            if (maxDiff > 40) zoom = 3;
+            else if (maxDiff > 20) zoom = 4;
+            else if (maxDiff > 10) zoom = 5;
+            else if (maxDiff > 5) zoom = 6;
+            else if (maxDiff > 2) zoom = 7;
+            else if (maxDiff > 1) zoom = 8;
+            else if (maxDiff > 0.5) zoom = 9;
+            else if (maxDiff > 0.1) zoom = 10;
+            else zoom = 12;
+
+            return {
+                center: {
+                    lat: centerLat,
+                    lng: centerLng
+                },
+                zoom: zoom,
+                job: {
+                    id: job.id,
+                    pickup: pickupCoords,
+                    delivery: deliveryCoords,
+                    childJobs: {}
+                },
+                selectedJobIndex: 0
+            };
         }
 
         /**
@@ -2924,51 +2915,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             await $scope.getSupports();
         };
 
-        $scope.getAvailableCourierLocation = async () => {
-            if (!$scope.allCouriers.display) {
-                map.clearLabels();
-                map.clearFlags();
-                return;
-            }
-
-            const areas = $scope.views;
-            const channels = [];
-            let trucks = false;
-
-            areas.forEach(area => {
-                switch (area) {
-                    case "main1":
-                    case "main2":
-                        if (!channels.includes(1)) {
-                            channels.push(1);
-                        }
-                        break;
-                    case "city":
-                        if (!channels.includes(2)) {
-                            channels.push(2);
-                        }
-                        break;
-                    case "truck":
-                        trucks = true;
-                        break;
-                    default:
-                    // code block
-                }
-            });
-
-            try {
-                const bounds = map.getBounds();
-                const sw = bounds.getSouthWest();
-                const ne = bounds.getNorthEast();
-
-                const returnData = await NWData.getAvailableCourierLocation(sw.lng(), sw.lat(), ne.lng(), ne.lat());
-
-                const currentCourierNum = $scope.currentCourier === false || $scope.currentCourier === null ? 0 : $scope.currentCourier.courier.split(" ")[0].trim();
-
-                displayAvailableCouriers(returnData, currentCourierNum, channels, trucks, $scope.truckMode, $scope.allCouriers.includeUA);
-            } catch (error) {
-                console.error("Error fetching available courier locations:", error);
-            }
+        $scope.getAvailableCourierLocation = () => {
+            // Todo: Update courier location for new US based implementation
         };
 
         /**
