@@ -85,7 +85,7 @@ angular.module('uDispatch')
                  */
                 .state('overview', {
                     url: '/overview',
-                    templateUrl: versionUrl('app/components/overview/overview.html'),
+                    templateUrl: versionUrl('app/components/overview/overview.template.html'),
                     controller: 'deliveryOverview',
                     reloadOnSearch: false,
                 });

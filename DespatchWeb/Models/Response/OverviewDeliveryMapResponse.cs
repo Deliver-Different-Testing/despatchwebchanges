@@ -7,6 +7,10 @@ public class OverviewDeliveryMapResponse
     public Coordinates Center { get; set; }
     public int Zoom { get; set; }
     public OverviewJobLocation Job { get; set; }
+
+    public Coordinates CourierLocation { get; set; }
+
+    public int SelectedJobIndex { get; set; }
 }
 
 public class Coordinates
@@ -21,8 +25,6 @@ public class OverviewJobLocation
     public Coordinates Pickup { get; set; }
     public Coordinates Delivery { get; set; }
     public List<OverviewChildJobLocation> ChildJobs { get; set; }
-    public int SelectedJobIndex { get; set; }
-    public Coordinates CourierLocation { get; set; }
 }
 
 public class OverviewChildJobLocation

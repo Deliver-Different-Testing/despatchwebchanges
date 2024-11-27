@@ -994,6 +994,7 @@ public class BaseJobRepository
                     Lng = (decimal)-98.5556199
                 },
                 Zoom = 5,
+                SelectedJobIndex = 0,
                 Job = new OverviewJobLocation
                 {
                     Id = j.UcjbId,
@@ -1021,8 +1022,7 @@ public class BaseJobRepository
                             Lng = c.DeliveryLongitude != null ? c.DeliveryLongitude.Value : 0,
                         },
                         Flight = j.TucJobNationwides.FirstOrDefault() != null
-                    }).ToList(),
-                    SelectedJobIndex = 1
+                    }).ToList()
                 }
             }).AsNoTracking().FirstOrDefaultAsync();
 

@@ -58,7 +58,8 @@ class MapDialogController {
     switchMapJob(index) {
         console.log('Setting child job on map to ' + (index + 1));
         this.selectedJobIndex = index;
-        this.mapConfig.job.selectedJobIndex = index + 1;
+        this.mapConfig.selectedJobIndex = index + 1;
+        console.log(this.mapConfig);
     }
 
     /**
