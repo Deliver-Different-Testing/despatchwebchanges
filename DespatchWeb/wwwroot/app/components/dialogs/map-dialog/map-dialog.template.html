@@ -42,13 +42,32 @@
 
                 <div class="job-timeline" layout="row" layout-align="center center" ng-if="!ctrl.loading">
                     <div class="timeline-container" layout="row" layout-align="center center">
+                        <!-- Parent Job Step -->
+                        <div layout="row" layout-align="center center">
+                            <div class="timeline-step"
+                                 ng-class="{'active': ctrl.selectedJobIndex === 0}"
+                                 ng-click="ctrl.switchMapJob(0)">
+                                <div class="step-circle"
+                                     md-colors="{background: ctrl.selectedJobIndex === 0 ? 'primary' : 'background-400'}">
+                                    P
+                                </div>
+                                <div class="step-label">{{ctrl.delivery.jobName}}</div>
+                            </div>
+                            <!-- Connector Line to first child -->
+                            <div class="timeline-connector"
+                                 md-colors="{background: 'background-400'}">
+                                <md-icon md-font-set="material-symbols-outlined">arrow_forward</md-icon>
+                            </div>
+                        </div>
+
+                        <!-- Child Jobs -->
                         <div layout="row" layout-align="center center" ng-repeat="job in ctrl.delivery.childJobs">
                             <!-- Job Step Circle -->
                             <div class="timeline-step"
-                                 ng-class="{'active': ctrl.selectedJobIndex === $index}"
-                                 ng-click="ctrl.switchMapJob($index)">
+                                 ng-class="{'active': ctrl.selectedJobIndex === $index + 1}"
+                                 ng-click="ctrl.switchMapJob($index + 1)">
                                 <div class="step-circle"
-                                     md-colors="{background: ctrl.selectedJobIndex === $index ? 'primary' : 'background-400'}">
+                                     md-colors="{background: ctrl.selectedJobIndex === $index + 1 ? 'primary' : 'background-400'}">
                                     {{$index + 1}}
                                 </div>
                                 <div class="step-label" ng-bind="job.jobName"></div>

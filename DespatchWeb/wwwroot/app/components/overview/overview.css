@@ -2,21 +2,17 @@ md-progress-linear.md-low .md-bar,
 md-progress-linear.md-default-theme.md-low .md-bar {
   background-color: #BBF7D0 !important;
 }
-
 md-progress-linear.md-medium .md-bar,
 md-progress-linear.md-default-theme.md-medium .md-bar {
   background-color: #86EFAC !important;
 }
-
 md-progress-linear.md-high .md-bar,
 md-progress-linear.md-default-theme.md-high .md-bar {
   background-color: #9CA3AF !important;
 }
-
 md-progress-linear .md-container {
   background-color: rgba(0, 0, 0, 0.05);
 }
-
 .delivery-dashboard md-card {
     margin: 8px;
 }
@@ -339,7 +335,7 @@ md-progress-linear .md-container {
   }
 }
 .regions-container {
-  max-height: 300px;
+    max-height: 200px;
   overflow-y: auto;
   padding-right: 10px;
 }
