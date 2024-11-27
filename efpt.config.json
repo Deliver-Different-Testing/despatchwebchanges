@@ -295,6 +295,11 @@
          "ObjectType": 1
       },
       {
+         "MappedType": "DES_qdfCourier_ClearListsResult",
+         "Name": "[dbo].[DES_qdfUS_Courier_ClearLists]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DES_qryCourierCombo_Active]",
          "ObjectType": 1
       },

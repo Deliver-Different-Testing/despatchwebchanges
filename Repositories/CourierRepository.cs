@@ -259,7 +259,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
         };
     }
 
-    public async Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds)
+    public async Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds, bool isUsTenant)
     {
         try
         {
@@ -286,7 +286,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
             var areas = new List<AreaClearList>();
             foreach (var clearList in clearLists)
             {
-                var areaClearList = await BuildClearListViewModel(activeCouriers, clearList, 33);
+                var areaClearList = await BuildClearListViewModel(activeCouriers, clearList, 33, isUsTenant);
                 if (areaClearList == null) continue;
 
                 areaClearList.TotalRemaining = await ClearListTotalRemainingAsync(clearList.Name?.ToLower());
@@ -518,10 +518,13 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
     private async Task<AreaClearList> BuildClearListViewModel(
         IReadOnlyCollection<DES_qryCourierCombo_ActiveResult> activeCouriers,
         dynamic clearList,
-        int percentHeight)
+        int percentHeight,
+        bool isUsTenant)
     {
         // Combine multiple queries into one
-        var clearListData = await Context.Procedures.DES_qdfCourier_ClearListsAsync(clearList.ClearListAreaId);
+        var clearListData = isUsTenant
+            ? await Context.Procedures.DES_qdfUS_Courier_ClearListsAsync(clearList.ClearListAreaId) 
+            : await Context.Procedures.DES_qdfCourier_ClearListsAsync(clearList.ClearListAreaId);
 
         if (clearListData == null) return null;
 

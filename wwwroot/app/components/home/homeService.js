@@ -372,7 +372,7 @@ class DispatchData {
             params.append('despatchViewIds', id.toString());
         });
 
-        const response = await this._$http.get(`courier?${params.toString()}`);
+        const response = await this._$http.get(`courier?${params.toString()}&isUsTenant=${this._isUsCustomer}`);
         return response.data;
     }
 

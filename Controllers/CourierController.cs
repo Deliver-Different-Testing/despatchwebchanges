@@ -12,14 +12,14 @@ namespace DespatchWeb.Controllers
 {
     public class CourierController(ICourierRepository courierRepository) : Controller
     {
-        public async Task<IActionResult> Index([FromQuery] List<int> despatchViewIds)
+        public async Task<IActionResult> Index([FromQuery] List<int> despatchViewIds, bool isUsTenant)
         {
             try
             {
                 if (despatchViewIds is { Count: 0 })
                     despatchViewIds.Add(49);
 
-                var result = await courierRepository.GetClearListsAsync(despatchViewIds);
+                var result = await courierRepository.GetClearListsAsync(despatchViewIds, isUsTenant);
                 return Json(result);
             }
             catch (Exception e)
