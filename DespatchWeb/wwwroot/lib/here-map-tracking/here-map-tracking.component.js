@@ -69,7 +69,7 @@ angular.module('hereMapTracking.components', [])
                 config: '=',
                 onMapReady: '&'
             },
-            template: '<div class="here-map" id="{{mapId}}" style="width: 900px; height: 700px;"></div>',
+            template: '<div class="here-map" id="{{mapId}}" style="width: 800px; height:500px;"></div>',
             controller: ['$scope', 'HereMapService', function ($scope, HereMapService) {
                 var platform;
                 var mapInstance;
@@ -99,40 +99,38 @@ angular.module('hereMapTracking.components', [])
                 };
 
                 //Watch for changes in config
-                $scope.$watchGroup(['credentials', 'config'], function (newValues, oldValues) {
-                    if (newValues[0] && newValues[1]) {
+                $scope.$watchGroup(['config', 'config.selectedJobIndex'], function (newValues, oldValues) {
+                    if ($scope.credentials && newValues[0]) {
                         //Setup map if no map
                         if (!mapInstance) {
                             initialiseMap();
                         }
-
                         //Check if new job or already on map
-                        if (newValues[1].job && (!oldValues[1].job || newValues[1].job.id !== oldValues[1].job.id)) {
+                        if (newValues[0].job && (!oldValues[0].job || newValues[0].job.id !== oldValues[0].job.id) && newValues[1] === 0) {
                             //Update map if first/new job
-                            $scope.showJobOnMap(newValues[1].job, newValues[1].courierLocation);
+                            $scope.showJobOnMap(newValues[0].job, newValues[0].courierLocation);
                         } else {
                             //To center map for job leg
-                            if (newValues[1].selectedJobIndex || newValues[1].selectedJobIndex === 0) {
-                                var index = newValues[1].selectedJobIndex - 1;
+                            if (newValues[1] || newValues[1] === 0) {
+                                var index = newValues[1] - 1;
                                 var thisJob = null;
                                 if (index !== -1) {
                                     //Scope map to selected leg of job
-                                    thisJob = newValues[1].job.childJobs[index];
+                                    thisJob = newValues[0].job.childJobs[index];
                                     thisJob.index = extraRouteLines.findIndex(x => x.id.slice(-1) === index.toString());
                                     HereMapService.centerHereMap(thisJob.pickup.lat, thisJob.pickup.lng, thisJob.delivery.lat, thisJob.delivery.lng, thisJob, routeLine, extraRouteLines, mapInstance.map);
                                 } else {
                                     //Scope map to flight leg of job
-                                    index = newValues[1].job.childJobs.findIndex(x => x.flight === true);
-                                    thisJob = newValues[1].job.childJobs[index];
+                                    index = newValues[0].job.childJobs.findIndex(x => x.flight === true);
+                                    thisJob = newValues[0].job.childJobs[index];
                                     thisJob.index = extraRouteLines.findIndex(x => x.id.slice(-1) === index.toString());
                                     HereMapService.centerHereMap(thisJob.pickup.lat, thisJob.pickup.lng, thisJob.delivery.lat, thisJob.delivery.lng, thisJob, routeLine, extraRouteLines, mapInstance.map);
                                 }
                             }
-
                             //If courier location updated on existing job then update marker location
-                            if (newValues[1].courierLocation && newValues[1].courierLocation.lat !== null && newValues[1].courierLocation.lng !== null && (!oldValues[1].courierLocation ||
-                                (newValues[1].courierLocation.lat != oldValues[1].courierLocation.lat && newValues[1].courierLocation.lng != oldValues[1].courierLocation.lng))) {
-                                courierMarker = HereMapService.getHereCourierMarker(newValues[1].courierLocation.lat, newValues[1].courierLocation.lng, courierMarker, mapInstance.map);
+                            if (newValues[0].courierLocation && newValues[0].courierLocation.lat !== null && newValues[0].courierLocation.lng !== null && (!oldValues[0].courierLocation ||
+                                (newValues[0].courierLocation.lat != oldValues[0].courierLocation.lat && newValues[0].courierLocation.lng != oldValues[0].courierLocation.lng))) {
+                                courierMarker = HereMapService.getHereCourierMarker(newValues[0].courierLocation.lat, newValues[0].courierLocation.lng, courierMarker, mapInstance.map);
                             }
                         }
                     }
