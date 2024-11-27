@@ -20,9 +20,9 @@ angular.module('uDispatch').controller('CSControl', [
     'moment',
     'DispatchData',
     'versionUrl',
-    'materialSidenavService',
+    '$mdSidenav',
     'CSLayoutService',
-    ($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document, $timeout, loadingService, dispatchJobService, toastrService, moment, DispatchData, versionUrl, materialSidenavService, LayoutService) => {
+    ($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document, $timeout, loadingService, dispatchJobService, toastrService, moment, DispatchData, versionUrl, $mdSidenav, LayoutService) => {
         $scope.jdSvc = jdSvc;
         $scope.dispatchJobService = dispatchJobService;
 
@@ -247,10 +247,16 @@ angular.module('uDispatch').controller('CSControl', [
             };
         }
 
+        /**
+         * Toggles the sidenav.
+         */
         $scope.toggleSidenav = () => {
-            materialSidenavService.toggle();
+            $mdSidenav('right').toggle();
         };
 
+        /**
+         * Create greeting for the user based on time of day
+         */
         $scope.greetUser = () => {
             return greetingService.greetUser(FirstName);
         }
@@ -873,7 +879,8 @@ angular.module('uDispatch').controller('CSControl', [
                 })
                 .finally(() => {
                     document.getElementById("jobListUpload").value = null;
-                });                ;
+                });
+            ;
         };
 
         /**

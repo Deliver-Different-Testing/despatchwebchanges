@@ -24,15 +24,15 @@
  * @param {Object} DispatchData - Dispatch Data Service.
  * @param {Object} moment - Moment.js library.
  * @param {string} versionUrl - URL for versioned assets.
- * @param {Object} materialSidenavService - Material sidenav service.
+ * @param {Object} $mdSidenav - Material sidenav service.
  * @param {Object} AppPages - Application pages configuration.
  * @param {Object} APP_CONFIG - Application configuration.
  * @param {Object} $mdEditDialog - Angular Material edit dialog service.
  * @param {Object} LayoutService - Layout management service.
  * @param {Object} $mdMenu - Angular Material menu service.
  */
-angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetailService', "NWData", "$state", "$filter", "$parse", "hotkeys", "NgMap", "$q", "$timeout", "greetingService", "$mdDialog", "$document", "$window", "toastrService", "DispatchData", "moment", "versionUrl", "materialSidenavService", "AppPages", "APP_CONFIG", "$mdEditDialog", "NationwideLayoutService", "$mdMenu",
-    ($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService, $mdDialog, $document, $window, toastrService, DispatchData, moment, versionUrl, materialSidenavService, AppPages, APP_CONFIG, $mdEditDialog, LayoutService, $mdMenu) => {
+angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetailService', "NWData", "$state", "$filter", "$parse", "hotkeys", "NgMap", "$q", "$timeout", "greetingService", "$mdDialog", "$document", "$window", "toastrService", "DispatchData", "moment", "versionUrl", "$mdSidenav", "AppPages", "APP_CONFIG", "$mdEditDialog", "NationwideLayoutService", "$mdMenu",
+    ($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService, $mdDialog, $document, $window, toastrService, DispatchData, moment, versionUrl, $mdSidenav, AppPages, APP_CONFIG, $mdEditDialog, LayoutService, $mdMenu) => {
         $scope.jdSvc = jdSvc;
 
         const JOB_DATA_TYPE = {
@@ -378,11 +378,21 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         }
 
         init();
+
+        /**
+         * Toggles the sidenav.
+         */
         $scope.toggleSidenav = () => {
-            materialSidenavService.toggle();
+            $mdSidenav('right').toggle();
         };
 
-        $scope.greetUser = () => greetingService.greetUser($scope.userName)
+        /**
+         * Create greeting for the user based on time of day
+         */
+        $scope.greetUser = () => {
+            return greetingService.greetUser(FirstName);
+        }
+
 
         async function loadPageViews() {
             try {
@@ -442,7 +452,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             saveViewsToStorage($scope.selectedViews);
 
             // Update data
-           await $scope.updateFilters();
+            await $scope.updateFilters();
         };
 
         $scope.updateFilters = async (selectedFilter) => {

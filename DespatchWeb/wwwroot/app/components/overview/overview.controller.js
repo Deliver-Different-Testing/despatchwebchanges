@@ -3,9 +3,9 @@
  * @description Controller for delivery overview page
  */
 class OverviewController {
-    constructor($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state, greetingService) {
+    constructor($mdDialog, $mdSidenav, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state, greetingService) {
         this.$mdDialog = $mdDialog;
-        this.materialSidenavService = materialSidenavService;
+        this.$mdSidenav = $mdSidenav;
         this.overviewService = overviewService;
         this.versionUrl = versionUrl;
         this.$document = $document;
@@ -341,7 +341,7 @@ class OverviewController {
     }
 
     toggleSidenav() {
-        this.materialSidenavService.toggle();
+        this.$mdSidenav('right').toggle();
     }
 
     /**
@@ -450,7 +450,7 @@ class OverviewController {
         await this.$mdDialog.show({
             controller: 'MapDialogController',
             controllerAs: 'ctrl',
-            templateUrl: this.versionUrl('app/components/dialogs/map-dialog/map-dialog.html'),
+            templateUrl: this.versionUrl('app/components/dialogs/map-dialog/map-dialog.template.html'),
             parent: angular.element(this.$document.body),
             clickOutsideToClose: true,
             fullscreen: true,
@@ -536,4 +536,4 @@ class OverviewController {
     }
 }
 
-angular.module('uDispatch').controller('deliveryOverview', ['$mdDialog', 'materialSidenavService', 'overviewService', 'versionUrl', '$document', '$scope', '$timeout', 'toastrService', 'moment', '$state', 'greetingService', ($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state, greetingService) => new OverviewController($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state, greetingService)]);
+angular.module('uDispatch').controller('deliveryOverview', ['$mdDialog', '$mdSidenav', 'overviewService', 'versionUrl', '$document', '$scope', '$timeout', 'toastrService', 'moment', '$state', 'greetingService', ($mdDialog, $mdSidenav, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state, greetingService) => new OverviewController($mdDialog, $mdSidenav, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state, greetingService)]);

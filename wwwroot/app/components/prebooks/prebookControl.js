@@ -1,5 +1,5 @@
 angular.module('uDispatch')
-    .controller('PBControl', ['$scope', 'JobDetailService', 'uPBData', "$state", "$stateParams", "$filter", '$parse', "hotkeys", "$location", 'NgMap', 'GeoCoder', '$mdDialog', '$timeout', 'versionUrl', '$window', 'materialSidenavService', ($scope, jdSvc, uPBData, $state, $stateParams, $filter, $parse, hotkeys, $location, NgMap, GeoCoder, $mdDialog, $timeout, versionUrl, $window, materialSidenavService) => {
+    .controller('PBControl', ['$scope', 'JobDetailService', 'uPBData', "$state", "$stateParams", "$filter", '$parse', "hotkeys", "$location", 'NgMap', 'GeoCoder', '$mdDialog', '$timeout', 'versionUrl', '$window', '$mdSidenav', ($scope, jdSvc, uPBData, $state, $stateParams, $filter, $parse, hotkeys, $location, NgMap, GeoCoder, $mdDialog, $timeout, versionUrl, $window, $mdSidenav) => {
         $scope.isAdmin = (ClientInternal === "True");
         $scope.mapSetting = {
             "allCouriers": false, "allRuns": false
@@ -7,8 +7,11 @@ angular.module('uDispatch')
 
         $scope.jdSvc = jdSvc;
 
+        /**
+         * Toggles the sidenav.
+         */
         $scope.toggleSidenav = () => {
-            materialSidenavService.toggle();
+            $mdSidenav('right').toggle();
         };
 
         $scope.selectedPrebooks = [];
