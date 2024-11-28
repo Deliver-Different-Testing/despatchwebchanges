@@ -132,7 +132,9 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 PreBook = true,
                 Pedal = jb.UcbkCbd,
                 Reprice = jb.Reprice,
-                LoggedInContactName = jb.LoggedInContact.UccoName,
+                LoggedInContactName = jb.LoggedInContact != null
+                    ? jb.LoggedInContact.UcctFirstname + jb.LoggedInContact.UcctSurname
+                    : string.Empty,
                 PalletInfo = jb.TucJobBookingItems.Select(i => new PalletInfo
                 {
                     Id = i.BookingId,

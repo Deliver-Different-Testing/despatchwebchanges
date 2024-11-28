@@ -298,7 +298,7 @@ angular.module("hereMapTracking.services")
                     });
             };
 
-            service.addExtraRouteLine = function (fromLat, fromLong, toLat, toLong, index, flight, extraRouteLines, job, map, platform) {
+            service.addExtraRouteLine = function (fromLat, fromLong, toLat, toLong, index, flight, extraRouteLines, job, map, platform, isScopedJob) {
                 //Draws multiple routelines for multipart job
                 var routingParameters = {
                     routingMode: 'fast',
@@ -348,7 +348,7 @@ angular.module("hereMapTracking.services")
                             }
                         });
 
-                        if (flight) {
+                        if ((flight && isScopedJob == null) || isScopedJob) {
                             // Center the map and set viewport
                             service.centerHereMap(fromLat, fromLong, toLat, toLong, job.childJobs[index], null, extraRouteLines, map);
                             //match parents index to the flight part (as it encompasses whole route)

@@ -224,7 +224,6 @@ angular.module("uDispatch")
                     {key: 'client', label: 'Client'},
                     {key: 'from', label: 'From'},
                     {key: 'to', label: 'To'},
-                    {key: '', label: ''},
                     {key: 'remain', label: 'Remain'},
                     {key: 'status', label: 'S'}
                 ];
