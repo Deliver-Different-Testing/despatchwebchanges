@@ -55,6 +55,8 @@ public partial class TblBulkRegion
 
     public bool? CourierApplicantEnabled { get; set; }
 
+    public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; } = new List<TblBulkJob>();
+
     public virtual ICollection<TblBulkRunSchedule> TblBulkRunSchedules { get; set; } = new List<TblBulkRunSchedule>();
 
     public virtual ICollection<ZoneName> ZoneNames { get; set; } = new List<ZoneName>();

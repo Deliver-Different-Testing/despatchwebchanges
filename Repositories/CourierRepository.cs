@@ -313,7 +313,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
 
     public async Task<List<Suggestion>> GetAllRegionsAsync()
     {
-        var regions = await _context.TblBulkRegions
+        var regions = await Context.TblBulkRegions
             .OrderBy(r => r.Name)
             .Select(r => new Suggestion
             {
@@ -326,7 +326,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
 
     public async Task<List<Suggestion>> GetAllSpeedsAsync()
     {
-        var speeds = await _context.TucJobTypes
+        var speeds = await Context.TucJobTypes
             .OrderBy(r => r.UcjtName)
             .Select(r => new Suggestion
             {

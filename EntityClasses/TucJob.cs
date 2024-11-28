@@ -453,6 +453,8 @@ public partial class TucJob
 
     public virtual TucSource Source { get; set; }
 
+    public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; } = new List<TblBulkJob>();
+
     public virtual TblAirport ToAirport { get; set; }
 
     public virtual ICollection<TucEvent> TucEvents { get; set; } = new List<TucEvent>();

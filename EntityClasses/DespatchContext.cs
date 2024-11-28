@@ -925,6 +925,14 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Weight).HasColumnType("decimal(6, 2)");
             entity.Property(e => e.Width).HasColumnType("numeric(18, 0)");
 
+            entity.HasOne(d => d.Job).WithMany(p => p.TblBulkJobs)
+                .HasForeignKey(d => d.JobId)
+                .HasConstraintName("FK_tblBulkJob_tucJob");
+
+            entity.HasOne(d => d.Region).WithMany(p => p.TblBulkJobs)
+                .HasForeignKey(d => d.RegionId)
+                .HasConstraintName("FK_tblBulkJob_tblBulkRegion");
+
             entity.HasOne(d => d.SpeedNavigation).WithMany(p => p.TblBulkJobs)
                 .HasForeignKey(d => d.Speed)
                 .OnDelete(DeleteBehavior.ClientSetNull)
@@ -4555,7 +4563,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.LoggedInContact).WithMany(p => p.TucJobBookings)
                 .HasForeignKey(d => d.LoggedInContactId)
-                .HasConstraintName("FK_TucJobBooking_tucContact");
+                .HasConstraintName("FK_TucJobBooking_tucClientContact");
 
             entity.HasOne(d => d.Source).WithMany(p => p.TucJobBookings)
                 .HasForeignKey(d => d.SourceId)

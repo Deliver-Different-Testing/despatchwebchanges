@@ -217,5 +217,9 @@ public partial class TblBulkJob
 
     public string DeliveryAddressLine8 { get; set; }
 
+    public virtual TucJob Job { get; set; }
+
+    public virtual TblBulkRegion Region { get; set; }
+
     public virtual TucJobType SpeedNavigation { get; set; }
 }

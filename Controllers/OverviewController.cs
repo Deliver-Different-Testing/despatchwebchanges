@@ -5,23 +5,15 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace DespatchWeb.Controllers;
 
-public class OverviewController : Controller
+public class OverviewController(
+    IJobRepository jobRepository,
+    ICourierRepository courierRepository)
+    : Controller
 {
-    private readonly ICourierRepository _courierRepository;
-    private readonly IJobRepository _jobRepository;
-    private readonly ILogger<OverviewController> _logger;
-
-    public OverviewController(IJobRepository jobRepository, ILogger<OverviewController> logger,
-        ICourierRepository courierRepository)
-    {
-        _jobRepository = jobRepository;
-        _logger = logger;
-        _courierRepository = courierRepository;
-    }
-
     [HttpGet]
     public async Task<IActionResult> Index([FromQuery] OverviewJobsRequest parameters)
     {
@@ -34,7 +26,7 @@ public class OverviewController : Controller
             var statusEnum = (JobStatusGroup)parameters.StatusGroup;
 
             // Get paginated jobs
-            var paginatedJobs = await _jobRepository.GetJobsForOverviewPageAsync(
+            var paginatedJobs = await jobRepository.GetJobsForOverviewPageAsync(
                 statusEnum,
                 parameters.Page,
                 parameters.Limit,
@@ -51,7 +43,7 @@ public class OverviewController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting jobs for status group {StatusGroup}: {Error}",
+            Log.Error(ex, "Error getting jobs for status group {StatusGroup}: {Error}",
                 parameters.StatusGroup, ex.Message);
             return StatusCode(500);
         }
@@ -62,12 +54,12 @@ public class OverviewController : Controller
     {
         try
         {
-            var regions = await _courierRepository.GetAllRegionsAsync();
+            var regions = await courierRepository.GetAllRegionsAsync();
             return Json(regions);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting regions");
+            Log.Error(ex, "Error getting regions");
             return StatusCode(500);
         }
     }
@@ -77,12 +69,12 @@ public class OverviewController : Controller
     {
         try
         {
-            var stats = await _jobRepository.GetOverviewStatsAsync();
+            var stats = await jobRepository.GetOverviewStatsAsync();
             return Json(stats);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting overview stats");
+            Log.Error(ex, "Error getting overview stats");
             return StatusCode(500);
         }
     }
@@ -92,12 +84,12 @@ public class OverviewController : Controller
     {
         try
         {
-            var locations = await _jobRepository.GetOverviewLocationDataAsync(jobId);
+            var locations = await jobRepository.GetOverviewLocationDataAsync(jobId);
             return Json(locations);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error getting map coordinates for JobId: {jobId}");
+            Log.Error(ex, $"Error getting map coordinates for JobId: {jobId}");
             return StatusCode(500);
         }
     }
@@ -107,12 +99,12 @@ public class OverviewController : Controller
     {
         try
         {
-            var speeds = await _courierRepository.GetAllSpeedsAsync();
+            var speeds = await courierRepository.GetAllSpeedsAsync();
             return Json(speeds);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting speeds");
+            Log.Error(ex, "Error getting speeds");
             return StatusCode(500);
         }
     }

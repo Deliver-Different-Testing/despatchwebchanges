@@ -349,7 +349,7 @@ public partial class TucJobBooking
 
     public virtual TblJobRelationshipType JobRelationshipType { get; set; }
 
-    public virtual TucContact LoggedInContact { get; set; }
+    public virtual TucClientContact LoggedInContact { get; set; }
 
     public virtual ICollection<PricingBreakdown> PricingBreakdowns { get; set; } = new List<PricingBreakdown>();
 

@@ -784,7 +784,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
     public async Task<OverviewStatsViewModel> GetOverviewStatsAsync()
     {
-        var baseQuery = _context.TucJobs.Where(j => j.InverseParent.Any());
+        var baseQuery = Context.TucJobs.Where(j => j.InverseParent.Any());
 
         var stats = await baseQuery
             .GroupBy(j => true) // Group all records together
@@ -819,7 +819,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         string speeds = null)
     {
         // Base query
-        var query = _context.TucJobs
+        var query = Context.TucJobs
             .Where(j => j.InverseParent.Any());
 
         // Apply status group
@@ -982,7 +982,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
     public async Task<OverviewDeliveryMapResponse> GetOverviewLocationDataAsync(int jobId)
     {
-        var locations = await _context.TucJobs
+        var locations = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Select(j => new OverviewDeliveryMapResponse
             {

@@ -76,11 +76,13 @@
 
     <environment include="Development">
         <link rel="stylesheet" href="~/css/udispatch.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/material3.css" asp-append-version="true"/>
         <link rel="stylesheet" href="~/css/toasts.css" asp-append-version="true" />
         <link rel="stylesheet" href="~/css/promiseButton.css" asp-append-version="true" />
     </environment>
     <environment exclude="Development">
         <link rel="stylesheet" href="~/css/udispatch.min.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/material3.min.css" asp-append-version="true" />
         <link rel="stylesheet" href="~/css/toasts.min.css" asp-append-version="true" />
         <link rel="stylesheet" href="~/css/promiseButton.min.css" asp-append-version="true" />
     </environment>
@@ -163,7 +165,19 @@
             crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="lib/jquery_timers.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/datejs/1.0/date.min.js"></script>
+    
+    
+    @* Tracking lib*@
+    <!--Here Maps-->
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-core-legacy.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
 
+    <script src="lib/here-map-tracking/here-map-tracking.module.js"></script>
+    <script src="lib/here-map-tracking/here-map-tracking.service.js"></script>
+    <script src="lib/here-map-tracking/here-map-tracking.component.js"></script>
     <script src="lib/moment.js"></script>
     <script src="lib/sortable.js"></script>
     <script src="lib/contextMenu.js"></script>
@@ -195,7 +209,6 @@
     "dist/mapLabels.js",
     "dist/filters.js",
     "dist/components/common/side-nav/side-nav.directive.js",
-    "dist/components/common/side-nav/side-nav.service.js",
     "dist/components/home/homeService.js",
     "dist/components/home/homeControl.js",
     "dist/components/home/services/job-table.service.js",
@@ -207,6 +220,8 @@
     "dist/components/CS/csControl.js",
     "dist/components/prebooks/prebookService.js",
     "dist/components/prebooks/prebookControl.js",
+    "dist/components/overview/overview.controller.js",
+    "dist/components/overview/overview.service.js",
     "dist/components/dialogs/edit-address-dialog/edit-address-dialog.controller.js",
     "dist/components/dialogs/auto-complete-dialog/auto-complete-dialog.controller.js",
     "dist/components/dialogs/send-message-dialog/send-message-dialog.controller.js",
@@ -222,6 +237,8 @@
     "dist/components/dialogs/job-file-upload-dialog/job-file-upload.controller.js",
     "dist/components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.controller.js",
     "dist/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.controller.js",
+    "dist/components/dialogs/date-range-dialog/date-range-dialog.controller.js",
+    "dist/components/dialogs/map-dialog/map-dialog.controller.js",
     "dist/services/job-detail.service.js",
     "dist/services/toastr.service.js",
     "dist/services/loading.service.js",
