@@ -6654,7 +6654,7 @@ namespace DespatchWeb.EntityClasses
                 entity.HasOne(d => d.LoggedInContact)
                     .WithMany(p => p.TucJobBookings)
                     .HasForeignKey(d => d.LoggedInContactId)
-                    .HasConstraintName("FK_TucJobBooking_tucContact");
+                    .HasConstraintName("FK_TucJobBooking_tucClientContact");
 
                 entity.HasOne(d => d.Source)
                     .WithMany(p => p.TucJobBookings)

@@ -7,16 +7,10 @@ namespace DespatchWeb.EntityClasses
 {
     public partial class TucContact
     {
-        public TucContact()
-        {
-            TucJobBookings = new HashSet<TucJobBooking>();
-        }
-
         public int UccoId { get; set; }
         public string UccoName { get; set; }
         public int? UccoClientId { get; set; }
 
         public virtual TucClient UccoClient { get; set; }
-        public virtual ICollection<TucJobBooking> TucJobBookings { get; set; }
     }
 }
