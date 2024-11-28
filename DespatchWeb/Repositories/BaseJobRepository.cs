@@ -1021,7 +1021,7 @@ public class BaseJobRepository
                             Lat = c.DeliveryLatitude != null ? c.DeliveryLatitude.Value : 0,
                             Lng = c.DeliveryLongitude != null ? c.DeliveryLongitude.Value : 0,
                         },
-                        Flight = j.TucJobNationwides.FirstOrDefault() != null
+                        Flight = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
                     }).ToList()
                 }
             }).AsNoTracking().FirstOrDefaultAsync();

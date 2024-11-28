@@ -51,10 +51,10 @@
                 delivery: { lat: 46.7128, lng: -71.0060 },
                 flight: false
             }
-        ],
-        selectedJobIndex: 1, //e.g. parent is index 0, children are 1, 2, 3 in order
-        courierLocation: { lat: 39.8097343, lng: -98.5556199 }
-    }
+        ]
+    },
+    selectedJobIndex: 1, //e.g. parent is index 0, children are 1, 2, 3 in order
+    courierLocation: { lat: 39.8097343, lng: -98.5556199 }
  }
 */
 
@@ -69,7 +69,7 @@ angular.module('hereMapTracking.components', [])
                 config: '=',
                 onMapReady: '&'
             },
-            template: '<div class="here-map" id="{{mapId}}" style="width: 800px; height:500px;"></div>',
+            template: '<div class="here-map" id="{{mapId}}"  style="width: 800px; height:500px;"></div>',
             controller: ['$scope', 'HereMapService', function ($scope, HereMapService) {
                 var platform;
                 var mapInstance;
@@ -99,42 +99,62 @@ angular.module('hereMapTracking.components', [])
                 };
 
                 //Watch for changes in config
-                $scope.$watchGroup(['config', 'config.selectedJobIndex'], function (newValues, oldValues) {
-                    if ($scope.credentials && newValues[0]) {
+                $scope.$watchGroup(['config', 'credentials'], function (newValues, oldValues) {
+                    if (newValues[0] && newValues[1]) {
                         //Setup map if no map
                         if (!mapInstance) {
                             initialiseMap();
                         }
+
                         //Check if new job or already on map
-                        if (newValues[0].job && (!oldValues[0].job || newValues[0].job.id !== oldValues[0].job.id) && newValues[1] === 0) {
+                        if (newValues[0].job && (!oldValues[0].job || newValues[0].job.id !== oldValues[0].job.id)) {
                             //Update map if first/new job
                             $scope.showJobOnMap(newValues[0].job, newValues[0].courierLocation);
-                        } else {
-                            //To center map for job leg
-                            if (newValues[1] || newValues[1] === 0) {
-                                var index = newValues[1] - 1;
-                                var thisJob = null;
-                                if (index !== -1) {
-                                    //Scope map to selected leg of job
-                                    thisJob = newValues[0].job.childJobs[index];
-                                    thisJob.index = extraRouteLines.findIndex(x => x.id.slice(-1) === index.toString());
-                                    HereMapService.centerHereMap(thisJob.pickup.lat, thisJob.pickup.lng, thisJob.delivery.lat, thisJob.delivery.lng, thisJob, routeLine, extraRouteLines, mapInstance.map);
-                                } else {
-                                    //Scope map to flight leg of job
-                                    index = newValues[0].job.childJobs.findIndex(x => x.flight === true);
-                                    thisJob = newValues[0].job.childJobs[index];
-                                    thisJob.index = extraRouteLines.findIndex(x => x.id.slice(-1) === index.toString());
-                                    HereMapService.centerHereMap(thisJob.pickup.lat, thisJob.pickup.lng, thisJob.delivery.lat, thisJob.delivery.lng, thisJob, routeLine, extraRouteLines, mapInstance.map);
-                                }
-                            }
-                            //If courier location updated on existing job then update marker location
-                            if (newValues[0].courierLocation && newValues[0].courierLocation.lat !== null && newValues[0].courierLocation.lng !== null && (!oldValues[0].courierLocation ||
-                                (newValues[0].courierLocation.lat != oldValues[0].courierLocation.lat && newValues[0].courierLocation.lng != oldValues[0].courierLocation.lng))) {
-                                courierMarker = HereMapService.getHereCourierMarker(newValues[0].courierLocation.lat, newValues[0].courierLocation.lng, courierMarker, mapInstance.map);
-                            }
                         }
                     }
                 });
+
+                $scope.$watch('config.selectedJobIndex', function (newValue, oldValue) {
+                    if ((newValue || newValue === 0) && oldValue !== null && $scope.credentials && mapInstance.map) {
+                        //one more jawn to fix - this is called when changing from one job to a new one while it's already called in showJobOnMap
+                        $scope.centerMapOnIndex(newValue);
+                    }
+                });
+
+                $scope.$watch('config.courierLocation', function (newValue, oldValue) {
+                    if (newValue && newValue.lat !== null && newValue.lng !== null && (!oldValue ||
+                        (newValue.lat != oldValue.lat && newValue.lng != oldValue.lng))) {
+                        courierMarker = HereMapService.getHereCourierMarker(newValue.lat, newValue.lng, courierMarker, mapInstance.map);
+                    }
+                });
+
+                $scope.centerMapOnIndex = function (selectedJobIndex) {
+                    var thisJob = $scope.getScopedJob(selectedJobIndex);
+                    HereMapService.centerHereMap(thisJob.pickup.lat,
+                        thisJob.pickup.lng,
+                        thisJob.delivery.lat,
+                        thisJob.delivery.lng,
+                        thisJob,
+                        routeLine,
+                        extraRouteLines,
+                        mapInstance.map);
+                };
+
+                $scope.getScopedJob = function (selectedJobIndex) {
+                    var index = selectedJobIndex - 1;
+                    var thisJob = null;
+                    if (index !== -1) {
+                        //Scope map to selected leg of job
+                        thisJob = $scope.config.job.childJobs[index];
+                        thisJob.index = extraRouteLines.findIndex(x => x.id.slice(-1) === index.toString());
+                    } else {
+                        //Scope map to flight leg of job
+                        index = $scope.config.job.childJobs.findIndex(x => x.flight === true);
+                        thisJob = $scope.config.job.childJobs[index];
+                        thisJob.index = extraRouteLines.findIndex(x => x.id.slice(-1) === index.toString());
+                    }
+                    return thisJob;
+                };
 
                 // Set up all job data on map
                 $scope.showJobOnMap = function (job, courierLocation) {
@@ -174,6 +194,13 @@ angular.module('hereMapTracking.components', [])
                     }
                     ;
 
+                    //Get scoped job in case initialised with it
+                    var scopedJob = null;
+                    if ($scope.config.selectedJobIndex && $scope.config.selectedJobIndex !== 0) {
+                        scopedJob = $scope.getScopedJob($scope.config.selectedJobIndex);
+                    }
+                    ;
+
                     //Add all route lines (and extra markers if needed), also centers map
                     if (job.childJobs.length > 0) {
                         for (i in job.childJobs) {
@@ -186,7 +213,7 @@ angular.module('hereMapTracking.components', [])
                                 job.childJobs[i].delivery.lat,
                                 job.childJobs[i].delivery.lng,
                                 i,
-                                job.childJobs[i].flight, extraRouteLines, job, mapInstance.map, platform);
+                                job.childJobs[i].flight, extraRouteLines, job, mapInstance.map, platform, scopedJob ? job.childJobs[i].id === scopedJob.id : null);
                         }
                     } else {
                         routeLine = HereMapService.drawRouteLine(job.pickup.lat,
