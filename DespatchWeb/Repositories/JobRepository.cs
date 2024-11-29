@@ -1718,13 +1718,20 @@ public class JobRepository : BaseJobRepository, IJobRepository
     public async Task UpdateJobAsync(int jobId, string field, string value, decimal? rate, string despatcher,
         int staffId)
     {
-        await _context.Procedures.DESWEB_stpUpdateJobAsync(
-            jobId,
-            field,
-            value,
-            rate,
-            despatcher,
-            staffId);
+        try
+        {
+            // Update either active or archived job
+            var isActiveJob = _context.TucJobs.Any(j => j.UcjbId == jobId);
+            if (isActiveJob)
+                await UpdateTucJob(jobId, field, value);
+            else
+                await UpdateTucJobArchive(jobId, field, value);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "An error occured updating Job {jobId}", jobId);
+            throw;
+        }
     }
 
 
@@ -1899,6 +1906,490 @@ public class JobRepository : BaseJobRepository, IJobRepository
         _context.TucJobs.Attach(job);
         _context.Entry(job).Property(x => x.ClientItemIds).IsModified = true;
         _context.Entry(job).Property(x => x.UcjbAmount).IsModified = true;
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task UpdateTucJob(int jobId, string field, string value)
+    {
+        var job = await _context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Include(j => j.TucJobNationwides)
+            .Include(j => j.UcjbClient)
+            .Include(j => j.Contact)
+            .Include(j => j.InternalStatusNavigation)
+            .Include(j => j.UndeliverableLocation)
+            .Include(j => j.InverseParent)
+            .Include(j => j.Parent)
+            .ThenInclude(j => j.InverseParent)
+            .Include(j => j.NotifiedJobType)
+            .FirstOrDefaultAsync();
+
+        if (job == null) throw new ArgumentException("Job not found");
+
+        // Update the correct field prop
+        switch (field)
+        {
+            case "ConNote":
+                job.Connote = value;
+                break;
+            case "AirportOnly":
+                job.TucJobNationwides.FirstOrDefault().UcnwAirportOnly = bool.Parse(field);
+                break;
+            case "Time":
+                job.UcjbTime = DateTime.Parse(field);
+                break;
+            case "Date":
+                job.UcjbDate = DateTime.Parse(field);
+                break;
+            case "Size":
+                job.UcjbSize = int.Parse(field);
+                break;
+            case "Items":
+                job.UcjbQty = short.Parse(value);
+                break;
+            case "SpeedID":
+                job.UcjbSpeed = short.Parse(value);
+                break;
+            case "AcceptedJobTypeID" when !job.UcjbJobDone:
+                job.UcjbSpeed = short.Parse(value);
+                break;
+            case "Weight":
+                job.UcjbWeight = float.Parse(value);
+                break;
+            case "ClientID":
+                job.UcjbClientId = int.Parse(value);
+                job.UcjbClientCode = job.UcjbClient.UcclCode;
+                break;
+            case "ClientCode":
+                job.UcjbClientCode = value[..Math.Min(value.Length, 5)];
+                break;
+            case "ContactID":
+                var contactId = int.Parse(value);
+                job.ContactId = contactId;
+                job.UcjbContact = job.Contact?.UserName;
+                break;
+            case "Pedal":
+                job.UcjbCbd = bool.Parse(value);
+                break;
+            case "Attention":
+                job.UcjbAttention = bool.Parse(value);
+                break;
+            case "Reprice":
+                job.Reprice = bool.Parse(value);
+                break;
+            case "Truck":
+                job.Truck = bool.Parse(value);
+                job.UcjbVan = false; // Set van to false when truck is selected
+                break;
+            case "Van":
+                job.UcjbVan = bool.Parse(value);
+                job.Truck = false; // Set truck to false when van is selected
+                break;
+            case "VanOK":
+                job.VanOk = bool.Parse(value);
+                break;
+            case "InternalStatusID":
+                var internalStatusId = int.Parse(value);
+                job.InternalStatus = internalStatusId;
+
+                // Handle followup time
+                if (!new[] { (int)InternalJobStatus.NewJobs, (int)InternalJobStatus.Reprice }
+                        .Contains(internalStatusId))
+                    job.FollowupTime = DateTime.Now.AddMinutes(job.InternalStatusNavigation.DefaultMinutes ?? 0);
+                else
+                    job.FollowupTime = null;
+
+                job.UcjbStatus = internalStatusId switch
+                {
+                    // Handle status changes
+                    3 when job.UcjbStatus != 9 => 9,
+                    1 when job.UcjbStatus != 1 => 1,
+                    4 when job.UcjbStatus != 6 => 6,
+                    _ => job.UcjbStatus
+                };
+                break;
+            case "RefA":
+                job.UcjbClientRefa = value[..Math.Min(value.Length, 20)];
+                break;
+            case "RefB":
+                job.UcjbClientRefb = value[..Math.Min(value.Length, 15)];
+                break;
+            case "OurRef":
+                job.UcjbOurRef = value[..Math.Min(value.Length, 20)];
+                break;
+            case "FromContactName":
+                job.PickupFromContact = value[..Math.Min(value.Length, 100)];
+                break;
+            case "ToContactName":
+                job.DeliverToContact = value[..Math.Min(value.Length, 100)];
+                break;
+            case "FromContactPhone":
+                job.PickupFromPhone = value[..Math.Min(value.Length, 100)];
+                break;
+            case "ToContactPhone":
+                job.DeliverToPhone = value[..Math.Min(value.Length, 100)];
+                break;
+            case "DeliverToLeaveID":
+                var leaveId = int.Parse(value);
+                job.DeliverToLeaveId = leaveId;
+                job.DeliverToPrivateBusiness = leaveId == 1 ? null : 1;
+                break;
+            case "UndeliverableLocationID":
+                job.UndeliverableLocationId = int.Parse(value);
+                job.UcjbStatus = (int)JobStatus.Undeliverable;
+                job.UcjbJobDone = true;
+                job.UcjbComplTime = DateTime.Now;
+                job.UcjbPodname = job.UndeliverableLocation != null ? job.UndeliverableLocation.Podname : string.Empty;
+                break;
+            case "Delivered":
+                var delivered = bool.Parse(value);
+                job.UcjbJobDone = delivered;
+                if (delivered)
+                {
+                    job.UcjbStatus = 6;
+                    job.UcjbComplTime = DateTime.Now;
+                }
+
+                break;
+            case "CompletedTime":
+                job.UcjbComplTime = DateTime.Parse(value);
+                break;
+            case "DGClass":
+                job.Dgclass = int.Parse(value);
+                break;
+            case "DGDocumentation":
+                job.Dgdocument = bool.Parse(value);
+                break;
+            case "TrackingMethod":
+                job.TrackingMethod = int.Parse(value);
+                break;
+            case "Direct":
+                job.Direct = bool.Parse(value);
+                break;
+            case "Void":
+                job.UcjbVoid = bool.Parse(value);
+                break;
+            case "TrackingMobile":
+                job.TrackingMobile = value[..Math.Min(value.Length, 100)];
+                break;
+            case "TrackingEmail":
+                job.TrackingEmail = value[..Math.Min(value.Length, 100)];
+                break;
+            case "PODName":
+                job.UcjbPodname = value[..Math.Min(value.Length, 100)];
+                break;
+            case "Amount":
+                var amount = decimal.Parse(value);
+
+                // Update parent job if it exists
+                if (job.Parent != null)
+                {
+                    job.Parent.UcjbAmount = amount;
+                    job.Parent.RatedManually = true;
+
+                    // Update all other child jobs of the parent
+                    if (job.Parent.InverseParent != null)
+                    {
+                        foreach (var siblingJob in job.Parent.InverseParent)
+                        {
+                            siblingJob.UcjbAmount = amount;
+                            siblingJob.RatedManually = true;
+                        }
+                    }
+                }
+                // If no parent, update this job and its children
+                else
+                {
+                    // Update current job
+                    job.UcjbAmount = amount;
+                    job.RatedManually = true;
+
+                    // Update child jobs
+                    if (job.InverseParent != null)
+                    {
+                        foreach (var childJob in job.InverseParent)
+                        {
+                            childJob.UcjbAmount = amount;
+                            childJob.RatedManually = true;
+                        }
+                    }
+                }
+
+                break;
+            case "NotifiedJobTypeID":
+                var notifiedJobTypeId = short.Parse(value);
+                job.NotifiedJobTypeId = notifiedJobTypeId;
+
+                if (notifiedJobTypeId > job.NotifiedJobTypeId &&
+                    job.ContactId != null &&
+                    job.NotifiedJobType.UcjtName == "Email" &&
+                    job.Contact?.HasEmail == true &&
+                    !string.IsNullOrEmpty(job.Contact.UcctEmail))
+                {
+                    job.SpeedChangeNotificationHasBeenSent = false;
+                    job.WhenSpeedChangeNotificationSent = null;
+                }
+                else
+                {
+                    job.SpeedChangeNotificationHasBeenSent = true;
+                }
+
+                break;
+            case "AcceptedJobTypeID":
+                job.AcceptedJobTypeId = short.Parse(value);
+                break;
+            case "Locked":
+                job.UcjbLocked = bool.Parse(value);
+                break;
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task UpdateTucJobArchive(int jobId, string field, string value)
+    {
+        var archive = await _context.TucJobArchives
+            .Where(j => j.UcjbId == jobId)
+            .Include(j => j.UcjbClient)
+            .Include(j => j.Contact)
+            .Include(j => j.InternalStatusNavigation)
+            .Include(j => j.UndeliverableLocation)
+            .Include(j => j.InverseParent)
+            .Include(j => j.Parent)
+            .ThenInclude(j => j.InverseParent)
+            .Include(j => j.NotifiedJobType)
+            .Select(j => new
+            {
+                Job = j,
+                Nationwide = _context.TucJobNationwides
+                    .FirstOrDefault(n => n.UcnwJobId == j.UcjbId)
+            })
+            .FirstOrDefaultAsync();
+
+
+        if (archive == null)
+            throw new ArgumentException("Job not found");
+
+        // Update the correct field prop
+        switch (field)
+        {
+            case "ConNote":
+                archive.Job.Connote = value;
+                break;
+            case "AirportOnly":
+                archive.Nationwide.UcnwAirportOnly = bool.Parse(field);
+                break;
+            case "Time":
+                archive.Job.UcjbTime = DateTime.Parse(field);
+                break;
+            case "Date":
+                archive.Job.UcjbDate = DateTime.Parse(field);
+                break;
+            case "Size":
+                archive.Job.UcjbSize = short.Parse(field);
+                break;
+            case "Items":
+                archive.Job.UcjbQty = short.Parse(value);
+                break;
+            case "SpeedID":
+                archive.Job.UcjbSpeed = short.Parse(value);
+                break;
+            case "AcceptedJobTypeID" when !archive.Job.UcjbJobDone:
+                archive.Job.UcjbSpeed = short.Parse(value);
+                break;
+            case "Weight":
+                archive.Job.UcjbWeight = float.Parse(value);
+                break;
+            case "ClientID":
+                archive.Job.UcjbClientId = int.Parse(value);
+                archive.Job.UcjbClientCode = archive.Job.UcjbClient.UcclCode;
+                break;
+            case "ClientCode":
+                archive.Job.UcjbClientCode = value[..Math.Min(value.Length, 5)];
+                break;
+            case "ContactID":
+                var contactId = int.Parse(value);
+                archive.Job.ContactId = contactId;
+                archive.Job.UcjbContact = archive.Job.Contact?.UserName;
+                break;
+            case "Pedal":
+                archive.Job.UcjbCbd = bool.Parse(value);
+                break;
+            case "Attention":
+                archive.Job.UcjbAttention = bool.Parse(value);
+                break;
+            case "Reprice":
+                archive.Job.Reprice = bool.Parse(value);
+                break;
+            case "Truck":
+                archive.Job.Truck = bool.Parse(value);
+                archive.Job.UcjbVan = false; // Set van to false when truck is selected
+                break;
+            case "Van":
+                archive.Job.UcjbVan = bool.Parse(value);
+                archive.Job.Truck = false; // Set truck to false when van is selected
+                break;
+            case "VanOK":
+                archive.Job.VanOk = bool.Parse(value);
+                break;
+            case "InternalStatusID":
+                var internalStatusId = int.Parse(value);
+                archive.Job.InternalStatus = internalStatusId;
+
+                // Handle followup time
+                if (!new[] { (int)InternalJobStatus.NewJobs, (int)InternalJobStatus.Reprice }
+                        .Contains(internalStatusId))
+                    archive.Job.FollowupTime =
+                        DateTime.Now.AddMinutes(archive.Job.InternalStatusNavigation.DefaultMinutes ?? 0);
+                else
+                    archive.Job.FollowupTime = null;
+
+                archive.Job.UcjbStatus = internalStatusId switch
+                {
+                    // Handle status changes
+                    3 when archive.Job.UcjbStatus != 9 => 9,
+                    1 when archive.Job.UcjbStatus != 1 => 1,
+                    4 when archive.Job.UcjbStatus != 6 => 6,
+                    _ => archive.Job.UcjbStatus
+                };
+                break;
+            case "RefA":
+                archive.Job.UcjbClientRefa = value[..Math.Min(value.Length, 20)];
+                break;
+            case "RefB":
+                archive.Job.UcjbClientRefb = value[..Math.Min(value.Length, 15)];
+                break;
+            case "OurRef":
+                archive.Job.UcjbOurRef = value[..Math.Min(value.Length, 20)];
+                break;
+            case "FromContactName":
+                archive.Job.PickUpFromContact = value[..Math.Min(value.Length, 100)];
+                break;
+            case "ToContactName":
+                archive.Job.DeliverToContact = value[..Math.Min(value.Length, 100)];
+                break;
+            case "FromContactPhone":
+                archive.Job.PickUpFromPhone = value[..Math.Min(value.Length, 100)];
+                break;
+            case "ToContactPhone":
+                archive.Job.DeliverToPhone = value[..Math.Min(value.Length, 100)];
+                break;
+            case "DeliverToLeaveID":
+                var leaveId = int.Parse(value);
+                archive.Job.DeliverToLeaveId = leaveId;
+                archive.Job.DeliverToPrivateBusiness = leaveId == 1 ? null : 1;
+                break;
+            case "UndeliverableLocationID":
+                archive.Job.UndeliverableLocationId = int.Parse(value);
+                archive.Job.UcjbStatus = (int)JobStatus.Undeliverable;
+                archive.Job.UcjbJobDone = true;
+                archive.Job.UcjbComplTime = DateTime.Now;
+                archive.Job.UcjbPodname = archive.Job.UndeliverableLocation != null
+                    ? archive.Job.UndeliverableLocation.Podname
+                    : string.Empty;
+                break;
+            case "Delivered":
+                var delivered = bool.Parse(value);
+                archive.Job.UcjbJobDone = delivered;
+                if (delivered)
+                {
+                    archive.Job.UcjbStatus = 6;
+                    archive.Job.UcjbComplTime = DateTime.Now;
+                }
+
+                break;
+            case "CompletedTime":
+                archive.Job.UcjbComplTime = DateTime.Parse(value);
+                break;
+            case "DGClass":
+                archive.Job.Dgclass = int.Parse(value);
+                break;
+            case "DGDocumentation":
+                archive.Job.Dgdocument = bool.Parse(value);
+                break;
+            case "TrackingMethod":
+                archive.Job.TrackingMethod = int.Parse(value);
+                break;
+            case "Direct":
+                archive.Job.Direct = bool.Parse(value);
+                break;
+            case "Void":
+                archive.Job.UcjbVoid = bool.Parse(value);
+                break;
+            case "TrackingMobile":
+                archive.Job.TrackingMobile = value[..Math.Min(value.Length, 100)];
+                break;
+            case "TrackingEmail":
+                archive.Job.TrackingEmail = value[..Math.Min(value.Length, 100)];
+                break;
+            case "PODName":
+                archive.Job.UcjbPodname = value[..Math.Min(value.Length, 100)];
+                break;
+            case "Amount":
+                var amount = decimal.Parse(value);
+
+                // Update parent job if it exists
+                if (archive.Job.Parent != null)
+                {
+                    archive.Job.Parent.UcjbAmount = amount;
+                    archive.Job.Parent.RatedManually = true;
+
+                    // Update all other child jobs of the parent
+                    if (archive.Job.Parent.InverseParent != null)
+                    {
+                        foreach (var siblingJob in archive.Job.Parent.InverseParent)
+                        {
+                            siblingJob.UcjbAmount = amount;
+                            siblingJob.RatedManually = true;
+                        }
+                    }
+                }
+                // If no parent, update this job and its children
+                else
+                {
+                    // Update current job
+                    archive.Job.UcjbAmount = amount;
+                    archive.Job.RatedManually = true;
+
+                    // Update child jobs
+                    if (archive.Job.InverseParent != null)
+                    {
+                        foreach (var childJob in archive.Job.InverseParent)
+                        {
+                            childJob.UcjbAmount = amount;
+                            childJob.RatedManually = true;
+                        }
+                    }
+                }
+
+                break;
+            case "NotifiedJobTypeID":
+                var notifiedJobTypeId = short.Parse(value);
+                archive.Job.NotifiedJobTypeId = notifiedJobTypeId;
+
+                if (notifiedJobTypeId > archive.Job.NotifiedJobTypeId &&
+                    archive.Job.ContactId != null &&
+                    archive.Job.NotifiedJobType.UcjtName == "Email" &&
+                    archive.Job.Contact?.HasEmail == true &&
+                    !string.IsNullOrEmpty(archive.Job.Contact.UcctEmail))
+                {
+                    archive.Job.SpeedChangeNotificationHasBeenSent = false;
+                    archive.Job.WhenSpeedChangeNotificationSent = null;
+                }
+                else
+                {
+                    archive.Job.SpeedChangeNotificationHasBeenSent = true;
+                }
+
+                break;
+            case "AcceptedJobTypeID":
+                archive.Job.AcceptedJobTypeId = short.Parse(value);
+                break;
+            case "Locked":
+                archive.Job.UcjbLocked = int.Parse(value);
+                break;
+        }
+
         await _context.SaveChangesAsync();
     }
 
