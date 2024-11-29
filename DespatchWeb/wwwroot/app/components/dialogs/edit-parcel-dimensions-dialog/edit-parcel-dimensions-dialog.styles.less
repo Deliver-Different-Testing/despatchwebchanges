@@ -1,0 +1,44 @@
+// Variables
+@text-secondary: rgba(0, 0, 0, 0.54);
+@background-light: #f5f5f5;
+@dialog-padding: 24px;
+@spacing-unit: 16px;
+@font-small: 12px;
+@border-radius: 4px;
+
+// Dialog styles
+#edit-dimensions-dialog {
+  max-width: 800px;
+  width: 90%;
+
+  .md-dialog-content {
+    padding: @dialog-padding;
+  }
+}
+
+// Form elements
+.dimension-unit {
+  color: @text-secondary;
+  margin-top: 4px;
+  font-size: @font-small;
+}
+
+md-input-container {
+  margin-bottom: @spacing-unit;
+}
+
+// Visualization container
+.dimension-visualization {
+  padding: @spacing-unit;
+  background-color: @background-light;
+  border-radius: @border-radius;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// SVG text labels
+.dimension-label {
+  font-size: @font-small;
+}

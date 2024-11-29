@@ -281,9 +281,9 @@ angular.module("uDispatch")
                             id: "col2",
                             width: "17.5%",
                             boxes: [
-                                {name: "currentWork", height: "40%"},
-                                {name: "potentialCouriers", height: "30%"},
-                                {name: "supports", height: "30%"}
+                                {name: "currentWork", height: "50%"},
+                                //{name: "potentialCouriers", height: "30%"},
+                                {name: "supports", height: "50%"}
                             ]
                         }, {
                             id: "col3",

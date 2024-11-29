@@ -2378,22 +2378,6 @@ public class JobRepository : BaseJobRepository, IJobRepository
         await _context.SaveChangesAsync();
     }
 
-    private async Task<List<Size>> GetRelatedJobsAsync(int? rootParentId, int clientId)
-    {
-        if (!rootParentId.HasValue) return new List<Size>();
-
-        return await _context.TblJobs
-            .Where(r => r.ParentId == rootParentId && r.ClientId == clientId)
-            .OrderBy(t => t.Date)
-            .ThenBy(x => x.Time)
-            .Select(rel => new Size
-            {
-                Id = rel.JobId,
-                Label = rel.Number
-            })
-            .ToListAsync();
-    }
-
     private async Task<List<byte[]>> GetPodPhotosAsync(int jobId, byte[] podPhoto, byte[] deliverySignature)
     {
         var photos = new List<byte[]>();
