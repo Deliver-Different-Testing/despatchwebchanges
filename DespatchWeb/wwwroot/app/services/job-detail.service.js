@@ -1,11 +1,10 @@
 class JobDetailService {
-    constructor(DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl, APP_CONFIG, $rootScope) {
+    constructor(DispatchData, $mdDialog, toastrService, rateJobService, $document, moment, versionUrl, APP_CONFIG, $rootScope) {
         this._dispatchData = DispatchData;
         this._$mdDialog = $mdDialog;
         this._toastrService = toastrService;
         this._rateJobService = rateJobService;
         this._$document = $document;
-        this._$timeout = $timeout;
         this._moment = moment;
         this._versionUrl = versionUrl;
         this.APP_CONFIG = APP_CONFIG;
@@ -564,15 +563,15 @@ class JobDetailService {
      * @param {Job} job
      */
     async editJobToPhone($event, job) {
-        return this.showEditPrompt($event, job, 'Edit To Contact Phone', 'To Contact Phone...', 'to contact phone', job.phone, 'ToContactPhone');
+        return this.showEditPrompt($event, job, 'Edit To Contact Phone', 'To Contact Phone...', 'to contact phone', job.toContactPhone, 'ToContactPhone');
     }
 
     /**
-     * @param {Object} event
+     * @param {Object} $event
      * @param {Job} job
      */
-    async editJobFromPhone(event, job) {
-        await this.showEditPrompt(event, job, 'Edit From Contact Phone', 'From Contact Phone...', 'from contact phone', job.fromContactNumber, 'FromContactPhone');
+    async editJobFromPhone($event, job) {
+        await this.showEditPrompt($event, job, 'Edit From Contact Phone', 'From Contact Phone...', 'from contact phone', job.fromContactNumber, 'FromContactPhone');
     }
 
     /**
@@ -1571,10 +1570,9 @@ angular.module('uDispatch').service('JobDetailService', [
     "toastrService",
     "rateJobService",
     "$document",
-    "$timeout",
     "moment",
     "versionUrl",
     "APP_CONFIG",
     "$rootScope",
-    (DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl, APP_CONFIG, $rootScope) => new JobDetailService(DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl, APP_CONFIG, $rootScope)
+    (DispatchData, $mdDialog, toastrService, rateJobService, $document, moment, versionUrl, APP_CONFIG, $rootScope) => new JobDetailService(DispatchData, $mdDialog, toastrService, rateJobService, $document, moment, versionUrl, APP_CONFIG, $rootScope)
 ]);

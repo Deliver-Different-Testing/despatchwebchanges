@@ -29,6 +29,7 @@ public class BaseJobRepository
         CreatedDate = j.UcjbDate,
         ScheduleName = j.ScheduleName,
         FollowupTime = j.FollowupTime,
+        Void = j.UcjbVoid,
 
         PickupTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.PickupTime : null,
         DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime : null,
@@ -138,6 +139,7 @@ public class BaseJobRepository
         UdStatus = j.UndeliverableLocation.Name,
         SigNotRequired = j.DeliverToLeave.Name,
         DeliverToLeaveId = j.DeliverToLeaveId,
+        DeliverToContact = j.DeliverToContact,
 
         // Location data
         PickUpLatitude = j.PickUpLatitude,
@@ -148,7 +150,7 @@ public class BaseJobRepository
         // Client information
         Client = j.UcjbClientCode,
         ClientName = j.UcjbClient.UcclName,
-        Phone = j.DeliverToPhone,
+        ToContactPhone = j.DeliverToPhone,
         PodName = j.UcjbPodname,
         PuTime = j.PickUpTime,
 
@@ -247,13 +249,6 @@ public class BaseJobRepository
     {
         _context = context;
         _logger = logger;
-    }
-
-    public async Task<T> Add<T>(T entity) where T : class
-    {
-        var result = await _context.Set<T>().AddAsync(entity);
-        await _context.SaveChangesAsync();
-        return result.Entity;
     }
 
     protected async Task<T> Get<T>(int id) where T : class => await _context.Set<T>().FindAsync(id);

@@ -96,7 +96,7 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 FromContactNumber = jb.PickupFromPhone,
                 Courier = jb.Courier != null ? jb.Courier.Code : null,
                 ContactName = jb.UcbkContact,
-                Phone = jb.DeliverToPhone,
+                ToContactPhone = jb.DeliverToPhone,
                 Weight = jb.UcbkWeight,
                 Items = jb.Quantity,
                 RefA = jb.UcbkClientRefa,
@@ -219,7 +219,7 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 Courier = co.Code,
                 Status = status.UcjsCode,
                 ContactName = j.Contact,
-                Phone = j.DeliverToPhone,
+                ToContactPhone = j.DeliverToPhone,
                 Weight = (double?)j.Weight,
                 Items = j.Qty,
                 RefA = j.ClientRefa,
@@ -1954,7 +1954,32 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 job.UcjbSpeed = short.Parse(value);
                 break;
             case "Weight":
-                job.UcjbWeight = float.Parse(value);
+                var weight = short.Parse(value);
+
+                // Update parent job if it exists
+                if (job.InverseParent != null)
+                {
+                    job.Parent.UcjbWeight = weight;
+
+                    // Update all other child jobs of the parent
+                    if (job.Parent.InverseParent.Any())
+                    {
+                        foreach (var siblingJob in job.Parent.InverseParent) siblingJob.UcjbWeight = weight;
+                    }
+                }
+                // If no parent, update this job and its children
+                else
+                {
+                    // Update current job
+                    job.UcjbWeight = weight;
+
+                    // Update child jobs
+                    if (job.InverseParent != null && job.InverseParent.Any())
+                    {
+                        foreach (var childJob in job.InverseParent) childJob.UcjbWeight = weight;
+                    }
+                }
+
                 break;
             case "ClientID":
                 job.UcjbClientId = int.Parse(value);
@@ -2079,42 +2104,7 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 job.UcjbPodname = value[..Math.Min(value.Length, 100)];
                 break;
             case "Amount":
-                var amount = decimal.Parse(value);
-
-                // Update parent job if it exists
-                if (job.Parent != null)
-                {
-                    job.Parent.UcjbAmount = amount;
-                    job.Parent.RatedManually = true;
-
-                    // Update all other child jobs of the parent
-                    if (job.Parent.InverseParent != null)
-                    {
-                        foreach (var siblingJob in job.Parent.InverseParent)
-                        {
-                            siblingJob.UcjbAmount = amount;
-                            siblingJob.RatedManually = true;
-                        }
-                    }
-                }
-                // If no parent, update this job and its children
-                else
-                {
-                    // Update current job
-                    job.UcjbAmount = amount;
-                    job.RatedManually = true;
-
-                    // Update child jobs
-                    if (job.InverseParent != null)
-                    {
-                        foreach (var childJob in job.InverseParent)
-                        {
-                            childJob.UcjbAmount = amount;
-                            childJob.RatedManually = true;
-                        }
-                    }
-                }
-
+                job.UcjbAmount = decimal.Parse(value);
                 break;
             case "NotifiedJobTypeID":
                 var notifiedJobTypeId = short.Parse(value);
@@ -2198,7 +2188,37 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 archive.Job.UcjbSpeed = short.Parse(value);
                 break;
             case "Weight":
-                archive.Job.UcjbWeight = float.Parse(value);
+                var weight = float.Parse(value);
+                // Update parent job if it exists
+                if (archive.Job.InverseParent != null)
+                {
+                    archive.Job.Parent.UcjbWeight = weight;
+
+                    // Update all other child jobs of the parent
+                    if (archive.Job.Parent.InverseParent.Any())
+                    {
+                        foreach (var siblingJob in archive.Job.Parent.InverseParent)
+                        {
+                            siblingJob.UcjbWeight = weight;
+                        }
+                    }
+                }
+                // If no parent, update this job and its children
+                else
+                {
+                    // Update current job
+                    archive.Job.UcjbWeight = weight;
+
+                    // Update child jobs
+                    if (archive.Job.InverseParent != null && archive.Job.InverseParent.Any())
+                    {
+                        foreach (var childJob in archive.Job.InverseParent)
+                        {
+                            childJob.UcjbWeight = weight;
+                        }
+                    }
+                }
+
                 break;
             case "ClientID":
                 archive.Job.UcjbClientId = int.Parse(value);
@@ -2326,42 +2346,7 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 archive.Job.UcjbPodname = value[..Math.Min(value.Length, 100)];
                 break;
             case "Amount":
-                var amount = decimal.Parse(value);
-
-                // Update parent job if it exists
-                if (archive.Job.Parent != null)
-                {
-                    archive.Job.Parent.UcjbAmount = amount;
-                    archive.Job.Parent.RatedManually = true;
-
-                    // Update all other child jobs of the parent
-                    if (archive.Job.Parent.InverseParent != null)
-                    {
-                        foreach (var siblingJob in archive.Job.Parent.InverseParent)
-                        {
-                            siblingJob.UcjbAmount = amount;
-                            siblingJob.RatedManually = true;
-                        }
-                    }
-                }
-                // If no parent, update this job and its children
-                else
-                {
-                    // Update current job
-                    archive.Job.UcjbAmount = amount;
-                    archive.Job.RatedManually = true;
-
-                    // Update child jobs
-                    if (archive.Job.InverseParent != null)
-                    {
-                        foreach (var childJob in archive.Job.InverseParent)
-                        {
-                            childJob.UcjbAmount = amount;
-                            childJob.RatedManually = true;
-                        }
-                    }
-                }
-
+                archive.Job.UcjbAmount = decimal.Parse(value);
                 break;
             case "NotifiedJobTypeID":
                 var notifiedJobTypeId = short.Parse(value);

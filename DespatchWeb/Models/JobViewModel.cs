@@ -105,7 +105,7 @@ public class JobViewModel
     public byte[] DeliverySignature { get; set; }
     public List<byte[]> PodPhotos { get; set; }
     public string PodName { get; set; }
-    public string Phone { get; set; }
+    public string ToContactPhone { get; set; }
     public string SpeedAccepted { get; set; }
     public int? AcceptedJobTypeId { get; set; }
     public int? NotifiedJobTypeId { get; set; }
