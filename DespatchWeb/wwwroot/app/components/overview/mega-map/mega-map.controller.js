@@ -1,21 +1,24 @@
 class MegaMapController {
-    constructor($interval, toastrService, NgMap, overviewService) {
+    constructor($interval, toastrService, NgMap, overviewService, APP_CONFIG) {
         this.$interval = $interval;
         this.toastrService = toastrService;
         this.NgMap = NgMap;
         this.overviewService = overviewService;
 
-        // Initialize data
+// Initialize data
+        this.isUsCustomer = APP_CONFIG.US_Customer;
         this.drivers = [];
         this.pickupPoints = [];
         this.deliveryPoints = [];
-        this.mapCenter = [39.8097343, -98.5556199]; // Default to central USA
+        this.mapCenter = this.isUsCustomer
+            ? [39.8097343, -98.5556199]  // Central USA coordinates
+            : [-36.8484597, 174.7633315]; // Auckland, New Zealand coordinates
         this.isLoading = false;
 
         // Initialize map and start refresh interval
         this.initializeMap();
         this.refreshData();
-        this.$interval(() => this.refreshData(), 30000);
+        //this.$interval(() => this.refreshData(), 30000);
     }
 
     initializeMap() {
@@ -73,6 +76,6 @@ class MegaMapController {
 
 angular.module('uDispatch')
     .controller('megaMapController',
-        ['$interval', 'toastrService', 'NgMap', 'overviewService',
-            ($interval, toastrService, NgMap, overviewService) => new MegaMapController(
-                $interval, toastrService, NgMap, overviewService)]);
+        ['$interval', 'toastrService', 'NgMap', 'overviewService', 'APP_CONFIG',
+            ($interval, toastrService, NgMap, overviewService, APP_CONFIG) => new MegaMapController(
+                $interval, toastrService, NgMap, overviewService, APP_CONFIG)]);
