@@ -4,7 +4,7 @@
  */
 class OverviewService {
     constructor($http) {
-        this._http = $http;
+        this.$http = $http;
     }
 
     /**
@@ -27,7 +27,7 @@ class OverviewService {
         const regionIds = params.regions?.map(r => r.id).join(',');
         const speedIds = params.speeds?.map(s => s.id).join(',');
 
-        const response = await this._http.get('/overview', {
+        const response = await this.$http.get('/overview', {
             params: {
                 statusGroup: params.statusGroup,
                 page: params.page,
@@ -55,7 +55,7 @@ class OverviewService {
      * @returns {Promise<Array>} Array of region objects
      */
     async getAllRegions() {
-        const response = await this._http.get('/overview/GetAllRegions');
+        const response = await this.$http.get('/overview/GetAllRegions');
         return response.data;
     }
 
@@ -64,12 +64,12 @@ class OverviewService {
      * @returns {Promise<Array>} Array of region objects
      */
     async getAllSpeeds() {
-        const response = await this._http.get('/overview/GetAllSpeeds');
+        const response = await this.$http.get('/overview/GetAllSpeeds');
         return response.data;
     }
 
     async getStats() {
-        const response = await this._http.get('/overview/GetStats');
+        const response = await this.$http.get('/overview/GetStats');
         return response.data;
     }
 
@@ -79,8 +79,23 @@ class OverviewService {
      * @returns {Promise<Object>} Object containing jobs array and pagination metadata
      */
     async getParentJobMap(jobId) {
-        const response = await this._http.get('/overview/GetParentJobMap?jobId=' + jobId);
+        const response = await this.$http.get('/overview/GetParentJobMap?jobId=' + jobId);
         return response.data;
+    }
+
+    async getDrivers() {
+        let response = await this.$http.get('/api/drivers');
+        return await response.data;
+    }
+
+    async getPickupPoints() {
+        let response = await this.$http.get('/api/pickups');
+        return await response.data;
+    }
+
+    async getDeliveryPoints() {
+        let response = await this.$http.get('/api/deliveries');
+        return await response.data;
     }
 }
 

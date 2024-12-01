@@ -1,0 +1,147 @@
+// Variables
+@primary-blue: #2196F3;
+@overlay-bg: rgba(255, 255, 255, 0.7);
+@text-secondary: rgba(0, 0, 0, 0.54);
+@hover-bg: rgba(158, 158, 158, 0.2);
+
+// Mixins
+.absolute-position(@top: 0, @right: 0, @bottom: 0, @left: 0) {
+  position: absolute;
+  top: @top;
+  right: @right;
+  bottom: @bottom;
+  left: @left;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+// Reset styles
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+// Map container and elements
+.map-container {
+  height: 100vh;
+  width: 100%;
+  position: relative;
+}
+
+// Driver list card
+.driver-list {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  width: 300px;
+  max-height: 80vh;
+  overflow-y: auto;
+
+  md-list-item {
+    cursor: pointer;
+
+    &:hover {
+      background-color: @hover-bg;
+    }
+  }
+}
+
+// Info windows
+.info-window {
+  padding: 16px;
+  max-width: 250px;
+}
+
+// Refresh button
+.refresh-fab {
+  position: absolute !important;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1;
+}
+
+// Driver markers and status
+.driver-marker {
+  i {
+    font-size: 24px;
+    transform: rotate(45deg);
+  }
+}
+
+.driver-status {
+  font-size: 12px;
+  color: @text-secondary;
+}
+
+// Loading overlay
+.loading-overlay {
+  .absolute-position();
+  z-index: 2;
+  background-color: @overlay-bg;
+  .flex-center();
+}
+
+// Legend styles
+.legend {
+  position: absolute;
+  left: 10px;
+  bottom: 20px;
+  z-index: 1;
+  background: white;
+  padding: 8px;
+
+  &-item {
+    display: flex;
+    align-items: center;
+    margin: 4px 0;
+  }
+
+  &-icon {
+    margin-right: 8px;
+  }
+}
+
+// Map markers
+.custom-marker {
+  i.material-icons {
+    color: @primary-blue;
+  }
+}
+
+// Card content
+.md-card {
+  &-content {
+    .md-list-item-text {
+      h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .driver-list {
+    width: 100%;
+    top: auto;
+    bottom: 0;
+    right: 0;
+    max-height: 40vh;
+  }
+
+  .refresh-fab {
+    bottom: 42vh; // Above the driver list
+  }
+
+  .legend {
+    display: none; // Hide legend on mobile
+  }
+}

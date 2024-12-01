@@ -1,0 +1,101 @@
+<link href="app/components/overview/mega-map/mega-map.styles.css" rel="stylesheet">
+
+<div class="map-container">
+    <!-- Main Map -->
+    <ng-map center="{{ctrl.mapCenter}}"
+            default-style="false"
+            map-type-control="false"
+            street-view-control="false"
+            style="height: 100%"
+            zoom="12">
+
+        <!-- Driver Markers -->
+        <custom-marker ng-repeat="driver in ctrl.drivers"
+                       on-click="ctrl.showDriverInfo(driver, $event)"
+                       position="[[driver.lat, driver.lng]]">
+            <div class="driver-marker">
+                <i class="material-icons" style="color: #2196F3;">navigation</i>
+            </div>
+        </custom-marker>
+
+        <!-- Pickup Points -->
+        <marker icon="https://maps.google.com/mapfiles/ms/icons/green-dot.png"
+                ng-repeat="point in ctrl.pickupPoints"
+                on-click="ctrl.showPickupInfo(point, $event)"
+                position="[[point.lat, point.lng]]">
+            <info-window id="pickup-{{$index}}">
+                <div class="info-window">
+                    <h3 class="md-title">Pickup Point</h3>
+                    <p><strong>Address:</strong><br>{{point.address}}</p>
+                    <p><strong>Scheduled:</strong><br>{{point.scheduledTime | date:'short'}}</p>
+                </div>
+            </info-window>
+        </marker>
+
+        <!-- Delivery Points -->
+        <marker icon="https://maps.google.com/mapfiles/ms/icons/red-dot.png"
+                ng-repeat="point in ctrl.deliveryPoints"
+                on-click="ctrl.showDeliveryInfo(point, $event)"
+                position="[[point.lat, point.lng]]">
+            <info-window id="delivery-{{$index}}">
+                <div class="info-window">
+                    <h3 class="md-title">Delivery Point</h3>
+                    <p><strong>Address:</strong><br>{{point.address}}</p>
+                    <p><strong>ETA:</strong><br>{{point.eta | date:'short'}}</p>
+                </div>
+            </info-window>
+        </marker>
+    </ng-map>
+
+    <!-- Driver List -->
+    <md-card class="driver-list">
+        <md-card-header>
+            <md-card-header-text>
+                <span class="md-title">Active Drivers</span>
+            </md-card-header-text>
+        </md-card-header>
+        <md-card-content>
+            <md-list>
+                <md-list-item ng-click="ctrl.centerOnDriver(driver)"
+                              ng-repeat="driver in ctrl.drivers">
+                    <md-icon class="material-icons">person</md-icon>
+                    <div class="md-list-item-text">
+                        <h3>{{driver.name}}</h3>
+                        <p class="driver-status">{{driver.status}}</p>
+                    </div>
+                </md-list-item>
+            </md-list>
+        </md-card-content>
+    </md-card>
+
+    <!-- Legend -->
+    <md-card class="legend">
+        <md-list>
+            <md-subheader>Map Legend</md-subheader>
+            <md-list-item class="legend-item">
+                <md-icon class="material-icons legend-icon" style="color: #2196F3;">navigation</md-icon>
+                <p>Drivers</p>
+            </md-list-item>
+            <md-list-item class="legend-item">
+                <img class="legend-icon" src="https://maps.google.com/mapfiles/ms/icons/green-dot.png">
+                <p>Pickup Points</p>
+            </md-list-item>
+            <md-list-item class="legend-item">
+                <img class="legend-icon" src="https://maps.google.com/mapfiles/ms/icons/red-dot.png">
+                <p>Delivery Points</p>
+            </md-list-item>
+        </md-list>
+    </md-card>
+
+    <!-- Refresh Button -->
+    <md-button aria-label="Refresh"
+               class="md-fab md-primary refresh-fab"
+               ng-click="ctrl.refreshData()">
+        <md-icon class="material-icons">refresh</md-icon>
+    </md-button>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" ng-if="ctrl.isLoading">
+        <md-progress-circular md-mode="indeterminate"></md-progress-circular>
+    </div>
+</div>

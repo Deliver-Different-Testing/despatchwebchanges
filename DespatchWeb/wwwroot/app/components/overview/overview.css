@@ -349,4 +349,11 @@ md-progress-linear .md-container {
 .regions-container::-webkit-scrollbar-track {
   background-color: rgba(0, 0, 0, 0.1);
 }
+
+.megaMap-button {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 100;
+}
 /*# sourceMappingURL=overview.css.map */

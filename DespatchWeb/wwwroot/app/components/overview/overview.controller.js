@@ -478,6 +478,11 @@ class OverviewController {
         }
     }
 
+    openMegaMap() {
+        const url = this.$state.href('megaMap');
+        this.$window.open(url, '_blank');
+    }
+
     /**
      * Refresh data when tab changes
      */

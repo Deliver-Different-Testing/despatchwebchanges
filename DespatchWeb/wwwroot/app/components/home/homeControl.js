@@ -379,6 +379,9 @@ angular.module("uDispatch")
                         });
                 };
 
+                /**
+                 * @param {number} index
+                 */
                 $scope.deleteLayout = (index) => {
                     if (index === 0) return; // Prevent deleting default layout
 
