@@ -22,12 +22,14 @@ angular.module('uDispatch').controller('CSControl', [
     'versionUrl',
     '$mdSidenav',
     'CSLayoutService',
-    ($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document, $timeout, loadingService, dispatchJobService, toastrService, moment, DispatchData, versionUrl, $mdSidenav, LayoutService) => {
+    'APP_CONFIG',
+    ($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document, $timeout, loadingService, dispatchJobService, toastrService, moment, DispatchData, versionUrl, $mdSidenav, LayoutService, APP_CONFIG) => {
         $scope.jdSvc = jdSvc;
         $scope.dispatchJobService = dispatchJobService;
 
         // Variables
         function initializeVariables() {
+            $scope.isUsCustomer = APP_CONFIG.US_Customer;
             $scope.isAdmin = (ClientInternal === "True");
             $scope.mapSetting = {
                 "allCouriers": false, "allRuns": false

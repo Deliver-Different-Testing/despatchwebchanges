@@ -68,7 +68,7 @@
  * @property {Uint8Array} deliverySignature
  * @property {Uint8Array[]} podPhotos
  * @property {string} podName
- * @property {string} phone
+ * @property {string} toContactPhone
  * @property {string} speedAccepted
  * @property {number|null} acceptedJobTypeId
  * @property {number|null} notifiedJobTypeId

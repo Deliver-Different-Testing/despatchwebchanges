@@ -3,7 +3,7 @@
  * @description Controller for delivery overview page
  */
 class OverviewController {
-    constructor($mdDialog, $mdSidenav, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state, greetingService) {
+    constructor($mdDialog, $mdSidenav, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state, $window, greetingService) {
         this.$mdDialog = $mdDialog;
         this.$mdSidenav = $mdSidenav;
         this.overviewService = overviewService;
@@ -13,6 +13,7 @@ class OverviewController {
         this.toastrService = toastrService;
         this.moment = moment;
         this.$state = $state;
+        this.$window = $window;
 
         this.greeting = greetingService.greetUser(FirstName);
         this.statistics = {
@@ -463,13 +464,15 @@ class OverviewController {
 
 
     /**
-     * Open job detail in dispatch screen
+     * Open job detail in dispatch screen in a new tab
      * @param {OverviewTableParentJob} delivery The delivery job to view
      */
     openJobDetail(delivery) {
         if (delivery && delivery.jobId) {
-            // Navigate to home state with jobId parameter
-            this.$state.go('home', {jobId: delivery.jobId});
+            // Get the URL for the state
+            const url = this.$state.href('home', {jobId: delivery.jobId});
+            // Open in new tab
+            this.$window.open(url, '_blank');
         } else {
             this.toastrService.showErrorToast("Cannot open job details: Invalid job ID");
         }
@@ -536,4 +539,4 @@ class OverviewController {
     }
 }
 
-angular.module('uDispatch').controller('deliveryOverview', ['$mdDialog', '$mdSidenav', 'overviewService', 'versionUrl', '$document', '$scope', '$timeout', 'toastrService', 'moment', '$state', 'greetingService', ($mdDialog, $mdSidenav, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state, greetingService) => new OverviewController($mdDialog, $mdSidenav, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state, greetingService)]);
+angular.module('uDispatch').controller('deliveryOverview', ['$mdDialog', '$mdSidenav', 'overviewService', 'versionUrl', '$document', '$scope', '$timeout', 'toastrService', 'moment', '$state', '$window', 'greetingService', ($mdDialog, $mdSidenav, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state, $window, greetingService) => new OverviewController($mdDialog, $mdSidenav, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state, $window, greetingService)]);

@@ -10,6 +10,7 @@ namespace DespatchWeb.EntityClasses
         public TucJobInternalStatus()
         {
             TucJobArchives = new HashSet<TucJobArchive>();
+            TucJobs = new HashSet<TucJob>();
         }
 
         public int Tcis { get; set; }
@@ -19,5 +20,6 @@ namespace DespatchWeb.EntityClasses
         public int? JobStatusNotificationId { get; set; }
 
         public virtual ICollection<TucJobArchive> TucJobArchives { get; set; }
+        public virtual ICollection<TucJob> TucJobs { get; set; }
     }
 }

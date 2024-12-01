@@ -8,7 +8,6 @@
  * @class
  */
 class EditParcelDimensionsDialogController {
-    // Update $inject to use 'dimensions' instead of 'parcelDimensions'
     static $inject = ['$mdDialog', 'toastrService', 'DispatchData', '$document', 'versionUrl', 'jobId', 'dimensions'];
 
     constructor($mdDialog, toastrService, DispatchData, $document, versionUrl, jobId, dimensions) {

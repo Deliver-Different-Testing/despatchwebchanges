@@ -1,3 +1,6 @@
+<link href="app/components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.styles.min.css"
+      rel="stylesheet">
+
 <md-dialog aria-label="Edit Dimensions" id="edit-dimensions-dialog">
     <md-toolbar>
         <div class="md-toolbar-tools">
@@ -15,35 +18,48 @@
 
     <md-dialog-content>
         <div class="md-dialog-content">
-            <form ng-submit="ctrl.submit(ctrl.dimensions)">
-                <!-- Item Name -->
-                <md-input-container class="md-block" flex-gt-sm>
-                    <label for="itemName">Item Name</label>
-                    <input id="itemName" ng-model="ctrl.dimensions.itemName" type="text">
-                </md-input-container>
+            <div layout="row" layout-align="space-between start">
+                <!-- Left side - Form -->
+                <div flex="45">
+                    <form ng-submit="ctrl.submit(ctrl.dimensions)">
+                        <!-- Item Name -->
+                        <md-input-container class="md-block" flex-gt-sm>
+                            <label for="itemName">Item Name</label>
+                            <input id="itemName" ng-model="ctrl.dimensions.itemName" type="text">
+                        </md-input-container>
 
-                <!-- Dimensions Input Group -->
-                <div layout="row" layout-align="start center">
-                    <md-input-container flex>
-                        <label>Length</label>
-                        <input min="0" ng-model="ctrl.dimensions.length" step="0.1" type="number">
-                    </md-input-container>
+                        <!-- Dimensions Input Group -->
+                        <div layout="column">
+                            <md-input-container>
+                                <label>Length</label>
+                                <input min="0" ng-model="ctrl.dimensions.length" step="0.1" type="number">
+                                <div class="md-caption dimension-unit">inches</div>
+                            </md-input-container>
 
-                    <span class="dimension-separator" style="margin: 0 10px; padding-top: 15px;">x</span>
+                            <md-input-container>
+                                <label>Width</label>
+                                <input min="0" ng-model="ctrl.dimensions.depth" step="0.1" type="number">
+                                <div class="md-caption dimension-unit">inches</div>
+                            </md-input-container>
 
-                    <md-input-container flex>
-                        <label>Width</label>
-                        <input min="0" ng-model="ctrl.dimensions.depth" step="0.1" type="number">
-                    </md-input-container>
-
-                    <span class="dimension-separator" style="margin: 0 10px; padding-top: 15px;">x</span>
-
-                    <md-input-container flex>
-                        <label>Height</label>
-                        <input min="0" ng-model="ctrl.dimensions.height" step="0.1" type="number">
-                    </md-input-container>
+                            <md-input-container>
+                                <label>Height</label>
+                                <input min="0" ng-model="ctrl.dimensions.height" step="0.1" type="number">
+                                <div class="md-caption dimension-unit">inches</div>
+                            </md-input-container>
+                        </div>
+                    </form>
                 </div>
-            </form>
+
+                <!-- Right side - Visual representation -->
+                <div class="dimension-visualization" flex="50">
+                    <parcel-visualization
+                            height="{{ctrl.dimensions.height}}"
+                            length="{{ctrl.dimensions.length}}"
+                            width="{{ctrl.dimensions.depth}}">
+                    </parcel-visualization>
+                </div>
+            </div>
         </div>
     </md-dialog-content>
 
@@ -65,10 +81,3 @@
         </md-button>
     </md-dialog-actions>
 </md-dialog>
-
-<style>
-    .dimension-separator {
-        font-weight: bold;
-        color: rgba(0, 0, 0, 0.54);
-    }
-</style>

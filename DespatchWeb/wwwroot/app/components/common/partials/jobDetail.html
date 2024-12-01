@@ -99,7 +99,7 @@
                              ng-click="!jdSvc.currentJob.locked && jdSvc.editJobToPhone($event, jdSvc.currentJob)">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">To Phone</label>
                             <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
-                                {{jdSvc.currentJob.phone}}
+                                {{jdSvc.currentJob.toContactPhone}}
                             </div>
                         </div>
                     </div>

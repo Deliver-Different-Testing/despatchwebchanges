@@ -4,6 +4,10 @@
             <div class="md-toolbar-tools-m3">
                 <h2>DFRNT</h2>
 
+                <md-divider class="vertical-divider"></md-divider>
+
+                <h2>Dispatch Dashboard</h2>
+
                 <span flex></span>
 
                 <md-menu>
@@ -83,23 +87,13 @@
 
                 <span style="font-size: medium;">{{greetUser()}}</span>
 
-                <md-button aria-label="Menu" class="md-icon-button" ng-click="toggleSidenav()"
-                           ng-mouseover="toggleSidenav()">
+                <md-button aria-label="Menu" class="md-icon-button" ng-mouseover="toggleSidenav()">
                     <md-icon md-font-set="material-symbols-outlined">menu</md-icon>
                 </md-button>
             </div>
         </md-toolbar>
 
         <material-sidenav></material-sidenav>
-    </div>
-
-    <!-- Added Title Section -->
-    <div class="page-title-section md-padding" layout="row" layout-align="start center">
-        <div>
-            <h1 class="md-headline" style="margin: 0; color: rgba(0,0,0,0.87);">Dispatch Dashboard</h1>
-            <p class="md-subhead" style="margin: 4px 0 0 0; color: rgba(0,0,0,0.54);">Monitor and manage local
-                operations</p>
-        </div>
     </div>
 
     <div>
