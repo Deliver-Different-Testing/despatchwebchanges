@@ -3,6 +3,7 @@
 <div class="map-container">
     <!-- Main Map -->
     <ng-map center="{{ctrl.mapCenter}}"
+            id="megamap"
             default-style="false"
             map-type-control="false"
             street-view-control="false"
@@ -14,7 +15,7 @@
                        on-click="ctrl.showDriverInfo(driver, $event)"
                        position="[[driver.lat, driver.lng]]">
             <div class="driver-marker">
-                <i class="material-icons" style="color: #2196F3;">navigation</i>
+                <i class="material-symbols-outlined" style="color: #2196F3;">navigation</i>
             </div>
         </custom-marker>
 
@@ -58,7 +59,7 @@
             <md-list>
                 <md-list-item ng-click="ctrl.centerOnDriver(driver)"
                               ng-repeat="driver in ctrl.drivers">
-                    <md-icon class="material-icons">person</md-icon>
+                    <md-icon class="material-symbols-outlined">person</md-icon>
                     <div class="md-list-item-text">
                         <h3>{{driver.name}}</h3>
                         <p class="driver-status">{{driver.status}}</p>
@@ -70,10 +71,14 @@
 
     <!-- Legend -->
     <md-card class="legend">
+        <md-card-header>
+            <md-card-header-text>
+                <span class="md-title">Map Legend</span>
+            </md-card-header-text>
+        </md-card-header>
         <md-list>
-            <md-subheader>Map Legend</md-subheader>
             <md-list-item class="legend-item">
-                <md-icon class="material-icons legend-icon" style="color: #2196F3;">navigation</md-icon>
+                <md-icon class="material-symbols-outlined legend-icon" style="color: #2196F3;">navigation</md-icon>
                 <p>Drivers</p>
             </md-list-item>
             <md-list-item class="legend-item">
@@ -87,15 +92,19 @@
         </md-list>
     </md-card>
 
-    <!-- Refresh Button -->
-    <md-button aria-label="Refresh"
-               class="md-fab md-primary refresh-fab"
-               ng-click="ctrl.refreshData()">
-        <md-icon class="material-icons">refresh</md-icon>
-    </md-button>
-
     <!-- Loading Overlay -->
     <div class="loading-overlay" ng-if="ctrl.isLoading">
         <md-progress-circular md-mode="indeterminate"></md-progress-circular>
     </div>
 </div>
+
+
+<!-- Floating Refresh Button -->
+<nav active-icon="refresh"
+     label="Refresh Map"
+     main-action="ctrl.refreshData()"
+     mfb-menu
+     position="br"
+     resting-icon="refresh"
+     template-url="ng-mfb-menu-md.tpl.html">
+</nav>

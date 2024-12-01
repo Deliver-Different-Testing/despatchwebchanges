@@ -9,7 +9,7 @@ class MegaMapController {
         this.drivers = [];
         this.pickupPoints = [];
         this.deliveryPoints = [];
-        this.mapCenter = [37.7749, -122.4194]; // Default to San Francisco
+        this.mapCenter = [39.8097343, -98.5556199]; // Default to central USA
         this.isLoading = false;
 
         // Initialize map and start refresh interval
@@ -74,5 +74,5 @@ class MegaMapController {
 angular.module('uDispatch')
     .controller('megaMapController',
         ['$interval', 'toastrService', 'NgMap', 'overviewService',
-            ($interval, toastrService, NgMap, overviewService) => new OverviewController(
+            ($interval, toastrService, NgMap, overviewService) => new MegaMapController(
                 $interval, toastrService, NgMap, overviewService)]);

@@ -20,14 +20,6 @@
     <material-sidenav></material-sidenav>
 </div>
 
-<!-- Floating Map Button -->
-<div class="mega-map-loading-button">
-    <md-button aria-label="Open Map" class="md-fab md-primary" ng-click="ctrl.openMegaMap()">
-        <md-icon md-font-set="material-symbols-outlined">public</md-icon>
-        <md-tooltip md-direction="bottom">Open Mega Map</md-tooltip>
-    </md-button>
-</div>
-
 <div class="delivery-dashboard md-padding" layout="column">
     <!-- Tabs -->
     <div class="stats-tabs-container">
@@ -315,3 +307,13 @@
         </md-card>
     </div>
 </div>
+
+<!-- Floating Map Button -->
+<nav active-icon="public"
+     label="Open Map"
+     main-action="ctrl.openMegaMap()"
+     mfb-menu
+     position="br"
+     resting-icon="public"
+     template-url="ng-mfb-menu-md.tpl.html">
+</nav>
