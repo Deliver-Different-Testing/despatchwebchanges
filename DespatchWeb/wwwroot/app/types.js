@@ -518,3 +518,21 @@
  * @property {string} region - The geographical region for the delivery
  * @property {Array<OverviewTableChildJob>} childJobs - List of associated child delivery jobs
  */
+
+/**
+ * Response object containing job details with associated locations.
+ * @typedef {Object} MegaMapResponse
+ * @property {number} jobId - The unique identifier for the job
+ * @property {string} jobNumber - The job reference number
+ * @property {AddressDetails} pickupLocation - The pickup address and coordinates
+ * @property {AddressDetails} deliveryLocation - The delivery address and coordinates
+ * @property {CourierLocation} courierLocation - The assigned courier's current location details
+ */
+
+/**
+ * Object containing courier location information.
+ * @typedef {Object} CourierLocation
+ * @property {number} courierId - The unique identifier for the courier
+ * @property {string} courierName - The name of the courier
+ * @property {Coordinates} coordinates - The current geographical coordinates of the courier
+ */

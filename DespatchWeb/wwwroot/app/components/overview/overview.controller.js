@@ -479,7 +479,16 @@ class OverviewController {
     }
 
     openMegaMap() {
-        const url = this.$state.href('megaMap');
+        const url = this.$state.href('megaMap', {
+            deliveries: this.deliveries,
+            filters: {
+                statusGroup: this.getStatusGroup(),
+                regions: this.selectedRegions,
+                speeds: this.selectedSpeeds,
+                dateRange: this.dateRange,
+                search: this.search
+            }
+        });
         this.$window.open(url, '_blank');
     }
 

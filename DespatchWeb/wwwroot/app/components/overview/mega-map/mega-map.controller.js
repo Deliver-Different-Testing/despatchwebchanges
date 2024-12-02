@@ -5,7 +5,7 @@ class MegaMapController {
         this.NgMap = NgMap;
         this.overviewService = overviewService;
 
-// Initialize data
+        // Initialize data
         this.isUsCustomer = APP_CONFIG.US_Customer;
         this.drivers = [];
         this.pickupPoints = [];
@@ -52,25 +52,73 @@ class MegaMapController {
     }
 
     async refreshData() {
+        console.log('Refreshing map data...');
         this.isLoading = true;
 
         try {
-            const [drivers, pickups, deliveries] = await Promise.all([
-                this.overviewService.getDrivers(),
-                this.overviewService.getPickupPoints(),
-                this.overviewService.getDeliveryPoints()
-            ]);
+            const response = await this.overviewService.getMegaMapData();
+            const {pickups, deliveries, drivers} = this.transformMapData(response);
 
             this.drivers = drivers;
             this.pickupPoints = pickups;
             this.deliveryPoints = deliveries;
+
             this.showToast('Data updated successfully');
         } catch (error) {
             this.showToast('Error updating data');
             console.error('Error:', error);
         } finally {
             this.isLoading = false;
+            console.log('Refreshing map data complete...')
         }
+    }
+
+    transformMapData(jobs) {
+        const pickups = [];
+        const deliveries = [];
+        const drivers = [];
+
+        jobs.forEach(job => {
+            // Add pickup points
+            if (job.pickupLocation && job.pickupLocation.latitude && job.pickupLocation.longitude) {
+                pickups.push({
+                    lat: parseFloat(job.pickupLocation.latitude),
+                    lng: parseFloat(job.pickupLocation.longitude),
+                    address: job.pickupLocation.fullAddress,
+                    jobId: job.jobId,
+                    jobNumber: job.jobNumber
+                });
+            }
+
+            // Add delivery points
+            if (job.deliveryLocation && job.deliveryLocation.latitude && job.deliveryLocation.longitude) {
+                deliveries.push({
+                    lat: parseFloat(job.deliveryLocation.latitude),
+                    lng: parseFloat(job.deliveryLocation.longitude),
+                    address: job.deliveryLocation.fullAddress,
+                    jobId: job.jobId,
+                    jobNumber: job.jobNumber
+                });
+            }
+
+            // Add driver location if exists
+            if (job.courierLocation && job.courierLocation.coordinates) {
+                // Check if driver already exists (to avoid duplicates)
+                const existingDriver = drivers.find(d => d.courierId === job.courierLocation.courierId);
+                if (!existingDriver) {
+                    drivers.push({
+                        courierId: job.courierLocation.courierId,
+                        name: job.courierLocation.courierName,
+                        lat: parseFloat(job.courierLocation.coordinates.latitude),
+                        lng: parseFloat(job.courierLocation.coordinates.longitude),
+                        assignedJobId: job.jobId,
+                        assignedJobNumber: job.jobNumber
+                    });
+                }
+            }
+        });
+
+        return {pickups, deliveries, drivers};
     }
 }
 

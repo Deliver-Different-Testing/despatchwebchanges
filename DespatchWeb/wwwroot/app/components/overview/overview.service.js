@@ -83,19 +83,16 @@ class OverviewService {
         return response.data;
     }
 
-    async getDrivers() {
-        let response = await this.$http.get('/api/drivers');
-        return await response.data;
-    }
-
-    async getPickupPoints() {
-        let response = await this.$http.get('/api/pickups');
-        return await response.data;
-    }
-
-    async getDeliveryPoints() {
-        let response = await this.$http.get('/api/deliveries');
-        return await response.data;
+    /**
+     * Fetches jobs data for the mega map display from the server.
+     * @async
+     * @returns {Promise<Array<MegaMapResponse>>} Array of jobs with their locations and assigned couriers.
+     *
+     * @throws {Error} If the server request fails
+     */
+    async getMegaMapData() {
+        const response = await this.$http.get('/overview/GetJobsForMegaMap');
+        return response.data;
     }
 }
 

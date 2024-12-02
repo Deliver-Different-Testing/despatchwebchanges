@@ -177,4 +177,5 @@ public interface IJobRepository
     Task<OverviewStatsViewModel> GetOverviewStatsAsync();
 
     Task<OverviewDeliveryMapResponse> GetOverviewLocationDataAsync(int jobId);
+    Task<List<MegaMapResponse>> GetJobsForMegaMapAsync();
 }
