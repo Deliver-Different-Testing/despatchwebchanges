@@ -5,16 +5,15 @@ class MegaMapController {
         this.NgMap = NgMap;
         this.overviewService = overviewService;
 
+        this.directionsService = new google.maps.DirectionsService();
+        this.routePaths = new Map(); // Cache for route paths
+
         // Initialize data
         this.isUsCustomer = APP_CONFIG.US_Customer;
         this.jobs = [];
         this.drivers = [];
         this.pickupPoints = [];
         this.deliveryPoints = [];
-
-        this.selectedDelivery = [];
-        this.selectedPickup = [];
-        this.selectedDriver = [];
 
         this.mapCenter = this.isUsCustomer
             ? [39.8097343, -98.5556199]  // Central USA coordinates
@@ -42,59 +41,6 @@ class MegaMapController {
         return this.deliveryPoints.find(point => point.jobId === jobId) || {lat: 0, lng: 0};
     }
 
-    /**
-     * Show info window for pickup point
-     * @param {number} index Array index of the pickup point
-     * @param {Event} event The click event
-     */
-    showPickupInfo(index, event) {
-        const point = this.pickupPoints[index];
-        if (!point || !point.jobId) {
-            console.warn('Invalid pickup point or missing jobId at index:', index);
-            return;
-        }
-
-        this.selectedPickup = point;
-        const markerId = `pickup-marker-${point.jobId}`;
-        const marker = document.getElementById(markerId);
-
-        if (marker) {
-            this.map.showInfoWindow(`pickup-${point.jobId}`, marker);
-        }
-    }
-
-    /**
-     * Show info window for delivery point
-     * @param {number} index Array index of the delivery point
-     * @param {Event} event The click event
-     */
-    showDeliveryInfo(index, event) {
-        const point = this.deliveryPoints[index];
-        if (!point || !point.jobId) {
-            console.warn('Invalid delivery point or missing jobId at index:', index);
-            return;
-        }
-
-        this.selectedDelivery = point;
-        const markerId = `delivery-marker-${point.jobId}`;
-        const marker = document.getElementById(markerId);
-
-        if (marker) {
-            this.map.showInfoWindow(`delivery-${point.jobId}`, marker);
-        }
-    }
-
-    highlightRoute(jobId) {
-        // You could add logic here to highlight the specific route
-        // For example, changing its color or thickness
-        const pickup = this.pickupPoints.find(p => p.jobId === jobId);
-        const delivery = this.deliveryPoints.find(d => d.jobId === jobId);
-
-        if (pickup && delivery) {
-            // Log the route being highlighted
-            console.log(`Highlighting route from ${pickup.jobNumber}: ${pickup.address} to ${delivery.address}`);
-        }
-    }
 
     /**
      * Check if job is a flight route
@@ -104,15 +50,6 @@ class MegaMapController {
     isFlightRoute(jobId) {
         const job = this.jobs.find(j => j.jobId === jobId);
         return job?.IsFlightJob || false;
-    }
-
-    showDriverInfo(driver, $event) {
-        this.selectedDriver = driver;
-        if (driver && driver.courierId) {
-            this.map.showInfoWindow(`driver-${driver.courierId}`, $event.target);
-        } else {
-            console.warn('Invalid driver or missing courierId:', driver);
-        }
     }
 
     centerOnDriver(driver) {
@@ -300,17 +237,80 @@ class MegaMapController {
     }
 
     getRoutePath(pickup) {
-        const delivery = this.getDeliveryPointForJob(pickup.jobId);
-        if (!delivery) {
-            console.warn(`No delivery found for job ${pickup.jobId}`);
-            return [];
+        if (this.isFlightRoute(pickup.jobId)) {
+            const delivery = this.getDeliveryPointForJob(pickup.jobId);
+            if (!delivery) return [];
+
+            // Direct line for flight routes
+            return [[pickup.lat, pickup.lng], [delivery.lat, delivery.lng]];
         }
 
-        // Return path in the format Google Maps expects
-        return [
-            [parseFloat(pickup.lat), parseFloat(pickup.lng)],
-            [parseFloat(delivery.lat), parseFloat(delivery.lng)]
-        ];
+        // Get cached road route if available
+        const cacheKey = `${pickup.jobId}`;
+        const cachedPath = this.routePaths.get(cacheKey);
+        if (cachedPath) {
+            return cachedPath;
+        }
+
+        // Calculate road route if not cached
+        const delivery = this.getDeliveryPointForJob(pickup.jobId);
+        if (!delivery) return [];
+
+        // Start calculating road route
+        this.calculateRoadRoute(pickup, delivery).then(path => {
+            if (path) {
+                this.routePaths.set(cacheKey, path);
+                if (this.map) {
+                    const center = this.map.getCenter();
+                    this.map.setCenter(center);
+                }
+            }
+        });
+
+        // Return direct line while calculating road route
+        return [[pickup.lat, pickup.lng], [delivery.lat, delivery.lng]];
+    }
+
+    /**
+     * Calculate road route between points
+     * @param {Object} pickup
+     * @param {Object} delivery
+     * @returns {Promise<Array>}
+     */
+    async calculateRoadRoute(pickup, delivery) {
+        try {
+            const result = await new Promise((resolve, reject) => {
+                this.directionsService.route({
+                    origin: {lat: parseFloat(pickup.lat), lng: parseFloat(pickup.lng)},
+                    destination: {lat: parseFloat(delivery.lat), lng: parseFloat(delivery.lng)},
+                    travelMode: google.maps.TravelMode.DRIVING
+                }, (response, status) => {
+                    if (status === google.maps.DirectionsStatus.OK) {
+                        resolve(response);
+                    } else {
+                        reject(status);
+                    }
+                });
+            });
+
+            // Extract path points from result
+            return result.routes[0].overview_path.map(point => [
+                point.lat(),
+                point.lng()
+            ]);
+        } catch (error) {
+            console.warn('Failed to get road route, falling back to direct line:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Transform the route path for ng-map shape
+     * @param {Array} path - Array of coordinate pairs
+     * @returns {string} Formatted path string
+     */
+    formatRoutePath(path) {
+        return path.map(point => `[${point[0]}, ${point[1]}]`).join(',');
     }
 
     /**

@@ -72,24 +72,13 @@
         </custom-marker>
 
         <!-- Route Lines -->
-        <!-- All Route Lines -->
         <shape name="polyline"
                ng-repeat="pickup in ctrl.pickupPoints"
                path="{{ctrl.getRoutePath(pickup)}}"
                stroke-color="{{ctrl.isFlightRoute(pickup.jobId) ? '#3EAFC2' : '#FFB300'}}"
                stroke-opacity="0.7"
-               stroke-pattern="{{ctrl.isFlightRoute(pickup.jobId) ? '[20,10]' : ''}}"
+               stroke-pattern="{{ctrl.isFlightRoute(pickup.jobId) ? [20,10] : []}}"
                stroke-weight="2">
-        </shape>
-
-        <shape name="polyline"
-               ng-if="ctrl.isFlightRoute(pickup.jobId)"
-               ng-repeat="pickup in ctrl.pickupPoints"
-               path="{{ctrl.getRoutePath(pickup)}}"
-               stroke-color="#3EAFC2"
-               stroke-opacity="0.7"
-               stroke-pattern="[20,10]"
-               stroke-weight="2">  <!-- Dashed line for flights -->
         </shape>
     </ng-map>
 
