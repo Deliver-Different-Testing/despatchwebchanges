@@ -27,12 +27,12 @@ class MegaMapController {
     async initializeMap() {
         // Initialize the platform
         const apiKey = await this.configService.getHereMapsKey();
-        const platform = new H.service.Platform({
+        this.platform = new H.service.Platform({
             apikey: apiKey
         });
 
         // Get default layers
-        const defaultLayers = platform.createDefaultLayers();
+        const defaultLayers = this.platform.createDefaultLayers();
 
         // Initialize map
         this.map = new H.Map(
@@ -46,25 +46,39 @@ class MegaMapController {
         );
 
         // Add map controls
-        this.addMapControls(platform);
+        this.addMapControls(this.platform);
 
         // Enable map events
         const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(this.map));
 
         // Initialize routing service
-        this.routingService = platform.getRoutingService(null, H.service.Platform.ROUTE_MODE_FAST);
+        this.routingService = this.platform.getRoutingService(null, H.service.Platform.ROUTE_MODE_FAST);
 
         // Force a refresh after map is initialized
         await this.refreshData();
     }
 
     addMapControls(platform) {
-        // Add zoom control
+        // Create UI with default controls
         const ui = H.ui.UI.createDefault(this.map, platform.createDefaultLayers());
-        const zoomControl = new H.ui.ZoomControl();
+
+        // Remove default zoom control
+        ui.removeControl('zoom');
+
+        // Add custom zoom control with specific options
+        const zoomControl = new H.ui.ZoomControl({
+            position: 'right-bottom',
+            fractionalZoom: false
+        });
         ui.addControl('zoom', zoomControl);
+
+        // Store UI reference
+        this.ui = ui;
     }
 
+    /**
+     * @param {number} jobId
+     */
     getDeliveryPointForJob(jobId) {
         return this.deliveryPoints.find(point => point.jobId === jobId) || {lat: 0, lng: 0};
     }
@@ -105,7 +119,7 @@ class MegaMapController {
 
             // Add new markers and routes
             this.addMarkersToMap();
-            this.addRoutesToMap();
+            await this.addRoutesToMap();
 
             // Fit map to show all points
             this.fitMapToPoints();
@@ -279,6 +293,9 @@ class MegaMapController {
         });
     }
 
+    /**
+     * @param {string} color
+     */
     createMarkerIcon(color) {
         return new H.map.Icon(`
             <svg width="24" height="24" viewBox="0 0 24 24">
@@ -292,41 +309,48 @@ class MegaMapController {
             const delivery = this.getDeliveryPointForJob(pickup.jobId);
             if (!delivery) continue;
 
-            if (this.isFlightRoute(pickup.jobId)) {
-                // Direct line for flight routes
-                const lineString = new H.geo.LineString([
-                    [pickup.lat, pickup.lng],
-                    [delivery.lat, delivery.lng]
-                ]);
+            try {
+                let lineString;
+                if (this.isFlightRoute(pickup.jobId)) {
+                    // Direct line for flight routes
+                    lineString = new H.geo.LineString();
+                    lineString.pushPoint({lat: pickup.lat, lng: pickup.lng});
+                    lineString.pushPoint({lat: delivery.lat, lng: delivery.lng});
 
-                const polyline = new H.map.Polyline(lineString, {
-                    style: {
-                        lineWidth: 2,
-                        strokeColor: '#3EAFC2',
-                        lineDash: [8, 4]
+                    const polyline = new H.map.Polyline(lineString, {
+                        style: {
+                            lineWidth: 2,
+                            strokeColor: '#3EAFC2',
+                            lineDash: [8, 4]
+                        }
+                    });
+
+                    this.routeLines.set(`route-${pickup.jobId}`, polyline);
+                    this.map.addObject(polyline);
+                } else {
+                    // Try to calculate road route
+                    try {
+                        lineString = await this.calculateRoadRoute(pickup, delivery);
+                    } catch (routeError) {
+                        console.warn('Failed to calculate road route, falling back to direct line:', routeError);
+                        // Fall back to direct line if routing fails
+                        lineString = new H.geo.LineString();
+                        lineString.pushPoint({lat: pickup.lat, lng: pickup.lng});
+                        lineString.pushPoint({lat: delivery.lat, lng: delivery.lng});
                     }
-                });
 
-                this.routeLines.set(`route-${pickup.jobId}`, polyline);
-                this.map.addObject(polyline);
-            } else {
-                // Calculate road route
-                try {
-                    const route = await this.calculateRoadRoute(pickup, delivery);
-                    if (route) {
-                        const polyline = new H.map.Polyline(route, {
-                            style: {
-                                lineWidth: 2,
-                                strokeColor: '#FFB300'
-                            }
-                        });
+                    const polyline = new H.map.Polyline(lineString, {
+                        style: {
+                            lineWidth: 2,
+                            strokeColor: '#FFB300'
+                        }
+                    });
 
-                        this.routeLines.set(`route-${pickup.jobId}`, polyline);
-                        this.map.addObject(polyline);
-                    }
-                } catch (error) {
-                    console.warn('Failed to calculate road route:', error);
+                    this.routeLines.set(`route-${pickup.jobId}`, polyline);
+                    this.map.addObject(polyline);
                 }
+            } catch (error) {
+                console.error('Failed to add route to map:', error);
             }
         }
     }
@@ -334,23 +358,32 @@ class MegaMapController {
     async calculateRoadRoute(pickup, delivery) {
         return new Promise((resolve, reject) => {
             const params = {
-                routingMode: 'fast',
-                transportMode: 'car',
-                origin: `${pickup.lat},${pickup.lng}`,
-                destination: `${delivery.lat},${delivery.lng}`,
-                return: 'polyline'
+                'routingMode': 'fast',
+                'transportMode': 'car',
+                'origin': `${pickup.lat},${pickup.lng}`,
+                'destination': `${delivery.lat},${delivery.lng}`,
+                'return': ['polyline', 'summary']
             };
 
-            this.routingService.calculateRoute(params, (result) => {
-                if (result.routes && result.routes.length > 0) {
-                    const lineString = H.geo.LineString.fromFlexiblePolyline(
-                        result.routes[0].sections[0].polyline
-                    );
-                    resolve(lineString);
+            const router = this.platform.getRoutingService(null, 8);
+
+            router.calculateRoute(params, (result) => {
+                if (result.routes && result.routes.length) {
+                    try {
+                        const sections = result.routes[0].sections;
+                        const lineString = H.geo.LineString.fromFlexiblePolyline(sections[0].polyline);
+                        resolve(lineString);
+                    } catch (error) {
+                        console.error('Failed to process route result:', error);
+                        reject(error);
+                    }
                 } else {
                     reject(new Error('No route found'));
                 }
-            }, reject);
+            }, (error) => {
+                console.error('Failed to calculate road route:', error);
+                reject(error);
+            });
         });
     }
 
