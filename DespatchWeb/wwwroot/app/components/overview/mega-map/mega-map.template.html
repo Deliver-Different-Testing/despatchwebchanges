@@ -29,18 +29,41 @@
         </info-window>
 
         <!-- Pickup Points -->
-        <marker icon="https://maps.google.com/mapfiles/ms/icons/green-dot.png"
+        <marker data-point="{{point}}"
+                icon="https://maps.google.com/mapfiles/ms/icons/green-dot.png"
                 ng-repeat="point in ctrl.pickupPoints"
-                on-click="ctrl.showPickupInfo(point, $event)"
+                on-click="ctrl.showPickupInfo(point)"
                 position="[{{point.lat}}, {{point.lng}}]">
+            <info-window id="pickup-{{point.jobId}}">
+                <div class="job-info-window">
+                    <h4>Pickup: {{point.jobNumber}}</h4>
+                    <p>{{point.address}}</p>
+                </div>
+            </info-window>
         </marker>
 
         <!-- Delivery Points -->
-        <marker icon="https://maps.google.com/mapfiles/ms/icons/red-dot.png"
+        <marker data-point="{{point}}"
+                icon="https://maps.google.com/mapfiles/ms/icons/red-dot.png"
                 ng-repeat="point in ctrl.deliveryPoints"
-                on-click="ctrl.showDeliveryInfo(point, $event)"
+                on-click="ctrl.showDeliveryInfo(point)"
                 position="[{{point.lat}}, {{point.lng}}]">
+            <info-window id="delivery-{{point.jobId}}">
+                <div class="job-info-window">
+                    <h4>Delivery: {{point.jobNumber}}</h4>
+                    <p>{{point.address}}</p>
+                </div>
+            </info-window>
         </marker>
+
+        <!-- Route Lines -->
+        <shape name="polyline"
+               ng-repeat="pickup in ctrl.pickupPoints"
+               path="{{ctrl.getRoutePath(pickup)}}"
+               stroke-color="#FFB300"
+               stroke-opacity="0.7"
+               stroke-weight="2">
+        </shape>
     </ng-map>
 
     <!-- Active Drivers Panel -->

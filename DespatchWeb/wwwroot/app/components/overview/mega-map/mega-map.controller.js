@@ -32,19 +32,55 @@ class MegaMapController {
         });
     }
 
+    getDeliveryPointForJob(jobId) {
+        return this.deliveryPoints.find(point => point.jobId === jobId) || {lat: 0, lng: 0};
+    }
+
+    showPickupInfo(point) {
+        if (!point || !point.jobId) {
+            console.warn('Invalid pickup point or missing jobId:', point);
+            return;
+        }
+
+        this.selectedPickup = point;
+        this.map.showInfoWindow(`pickup-${point.jobId}`);
+
+        // Highlight the corresponding route
+        this.highlightRoute(point.jobId);
+    }
+
+    showDeliveryInfo(point) {
+        if (!point || !point.jobId) {
+            console.warn('Invalid delivery point or missing jobId:', point);
+            return;
+        }
+
+        this.selectedDelivery = point;
+        this.map.showInfoWindow(`delivery-${point.jobId}`);
+
+        // Highlight the corresponding route
+        this.highlightRoute(point.jobId);
+    }
+
+    highlightRoute(jobId) {
+        // You could add logic here to highlight the specific route
+        // For example, changing its color or thickness
+        const pickup = this.pickupPoints.find(p => p.jobId === jobId);
+        const delivery = this.deliveryPoints.find(d => d.jobId === jobId);
+
+        if (pickup && delivery) {
+            // Log the route being highlighted
+            console.log(`Highlighting route from ${pickup.jobNumber}: ${pickup.address} to ${delivery.address}`);
+        }
+    }
+
     showDriverInfo(driver, event) {
         this.selectedDriver = driver;
-        this.map.showInfoWindow('driver-info', event.target);
-    }
-
-    showPickupInfo(point, event) {
-        this.selectedPickup = point;
-        this.map.showInfoWindow(`pickup-${this.pickupPoints.indexOf(point)}`);
-    }
-
-    showDeliveryInfo(point, event) {
-        this.selectedDelivery = point;
-        this.map.showInfoWindow(`delivery-${this.deliveryPoints.indexOf(point)}`);
+        if (driver && driver.courierId) {
+            this.map.showInfoWindow(`driver-${driver.courierId}`, event.target);
+        } else {
+            console.warn('Invalid driver or missing courierId:', driver);
+        }
     }
 
     centerOnDriver(driver) {
@@ -182,14 +218,15 @@ class MegaMapController {
             }
         });
 
-        console.log('Transform complete:', {
-            pickupCount: pickups.length,
-            deliveryCount: deliveries.length,
-            driverCount: drivers.length,
-            pickups,
-            deliveries,
-            drivers
-        });
+        // Log routes after transformation
+        console.log('Routes:', pickups.map(pickup => {
+            const delivery = deliveries.find(d => d.jobId === pickup.jobId);
+            return {
+                jobNumber: pickup.jobNumber,
+                from: pickup.address,
+                to: delivery ? delivery.address : 'Unknown'
+            };
+        }));
 
         return {pickups, deliveries, drivers};
     }
@@ -225,6 +262,20 @@ class MegaMapController {
             const isVisible = bounds.contains(new google.maps.LatLng(driver.lat, driver.lng));
             console.log(`Driver ${driver.name} visible: ${isVisible}`, driver);
         });
+    }
+
+    getRoutePath(pickup) {
+        const delivery = this.getDeliveryPointForJob(pickup.jobId);
+        if (!delivery) {
+            console.warn(`No delivery found for job ${pickup.jobId}`);
+            return [];
+        }
+
+        // Return path in the format Google Maps expects
+        return [
+            [parseFloat(pickup.lat), parseFloat(pickup.lng)],
+            [parseFloat(delivery.lat), parseFloat(delivery.lng)]
+        ];
     }
 }
 
