@@ -527,6 +527,8 @@
  * @property {AddressDetails} pickupLocation - The pickup address and coordinates
  * @property {AddressDetails} deliveryLocation - The delivery address and coordinates
  * @property {CourierLocation} courierLocation - The assigned courier's current location details
+ * @property {boolean} IsFlightJob - Indicates if this is a flight job
+ * @property {AssignedFlight} FlightInfo - Flight details if this is a flight job
  */
 
 /**

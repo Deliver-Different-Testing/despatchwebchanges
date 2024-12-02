@@ -1,9 +1,13 @@
+@import "../overview.less";
+
 // Variables
-@primary-blue: #2196F3;
 @overlay-bg: rgba(255, 255, 255, 0.7);
 @text-secondary: rgba(0, 0, 0, 0.54);
 @hover-bg: rgba(158, 158, 158, 0.2);
 @card-bg: rgba(255, 255, 255, 0.95);
+@z-map: 1;
+@z-overlays: 100;
+@z-loading: 1000;
 
 // Mixins
 .absolute-position(@top: 0, @right: 0, @bottom: 0, @left: 0) {
@@ -12,6 +16,11 @@
   right: @right;
   bottom: @bottom;
   left: @left;
+}
+
+.card-shadow() {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
 }
 
 .flex-center {
@@ -33,68 +42,90 @@ html, body {
   .absolute-position();
   height: 100vh;
   width: 100vw;
+  z-index: @z-map;
+
+  // Ensure map takes full space
+  ng-map, .angular-google-map-container {
+    height: 100% !important;
+    width: 100% !important;
+  }
 }
 
 // Active Drivers panel
 .active-drivers {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 250px;
-  z-index: 1;
-  background: rgba(255, 255, 255, 0.95);
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 280px;
+  z-index: @z-overlays;
+  background: @card-bg;
+  .card-shadow();
 
   .md-subtitle {
-    padding: 8px 16px;
+    padding: 12px 16px;
     margin: 0;
     font-size: 14px;
+    font-weight: 500;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    background: @primary-color;
+    color: white;
+    border-radius: 4px 4px 0 0;
   }
 
   .driver-list {
     max-height: 300px;
     overflow-y: auto;
+    padding: 0;
   }
 
   .compact-list-item {
-    min-height: 40px;
+    min-height: 48px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: @hover-bg;
+    }
 
     .md-list-item-text {
       h4 {
         margin: 0;
-        font-size: 13px;
-        line-height: 1.2;
+        font-size: 14px;
+        line-height: 1.4;
       }
 
       small {
-        color: rgba(0, 0, 0, 0.54);
-        font-size: 11px;
+        color: @text-secondary;
+        font-size: 12px;
+        display: block;
+        margin-top: 2px;
       }
     }
   }
 
   .driver-icon {
     margin-right: 12px;
-    color: #2196F3;
+    color: @primary-color;
     font-size: 20px;
   }
 }
 
 // Map Legend
 .map-legend {
-  position: absolute;
+  position: fixed;
   left: 20px;
-  bottom: 30px;
+  bottom: 40px;
   background: @card-bg;
-  padding: 12px;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 1;
+  padding: 16px;
+  .card-shadow();
+  z-index: @z-overlays;
 
   h3 {
-    margin: 0 0 8px 0;
+    margin: 0 0 12px 0;
     font-size: 14px;
     font-weight: 500;
+    color: @primary-color;
   }
 
   .legend-item {
@@ -103,63 +134,74 @@ html, body {
     margin: 8px 0;
     font-size: 13px;
 
-    img {
-      width: 20px;
-      height: 20px;
-      margin-right: 8px;
+    img, i {
+      width: 24px;
+      height: 24px;
+      margin-right: 12px;
     }
   }
 }
 
-// Refresh button
-.refresh-map {
-  position: absolute;
+// Job Info Panel
+.job-info-panel {
+  position: fixed;
+  top: 20px;
   right: 20px;
-  bottom: 30px;
-  z-index: 1;
-}
+  width: 320px;
+  z-index: @z-overlays;
+  background: @card-bg;
+  .card-shadow();
 
-// Info windows
-.info-window {
-  padding: 12px;
-  max-width: 250px;
-
-  h3 {
-    margin: 0 0 8px 0;
-    font-size: 14px;
+  .md-toolbar-tools {
+    background: @primary-color;
+    color: white;
+    height: 48px;
+    min-height: 48px;
+    border-radius: 4px 4px 0 0;
   }
 
-  p {
-    margin: 4px 0;
-    font-size: 13px;
+  .job-details {
+    padding: 16px;
+
+    h3 {
+      color: @primary-color;
+      font-size: 14px;
+      margin: 16px 0 8px;
+
+      &:first-child {
+        margin-top: 0;
+      }
+    }
+
+    p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.4;
+      color: @text-secondary;
+    }
   }
 }
 
 // Loading overlay
 .loading-overlay {
   .absolute-position();
-  z-index: 2;
+  z-index: @z-loading;
   background-color: @overlay-bg;
   .flex-center();
 }
 
 // Responsive styles
 @media (max-width: 768px) {
-  .active-drivers {
+  .active-drivers, .job-info-panel {
     width: auto;
     left: 20px;
     right: 20px;
-    max-height: 300px;
+    max-height: 40vh;
   }
 
   .map-legend {
     left: 20px;
-    bottom: 90px; // Above the refresh button
-  }
-
-  .refresh-map {
-    right: 20px;
-    bottom: 20px;
+    bottom: 80px;
   }
 }
 

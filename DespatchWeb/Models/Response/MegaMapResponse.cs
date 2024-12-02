@@ -7,6 +7,8 @@ public class MegaMapResponse
     public AddressViewModel PickupLocation { get; set; }
     public AddressViewModel DeliveryLocation { get; set; }
     public CourierLocation CourierLocation { get; set; }
+    public bool IsFlightJob { get; set; }
+    public AssignedFlight FlightInfo { get; set; }
 }
 
 public class CourierLocation

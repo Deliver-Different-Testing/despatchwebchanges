@@ -996,26 +996,26 @@ public class BaseJobRepository
                     Id = j.UcjbId,
                     Pickup = new Coordinates
                     {
-                        Lat = j.PickUpLatitude != null ? j.PickUpLatitude.Value : 0,
-                        Lng = j.PickUpLongitude != null ? j.PickUpLongitude.Value : 0
+                        Lat = j.PickUpLatitude ?? 0,
+                        Lng = j.PickUpLongitude ?? 0
                     },
                     Delivery = new Coordinates
                     {
-                        Lat = j.DeliveryLatitude != null ? j.DeliveryLatitude.Value : 0,
-                        Lng = j.DeliveryLongitude != null ? j.DeliveryLongitude.Value : 0
+                        Lat = j.DeliveryLatitude ?? 0,
+                        Lng = j.DeliveryLongitude ?? 0
                     },
                     ChildJobs = j.InverseParent.Select(c => new OverviewChildJobLocation
                     {
                         Id = c.UcjbId,
                         Pickup = new Coordinates
                         {
-                            Lat = c.PickUpLatitude != null ? c.PickUpLatitude.Value : 0,
-                            Lng = c.PickUpLongitude != null ? c.PickUpLongitude.Value : 0
+                            Lat = c.PickUpLatitude ?? 0,
+                            Lng = c.PickUpLongitude ?? 0
                         },
                         Delivery = new Coordinates
                         {
-                            Lat = c.DeliveryLatitude != null ? c.DeliveryLatitude.Value : 0,
-                            Lng = c.DeliveryLongitude != null ? c.DeliveryLongitude.Value : 0
+                            Lat = c.DeliveryLatitude ?? 0,
+                            Lng = c.DeliveryLongitude ?? 0
                         },
                         Flight = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
                     }).ToList()
@@ -1029,15 +1029,18 @@ public class BaseJobRepository
     {
         // Get active jobs to display on map
         var jobs = await _context.TucJobs
-            .Where(j => j.UcjbStatus.HasValue && JobStatusGroups.Active.Contains(j.UcjbStatus.Value) && !j.UcjbVoid)
+            .Where(j => j.UcjbStatus.HasValue &&
+                        JobStatusGroups.Active.Contains(j.UcjbStatus.Value) &&
+                        !j.UcjbVoid)
             .Select(j => new MegaMapResponse
             {
                 JobId = j.UcjbId,
                 JobNumber = j.UcjbNumber,
+                IsFlightJob = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight,
                 PickupLocation = new AddressViewModel
                 {
-                    Latitude = (decimal)j.PickUpLatitude,
-                    Longitude = (decimal)j.PickUpLongitude,
+                    Latitude = j.PickUpLatitude ?? 0,
+                    Longitude = j.PickUpLongitude ?? 0,
                     AddressLine1 = j.PickupAddressLine1,
                     AddressLine2 = j.PickupAddressLine2,
                     AddressLine3 = j.PickupAddressLine3,
@@ -1049,8 +1052,8 @@ public class BaseJobRepository
                 },
                 DeliveryLocation = new AddressViewModel
                 {
-                    Latitude = (decimal)j.DeliveryLatitude,
-                    Longitude = (decimal)j.DeliveryLongitude,
+                    Latitude = j.DeliveryLatitude ?? 0,
+                    Longitude = j.DeliveryLongitude ?? 0,
                     AddressLine1 = j.DeliveryAddressLine1,
                     AddressLine2 = j.DeliveryAddressLine2,
                     AddressLine3 = j.DeliveryAddressLine3,
@@ -1060,19 +1063,34 @@ public class BaseJobRepository
                     AddressLine7 = j.DeliveryAddressLine7,
                     AddressLine8 = j.DeliveryAddressLine8
                 },
-                CourierLocation = j.UcjbCourierId != null
+                CourierLocation = j.UcjbCourierId.HasValue &&
+                                  j.UcjbSpeedNavigation.GroupingId != (int)SpeedGrouping.Flight
                     ? new CourierLocation
                     {
                         CourierId = j.UcjbCourier.UccrId,
-                        CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname,
-                        Coordinates = new Coordinates
-                        {
-                            Lat = j.UcjbCourier.CourierGpsid != null ? (decimal)j.UcjbCourier.CourierGps.Latitude : 0,
-                            Lng = j.UcjbCourier.CourierGpsid != null ? (decimal)j.UcjbCourier.CourierGps.Longitude : 0
-                        }
+                        CourierName = $"{j.UcjbCourier.UccrName} {j.UcjbCourier.UccrSurname}".Trim(),
+                        Coordinates = j.UcjbCourier.CourierGpsid.HasValue
+                            ? new Coordinates
+                            {
+                                Lat = (decimal)j.UcjbCourier.CourierGps.Latitude,
+                                Lng = (decimal)j.UcjbCourier.CourierGps.Longitude
+                            }
+                            : null
                     }
+                    : null,
+                FlightInfo = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
+                    ? j.TucJobNationwides
+                        .Select(n => new AssignedFlight
+                        {
+                            FlightNumber = n.UcnwFlightNo,
+                            ExpectedArrival = n.UcnwEta,
+                            ExpectedDeparture = n.UcnwEtd
+                        })
+                        .FirstOrDefault()
                     : null
-            }).AsNoTracking().ToListAsync();
+            })
+            .AsNoTracking()
+            .ToListAsync();
 
         return jobs;
     }
