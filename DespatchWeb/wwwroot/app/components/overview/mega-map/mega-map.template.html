@@ -18,57 +18,46 @@
             <div class="driver-marker">
                 <i class="material-symbols-outlined" style="color: #2196F3;">navigation</i>
             </div>
-            <!-- Info Window for Driver -->
-            <info-window id="driver-info-{{driver.courierId}}">
-                <div>
-                    <h4>{{driver.name}}</h4>
-                    <p ng-if="driver.assignedJobNumber">Assigned to: {{driver.assignedJobNumber}}</p>
-                </div>
-            </info-window>
         </custom-marker>
 
-        <marker icon="https://maps.google.com/mapfiles/ms/icons/red-dot.png"
-                ng-repeat="point in ctrl.deliveryPoints"
-                on-click="ctrl.showDeliveryInfo(point, $event)"
-                position="[[point.lat, point.lng]]">
-            <!-- Info Window for Delivery Point -->
-            <info-window id="delivery-{{point.jobId}}">
-                <div class="job-info-window">
-                    <h4>Delivery: {{point.jobNumber}}</h4>
-                    <p>{{point.address}}</p>
-                </div>
-            </info-window>
-        </marker>
+        <info-window id="driver-{{driver.courierId}}"
+                     ng-repeat="driver in ctrl.drivers">
+            <div>
+                <h4>{{driver.name}}</h4>
+                <p ng-if="driver.assignedJobNumber">Job: {{driver.assignedJobNumber}}</p>
+            </div>
+        </info-window>
 
         <!-- Pickup Points -->
         <marker icon="https://maps.google.com/mapfiles/ms/icons/green-dot.png"
                 ng-repeat="point in ctrl.pickupPoints"
                 on-click="ctrl.showPickupInfo(point, $event)"
-                position="[[point.lat, point.lng]]">
-            <!-- Info Window for Pickup Point -->
-            <info-window id="pickup-{{point.jobId}}">
-                <div class="job-info-window">
-                    <h4>Pickup: {{point.jobNumber}}</h4>
-                    <p>{{point.address}}</p>
-                </div>
-            </info-window>
+                position="[{{point.lat}}, {{point.lng}}]">
+        </marker>
+
+        <!-- Delivery Points -->
+        <marker icon="https://maps.google.com/mapfiles/ms/icons/red-dot.png"
+                ng-repeat="point in ctrl.deliveryPoints"
+                on-click="ctrl.showDeliveryInfo(point, $event)"
+                position="[{{point.lat}}, {{point.lng}}]">
         </marker>
     </ng-map>
 
     <!-- Active Drivers Panel -->
     <md-card class="active-drivers">
-        <h2 class="md-title">Active Drivers</h2>
+        <h2 class="md-subtitle">Active Drivers</h2>
         <md-list class="driver-list">
             <md-list-item ng-click="ctrl.centerOnDriver(driver)"
+                          class="compact-list-item"
                           ng-repeat="driver in ctrl.drivers">
+                <i class="material-symbols-outlined driver-icon">local_shipping</i>
                 <div class="md-list-item-text">
-                    <h3>{{driver.name}}</h3>
-                    <p>{{driver.status}}</p>
+                    <h4>{{driver.name}}</h4>
+                    <small ng-if="driver.assignedJobNumber">Job: {{driver.assignedJobNumber}}</small>
                 </div>
             </md-list-item>
         </md-list>
     </md-card>
-
 
     <!-- Job Information Panel (shows when job is clicked) -->
     <md-card class="job-info-panel" ng-if="ctrl.selectedJob">

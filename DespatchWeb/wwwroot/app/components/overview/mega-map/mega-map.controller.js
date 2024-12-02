@@ -17,13 +17,18 @@ class MegaMapController {
 
         // Initialize map and start refresh interval
         this.initializeMap();
-        this.refreshData();
-        //this.$interval(() => this.refreshData(), 30000);
     }
 
     initializeMap() {
         this.NgMap.getMap().then(map => {
             this.map = map;
+            console.log('Map initialized:', {
+                center: map.getCenter().toJSON(),
+                zoom: map.getZoom()
+            });
+
+            // Force a refresh after map is initialized
+            this.refreshData();
         });
     }
 
@@ -52,7 +57,6 @@ class MegaMapController {
     }
 
     async refreshData() {
-        console.log('Refreshing map data...');
         this.isLoading = true;
 
         try {
@@ -63,62 +67,164 @@ class MegaMapController {
             this.pickupPoints = pickups;
             this.deliveryPoints = deliveries;
 
+            // Check visibility after setting points
+            if (this.map) {
+                this.checkVisiblePoints();
+
+                // Optionally, fit bounds to show all points
+                const bounds = new google.maps.LatLngBounds();
+                [...pickups, ...deliveries, ...drivers].forEach(point => {
+                    bounds.extend(new google.maps.LatLng(point.lat, point.lng));
+                });
+                this.map.fitBounds(bounds);
+            }
+
             this.showToast('Data updated successfully');
         } catch (error) {
             this.showToast('Error updating data');
             console.error('Error:', error);
         } finally {
             this.isLoading = false;
-            console.log('Refreshing map data complete...')
         }
     }
 
+    /**
+     * @param {Array<MegaMapResponse>} jobs
+     */
     transformMapData(jobs) {
+        console.log('Starting transformMapData with %d jobs', jobs.length);
+
         const pickups = [];
         const deliveries = [];
         const drivers = [];
 
         jobs.forEach(job => {
+            console.log('Processing job %s:', job.jobNumber, job);
+
             // Add pickup points
             if (job.pickupLocation && job.pickupLocation.latitude && job.pickupLocation.longitude) {
-                pickups.push({
-                    lat: parseFloat(job.pickupLocation.latitude),
-                    lng: parseFloat(job.pickupLocation.longitude),
-                    address: job.pickupLocation.fullAddress,
-                    jobId: job.jobId,
-                    jobNumber: job.jobNumber
-                });
+                const lat = parseFloat(job.pickupLocation.latitude);
+                const lng = parseFloat(job.pickupLocation.longitude);
+
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    console.log('Adding pickup point for job %s at [%d, %d]',
+                        job.jobNumber, lat, lng
+                    );
+
+                    pickups.push({
+                        lat,
+                        lng,
+                        address: job.pickupLocation.fullAddress,
+                        jobId: job.jobId,
+                        jobNumber: job.jobNumber
+                    });
+                } else {
+                    console.warn('Job %s has invalid pickup coordinates', job.jobNumber);
+                }
+            } else {
+                console.warn('Job %s missing valid pickup location', job.jobNumber);
             }
 
             // Add delivery points
             if (job.deliveryLocation && job.deliveryLocation.latitude && job.deliveryLocation.longitude) {
-                deliveries.push({
-                    lat: parseFloat(job.deliveryLocation.latitude),
-                    lng: parseFloat(job.deliveryLocation.longitude),
-                    address: job.deliveryLocation.fullAddress,
-                    jobId: job.jobId,
-                    jobNumber: job.jobNumber
-                });
+                const lat = parseFloat(job.deliveryLocation.latitude);
+                const lng = parseFloat(job.deliveryLocation.longitude);
+
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    console.log('Adding delivery point for job %s at [%d, %d]',
+                        job.jobNumber, lat, lng
+                    );
+
+                    deliveries.push({
+                        lat,
+                        lng,
+                        address: job.deliveryLocation.fullAddress,
+                        jobId: job.jobId,
+                        jobNumber: job.jobNumber
+                    });
+                } else {
+                    console.warn('Job %s has invalid delivery coordinates', job.jobNumber);
+                }
+            } else {
+                console.warn('Job %s missing valid delivery location', job.jobNumber);
             }
 
             // Add driver location if exists
             if (job.courierLocation && job.courierLocation.coordinates) {
-                // Check if driver already exists (to avoid duplicates)
-                const existingDriver = drivers.find(d => d.courierId === job.courierLocation.courierId);
-                if (!existingDriver) {
-                    drivers.push({
-                        courierId: job.courierLocation.courierId,
-                        name: job.courierLocation.courierName,
-                        lat: parseFloat(job.courierLocation.coordinates.latitude),
-                        lng: parseFloat(job.courierLocation.coordinates.longitude),
-                        assignedJobId: job.jobId,
-                        assignedJobNumber: job.jobNumber
-                    });
+                const lat = parseFloat(job.courierLocation.coordinates.latitude);
+                const lng = parseFloat(job.courierLocation.coordinates.longitude);
+
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    // Check if driver already exists (to avoid duplicates)
+                    const existingDriver = drivers.find(d => d.courierId === job.courierLocation.courierId);
+                    if (!existingDriver) {
+                        console.log('Adding driver %s for job %s at [%d, %d]',
+                            job.courierLocation.courierName,
+                            job.jobNumber,
+                            lat,
+                            lng
+                        );
+
+                        drivers.push({
+                            courierId: job.courierLocation.courierId,
+                            name: job.courierLocation.courierName,
+                            lat,
+                            lng,
+                            assignedJobId: job.jobId,
+                            assignedJobNumber: job.jobNumber
+                        });
+                    } else {
+                        console.log('Driver %s already exists, skipping duplicate', job.courierLocation.courierName);
+                    }
+                } else {
+                    console.warn('Job %s has invalid driver coordinates', job.jobNumber);
                 }
             }
         });
 
+        console.log('Transform complete:', {
+            pickupCount: pickups.length,
+            deliveryCount: deliveries.length,
+            driverCount: drivers.length,
+            pickups,
+            deliveries,
+            drivers
+        });
+
         return {pickups, deliveries, drivers};
+    }
+
+    checkVisiblePoints() {
+        if (!this.map) {
+            console.warn('Map not initialized yet');
+            return;
+        }
+
+        const bounds = this.map.getBounds();
+        if (!bounds) {
+            console.warn('Map bounds not available');
+            return;
+        }
+
+        console.log('Current map bounds:', bounds.toJSON());
+
+        // Check pickups
+        this.pickupPoints.forEach(point => {
+            const isVisible = bounds.contains(new google.maps.LatLng(point.lat, point.lng));
+            console.log(`Pickup ${point.jobNumber} visible: ${isVisible}`, point);
+        });
+
+        // Check deliveries
+        this.deliveryPoints.forEach(point => {
+            const isVisible = bounds.contains(new google.maps.LatLng(point.lat, point.lng));
+            console.log(`Delivery ${point.jobNumber} visible: ${isVisible}`, point);
+        });
+
+        // Check drivers
+        this.drivers.forEach(driver => {
+            const isVisible = bounds.contains(new google.maps.LatLng(driver.lat, driver.lng));
+            console.log(`Driver ${driver.name} visible: ${isVisible}`, driver);
+        });
     }
 }
 

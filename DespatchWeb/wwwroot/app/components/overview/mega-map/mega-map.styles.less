@@ -38,32 +38,45 @@ html, body {
 // Active Drivers panel
 .active-drivers {
   position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 300px;
-  max-height: 400px;
+  top: 10px;
+  right: 10px;
+  width: 250px;
   z-index: 1;
-  background: @card-bg;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.95);
 
-  .md-title {
-    padding: 16px;
+  .md-subtitle {
+    padding: 8px 16px;
     margin: 0;
+    font-size: 14px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   }
 
   .driver-list {
-    max-height: 350px;
+    max-height: 300px;
     overflow-y: auto;
+  }
 
-    md-list-item {
-      cursor: pointer;
+  .compact-list-item {
+    min-height: 40px;
 
-      &:hover {
-        background-color: @hover-bg;
+    .md-list-item-text {
+      h4 {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.2;
+      }
+
+      small {
+        color: rgba(0, 0, 0, 0.54);
+        font-size: 11px;
       }
     }
+  }
+
+  .driver-icon {
+    margin-right: 12px;
+    color: #2196F3;
+    font-size: 20px;
   }
 }
 
