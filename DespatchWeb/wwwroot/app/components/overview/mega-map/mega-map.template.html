@@ -1,86 +1,7 @@
 <link href="app/components/overview/mega-map/mega-map.styles.css" rel="stylesheet">
 <!-- Main Map Container -->
 <div class="map-container">
-    <ng-map center="{{ctrl.mapCenter}}"
-            fullscreen-control="false"
-            default-style="false"
-            street-view-control="false"
-            map-type-control="false"
-            style="height: 100vh !important; width: 100% !important;"
-            zoom="5"
-            zoom-control="true"
-            zoom-control-options="{position: 'RIGHT_BOTTOM'}">
-
-        <!-- Driver Markers -->
-        <custom-marker ng-repeat="driver in ctrl.drivers"
-                       on-click="ctrl.showDriverInfo(driver, $event)"
-                       position="[[driver.lat, driver.lng]]">
-            <div class="driver-marker">
-                <i class="material-symbols-outlined" style="color: #3EAFC2;">navigation</i>
-            </div>
-        </custom-marker>
-
-        <info-window id="driver-{{driver.courierId}}"
-                     ng-repeat="driver in ctrl.drivers">
-            <div>
-                <h4>{{driver.name}}</h4>
-                <p ng-if="driver.assignedJobNumber">Job: {{driver.assignedJobNumber}}</p>
-            </div>
-        </info-window>
-
-        <!-- Pickup Points -->
-        <marker icon="https://maps.google.com/mapfiles/ms/icons/green-dot.png"
-                ng-repeat="point in ctrl.pickupPoints"
-                id="pickup-marker-{{point.jobId}}"
-                on-click="ctrl.showPickupInfo($index, $event)"
-                position="[{{point.lat}}, {{point.lng}}]">
-            <info-window id="pickup-{{point.jobId}}">
-                <div class="job-info-window">
-                    <h4>Pickup: {{point.jobNumber}}</h4>
-                    <p>{{point.address}}</p>
-                </div>
-            </info-window>
-        </marker>
-
-        <!-- Delivery Points -->
-        <marker icon="https://maps.google.com/mapfiles/ms/icons/red-dot.png"
-                ng-repeat="point in ctrl.deliveryPoints"
-                id="delivery-marker-{{point.jobId}}"
-                on-click="ctrl.showDeliveryInfo($index, $event)"
-                position="[{{point.lat}}, {{point.lng}}]">
-            <info-window id="delivery-{{point.jobId}}">
-                <div class="job-info-window">
-                    <h4>Delivery: {{point.jobNumber}}</h4>
-                    <p>{{point.address}}</p>
-                </div>
-            </info-window>
-        </marker>
-
-        <!-- Flight Route Icons -->
-        <custom-marker ng-repeat="route in ctrl.getFlightRoutes()"
-                       on-click="ctrl.showFlightInfo(route, $event)"
-                       position="{{route.position}}">
-            <div class="flight-marker">
-                <i class="material-symbols-outlined"
-                   style="color: #3EAFC2; transform: rotate({{route.rotation}}deg);">
-                    flight
-                </i>
-            </div>
-            <info-window id="flight-{{route.jobId}}">
-                <div ng-bind-html="ctrl.getInfoWindowContent(route)"></div>
-            </info-window>
-        </custom-marker>
-
-        <!-- Route Lines -->
-        <shape name="polyline"
-               ng-repeat="pickup in ctrl.pickupPoints"
-               path="{{ctrl.getRoutePath(pickup)}}"
-               stroke-color="{{ctrl.isFlightRoute(pickup.jobId) ? '#3EAFC2' : '#FFB300'}}"
-               stroke-opacity="0.7"
-               stroke-pattern="{{ctrl.isFlightRoute(pickup.jobId) ? [20,10] : []}}"
-               stroke-weight="2">
-        </shape>
-    </ng-map>
+    <div id="hereMap" style="height: 100vh; width: 100%;"></div>
 
     <!-- Active Drivers Panel -->
     <md-card class="active-drivers">
@@ -98,7 +19,7 @@
         </md-list>
     </md-card>
 
-    <!-- Job Information Panel (shows when job is clicked) -->
+    <!-- Job Information Panel -->
     <md-card class="job-info-panel" ng-if="ctrl.selectedJob">
         <md-toolbar>
             <div class="md-toolbar-tools">
@@ -131,11 +52,11 @@
             <span>Drivers</span>
         </div>
         <div class="legend-item">
-            <img src="https://maps.google.com/mapfiles/ms/icons/green-dot.png">
+            <div class="legend-marker pickup-marker"></div>
             <span>Pickup Points</span>
         </div>
         <div class="legend-item">
-            <img src="https://maps.google.com/mapfiles/ms/icons/red-dot.png">
+            <div class="legend-marker delivery-marker"></div>
             <span>Delivery Points</span>
         </div>
     </div>
