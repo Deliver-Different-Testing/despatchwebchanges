@@ -1,9 +1,10 @@
 class MegaMapController {
-    constructor($interval, toastrService, NgMap, overviewService, APP_CONFIG) {
+    constructor($interval, toastrService, NgMap, overviewService, APP_CONFIG, openJobDispatchService) {
         this.$interval = $interval;
         this.toastrService = toastrService;
         this.NgMap = NgMap;
         this.overviewService = overviewService;
+        this.openJobDispatchService = openJobDispatchService;
 
         this.directionsService = new google.maps.DirectionsService();
         this.routePaths = new Map(); // Cache for route paths
@@ -558,10 +559,17 @@ class MegaMapController {
             this.zoomLevel = this.map.getZoom();
         }
     }
+
+    /**
+     * @param {number} jobId
+     */
+    openJobDispatch(jobId) {
+        this.openJobDispatchService.openJobDetail(jobId);
+    }
 }
 
 angular.module('uDispatch')
     .controller('megaMapController',
-        ['$interval', 'toastrService', 'NgMap', 'overviewService', 'APP_CONFIG',
-            ($interval, toastrService, NgMap, overviewService, APP_CONFIG) => new MegaMapController(
-                $interval, toastrService, NgMap, overviewService, APP_CONFIG)]);
+        ['$interval', 'toastrService', 'NgMap', 'overviewService', 'APP_CONFIG', 'openJobDispatchService',
+            ($interval, toastrService, NgMap, overviewService, APP_CONFIG, openJobDispatchService) => new MegaMapController(
+                $interval, toastrService, NgMap, overviewService, APP_CONFIG, openJobDispatchService)]);

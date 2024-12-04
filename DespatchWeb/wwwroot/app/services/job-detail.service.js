@@ -278,10 +278,10 @@ class JobDetailService {
             console.log('Opening price breakdown dialog');
             return this._$mdDialog.show(
                 this._$mdDialog.alert()
-                    .parent(angular.element(this._$document.body))
+                    .parent(this._$document.body)
                     .clickOutsideToClose(true)
                     .title('Charge Information')
-                    .htmlContent(description)  // Changed from textContent to htmlContent
+                    .htmlContent(description)
                     .ariaLabel('Alert Dialog')
                     .ok('OK')
             );
