@@ -14,9 +14,10 @@ class MegaMapController {
         this.drivers = [];
         this.pickupPoints = [];
         this.deliveryPoints = [];
-        this.selectedJob = null;
         this.zoomLevel = 5; // Default zoom level
         this.flightRoutes = [];
+        this.selectedPoint = null;
+        this.selectedJob = null;
 
         this.mapCenter = this.isUsCustomer
             ? [39.8097343, -98.5556199]  // Central USA coordinates
@@ -40,7 +41,6 @@ class MegaMapController {
                 this.onZoomChanged();
             });
 
-            // Force a refresh after map is initialized
             this.refreshData();
         });
     }
@@ -194,9 +194,6 @@ class MegaMapController {
                 }
             }
         });
-
-        // Store original job data for reference
-        this.jobs = jobs;
 
         // Convert driversMap to array for the view
         const drivers = Array.from(driversMap.values()).map(driver => ({
@@ -468,25 +465,52 @@ class MegaMapController {
         return new Date(date).toLocaleString();
     }
 
-    showPickupInfo(point) {
+    /**
+     * Shows info for a map point and pans to its location
+     * @param {Event} $event - The NgMap event object
+     */
+    showPointInfo($event) {
+        const element = $event.target || $event.srcElement;
+        const scope = angular.element(element).scope();
+        const point = scope.point;
+
+        if (!point) {
+            console.error('Could not get point data from event');
+            return;
+        }
+
+        // Find the corresponding job using the point's jobId
         this.selectedPoint = point;
+
+        if (!this.jobs) {
+            console.error('No jobs saved!');
+        }
+        this.selectedJob = this.jobs.find(job => job.jobId === point.jobId);
+
+        console.log(selectedJob);
+
+        if (!this.selectedJob) {
+            console.error('Could not find job data for point:', point);
+            return;
+        }
+
         if (this.map) {
             this.map.panTo(new google.maps.LatLng(point.lat, point.lng));
         }
     }
 
-    showDeliveryInfo(point) {
-        this.selectedPoint = point;
-        if (this.map) {
-            this.map.panTo(new google.maps.LatLng(point.lat, point.lng));
-        }
+    closeJobInfo() {
+        this.selectedPoint = null;
+        this.selectedJob = null;
     }
 
+    /**
+     * @param {MegaMapPoint} point
+     */
     isPickupPoint(point) {
         return this.pickupPoints.some(p => p.jobId === point.jobId);
     }
 
-    // Cluster styles for pickup and delivery points
     getClusterStyles() {
         return [
             {
