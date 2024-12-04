@@ -335,7 +335,7 @@ class JobDetailService {
             controller: 'AddNotesDialogController',
             controllerAs: "ctrl",
             templateUrl: this._versionUrl("app/components/dialogs/add-notes-dialog/add-notes-dialog.html"),
-            parent: angular.element(this._$document.body),
+            parent: this._$document.body,
             targetEvent: $event,
             clickOutsideToClose: true,
             fullscreen: true,
@@ -362,7 +362,7 @@ class JobDetailService {
         return this._$mdDialog.show({
             controller: 'EditDateTimeDialogController',
             controllerAs: 'ctrl',
-            parent: angular.element(this._$document.body),
+            parent: this._$document.body,
             targetEvent: $event,
             templateUrl: this._versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
             clickOutsideToClose: false,
@@ -408,7 +408,7 @@ class JobDetailService {
         return this._$mdDialog.show({
             controller: 'EditDateTimeDialogController',
             controllerAs: 'ctrl',
-            parent: angular.element(this._$document.body),
+            parent: this._$document.body,
             targetEvent: $event,
             templateUrl: this._versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
             clickOutsideToClose: false,
@@ -457,7 +457,7 @@ class JobDetailService {
             await this._$mdDialog.show({
                 controller: 'EditDateTimeDialogController',
                 controllerAs: 'ctrl',
-                parent: angular.element(this._$document.body),
+                parent: this._$document.body,
                 targetEvent: $event,
                 templateUrl: this._versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
                 clickOutsideToClose: false,
@@ -664,7 +664,7 @@ class JobDetailService {
         await this._$mdDialog.show({
             controller: 'EditParcelDimensionsDialogController',
             controllerAs: 'ctrl',
-            parent: angular.element(this._$document.body),
+            parent: this._$document.body,
             targetEvent: $event,
             templateUrl: this._versionUrl("app/components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.html"),
             clickOutsideToClose: false,
@@ -769,7 +769,7 @@ class JobDetailService {
         return this._$mdDialog.show({
             controller: 'EditAddressDialogController',
             controllerAs: 'ctrl',
-            parent: angular.element(this._$document.body),
+            parent: this._$document.body,
             targetEvent: event,
             templateUrl: this._versionUrl("app/components/dialogs/edit-address-dialog/edit-address-dialog.html"),
             clickOutsideToClose: false,
@@ -1332,7 +1332,7 @@ class JobDetailService {
         this._$mdDialog.show({
             controller: 'SelectDialogController',
             controllerAs: 'ctrl',
-            parent: angular.element(this._$document.body),
+            parent: this._$document.body,
             targetEvent: $event,
             templateUrl: this._versionUrl('app/components/dialogs/select-dialog/select-dialog.html'),
             clickOutsideToClose: true,
@@ -1452,7 +1452,7 @@ class JobDetailService {
         this._$mdDialog.show({
             controller: 'AutoCompleteDialogController',
             controllerAs: 'ctrl',
-            parent: angular.element(this._$document.body),
+            parent: this._$document.body,
             targetEvent: $event,
             templateUrl: this._versionUrl('app/components/dialogs/auto-complete-dialog/auto-complete-dialog.html'),
             clickOutsideToClose: true,
@@ -1507,7 +1507,7 @@ class JobDetailService {
             controller: 'PalletDialogController',
             controllerAs: "ctrl",
             templateUrl: this._versionUrl("app/components/dialogs/add-pallet-dialog/add-pallet-dialog.html"),
-            parent: angular.element(this._$document.body),
+            parent: this._$document.body,
             targetEvent: $event,
             clickOutsideToClose: true,
             fullscreen: true,
@@ -1557,7 +1557,7 @@ class JobDetailService {
             controller: 'FeatureInDevelopmentDialogController',
             controllerAs: 'ctrl',
             templateUrl: this._versionUrl('app/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.html'),
-            parent: angular.element(this._$document.body),
+            parent: this._$document.body,
             clickOutsideToClose: true,
             bindToController: true
         });

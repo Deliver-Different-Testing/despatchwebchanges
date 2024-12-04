@@ -1036,7 +1036,8 @@ public class BaseJobRepository
             {
                 JobId = j.UcjbId,
                 JobNumber = j.UcjbNumber,
-                IsFlightJob = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight,
+                IsFlightJob = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight ||
+                              IsFlightJobNumber(j.UcjbNumber),
                 PickupLocation = new AddressViewModel
                 {
                     Latitude = j.PickUpLatitude ?? 0,
@@ -1064,7 +1065,8 @@ public class BaseJobRepository
                     AddressLine8 = j.DeliveryAddressLine8
                 },
                 CourierLocation = j.UcjbCourierId.HasValue &&
-                                  j.UcjbSpeedNavigation.GroupingId != (int)SpeedGrouping.Flight
+                                  (j.UcjbSpeedNavigation.GroupingId != (int)SpeedGrouping.Flight ||
+                                   !IsFlightJobNumber(j.UcjbNumber))
                     ? new CourierLocation
                     {
                         CourierId = j.UcjbCourier.UccrId,
@@ -1078,7 +1080,8 @@ public class BaseJobRepository
                             : null
                     }
                     : null,
-                FlightInfo = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
+                FlightInfo = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight ||
+                             IsFlightJobNumber(j.UcjbNumber)
                     ? j.TucJobNationwides
                         .Select(n => new AssignedFlight
                         {
@@ -1094,4 +1097,7 @@ public class BaseJobRepository
 
         return jobs;
     }
+
+    private static bool IsFlightJobNumber(string input) =>
+        !string.IsNullOrEmpty(input) && input.EndsWith("2");
 }

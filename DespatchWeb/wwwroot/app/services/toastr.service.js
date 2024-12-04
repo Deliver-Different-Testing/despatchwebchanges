@@ -3,8 +3,9 @@
  * @class
  */
 class ToastrService {
-    constructor($mdToast) {
+    constructor($mdToast, $document) {
         this.$mdToast = $mdToast;
+        this.$document = $document
 
         // Material Design icons for different toast types
         this.icons = {
@@ -62,15 +63,14 @@ class ToastrService {
         return this.$mdToast.show(
             this.$mdToast.simple()
                 .textContent(message)
-                .position('bottom center')
+                .position('top right')
                 .hideDelay(5000)
                 .toastClass(`md-${type}-toast md-toast-custom`)
-                .parent(document.body)
+                .parent(this.$document.body)
                 .theme(`${type}-toast`)
                 .highlightAction(true)
                 .highlightClass('md-accent')
                 .capsule(true)
-                .parent(document.body)
         );
     }
 
@@ -84,7 +84,7 @@ class ToastrService {
         return `
             <md-toast class="md-${type}-toast md-toast-custom">
                 <span class="md-toast-content">
-                    <i class="material-icons">${this.icons[type]}</i>
+                    <md-icon md-font-set="material-symbols-outlined">${this.icons[type]}</md-icon>
                     <span flex>${message}</span>
                 </span>
             </md-toast>
@@ -94,6 +94,6 @@ class ToastrService {
 
 // Register the service
 angular.module("uDispatch").service("toastrService", [
-    '$mdToast',
-    ($mdToast) => new ToastrService($mdToast)
+    '$mdToast', '$document',
+    ($mdToast, $document) => new ToastrService($mdToast, $document)
 ]);
