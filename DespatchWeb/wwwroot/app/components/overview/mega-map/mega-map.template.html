@@ -22,7 +22,7 @@
             <custom-marker class="zoom-adaptive"
                            id="pickup-marker-{{point.jobId}}"
                            ng-repeat="point in ctrl.pickupPoints"
-                           on-click="ctrl.showPointInfo($event, point)"
+                           on-click="ctrl.showPointInfo($event)"
                            position="[{{point.lat}}, {{point.lng}}]">
                 <div class="marker-container" ng-class="{
     'airport-marker': point.isFlightRoute,
@@ -47,7 +47,7 @@
             <custom-marker class="zoom-adaptive"
                            id="delivery-marker-{{point.jobId}}"
                            ng-repeat="point in ctrl.deliveryPoints"
-                           on-click="ctrl.showPointInfo($event, point)"
+                           on-click="ctrl.showPointInfo($event)"
                            position="[{{point.lat}}, {{point.lng}}]">
                 <div class="marker-container" ng-class="{
                     'airport-marker': point.isFlightRoute,
@@ -64,7 +64,7 @@
         <!-- Flight Route Icons -->
         <custom-marker class="zoom-adaptive"
                        ng-repeat="route in ctrl.flightRoutes"
-                       on-click="ctrl.showPointInfo($event, point)"
+                       on-click="ctrl.showPointInfo($event)"
                        position="{{route.position}}">
             <div class="flight-marker" ng-class="{'compact': ctrl.zoomLevel < 10}">
                 <i class="material-symbols-outlined"

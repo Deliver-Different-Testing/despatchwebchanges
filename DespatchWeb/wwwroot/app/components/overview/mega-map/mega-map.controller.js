@@ -10,6 +10,7 @@ class MegaMapController {
 
         // Initialize data
         this.isUsCustomer = APP_CONFIG.US_Customer;
+
         this.jobs = [];
         this.drivers = [];
         this.pickupPoints = [];
@@ -23,6 +24,11 @@ class MegaMapController {
             ? [39.8097343, -98.5556199]  // Central USA coordinates
             : [-36.8484597, 174.7633315]; // Auckland, New Zealand coordinates
         this.isLoading = false;
+
+        // Bind methods that need to preserve 'this' context
+        this.showPointInfo = this.showPointInfo.bind(this);
+        this.closeJobInfo = this.closeJobInfo.bind(this);
+        this.onZoomChanged = this.onZoomChanged.bind(this);
 
         // Initialize map and start refresh interval
         this.initializeMap();
@@ -45,31 +51,21 @@ class MegaMapController {
         });
     }
 
-    /**
-     * @param {number|string} jobId
-     */
-    getDeliveryPointForJob(jobId) {
-        return this.deliveryPoints.find(point => point.jobId === jobId) || {lat: 0, lng: 0};
-    }
-
-    centerOnDriver(driver) {
-        this.mapCenter = [driver.lat, driver.lng];
-        this.map.setZoom(15);
-    }
-
     async refreshData() {
         this.isLoading = true;
 
-        try {
-            // Store raw response
-            this.jobs = await this.overviewService.getMegaMapData();
+        // Get all jobs
+        const jobs = await this.overviewService.getMegaMapData();
 
+        try {
             // Transform data for map
-            const {pickups, deliveries, drivers} = this.transformMapData(this.jobs);
+            const {pickups, deliveries, drivers} = this.transformMapData(jobs);
 
             this.drivers = drivers;
             this.pickupPoints = pickups;
             this.deliveryPoints = deliveries;
+
+            this.jobs = jobs;
 
             // Check visibility after setting points
             if (this.map) {
@@ -90,6 +86,18 @@ class MegaMapController {
         } finally {
             this.isLoading = false;
         }
+    }
+
+    /**
+     * @param {number|string} jobId
+     */
+    getDeliveryPointForJob(jobId) {
+        return this.deliveryPoints.find(point => point.jobId === jobId) || {lat: 0, lng: 0};
+    }
+
+    centerOnDriver(driver) {
+        this.mapCenter = [driver.lat, driver.lng];
+        this.map.setZoom(15);
     }
 
     /**
