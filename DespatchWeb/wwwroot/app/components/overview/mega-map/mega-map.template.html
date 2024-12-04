@@ -25,10 +25,10 @@
                            on-click="ctrl.showPickupInfo(point)"
                            position="[{{point.lat}}, {{point.lng}}]">
                 <div class="marker-container" ng-class="{
-                    'airport-marker': ctrl.isFlightRoute(point.jobId),
-                    'pickup-marker': !ctrl.isFlightRoute(point.jobId),
-                    'compact': ctrl.isZoomLow()
-                }">
+    'airport-marker': point.isFlightRoute,
+    'pickup-marker': !point.isFlightRoute,
+    'compact': ctrl.zoomLevel < 10
+}">
                     <i class="material-symbols-outlined">
                         {{ctrl.isFlightRoute(point.jobId) ? 'local_airport' : 'location_on'}}
                     </i>
@@ -50,12 +50,12 @@
                            on-click="ctrl.showDeliveryInfo(point)"
                            position="[{{point.lat}}, {{point.lng}}]">
                 <div class="marker-container" ng-class="{
-                    'airport-marker': ctrl.isFlightRoute(point.jobId),
-                    'delivery-marker': !ctrl.isFlightRoute(point.jobId),
-                    'compact': ctrl.isZoomLow()
+                    'airport-marker': point.isFlightRoute,
+                    'delivery-marker': !point.isFlightRoute,
+                    'compact': ctrl.zoomLevel < 10
                 }">
                     <i class="material-symbols-outlined">
-                        {{ctrl.isFlightRoute(point.jobId) ? 'local_airport' : 'location_on'}}
+                        {{point.isFlightRoute ? 'local_airport' : 'location_on'}}
                     </i>
                 </div>
             </custom-marker>
@@ -63,10 +63,10 @@
 
         <!-- Flight Route Icons -->
         <custom-marker class="zoom-adaptive"
-                       ng-repeat="route in ctrl.getFlightRoutes()"
+                       ng-repeat="route in ctrl.flightRoutes"
                        on-click="ctrl.showFlightInfo(route, $event)"
                        position="{{route.position}}">
-            <div class="flight-marker" ng-class="{'compact': ctrl.isZoomLow()}">
+            <div class="flight-marker" ng-class="{'compact': ctrl.zoomLevel < 10}">
                 <i class="material-symbols-outlined"
                    style="color: #3EAFC2; transform: rotate({{route.rotation}}deg);">
                     flight
@@ -78,9 +78,9 @@
         <shape name="polyline"
                ng-repeat="pickup in ctrl.pickupPoints"
                path="{{ctrl.getRoutePath(pickup)}}"
-               stroke-color="{{ctrl.isFlightRoute(pickup.jobId) ? '#3EAFC2' : '#FFB300'}}"
+               stroke-color="{{pickup.isFlightRoute ? '#3EAFC2' : '#FFB300'}}"
                stroke-opacity="0.7"
-               stroke-pattern="{{ctrl.isFlightRoute(pickup.jobId) ? [20,10] : []}}"
+               stroke-pattern="{{pickup.isFlightRoute ? [20,10] : []}}"
                stroke-weight="2">
         </shape>
     </ng-map>
@@ -170,15 +170,15 @@
             <div class="job-details">
                 <div class="detail-section">
                     <i class="material-symbols-outlined"
-                       ng-style="{'color': ctrl.isFlightRoute(ctrl.selectedPoint.jobId) ? '#3EAFC2' : '#4CAF50'}">
-                        {{ctrl.isFlightRoute(ctrl.selectedPoint.jobId) ? 'local_airport' : 'location_on'}}
+                       ng-style="{'color': ctrl.selectedPoint.isFlightRoute ? '#3EAFC2' : '#4CAF50'}">
+                        {{ctrl.selectedPoint.isFlightRoute ? 'local_airport' : 'location_on'}}
                     </i>
                     <div class="detail-text">
                         <h3>{{ctrl.isPickupPoint(ctrl.selectedPoint) ? 'Pickup' : 'Delivery'}} Location</h3>
                         <p>{{ctrl.selectedPoint.address}}</p>
                     </div>
                 </div>
-                <div class="detail-section" ng-if="ctrl.isFlightRoute(ctrl.selectedPoint.jobId)">
+                <div class="detail-section" ng-if="ctrl.selectedPoint.isFlightRoute">
                     <i class="material-symbols-outlined" style="color: #3EAFC2">flight</i>
                     <div class="detail-text">
                         <h3>Flight Details</h3>

@@ -522,19 +522,32 @@
 /**
  * Response object containing job details with associated locations.
  * @typedef {Object} MegaMapResponse
+ *
  * @property {number} jobId - The unique identifier for the job
  * @property {string} jobNumber - The job reference number
  * @property {AddressDetails} pickupLocation - The pickup address and coordinates
  * @property {AddressDetails} deliveryLocation - The delivery address and coordinates
  * @property {CourierLocation} courierLocation - The assigned courier's current location details
- * @property {boolean} IsFlightJob - Indicates if this is a flight job
- * @property {AssignedFlight} FlightInfo - Flight details if this is a flight job
+ * @property {boolean} isFlightJob - Indicates if this is a flight job
+ * @property {AssignedFlight} flightInfo - Flight details if this is a flight job
  */
 
 /**
  * Object containing courier location information.
  * @typedef {Object} CourierLocation
+ *
  * @property {number} courierId - The unique identifier for the courier
  * @property {string} courierName - The name of the courier
  * @property {Coordinates} coordinates - The current geographical coordinates of the courier
+ */
+
+/**
+ * @typedef {Object} MegaMapPoint
+ *
+ * @property {number|string} lat - Latitude coordinate of the pickup location
+ * @property {number|string} lng - Longitude coordinate of the pickup location
+ * @property {string} address - Full address of the pickup location
+ * @property {number|string} jobId - Unique identifier for the job
+ * @property {string} jobNumber - Job reference number for display purposes
+ * @property {boolean} isFlightRoute - Whether this pickup is part of a flight route
  */

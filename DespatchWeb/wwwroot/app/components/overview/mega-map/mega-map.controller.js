@@ -14,8 +14,9 @@ class MegaMapController {
         this.drivers = [];
         this.pickupPoints = [];
         this.deliveryPoints = [];
-        this.currentZoom = 5; // Default zoom level
         this.selectedJob = null;
+        this.zoomLevel = 5; // Default zoom level
+        this.flightRoutes = [];
 
         this.mapCenter = this.isUsCustomer
             ? [39.8097343, -98.5556199]  // Central USA coordinates
@@ -44,6 +45,9 @@ class MegaMapController {
         });
     }
 
+    /**
+     * @param {number|string} jobId
+     */
     getDeliveryPointForJob(jobId) {
         return this.deliveryPoints.find(point => point.jobId === jobId) || {lat: 0, lng: 0};
     }
@@ -103,6 +107,8 @@ class MegaMapController {
         jobs.forEach(job => {
             console.log('Processing job %s:', job.jobNumber, job);
 
+            const isFlightRoute = job?.isFlightJob || false;
+
             // Add pickup points
             if (job.pickupLocation && job.pickupLocation.latitude && job.pickupLocation.longitude) {
                 const lat = parseFloat(job.pickupLocation.latitude);
@@ -119,7 +125,7 @@ class MegaMapController {
                         address: job.pickupLocation.fullAddress,
                         jobId: job.jobId,
                         jobNumber: job.jobNumber,
-                        isFlightJob: job.isFlightJob  // Store isFlightJob with the point
+                        isFlightRoute
                     });
                 } else {
                     console.warn('Job %s has invalid pickup coordinates', job.jobNumber);
@@ -144,7 +150,7 @@ class MegaMapController {
                         address: job.deliveryLocation.fullAddress,
                         jobId: job.jobId,
                         jobNumber: job.jobNumber,
-                        isFlightJob: job.isFlightJob  // Store isFlightJob with the point
+                        isFlightRoute
                     });
                 } else {
                     console.warn('Job %s has invalid delivery coordinates', job.jobNumber);
@@ -207,11 +213,54 @@ class MegaMapController {
             flightJobs: pickups.filter(p => p.isFlightJob).length
         });
 
+        this.flightRoutes = this.calculateFlightRoutes(jobs, pickups, deliveries);
+
         return {
             pickups,
             deliveries,
             drivers
         };
+    }
+
+    calculateFlightRoutes(jobs, pickups, deliveries) {
+        if (!jobs?.length || !pickups?.length || !deliveries?.length) {
+            return [];
+        }
+
+        return jobs
+            .filter(job => job.isFlightJob && job.flightInfo)
+            .map(job => {
+                const pickup = pickups.find(p => p.jobId === job.jobId);
+                const delivery = deliveries.find(d => d.jobId === job.jobId);
+
+                if (!pickup || !delivery) return null;
+
+                const position = this.calculateFlightPosition(
+                    pickup.lat,
+                    pickup.lng,
+                    delivery.lat,
+                    delivery.lng,
+                    job.flightInfo
+                );
+
+                const rotation = this.calculateRotationAngle(
+                    {lat: pickup.lat, lng: pickup.lng},
+                    {lat: delivery.lat, lng: delivery.lng}
+                );
+
+                return {
+                    jobId: job.jobId,
+                    jobNumber: job.jobNumber,
+                    flightNumber: job.flightInfo.flightNumber,
+                    position: [position.lat, position.lng],
+                    rotation: rotation,
+                    progress: position.progress,
+                    notes: job.flightInfo.notes,
+                    etd: job.flightInfo.expectedDeparture,
+                    eta: job.flightInfo.expectedArrival
+                };
+            })
+            .filter(route => route !== null);
     }
 
     checkVisiblePoints() {
@@ -248,25 +297,13 @@ class MegaMapController {
     }
 
     /**
-     * Check if job is a flight route
-     * @param {number} jobId - The job ID to check
-     * @returns {boolean} True if it's a flight job
+     * Gets the route path between pickup and delivery points
+     * @param {MegaMapPoint} pickup - The pickup point object
+     * @returns {Array<Array<number>>} Array of coordinate pairs forming the route path
      */
-    isFlightRoute(jobId) {
-        console.log('Checking if job is flight route:', jobId);
-        const job = this.jobs.find(j => j.jobId === jobId);
-        console.log('Found job:', job);
-        if (job?.isFlightJob) {
-            console.log('Job IS a flight route:', jobId);
-            return true;
-        }
-        console.log('Job is NOT a flight route:', jobId);
-        return false;
-    }
-
     getRoutePath(pickup) {
         console.log('Getting route path for pickup:', pickup);
-        if (this.isFlightRoute(pickup.jobId)) {
+        if (pickup.isFlightRoute) {
             console.log('Drawing FLIGHT route for job:', pickup.jobId);
             const delivery = this.getDeliveryPointForJob(pickup.jobId);
             if (!delivery) return [];
@@ -304,8 +341,8 @@ class MegaMapController {
 
     /**
      * Calculate road route between points
-     * @param {Object} pickup
-     * @param {Object} delivery
+     * @param {MegaMapPoint} pickup
+     * @param {MegaMapPoint} delivery
      * @returns {Promise<Array>}
      */
     async calculateRoadRoute(pickup, delivery) {
@@ -382,52 +419,6 @@ class MegaMapController {
         const lng = startLng + (endLng - startLng) * progress;
 
         return {lat, lng, progress};
-    }
-
-    /**
-     * Get all flight routes for display
-     * @returns {Array} Array of flight route objects
-     */
-    getFlightRoutes() {
-        if (!this.jobs || !this.pickupPoints) {
-            return [];
-        }
-
-        const flightRoutes = [];
-
-        this.pickupPoints.forEach(pickup => {
-            const delivery = this.getDeliveryPointForJob(pickup.jobId);
-            const job = this.jobs.find(j => j.jobId === pickup.jobId);
-
-            if (delivery && job?.IsFlightJob && job.FlightInfo) {
-                const position = this.calculateFlightPosition(
-                    pickup.lat,
-                    pickup.lng,
-                    delivery.lat,
-                    delivery.lng,
-                    job.FlightInfo
-                );
-
-                const rotation = this.calculateRotationAngle(
-                    {lat: pickup.lat, lng: pickup.lng},
-                    {lat: delivery.lat, lng: delivery.lng}
-                );
-
-                flightRoutes.push({
-                    jobId: pickup.jobId,
-                    jobNumber: pickup.jobNumber,
-                    flightNumber: job.FlightInfo.flightNumber,
-                    position: [position.lat, position.lng],
-                    rotation: rotation,
-                    progress: position.progress,
-                    notes: job.FlightInfo.Notes,
-                    etd: job.FlightInfo.expectedDeparture,
-                    eta: job.FlightInfo.expectedArrival
-                });
-            }
-        });
-
-        return flightRoutes;
     }
 
     /**
@@ -530,16 +521,9 @@ class MegaMapController {
         return 'data:image/svg+xml;base64,' + btoa(svg);
     }
 
-    isZoomLow() {
-        return this.map && this.map.getZoom() < 10;
-    }
-
     onZoomChanged() {
         if (this.map) {
-            this.currentZoom = this.map.getZoom();
-            if (this.$scope && !this.$scope.$phase) {
-                this.$scope.$apply();
-            }
+            this.zoomLevel = this.map.getZoom();
         }
     }
 }
