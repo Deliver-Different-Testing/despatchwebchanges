@@ -84,7 +84,7 @@ class ToastrService {
         return `
             <md-toast class="md-${type}-toast md-toast-custom">
                 <span class="md-toast-content">
-                    <md-icon md-font-set="material-symbols-outlined">${this.icons[type]}</md-icon>
+                    <i class="material-symbols-outlined">${this.icons[type]}</i>
                     <span flex>${message}</span>
                 </span>
             </md-toast>
