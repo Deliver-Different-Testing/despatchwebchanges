@@ -1,5 +1,4 @@
 <link href="app/components/overview/mega-map/mega-map.styles.min.css" rel="stylesheet">
-
 <!-- Main Map Container -->
 <div class="map-container">
     <ng-map center="{{ctrl.mapCenter}}"
@@ -12,38 +11,68 @@
             zoom-control="true"
             zoom-control-options="{position: 'RIGHT_BOTTOM'}">
 
-        <marker-clusterer options="ctrl.clusterOptions">
-            <!-- Pickup Points -->
-            <custom-marker ng-repeat="point in ctrl.pickupPoints"
-                           on-click="ctrl.showPointInfo(point)"
-                           position="[{{point.lat}}, {{point.lng}}]"
-                           visible="{{ctrl.shouldShowMarkers()}}">
-                <div class="marker-container pickup-marker" ng-class="{'compact': ctrl.zoomLevel < 10}">
-                    <i class="material-symbols-outlined">location_on</i>
-                </div>
-            </custom-marker>
-
-            <!-- Delivery Points -->
-            <custom-marker ng-repeat="point in ctrl.deliveryPoints"
-                           on-click="ctrl.showPointInfo(point)"
-                           position="[{{point.lat}}, {{point.lng}}]"
-                           visible="{{ctrl.shouldShowMarkers()}}">
-                <div class="marker-container delivery-marker" ng-class="{'compact': ctrl.zoomLevel < 10}">
-                    <i class="material-symbols-outlined">location_on</i>
-                </div>
-            </custom-marker>
-
-            <!-- Flight Routes -->
-            <custom-marker ng-repeat="route in ctrl.flightRoutes"
-                           on-click="ctrl.showPointInfo(route)"
-                           position="[{{route.position[0]}}, {{route.position[1]}}]"
-                           visible="{{ctrl.shouldShowMarkers()}}">
-                <div class="marker-container flight-marker" ng-class="{'compact': ctrl.zoomLevel < 10}">
-                    <i class="material-symbols-outlined"
-                       style="transform: rotate({{route.rotation}}deg);">flight</i>
+        <!-- Pickup Points -->
+        <marker-clusterer options="{
+            styles: ctrl.getClusterStyles(),
+            minimumClusterSize: 2,
+            zoomOnClick: true,
+            averageCenter: true,
+            gridSize: 60
+        }">
+            <custom-marker class="zoom-adaptive"
+                           id="pickup-marker-{{point.jobId}}"
+                           ng-repeat="point in ctrl.pickupPoints"
+                           on-click="ctrl.showPointInfo($event)"
+                           position="[{{point.lat}}, {{point.lng}}]">
+                <div class="marker-container" ng-class="{
+    'airport-marker': point.isFlightRoute,
+    'pickup-marker': !point.isFlightRoute,
+    'compact': ctrl.zoomLevel < 10
+}">
+                    <i class="material-symbols-outlined">
+                        {{point.isFlightRoute ? 'local_airport' : 'location_on'}}
+                    </i>
                 </div>
             </custom-marker>
         </marker-clusterer>
+
+        <!-- Delivery Points -->
+        <marker-clusterer options="{
+            styles: ctrl.getClusterStyles(),
+            minimumClusterSize: 2,
+            zoomOnClick: true,
+            averageCenter: true,
+            gridSize: 60
+        }">
+            <custom-marker class="zoom-adaptive"
+                           id="delivery-marker-{{point.jobId}}"
+                           ng-repeat="point in ctrl.deliveryPoints"
+                           on-click="ctrl.showPointInfo($event)"
+                           position="[{{point.lat}}, {{point.lng}}]">
+                <div class="marker-container" ng-class="{
+                    'airport-marker': point.isFlightRoute,
+                    'delivery-marker': !point.isFlightRoute,
+                    'compact': ctrl.zoomLevel < 10
+                }">
+                    <i class="material-symbols-outlined">
+                        {{point.isFlightRoute ? 'local_airport' : 'location_on'}}
+                    </i>
+                </div>
+            </custom-marker>
+        </marker-clusterer>
+
+        <!-- Flight Route Icons -->
+        <custom-marker class="zoom-adaptive"
+                       ng-repeat="route in ctrl.flightRoutes"
+                       on-click="ctrl.showPointInfo($event)"
+                       position="{{route.position}}">
+            <div class="flight-marker" ng-class="{'compact': ctrl.zoomLevel < 10}">
+                <i class="material-symbols-outlined"
+                   style="color: #3EAFC2; transform: rotate({{route.rotation}}deg);">
+                    flight
+                </i>
+            </div>
+        </custom-marker>
 
         <!-- Route Lines -->
         <shape name="polyline"

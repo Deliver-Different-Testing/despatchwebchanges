@@ -1071,9 +1071,7 @@ public class BaseJobRepository
                     AddressLine7 = j.DeliveryAddressLine7,
                     AddressLine8 = j.DeliveryAddressLine8
                 },
-                CourierLocation = j.UcjbCourierId.HasValue &&
-                                  (j.UcjbSpeedNavigation.GroupingId != (int)SpeedGrouping.Flight ||
-                                   !IsFlightJobNumber(j.UcjbNumber))
+                CourierLocation = j.UcjbCourierId.HasValue
                     ? new CourierLocation
                     {
                         CourierId = j.UcjbCourier.UccrId,
