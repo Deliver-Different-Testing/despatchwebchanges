@@ -515,7 +515,7 @@ public class BaseJobRepository
         query = query.Where(j => clientIdList.Contains((int)j.UcjbClientId));
 
         // Only get child jobs
-        query = query.Where(j => j.ParentId != null);
+        query = query.Where(j => !j.InverseParent.Any());
 
         // Block out completed jobs from the domestic/nationwide page
         query = query.Where(j => j.UcjbComplTime != null || j.UcjbComplTime < DateTime.Now);
