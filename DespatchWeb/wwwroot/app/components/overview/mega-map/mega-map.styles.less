@@ -5,6 +5,7 @@
 @accent-color: #FFB300; // Used for secondary actions/highlights
 @error-color: #F44336; // For errors and urgent states
 @success-color: #4CAF50; // For success states
+@warning-color: #FFA000;
 
 // Material Design Elevation Levels
 @elevation-1: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
@@ -12,7 +13,6 @@
 @elevation-3: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
 
 // Material Design Typography
-@font-regular: Roboto, "Helvetica Neue", sans-serif;
 @font-weight-regular: 400;
 @font-weight-medium: 500;
 
@@ -32,19 +32,6 @@
 @z-map: 1;
 @z-overlays: 100;
 @z-loading: 1000;
-
-// Mixins with Material Design principles
-.material-elevation(@level: 1) {
-  & when (@level = 1) {
-    box-shadow: @elevation-1;
-  }
-  & when (@level = 2) {
-    box-shadow: @elevation-2;
-  }
-  & when (@level = 3) {
-    box-shadow: @elevation-3;
-  }
-}
 
 .material-transition(@properties: all) {
   transition: @properties 200ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -70,7 +57,6 @@ html, body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  font-family: @font-regular;
   color: @text-primary;
 }
 
@@ -214,58 +200,16 @@ html, body {
   }
 }
 
-// Job Info Panel
-.job-info-panel {
-  position: fixed;
-  top: @spacing-unit * 2.5;
-  right: @spacing-unit * 2.5;
-  width: 360px;
-  z-index: @z-overlays;
-  background: @card-bg;
-  .material-elevation(2);
-  border-radius: 4px;
-  overflow: hidden;
+// Material Design elevation mixin
+.material-elevation(@level) {
+  @shadow-key-umbra-opacity: 0.2;
+  @shadow-key-penumbra-opacity: 0.14;
+  @shadow-ambient-shadow-opacity: 0.12;
 
-  md-toolbar {
-    background-color: @primary-color !important;
-    min-height: 56px;
-
-    .md-toolbar-tools {
-      height: 56px;
-      padding: 0 @spacing-unit * 2;
-      font-size: 20px;
-      font-weight: @font-weight-medium;
-    }
-  }
-
-  .job-details {
-    padding: @spacing-unit * 2;
-
-    h3 {
-      color: @primary-color;
-      font-size: 14px;
-      font-weight: @font-weight-medium;
-      margin: @spacing-unit * 2 0 @spacing-unit;
-
-      &:first-child {
-        margin-top: 0;
-      }
-    }
-
-    p {
-      margin: 0 0 @spacing-unit * 2;
-      font-size: 14px;
-      line-height: 1.5;
-      color: @text-secondary;
-    }
-  }
-
-  .md-icon-button {
-    .material-transition(background-color);
-
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
+  & when (@level = 2) {
+    box-shadow: 0 3px 1px -2px rgba(0, 0, 0, @shadow-key-umbra-opacity),
+    0 2px 2px 0 rgba(0, 0, 0, @shadow-key-penumbra-opacity),
+    0 1px 5px 0 rgba(0, 0, 0, @shadow-ambient-shadow-opacity);
   }
 }
 
@@ -513,5 +457,139 @@ html, body {
   to {
     transform: scale(1.5);
     opacity: 0;
+  }
+}
+
+.job-info-panel {
+  position: fixed;
+  top: @spacing-unit * 2.5;
+  right: @spacing-unit * 2.5;
+  width: 360px;
+  z-index: @z-overlays;
+  background: @card-bg;
+  .material-elevation(2); // Using existing mixin
+  border-radius: 4px;
+  overflow: hidden;
+
+  md-toolbar {
+    background-color: @primary-color !important;
+    min-height: 56px;
+
+    .md-toolbar-tools {
+      height: 56px;
+      padding: 0 @spacing-unit * 2;
+
+      md-icon {
+        margin-right: @spacing-unit;
+        color: white;
+      }
+
+      h2 {
+        font-size: 20px;
+        font-weight: @font-weight-medium;
+        color: white;
+      }
+    }
+  }
+
+  md-card-content {
+    padding: 0;
+
+    .status-banner {
+      padding: @spacing-unit * 2;
+      margin-bottom: @spacing-unit * 2;
+      background-color: fade(@primary-color, 5%);
+
+      &.in-progress {
+        background-color: fade(@primary-color, 5%);
+
+        .status-content {
+          color: @primary-color;
+        }
+      }
+
+      &.completed {
+        background-color: fade(@success-color, 5%);
+
+        .status-content {
+          color: @success-color;
+        }
+      }
+
+      &.delayed {
+        background-color: fade(@warning-color, 5%);
+
+        .status-content {
+          color: @warning-color;
+        }
+      }
+
+      .status-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: @primary-color;
+        font-weight: @font-weight-medium;
+
+        .status-left, .status-right {
+          display: flex;
+          align-items: center;
+
+          md-icon {
+            margin-right: @spacing-unit;
+            font-size: 20px;
+          }
+        }
+      }
+    }
+
+    .job-details {
+      padding: @spacing-unit * 2;
+
+      .detail-section {
+        margin-bottom: @spacing-unit * 3;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        .section-header {
+          display: flex;
+          align-items: center;
+          margin-bottom: @spacing-unit;
+
+          md-icon {
+            margin-right: @spacing-unit;
+            color: @primary-color;
+            font-size: 20px;
+          }
+
+          h3 {
+            color: @primary-color;
+            font-size: 14px;
+            font-weight: @font-weight-medium;
+            margin: 0;
+          }
+        }
+
+        p {
+          margin: 0;
+          padding-left: @spacing-unit * 3.5;
+          font-size: 14px;
+          line-height: 1.5;
+          color: @text-secondary;
+        }
+      }
+    }
+  }
+
+  .md-icon-button {
+    md-icon {
+      color: white;
+    }
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
   }
 }

@@ -1,4 +1,5 @@
 <link href="app/components/overview/mega-map/mega-map.styles.min.css" rel="stylesheet">
+
 <!-- Main Map Container -->
 <div class="map-container">
     <ng-map center="{{ctrl.mapCenter}}"
@@ -101,8 +102,9 @@
         </md-list>
     </md-card>
 
-    <!-- Job Information Panel (shows when job is clicked) -->
+    <!-- Job Information Panel -->
     <md-card class="job-info-panel" ng-if="ctrl.selectedJob">
+        <!-- Header -->
         <md-toolbar>
             <div class="md-toolbar-tools">
                 <h2>Job #{{ctrl.selectedJob.jobNumber}}</h2>
@@ -117,16 +119,64 @@
                 </md-button>
             </div>
         </md-toolbar>
+
         <md-card-content>
+            <!-- Status Banner -->
+            <div class="status-banner" ng-class="ctrl.selectedJob.jobStatus | lowercase">
+                <div class="status-content">
+                    <div class="status-left">
+                        <md-icon md-font-set="material-symbols-outlined">
+                            {{ctrl.selectedJob.isFlightRoute ? 'flight' : 'navigation'}}
+                        </md-icon>
+                        <span>{{ctrl.selectedJob.jobStatus}}</span>
+                    </div>
+                    <div class="status-right">
+                        <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
+                        <span ng-if="ctrl.isUsCustomer">{{ctrl.selectedJob.estimatedDelivery | date:'MM/dd/yyyy h:mm a'}}</span>
+                        <span ng-if="!ctrl.isUsCustomer">{{ctrl.selectedJob.estimatedDelivery | date:'dd/MM/yyyy h:mm a'}}</span>
+                    </div>
+                </div>
+            </div>
+
+            <md-divider></md-divider>
+
             <div class="job-details">
-                <h3>Pickup</h3>
-                <p>{{ctrl.selectedJob.pickupLocation.fullAddress}}</p>
+                <!-- Pickup Location -->
+                <div class="detail-section">
+                    <div class="section-header">
+                        <md-icon md-font-set="material-symbols-outlined" style="margin: 5px;">
+                            {{ctrl.selectedJob.isFlightRoute ? 'local_airport' : 'place'}}
+                        </md-icon>
+                        <h3>Pickup Points</h3>
+                    </div>
+                    <p>{{ctrl.selectedJob.pickupLocation.fullAddress}}</p>
+                </div>
 
-                <h3>Delivery</h3>
-                <p>{{ctrl.selectedJob.deliveryLocation.fullAddress}}</p>
+                <md-divider></md-divider>
 
-                <h3>Assigned Driver</h3>
-                <p>{{ctrl.selectedJob.courierLocation.courierName || 'Not assigned'}}</p>
+                <!-- Delivery Location -->
+                <div class="detail-section">
+                    <div class="section-header">
+                        <md-icon md-font-set="material-symbols-outlined" style="margin: 5px;">
+                            {{ctrl.selectedJob.isFlightRoute ? 'local_airport' : 'place'}}
+                        </md-icon>
+                        <h3>Delivery Points</h3>
+                    </div>
+                    <p>{{ctrl.selectedJob.deliveryLocation.fullAddress}}</p>
+                </div>
+
+                <md-divider></md-divider>
+
+                <!-- Assigned Driver -->
+                <div class="detail-section">
+                    <div class="section-header">
+                        <md-icon md-font-set="material-symbols-outlined" style="margin: 5px;">
+                            {{ctrl.selectedJob.isFlightRoute ? 'flight' : 'local_shipping'}}
+                        </md-icon>
+                        <h3>{{ctrl.selectedJob.isFlightRoute ? 'Assigned Flight' : 'Assigned Driver'}}</h3>
+                    </div>
+                    <p>{{ctrl.selectedJob.courierLocation.courierName || 'Not Assigned'}}</p>
+                </div>
             </div>
         </md-card-content>
     </md-card>

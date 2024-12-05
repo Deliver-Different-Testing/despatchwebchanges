@@ -626,7 +626,7 @@ public class BaseJobRepository
         };
     }
 
-    protected static int? CalculateRemainTime(TucJob job, TucJobType jobType)
+    private static int? CalculateRemainTime(TucJob job, TucJobType jobType)
     {
         if (job == null)
             return null;
@@ -1017,7 +1017,8 @@ public class BaseJobRepository
                             Lat = c.DeliveryLatitude ?? 0,
                             Lng = c.DeliveryLongitude ?? 0
                         },
-                        Flight = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
+                        Flight = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight ||
+                                 IsFlightJobNumber(j.UcjbNumber)
                     }).ToList()
                 }
             }).AsNoTracking().FirstOrDefaultAsync();
@@ -1036,6 +1037,11 @@ public class BaseJobRepository
             {
                 JobId = j.UcjbId,
                 JobNumber = j.UcjbNumber,
+                JobStatus = j.UcjbStatus != null ? j.UcjbStatusNavigation.UcjsName : "New",
+                EstimatedDelivery = (j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight ||
+                                     IsFlightJobNumber(j.UcjbNumber)) && j.TucJobNationwides.Any()
+                    ? j.TucJobNationwides.FirstOrDefault().UcnwEta.Value
+                    : j.UcjbTime.Value.AddMinutes(j.UcjbSpeedNavigation.Minutes.Value),
                 IsFlightJob = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight ||
                               IsFlightJobNumber(j.UcjbNumber),
                 PickupLocation = new AddressViewModel

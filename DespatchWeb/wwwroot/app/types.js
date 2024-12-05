@@ -525,6 +525,8 @@
  *
  * @property {number} jobId - The unique identifier for the job
  * @property {string} jobNumber - The job reference number
+ * @property {string} jobStatus - The job status
+ * @property {Date} estimatedDelivery - The estimated delivery time for the job
  * @property {AddressDetails} pickupLocation - The pickup address and coordinates
  * @property {AddressDetails} deliveryLocation - The delivery address and coordinates
  * @property {CourierLocation} courierLocation - The assigned courier's current location details
