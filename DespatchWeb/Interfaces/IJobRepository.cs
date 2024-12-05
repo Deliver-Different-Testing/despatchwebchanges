@@ -140,7 +140,7 @@ public interface IJobRepository
         decimal pickupLng, bool cbd, decimal rate, string despatcher);
 
     Task ReleaseBulkJobAsync(string jobNumber, DateTime bookDate);
-    Task UpdateJobAsync(int jobId, string field, string value, decimal? rate, string despatcher, int staffId);
+    Task UpdateJobAsync(int jobId, string field, string value, decimal? rate, string userName, int staffId);
 
     Task UpdateBulkJobAsync(int bulkJobId, string field, string value, decimal? rate, string despatcher,
         int staffId);
