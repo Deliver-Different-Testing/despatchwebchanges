@@ -7,38 +7,99 @@ class MegaMapController {
         this.openJobDispatchService = openJobDispatchService;
 
         this.directionsService = new google.maps.DirectionsService();
-        this.routePaths = new Map(); // Cache for route paths
+        this.routePaths = new Map();
 
         // Initialize data
         this.isUsCustomer = APP_CONFIG.US_Customer;
 
+        /** @type {MegaMapResponse[]} */
         this.jobs = [];
+        /** @type {MegaMapPoint[]} */
         this.drivers = [];
+        /** @type {MegaMapPoint[]} */
         this.pickupPoints = [];
+        /** @type {MegaMapPoint[]} */
         this.deliveryPoints = [];
         this.zoomLevel = 5; // Default zoom level
+        /** @type {MegaMapPoint[]} */
         this.flightRoutes = [];
+        /** @type {MegaMapResponse|null} */
         this.selectedJob = null;
 
         this.mapCenter = this.isUsCustomer ? [39.8097343, -98.5556199]  // Central USA coordinates
             : [-36.8484597, 174.7633315]; // Auckland, New Zealand coordinates
         this.isLoading = false;
 
+        /** @type {google.maps.MarkerClusterer} */
+        this.markerCluster = null;
+
         // Bind functions to context
         this.showPointInfo = this.showPointInfo.bind(this);
         this.closeJobInfo = this.closeJobInfo.bind(this);
+        this.shouldShowMarkers = this.shouldShowMarkers.bind(this);
         this.onZoomChanged = this.onZoomChanged.bind(this);
+        this.handleClusterClick = this.handleClusterClick.bind(this);
 
         // Initialize map and start refresh interval
         this.initializeMap();
     }
 
     initializeMap() {
+        const mapStyles = [
+            {
+                "featureType": "poi",
+                "stylers": [
+                    {"visibility": "off"}
+                ]
+            },
+            {
+                "featureType": "road",
+                "elementType": "labels",
+                "stylers": [
+                    {"visibility": "off"}
+                ]
+            },
+            {
+                "featureType": "transit",
+                "stylers": [
+                    {"visibility": "off"}
+                ]
+            }
+        ];
+
+        const clusterOptions = {
+            gridSize: 60,          // Controls how close markers need to be to form a cluster
+            maxZoom: 7,          // Clusters will break apart when zoomed beyond this level
+            minimumClusterSize: 4, // Minimum number of markers to form a cluster
+            styles: this.getClusterStyles(),
+            zoomOnClick: true,    // Automatically zooms in when clicking a cluster
+            averageCenter: true,
+            calculator: this.calculateClusterSize
+        };
+        this.clusterOptions = clusterOptions;
+
         this.NgMap.getMap().then(map => {
             this.map = map;
-            console.log('Map initialized:', {
-                center: map.getCenter().toJSON(), zoom: map.getZoom()
+
+            // Apply custom styles
+            map.setOptions({
+                styles: mapStyles,
+                disableDefaultUI: true, // Disable default UI
+                zoomControl: true,
+                minZoom: 4,        // Prevent zooming out too far
+                maxZoom: 16,       // Maximum zoom level
+                zoomControlOptions: {
+                    position: google.maps.ControlPosition.RIGHT_BOTTOM
+                }
             });
+
+            // Rest of your initialization code...
+            if (typeof MarkerClusterer === 'undefined') {
+                console.error('MarkerClusterer library not loaded');
+                return;
+            }
+
+            this.markerCluster = new MarkerClusterer(map, [], clusterOptions);
 
             // Add zoom change listener
             google.maps.event.addListener(map, 'zoom_changed', () => {
@@ -47,6 +108,101 @@ class MegaMapController {
 
             this.refreshData();
         });
+    }
+
+    getClusterStyles() {
+        return [{
+            // Small cluster style
+            url: 'data:image/svg+xml;base64,' + btoa(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+                <circle cx="20" cy="20" r="18" fill="white" stroke="#3EAFC2" stroke-width="2"/>
+            </svg>
+        `),
+            height: 40,
+            width: 40,
+            textColor: '#3EAFC2',
+            textSize: 13,
+            fontFamily: 'Roboto, Arial, sans-serif',
+            fontWeight: '500',
+            anchorText: [-5, 0],
+            textAlign: 'center'
+        }, {
+            // Medium cluster style
+            url: 'data:image/svg+xml;base64,' + btoa(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
+                <circle cx="25" cy="25" r="23" fill="white" stroke="#3EAFC2" stroke-width="2"/>
+            </svg>
+        `),
+            height: 50,
+            width: 50,
+            textColor: '#3EAFC2',
+            textSize: 14,
+            fontFamily: 'Roboto, Arial, sans-serif',
+            fontWeight: '500',
+            anchorText: [-6, 0],
+            textAlign: 'center'
+        }, {
+            // Large cluster style
+            url: 'data:image/svg+xml;base64,' + btoa(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60">
+                <circle cx="30" cy="30" r="28" fill="white" stroke="#3EAFC2" stroke-width="2"/>
+            </svg>
+        `),
+            height: 60,
+            width: 60,
+            textColor: '#3EAFC2',
+            textSize: 16,
+            fontFamily: 'Roboto, Arial, sans-serif',
+            fontWeight: '500',
+            anchorText: [-7, 0],
+            textAlign: 'center'
+        }];
+    }
+
+    calculateClusterSize(markers, numStyles) {
+        const count = markers.length;
+        let index = 0;
+
+        if (count < 10) index = 0;
+        else if (count < 50) index = 1;
+        else index = 2;
+
+        return {
+            text: count.toString(),
+            index: index
+        };
+    }
+
+    handleClusterClick(cluster) {
+        if (!cluster || !cluster.getMarkers) {
+            console.error('Invalid cluster object', cluster);
+            return;
+        }
+
+        const markers = cluster.getMarkers();
+        if (!markers.length) return;
+
+        // If cluster is small enough and we're close to max zoom, show all points
+        if (markers.length < 10 && this.map.getZoom() > 13) { // Changed from maxZoom - 2
+            markers.forEach(marker => {
+                if (marker && marker.get && marker.get('point')) {
+                    this.showPointInfo(marker);
+                }
+            });
+            return;
+        }
+
+        // Otherwise, zoom to fit the cluster
+        const bounds = new google.maps.LatLngBounds();
+        markers.forEach(marker => bounds.extend(marker.getPosition()));
+        this.map.fitBounds(bounds);
+
+        // If we're already quite zoomed in, also adjust zoom level
+        if (this.map.getZoom() > 13) { // Changed from maxZoom - 3
+            setTimeout(() => {
+                this.map.setZoom(this.map.getZoom() + 1);
+            }, 100);
+        }
     }
 
     async refreshData() {
@@ -207,11 +363,104 @@ class MegaMapController {
 
         this.flightRoutes = this.calculateFlightRoutes(jobs, pickups, deliveries);
 
+        const pickupMarkers = pickups.map(p => this.createMarker(p, true));
+        const deliveryMarkers = deliveries.map(d => this.createMarker(d, false));
+        const flightMarkers = this.flightRoutes.map(route => this.createFlightMarker(route));
+
+        // If markerCluster exists, update its markers
+        if (this.markerCluster && typeof this.markerCluster.clearMarkers === 'function') {
+            this.markerCluster.clearMarkers();
+            this.markerCluster.addMarkers([...pickupMarkers, ...deliveryMarkers, ...flightMarkers]);
+        } else {
+            console.warn('MarkerCluster not properly initialized');
+        }
+
         return {
             pickups, deliveries, drivers
         };
     }
 
+    createMarker(point, isPickup) {
+        // Create SVG icon with circular background
+        const svgIcon = {
+            url: 'data:image/svg+xml;base64,' + btoa(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36">
+                <circle cx="12" cy="12" r="11" fill="white" stroke="${isPickup ? '#4CAF50' : '#F44336'}" stroke-width="2"/>
+                <text x="12" y="16" 
+                    font-family="Material Symbols Outlined" 
+                    font-size="16"
+                    text-anchor="middle" 
+                    fill="${isPickup ? '#4CAF50' : '#F44336'}">location_on</text>
+            </svg>
+        `),
+            size: new google.maps.Size(36, 36),
+            anchor: new google.maps.Point(18, 18),
+            scaledSize: new google.maps.Size(36, 36)
+        };
+
+        const marker = new google.maps.Marker({
+            position: new google.maps.LatLng(point.lat, point.lng),
+            title: point.jobNumber,
+            map: this.map,
+            icon: svgIcon
+        });
+
+        // Store point data and add click listener
+        marker.addListener('click', () => {
+            this.showPointInfo(marker);
+        });
+        marker.set('point', point);
+
+        return marker;
+    }
+
+    createFlightMarker(route) {
+        // Create SVG icon with circular background and rotated flight icon
+        const svgIcon = {
+            url: 'data:image/svg+xml;base64,' + btoa(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36">
+                <circle cx="12" cy="12" r="11" fill="white" stroke="#3EAFC2" stroke-width="2"/>
+                <g transform="rotate(${route.rotation} 12 12)">
+                    <text x="12" y="16" 
+                        font-family="Material Symbols Outlined" 
+                        font-size="16"
+                        text-anchor="middle" 
+                        fill="#3EAFC2">flight</text>
+                </g>
+            </svg>
+        `),
+            size: new google.maps.Size(36, 36),
+            anchor: new google.maps.Point(18, 18),
+            scaledSize: new google.maps.Size(36, 36)
+        };
+
+        const marker = new google.maps.Marker({
+            position: new google.maps.LatLng(route.position[0], route.position[1]),
+            title: route.flightNumber,
+            map: this.map,
+            icon: svgIcon
+        });
+
+        // Store route data and add click listener
+        marker.addListener('click', () => {
+            this.showPointInfo(marker);
+        });
+        marker.set('point', {
+            jobId: route.jobId,
+            jobNumber: route.jobNumber,
+            lat: route.position[0],
+            lng: route.position[1],
+            isFlightRoute: true
+        });
+
+        return marker;
+    }
+
+    /**
+     * @param {MegaMapResponse[]} jobs
+     * @param {MegaMapPoint[]} pickups
+     * @param {MegaMapPoint[]} deliveries
+     */
     calculateFlightRoutes(jobs, pickups, deliveries) {
         if (!jobs?.length || !pickups?.length || !deliveries?.length) {
             return [];
@@ -335,20 +584,20 @@ class MegaMapController {
                 this.directionsService.route({
                     origin: {lat: parseFloat(pickup.lat), lng: parseFloat(pickup.lng)},
                     destination: {lat: parseFloat(delivery.lat), lng: parseFloat(delivery.lng)},
-                    travelMode: google.maps.TravelMode.DRIVING
+                    travelMode: google.maps.TravelMode.DRIVING,
+                    optimizeWaypoints: true
                 }, (response, status) => {
                     if (status === google.maps.DirectionsStatus.OK) {
                         resolve(response);
                     } else {
+                        console.warn(`Route calculation failed: ${status}`);
                         reject(status);
                     }
                 });
             });
 
-            // Extract path points from result
             return result.routes[0].overview_path.map(point => [point.lat(), point.lng()]);
         } catch (error) {
-            console.warn('Failed to get road route, falling back to direct line:', error);
             return null;
         }
     }
@@ -454,18 +703,26 @@ class MegaMapController {
      * @param {Event} $event - The NgMap event object
      */
     showPointInfo($event) {
-        const element = $event.target || $event.srcElement;
-        const scope = angular.element(element).scope();
-        /** @type {MegaMapPoint} */
-        const point = scope.point;
+        let point;
+
+        // Handle direct marker clicks from custom markers
+        if ($event.target && angular.element($event.target).scope()) {
+            const scope = angular.element($event.target).scope();
+            point = scope.point;
+        }
+        // Handle cluster marker clicks
+        else if ($event.get && $event.get('point')) {
+            point = $event.get('point');
+        }
 
         if (!point) {
-            console.error('Could not get point data from event');
+            console.error('Could not get point data from event', $event);
             return;
         }
 
         if (!this.jobs) {
-            console.error('No jobs saved!');
+            console.error('No jobs data available');
+            return;
         }
 
         this.selectedJob = this.jobs.find(job => job.jobId === point.jobId);
@@ -473,7 +730,7 @@ class MegaMapController {
             console.error('Could not find job data for point:', point);
             return;
         }
-        console.log(this.selectedJob);
+        console.log('Selected job:', this.selectedJob);
 
         // Focus map on the delivery point
         if (this.map) {
@@ -492,35 +749,10 @@ class MegaMapController {
         return this.pickupPoints.some(p => p.jobId === point.jobId);
     }
 
-    getClusterStyles() {
-        return [{
-            textColor: '#1A1A1A',
-            textSize: 14,
-            url: this.createClusterIcon('pickup'),
-            height: 40,
-            width: 40,
-            anchor: [20, 20]
-        }, {
-            textColor: '#1A1A1A',
-            textSize: 16,
-            url: this.createClusterIcon('delivery'),
-            height: 46,
-            width: 46,
-            anchor: [23, 23]
-        }];
-    }
-
-    /**
-     * @param {string} type
-     */
-    createClusterIcon(type) {
-        const color = type === 'pickup' ? '#4CAF50' : '#F44336';
-        const svg = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
-                <circle cx="20" cy="20" r="19" fill="white" stroke="${color}" stroke-width="2"/>
-            </svg>
-        `;
-        return 'data:image/svg+xml;base64,' + btoa(svg);
+    shouldShowMarkers() {
+        const show = this.map && this.map.getZoom() > this.clusterOptions.maxZoom;
+        console.log(show);
+        return show;
     }
 
     onZoomChanged() {
@@ -538,4 +770,6 @@ class MegaMapController {
 }
 
 angular.module('uDispatch')
-    .controller('megaMapController', ['$interval', 'toastrService', 'NgMap', 'overviewService', 'APP_CONFIG', 'openJobDispatchService', ($interval, toastrService, NgMap, overviewService, APP_CONFIG, openJobDispatchService) => new MegaMapController($interval, toastrService, NgMap, overviewService, APP_CONFIG, openJobDispatchService)]);
+    .controller('megaMapController', ['$interval', 'toastrService', 'NgMap', 'overviewService', 'APP_CONFIG', 'openJobDispatchService',
+        ($interval, toastrService, NgMap, overviewService, APP_CONFIG, openJobDispatchService) => new MegaMapController(
+            $interval, toastrService, NgMap, overviewService, APP_CONFIG, openJobDispatchService)]);

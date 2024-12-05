@@ -593,3 +593,116 @@ html, body {
     }
   }
 }
+
+// Cluster Styles
+.cluster-small,
+.cluster-medium,
+.cluster-large {
+  background-color: @card-bg;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid @primary-color;
+  .material-elevation(1);
+  color: @text-primary;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: scale(1.1);
+    .material-elevation(2);
+  }
+}
+
+.cluster-small {
+  min-width: 35px;
+  min-height: 35px;
+  font-size: 12px;
+
+  &::before {
+    content: 'location_on';
+    font-size: 18px;
+    color: @primary-color;
+  }
+}
+
+.cluster-medium {
+  min-width: 45px;
+  min-height: 45px;
+  font-size: 14px;
+
+  &::before {
+    content: 'hub';
+    font-size: 20px;
+    color: @primary-color;
+  }
+}
+
+.cluster-large {
+  min-width: 55px;
+  min-height: 55px;
+  font-size: 16px;
+
+  &::before {
+    content: 'hub';
+    font-size: 24px;
+    color: @primary-color;
+  }
+}
+
+// Add marker animation
+.marker-animation {
+  &:hover {
+    animation: bounce 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+.marker-container {
+  background: @card-bg;
+  border-radius: 50%;
+  padding: @spacing-unit;
+  .material-elevation(1);
+  cursor: pointer;
+  .material-transition(transform);
+
+  &:hover {
+    transform: scale(1.1);
+    .material-elevation(2);
+  }
+
+  i {
+    font-size: 20px;
+    display: block;
+    transition: font-size 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  &.compact {
+    padding: @spacing-unit/2;
+
+    i {
+      font-size: 14px;
+    }
+  }
+}
+
+// Update pickup/delivery colors to use your variables
+.pickup-marker i {
+  color: @success-color;
+}
+
+.delivery-marker i {
+  color: @error-color;
+}
+
+.flight-marker i {
+  color: @primary-color;
+}

@@ -1041,7 +1041,8 @@ public class BaseJobRepository
                 EstimatedDelivery = (j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight ||
                                      IsFlightJobNumber(j.UcjbNumber)) && j.TucJobNationwides.Any()
                     ? j.TucJobNationwides.FirstOrDefault().UcnwEta.Value
-                    : j.UcjbTime.Value.AddMinutes(j.UcjbSpeedNavigation.Minutes.Value),
+                    : j.UcjbDate.Date.Add(j.UcjbTime.Value.TimeOfDay)
+                        .AddMinutes(j.UcjbSpeedNavigation.Minutes ?? 180),
                 IsFlightJob = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight ||
                               IsFlightJobNumber(j.UcjbNumber),
                 PickupLocation = new AddressViewModel
