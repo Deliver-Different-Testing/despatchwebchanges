@@ -1464,6 +1464,7 @@ class JobDetailService {
      * @private
      */
     async _refreshJobDetails(jobId) {
+        this.jobDetailLoading = true; // Show loader
         try {
             if (this.currentJob) {
                 this.currentJob = await this.DispatchData.getJobDetail(jobId);
@@ -1471,6 +1472,8 @@ class JobDetailService {
         } catch (error) {
             console.error('Error refreshing job details:', error);
             this.toastrService.showErrorToast();
+        } finally {
+            this.jobDetailLoading = false; // Hide loader
         }
     }
 
