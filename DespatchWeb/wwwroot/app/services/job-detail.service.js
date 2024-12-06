@@ -255,15 +255,13 @@ class JobDetailService {
          */
         const showDialog = async (description) => {
             console.log('Opening price breakdown dialog');
-            return this.$mdDialog.show(
-                this.$mdDialog.alert()
-                    .parent(this.$document.body)
-                    .clickOutsideToClose(true)
-                    .title('Charge Information')
-                    .htmlContent(description)
-                    .ariaLabel('Alert Dialog')
-                    .ok('OK')
-            );
+            return this.$mdDialog.show(this.$mdDialog.alert()
+                .parent(this.$document.body)
+                .clickOutsideToClose(true)
+                .title('Charge Information')
+                .htmlContent(description)
+                .ariaLabel('Alert Dialog')
+                .ok('OK'));
         };
 
         try {
@@ -325,6 +323,7 @@ class JobDetailService {
             });
 
             // Refresh job detail in background
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
@@ -352,18 +351,13 @@ class JobDetailService {
                 clickOutsideToClose: false,
                 fullscreen: true,
                 locals: {
-                    job,
-                    title,
-                    fieldName,
-                    dateTime: date,
-                    id,
-                    showDate: true,
-                    showTime: false
+                    job, title, fieldName, dateTime: date, id, showDate: true, showTime: false
                 },
                 bindToController: true
             });
 
             // Refresh job detail in background
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
@@ -399,18 +393,13 @@ class JobDetailService {
                 clickOutsideToClose: false,
                 fullscreen: true,
                 locals: {
-                    job,
-                    title,
-                    fieldName,
-                    dateTime: time,
-                    id,
-                    showDate: false,
-                    showTime: true
+                    job, title, fieldName, dateTime: time, id, showDate: false, showTime: true
                 },
                 bindToController: true
             });
 
             // Refresh job detail in background
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
@@ -452,18 +441,13 @@ class JobDetailService {
                 clickOutsideToClose: false,
                 fullscreen: true,
                 locals: {
-                    job,
-                    title,
-                    fieldName,
-                    dateTime: datetime,
-                    id,
-                    showDate: true,
-                    showTime: true
+                    job, title, fieldName, dateTime: datetime, id, showDate: true, showTime: true
                 },
                 bindToController: true
             });
 
             // Refresh job detail in background
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
@@ -510,6 +494,7 @@ class JobDetailService {
             await this.updateField(true, job, callData);
 
             // Refresh job detail in background
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
@@ -644,8 +629,7 @@ class JobDetailService {
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
-                jobId,
-                dimensions
+                jobId, dimensions
             },
             bindToController: true
         });
@@ -670,15 +654,7 @@ class JobDetailService {
                     console.error('Failed to convert rate to a number:', rate);
                 }
 
-                await this.DispatchData.updateJobDetail(
-                    callData.jobID,
-                    callData.field,
-                    callData.value,
-                    numericRate,
-                    FirstName,
-                    ContactID,
-                    job.preBook
-                );
+                await this.DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, numericRate, FirstName, ContactID, job.preBook);
             } else {
                 // Ensure rate is decimal
                 const numericRate = parseFloat(job.charge.replace(/[^\d.-]/g, ''));
@@ -687,24 +663,9 @@ class JobDetailService {
                 }
 
                 if (job.bulkJob) {
-                    await this.DispatchData.updateBulkJobDetail(
-                        job.id,
-                        callData.field,
-                        callData.value,
-                        numericRate,
-                        FirstName,
-                        ContactID
-                    );
+                    await this.DispatchData.updateBulkJobDetail(job.id, callData.field, callData.value, numericRate, FirstName, ContactID);
                 } else {
-                    await this.DispatchData.updateJobDetail(
-                        callData.jobID,
-                        callData.field,
-                        callData.value,
-                        numericRate,
-                        FirstName,
-                        ContactID,
-                        job.preBook
-                    );
+                    await this.DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, numericRate, FirstName, ContactID, job.preBook);
                 }
             }
         } catch (error) {
@@ -767,15 +728,13 @@ class JobDetailService {
         console.log('isDeliveryAddress: ' + isDeliveryAddress);
 
         // Update job by address format
-        const updatedJob = this.isUsCustomer ?
-            this._updateJobAddressUs(job, addressResult, isDeliveryAddress) :
-            this._updateJobAddressNz(job, addressResult, isDeliveryAddress);
+        const updatedJob = this.isUsCustomer ? this._updateJobAddressUs(job, addressResult, isDeliveryAddress) : this._updateJobAddressNz(job, addressResult, isDeliveryAddress);
 
         try {
             await this.updateJobRateAndAddress(updatedJob, addressResult, isDeliveryAddress);
-            await this._refreshJobDetails(job.id);
 
-            this.toastrService.showSuccessToast("Address successfully updated");
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
+            await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
         }
@@ -827,21 +786,9 @@ class JobDetailService {
         console.log('Job Rate: ' + rate);
 
         if (isDeliveryAddress) {
-            await this.DispatchData.updateDeliveryAddress(
-                job.id,
-                rate,
-                FirstName,
-                job.preBook,
-                addressResult.addressData
-            );
+            await this.DispatchData.updateDeliveryAddress(job.id, rate, FirstName, job.preBook, addressResult.addressData);
         } else {
-            await this.DispatchData.updatePickupAddress(
-                job.id,
-                rate,
-                FirstName,
-                job.preBook,
-                addressResult.addressData
-            );
+            await this.DispatchData.updatePickupAddress(job.id, rate, FirstName, job.preBook, addressResult.addressData);
         }
     }
 
@@ -856,7 +803,9 @@ class JobDetailService {
             };
 
             await this.updateField(false, job, callData);
-            this.currentJob.locked = false;
+
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
+            await this._refreshJobDetails(job.id);
         } catch (error) {
             console.error('An error occured unlocking the job.');
         }
@@ -873,7 +822,9 @@ class JobDetailService {
             };
 
             await this.updateField(false, job, callData);
-            this.currentJob.locked = true;
+
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
+            await this._refreshJobDetails(job.id);
         } catch (error) {
             console.error('An error occured locking the job.');
         }
@@ -906,6 +857,7 @@ class JobDetailService {
             };
 
             await this.updateField(true, job, callData);
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
@@ -924,6 +876,7 @@ class JobDetailService {
             };
 
             await this.updateField(true, job, callData);
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
@@ -950,15 +903,7 @@ class JobDetailService {
         const capitalizedProperty = property.charAt(0).toUpperCase() + property.slice(1);
 
         const updateJob = async (rate) => {
-            await this.DispatchData.updateJobDetail(
-                job.id,
-                capitalizedProperty,
-                newValue,
-                rate,
-                FirstName,
-                ContactID,
-                job.preBook
-            );
+            await this.DispatchData.updateJobDetail(job.id, capitalizedProperty, newValue, rate, FirstName, ContactID, job.preBook);
         };
 
         try {
@@ -969,6 +914,7 @@ class JobDetailService {
                 await updateJob(this.extractNumericRate(rate));
             }
 
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
@@ -1018,10 +964,7 @@ class JobDetailService {
 
             // Prepare the call data for updating the reprice status
             const callData = {
-                "call": "updateDetailField",
-                "field": 'Reprice',
-                "value": !job.reprice,
-                "jobID": job.id
+                "call": "updateDetailField", "field": 'Reprice', "value": !job.reprice, "jobID": job.id
             };
 
             // Update the job
@@ -1030,30 +973,15 @@ class JobDetailService {
             // If job moves to reprice status, update internal status
             if (this.currentJob.reprice) {
                 const repriceStatusId = 4; // Assuming 4 is the ID for reprice status
-                await this.DispatchData.updateJobDetail(
-                    job.id,
-                    "InternalStatusID",
-                    repriceStatusId,
-                    job.charge,
-                    FirstName,
-                    ContactID,
-                    job.preBook
-                );
+                await this.DispatchData.updateJobDetail(job.id, "InternalStatusID", repriceStatusId, job.charge, FirstName, ContactID, job.preBook);
             }
 
             // If job moves out of reprice status, restore previous status
             if (!this.currentJob.reprice && previousStatus) {
-                await this.DispatchData.updateJobDetail(
-                    job.id,
-                    "InternalStatusID",
-                    previousStatus,
-                    job.charge,
-                    FirstName,
-                    ContactID,
-                    job.preBook
-                );
+                await this.DispatchData.updateJobDetail(job.id, "InternalStatusID", previousStatus, job.charge, FirstName, ContactID, job.preBook);
             }
 
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             console.error('Error in repriceClick:', error);
@@ -1109,9 +1037,9 @@ class JobDetailService {
 
         try {
             await this.DispatchData.updatePODDetail(job.jobNo, 6, job.podName, job.completedTime);
-            await this._refreshJobDetails(job.id);
 
-            this.toastrService.showSuccessToast("Job successfully marked as done");
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
+            await this._refreshJobDetails(job.id);
         } catch (error) {
             const message = "Failed to mark job as done. Please try again.";
             console.error(message);
@@ -1206,8 +1134,7 @@ class JobDetailService {
      * @param {boolean} showCheckbox
      * @param {string} checkboxLabel
      */
-    async showSelectDialog($event, job, data, fieldName, title, initialValue = null,
-                           id = "editField", showCheckbox = false, checkboxLabel = "") {
+    async showSelectDialog($event, job, data, fieldName, title, initialValue = null, id = "editField", showCheckbox = false, checkboxLabel = "") {
         const options = {
             minimumInputLength: 1, items: data, placeholder: title
         };
@@ -1227,6 +1154,7 @@ class JobDetailService {
                 bindToController: true
             });
 
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
@@ -1344,6 +1272,7 @@ class JobDetailService {
                 bindToController: true
             });
 
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
@@ -1396,15 +1325,12 @@ class JobDetailService {
                 clickOutsideToClose: true,
                 fullscreen: true,
                 locals: {
-                    job,
-                    dispatcherName: FirstName,
-                    contactId: ContactID,
-                    existingPallet,
-                    dialogTitle
+                    job, dispatcherName: FirstName, contactId: ContactID, existingPallet, dialogTitle
                 },
                 bindToController: true
             });
 
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
@@ -1474,15 +1400,4 @@ class JobDetailService {
     }
 }
 
-angular.module('uDispatch').service('JobDetailService', [
-    "DispatchData",
-    "$mdDialog",
-    "toastrService",
-    "rateJobService",
-    "$document",
-    "moment",
-    "versionUrl",
-    "APP_CONFIG",
-    "$rootScope",
-    (DispatchData, $mdDialog, toastrService, rateJobService, $document, moment, versionUrl, APP_CONFIG, $rootScope) => new JobDetailService(DispatchData, $mdDialog, toastrService, rateJobService, $document, moment, versionUrl, APP_CONFIG, $rootScope)
-]);
+angular.module('uDispatch').service('JobDetailService', ["DispatchData", "$mdDialog", "toastrService", "rateJobService", "$document", "moment", "versionUrl", "APP_CONFIG", "$rootScope", (DispatchData, $mdDialog, toastrService, rateJobService, $document, moment, versionUrl, APP_CONFIG, $rootScope) => new JobDetailService(DispatchData, $mdDialog, toastrService, rateJobService, $document, moment, versionUrl, APP_CONFIG, $rootScope)]);
