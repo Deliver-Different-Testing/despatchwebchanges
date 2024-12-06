@@ -194,16 +194,6 @@ class JobDetailService {
     }
 
     /**
-     * @param {number} deliverToLeaveId
-     */
-    getSelectedLeaveParcel(deliverToLeaveId) {
-        console.log('DeliverToLeaveId: ' + deliverToLeaveId);
-        const selected = this.pickLeaveList.find(({id}) => id === deliverToLeaveId);
-        console.log('Selected: ' + selected);
-        return selected !== undefined ? selected.text : "";
-    }
-
-    /**
      * @param {Job} job
      */
     hasDGDocs(job) {
