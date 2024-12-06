@@ -54,32 +54,9 @@ class JobDetailService {
             }
         }
 
-        this.pickLeaveList = [];
-        this.pickUndeliverableList = [];
-        this.pickSpeeds = [];
         this.pickContacts = [];
 
         this.gather = {};
-
-        DispatchData.getLeaveList().then(data => {
-            this.pickLeaveList = data;
-        });
-
-        DispatchData.getUndeliverableList().then(data => {
-            this.pickUndeliverableList = data;
-        });
-
-        DispatchData.getSpeedList().then(data => {
-            this.pickSpeeds = data;
-        });
-
-        DispatchData.getSuburbList().then(data => {
-            this.pickSuburbs = data;
-        });
-
-        DispatchData.getVehicleSizes().then(data => {
-            this.pickVehicleSizes = data;
-        })
 
         this.pickHolidays = [{
             "id": "0", "label": "Don't Book"
@@ -198,11 +175,6 @@ class JobDetailService {
      */
     async setJob(job) {
         this.currentJob = job;
-        try {
-            this.pickContacts = await this.DispatchData.getContactList(job.clientId);
-        } catch (error) {
-            console.error('Error fetching contact list:', error);
-        }
     }
 
     /**
@@ -697,8 +669,9 @@ class JobDetailService {
      * @param {Job} currentJob
      * @param {boolean} isDeliveryAddress
      */
-    showAddressDialog(event, currentJob, isDeliveryAddress) {
+    async showAddressDialog(event, currentJob, isDeliveryAddress) {
         const addressToUpdate = isDeliveryAddress ? currentJob.deliveryAddress : currentJob.pickupAddress;
+        const pickSuburbs = await this.DispatchData.getSuburbList();
 
         return this.$mdDialog.show({
             controller: 'EditAddressDialogController',
@@ -710,7 +683,7 @@ class JobDetailService {
             fullscreen: true,
             locals: {
                 addressDetails: addressToUpdate,
-                suburbOptions: this.pickSuburbs,
+                suburbOptions: pickSuburbs,
                 title: "Update Address and GPS",
                 submitLabel: "Update",
             },
@@ -1104,7 +1077,8 @@ class JobDetailService {
      * @param {Job} job
      */
     async leaveClick($event, job) {
-        await this.showSelectDialog($event, job, this.pickLeaveList, "DeliverToLeaveID", "Leave Parcel", job.sigNotRequired || "Signature Required");
+        const pickLeaveList = await this.DispatchData.getLeaveList();
+        await this.showSelectDialog($event, job, pickLeaveList, "DeliverToLeaveID", "Leave Parcel", job.sigNotRequired || "Signature Required");
     }
 
     /**
@@ -1112,7 +1086,8 @@ class JobDetailService {
      * @param {Job} job
      */
     async undeliverableClick($event, job) {
-        await this.showSelectDialog($event, job, this.pickUndeliverableList, "UndeliverableLocationID", "Undeliverable Location", job.udStatus);
+        const pickUndeliverableList = await this.DispatchData.getUndeliverableList();
+        await this.showSelectDialog($event, job, pickUndeliverableList, "UndeliverableLocationID", "Undeliverable Location", job.udStatus);
     }
 
     /**
@@ -1120,7 +1095,8 @@ class JobDetailService {
      * @param {Job} job
      */
     async sizeClick($event, job) {
-        await this.showSelectDialog($event, job, this.pickVehicleSizes, "Size", "Size", job.size.text);
+        const pickVehicleSizes = await this.DispatchData.getVehicleSizes();
+        await this.showSelectDialog($event, job, pickVehicleSizes, "Size", "Size", job.size.text);
     }
 
     /**
@@ -1165,6 +1141,15 @@ class JobDetailService {
      * @param $event
      * @param {Job} job
      */
+    async statusClick($event, job) {
+        const pickStatus = await this.DispatchData.getStatusList();
+        await this.showSelectDialog($event, job, pickStatus, "Status", "Status", job.statusId);
+    }
+
+    /**
+     * @param $event
+     * @param {Job} job
+     */
     async dgClassClick($event, job) {
         let dgClassOptions = [];
         for (let i = 1; i <= 9; i++) {
@@ -1181,7 +1166,8 @@ class JobDetailService {
      * @param {Job} job
      */
     async notifyClick($event, job) {
-        await this.showSelectDialog($event, job, this.pickSpeeds, "NotifiedJobTypeID", "Notified", job.notifiedName);
+        const pickSpeeds = await this.DispatchData.getSpeedList();
+        await this.showSelectDialog($event, job, pickSpeeds, "NotifiedJobTypeID", "Notified", job.notifiedName);
     }
 
     /**
@@ -1189,7 +1175,8 @@ class JobDetailService {
      * @param {Job} job
      */
     async acceptedClick($event, job) {
-        await this.showSelectDialog($event, job, this.pickSpeeds, "AcceptedJobTypeID", "Accepted", job.acceptedName);
+        const pickSpeeds = await this.DispatchData.getSpeedList();
+        await this.showSelectDialog($event, job, pickSpeeds, "AcceptedJobTypeID", "Accepted", job.acceptedName);
     }
 
     /**
@@ -1197,7 +1184,8 @@ class JobDetailService {
      * @param {Job} job
      */
     async speedClick($event, job) {
-        await this.showSelectDialog($event, job, this.pickSpeeds, "SpeedID", "Speed", job.speedName);
+        const pickSpeeds = await this.DispatchData.getSpeedList();
+        await this.showSelectDialog($event, job, pickSpeeds, "SpeedID", "Speed", job.speedName);
     }
 
     /**
@@ -1205,7 +1193,8 @@ class JobDetailService {
      * @param {Job} job
      */
     async contactClick($event, job) {
-        await this.showSelectDialog($event, job, this.pickContacts, "ContactID", "Contact", job.contactName);
+        const pickContacts = await this.DispatchData.getContactList(job.clientId);
+        await this.showSelectDialog($event, job, pickContacts, "ContactID", "Contact", job.contactName);
     }
 
     /**

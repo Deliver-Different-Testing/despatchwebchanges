@@ -483,6 +483,11 @@ class DispatchData {
         return response.data;
     }
 
+    async getStatusList() {
+        const response = await this.$http.get('job/StatusList');
+        return response.data;
+    }
+
     /**
      * @param {number} jobId
      * @param {number} truckWeightLimit

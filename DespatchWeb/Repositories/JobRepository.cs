@@ -1300,6 +1300,16 @@ public class JobRepository : BaseJobRepository, IJobRepository
             .ToListAsync();
     }
 
+    public async Task<List<Suggestion>> GetStatusListAsync()
+    {
+        return await _context.TucJobStatuses.OrderBy(s => s.UcjsId)
+            .Select(s => new Suggestion
+            {
+                Id = s.UcjsId,
+                Text = s.UcjsName
+            }).AsNoTracking().ToListAsync();
+    }
+
     public async Task<List<Lookup>> EventTypeListAsync()
     {
         return await _context.TucEventTypes
@@ -2043,6 +2053,9 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 };
                 updateNote = $"Changed Job Follow Up to {job.InternalStatusNavigation.TcisName}";
                 break;
+            case "Status":
+                job.UcjbStatus = int.Parse(value);
+                break;
             case "RefA":
                 job.UcjbClientRefa = value[..Math.Min(value.Length, 20)];
                 break;
@@ -2304,6 +2317,9 @@ public class JobRepository : BaseJobRepository, IJobRepository
                     _ => archive.Job.UcjbStatus
                 };
                 updateNote = $"Changed Job Follow Up to {archive.Job.InternalStatusNavigation.TcisName}";
+                break;
+            case "Status":
+                archive.Job.UcjbStatus = int.Parse(value);
                 break;
             case "RefA":
                 archive.Job.UcjbClientRefa = value[..Math.Min(value.Length, 20)];

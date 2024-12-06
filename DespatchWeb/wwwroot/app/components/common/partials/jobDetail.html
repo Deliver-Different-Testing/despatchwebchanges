@@ -165,9 +165,13 @@
             <div class="col-md-6">
                 <div class="row row-no-padding">
                     <div class="col-md-4">
-                        <div class="field" ng-if="!jdSvc.currentJob.bulkJob">
-                            <label class="disabled">Status</label>
-                            <div class="disabled value">{{jdSvc.currentJob.statusName}}</div>
+                        <div class="field"
+                             ng-click="!jdSvc.currentJob.locked && jdSvc.statusClick($event, jdSvc.currentJob)"
+                             ng-if="!jdSvc.currentJob.bulkJob">
+                            <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Status</label>
+                            <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
+                                {{jdSvc.currentJob.statusName}}
+                            </div>
                         </div>
 
                         <div class="field" ng-if="!jdSvc.currentJob.bulkJob">

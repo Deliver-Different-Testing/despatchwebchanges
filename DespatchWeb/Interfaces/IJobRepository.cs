@@ -87,6 +87,7 @@ public interface IJobRepository
     Task<List<Lookup>> LeaveParcelLocationsAsync();
     Task<List<UndeliverableLocation>> UndeliverableLocationsAsync();
     Task<List<InternalStatus>> GetInternalStatusListAsync();
+    Task<List<Suggestion>> GetStatusListAsync();
     Task<List<Lookup>> EventTypeListAsync();
 
     Task<decimal> RateTruckJob(int clientId, int fromId, int toId, double weight, int size, int speed,

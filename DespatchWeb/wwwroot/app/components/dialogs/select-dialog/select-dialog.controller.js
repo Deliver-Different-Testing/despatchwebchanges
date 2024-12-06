@@ -58,7 +58,9 @@ class SelectDialogController {
      * @returns {Object|null} The found option or null if not found.
      */
     _findInitialValue(options, initialValue) {
-        return options.items.find(option => option.text === initialValue) ?? null;
+        return options.items.find(option =>
+            option.text === initialValue || option.id === initialValue
+        ) ?? null;
     }
 
     /**
