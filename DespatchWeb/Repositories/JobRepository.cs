@@ -1941,13 +1941,13 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 updateNote = $"Changed AirportOnly to {(airportOnly ? "Yes" : "No")}";
                 break;
             case "Time":
-                job.UcjbTime = DateTime.Parse(field);
+                job.UcjbTime = DateTime.Parse(value);
                 break;
             case "Date":
-                job.UcjbDate = DateTime.Parse(field);
+                job.UcjbDate = DateTime.Parse(value);
                 break;
             case "Size":
-                job.UcjbSize = int.Parse(field);
+                job.UcjbSize = int.Parse(value);
                 updateNote = $"Changed Size to {job.UcjbSize}";
                 break;
             case "Items":

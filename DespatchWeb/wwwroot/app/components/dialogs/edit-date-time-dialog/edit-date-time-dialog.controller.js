@@ -161,12 +161,19 @@ class EditDateTimeDialogController {
     /**
      * @description Formats the date/time to the required string format.
      * @param {Date} dateTime - The date and time to format.
-     * @returns {Date} The formatted date.
+     * @returns {string} The formatted date string.
      *
      * @private
      */
     _formatDateTime(dateTime) {
-        return new Date(this.moment(dateTime).format("YYYY-MM-DDTHH:mm"));
+        // Ensure we're working with a valid date
+        if (!(dateTime instanceof Date) || isNaN(dateTime.getTime())) {
+            console.warn('Invalid date provided to _formatDateTime');
+            return null;
+        }
+
+        // Use moment directly without creating a new Date object
+        return this.moment(dateTime).format("YYYY-MM-DDTHH:mm");
     }
 
     /**
