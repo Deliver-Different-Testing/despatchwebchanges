@@ -637,13 +637,15 @@ class NationwideService {
     }
 
     /**
-     * Fetches flight options for a specific job. Optionally can specify departure date
+     * Fetches flight options for a specific job
      * @param {number} jobId - The ID of the job
-     * @param {string} departureDate - The date of departure.
-     * @throws {Error} If the API request fails or returns an unexpected response.
+     * @param {string|Date} departureDate - The date of departure
+     * @throws {Error} If the API request fails or returns an unexpected response
      */
     async getFlightOptions(jobId, departureDate) {
-        const formattedDate = this.moment(departureDate).format('YYYY-MM-DDTHH:mm:ss');
+        const formattedDate = this.moment(departureDate, this.moment.ISO_8601, true)
+            .format('YYYY-MM-DDTHH:mm:ss');
+
         const response = await this.$http.get('nationwideJob/GetScheduledFlightOptions', {
             params: {
                 departureDate: formattedDate,
@@ -653,7 +655,9 @@ class NationwideService {
 
         return {
             flights: response.data,
-            message: response.data.length === 0 ? 'Sorry, we couldn\'t find any flights between these airports on the selected date. Please try different dates or airports.' : null
+            message: response.data.length === 0
+                ? 'Sorry, we couldn\'t find any flights between these airports on the selected date. Please try different dates or airports.'
+                : null
         };
     }
 

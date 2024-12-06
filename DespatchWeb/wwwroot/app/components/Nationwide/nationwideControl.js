@@ -60,6 +60,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
              */
             $scope.jobDataType = JOB_DATA_TYPE;
 
+            /** @type {Date} */
+            $scope.currentSearchTime = new Date();
 
             $scope.sort = [];
             /** @type {FlightOptions[]} */
@@ -2377,7 +2379,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
          * Choose flight icon based on stage
          * @param {string} jobNumber
          */
-        $scope.getFlightIcon = function (jobNumber) {
+        $scope.getFlightIcon = jobNumber => {
             if (!jobNumber) return '';
 
             const lastChar = jobNumber.toString().slice(-1);
@@ -2489,6 +2491,60 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             $scope.jobGroups = false;
             $scope.jobsCurrentList = false;
         }
+
+        $scope.loadNextFlights = async () => {
+            $scope.flightsLoading = true;
+            $scope.flightError = null;
+
+            try {
+                if ($scope.flightOptions && $scope.flightOptions.length > 0) {
+                    let lastFlight = $scope.flightOptions[$scope.flightOptions.length - 1];
+                    // Parse the arrival time and ensure it's in ISO format
+                    $scope.currentSearchTime = moment(lastFlight.arrivalTime).toISOString();
+                }
+
+                const result = await NWData.getFlightOptions(
+                    $scope.currentJob.id,
+                    $scope.currentSearchTime);
+
+                $scope.flightOptions = result.flights;
+                console.log("Flight options:", result.flights);
+                $scope.flightMessage = result.message;
+                $scope.flightError = result.error;
+            } catch (error) {
+                $scope.flightError = 'Failed to load next set of flights: ' + error.message;
+            } finally {
+                $scope.flightsLoading = false;
+                $scope.$apply();
+            }
+        };
+
+        $scope.loadNextDayFlights = async () => {
+            $scope.flightsLoading = true;
+            $scope.flightError = null;
+
+            try {
+                // Set the search time to the start of the next day
+                $scope.currentSearchTime = moment($scope.currentSearchTime)
+                    .add(1, 'days')
+                    .startOf('day')
+                    .toISOString();
+
+                const result = await NWData.getFlightOptions(
+                    $scope.currentJob.id,
+                    $scope.currentSearchTime);
+
+                $scope.flightOptions = result.flights;
+                console.log("Flight options:", result.flights);
+                $scope.flightMessage = result.message;
+                $scope.flightError = result.error;
+            } catch (error) {
+                $scope.flightError = 'Failed to load next day\'s flights: ' + error.message;
+            } finally {
+                $scope.flightsLoading = false;
+                $scope.$apply();
+            }
+        };
 
         /**
          * @param {Object} $event
