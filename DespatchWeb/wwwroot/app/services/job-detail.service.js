@@ -1090,20 +1090,7 @@ class JobDetailService {
      * @param {Job} job - The job to update
      */
     async voidClick(job) {
-        const voidValue = !job.void;
-        const updateMethod = job.bulkJob ? this.DispatchData.updateBulkJobDetail : this.DispatchData.updateJobDetail;
-        const params = job.bulkJob ?
-            [job.id, "Void", voidValue, job.charge, FirstName, ContactID] :
-            [job.id, "Void", voidValue, job.charge, FirstName, ContactID, job.preBook];
-
-        try {
-            const response = await updateMethod.apply(this.DispatchData, params);
-            this.currentJob.void = voidValue;
-            return response;
-        } catch (error) {
-            console.log("Failed to update Void status. Please try again.");
-            throw error;
-        }
+        await this.toggleJobProperty(job, 'Void');
     }
 
     /**
