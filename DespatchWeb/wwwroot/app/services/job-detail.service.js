@@ -1,14 +1,14 @@
 class JobDetailService {
     constructor(DispatchData, $mdDialog, toastrService, rateJobService, $document, moment, versionUrl, APP_CONFIG, $rootScope) {
-        this._dispatchData = DispatchData;
-        this._$mdDialog = $mdDialog;
-        this._toastrService = toastrService;
-        this._rateJobService = rateJobService;
-        this._$document = $document;
-        this._moment = moment;
-        this._versionUrl = versionUrl;
+        this.DispatchData = DispatchData;
+        this.$mdDialog = $mdDialog;
+        this.toastrService = toastrService;
+        this.rateJobService = rateJobService;
+        this.$document = $document;
+        this.moment = moment;
+        this.versionUrl = versionUrl;
         this.APP_CONFIG = APP_CONFIG;
-        this._$rootScope = $rootScope;
+        this.$rootScope = $rootScope;
 
         this.isUsCustomer = APP_CONFIG.US_Customer;
         this.jobDetailLoading = false;
@@ -199,22 +199,9 @@ class JobDetailService {
     async setJob(job) {
         this.currentJob = job;
         try {
-            this.pickContacts = await this._dispatchData.getContactList(job.clientId);
+            this.pickContacts = await this.DispatchData.getContactList(job.clientId);
         } catch (error) {
             console.error('Error fetching contact list:', error);
-        }
-    }
-
-    /**
-     * @param {Object} $event
-     * @param {Job} job
-     */
-    async getClientContactDetail($event, job) {
-        $event.stopPropagation();
-        try {
-            job.contactList = await this._dispatchData.getContactDetailList(job.clientId);
-        } catch (error) {
-            console.error('Error fetching contact detail list:', error);
         }
     }
 
@@ -245,14 +232,6 @@ class JobDetailService {
     }
 
     /**
-     * @param {number} is
-     */
-    getInternalStatus(is) {
-        const selected = this.pickInternalStatus.find(({id}) => id === is);
-        return selected !== undefined ? selected.text : "";
-    }
-
-    /**
      * @param {Job} job
      */
     hasDGDocs(job) {
@@ -264,7 +243,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
     async displayPriceBreakdown($event, job) {
@@ -276,9 +255,9 @@ class JobDetailService {
          */
         const showDialog = async (description) => {
             console.log('Opening price breakdown dialog');
-            return this._$mdDialog.show(
-                this._$mdDialog.alert()
-                    .parent(this._$document.body)
+            return this.$mdDialog.show(
+                this.$mdDialog.alert()
+                    .parent(this.$document.body)
                     .clickOutsideToClose(true)
                     .title('Charge Information')
                     .htmlContent(description)
@@ -289,7 +268,7 @@ class JobDetailService {
 
         try {
             console.log('Fetching price breakdown data for job:', job.id);
-            const data = await this._dispatchData.getPriceBreakdown(job.id);
+            const data = await this.DispatchData.getPriceBreakdown(job.id);
             console.log('Received price breakdown data:', data);
 
             console.log('Formatting price breakdown');
@@ -301,8 +280,7 @@ class JobDetailService {
             console.log('Dialog closed successfully');
         } catch (error) {
             console.error('Error in displayPriceBreakdown:', error);
-            console.log('Showing error dialog to user');
-            await showDialog('An error occurred while fetching the price breakdown. Please try again.');
+            this.toastrService.showErrorToast('An error occurred while fetching the price breakdown. Please try again.');
         }
     }
 
@@ -324,33 +302,38 @@ class JobDetailService {
     };
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      * @param {string} title
      * @param {string} fieldName
      * @param {string} id
      */
-    showNotesDialog($event, job, title, fieldName, id = "editField") {
-        return this._$mdDialog.show({
-            controller: 'AddNotesDialogController',
-            controllerAs: "ctrl",
-            templateUrl: this._versionUrl("app/components/dialogs/add-notes-dialog/add-notes-dialog.html"),
-            parent: this._$document.body,
-            targetEvent: $event,
-            clickOutsideToClose: true,
-            fullscreen: true,
-            locals: {
-                id: id, fieldName: fieldName, title: title, job: job,
-            },
-            bindToController: true
-        }).then(updatedJob => {
-            this.currentJob = updatedJob
-        });
+    async showNotesDialog($event, job, title, fieldName, id = "editField") {
+        try {
+            await this.$mdDialog.show({
+                controller: 'AddNotesDialogController',
+                controllerAs: "ctrl",
+                templateUrl: this.versionUrl("app/components/dialogs/add-notes-dialog/add-notes-dialog.html"),
+                parent: this.$document.body,
+                targetEvent: $event,
+                clickOutsideToClose: true,
+                fullscreen: true,
+                locals: {
+                    id: id, fieldName: fieldName, title: title, job: job,
+                },
+                bindToController: true
+            });
+
+            // Refresh job detail in background
+            await this._refreshJobDetails(job.id);
+        } catch (error) {
+            this._handleError(error);
+        }
     }
 
     /**
      * Shows a dialog for editing a date
-     * @param {Object} $event - The triggering event
+     * @param $event
      * @param {Job} job - The job being edited
      * @param {string} title - The title of the dialog
      * @param {string} fieldName - The name of the field being edited
@@ -358,86 +341,92 @@ class JobDetailService {
      * @param {string} [id="editForm"] - The ID for the form
      * @returns {Promise} A promise that resolves when the dialog is closed
      */
-    showEditDateDialog($event, job, title, fieldName, date, id = "editForm") {
-        return this._$mdDialog.show({
-            controller: 'EditDateTimeDialogController',
-            controllerAs: 'ctrl',
-            parent: this._$document.body,
-            targetEvent: $event,
-            templateUrl: this._versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
-            clickOutsideToClose: false,
-            fullscreen: true,
-            locals: {
-                job,
-                title,
-                fieldName,
-                dateTime: date,
-                id,
-                showDate: true,
-                showTime: false
-            },
-            bindToController: true
-        })
-            .then(() => {
-                console.log('Dialog closed successfully');
-            })
-            .catch(error => {
-                console.log('Error in date dialog:', error);
+    async showEditDateDialog($event, job, title, fieldName, date, id = "editForm") {
+        try {
+            await this.$mdDialog.show({
+                controller: 'EditDateTimeDialogController',
+                controllerAs: 'ctrl',
+                parent: this.$document.body,
+                targetEvent: $event,
+                templateUrl: this.versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
+                clickOutsideToClose: false,
+                fullscreen: true,
+                locals: {
+                    job,
+                    title,
+                    fieldName,
+                    dateTime: date,
+                    id,
+                    showDate: true,
+                    showTime: false
+                },
+                bindToController: true
             });
+
+            // Refresh job detail in background
+            await this._refreshJobDetails(job.id);
+        } catch (error) {
+            this._handleError(error);
+        }
     }
 
     /**
      * Opens a dialog to edit the job date
-     * @param {Object} $event - The triggering event
+     * @param $event
      * @param {Job} job - The job to edit
-     * @returns {Promise} A promise that resolves when the edit is complete
      */
-    editJobDate($event, job) {
-        return this.showEditDateDialog($event, job, "Date", "Date", job.date);
+    async editJobDate($event, job) {
+        await this.showEditDateDialog($event, job, "Date", "Date", job.date);
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      * @param {string} title
      * @param {string} fieldName
      * @param {Date} time
      * @param {string} id
      */
-    showEditTimeDialog($event, job, title, fieldName, time, id = "editForm") {
-        return this._$mdDialog.show({
-            controller: 'EditDateTimeDialogController',
-            controllerAs: 'ctrl',
-            parent: this._$document.body,
-            targetEvent: $event,
-            templateUrl: this._versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
-            clickOutsideToClose: false,
-            fullscreen: true,
-            locals: {
-                job,
-                title,
-                fieldName,
-                dateTime: time,
-                id,
-                showDate: false,
-                showTime: true
-            },
-            bindToController: true
-        }).then(_ => {
-            console.log('Dialog closed!');
-        });
+    async showEditTimeDialog($event, job, title, fieldName, time, id = "editForm") {
+
+        try {
+            await this.$mdDialog.show({
+                controller: 'EditDateTimeDialogController',
+                controllerAs: 'ctrl',
+                parent: this.$document.body,
+                targetEvent: $event,
+                templateUrl: this.versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
+                clickOutsideToClose: false,
+                fullscreen: true,
+                locals: {
+                    job,
+                    title,
+                    fieldName,
+                    dateTime: time,
+                    id,
+                    showDate: false,
+                    showTime: true
+                },
+                bindToController: true
+            });
+
+            // Refresh job detail in background
+            await this._refreshJobDetails(job.id);
+        } catch (error) {
+            this._handleError(error);
+        }
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
-    editLogTime($event, job) {
-        return this.showEditTimeDialog($event, job, "Time", "Time", job.time);
+    async editLogTime($event, job) {
+        await this.showEditTimeDialog($event, job, "Time", "Time", job.time);
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
     editCompletedTime($event, job) {
@@ -445,7 +434,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      * @param {string} title
      * @param {string} fieldName
@@ -454,12 +443,12 @@ class JobDetailService {
      */
     async showEditDateTimeDialog($event, job, title, fieldName, datetime, id = "editForm") {
         try {
-            await this._$mdDialog.show({
+            await this.$mdDialog.show({
                 controller: 'EditDateTimeDialogController',
                 controllerAs: 'ctrl',
-                parent: this._$document.body,
+                parent: this.$document.body,
                 targetEvent: $event,
-                templateUrl: this._versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
+                templateUrl: this.versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
                 clickOutsideToClose: false,
                 fullscreen: true,
                 locals: {
@@ -474,18 +463,15 @@ class JobDetailService {
                 bindToController: true
             });
 
-            console.log('Dialog closed!');
+            // Refresh job detail in background
+            await this._refreshJobDetails(job.id);
         } catch (error) {
-            if (error === undefined) {
-                console.log('Dialog canceled');
-            } else {
-                console.error('Dialog error:', error);
-            }
+            this._handleError(error);
         }
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
     async editFollowUpTime($event, job) {
@@ -494,7 +480,7 @@ class JobDetailService {
 
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      * @param {string} title
      * @param {string} placeholder
@@ -503,7 +489,7 @@ class JobDetailService {
      * @param {string} field
      */
     async showEditPrompt($event, job, title, placeholder, ariaLabel, initialValue, field) {
-        const prompt = this._$mdDialog.prompt()
+        const prompt = this.$mdDialog.prompt()
             .title(title)
             .placeholder(placeholder)
             .ariaLabel(ariaLabel)
@@ -514,36 +500,24 @@ class JobDetailService {
             .cancel('Cancel');
 
         try {
-            const result = await this._$mdDialog.show(prompt);
+            // Get new value
+            const result = await this.$mdDialog.show(prompt);
 
-            // Update field
-            let fieldName = field.toLowerCase();
-            let matchingField = Object.keys(job).find(key => key.toLowerCase() === fieldName);
-
-            if (matchingField) {
-                job[matchingField] = result;
-            } else {
-                console.warn(`Field ${field} not found in job object.`);
-            }
-
+            // Update in backend
             const callData = {
                 "call": "updateDetailField", "field": field, "value": result, "jobID": job.id
             };
-
             await this.updateField(true, job, callData);
 
-            console.log('Complete');
+            // Refresh job detail in background
+            await this._refreshJobDetails(job.id);
         } catch (error) {
-            if (error instanceof Error) {
-                console.log(`Error: ${error.message}`);
-            } else {
-                console.log(`Edit ${title} Cancelled!`);
-            }
+            this._handleError(error);
         }
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
     async editClientCode($event, job) {
@@ -551,7 +525,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
     async editItems($event, job) {
@@ -559,7 +533,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
     async editJobToPhone($event, job) {
@@ -567,7 +541,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
     async editJobFromPhone($event, job) {
@@ -575,7 +549,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
     async editToJobContact($event, job) {
@@ -583,7 +557,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
 
@@ -592,7 +566,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
     async editFromJobContact($event, job) {
@@ -600,7 +574,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
     async editJobWeight($event, job) {
@@ -608,7 +582,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
     async editAmount($event, job) {
@@ -616,7 +590,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      * @param {boolean} isRefA
      */
@@ -630,7 +604,7 @@ class JobDetailService {
 
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
     async editOurRef($event, job) {
@@ -638,7 +612,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
     async editTrackingMobile($event, job) {
@@ -646,7 +620,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
     async editTrackingEmail($event, job) {
@@ -654,19 +628,19 @@ class JobDetailService {
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} currentJob
      */
     async editJobDimensions($event, currentJob) {
         const dimensions = currentJob.parcelDimensions;
         const jobId = currentJob.id;
 
-        await this._$mdDialog.show({
+        await this.$mdDialog.show({
             controller: 'EditParcelDimensionsDialogController',
             controllerAs: 'ctrl',
-            parent: this._$document.body,
+            parent: this.$document.body,
             targetEvent: $event,
-            templateUrl: this._versionUrl("app/components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.html"),
+            templateUrl: this.versionUrl("app/components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.html"),
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -687,9 +661,8 @@ class JobDetailService {
      */
     async updateField(reRate, job, callData) {
         try {
-            let response;
             if (reRate && !job.bulkJob) {
-                const rate = await this._rateJobService.rateJob(job);
+                const rate = await this.rateJobService.rateJob(job);
 
                 // Ensure rate is decimal
                 const numericRate = parseFloat(rate.replace(/[^\d.-]/g, ''));
@@ -697,7 +670,7 @@ class JobDetailService {
                     console.error('Failed to convert rate to a number:', rate);
                 }
 
-                await this._dispatchData.updateJobDetail(
+                await this.DispatchData.updateJobDetail(
                     callData.jobID,
                     callData.field,
                     callData.value,
@@ -714,7 +687,7 @@ class JobDetailService {
                 }
 
                 if (job.bulkJob) {
-                    await this._dispatchData.updateBulkJobDetail(
+                    await this.DispatchData.updateBulkJobDetail(
                         job.id,
                         callData.field,
                         callData.value,
@@ -723,7 +696,7 @@ class JobDetailService {
                         ContactID
                     );
                 } else {
-                    await this._dispatchData.updateJobDetail(
+                    await this.DispatchData.updateJobDetail(
                         callData.jobID,
                         callData.field,
                         callData.value,
@@ -736,14 +709,14 @@ class JobDetailService {
             }
         } catch (error) {
             console.error('Error updating job:', error);
-            this._toastrService.showErrorToast('Failed to update job. Please try again.');
+            this.toastrService.showErrorToast('Failed to update job. Please try again.');
             throw error;
         }
     }
 
     /**
      * Updates the GPS coordinates and address for a job
-     * @param {Object} $event - The triggering event
+     * @param $event
      * @param {Job} currentJob - The job to update
      * @param {string} field - The field to update ('deliveryAddress' or 'pickupAddress')
      */
@@ -766,12 +739,12 @@ class JobDetailService {
     showAddressDialog(event, currentJob, isDeliveryAddress) {
         const addressToUpdate = isDeliveryAddress ? currentJob.deliveryAddress : currentJob.pickupAddress;
 
-        return this._$mdDialog.show({
+        return this.$mdDialog.show({
             controller: 'EditAddressDialogController',
             controllerAs: 'ctrl',
-            parent: this._$document.body,
+            parent: this.$document.body,
             targetEvent: event,
-            templateUrl: this._versionUrl("app/components/dialogs/edit-address-dialog/edit-address-dialog.html"),
+            templateUrl: this.versionUrl("app/components/dialogs/edit-address-dialog/edit-address-dialog.html"),
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -799,12 +772,12 @@ class JobDetailService {
             this._updateJobAddressNz(job, addressResult, isDeliveryAddress);
 
         try {
-            //await this._updateBulkJobIfNeeded(updatedJob, addressData, isDeliveryAddress);
             await this.updateJobRateAndAddress(updatedJob, addressResult, isDeliveryAddress);
-            this.currentJob = updatedJob;
-            this._toastrService.showSuccessToast("Address successfully updated");
+            await this._refreshJobDetails(job.id);
+
+            this.toastrService.showSuccessToast("Address successfully updated");
         } catch (error) {
-            console.log('Error processing address update:', error);
+            this._handleError(error);
         }
     }
 
@@ -842,49 +815,19 @@ class JobDetailService {
 
     /**
      * @param {Job} job
-     * @param {AddressViewModel} addressDetails
-     * @param {boolean} isDeliveryAddress
-     */
-    async _updateBulkJobIfNeeded(job, addressDetails, isDeliveryAddress) {
-        if (!job.bulkJob) {
-            return;
-        }
-
-        // Show feature in development dialog
-        await this._showFeatureInDevelopment();
-
-
-        // Todo: Update bulk job addresses here to US
-        /*        const updateMethod = isDeliveryAddress ?
-                    this._dispatchData.updateBulkDeliveryAddress :
-                    this._dispatchData.updateBulkPickupAddress;
-
-                await updateMethod(
-                    job.id,
-                    addressDetails.addressLine5, // Assuming suburb is in addressLine5
-                    addressDetails.addressLine6, // Assuming postcode is in addressLine6
-                    addressDetails.fullAddress,
-                    addressDetails.latitude,
-                    addressDetails.longitude,
-                    FirstName
-                );*/
-    }
-
-    /**
-     * @param {Job} job
      * @param {Object} addressResult
      * @param {boolean} isDeliveryAddress
      *
      * @private
      */
     async updateJobRateAndAddress(job, addressResult, isDeliveryAddress) {
-        job.charge = await this._rateJobService.rateJob(job);
+        job.charge = await this.rateJobService.rateJob(job);
         const rate = Number(job.charge.replace(/[^0-9.-]+/g, ""));
 
         console.log('Job Rate: ' + rate);
 
         if (isDeliveryAddress) {
-            await this._dispatchData.updateDeliveryAddress(
+            await this.DispatchData.updateDeliveryAddress(
                 job.id,
                 rate,
                 FirstName,
@@ -892,7 +835,7 @@ class JobDetailService {
                 addressResult.addressData
             );
         } else {
-            await this._dispatchData.updatePickupAddress(
+            await this.DispatchData.updatePickupAddress(
                 job.id,
                 rate,
                 FirstName,
@@ -922,7 +865,6 @@ class JobDetailService {
     /**
      * Locks a job
      * @param {Job} job - The job to be locked
-     * @returns {Promise} A promise that resolves with the response or rejects with an error
      */
     async lockJob(job) {
         try {
@@ -944,7 +886,7 @@ class JobDetailService {
         job.done = !job.done;
 
         try {
-            const response = await this._dispatchData.releaseBulkJob(job.jobNo, job.bookedDate);
+            const response = await this.DispatchData.releaseBulkJob(job.jobNo, job.bookedDate);
             await this.selectBulkJobDetail(job.id);
             return response;
         } catch (error) {
@@ -955,7 +897,6 @@ class JobDetailService {
     /**
      * Toggles the VanOK status of a job
      * @param {Job} job - The job to update
-     * @returns {Promise} A promise that resolves with the response or rejects with an error
      */
     async vanOkClick(job) {
         const vanOkValue = !job.vanOK;
@@ -965,9 +906,9 @@ class JobDetailService {
             };
 
             await this.updateField(true, job, callData);
-            this.currentJob.vanOK = vanOkValue;
+            await this._refreshJobDetails(job.id);
         } catch (error) {
-            throw error; // Re-throw the error to propagate it
+            this._handleError(error);
         }
     }
 
@@ -983,8 +924,9 @@ class JobDetailService {
             };
 
             await this.updateField(true, job, callData);
+            await this._refreshJobDetails(job.id);
         } catch (error) {
-            console.log(error.message);
+            this._handleError(error);
         }
     }
 
@@ -999,17 +941,16 @@ class JobDetailService {
 
     /**
      * Generic function to toggle a job property
-     * @param {Job} job - The job to update
-     * @param {string} property - The property to toggle
-     * @param {boolean} useCharge - Whether to use job.charge or calculate a new rate
-     * @returns {Promise} A promise that resolves with the response or rejects with an error
+     * @param {Job} job
+     * @param {string} property
+     * @param {boolean} useCharge
      */
     async toggleJobProperty(job, property, useCharge = true) {
         const newValue = !job[property];
         const capitalizedProperty = property.charAt(0).toUpperCase() + property.slice(1);
 
         const updateJob = async (rate) => {
-            return this._dispatchData.updateJobDetail(
+            await this.DispatchData.updateJobDetail(
                 job.id,
                 capitalizedProperty,
                 newValue,
@@ -1021,19 +962,16 @@ class JobDetailService {
         };
 
         try {
-            let response;
             if (useCharge) {
-                response = await updateJob(job.charge);
+                await updateJob(job.charge);
             } else {
-                const rate = await this._rateJobService.rateJob(job);
-                response = await updateJob(this.extractNumericRate(rate));
+                const rate = await this.rateJobService.rateJob(job);
+                await updateJob(this.extractNumericRate(rate));
             }
 
-            this.currentJob[property] = newValue;
-            return response;
+            await this._refreshJobDetails(job.id);
         } catch (error) {
-            console.log(`Failed to update ${capitalizedProperty} status. Please try again.`);
-            throw error;
+            this._handleError(error);
         }
     }
 
@@ -1058,29 +996,15 @@ class JobDetailService {
      * @param {Job} job - The job to update
      */
     async directClick(job) {
-        const newDirectValue = !job.direct;
-
-        if (!newDirectValue) {
-            try {
-                const response = await this._dispatchData.processUncheckDirect(job.id, FirstName, ContactID, job.speedAccepted);
-                this.currentJob.direct = false;
-                return response;
-            } catch (error) {
-                console.log("Failed to uncheck Direct status. Please try again.");
-                throw error;
-            }
-        } else {
-            await this.toggleJobProperty(job, 'direct', false);
-        }
+        await this.toggleJobProperty(job, 'direct');
     }
 
     /**
      * Toggles the Attention status of a job
      * @param {Job} job - The job to update
-     * @returns {Promise} A promise that resolves with the response or rejects with an error
      */
-    attentionClick(job) {
-        return this.toggleJobProperty(job, 'attention');
+    async attentionClick(job) {
+        await this.toggleJobProperty(job, 'attention');
     }
 
     /**
@@ -1106,7 +1030,7 @@ class JobDetailService {
             // If job moves to reprice status, update internal status
             if (this.currentJob.reprice) {
                 const repriceStatusId = 4; // Assuming 4 is the ID for reprice status
-                await this._dispatchData.updateJobDetail(
+                await this.DispatchData.updateJobDetail(
                     job.id,
                     "InternalStatusID",
                     repriceStatusId,
@@ -1119,7 +1043,7 @@ class JobDetailService {
 
             // If job moves out of reprice status, restore previous status
             if (!this.currentJob.reprice && previousStatus) {
-                await this._dispatchData.updateJobDetail(
+                await this.DispatchData.updateJobDetail(
                     job.id,
                     "InternalStatusID",
                     previousStatus,
@@ -1130,75 +1054,50 @@ class JobDetailService {
                 );
             }
 
-            // Trigger refresh of job lists through callback
-            if (this.selectJobDetail) {
-                await this.selectJobDetail(job.id);
-            }
-
+            await this._refreshJobDetails(job.id);
         } catch (error) {
             console.error('Error in repriceClick:', error);
-            this._toastrService.showErrorToast('Failed to update reprice status. Please try again.');
-            throw error;
+            this.toastrService.showErrorToast('Failed to update reprice status. Please try again.');
         }
     }
 
     /**
      * Toggles the Return status of a pre-booked job
      * @param {Job} job - The job to update
-     * @returns {Promise} A promise that resolves with the response or rejects with an error
      */
-    preBookReturnClick(job) {
-        return this.toggleJobProperty(job, 'return');
+    async preBookReturnClick(job) {
+        await this.toggleJobProperty(job, 'return');
     }
 
     /**
      * Toggles the OneOff status of a job
      * @param {Job} job - The job to update
-     * @returns {Promise} A promise that resolves with the response or rejects with an error
      */
-    oneOffClick(job) {
-        return this.toggleJobProperty(job, 'oneOff');
+    async oneOffClick(job) {
+        await this.toggleJobProperty(job, 'oneOff');
     }
 
     /**
      * Toggles the Active status of a job
      * @param {Job} job - The job to update
-     * @returns {Promise} A promise that resolves with the response or rejects with an error
      */
     async activeClick(job) {
-        const activeValue = !job.active;
-        try {
-            const response = await this._dispatchData.updateJobDetail(
-                job.id,
-                "Active",
-                activeValue,
-                job.charge,
-                FirstName,
-                ContactID,
-                job.preBook
-            );
-            this.currentJob.active = activeValue;
-            return response;
-        } catch (error) {
-            console.log(error.message || "Failed to update Active status. Please try again.");
-            throw error;
-        }
+        await this.toggleJobProperty(job, 'Active');
     }
 
     /**
      * Toggles the Void status of a job
      * @param {Job} job - The job to update
-     * @returns {Promise} A promise that resolves with the response or rejects with an error
      */
     async voidClick(job) {
         const voidValue = !job.void;
-        const updateMethod = job.bulkJob ? this._dispatchData.updateBulkJobDetail : this._dispatchData.updateJobDetail;
+        const updateMethod = job.bulkJob ? this.DispatchData.updateBulkJobDetail : this.DispatchData.updateJobDetail;
         const params = job.bulkJob ?
             [job.id, "Void", voidValue, job.charge, FirstName, ContactID] :
             [job.id, "Void", voidValue, job.charge, FirstName, ContactID, job.preBook];
 
         try {
-            const response = await updateMethod.apply(this._dispatchData, params);
+            const response = await updateMethod.apply(this.DispatchData, params);
             this.currentJob.void = voidValue;
             return response;
         } catch (error) {
@@ -1209,34 +1108,33 @@ class JobDetailService {
 
     /**
      * Marks a job as done
-     * @param {Object} $event - The triggering event
+     * @param $event
      * @param {Job} job - The job to update
-     * @returns {Promise} A promise that resolves with the response or rejects with an error
      */
     async doneClick($event, job) {
         if (!job.completedTime || !job.podName) {
             try {
                 await this.showMissingInfoDialog($event, job);
-                this.currentJob.done = false;
             } catch (error) {
-                // If showMissingInfoDialog throws an error, we want to propagate it
-                throw error;
+                this._handleError(error);
             }
         }
 
         try {
-            const response = await this._dispatchData.updatePODDetail(job.jobNo, 6, job.podName, job.completedTime);
-            this.currentJob.done = !job.done;
-            return response;
+            await this.DispatchData.updatePODDetail(job.jobNo, 6, job.podName, job.completedTime);
+            await this._refreshJobDetails(job.id);
+
+            this.toastrService.showSuccessToast("Job successfully marked as done");
         } catch (error) {
-            console.log("Failed to mark job as done. Please try again.");
-            throw error;
+            const message = "Failed to mark job as done. Please try again.";
+            console.error(message);
+            this.toastrService.showErrorToast(message);
         }
     }
 
     /**
      * Shows a dialog for missing information
-     * @param {Object} $event - The triggering event
+     * @param $event
      * @param {Job} job - The job being updated
      * @returns {Promise} A promise that resolves when the dialog is closed
      */
@@ -1248,109 +1146,111 @@ class JobDetailService {
             message = 'You must set POD Name first';
         }
 
-        const confirm = this._$mdDialog.confirm()
+        const confirm = this.$mdDialog.confirm()
             .title(message)
             .targetEvent($event)
             .ok('OK');
 
-        return this._$mdDialog.show(confirm);
+        return this.$mdDialog.show(confirm);
     }
 
     /**
      * Toggles the Delivered status of a job
      * @param {Job} job - The job to update
-     * @returns {Promise} A promise that resolves with the response or rejects with an error
      */
-    deliveredClick(job) {
-        return this.toggleJobProperty(job, 'done');
+    async deliveredClick(job) {
+        await this.toggleJobProperty(job, 'done');
     }
 
     /**
      * Toggles the AirportOnly status of a job
      * @param {Job} job - The job to update
-     * @returns {Promise} A promise that resolves with the response or rejects with an error
      */
-    airportOnlyClick(job) {
-        return this.toggleJobProperty(job, 'airportOnly');
+    async airportOnlyClick(job) {
+        await this.toggleJobProperty(job, 'airportOnly');
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
-    trackingMethodClick($event, job) {
+    async trackingMethodClick($event, job) {
         const trackingArray = this.options.detail.tracking.map(item => {
             return {
                 id: item.id, text: item.label
             };
         });
 
-        this.showSelectDialog($event, job, trackingArray, "TrackingMethod", "Tracking Method", this.getTrackingMethod(job.trackingMethod));
+        await this.showSelectDialog($event, job, trackingArray, "TrackingMethod", "Tracking Method", this.getTrackingMethod(job.trackingMethod));
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
-    leaveClick($event, job) {
-        this.showSelectDialog($event, job, this.pickLeaveList, "DeliverToLeaveID", "Leave Parcel", job.sigNotRequired || "Signature Required");
+    async leaveClick($event, job) {
+        await this.showSelectDialog($event, job, this.pickLeaveList, "DeliverToLeaveID", "Leave Parcel", job.sigNotRequired || "Signature Required");
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
-    undeliverableClick($event, job) {
-        this.showSelectDialog($event, job, this.pickUndeliverableList, "UndeliverableLocationID", "Undeliverable Location", job.udStatus);
+    async undeliverableClick($event, job) {
+        await this.showSelectDialog($event, job, this.pickUndeliverableList, "UndeliverableLocationID", "Undeliverable Location", job.udStatus);
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
-    sizeClick($event, job) {
-        this.showSelectDialog($event, job, this.pickVehicleSizes, "Size", "Size", job.size.text);
+    async sizeClick($event, job) {
+        await this.showSelectDialog($event, job, this.pickVehicleSizes, "Size", "Size", job.size.text);
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      * @param {[]} data
      * @param {string} fieldName
      * @param {string} title
-     * @param {string|null} initialValue
+     * @param {string|number|null} initialValue
      * @param {string} id
      * @param {boolean} showCheckbox
      * @param {string} checkboxLabel
      */
-    showSelectDialog($event, job, data, fieldName, title, initialValue = null,
-                     id = "editField", showCheckbox = false, checkboxLabel = "") {
+    async showSelectDialog($event, job, data, fieldName, title, initialValue = null,
+                           id = "editField", showCheckbox = false, checkboxLabel = "") {
         const options = {
             minimumInputLength: 1, items: data, placeholder: title
         };
 
-        this._$mdDialog.show({
-            controller: 'SelectDialogController',
-            controllerAs: 'ctrl',
-            parent: this._$document.body,
-            targetEvent: $event,
-            templateUrl: this._versionUrl('app/components/dialogs/select-dialog/select-dialog.html'),
-            clickOutsideToClose: true,
-            fullscreen: true,
-            locals: {
-                id, fieldName, title, job, options, initialValue, showCheckbox, checkboxLabel
-            },
-            bindToController: true
-        }).then(_ => {
-            console.log('Dialog closed!');
-        });
+        try {
+            await this.$mdDialog.show({
+                controller: 'SelectDialogController',
+                controllerAs: 'ctrl',
+                parent: this.$document.body,
+                targetEvent: $event,
+                templateUrl: this.versionUrl('app/components/dialogs/select-dialog/select-dialog.html'),
+                clickOutsideToClose: true,
+                fullscreen: true,
+                locals: {
+                    id, fieldName, title, job, options, initialValue, showCheckbox, checkboxLabel
+                },
+                bindToController: true
+            });
+
+            await this._refreshJobDetails(job.id);
+        } catch (error) {
+            this._handleError(error);
+        }
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
-    dgClassClick($event, job) {
+    async dgClassClick($event, job) {
         let dgClassOptions = [];
         for (let i = 1; i <= 9; i++) {
             dgClassOptions.push({id: i, text: i.toString()});
@@ -1358,39 +1258,39 @@ class JobDetailService {
 
         const initialValue = !job.dgClass ? null : job.dgClass;
 
-        this.showSelectDialog($event, job, dgClassOptions, "DGClass", "DG Class", initialValue, "editField", true, "Has Documentation?");
+        await this.showSelectDialog($event, job, dgClassOptions, "DGClass", "DG Class", initialValue, "editField", true, "Has Documentation?");
+    }
+
+    /**
+     * @param $event
+     * @param {Job} job
+     */
+    async notifyClick($event, job) {
+        await this.showSelectDialog($event, job, this.pickSpeeds, "NotifiedJobTypeID", "Notified", job.notifiedName);
     }
 
     /**
      * @param {Object} $event
      * @param {Job} job
      */
-    notifyClick($event, job) {
-        this.showSelectDialog($event, job, this.pickSpeeds, "NotifiedJobTypeID", "Notified", job.notifiedName);
+    async acceptedClick($event, job) {
+        await this.showSelectDialog($event, job, this.pickSpeeds, "AcceptedJobTypeID", "Accepted", job.acceptedName);
     }
 
     /**
-     * @param {Object} event
+     * @param $event
      * @param {Job} job
      */
-    acceptedClick(event, job) {
-        this.showSelectDialog(event, job, this.pickSpeeds, "AcceptedJobTypeID", "Accepted", job.acceptedName);
+    async speedClick($event, job) {
+        await this.showSelectDialog($event, job, this.pickSpeeds, "SpeedID", "Speed", job.speedName);
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
-    speedClick($event, job) {
-        this.showSelectDialog($event, job, this.pickSpeeds, "SpeedID", "Speed", job.speedName);
-    }
-
-    /**
-     * @param {Object} $event
-     * @param {Job} job
-     */
-    contactClick($event, job) {
-        this.showSelectDialog($event, job, this.pickContacts, "ContactID", "Contact", job.contactName);
+    async contactClick($event, job) {
+        await this.showSelectDialog($event, job, this.pickContacts, "ContactID", "Contact", job.contactName);
     }
 
     /**
@@ -1410,10 +1310,10 @@ class JobDetailService {
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
-    jobTypeClick($event, job) {
+    async jobTypeClick($event, job) {
         const data = [{
             id: 1, text: 'Pickup'
         }, {
@@ -1422,19 +1322,12 @@ class JobDetailService {
             id: 3, text: '3rd-Party'
         }];
 
-        this.showSelectDialog($event, job, data, "JobTypeID", "Job Type", this.getJobTypeDescription(job.jobType));
+        const jobTypeDes = this.getJobTypeDescription(job.jobType);
+        await this.showSelectDialog($event, job, data, "JobTypeID", "Job Type", jobTypeDes);
     }
 
     /**
-     * @param {Object} $event
-     * @param {Job} job
-     */
-    internalStatusClick($event, job) {
-        this.showSelectDialog($event, job, this.pickInternalStatus, "InternalStatusID", "Service", "Select new status....");
-    }
-
-    /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      * @param {string} url
      * @param {string} placeholder
@@ -1444,33 +1337,37 @@ class JobDetailService {
      * @param {null} existingItem
      * @param {boolean} showRerateOption
      */
-    showAutocompleteDialog($event, job, url, placeholder, fieldName, title, id = "editField", existingItem, showRerateOption) {
+    async showAutocompleteDialog($event, job, url, placeholder, fieldName, title, existingItem, showRerateOption, id = "editField") {
         const options = {
             placeholder, minimumInputLength: 3, searchUrl: url
         };
 
-        this._$mdDialog.show({
-            controller: 'AutoCompleteDialogController',
-            controllerAs: 'ctrl',
-            parent: this._$document.body,
-            targetEvent: $event,
-            templateUrl: this._versionUrl('app/components/dialogs/auto-complete-dialog/auto-complete-dialog.html'),
-            clickOutsideToClose: true,
-            fullscreen: true,
-            locals: {
-                id, fieldName, title, job, options, existingItem, showRerateOption
-            },
-            bindToController: true
-        }).then(_ => {
-            console.log('Dialog closed!')
-        });
+        try {
+            await this.$mdDialog.show({
+                controller: 'AutoCompleteDialogController',
+                controllerAs: 'ctrl',
+                parent: this.$document.body,
+                targetEvent: $event,
+                templateUrl: this.versionUrl('app/components/dialogs/auto-complete-dialog/auto-complete-dialog.html'),
+                clickOutsideToClose: true,
+                fullscreen: true,
+                locals: {
+                    id, fieldName, title, job, options, existingItem, showRerateOption
+                },
+                bindToController: true
+            });
+
+            await this._refreshJobDetails(job.id);
+        } catch (error) {
+            this._handleError(error);
+        }
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
-    clientClick($event, job) {
+    async clientClick($event, job) {
         const url = "/home/ActiveClients";
         const placeholder = "Start typing to enter new client...";
 
@@ -1478,89 +1375,112 @@ class JobDetailService {
             id: job.clientId, text: job.clientName
         }
 
-        return this.showAutocompleteDialog($event, job, url, placeholder, "clientId", "Client", job.id, existingItem, true)
+        await this.showAutocompleteDialog($event, job, url, placeholder, "clientId", "Client", existingItem, true)
     }
 
     /**
-     * @param {Object} $event
+     * @param $event
      * @param {Job} job
      */
-    courierClick($event, job) {
+    async courierClick($event, job) {
         const url = "/courier/AllActiveSearch";
         const placeholder = "Start typing to search courier...";
 
-        return this.showAutocompleteDialog($event, job, url, placeholder, "CourierID", "Courier", job.id, null, false)
+        await this.showAutocompleteDialog($event, job, url, placeholder, "CourierID", "Courier", null, false)
     }
 
     /**
      * Shows a dialog for creating or editing a pallet
-     * @param {Object} $event - The triggering event
+     * @param $event
      * @param {Job} job - The job associated with the pallet
      * @param {Object} [existingPallet] - The pallet to edit (if editing an existing pallet)
-     * @returns {Promise} A promise that resolves when the dialog is closed
      */
-    showPalletDialog($event, job, existingPallet = undefined) {
+    async showPalletDialog($event, job, existingPallet = undefined) {
         const isEditing = !!existingPallet;
         const dialogTitle = isEditing ? 'Edit Pallet' : 'New Pallet';
 
-        return this._$mdDialog.show({
-            controller: 'PalletDialogController',
-            controllerAs: "ctrl",
-            templateUrl: this._versionUrl("app/components/dialogs/add-pallet-dialog/add-pallet-dialog.html"),
-            parent: this._$document.body,
-            targetEvent: $event,
-            clickOutsideToClose: true,
-            fullscreen: true,
-            locals: {
-                job,
-                dispatcherName: FirstName,
-                contactId: ContactID,
-                existingPallet,
-                dialogTitle
-            },
-            bindToController: true
-        })
-            .then((result) => {
-                console.log(`Pallet Dialog closed: ${isEditing ? 'Edited' : 'Created'} pallet`);
-                return result; // Return the result for further processing if needed
-            })
-            .catch((error) => {
-                console.log('Error in pallet dialog:', error);
-                console.log(`Failed to ${isEditing ? 'edit' : 'create'} pallet. Please try again.`);
+        try {
+            await this.$mdDialog.show({
+                controller: 'PalletDialogController',
+                controllerAs: "ctrl",
+                templateUrl: this.versionUrl("app/components/dialogs/add-pallet-dialog/add-pallet-dialog.html"),
+                parent: this.$document.body,
+                targetEvent: $event,
+                clickOutsideToClose: true,
+                fullscreen: true,
+                locals: {
+                    job,
+                    dispatcherName: FirstName,
+                    contactId: ContactID,
+                    existingPallet,
+                    dialogTitle
+                },
+                bindToController: true
             });
+
+            await this._refreshJobDetails(job.id);
+        } catch (error) {
+            this._handleError(error);
+        }
     }
 
     /**
      * Opens a dialog to create a new pallet
-     * @param {Object} event - The triggering event
+     * @param {Object} $event - The triggering event
      * @param {Job} job - The job to associate with the new pallet
      * @returns {Promise} A promise that resolves when the creation is complete
      */
-    newPallet(event, job) {
-        return this.showPalletDialog(event, job);
+    async newPallet($event, job) {
+        await this.showPalletDialog($event, job);
     }
 
     /**
      * Opens a dialog to edit an existing pallet
-     * @param {Object} event - The triggering event
+     * @param {Object} $event - The triggering event
      * @param {Job} job - The job associated with the pallet
      * @param {Object} pallet - The pallet to edit
      * @returns {Promise} A promise that resolves when the edit is complete
      */
-    editPallet(event, job, pallet) {
-        return this.showPalletDialog(event, job, pallet);
+    async editPallet($event, job, pallet) {
+        await this.showPalletDialog($event, job, pallet);
     }
 
     async _showFeatureInDevelopment() {
         // Show feature in development dialog
-        await this._$mdDialog.show({
+        await this.$mdDialog.show({
             controller: 'FeatureInDevelopmentDialogController',
             controllerAs: 'ctrl',
-            templateUrl: this._versionUrl('app/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.html'),
-            parent: this._$document.body,
+            templateUrl: this.versionUrl('app/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.html'),
+            parent: this.$document.body,
             clickOutsideToClose: true,
             bindToController: true
         });
+    }
+
+    /**
+     * Refreshes the job details in the background after an update
+     * @param {number} jobId - The ID of the job to refresh
+     * @returns {Promise<void>}
+     * @private
+     */
+    async _refreshJobDetails(jobId) {
+        try {
+            if (this.currentJob) {
+                this.currentJob = await this.DispatchData.getJobDetail(jobId);
+            }
+        } catch (error) {
+            console.error('Error refreshing job details:', error);
+            this.toastrService.showErrorToast();
+        }
+    }
+
+    _handleError(error) {
+        if (error === undefined) {
+            console.log('User closed dialog');
+        } else {
+            console.error(error);
+            this.toastrService.showErrorToast();
+        }
     }
 }
 

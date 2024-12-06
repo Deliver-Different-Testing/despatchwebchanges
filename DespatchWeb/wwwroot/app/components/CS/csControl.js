@@ -824,14 +824,14 @@ angular.module('uDispatch').controller('CSControl', [
                 $scope.jobQuery.limit)
                 .then(response => {
                     if (response.status === 200) {
-                        var filename = response.headers()["content-disposition"]
+                        let filename = response.headers()["content-disposition"]
                             ?.split(";")
                             ?.find(s => s.includes("filename=\""));
                         filename = filename
                             ?.substring(filename.indexOf("\"") + 1, filename.length - 1);
 
-                        var objectUrl = (URL || webkitURL).createObjectURL(response.data);
-                        var link = document.createElement("A");
+                        const objectUrl = (URL || webkitURL).createObjectURL(response.data);
+                        const link = document.createElement("A");
                         link.href = objectUrl;
                         link.target = "_blank";
                         link.download = filename;
@@ -848,14 +848,14 @@ angular.module('uDispatch').controller('CSControl', [
         };
 
         $scope.onUploadJobList = function () {
-            var files = document.getElementById("jobListUpload").files;
+            const files = document.getElementById("jobListUpload").files;
             if (!files || files.length !== 1) {
                 document.getElementById("jobListUpload").value = null;
                 return;
             }
             // Check right file extension
-            var file = files[0];
-            var index = file.name.lastIndexOf(".");
+            const file = files[0];
+            const index = file.name.lastIndexOf(".");
             if (index < 1 || !['.xls', '.xlsx', '.csv'].includes(file.name.substring(index, file.name.length).toLowerCase())) {
                 document.getElementById("jobListUpload").value = null;
                 console.error("Please upload correct file type, file extension should be .xls, .xlsx or .csv");
@@ -1018,7 +1018,6 @@ angular.module('uDispatch').controller('CSControl', [
                 }
             } catch (error) {
                 console.error('Error in selectJobDetail:', error);
-                // Handle the error appropriately, e.g., show an error message to the user
             }
         };
 
@@ -1086,7 +1085,6 @@ angular.module('uDispatch').controller('CSControl', [
                 }
             } catch (error) {
                 console.error('Error in selectPreBookDetail:', error);
-                // Handle the error appropriately, e.g., show an error message to the user
             }
         };
 
