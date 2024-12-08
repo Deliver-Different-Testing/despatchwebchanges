@@ -646,6 +646,8 @@ class NationwideService {
         const formattedDate = this.moment(departureDate, this.moment.ISO_8601, true)
             .format('YYYY-MM-DDTHH:mm:ss');
 
+        console.log(formattedDate);
+
         const response = await this.$http.get('nationwideJob/GetScheduledFlightOptions', {
             params: {
                 departureDate: formattedDate,

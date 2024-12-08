@@ -85,7 +85,7 @@ public class FlightStatsService : IFlightStatsService
         string departureAirportCode,
         string destinationAirportCode,
         DateTime? departureDateTime = null,
-        DateTime? flightBuffer = null,
+        int flightBuffer = 0,
         string codeType = null,
         string[] extendedOptions = null)
     {
@@ -107,8 +107,12 @@ public class FlightStatsService : IFlightStatsService
         }
 
         var connectionClient = new RestClient(ConnectionUrl);
-        flightBuffer ??= DateTime.Now;
-        var (year, month, day, hour, minute) = SplitDate(flightBuffer.Value);
+
+        // Get datetime to sort flights from
+        var flightsFrom = departureDateTime ?? DateTime.Now;
+        flightsFrom = flightsFrom.AddMinutes(flightBuffer);
+
+        var (year, month, day, hour, minute) = SplitDate(flightsFrom);
 
         var request =
             new RestRequest(
