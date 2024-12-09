@@ -2106,26 +2106,78 @@ angular.module("uDispatch")
             }
         };
 
-// Select the courier
+        /**
+         * @param {CourierData} courier
+         */
         $scope.selectCourier = async (courier) => {
-            const loadingElement = angular.element("#box-jobDetail .loading");
-            const mapLoadingElement = angular.element('#box-map .loading');
-
             try {
-                helperFunctions.showLoading(loadingElement);
-                helperFunctions.showLoading(mapLoadingElement);
+                // Set loading states
+                await $timeout(() => {
+                    $scope.currentListLoading = true;
+                    $scope.jobsLoading = true;
+                });
 
+                // Deactivate all couriers first
                 deactivateAllCouriers();
-                activateSelectedCourier(courier);
 
-                await updateCourierInfo(courier);
-                await fetchTruckCourierStatus(courier);
+                // Activate the selected courier
+                if (courier) {
+                    courier.isActive = true;
+                    if (!courier.courier) {
+                        courier.courier = `${courier.code} ${courier.firstName}`;
+                    }
+                }
 
-                $scope.$apply();
+                // Find the courier in pickCouriers or pickAllCouriers
+                const foundCourier = $scope.pickCouriers.find(c => c.courierID === courier.courierID) ||
+                    $scope.pickAllCouriers.find(c => c.courierID === courier.courierID);
+
+                if (foundCourier) {
+                    // Update current courier information
+                    $scope.currentCourier = {
+                        courierID: foundCourier.courierID,
+                        courier: foundCourier.label || `${foundCourier.code} ${foundCourier.firstName}`
+                    };
+
+                    // Update current work selection text
+                    $scope.currentWorkSelection = ` for Courier ${$scope.currentCourier.courier}`;
+                    $scope.currentSelection = ` for Courier ${$scope.currentCourier.courier}`;
+
+                    // Get current jobs for the courier
+                    await getCurrentJobs(foundCourier.courierID);
+
+                    // Update truck courier status if available
+                    try {
+                        const result = await DispatchData.truckCourierStatus(foundCourier.courierID);
+                        if (result && result.data) {
+                            $scope.truckCourierStatus = result.data;
+                        }
+                    } catch (error) {
+                        console.warn('Error fetching truck courier status:', error);
+                    }
+
+                    // Update headings after a delay
+                    $timeout(() => sizeHeadings(), 1000);
+                    $timeout(() => sizeHeadings(), 2000);
+                } else {
+                    console.warn('Courier not found in active or all couriers list');
+                    toastrService.showErrorToast('Could not find courier information');
+                }
+
+                // Ensure view is updated
+                if (!$scope.$$phase) {
+                    $scope.$apply();
+                }
+
             } catch (error) {
                 console.error('Error selecting courier:', error);
+                toastrService.showErrorToast('Error loading courier information');
             } finally {
-                hideLoadingAfterTimeout(loadingElement, mapLoadingElement);
+                // Reset loading states
+                await $timeout(() => {
+                    $scope.currentListLoading = false;
+                    $scope.jobsLoading = false;
+                });
             }
         };
 
