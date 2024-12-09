@@ -1536,7 +1536,7 @@ angular.module("uDispatch")
             await $scope.getData();
             angular.element('#box-map .loading').css('display', '');
 
-            $scope.courier = {gpsCourier: foundCourier.courierID};
+            $scope.courier = {gpsCourier: foundCourier.id};
             await $scope.searchCourier();
         };
 
