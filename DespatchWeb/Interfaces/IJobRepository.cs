@@ -87,6 +87,7 @@ public interface IJobRepository
     Task<List<Lookup>> LeaveParcelLocationsAsync();
     Task<List<UndeliverableLocation>> UndeliverableLocationsAsync();
     Task<List<InternalStatus>> GetInternalStatusListAsync();
+    Task<List<Suggestion>> GetStatusListAsync();
     Task<List<Lookup>> EventTypeListAsync();
 
     Task<decimal> RateTruckJob(int clientId, int fromId, int toId, double weight, int size, int speed,
@@ -140,7 +141,7 @@ public interface IJobRepository
         decimal pickupLng, bool cbd, decimal rate, string despatcher);
 
     Task ReleaseBulkJobAsync(string jobNumber, DateTime bookDate);
-    Task UpdateJobAsync(int jobId, string field, string value, decimal? rate, string despatcher, int staffId);
+    Task UpdateJobAsync(int jobId, string field, string value, decimal? rate, string userName, int staffId);
 
     Task UpdateBulkJobAsync(int bulkJobId, string field, string value, decimal? rate, string despatcher,
         int staffId);
@@ -166,6 +167,7 @@ public interface IJobRepository
         JobStatusGroup statusGroup,
         int page,
         int limit,
+        bool isUsCustomer = true,
         string search = null,
         DateTime? startDate = null,
         DateTime? endDate = null,
@@ -177,4 +179,5 @@ public interface IJobRepository
     Task<OverviewStatsViewModel> GetOverviewStatsAsync();
 
     Task<OverviewDeliveryMapResponse> GetOverviewLocationDataAsync(int jobId);
+    Task<List<MegaMapResponse>> GetJobsForMegaMapAsync();
 }

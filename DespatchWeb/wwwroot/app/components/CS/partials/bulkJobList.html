@@ -1,7 +1,7 @@
 <!-- Bulk Job List Container -->
 <div class="droppable-box" style="min-height:500px">
     <md-table-container>
-        <table md-progress="bulkJobPromise" md-table>
+        <table md-dense md-progress="bulkJobPromise" md-table>
             <thead md-head md-on-reorder="orderList('bulkJobList', bulkJobQuery.order)" md-order="bulkJobQuery.order">
             <tr md-row>
                 <th md-column md-order-by="booked">
@@ -34,6 +34,7 @@
                 data-jobNo="{{job.jobNo}}"
                 data-jobid="{{job.id}}"
                 md-row
+                md-dense
                 ng-click="selectBulkJobDetail(job.id)"
                 ng-repeat="job in bulkJobList | filter: box.searchBox | orderBy: bulkJobQuery.order">
 
@@ -42,12 +43,14 @@
                 <td md-cell ng-click="speedColumnClick($event); $event.stopPropagation()">{{job.speed}}</td>
                 <td md-cell>{{job.jobNo}}</td>
                 <td md-cell ng-click="clientColumnClick($event); $event.stopPropagation()">{{job.client}}</td>
-                <td md-cell ng-click="fromColumnClick($event); $event.stopPropagation()">
-                    {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
+                <td md-cell>
+                    {{isUsCustomer ? job.pickupAddress.addressLine5 + ' ' + job.pickupAddress.addressLine6 : job.from}}
+                    <md-tooltip md-direction="bottom">{{ job.pickupAddress.fullAddress }}</md-tooltip>
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
                 </td>
-                <td md-cell ng-click="toColumnClick($event); $event.stopPropagation()">
-                    {{job.to}}
+                <td md-cell>
+                    {{isUsCustomer ? job.deliveryAddress.addressLine5 + ' ' + job.deliveryAddress.addressLine6 : job.to}}
+                    <md-tooltip md-direction="bottom">{{ job.deliveryAddress.fullAddress }}</md-tooltip>
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
                 </td>
             </tr>
@@ -64,31 +67,3 @@
             md-total="{{bulkJobTotalCount}}">
     </md-table-pagination>
 </div>
-
-<!-- Loading Indicator -->
-<div class="loading" ng-if="bulkJobPromise">
-    <div class="text">
-        <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
-        <span class="sr-only">Loading...</span>
-    </div>
-</div>
-
-<style>
-    .material-symbols-outlined {
-        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24
-    }
-
-    /* Preserve status styling */
-    .status {
-        font-weight: 500;
-    }
-
-    .md-table-container {
-        overflow: auto;
-    }
-
-    /* Ensure proper cursor for clickable elements */
-    [ng-click] {
-        cursor: pointer;
-    }
-</style>

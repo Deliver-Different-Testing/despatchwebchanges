@@ -3,7 +3,8 @@
  * @description Controller for delivery overview page
  */
 class OverviewController {
-    constructor($mdDialog, $mdSidenav, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state, $window, greetingService) {
+    constructor($mdDialog, $mdSidenav, overviewService, versionUrl, $document,
+                $scope, $timeout, toastrService, moment, $state, $window, greetingService, openJobDispatchService) {
         this.$mdDialog = $mdDialog;
         this.$mdSidenav = $mdSidenav;
         this.overviewService = overviewService;
@@ -14,6 +15,7 @@ class OverviewController {
         this.moment = moment;
         this.$state = $state;
         this.$window = $window;
+        this.openJobDispatchService = openJobDispatchService;
 
         this.greeting = greetingService.greetUser(FirstName);
         this.statistics = {
@@ -54,17 +56,6 @@ class OverviewController {
         this.allSpeedsSelected = false;
 
         this.activeTab = 0;
-
-        // Bind class methods to maintain 'this' context
-        this.setTab = this.setTab.bind(this);
-        this.getStatusLabel = this.getStatusLabel.bind(this);
-        this.getStatusIcon = this.getStatusIcon.bind(this);
-        this.onReorder = this.onReorder.bind(this);
-        this.onPaginate = this.onPaginate.bind(this);
-        this.refreshData = this.refreshData.bind(this);
-        this.handleSearchChange = this.handleSearchChange.bind(this);
-        this.showDateRangeDialog = this.showDateRangeDialog.bind(this);
-        this.clearDateRange = this.clearDateRange.bind(this);
 
         // Initialize data and set up watchers
         this.initializeData($scope);
@@ -149,55 +140,11 @@ class OverviewController {
     }
 
     /**
-     * Get the status label for a tab
-     * @param {number} tabIndex The tab index
-     * @returns {string} The status label
-     */
-    getStatusLabel(tabIndex) {
-        const labels = ['Active', 'Inactive', 'Completed'];
-        return labels[tabIndex] || '';
-    }
-
-    /**
-     * Get the status icon for a tab
-     * @param {number} tabIndex The tab index
-     * @returns {string} The material icon name
-     */
-    getStatusIcon(tabIndex) {
-        const icons = ['cycle', 'pause_circle', 'task_alt'];
-        return icons[tabIndex] || '';
-    }
-
-    /**
-     * Get the value for a statistics tab
-     * @param {number} tabIndex The tab index
-     * @returns {number} The statistics value
-     */
-    getStatValue(tabIndex) {
-        const statKeys = ['active', 'inactive', 'completed'];
-        return this.statistics[statKeys[tabIndex]] || 0;
-    }
-
-    /**
      * Get status group based on active tab
      * @returns {number} status group enum value
      */
     getStatusGroup() {
         return this.activeTab + 1; // Maps to JobStatusGroup enum (1-based)
-    }
-
-    /**
-     * Handle sort order change
-     * @param {string} order The new sort order
-     */
-    async onReorder(order) {
-        if (!this.query) {
-            this.query = {};
-        }
-
-        this.query.order = order;
-        this.query.page = 1;
-        await this.refreshData();
     }
 
     /**
@@ -214,21 +161,6 @@ class OverviewController {
             this.query.page = 1; // Reset to first page on new search
             await this.refreshData();
         }, 300); // 300ms debounce
-    }
-
-    /**
-     * Handle pagination changes
-     * @param {number} page
-     * @param {number} limit
-     */
-    async onPaginate(page, limit) {
-        if (!this.query) {
-            this.query = {};
-        }
-
-        this.query.page = page;
-        this.query.limit = limit;
-        await this.refreshData();
     }
 
     async getRegions() {
@@ -469,13 +401,13 @@ class OverviewController {
      */
     openJobDetail(delivery) {
         if (delivery && delivery.jobId) {
-            // Get the URL for the state
-            const url = this.$state.href('home', {jobId: delivery.jobId});
-            // Open in new tab
-            this.$window.open(url, '_blank');
-        } else {
-            this.toastrService.showErrorToast("Cannot open job details: Invalid job ID");
+            this.openJobDispatchService.openJobDetail(delivery.jobId);
         }
+    }
+
+    openMegaMap() {
+        const url = this.$state.href('megaMap');
+        this.$window.open(url, '_blank');
     }
 
     /**
@@ -539,4 +471,4 @@ class OverviewController {
     }
 }
 
-angular.module('uDispatch').controller('deliveryOverview', ['$mdDialog', '$mdSidenav', 'overviewService', 'versionUrl', '$document', '$scope', '$timeout', 'toastrService', 'moment', '$state', '$window', 'greetingService', ($mdDialog, $mdSidenav, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state, $window, greetingService) => new OverviewController($mdDialog, $mdSidenav, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state, $window, greetingService)]);
+angular.module('uDispatch').controller('deliveryOverview', ['$mdDialog', '$mdSidenav', 'overviewService', 'versionUrl', '$document', '$scope', '$timeout', 'toastrService', 'moment', '$state', '$window', 'greetingService', 'openJobDispatchService', ($mdDialog, $mdSidenav, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state, $window, greetingService, openJobDispatchService) => new OverviewController($mdDialog, $mdSidenav, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state, $window, greetingService, openJobDispatchService)]);

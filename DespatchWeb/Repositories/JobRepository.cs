@@ -1300,6 +1300,16 @@ public class JobRepository : BaseJobRepository, IJobRepository
             .ToListAsync();
     }
 
+    public async Task<List<Suggestion>> GetStatusListAsync()
+    {
+        return await _context.TucJobStatuses.OrderBy(s => s.UcjsId)
+            .Select(s => new Suggestion
+            {
+                Id = s.UcjsId,
+                Text = s.UcjsName
+            }).AsNoTracking().ToListAsync();
+    }
+
     public async Task<List<Lookup>> EventTypeListAsync()
     {
         return await _context.TucEventTypes
@@ -1715,7 +1725,7 @@ public class JobRepository : BaseJobRepository, IJobRepository
             bookDate);
     }
 
-    public async Task UpdateJobAsync(int jobId, string field, string value, decimal? rate, string despatcher,
+    public async Task UpdateJobAsync(int jobId, string field, string value, decimal? rate, string userName,
         int staffId)
     {
         try
@@ -1723,9 +1733,9 @@ public class JobRepository : BaseJobRepository, IJobRepository
             // Update either active or archived job
             var isActiveJob = _context.TucJobs.Any(j => j.UcjbId == jobId);
             if (isActiveJob)
-                await UpdateTucJob(jobId, field, value, despatcher);
+                await UpdateTucJob(jobId, field, value, userName);
             else
-                await UpdateTucJobArchive(jobId, field, value);
+                await UpdateTucJobArchive(jobId, field, value, userName);
         }
         catch (Exception e)
         {
@@ -1733,7 +1743,6 @@ public class JobRepository : BaseJobRepository, IJobRepository
             throw;
         }
     }
-
 
     public async Task UpdateBulkJobAsync(int bulkJobId, string field, string value, decimal? rate, string despatcher,
         int staffId)
@@ -1909,7 +1918,7 @@ public class JobRepository : BaseJobRepository, IJobRepository
         await _context.SaveChangesAsync();
     }
 
-    private async Task UpdateTucJob(int jobId, string field, string value, string despatcher)
+    private async Task UpdateTucJob(int jobId, string field, string value, string userName)
     {
         var job = await _context.TucJobs
             .Where(j => j.UcjbId == jobId)
@@ -1938,17 +1947,17 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 break;
             case "AirportOnly":
                 var airportOnly = bool.Parse(value);
-                job.TucJobNationwides.FirstOrDefault().UcnwAirportOnly = airportOnly;
+                job.TucJobNationwides.First().UcnwAirportOnly = airportOnly;
                 updateNote = $"Changed AirportOnly to {(airportOnly ? "Yes" : "No")}";
                 break;
             case "Time":
-                job.UcjbTime = DateTime.Parse(field);
+                job.UcjbTime = DateTime.Parse(value);
                 break;
             case "Date":
-                job.UcjbDate = DateTime.Parse(field);
+                job.UcjbDate = DateTime.Parse(value);
                 break;
             case "Size":
-                job.UcjbSize = int.Parse(field);
+                job.UcjbSize = int.Parse(value);
                 updateNote = $"Changed Size to {job.UcjbSize}";
                 break;
             case "Items":
@@ -2044,6 +2053,9 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 };
                 updateNote = $"Changed Job Follow Up to {job.InternalStatusNavigation.TcisName}";
                 break;
+            case "Status":
+                job.UcjbStatus = int.Parse(value);
+                break;
             case "RefA":
                 job.UcjbClientRefa = value[..Math.Min(value.Length, 20)];
                 break;
@@ -2103,14 +2115,7 @@ public class JobRepository : BaseJobRepository, IJobRepository
             case "TrackingMethod":
                 var trackingMethodId = int.Parse(value);
                 job.TrackingMethod = trackingMethodId;
-                var trackingText = trackingMethodId switch
-                {
-                    1 => "Email",
-                    2 => "Mobile",
-                    3 => "Email & Mobile",
-                    _ => string.Empty
-                };
-                updateNote = $"Changed Tracking Method to {trackingText}";
+                updateNote = $"Changed Tracking Method to {GetTrackingName(trackingMethodId)}";
                 break;
             case "Direct":
                 job.Direct = bool.Parse(value);
@@ -2159,19 +2164,19 @@ public class JobRepository : BaseJobRepository, IJobRepository
 
         if (!string.IsNullOrEmpty(updateNote))
         {
-            await AddNoteAsync(jobId, updateNote, despatcher);
+            await AddNoteAsync(jobId, updateNote, userName);
         }
 
         // Add additional notes for undeliverable location
         if (field == "UndeliverableLocationID" && job.UndeliverableLocation?.Message != null)
         {
-            await AddNoteAsync(jobId, job.UndeliverableLocation.Message, despatcher);
+            await AddNoteAsync(jobId, job.UndeliverableLocation.Message, userName);
         }
 
         await _context.SaveChangesAsync();
     }
 
-    private async Task UpdateTucJobArchive(int jobId, string field, string value)
+    private async Task UpdateTucJobArchive(int jobId, string field, string value, string userName)
     {
         var archive = await _context.TucJobArchives
             .Where(j => j.UcjbId == jobId)
@@ -2191,9 +2196,9 @@ public class JobRepository : BaseJobRepository, IJobRepository
             })
             .FirstOrDefaultAsync();
 
+        if (archive == null) throw new ArgumentException("Job not found");
 
-        if (archive == null)
-            throw new ArgumentException("Job not found");
+        var updateNote = string.Empty;
 
         // Update the correct field prop
         switch (field)
@@ -2202,7 +2207,9 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 archive.Job.Connote = value;
                 break;
             case "AirportOnly":
-                archive.Nationwide.UcnwAirportOnly = bool.Parse(field);
+                var airportOnly = bool.Parse(value);
+                archive.Nationwide.UcnwAirportOnly = airportOnly;
+                updateNote = $"Changed AirportOnly to {(airportOnly ? "Yes" : "No")}";
                 break;
             case "Time":
                 archive.Job.UcjbTime = DateTime.Parse(field);
@@ -2218,6 +2225,7 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 break;
             case "SpeedID":
                 archive.Job.UcjbSpeed = short.Parse(value);
+                updateNote = $"Changed Speed to {archive.Job.UcjbSpeedNavigation?.UcjtName}";
                 break;
             case "AcceptedJobTypeID" when !archive.Job.UcjbJobDone:
                 archive.Job.UcjbSpeed = short.Parse(value);
@@ -2258,6 +2266,7 @@ public class JobRepository : BaseJobRepository, IJobRepository
             case "ClientID":
                 archive.Job.UcjbClientId = int.Parse(value);
                 archive.Job.UcjbClientCode = archive.Job.UcjbClient.UcclCode;
+                updateNote = $"Changed Client to {archive.Job.UcjbClient?.UcclCode}";
                 break;
             case "ClientCode":
                 archive.Job.UcjbClientCode = value[..Math.Min(value.Length, 5)];
@@ -2307,6 +2316,10 @@ public class JobRepository : BaseJobRepository, IJobRepository
                     4 when archive.Job.UcjbStatus != 6 => 6,
                     _ => archive.Job.UcjbStatus
                 };
+                updateNote = $"Changed Job Follow Up to {archive.Job.InternalStatusNavigation.TcisName}";
+                break;
+            case "Status":
+                archive.Job.UcjbStatus = int.Parse(value);
                 break;
             case "RefA":
                 archive.Job.UcjbClientRefa = value[..Math.Min(value.Length, 20)];
@@ -2333,6 +2346,7 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 var leaveId = int.Parse(value);
                 archive.Job.DeliverToLeaveId = leaveId;
                 archive.Job.DeliverToPrivateBusiness = leaveId == 1 ? null : 1;
+                updateNote = $"Changed Leave Parcel to {archive.Job.DeliverToLeave?.Name}";
                 break;
             case "UndeliverableLocationID":
                 archive.Job.UndeliverableLocationId = int.Parse(value);
@@ -2342,6 +2356,7 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 archive.Job.UcjbPodname = archive.Job.UndeliverableLocation != null
                     ? archive.Job.UndeliverableLocation.Podname
                     : string.Empty;
+                updateNote = $"Changed Undeliverable Location to {archive.Job.UndeliverableLocation?.Name}";
                 break;
             case "Delivered":
                 var delivered = bool.Parse(value);
@@ -2360,10 +2375,14 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 archive.Job.Dgclass = int.Parse(value);
                 break;
             case "DGDocumentation":
-                archive.Job.Dgdocument = bool.Parse(value);
+                var dgDoc = bool.Parse(value);
+                archive.Job.Dgdocument = dgDoc;
+                updateNote = $"Changed DGDocumentation to {(dgDoc ? "Yes" : "No")}";
                 break;
             case "TrackingMethod":
-                archive.Job.TrackingMethod = int.Parse(value);
+                var trackingMethodId = int.Parse(value);
+                archive.Job.TrackingMethod = trackingMethodId;
+                updateNote = $"Changed Tracking Method to {GetTrackingName(trackingMethodId)}";
                 break;
             case "Direct":
                 archive.Job.Direct = bool.Parse(value);
@@ -2410,7 +2429,29 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 break;
         }
 
+        if (!string.IsNullOrEmpty(updateNote))
+        {
+            await AddNoteAsync(jobId, updateNote, userName);
+        }
+
+        // Add additional notes for undeliverable location
+        if (field == "UndeliverableLocationID" && archive.Job.UndeliverableLocation?.Message != null)
+        {
+            await AddNoteAsync(jobId, archive.Job.UndeliverableLocation.Message, userName);
+        }
+
         await _context.SaveChangesAsync();
+    }
+
+    private static string GetTrackingName(int trackingMethodId)
+    {
+        return trackingMethodId switch
+        {
+            1 => "Email",
+            2 => "Mobile",
+            3 => "Email & Mobile",
+            _ => string.Empty
+        };
     }
 
     private async Task<List<byte[]>> GetPodPhotosAsync(int jobId, byte[] podPhoto, byte[] deliverySignature)

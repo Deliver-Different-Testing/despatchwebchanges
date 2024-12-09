@@ -276,6 +276,42 @@
       <_ContentIncludedByDefault Remove="wwwroot\app\components\Nationwide\api\lateCalls.json" />
       <_ContentIncludedByDefault Remove="wwwroot\app\components\Nationwide\api\potentialCouriers.json" />
       <_ContentIncludedByDefault Remove="wwwroot\app\components\Nationwide\api\supports.json" />
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\date-range-dialog\date-range-dialog.controller.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\date-range-dialog\date-range-dialog.controller.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\date-range-dialog\date-range-dialog.controller.min.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\date-range-dialog\date-range-dialog.controller.min.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.controller.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.controller.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.controller.min.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.controller.min.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-parcel-dimensions-dialog\parcel-visualization.directive.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-parcel-dimensions-dialog\parcel-visualization.directive.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-parcel-dimensions-dialog\parcel-visualization.directive.min.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-parcel-dimensions-dialog\parcel-visualization.directive.min.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.controller.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.controller.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.controller.min.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.controller.min.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\map-dialog\map-dialog.controller.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\map-dialog\map-dialog.controller.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\map-dialog\map-dialog.controller.min.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\map-dialog\map-dialog.controller.min.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\overview\mega-map\mega-map.controller.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\overview\mega-map\mega-map.controller.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\overview\mega-map\mega-map.controller.min.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\overview\mega-map\mega-map.controller.min.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\overview\overview.controller.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\overview\overview.controller.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\overview\overview.controller.min.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\overview\overview.controller.min.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\overview\overview.service.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\overview\overview.service.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\overview\overview.service.min.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\overview\overview.service.min.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\services\config.service.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\services\config.service.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\services\config.service.min.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\services\config.service.min.js.map"/>
   </ItemGroup>
 
   <ItemGroup>

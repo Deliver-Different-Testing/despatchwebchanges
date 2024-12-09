@@ -97,16 +97,6 @@
         <material-sidenav></material-sidenav>
     </div>
 
-    <!-- Added Title Section -->
-    <div class="page-title-section md-padding" layout="row" layout-align="start center">
-        <div>
-            <h1 class="md-headline" style="margin: 0; color: rgba(0,0,0,0.87);">
-                {{ isUsCustomer ? 'Domestic' : 'Nationwide' }} Dashboard</h1>
-            <p class="md-subhead" style="margin: 4px 0 0 0; color: rgba(0,0,0,0.54);">Monitor and manage all
-                {{ isUsCustomer ? 'Domestic' : 'Nationwide' }} operations</p>
-        </div>
-    </div>
-
     <div>
         <div class="columns">
 
@@ -138,12 +128,10 @@
                                     <span ng-if="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span>
                                     <span ng-if="box.name == 'currentWork' || box.name == 'map'">{{currentWorkSelection}}</span>
                                     <span ng-if="box.name == 'jobDetail' && currentJob.relatedJobs.length > 1"
-                                          ng-repeat="jo in currentJob.relatedJobs">&nbsp;
-                                        <span
-                                                ng-click="loadRelatedJobDetail(jo.id, jo.label)"
-                                                ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}">
-                                        {{jo.label}}
-                                    </span>
+                                          ng-repeat="jo in currentJob.relatedJobs">&nbsp;<span
+                                            ng-click="loadRelatedJobDetail(jo.id, jo.label)"
+                                            ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}"
+                                            style="cursor:pointer;text-decoration:underline;">{{jo.text}}</span>
                                     </span>
                                     <span ng-if="box.name == 'flightAgentDataTable'">
                                         {{isDeliveryJob() ? 'Agents' : 'Flights'}}

@@ -21,7 +21,7 @@ angular.module('uDispatch')
              */
             $stateProvider
                 /**
-                 * Home state
+                 * Home
                  * @property {string} url - The URL for this state
                  * @property {string} templateUrl - The URL for the template file
                  * @property {string} controller - The controller for this state
@@ -38,7 +38,7 @@ angular.module('uDispatch')
                     }
                 })
                 /**
-                 * Nationwide state
+                 * Nationwide
                  * @property {string} url - The URL for this state
                  * @property {string} templateUrl - The URL for the template file
                  * @property {string} controller - The controller for this state
@@ -51,7 +51,7 @@ angular.module('uDispatch')
                     reloadOnSearch: false
                 })
                 /**
-                 * CS state
+                 * CS
                  * @property {string} url - The URL for this state
                  * @property {string} templateUrl - The URL for the template file
                  * @property {string} controller - The controller for this state
@@ -64,7 +64,7 @@ angular.module('uDispatch')
                     reloadOnSearch: false
                 })
                 /**
-                 * Prebooks state
+                 * Prebooks
                  * @property {string} url - The URL for this state
                  * @property {string} templateUrl - The URL for the template file
                  * @property {string} controller - The controller for this state
@@ -77,7 +77,7 @@ angular.module('uDispatch')
                     reloadOnSearch: false
                 })
                 /**
-                 * Prebooks state
+                 * Overview
                  * @property {string} url - The URL for this state
                  * @property {string} templateUrl - The URL for the template file
                  * @property {string} controller - The controller for this state
@@ -87,6 +87,21 @@ angular.module('uDispatch')
                     url: '/overview',
                     templateUrl: versionUrl('app/components/overview/overview.template.html'),
                     controller: 'deliveryOverview',
+                    controllerAs: 'ctrl',
+                    reloadOnSearch: false,
+                })
+                /**
+                 * MegaMap
+                 * @property {string} url - The URL for this state
+                 * @property {string} templateUrl - The URL for the template file
+                 * @property {string} controller - The controller for this state
+                 * @property {boolean} reloadOnSearch - Whether to reload the state on search change
+                 */
+                .state('megaMap', {
+                    url: '/megaMap',
+                    templateUrl: versionUrl('app/components/overview/mega-map/mega-map.template.html'),
+                    controller: 'megaMapController',
+                    controllerAs: 'ctrl',
                     reloadOnSearch: false,
                 });
         }]);
