@@ -81,14 +81,14 @@ public interface IJobRepository
     Task ReRateSplitJob(int jobId);
     Task FinishSplitJobProcess(int jobId, string despatcher);
     Task<List<SuburbLookup>> SuburbsAsync();
-    Task<List<Lookup>> SpeedsAsync();
-    Task<List<Lookup>> ContactsAsync(int clientId);
+    Task<List<Suggestion>> SpeedsAsync();
+    Task<List<Suggestion>> ContactsAsync(int clientId);
     Task<List<ClientContactDetailViewModel>> ContactDetailList(int clientId);
     Task<List<Lookup>> LeaveParcelLocationsAsync();
     Task<List<UndeliverableLocation>> UndeliverableLocationsAsync();
     Task<List<InternalStatus>> GetInternalStatusListAsync();
     Task<List<Suggestion>> GetStatusListAsync();
-    Task<List<Lookup>> EventTypeListAsync();
+    Task<List<Suggestion>> EventTypeListAsync();
 
     Task<decimal> RateTruckJob(int clientId, int fromId, int toId, double weight, int size, int speed,
         int qty, DateTime bookedDate, int pickUp, int dropOff, bool privateRes, int oversizeItems,

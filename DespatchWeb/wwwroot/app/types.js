@@ -553,3 +553,36 @@
  * @property {string} jobNumber - Job reference number for display purposes
  * @property {boolean} isFlightRoute - Whether this pickup is part of a flight route
  */
+
+/**
+ * Represents a view model for creating a job.
+ * @typedef {Object} JobCreateViewModel
+ *
+ * @property {number} clientId - The ID of the client.
+ * @property {string} deliverToContact - The contact person for delivery.
+ * @property {string} podName - The name of the proof of delivery.
+ * @property {AddressDetails} pickUpAddress - The address for pickup.
+ * @property {AddressDetails} deliveryAddress - The address for delivery.
+ * @property {Date} date - The date of the job.
+ * @property {string} fromContactName - The contact person for pickup.
+ * @property {string} refA - First reference identifier.
+ * @property {string} refB - Second reference identifier.
+ * @property {string} deliveryNotes - Notes related to delivery.
+ * @property {string} pickupNotes - Notes related to pickup.
+ * @property {string} jobNotes - General notes about the job.
+ * @property {boolean} van - Indicates if a van is required.
+ * @property {boolean} truck - Indicates if a truck is required.
+ * @property {boolean} pedal - Indicates if pedal delivery is required.
+ * @property {boolean} attention - Indicates if special attention is needed.
+ * @property {boolean} vanOk - Indicates if van delivery is acceptable.
+ * @property {boolean} reprice - Indicates if the job needs repricing.
+ * @property {boolean} void - Indicates if the job is void.
+ * @property {boolean} done - Indicates if the job is completed.
+ * @property {number} charge - The cost of the job.
+ * @property {number} fromLat - The latitude of the pickup location.
+ * @property {number} fromLong - The longitude of the pickup location.
+ * @property {number} toLat - The latitude of the delivery location.
+ * @property {number} toLong - The longitude of the delivery location.
+ * @property {number} speedId - The ID of the speed requirement.
+ * @property {number} vehicleId - The ID of the assigned vehicle.
+ */
