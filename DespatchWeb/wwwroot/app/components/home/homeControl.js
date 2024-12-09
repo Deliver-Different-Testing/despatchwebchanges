@@ -1064,7 +1064,7 @@ angular.module("uDispatch")
          * @param {Job} job
          */
         $scope.messageClick = ($event, job) => {
-            const selectedCourierId = $scope.selectedCourier ? $scope.selectedCourier.id : job.courierData.courierID;
+            const selectedCourierId = $scope.selectedCourier ? $scope.selectedCourier.id : job.courierData.courierId;
 
             $mdDialog.show({
                 controller: 'SendMessageDialogController',
@@ -1469,10 +1469,10 @@ angular.module("uDispatch")
          */
         async function processJobForRestore(job, callData) {
             const jobNo = job.jobNo;
-            await DispatchData.addRestoreEvent(jobNo, job.clientId, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
+            await DispatchData.addRestoreEvent(jobNo, job.clientId, job.contactName, ContactID, job.courierData.courierId, job.id, job.jobType, FirstName);
 
             if (callData.courierID === null) {
-                callData.courierID = job.courierData.courierID;
+                callData.courierID = job.courierData.courierId;
             }
 
             if (job.displaySplitJobDetail) {
@@ -1523,7 +1523,7 @@ angular.module("uDispatch")
                 const jobId = currentElement.attr("data-jobid");
                 const job = $scope.jobList.find(jo => jo.id === jobId);
                 if (job) {
-                    foundCourier = $scope.pickCouriers.find(c => c.courierID === job.courierData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === job.courierData.courierID);
+                    foundCourier = $scope.pickCouriers.find(c => c.courierID === job.courierData.courierId) || $scope.pickAllCouriers.find(c => c.courierID === job.courierData.courierId);
                     callData.jobs.push(jobId);
                 }
             }
@@ -1536,7 +1536,7 @@ angular.module("uDispatch")
             await $scope.getData();
             angular.element('#box-map .loading').css('display', '');
 
-            $scope.courier = {gpsCourier: foundCourier.id};
+            $scope.courier = {gpsCourier: foundCourier.courierID};
             await $scope.searchCourier();
         };
 
@@ -1557,7 +1557,7 @@ angular.module("uDispatch")
                 const lastJobId = lastJobElement.attr("data-jobid");
                 const lastJob = $scope.jobList.find(job => job.id === lastJobId);
 
-                const foundCourier = $scope.pickCouriers.find(c => c.courierID === lastJob.courierData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === lastJob.courierData.courierID);
+                const foundCourier = $scope.pickCouriers.find(c => c.courierID === lastjob.courierData.courierId) || $scope.pickAllCouriers.find(c => c.courierID === lastjob.courierData.courierId);
 
                 if (foundCourier) {
                     $scope.courier = {gpsCourier: foundCourier.id};
@@ -1813,7 +1813,7 @@ angular.module("uDispatch")
 
         async function addRestoreEvent(job) {
             try {
-                await DispatchData.addRestoreEvent(job.jobNo, job.clientId, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
+                await DispatchData.addRestoreEvent(job.jobNo, job.clientId, job.contactName, ContactID, job.courierData.courierId, job.id, job.jobType, FirstName);
                 console.log('Restore event added successfully');
             } catch (error) {
                 console.log('Error adding restore event:', error);
@@ -1823,7 +1823,7 @@ angular.module("uDispatch")
 
         const updateCallData = (callData, job, jobIdElement) => {
             if (!callData.courierID) {
-                callData.courierID = job.courierData.courierID;
+                callData.courierID = job.courierData.courierId;
             }
 
             if (job.displaySplitJobDetail) {
@@ -1835,7 +1835,7 @@ angular.module("uDispatch")
 
         const findCourier = (job) => {
             if (!job) return null;
-            return $scope.pickCouriers.find(c => c.courierID === job.courierData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === job.courierData.courierID);
+            return $scope.pickCouriers.find(c => c.courierID === job.courierData.courierId) || $scope.pickAllCouriers.find(c => c.courierID === job.courierData.courierId);
         };
 
         async function restoreJobs(callData, courier) {
@@ -2448,9 +2448,9 @@ angular.module("uDispatch")
 
             await checkForAttachments(job.id);
 
-            if (job.rootParentID) {
+            if (job.rootParentId) {
                 try {
-                    job.relatedJobs = await DispatchData.getRelatedJobs(job.rootParentID, job.clientId);
+                    job.relatedJobs = await DispatchData.getRelatedJobs(job.rootParentId, job.clientId);
                 } catch (error) {
                     console.error('Error getting related jobs:', error);
                 }
@@ -2493,8 +2493,8 @@ angular.module("uDispatch")
                     map.setZoom(12);
                 }
 
-                if ($scope.currentJob.rootParentID) {
-                    $scope.currentJob.relatedJobs = await DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientId);
+                if ($scope.currentJob.rootParentId) {
+                    $scope.currentJob.relatedJobs = await DispatchData.getRelatedJobs($scope.currentJob.rootParentId, $scope.currentJob.clientId);
                 }
             } catch (error) {
                 console.error('Error selecting support job detail:', error);
@@ -2528,9 +2528,9 @@ angular.module("uDispatch")
                     console.error('Error getting active couriers:', error);
                 }
 
-                if ($scope.currentJob.rootParentID) {
+                if (job.rootParentId) {
                     try {
-                        $scope.currentJob.relatedJobs = await DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientId);
+                        $scope.currentJob.relatedJobs = await DispatchData.getRelatedJobs($scope.currentJob.rootParentId, $scope.currentJob.clientId);
                     } catch (error) {
                         console.error('Error getting related jobs:', error);
                     }
