@@ -38,6 +38,7 @@ public class OverviewController : Controller
                 statusEnum,
                 parameters.Page,
                 parameters.Limit,
+                true,
                 parameters.Search,
                 parameters.StartDate,
                 parameters.EndDate,

@@ -167,6 +167,7 @@ public interface IJobRepository
         JobStatusGroup statusGroup,
         int page,
         int limit,
+        bool isUsCustomer = true,
         string search = null,
         DateTime? startDate = null,
         DateTime? endDate = null,

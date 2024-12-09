@@ -808,6 +808,7 @@ public class BaseJobRepository
         JobStatusGroup statusGroup,
         int page,
         int limit,
+        bool isUsCustomer = true,
         string search = null,
         DateTime? startDate = null,
         DateTime? endDate = null,
@@ -896,8 +897,8 @@ public class BaseJobRepository
                 Status = j.UcjbStatusNavigation.UcjsName,
                 Region =
                     j.TblBulkJobs.FirstOrDefault() != null ? j.TblBulkJobs.FirstOrDefault().Region.Name : null,
-                Pickup = j.PickupAddressLine5 + ", " + j.PickupAddressLine6,
-                Delivery = j.DeliveryAddressLine5 + ", " + j.DeliveryAddressLine6,
+                Pickup = isUsCustomer ? j.PickupAddressLine5 + ", " + j.PickupAddressLine6 : j.UcjbFromAddr,
+                Delivery = isUsCustomer ? j.DeliveryAddressLine5 + ", " + j.DeliveryAddressLine6 : j.UcjbToAddr,
                 Driver = j.UcjbCourier != null ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname : null,
                 Completion = j.InverseParent.Any()
                     ? (int)Math.Round(
