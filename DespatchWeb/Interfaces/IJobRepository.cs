@@ -152,7 +152,7 @@ public interface IJobRepository
     Task AddNoteAsync(int jobId, string note, string despatcher);
     Task AddBulkJobNoteAsync(int bulkJobId, string note, string despatcher);
     Task AddJobBookingNoteAsync(int jobId, string note, string despatcher);
-    Task<int> QuickAddJobAsync(JobCreateViewModel job, int staffId);
+    Task<int> QuickAddJobAsync(JobCreateViewModel request, int staffId);
     Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel);
     Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId);
 
