@@ -42,6 +42,11 @@ class SelectDialogController {
         this.options = options;
         this.selectedOption = null;
 
+        // Warning message
+        this.warningMessage = fieldName === "Status" ?
+            "Warning: You are about to change the status of a job. Different statuses trigger different notifications and automated workflows. " +
+            "While this change can be reversed, it may impact multiple systems and stakeholders. Please ensure you're selecting the correct status."
+            : "";
         /** @type {boolean} */
         this.checkboxValue = false;
 
