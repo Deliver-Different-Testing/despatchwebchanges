@@ -311,10 +311,14 @@ public class CourierRepository : ICourierRepository
 
     public async Task<List<Suggestion>> GetVehicleSizesAsync()
     {
-        return await _context.VehicleSizes.Select(v => new Suggestion
-        {
-            Id = v.VehicleSizeId, Text = v.VehicleName
-        }).ToListAsync();
+        var vehicles = await _context.VehicleSizes
+            .OrderBy(v => v.VehicleName)
+            .Select(v => new Suggestion
+            {
+                Id = v.VehicleSizeId, Text = v.VehicleName
+            }).AsNoTracking().ToListAsync();
+
+        return vehicles;
     }
 
     public async Task<List<Suggestion>> GetAllRegionsAsync()
