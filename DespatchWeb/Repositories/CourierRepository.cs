@@ -452,7 +452,7 @@ public class CourierRepository : ICourierRepository
                     )
                 )
             )
-            .Where(x => x.Courier.CourierLogInOut.LogInTime.Date == DateTime.Now &&
+            .Where(x => x.Courier.CourierLogInOut.LogInTime.Date == DateTime.Today &&
                         x.Courier.CourierLogInOut.LogOutTime == null)
             .Select(x => new EnvelopeCoordinate
             {
@@ -498,7 +498,7 @@ public class CourierRepository : ICourierRepository
     private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryNz(int clearListAreaId)
     {
         return _context.TucCouriers
-            .Where(c => c.CourierLogInOut.LogInTime.Date == DateTime.Now &&
+            .Where(c => c.CourierLogInOut.LogInTime.Date == DateTime.Today &&
                         c.CourierLogInOut.LogOutTime == null)
             .SelectMany(c => c.TucJobUcjbCouriers
                 .Where(jt => !jt.UcjbJobDone &&
