@@ -2445,6 +2445,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
             const result = await NWData.getFlightOptions($scope.currentJob.id, newDate);
 
+            $scope.currentSearchTime = newDate;
             $scope.flightOptions = result.flights;
             console.log("Flight options:", result.flights);
             $scope.flightMessage = result.message;

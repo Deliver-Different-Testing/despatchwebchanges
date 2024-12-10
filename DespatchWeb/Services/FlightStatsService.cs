@@ -109,10 +109,12 @@ public class FlightStatsService : IFlightStatsService
         var connectionClient = new RestClient(ConnectionUrl);
 
         // Get datetime to sort flights from
-        var flightsFrom = departureDateTime ?? DateTime.Now;
-        flightsFrom = flightsFrom.AddMinutes(flightBuffer);
+        var flightsFrom = departureDateTime == null || departureDateTime < DateTime.Now
+            ? DateTime.Now
+            : departureDateTime;
+        flightsFrom = flightsFrom.Value.AddMinutes(flightBuffer);
 
-        var (year, month, day, hour, minute) = SplitDate(flightsFrom);
+        var (year, month, day, hour, minute) = SplitDate(flightsFrom.Value);
 
         var request =
             new RestRequest(
