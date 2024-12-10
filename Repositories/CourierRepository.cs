@@ -104,7 +104,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
     {
         var result = new List<AvailableCourierPosition>();
         var procName = isUsTenant ? "DESWEB_stpUSMapEnvelope" : "DESWEB_stpMapEnvelope";
-        Context.LoadStoredProc("DESWEB_stpMapEnvelope")
+        Context.LoadStoredProc(procName)
             .WithSqlParam("@MinimumLongitude", minLng)
             .WithSqlParam("@MinimumLatitude", minLat)
             .WithSqlParam("@MaximumLongitude", maxLng)
