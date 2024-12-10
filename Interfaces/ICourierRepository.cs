@@ -15,7 +15,8 @@ public interface ICourierRepository
         string despatcherName, string notes, int eventType, float? lateTime = null, DateTime? etaTime = null,
         bool close = false);
 
-    List<AvailableCourierPosition> GetAvailableCouriers(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat);
+    List<AvailableCourierPosition> GetAvailableCouriers(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat,
+        bool isUsTenant);
     Task<List<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId);
 
     Task<List<ActiveCouriersViewModel>> ActiveCouriersAsync();

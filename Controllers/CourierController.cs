@@ -61,11 +61,11 @@ namespace DespatchWeb.Controllers
         }
 
         [HttpGet]
-        public IActionResult AvailableCourierLocation(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat)
+        public IActionResult AvailableCourierLocation(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat, bool isUsTenant)
         {
             try
             {
-                var result = courierRepository.GetAvailableCouriers(minLng, minLat, maxLng, maxLat);
+                var result = courierRepository.GetAvailableCouriers(minLng, minLat, maxLng, maxLat, isUsTenant);
                 return Json(result);
             }
             catch (Exception ex)
