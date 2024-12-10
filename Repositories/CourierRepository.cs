@@ -446,7 +446,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
                     )
                 )
             )
-            .Where(x => x.Courier.CourierLogInOut.LogInTime.Date == DateTime.Now &&
+            .Where(x => //x.Courier.CourierLogInOut.LogInTime.Date == DateTime.Now &&
                         x.Courier.CourierLogInOut.LogOutTime == null)
             .Select(x => new EnvelopeCoordinate
             {
