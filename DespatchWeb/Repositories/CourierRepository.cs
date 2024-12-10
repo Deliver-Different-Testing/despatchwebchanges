@@ -343,36 +343,6 @@ public class CourierRepository : ICourierRepository
         return speeds;
     }
 
-    public async Task<string> GetAirportCodeByIdAsync(int airportId)
-    {
-        try
-        {
-            _logger.LogInformation("Looking up airport code for ID: {AirportId}", airportId);
-
-            var airportCode = await _context.TblAirports
-                .Where(a => a.AirportId == airportId)
-                .Select(a => a.AirportCode)
-                .AsNoTracking()
-                .FirstOrDefaultAsync();
-
-            if (airportCode != null)
-            {
-                _logger.LogInformation("Found airport code {AirportCode} for ID {AirportId}", airportCode, airportId);
-            }
-            else
-            {
-                _logger.LogWarning("No airport found for ID {AirportId}", airportId);
-            }
-
-            return airportCode;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error looking up airport code for ID {AirportId}", airportId);
-            throw;
-        }
-    }
-
     private async Task<int> ClearListTotalRemainingAsync(string area)
     {
         var filter =
