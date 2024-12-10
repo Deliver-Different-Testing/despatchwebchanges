@@ -145,6 +145,22 @@
                                         <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
                                     </md-button>
 
+                                    <div class="row-overflow" layout="row"
+                                         ng-if="box.name === 'flightAgentDataTable' && flightOptions.length > 0">
+                                        <md-button class="md-button-m3 md-icon-button md-primary"
+                                                   ng-click="loadNextFlights()">
+                                            <md-tooltip md-direction="top">Next Available Flights</md-tooltip>
+                                            <md-icon md-font-set="material-symbols-outlined">next_week</md-icon>
+                                        </md-button>
+
+                                        <md-button class="md-button-m3 md-icon-button md-primary"
+                                                   ng-click="loadNextDayFlights()">
+                                            <md-tooltip md-direction="top">Next Day's Flights</md-tooltip>
+                                            <md-icon md-font-set="material-symbols-outlined">event_upcoming</md-icon>
+                                        </md-button>
+                                    </div>
+
+
                                     <!-- Courier Card Buttons-->
                                     <div class="row-overflow" layout="row"
                                          ng-if="currentCourier && box.name === 'currentWork'">

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using DespatchWeb.Controllers;
@@ -22,6 +23,7 @@ public class JobRepository : BaseJobRepository, IJobRepository
     private readonly DespatchContext _context;
     private readonly ILogger<JobRepository> _logger;
     private readonly IMapper _mapper;
+
 
     public JobRepository(DespatchContext context, IMapper mapper, ILogger<JobRepository> logger)
         : base(context, logger)
@@ -1213,18 +1215,19 @@ public class JobRepository : BaseJobRepository, IJobRepository
             .ToListAsync();
     }
 
-    public async Task<List<Lookup>> SpeedsAsync()
+    public async Task<List<Suggestion>> SpeedsAsync()
     {
         return await _context.DesQryAllJobTypes
-            .Select(x => new Lookup
+            .Select(x => new Suggestion
             {
-                ID = x.JobTypeId,
+                Id = x.JobTypeId,
                 Text = x.Name
             })
+            .AsNoTracking()
             .ToListAsync();
     }
 
-    public async Task<List<Lookup>> ContactsAsync(int clientId)
+    public async Task<List<Suggestion>> ContactsAsync(int clientId)
     {
         return await _context.UtlQryContactLookups
             .Join(_context.TblClientContacts,
@@ -1232,12 +1235,13 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 cc => cc.ContactId,
                 (s, cc) => new { s, cc })
             .Where(x => x.cc.ClientId == clientId && x.s.Active)
-            .Select(x => new Lookup
+            .Select(x => new Suggestion
             {
-                ID = x.s.ContactId,
+                Id = x.s.ContactId,
                 Text = x.s.Name
             })
             .Distinct()
+            .AsNoTracking()
             .ToListAsync();
     }
 
@@ -1310,16 +1314,17 @@ public class JobRepository : BaseJobRepository, IJobRepository
             }).AsNoTracking().ToListAsync();
     }
 
-    public async Task<List<Lookup>> EventTypeListAsync()
+    public async Task<List<Suggestion>> EventTypeListAsync()
     {
         return await _context.TucEventTypes
             .Where(u => u.UcetGroup == "CS" || u.UcetGroup == "GE")
             .OrderBy(u => u.UcetName)
-            .Select(x => new Lookup
+            .Select(x => new Suggestion
             {
-                ID = x.UcetId,
+                Id = x.UcetId,
                 Text = x.UcetName
             })
+            .AsNoTracking()
             .ToListAsync();
     }
 
@@ -1792,50 +1797,84 @@ public class JobRepository : BaseJobRepository, IJobRepository
             despatcher);
     }
 
-    public async Task<int> QuickAddJobAsync(JobCreateViewModel job, int staffId)
+    public async Task<int> QuickAddJobAsync(JobCreateViewModel request, int staffId)
     {
-        var jobId = new OutputParameter<int?>();
+        // Generate request number
+        var jobNumber = await GenerateJobNumberAsync(staffId, request.SpeedId);
 
-        await _context.Procedures.DESWEB_stpQuickCreateJobAsync(
-            job.ClientId,
-            job.PickUpAddress?.AddressLine1,
-            job.PickUpAddress?.AddressLine2,
-            job.PickUpAddress?.AddressLine3,
-            job.PickUpAddress?.AddressLine4,
-            job.PickUpAddress?.AddressLine5,
-            job.PickUpAddress?.AddressLine6,
-            job.PickUpAddress?.AddressLine7,
-            job.PickUpAddress?.AddressLine8,
-            job.FromLat,
-            job.FromLong,
-            job.DeliveryAddress?.AddressLine1,
-            job.DeliveryAddress?.AddressLine2,
-            job.DeliveryAddress?.AddressLine3,
-            job.DeliveryAddress?.AddressLine4,
-            job.DeliveryAddress?.AddressLine5,
-            job.DeliveryAddress?.AddressLine6,
-            job.DeliveryAddress?.AddressLine7,
-            job.DeliveryAddress?.AddressLine8,
-            job.ToLat,
-            job.ToLong,
-            job.FromContactName,
-            job.Date,
-            job.Void,
-            job.Van,
-            job.Attention,
-            job.DeliverToContact,
-            job.PodName,
-            job.Truck,
-            job.VanOk,
-            job.Reprice,
-            job.Charge,
-            job.SpeedId,
-            staffId,
-            job.RefA,
-            job.RefB,
-            jobId);
+        // Create new job
+        var job = new TucJob
+        {
+            UcjbClientId = request.ClientId,
+            UcjbNumber = jobNumber,
 
-        return jobId.Value ?? 0;
+            // Pick Up Address
+            PickupAddressLine1 = request.PickUpAddress?.AddressLine1,
+            PickupAddressLine2 = request.PickUpAddress?.AddressLine2,
+            PickupAddressLine3 = request.PickUpAddress?.AddressLine3,
+            PickupAddressLine4 = request.PickUpAddress?.AddressLine4,
+            PickupAddressLine5 = request.PickUpAddress?.AddressLine5,
+            PickupAddressLine6 = request.PickUpAddress?.AddressLine6,
+            PickupAddressLine7 = request.PickUpAddress?.AddressLine7,
+            PickupAddressLine8 = request.PickUpAddress?.AddressLine8,
+
+            // Pick Up Coordinates
+            PickUpLatitude = request.FromLat,
+            PickUpLongitude = request.FromLong,
+
+            // Delivery Address
+            DeliveryAddressLine1 = request.DeliveryAddress?.AddressLine1,
+            DeliveryAddressLine2 = request.DeliveryAddress?.AddressLine2,
+            DeliveryAddressLine3 = request.DeliveryAddress?.AddressLine3,
+            DeliveryAddressLine4 = request.DeliveryAddress?.AddressLine4,
+            DeliveryAddressLine5 = request.DeliveryAddress?.AddressLine5,
+            DeliveryAddressLine6 = request.DeliveryAddress?.AddressLine6,
+            DeliveryAddressLine7 = request.DeliveryAddress?.AddressLine7,
+            DeliveryAddressLine8 = request.DeliveryAddress?.AddressLine8,
+
+            // Delivery Coordinates
+            DeliveryLatitude = request.ToLat,
+            DeliveryLongitude = request.ToLong,
+
+            // Auckland CBD (Could be removed later)
+            UcjbCbd = IsCbdLocation(request.ToLat, request.ToLong),
+
+            // Details
+            PickupFromContact = request.FromContactName,
+            UcjbDate = request.Date,
+            UcjbVoid = request.Void,
+            UcjbVan = request.Van,
+            UcjbAttention = request.Attention,
+            DeliverToContact = request.DeliverToContact,
+            UcjbPodname = request.PodName,
+            Truck = request.Truck,
+            VanOk = request.VanOk,
+            Reprice = request.Reprice,
+            UcjbAmount = request.Charge,
+            UcjbSpeed = request.SpeedId,
+
+            // References
+            UcjbClientRefa = request.RefA,
+            UcjbClientRefb = request.RefB,
+
+            // Manual
+            RatedManually = true,
+            UcjbType = 3,
+            UcjbLocked = true,
+            SourceId = 13,
+            UcjbStatus = 6,
+            UcjbJobDone = true,
+            ProofOfDelivery = 0,
+            WhenPodnotificationSent = DateTime.Now,
+            UcjbReturn = false,
+            UcjbPaged = false
+        };
+
+        await _context.TucJobs.AddAsync(job);
+        await _context.SaveChangesAsync();
+
+
+        return job.UcjbId;
     }
 
     public async Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel)
@@ -1917,6 +1956,10 @@ public class JobRepository : BaseJobRepository, IJobRepository
         _context.Entry(job).Property(x => x.UcjbAmount).IsModified = true;
         await _context.SaveChangesAsync();
     }
+
+    private static bool IsCbdLocation(decimal latitude, decimal longitude) =>
+        latitude is >= -37.81897m and <= -37.80647m &&
+        longitude is >= 144.95573m and <= 144.97737m;
 
     private async Task UpdateTucJob(int jobId, string field, string value, string userName)
     {
@@ -2534,7 +2577,8 @@ public class JobRepository : BaseJobRepository, IJobRepository
         return outputParam.Value ?? 0m;
     }
 
-    private TucJob CreateJobEntry(string jobNumber, int courierId, decimal amount, string reference, string clientRefB,
+    private static TucJob CreateJobEntry(string jobNumber, int courierId, decimal amount, string reference,
+        string clientRefB,
         string ourRef,
         string note, DateTime currentTime, int staffId)
     {
@@ -2585,5 +2629,22 @@ public class JobRepository : BaseJobRepository, IJobRepository
             DeliverToPrivateBusiness = 0,
             UcjbDispTime = currentTime
         };
+    }
+
+    private async Task<string> GenerateJobNumberAsync(int staffId, int jobTypeId,
+        CancellationToken cancellationToken = default)
+    {
+        var jobNumberOutput = new OutputParameter<string>();
+        var returnValue = new OutputParameter<int>();
+
+        await _context.Procedures.NET_stpJob_Insert_JobNumberAsync(
+            StaffID: staffId,
+            JobTypeID: jobTypeId,
+            JobNumber: jobNumberOutput,
+            returnValue: returnValue,
+            cancellationToken: cancellationToken
+        );
+
+        return jobNumberOutput.Value;
     }
 }

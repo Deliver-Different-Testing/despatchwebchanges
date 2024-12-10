@@ -1,8 +1,8 @@
-<md-dialog aria-label="Create Job" style="width: 50%;">
+<md-dialog aria-label="Create Job" style="width: 55%;">
     <md-toolbar>
         <div class="md-toolbar-tools">
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">add_business</md-icon>
-            <h2>Initialize New Job</h2>
+            <h2>Add New Job</h2>
             <span flex></span>
             <md-button class="md-icon-button" ng-click="ctrl.cancel()">
                 <md-tooltip md-direction="bottom">Cancel</md-tooltip>
@@ -25,7 +25,7 @@
                             md-escape-options="clear"
                             md-floating-label="Client"
                             md-item-text="item.text"
-                            md-items="item in ctrl.clientSearchAutocomplete(ctrl.searchClientText)"
+                            md-items="item in ctrl.clientSearch(ctrl.searchClientText)"
                             md-min-length="3"
                             md-no-asterisk
                             md-search-text="ctrl.searchClientText"
@@ -138,34 +138,46 @@
                     </md-input-container>
                 </div>
 
-                <div layout="row" layout-align="center center" layout-wrap>
-                    <md-checkbox ng-change="ctrl.updateChoice('van')" ng-model="ctrl.job.van">
-                        Van
-                    </md-checkbox>
+                <div layout-gt-sm="row">
+                    <md-autocomplete
+                            flex-gt-sm
+                            md-autoselect
+                            md-escape-options="clear"
+                            md-floating-label="Vehicle"
+                            md-item-text="item.text"
+                            md-items="item in ctrl.vehicleSearch(ctrl.vehicleSearchText)"
+                            md-min-length="0"
+                            md-no-asterisk
+                            md-search-text="ctrl.vehicleSearchText"
+                            md-selected-item="ctrl.selectedVehicle"
+                            required>
+                        <md-item-template>
+                            <span md-highlight-text="ctrl.vehicleSearchText">{{item.text}}</span>
+                        </md-item-template>
+                        <md-not-found>
+                            No vehicles matching "{{ctrl.vehicleSearchText}}" were found.
+                        </md-not-found>
+                    </md-autocomplete>
 
-                    <md-checkbox ng-change="ctrl.updateChoice('truck')" ng-model="ctrl.job.truck">
-                        Truck
-                    </md-checkbox>
-
-                    <md-checkbox ng-change="ctrl.updateChoice('pedal')" ng-model="ctrl.job.pedal">
-                        Pedal
-                    </md-checkbox>
-
-                    <md-checkbox ng-change="ctrl.updateChoice('attention')" ng-model="ctrl.job.attention">
-                        Attention
-                    </md-checkbox>
-
-                    <md-checkbox ng-change="ctrl.updateChoice('vanOK')" ng-model="ctrl.job.vanOK">
-                        Van OK?
-                    </md-checkbox>
-
-                    <md-checkbox ng-change="ctrl.updateChoice('reprice')" ng-model="ctrl.job.reprice">
-                        Reprice
-                    </md-checkbox>
-
-                    <md-checkbox ng-change="ctrl.updateChoice('void')" ng-model="ctrl.job.void">
-                        Void
-                    </md-checkbox>
+                    <md-autocomplete
+                            flex-gt-sm
+                            md-autoselect
+                            md-escape-options="clear"
+                            md-floating-label="Speed"
+                            md-item-text="item.text"
+                            md-items="item in ctrl.speedSearch(ctrl.speedSearchText)"
+                            md-min-length="0"
+                            md-no-asterisk
+                            md-search-text="ctrl.speedSearchText"
+                            md-selected-item="ctrl.selectedSpeed"
+                            required>
+                        <md-item-template>
+                            <span md-highlight-text="ctrl.speedSearchText">{{item.text}}</span>
+                        </md-item-template>
+                        <md-not-found>
+                            No speeds matching "{{ctrl.speedSearchText}}" were found.
+                        </md-not-found>
+                    </md-autocomplete>
                 </div>
 
                 <div layout-gt-sm="row">
@@ -177,16 +189,6 @@
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="referenceB">Reference B</label>
                         <input id="referenceB" md-maxlength="20" ng-model="ctrl.job.refB">
-                    </md-input-container>
-
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label>Speed</label>
-                        <md-select aria-label="Select an option" md-no-asterisk ng-model="ctrl.selectedSpeed"
-                                   required>
-                            <md-option ng-repeat="item in ctrl.speedOptions" ng-value="item">
-                                {{ item.text }}
-                            </md-option>
-                        </md-select>
                     </md-input-container>
                 </div>
 
