@@ -3,6 +3,8 @@
         <md-toolbar class="md-hue-2">
             <div class="md-toolbar-tools-m3">
                 <h2>DFRNT</h2>
+                <md-divider class="vertical-divider"></md-divider>
+                <h2>{{ isUsCustomer ? 'Domestic' : 'Nationwide' }} Dashboard</h2>
 
                 <span flex></span>
 
@@ -27,8 +29,7 @@
                 </md-menu>
 
                 <md-menu ng-if="isInternal">
-                    <md-button aria-label="Open views menu" class="md-button-m3 md-icon-button"
-                               ng-click="$mdMenu.open($event)">
+                    <md-button aria-label="Open views menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined" ng-if="views">view_list</md-icon>
                         <md-tooltip md-direction="bottom">Views</md-tooltip>
                         <md-progress-circular md-diameter="18" md-mode="indeterminate"
@@ -87,8 +88,7 @@
 
                 <span style="font-size: medium;">{{greetUser()}}</span>
 
-                <md-button aria-label="Menu" class="md-button-m3 md-icon-button" ng-click="toggleSidenav()"
-                           ng-mouseover="toggleSidenav()">
+                <md-button aria-label="Menu" class="md-button-m3 md-icon-button" ng-mouseover="toggleSidenav()">
                     <md-icon md-font-set="material-symbols-outlined">menu</md-icon>
                 </md-button>
             </div>
@@ -128,12 +128,10 @@
                                     <span ng-if="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span>
                                     <span ng-if="box.name == 'currentWork' || box.name == 'map'">{{currentWorkSelection}}</span>
                                     <span ng-if="box.name == 'jobDetail' && currentJob.relatedJobs.length > 1"
-                                          ng-repeat="jo in currentJob.relatedJobs">&nbsp;
-                                        <span
-                                                ng-click="loadRelatedJobDetail(jo.id, jo.label)"
-                                                ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}">
-                                        {{jo.label}}
-                                    </span>
+                                          ng-repeat="jo in currentJob.relatedJobs">&nbsp;<span
+                                            ng-click="loadRelatedJobDetail(jo.id, jo.label)"
+                                            ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}"
+                                            style="cursor:pointer;text-decoration:underline;">{{jo.text}}</span>
                                     </span>
                                     <span ng-if="box.name == 'flightAgentDataTable'">
                                         {{isDeliveryJob() ? 'Agents' : 'Flights'}}
@@ -146,6 +144,22 @@
                                                ng-if="boxes[box.name].showRefresh">
                                         <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
                                     </md-button>
+
+                                    <div class="row-overflow" layout="row"
+                                         ng-if="box.name === 'flightAgentDataTable' && flightOptions.length > 0">
+                                        <md-button class="md-button-m3 md-icon-button md-primary"
+                                                   ng-click="loadNextFlights()">
+                                            <md-tooltip md-direction="top">Next Available Flights</md-tooltip>
+                                            <md-icon md-font-set="material-symbols-outlined">next_week</md-icon>
+                                        </md-button>
+
+                                        <md-button class="md-button-m3 md-icon-button md-primary"
+                                                   ng-click="loadNextDayFlights()">
+                                            <md-tooltip md-direction="top">Next Day's Flights</md-tooltip>
+                                            <md-icon md-font-set="material-symbols-outlined">event_upcoming</md-icon>
+                                        </md-button>
+                                    </div>
+
 
                                     <!-- Courier Card Buttons-->
                                     <div class="row-overflow" layout="row"
@@ -295,28 +309,6 @@
                                                 </md-menu-item>
                                             </md-menu-content>
                                         </md-menu>
-                                    </div>
-
-                                    <div layout="row" ng-if="box.name === 'map'">
-                                        <md-switch class="md-primary" ng-if="box.name === 'clearLists'"
-                                                   ng-model="areaListCity">
-                                            City
-                                        </md-switch>
-                                        <md-switch class="md-primary material-toolbar-switch"
-                                                   ng-change="getAvailableCourierLocation()"
-                                                   ng-if="box.name === 'map'" ng-model="allCouriers.display">
-                                            All
-                                        </md-switch>
-                                        <md-switch class="md-primary material-toolbar-switch"
-                                                   ng-change="storeMapZoomDisplay()"
-                                                   ng-if="box.name === 'map'" ng-model="mapZoom.display">
-                                            Auto Zoom
-                                        </md-switch>
-                                        <md-switch class="md-primary material-toolbar-switch"
-                                                   ng-change="getAvailableCourierLocation()"
-                                                   ng-if="box.name === 'map'" ng-model="allCouriers.includeUA">
-                                            Include UA
-                                        </md-switch>
                                     </div>
 
                                     <div class="row-overflow" id="box-{{box.name}}-{{$index}}" layout="row"

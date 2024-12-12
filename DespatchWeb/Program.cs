@@ -2,6 +2,7 @@
 using DespatchWeb.Automapper;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models.Config;
 using DespatchWeb.Repositories;
 using DespatchWeb.Services;
 using EntityFrameworkCore.UseRowNumberForPaging;
@@ -45,6 +46,10 @@ builder.Services.Configure<KestrelServerOptions>(options =>
 {
     if (options != null) options.Limits.MaxRequestBodySize = int.MaxValue;
 });
+
+// Api Keys
+builder.Services.Configure<HereMapsConfig>(builder.Configuration.GetSection("HereMaps"));
+
 
 // Repositories
 builder.Services.AddScoped<IJobRepository, JobRepository>();

@@ -5507,6 +5507,11 @@ namespace DespatchWeb.EntityClasses
                     .HasForeignKey(d => d.FromAirportId)
                     .HasConstraintName("FK_tucJob_FromAirport");
 
+                entity.HasOne(d => d.InternalStatusNavigation)
+                    .WithMany(p => p.TucJobs)
+                    .HasForeignKey(d => d.InternalStatus)
+                    .HasConstraintName("FK_TucJob_TucJobInternalStatus");
+
                 entity.HasOne(d => d.JobRelationshipType)
                     .WithMany(p => p.TucJobs)
                     .HasForeignKey(d => d.JobRelationshipTypeId)
@@ -6654,7 +6659,7 @@ namespace DespatchWeb.EntityClasses
                 entity.HasOne(d => d.LoggedInContact)
                     .WithMany(p => p.TucJobBookings)
                     .HasForeignKey(d => d.LoggedInContactId)
-                    .HasConstraintName("FK_TucJobBooking_tucContact");
+                    .HasConstraintName("FK_TucJobBooking_tucClientContact");
 
                 entity.HasOne(d => d.Source)
                     .WithMany(p => p.TucJobBookings)

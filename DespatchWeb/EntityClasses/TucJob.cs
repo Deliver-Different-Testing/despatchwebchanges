@@ -235,6 +235,7 @@ namespace DespatchWeb.EntityClasses
         public virtual TucJobType DesiredJobType { get; set; }
         public virtual TucCourier Fdcourier { get; set; }
         public virtual TblAirport FromAirport { get; set; }
+        public virtual TucJobInternalStatus InternalStatusNavigation { get; set; }
         public virtual TblJobRelationshipType JobRelationshipType { get; set; }
         public virtual TucJobType NotifiedJobType { get; set; }
         public virtual TucJob Parent { get; set; }

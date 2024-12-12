@@ -387,10 +387,6 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[DESWEB_stpUpdateJob]",
-         "ObjectType": 1
-      },
-      {
          "Name": "[dbo].[DESWEB_stpUpdateJobBooking]",
          "ObjectType": 1
       },
@@ -425,10 +421,6 @@
       {
          "Name": "[dbo].[MAP_stpCourierGPS_LastPositionToday]",
          "ObjectType": 1
-      },
-     {
-       "Name": "[dbo].[NET_stpJob_Insert_JobNumber]",
-       "ObjectType": 1
       },
       {
          "Name": "[dbo].[NET_stpJob_Insert_JobNumber]",

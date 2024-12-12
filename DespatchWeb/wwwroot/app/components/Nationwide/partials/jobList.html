@@ -42,8 +42,6 @@
                     {{job.speed}}
                     <i class="material-symbols-outlined job-table-icon"
                        ng-if="job.fromAirportId || job.toAirportId">{{getFlightIcon(job.jobNo)}}</i>
-                    <i class="material-symbols-outlined job-table-icon"
-                       ng-if="(job.assignedAgent)">engineering</i>
                 </td>
                 <td context-menu="setEventsMenu($event)"
                     ng-click="$event.stopPropagation()"

@@ -2,11 +2,6 @@
  * @fileoverview Controller for the Create Job Dialog in the uDispatch application.
  * @module CreateJobDialogController
  */
-
-/**
- * Controller for creating a new job
- * @class
- */
 class CreateJobDialogController {
     /**
      * @type {string[]}
@@ -26,19 +21,6 @@ class CreateJobDialogController {
         'UsStatesService'
     ];
 
-    /**
-     * Create a CreateJobDialogController.
-     * @param {Object} $scope - Angular scope object.
-     * @param {Object} $mdDialog - Angular Material dialog service.
-     * @param {Object} DispatchData - Service for dispatch data operations.
-     * @param {Object} toastrService - Service for displaying toast notifications.
-     * @param {Object} $http - Angular's $http service.
-     * @param {Object} dispatchJobService - Service for dispatching jobs.
-     * @param {string} staffId - ID of the staff member.
-     * @param {string} despatcherName - Name of the despatcher.
-     * @param {Object} APP_CONFIG - Application configuration object.
-     * @param {Object} UsStatesService - Service for US states data.
-     */
     constructor($scope, $mdDialog, DispatchData, toastrService, $http, dispatchJobService, staffId, despatcherName, APP_CONFIG, UsStatesService) {
         this.$scope = $scope;
         this.$mdDialog = $mdDialog;
@@ -51,11 +33,12 @@ class CreateJobDialogController {
         this.APP_CONFIG = APP_CONFIG;
         this.UsStatesService = UsStatesService;
 
+        this.vehicleSearchText = '';
+        this.speedSearchText = '';
+
+        this._initializeOptions();
         this._initializeFormData($scope);
         this._initializeJob();
-        this.fetchDataLists().then(speedOptions => {
-            this.speedOptions = speedOptions;
-        });
 
         this.useUsFormat = APP_CONFIG.US_Customer;
         if (this.useUsFormat) {
@@ -77,9 +60,22 @@ class CreateJobDialogController {
         this.isLoading = false;
         this.selectedCourier = null;
         this.selectedClient = null;
+        this.selectedVehicle = null;
         this.selectedSpeed = null;
         this.speedOptions = [];
         this.jobDate = new Date();
+    }
+
+    async _initializeOptions() {
+        const [speedOptions, vehicleSizes] = await Promise.all([
+            this.dispatchData.getSpeedList(),
+            this.dispatchData.getVehicleSizes()
+        ]);
+
+        /** @type {Suggestion[]} */
+        this.speedOptions = speedOptions;
+        /** @type {Suggestion[]} */
+        this.vehicleSizes = vehicleSizes;
     }
 
     /**
@@ -87,7 +83,7 @@ class CreateJobDialogController {
      * @private
      */
     _initializeJob() {
-        /** @type {Job} */
+        /** @type {JobCreateViewModel} */
         this.job = {
             clientId: "",
             deliverToContact: "",
@@ -114,40 +110,45 @@ class CreateJobDialogController {
     }
 
     /**
-     * Fetch data lists required for the form.
-     * @returns {Promise<Array>} A promise that resolves to the speed options list.
+     * @param {string} searchText
+     * @returns {Suggestion[]}
      */
-    async fetchDataLists() {
-        try {
-            return await this.dispatchData.getSpeedList();
-        } catch (error) {
-            console.error("Failed to fetch speed list: " + error.message);
-        }
+    vehicleSearch(searchText) {
+        searchText = searchText.toLowerCase();
+        return this.vehicleSizes.filter(item => item.text.toLowerCase().includes(searchText));
+    }
+
+
+    /**
+     * @param {Suggestion} item
+     */
+    onVehicleSelect(item) {
+        this.selectedVehicle = item;
     }
 
     /**
-     * Reset all choice fields to false.
+     * @param {string} searchText
+     * @returns {Suggestion[]}
      */
-    resetChoices() {
-        const choices = ['van', 'truck', 'pedal', 'attention', 'vanOK', 'reprice', 'void'];
-        choices.forEach(choice => this.job[choice] = false);
+    speedSearch(searchText) {
+        searchText = searchText.toLowerCase();
+        return this.speedOptions.filter(item => item.text.toLowerCase().includes(searchText)
+        );
     }
 
     /**
-     * Update a specific choice and reset others.
-     * @param {string} key - The key of the choice to update.
+     * @param {Suggestion} item
      */
-    updateChoice(key) {
-        this.resetChoices();
-        this.job[key] = true;
+    onSpeedSelect(item) {
+        this.selectedSpeed = item;
     }
 
     /**
      * Perform client search autocomplete.
      * @param {string} searchTerm - The search term.
-     * @returns {Promise<Array>} A promise that resolves to the search results.
+     * @returns {Promise<Suggestion[]>}
      */
-    async clientSearchAutocomplete(searchTerm) {
+    clientSearch(searchTerm) {
         return this.performAutocompleteSearch(searchTerm, "/home/ActiveClients");
     }
 
@@ -156,7 +157,7 @@ class CreateJobDialogController {
      * @param {string} searchText - The search text.
      * @returns {Promise<Array>} A promise that resolves to the search results.
      */
-    async courierSearch(searchText) {
+    courierSearch(searchText) {
         return this.performAutocompleteSearch(searchText, "/courier/AllActiveSearch");
     }
 
@@ -166,9 +167,9 @@ class CreateJobDialogController {
      * @param {string} url - The URL to perform the search.
      * @returns {Promise<Array>} A promise that resolves to the search results.
      */
-    async performAutocompleteSearch(searchTerm, url) {
+    performAutocompleteSearch(searchTerm, url) {
         try {
-            return await this.dispatchData.autocompleteSearch(searchTerm, url);
+            return this.dispatchData.autocompleteSearch(searchTerm, url);
         } catch (error) {
             console.error("Search failed: " + error.message);
             return [];
@@ -283,7 +284,7 @@ class CreateJobDialogController {
 
     /**
      * Submit the job form.
-     * @param {Job} job - The job object to submit.
+     * @param {JobCreateViewModel} job - The job object to submit.
      * @returns {Promise<void>}
      */
     async submit(job) {
@@ -320,13 +321,14 @@ class CreateJobDialogController {
 
     /**
      * Apply form values to the job object.
-     * @param {Job} job - The job object to update.
+     * @param {JobCreateViewModel} job - The job object to update.
      * @private
      */
     _applyFormValuesToJob(job) {
         job.clientId = this.selectedClient.id;
         job.date = this.jobDate.toISOString();
         job.speedId = this.selectedSpeed.id;
+        job.vehicleId = this.selectedVehicle.id;
 
         // Ensure fullAddress is up-to-date for both pickup and delivery addresses
         ['pickupAddress', 'deliveryAddress'].forEach(addressType => {
@@ -346,7 +348,7 @@ class CreateJobDialogController {
 
     /**
      * Create a new job.
-     * @param {Job} job - The job object to create.
+     * @param {JobCreateViewModel} job - The job object to create.
      * @returns {Promise<Object>} A promise that resolves to the response from the server.
      * @private
      */

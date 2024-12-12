@@ -194,3 +194,96 @@
     }
   }
 }
+
+// Variables
+@toast-error-color: #B00020;
+@toast-success-color: #00C853;
+@toast-warning-color: #FF6D00;
+@toast-info-color: #2196F3;
+@toast-text-color: white;
+@toast-font-size: 14px;
+@toast-line-height: 20px;
+
+// Toast Custom Styles
+.md-toast-custom {
+  &.md-error-toast {
+    .md-toast-content {
+      background-color: @toast-error-color !important;
+      color: @toast-text-color !important;
+    }
+  }
+
+  &.md-success-toast {
+    .md-toast-content {
+      background-color: @toast-success-color !important;
+      color: @toast-text-color !important;
+    }
+  }
+
+  &.md-warning-toast {
+    .md-toast-content {
+      background-color: @toast-warning-color !important;
+      color: @toast-text-color !important;
+    }
+  }
+
+  &.md-info-toast {
+    .md-toast-content {
+      background-color: @toast-info-color !important;
+      color: @toast-text-color !important;
+    }
+  }
+
+  .md-toast-content {
+    display: flex !important;
+    align-items: center !important;
+    font-size: @toast-font-size !important;
+    line-height: @toast-line-height !important;
+    padding: 14px 24px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.25px !important;
+    box-shadow: 0 3px 5px -1px rgba(0, 0, 0, .2),
+    0 6px 10px 0 rgba(0, 0, 0, .14),
+    0 1px 18px 0 rgba(0, 0, 0, .12) !important;
+
+    .material-symbols-outlined {
+      margin-right: 12px !important;
+      font-size: 24px !important;
+    }
+  }
+}
+
+// Animation classes
+.md-toast-custom {
+  &.ng-enter {
+    transform: translateY(100%) scale(0.9);
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  &.ng-enter-active {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+
+  &.ng-leave {
+    opacity: 1;
+    transform: scale(1);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  &.ng-leave-active {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+// Media Queries
+@media screen and (max-width: 599px) {
+  .md-toast-custom .md-toast-content {
+    margin: 0 16px !important;
+    width: calc(100% - 32px) !important;
+  }
+}
