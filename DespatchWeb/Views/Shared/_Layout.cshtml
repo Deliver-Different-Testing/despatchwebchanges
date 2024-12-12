@@ -136,6 +136,9 @@
         integrity="sha512-aItLT6sQatpSW2y7fAzMGlfYDst+OUOZGYsaEK4c3ko3HtGbqgEVS82OlbUPqampP/6s/luuFA5cugAnedU12g=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/markerclustererplus/2.1.4/markerclusterer.min.js"
+        integrity="sha512-/jShpNoGw558bp+NPGFAcyu//1onAk+1OGyDW3aJJoHLaTSi4nr2DXYC4VzgIELeIX3yg+EOVCf6v9PHHOJzTg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="lib/hotkeys/hotkeys.min.js"></script>
 <script src="lib/timepickerdirective.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/angularjs-google-maps/1.18.5/ng-map.min.js"
@@ -189,6 +192,7 @@
         integrity="sha512-z+sBc2xakvN/ch4Ik9ljGFYinKUjdyOw4PjB02Myt109VhrC56jef4x7mHJo/LOw17e4z61wvg00QAroiIL3nQ=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
+
 @{
     var isDevelopment = Environment.IsDevelopment();
     var scripts = new[]
@@ -213,6 +217,7 @@
         "dist/components/prebooks/prebookControl.js",
         "dist/components/overview/overview.controller.js",
         "dist/components/overview/overview.service.js",
+        "dist/components/overview/mega-map/mega-map.controller.js",
         "dist/components/dialogs/edit-address-dialog/edit-address-dialog.controller.js",
         "dist/components/dialogs/auto-complete-dialog/auto-complete-dialog.controller.js",
         "dist/components/dialogs/send-message-dialog/send-message-dialog.controller.js",
@@ -227,9 +232,11 @@
         "dist/components/dialogs/additional-services-dialog/additional-services-dialog.controller.js",
         "dist/components/dialogs/job-file-upload-dialog/job-file-upload.controller.js",
         "dist/components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.controller.js",
+        "dist/components/dialogs/edit-parcel-dimensions-dialog/parcel-visualization.directive.js",
         "dist/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.controller.js",
         "dist/components/dialogs/date-range-dialog/date-range-dialog.controller.js",
         "dist/components/dialogs/map-dialog/map-dialog.controller.js",
+        "dist/services/config.service.js",
         "dist/services/job-detail.service.js",
         "dist/services/toastr.service.js",
         "dist/services/loading.service.js",
@@ -237,6 +244,7 @@
         "dist/services/rate-job.service.js",
         "dist/services/dispatch-job.service.js",
         "dist/services/getUsStates.service.js",
+        "dist/services/open-job-dispatch.service.js",
     };
 
     foreach (var script in scripts)

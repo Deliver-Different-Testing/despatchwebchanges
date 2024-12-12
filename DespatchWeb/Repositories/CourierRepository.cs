@@ -311,10 +311,14 @@ public class CourierRepository : ICourierRepository
 
     public async Task<List<Suggestion>> GetVehicleSizesAsync()
     {
-        return await _context.VehicleSizes.Select(v => new Suggestion
-        {
-            Id = v.VehicleSizeId, Text = v.VehicleName
-        }).ToListAsync();
+        var vehicles = await _context.VehicleSizes
+            .OrderBy(v => v.VehicleName)
+            .Select(v => new Suggestion
+            {
+                Id = v.VehicleSizeId, Text = v.VehicleName
+            }).AsNoTracking().ToListAsync();
+
+        return vehicles;
     }
 
     public async Task<List<Suggestion>> GetAllRegionsAsync()
@@ -341,36 +345,6 @@ public class CourierRepository : ICourierRepository
             }).AsNoTracking().ToListAsync();
 
         return speeds;
-    }
-
-    public async Task<string> GetAirportCodeByIdAsync(int airportId)
-    {
-        try
-        {
-            _logger.LogInformation("Looking up airport code for ID: {AirportId}", airportId);
-
-            var airportCode = await _context.TblAirports
-                .Where(a => a.AirportId == airportId)
-                .Select(a => a.AirportCode)
-                .AsNoTracking()
-                .FirstOrDefaultAsync();
-
-            if (airportCode != null)
-            {
-                _logger.LogInformation("Found airport code {AirportCode} for ID {AirportId}", airportCode, airportId);
-            }
-            else
-            {
-                _logger.LogWarning("No airport found for ID {AirportId}", airportId);
-            }
-
-            return airportCode;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error looking up airport code for ID {AirportId}", airportId);
-            throw;
-        }
     }
 
     private async Task<int> ClearListTotalRemainingAsync(string area)
@@ -452,7 +426,7 @@ public class CourierRepository : ICourierRepository
                     )
                 )
             )
-            .Where(x => x.Courier.CourierLogInOut.LogInTime.Date == DateTime.Now &&
+            .Where(x => x.Courier.CourierLogInOut.LogInTime.Date == DateTime.Today &&
                         x.Courier.CourierLogInOut.LogOutTime == null)
             .Select(x => new EnvelopeCoordinate
             {
@@ -498,7 +472,7 @@ public class CourierRepository : ICourierRepository
     private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryNz(int clearListAreaId)
     {
         return _context.TucCouriers
-            .Where(c => c.CourierLogInOut.LogInTime.Date == DateTime.Now &&
+            .Where(c => c.CourierLogInOut.LogInTime.Date == DateTime.Today &&
                         c.CourierLogInOut.LogOutTime == null)
             .SelectMany(c => c.TucJobUcjbCouriers
                 .Where(jt => !jt.UcjbJobDone &&

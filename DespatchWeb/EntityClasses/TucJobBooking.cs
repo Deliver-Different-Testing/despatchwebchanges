@@ -184,7 +184,7 @@ namespace DespatchWeb.EntityClasses
         public virtual TucCourier Courier { get; set; }
         public virtual TblAirport FromAirport { get; set; }
         public virtual TblJobRelationshipType JobRelationshipType { get; set; }
-        public virtual TucContact LoggedInContact { get; set; }
+        public virtual TucClientContact LoggedInContact { get; set; }
         public virtual TucSource Source { get; set; }
         public virtual TblAirport ToAirport { get; set; }
         public virtual TucClient UcbkClient { get; set; }

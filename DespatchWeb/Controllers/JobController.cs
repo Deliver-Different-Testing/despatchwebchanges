@@ -670,7 +670,6 @@ public class JobController : Controller
         var un = _configuration["ExsalerateAPIUsername"];
         var pw = _configuration["ExsalerateAPIPW"];
 
-
         var rco = new RestClientOptions
             { Authenticator = new HttpBasicAuthenticator(un, pw), BaseUrl = new Uri(baseUrl) };
         var client = new RestClient(rco);
@@ -685,64 +684,75 @@ public class JobController : Controller
         };
 
         var request = new RestRequest("activity", Method.Post).AddJsonBody(body);
-
-
         var restResponse = await client.PostAsync(request);
 
-        if (restResponse.StatusCode != HttpStatusCode.OK)
-        {
-            var e = new ApplicationException(
-                $"Exsalerate Activity Failed {restResponse.Content} {Environment.NewLine} CurrentBody= {body}");
-            var key = _configuration["RaygunSettings:ApiKey"];
-            var rc = new RaygunClient(key).SendInBackground(e);
-        }
+        if (restResponse.StatusCode == HttpStatusCode.OK) return Json("OK");
+
+        var e = new ApplicationException(
+            $"Exsalerate Activity Failed {restResponse.Content} {Environment.NewLine} CurrentBody= {body}");
+        var key = _configuration["RaygunSettings:ApiKey"];
+        var rc = new RaygunClient(key).SendInBackground(e);
 
         return Json("OK");
     }
 
-
+    [HttpGet]
     public async Task<IActionResult> SuburbList()
     {
         var data = await _jobRepo.SuburbsAsync();
         return Json(data);
     }
 
+    [HttpGet]
     public async Task<IActionResult> SpeedList()
     {
         var data = await _jobRepo.SpeedsAsync();
         return Json(data);
     }
 
+    [HttpGet]
     public async Task<IActionResult> ContactList(int clientId)
     {
         var data = await _jobRepo.ContactsAsync(clientId);
         return Json(data);
     }
 
+    [HttpGet]
     public async Task<IActionResult> ContactDetailList(int clientId)
     {
         var data = await _jobRepo.ContactDetailList(clientId);
         return Json(data);
     }
 
+    [HttpGet]
     public async Task<IActionResult> LeaveList()
     {
         var data = await _jobRepo.LeaveParcelLocationsAsync();
         return Json(data);
     }
 
+    [HttpGet]
     public async Task<IActionResult> UndeliverableList()
     {
         var data = await _jobRepo.UndeliverableLocationsAsync();
         return Json(data);
     }
 
+    [HttpGet]
     public async Task<IActionResult> InternalStatusList()
     {
         var data = await _jobRepo.GetInternalStatusListAsync();
         return Json(data);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> StatusList()
+    {
+        var data = await _jobRepo.GetStatusListAsync();
+        return Json(data);
+    }
+
+    [HttpGet]
     public async Task<IActionResult> EventTypeList()
     {
         var data = await _jobRepo.EventTypeListAsync();

@@ -1,84 +1,67 @@
-<!-- Job List Component -->
-<div class="job-list-container" ng-if="jobList.length > 0">
-    <div class="droppable-box">
-        <!-- Table Headers -->
-        <div class="table-headings">
-            <table>
-                <thead class="thead-dark no-select">
-                <tr>
-                    <th ng-click="orderList('jobList', header.key)" ng-repeat="header in jobHeaders">
-                        {{header.label}}
-                        <md-icon md-font-set="material-symbols-outlined" ng-show="sort.jobList == header.key">
-                            arrow_drop_down
-                        </md-icon>
-                        <md-icon md-font-set="material-symbols-outlined" ng-show="sort.jobList == 'd-' + header.key">
-                            arrow_drop_up
-                        </md-icon>
-                    </th>
-                </tr>
-                </thead>
-            </table>
-        </div>
+<div class="droppable-box">
+    <md-table-container>
+        <table md-dense md-progress="jobListLoading" md-table>
+            <thead md-head md-on-reorder="orderList('jobList', jobQuery.order)" md-order="jobQuery.order">
+            <tr md-dense md-row>
+                <th md-column md-order-by="booked">
+                    <span>{{jobHeaders[0].label}}</span>
+                </th>
+                <th md-column>
+                    <span>{{jobHeaders[1].label}}</span>
+                </th>
+                <th md-column md-order-by="speed">
+                    <span>{{jobHeaders[2].label}}</span>
+                </th>
+                <th md-column md-order-by="jobNo">
+                    <span>{{jobHeaders[3].label}}</span>
+                </th>
+                <th md-column md-order-by="client">
+                    <span>{{jobHeaders[4].label}}</span>
+                </th>
+                <th md-column md-order-by="from">
+                    <span>{{jobHeaders[5].label}}</span>
+                </th>
+                <th md-column md-order-by="to">
+                    <span>{{jobHeaders[6].label}}</span>
+                </th>
+            </tr>
+            </thead>
 
-        <!-- Job List Table -->
-        <table class="table table-striped table-responsive table-rows" data-group="jobList" id="jobList">
-            <tbody>
-            <tr class="droppable-row draggable-row clickable-row noselect"
+            <tbody md-body>
+            <tr class="droppable-row draggable-row" data-jobno="{{job.jobNo}}"
+                md-dense
+                md-row
+                ng-click="selectJobDetail(job.id)"
                 data-courier="{{job.courier}}"
                 data-jobid="{{job.id}}"
-                data-jobno="{{job.jobNo}}"
-                ng-click="selectJobDetail(job.id);"
-                ng-repeat="job in jobList | filter: box.searchBox | orderBy: jobQuery.order">
-                <td>{{job.booked | date: "dd/MM/yy HH:mm"}}</td>
-                <td class="status" ng-class="job.status">{{job.status}}</td>
-                <td action="speedColumnClick($event)" right-click>{{job.speed}}</td>
-                <td>{{job.jobNo}}</td>
-                <td action="clientColumnClick($event)" right-click>{{job.client}}</td>
-                <td action="fromColumnClick($event)" right-click>
-                    {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
+                ng-repeat="job in jobList | filter: box.searchBox | orderBy: jobQuery.order | limitTo: jobQuery.limit : (jobQuery.page - 1) * jobQuery.limit">
+
+                <td md-cell>{{job.booked | date: "dd/MM/yy HH:mm"}}</td>
+                <td class="status" md-cell ng-class="job.status">{{job.status}}</td>
+                <td md-cell>{{job.speed}}</td>
+                <td md-cell>{{job.jobNo}}</td>
+                <td md-cell>{{job.client}}</td>
+                <td md-cell>
+                    {{isUsCustomer ? job.pickupAddress.addressLine5 + ' ' + job.pickupAddress.addressLine6 : job.from}}
+                    <md-tooltip md-direction="bottom">{{ job.pickupAddress.fullAddress }}</md-tooltip>
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
                 </td>
-                <td action="toColumnClick($event)" right-click>
-                    {{isUsCustomer ? job.deliveryAddress.addressLine5 : job.to}}
+                <td md-cell>
+                    {{isUsCustomer ? job.deliveryAddress.addressLine5 + ' ' + job.deliveryAddress.addressLine6 : job.to}}
+                    <md-tooltip md-direction="bottom">{{ job.deliveryAddress.fullAddress }}</md-tooltip>
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
                 </td>
             </tr>
             </tbody>
-            <tfoot>
-            <tr>
-                <td align="center" colspan="8">
-                    <div class="pull-right">
-                        <md-table-pagination
-                                md-limit="jobQuery.limit"
-                                md-limit-options="[5, 10, 25, 50]"
-                                md-on-paginate="jobPageChanged"
-                                md-page="jobQuery.page"
-                                md-page-select
-                                md-total="{{totalCount}}">
-                        </md-table-pagination>
-                    </div>
-                </td>
-            </tr>
-            </tfoot>
         </table>
-    </div>
+    </md-table-container>
 
-    <!-- Loading Indicator -->
-    <div class="loading" ng-if="jobListLoading">
-        <div class="text">
-            <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
-            <span class="sr-only">Loading...</span>
-        </div>
-    </div>
-</div>
-
-<div class="no-data" ng-if="!jobListLoading && jobList.length === 0">
-    <div class="content">
-        <div class="icon">
-            <md-icon md-font-set="material-symbols-outlined">work_off</md-icon>
-        </div>
-        <div class="text">
-            No Jobs Found Matching the Specified Criteria
-        </div>
-    </div>
+    <md-table-pagination
+            md-limit="jobQuery.limit"
+            md-limit-options="[5, 10, 25, 50]"
+            md-on-paginate="jobPageChanged"
+            md-page="jobQuery.page"
+            md-page-select
+            md-total="{{totalCount}}">
+    </md-table-pagination>
 </div>

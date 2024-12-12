@@ -81,13 +81,14 @@ public interface IJobRepository
     Task ReRateSplitJob(int jobId);
     Task FinishSplitJobProcess(int jobId, string despatcher);
     Task<List<SuburbLookup>> SuburbsAsync();
-    Task<List<Lookup>> SpeedsAsync();
-    Task<List<Lookup>> ContactsAsync(int clientId);
+    Task<List<Suggestion>> SpeedsAsync();
+    Task<List<Suggestion>> ContactsAsync(int clientId);
     Task<List<ClientContactDetailViewModel>> ContactDetailList(int clientId);
     Task<List<Lookup>> LeaveParcelLocationsAsync();
     Task<List<UndeliverableLocation>> UndeliverableLocationsAsync();
     Task<List<InternalStatus>> GetInternalStatusListAsync();
-    Task<List<Lookup>> EventTypeListAsync();
+    Task<List<Suggestion>> GetStatusListAsync();
+    Task<List<Suggestion>> EventTypeListAsync();
 
     Task<decimal> RateTruckJob(int clientId, int fromId, int toId, double weight, int size, int speed,
         int qty, DateTime bookedDate, int pickUp, int dropOff, bool privateRes, int oversizeItems,
@@ -140,7 +141,7 @@ public interface IJobRepository
         decimal pickupLng, bool cbd, decimal rate, string despatcher);
 
     Task ReleaseBulkJobAsync(string jobNumber, DateTime bookDate);
-    Task UpdateJobAsync(int jobId, string field, string value, decimal? rate, string despatcher, int staffId);
+    Task UpdateJobAsync(int jobId, string field, string value, decimal? rate, string userName, int staffId);
 
     Task UpdateBulkJobAsync(int bulkJobId, string field, string value, decimal? rate, string despatcher,
         int staffId);
@@ -151,7 +152,7 @@ public interface IJobRepository
     Task AddNoteAsync(int jobId, string note, string despatcher);
     Task AddBulkJobNoteAsync(int bulkJobId, string note, string despatcher);
     Task AddJobBookingNoteAsync(int jobId, string note, string despatcher);
-    Task<int> QuickAddJobAsync(JobCreateViewModel job, int staffId);
+    Task<int> QuickAddJobAsync(JobCreateViewModel request, int staffId);
     Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel);
     Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId);
 
@@ -166,6 +167,7 @@ public interface IJobRepository
         JobStatusGroup statusGroup,
         int page,
         int limit,
+        bool isUsCustomer = true,
         string search = null,
         DateTime? startDate = null,
         DateTime? endDate = null,
@@ -177,4 +179,5 @@ public interface IJobRepository
     Task<OverviewStatsViewModel> GetOverviewStatsAsync();
 
     Task<OverviewDeliveryMapResponse> GetOverviewLocationDataAsync(int jobId);
+    Task<List<MegaMapResponse>> GetJobsForMegaMapAsync();
 }
