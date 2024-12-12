@@ -99,7 +99,10 @@
                            ng-model="job.lp"
                            ng-mouseup="$event.preventDefault();"
                            placeholder="LP"
-                           type="number"/>
+                           inputmode="numeric"
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                           pattern="[0-9]*"
+                           type="text"/>
                 </td>
                 <td>
                     <input class="lateCallField no-spinners" ng-focus="selectAllContent($event)"
@@ -107,7 +110,10 @@
                            ng-model="job.ld"
                            ng-mouseup="$event.preventDefault();"
                            placeholder="LD"
-                           type="number"/>
+                           inputmode="numeric"
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                           pattern="[0-9]*"
+                           type="text"/>
                 </td>
                 <td ng-click="job.courier == null || restoreJobs();" title="Restore">
                     <i class="material-symbols-outlined job-table-icon" ng-if="job.courier !== null">undo</i>
@@ -132,3 +138,17 @@
         </div>
     </div>
 </div>
+
+<style>
+    /* Remove spinner buttons for Webkit browsers (Chrome, Safari, newer Edge) */
+    input.no-spinners::-webkit-outer-spin-button,
+    input.no-spinners::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    /* Remove spinner buttons for Firefox */
+    input.no-spinners[type="number"] {
+        -moz-appearance: textfield;
+    }
+</style>

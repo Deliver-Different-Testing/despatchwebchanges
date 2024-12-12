@@ -392,10 +392,6 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[DESWEB_stpUpdateJob]",
-         "ObjectType": 1
-      },
-      {
          "Name": "[dbo].[DESWEB_stpUpdateJobBooking]",
          "ObjectType": 1
       },

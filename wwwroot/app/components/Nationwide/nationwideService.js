@@ -3,14 +3,9 @@
  * @description A service for managing nationwide job-related operations, including job creation, updates, queries, and various API interactions.
  */
 class NationwideService {
-    /**
-     * @constructor
-     * @param {Object} $http - Angular's $http service for making HTTP requests.
-     * @param {Object} moment - Moment.js library for date and time manipulation.
-     */
     constructor($http, moment) {
-        this._$http = $http;
-        this._moment = moment;
+        this.$http = $http;
+        this.moment = moment;
     }
 
     /**
@@ -23,7 +18,7 @@ class NationwideService {
      */
     async addNote(jobId, note, despatcherName, preBook) {
         const method = preBook ? "job/AddJobBookingNote" : "job/AddNote";
-        return this._$http.post(method + "?jobId=" + jobId + "&note=" + note + "&despatcher=" + despatcherName);
+        return this.$http.post(method + "?jobId=" + jobId + "&note=" + note + "&despatcher=" + despatcherName);
     }
 
     /**
@@ -34,7 +29,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async addPallet(pallet, preBook, despatcherName) {
-        const response = await this._$http({
+        const response = await this.$http({
             url: "job/AddPallet?preBook=" + preBook + "&despatcher=" + despatcherName, method: "POST", data: pallet
         });
         return response.data;
@@ -48,7 +43,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async editPallet(pallet, preBook, despatcherName) {
-        const response = await this._$http({
+        const response = await this.$http({
             url: "job/EditPallet?preBook=" + preBook + "&despatcher=" + despatcherName, method: "POST", data: pallet
         });
         return response.data;
@@ -62,7 +57,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async deletePallet(pallet, preBook, despatcherName) {
-        const response = await this._$http({
+        const response = await this.$http({
             url: "job/DeletePallet?preBook=" + preBook + "&despatcher=" + despatcherName, method: "POST", data: pallet
         });
         return response.data;
@@ -81,7 +76,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async addFollowupEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
-        const response = await this._$http.post("courier/AddFollowupEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName);
+        const response = await this.$http.post("courier/AddFollowupEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName);
         return response.data;
     }
 
@@ -98,7 +93,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async addRestoreEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
-        const response = await this._$http.post("job/AddRestoreEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName);
+        const response = await this.$http.post("job/AddRestoreEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName);
         return response.data;
     }
     /**
@@ -116,7 +111,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async addEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, notes, eventType) {
-        const response = await this._$http.post("job/addEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName + "&notes=" + notes + "&eventType=" + eventType);
+        const response = await this.$http.post("job/addEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName + "&notes=" + notes + "&eventType=" + eventType);
         return response.data;
     }
 
@@ -130,7 +125,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async exsalerateActivity(eventName, notes, clientId, jobNumber, despatcherName) {
-        const response = await this._$http.post("job/ExsalerateActivity?eventName=" + eventName + "&notes=" + notes + "&clientId=" + clientId + "&jobNumber=" + jobNumber + "&despatcherName=" + despatcherName);
+        const response = await this.$http.post("job/ExsalerateActivity?eventName=" + eventName + "&notes=" + notes + "&clientId=" + clientId + "&jobNumber=" + jobNumber + "&despatcherName=" + despatcherName);
         return response.data;
     }
 
@@ -142,7 +137,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async allocateJobs(courierId, dispatcherId, jobIds) {
-        return this._$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
+        return this.$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
     }
 
     /**
@@ -153,7 +148,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async reAllocateJobs(courierId, dispatcherId, jobIds) {
-        return this._$http.post("job/ReAllocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
+        return this.$http.post("job/ReAllocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
     }
 
     /**
@@ -162,7 +157,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the courier status data.
      */
     async truckCourierStatus(courierId) {
-        return this._$http.post("courier/TruckCourierStatus?courierId=" + courierId);
+        return this.$http.post("courier/TruckCourierStatus?courierId=" + courierId);
     }
 
     /**
@@ -171,7 +166,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async voidJob(jobId) {
-        return this._$http.post("job/Void?jobId=" + jobId);
+        return this.$http.post("job/Void?jobId=" + jobId);
     }
 
     /**
@@ -183,7 +178,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async processUncheckDirect(jobId, despatcherName, staffId, currentSpeed) {
-        const response = await this._$http.post("job/ProcessUncheckDirect?jobId=" + jobId + "&despatcher=" + despatcherName + "&staffId=" + staffId + "&currentSpeed=" + currentSpeed);
+        const response = await this.$http.post("job/ProcessUncheckDirect?jobId=" + jobId + "&despatcher=" + despatcherName + "&staffId=" + staffId + "&currentSpeed=" + currentSpeed);
         return response.data;
     }
 
@@ -195,7 +190,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async restoreJobs(courierId, dispatcherId, jobIds) {
-        const response = await this._$http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
+        const response = await this.$http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
         return response.data;
     }
 
@@ -207,7 +202,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async restoreSplitJobs(courierId, dispatcherId, jobIds) {
-        const response = await this._$http.post("job/RestoreSplitJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
+        const response = await this.$http.post("job/RestoreSplitJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
         return response.data;
     }
 
@@ -217,7 +212,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async resendJobs(jobIds) {
-        const response = await this._$http.post("job/ResendSelected?jobIds=" + jobIds);
+        const response = await this.$http.post("job/ResendSelected?jobIds=" + jobIds);
         return response.data;
     }
 
@@ -227,7 +222,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async resendAllJobs(courierId) {
-        const response = await this._$http.post("job/ResendAll?courierId=" + courierId);
+        const response = await this.$http.post("job/ResendAll?courierId=" + courierId);
         return response.data;
     }
 
@@ -238,7 +233,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async sendPOD(jobId, email) {
-        const response = await this._$http.get('job/SendPOD?jobId=' + jobId + '&toEmail=' + email);
+        const response = await this.$http.get('job/SendPOD?jobId=' + jobId + '&toEmail=' + email);
         return response.data;
     }
 
@@ -251,7 +246,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async sendSMS(courierId, staffId, despatcherName, message) {
-        const response = await this._$http.post("job/SendSMS?courierId=" + courierId + "&dispId=" + staffId + "&despatcherName=" + despatcherName + "&message=" + message);
+        const response = await this.$http.post("job/SendSMS?courierId=" + courierId + "&dispId=" + staffId + "&despatcherName=" + despatcherName + "&message=" + message);
         return response.data;
     }
 
@@ -261,7 +256,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the job details.
      */
     async getJobDetail(jobId) {
-        const response = await this._$http.get('/Job/Detail?jobId=' + jobId);
+        const response = await this.$http.get('/Job/Detail?jobId=' + jobId);
         return response.data;
     }
 
@@ -272,7 +267,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the related jobs data.
      */
     async getRelatedJobs(parentId, clientId) {
-        const response = await this._$http.get('/Job/Related?parentId=' + parentId + '&clientId=' + clientId);
+        const response = await this.$http.get('/Job/Related?parentId=' + parentId + '&clientId=' + clientId);
         return response.data;
     }
 
@@ -283,7 +278,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the current jobs data.
      */
     async getJobsCurrent(courierId, done) {
-        const response = await this._$http.get("job/current?courierId=" + courierId + "&done=" + done);
+        const response = await this.$http.get("job/current?courierId=" + courierId + "&done=" + done);
         return response.data;
     }
     /**
@@ -292,7 +287,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the support data.
      */
     async getSupports(channel) {
-        const response = await this._$http.get("job/supports?channel=" + channel);
+        const response = await this.$http.get("job/supports?channel=" + channel);
         return response.data;
     }
 
@@ -303,7 +298,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async closeSupport(supportId, staffId) {
-        return this._$http.post("job/CloseSupport?supportId=" + supportId + "&staffId=" + staffId);
+        return this.$http.post("job/CloseSupport?supportId=" + supportId + "&staffId=" + staffId);
     }
 
     /**
@@ -313,7 +308,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async lockSupport(supportId, dispatcher) {
-        return this._$http.post("job/LockSupport?id=" + supportId + "&dispatcher=" + dispatcher);
+        return this.$http.post("job/LockSupport?id=" + supportId + "&dispatcher=" + dispatcher);
     }
 
     /**
@@ -323,14 +318,14 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async unLockSupport(supportId, dispatcher) {
-        return this._$http.post("job/UnLockSupport?id=" + supportId + "&dispatcher=" + dispatcher);
+        return this.$http.post("job/UnLockSupport?id=" + supportId + "&dispatcher=" + dispatcher);
     }
     /**
      * Retrieves active couriers data.
      * @returns {Promise<Object>} A promise that resolves with the active couriers data.
      */
     async getActiveCouriers() {
-        const response = await this._$http.get("courier/active");
+        const response = await this.$http.get("courier/active");
         return response.data;
     }
 
@@ -339,7 +334,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the active clients data.
      */
     async getActiveClients() {
-        const response = await this._$http.get("home/ActiveClients");
+        const response = await this.$http.get("home/ActiveClients");
         return response.data;
     }
 
@@ -349,7 +344,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the client contacts data.
      */
     async getClientContacts(contactId) {
-        const response = await this._$http.get("home/ClientContacts?contactId=" + contactId);
+        const response = await this.$http.get("home/ClientContacts?contactId=" + contactId);
         return response.data;
     }
 
@@ -359,7 +354,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the potential couriers data.
      */
     async getPotentialCouriers(jobId) {
-        const response = await this._$http.get("courier/PotentialCouriers?jobId=" + jobId);
+        const response = await this.$http.get("courier/PotentialCouriers?jobId=" + jobId);
         return response.data;
     }
 
@@ -369,7 +364,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the courier's position data.
      */
     async getCourierPosition(code) {
-        const response = await this._$http.get("courier/location?code=" + code);
+        const response = await this.$http.get("courier/location?code=" + code);
         return response.data;
     }
 
@@ -382,7 +377,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the available courier locations data.
      */
     async getAvailableCourierLocation(minLng, minLat, maxLng, maxLat) {
-        const response = await this._$http.get("courier/AvailableCourierLocation?minLng=" + minLng + "&minLat=" + minLat + "&maxLng=" + maxLng + "&maxLat=" + maxLat);
+        const response = await this.$http.get("courier/AvailableCourierLocation?minLng=" + minLng + "&minLat=" + minLat + "&maxLng=" + maxLng + "&maxLat=" + maxLat);
         return response.data;
     }
 
@@ -391,7 +386,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the suburb list data.
      */
     async getSuburbList() {
-        const response = await this._$http.get("job/SuburbList");
+        const response = await this.$http.get("job/SuburbList");
         return response.data;
     }
 
@@ -400,7 +395,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the speed list data.
      */
     async getSpeedList() {
-        const response = await this._$http.get("job/SpeedList");
+        const response = await this.$http.get("job/SpeedList");
         return response.data;
     }
 
@@ -409,7 +404,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the leave list data.
      */
     async getLeaveList() {
-        const response = await this._$http.get("job/LeaveList");
+        const response = await this.$http.get("job/LeaveList");
         return response.data;
     }
 
@@ -418,7 +413,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the undeliverable list data.
      */
     async getUndeliverableList() {
-        const response = await this._$http.get("job/UndeliverableList");
+        const response = await this.$http.get("job/UndeliverableList");
         return response.data;
     }
 
@@ -429,7 +424,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the truck items summary data.
      */
     async getTruckItemsSummary(jobId, truckWeightLimit) {
-        const response = await this._$http.get("job/TruckItemsSummary?jobId=" + jobId + "&truckWeightLimit=" + truckWeightLimit);
+        const response = await this.$http.get("job/TruckItemsSummary?jobId=" + jobId + "&truckWeightLimit=" + truckWeightLimit);
         return response.data;
     }
 
@@ -456,7 +451,7 @@ class NationwideService {
      * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async lateCall(lateType, lateTime, minutes, pickupTime, alertLatePickup, deliveryTime, alertLateDelivery, jobNo, clientId, contact, staffId, jobTime, jobId, jobType, bookedSpeed, notifiedSpeed, despatcherName, calc) {
-        const response = await this._$http.post("job/LateCall?lateType=" + lateType + "&lateTime=" + lateTime + "&minutes=" + minutes + "&pickupTime=" + pickupTime + "&alertLatePickup=" + alertLatePickup + "&deliveryTime=" + deliveryTime + "&alertLateDelivery=" + alertLateDelivery + "&jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&jobTime=" + jobTime + "&jobId=" + jobId + "&jobType=" + jobType + "&bookedSpeed=" + bookedSpeed + "&notifiedSpeed=" + notifiedSpeed + "&despatcherName=" + despatcherName + '&calculationRequired=' + calc);
+        const response = await this.$http.post("job/LateCall?lateType=" + lateType + "&lateTime=" + lateTime + "&minutes=" + minutes + "&pickupTime=" + pickupTime + "&alertLatePickup=" + alertLatePickup + "&deliveryTime=" + deliveryTime + "&alertLateDelivery=" + alertLateDelivery + "&jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&jobTime=" + jobTime + "&jobId=" + jobId + "&jobType=" + jobType + "&bookedSpeed=" + bookedSpeed + "&notifiedSpeed=" + notifiedSpeed + "&despatcherName=" + despatcherName + '&calculationRequired=' + calc);
         return response.data;
     }
     /**
@@ -479,7 +474,7 @@ class NationwideService {
      * @param {Date} booked
      */
     async rateJob(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId, ourRef, refA, refB, quantity, booked) {
-        const response = await this._$http.get("job/RateJob?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van + "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct + "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity + "&booked=" + booked);
+        const response = await this.$http.get("job/RateJob?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van + "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct + "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity + "&booked=" + booked);
         return response.data;
     }
 
@@ -488,7 +483,7 @@ class NationwideService {
      * @param {number} amount
      */
     async ppdExclusiveAmount(clientId, amount) {
-        const response = await this._$http.get("job/PPDExclusiveAmount?clientId=" + clientId + "&amount=" + amount);
+        const response = await this.$http.get("job/PPDExclusiveAmount?clientId=" + clientId + "&amount=" + amount);
         return response.data;
     }
 
@@ -497,14 +492,14 @@ class NationwideService {
      * @param {string} despatcherName
      */
     async splitJob(jobId, despatcherName) {
-        return this._$http.post("job/splitJob?jobId=" + jobId + "&despatcherName=" + despatcherName);
+        return this.$http.post("job/splitJob?jobId=" + jobId + "&despatcherName=" + despatcherName);
     }
 
     /**
      * @param {number} jobId
      */
     async reRateSplitJob(jobId) {
-        return this._$http.post("job/ReRateSplitJob?jobId=" + jobId);
+        return this.$http.post("job/ReRateSplitJob?jobId=" + jobId);
     }
 
     /**
@@ -520,7 +515,7 @@ class NationwideService {
      */
     async updateDeliveryAddress(jobId, toSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
         const method = prebook ? "job/UpdateBookingDeliveryAddress" : "job/UpdateDeliveryAddress";
-        return this._$http.post(method + "?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName);
+        return this.$http.post(method + "?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -536,7 +531,7 @@ class NationwideService {
      */
     async updatePickupAddress(jobId, fromSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
         const method = prebook ? "job/UpdateBookingPickupAddress" : "job/UpdatePickupAddress";
-        return this._$http.post(method + "?jobId=" + jobId + "&fromSuburbId=" + fromSuburbId + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName);
+        return this.$http.post(method + "?jobId=" + jobId + "&fromSuburbId=" + fromSuburbId + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName);
     }
     /**
      * @param {number} jobId
@@ -549,10 +544,10 @@ class NationwideService {
      */
     async updateJobDetail(jobId, field, value, rate, despatcherName, staffId, preBook) {
         if (field === "Time" || field === "CompletedTime") {
-            value = this._moment().format("YYYY-MM-DD") + " " + this._moment(value).format("HH:mm:ss");
+            value = this.moment().format("YYYY-MM-DD") + " " + this.moment(value).format("HH:mm:ss");
         }
         if (field === "Date" || field === "StopDate" || field === "RestartDate" || field === "InActiveDate" || field === "FirstDue" || field === "LastDone" || field === "NextDue") {
-            value = this._moment(value).format("YYYY-MM-DD");
+            value = this.moment(value).format("YYYY-MM-DD");
         }
 
         // Remove any symbols from rate
@@ -561,7 +556,7 @@ class NationwideService {
         }
 
         const method = preBook ? "job/UpdateJobBooking" : "job/UpdateJob";
-        const response = await this._$http.post(method + "?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
+        const response = await this.$http.post(method + "?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
 
         return response.data;
     }
@@ -592,7 +587,7 @@ class NationwideService {
         });
 
         const url = `nationwidejob/${endpoint}?${params.toString()}`;
-        const response = await this._$http.get(url);
+        const response = await this.$http.get(url);
         return response.data;
     }
 
@@ -637,20 +632,23 @@ class NationwideService {
     }
 
     async getEventTypes() {
-        const response = await this._$http.get("job/EventTypeList");
+        const response = await this.$http.get("job/EventTypeList");
         return response.data;
     }
 
     /**
-     * Fetches flight options for a specific job. Optionally can specify departure date
+     * Fetches flight options for a specific job
      * @param {number} jobId - The ID of the job
-     * @param {string} departureDate - The date of departure.
-     * @throws {Error} If the API request fails or returns an unexpected response.
+     * @param {string|Date} departureDate - The date of departure
+     * @throws {Error} If the API request fails or returns an unexpected response
      */
     async getFlightOptions(jobId, departureDate) {
-        const formattedDate = this._moment(departureDate).format('YYYY-MM-DDTHH:mm:ss');
+        const formattedDate = this.moment(departureDate, this.moment.ISO_8601, true)
+            .format('YYYY-MM-DDTHH:mm:ss');
 
-        const response = await this._$http.get('nationwideJob/GetScheduledFlightOptions', {
+        console.log(formattedDate);
+
+        const response = await this.$http.get('nationwideJob/GetScheduledFlightOptions', {
             params: {
                 departureDate: formattedDate,
                 jobId,
@@ -659,7 +657,9 @@ class NationwideService {
 
         return {
             flights: response.data,
-            message: response.data.length === 0 ? 'Sorry, we couldn\'t find any flights between these airports on the selected date. Please try different dates or airports.' : null
+            message: response.data.length === 0
+                ? 'Sorry, we couldn\'t find any flights between these airports on the selected date. Please try different dates or airports.'
+                : null
         };
     }
 
@@ -672,7 +672,7 @@ class NationwideService {
      */
     async assignFlightToJob(jobId, flightNumber, departureDate) {
         try {
-            const response = await this._$http.post('nationwideJob/AssignFlightToJob', {
+            const response = await this.$http.post('nationwideJob/AssignFlightToJob', {
                 jobId,
                 flightNumber,
                 departureDate,
@@ -690,7 +690,7 @@ class NationwideService {
      * @throws {Error} If the API request fails or returns an unexpected response.
      */
     async getAgentOptions(jobId) {
-        const response = await this._$http.get('nationwideJob/GetAgentsForJob', {
+        const response = await this.$http.get('nationwideJob/GetAgentsForJob', {
             params: {
                 jobId,
             }
@@ -710,7 +710,7 @@ class NationwideService {
      */
     async assignAgentToJob(jobId, agentId) {
         try {
-            const response = await this._$http.post('nationwideJob/AssignAgentToJob', {
+            const response = await this.$http.post('nationwideJob/AssignAgentToJob', {
                 jobId,
                 agentId,
             });

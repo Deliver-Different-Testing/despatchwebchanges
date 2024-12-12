@@ -25,6 +25,17 @@
                     </md-option>
                 </md-select>
 
+                <!-- Warning Message -->
+                <div class="warning-message" ng-if="ctrl.warningMessage"
+                     style="margin: 16px auto; padding: 12px; background-color: #FFF3E0; border-left: 4px solid #FF9800; color: rgba(0,0,0,0.87); max-width: 400px; width: 100%;">
+                    <div style="display: flex; align-items: start;">
+                        <md-icon md-font-set="material-symbols-outlined" style="margin-right: 8px; color: #FF9800;">
+                            warning
+                        </md-icon>
+                        <span>{{ ctrl.warningMessage }}</span>
+                    </div>
+                </div>
+
                 <div ng-show="ctrl.showCheckbox" style="display: flex; justify-content: center; align-items: center;">
                     <div>
                         <md-divider></md-divider>

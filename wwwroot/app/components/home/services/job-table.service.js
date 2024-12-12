@@ -1,6 +1,5 @@
 class JobTableService {
-    constructor($mdEditDialog) {
-        this._$mdEditDialog = $mdEditDialog;
+    constructor() {
     }
 
     /**

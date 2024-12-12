@@ -27,8 +27,8 @@ class SelectDialogController {
      * @param {string} checkboxLabel - Label to display for the checkbox if shown to view.
      */
     constructor($mdDialog, DispatchData, toastrService, rateJobService, id, fieldName, title, job, options, initialValue, showCheckbox, checkboxLabel) {
-        this._$mdDialog = $mdDialog;
-        this._dispatchData = DispatchData;
+        this.$mdDialog = $mdDialog;
+        this.DispatchData = DispatchData;
         this.toastrService = toastrService;
         this.rateJobService = rateJobService;
         this.showCheckbox = !showCheckbox ? false : showCheckbox;
@@ -37,11 +37,16 @@ class SelectDialogController {
         this.isLoading = false;
         this.id = id;
         this.title = title;
-        this._job = job;
-        this._fieldName = fieldName;
+        this.job = job;
+        this.fieldName = fieldName;
         this.options = options;
         this.selectedOption = null;
 
+        // Warning message
+        this.warningMessage = fieldName === "Status" ?
+            "Warning: You are about to change the status of a job. Different statuses trigger different notifications and automated workflows. " +
+            "While this change can be reversed, it may impact multiple systems and stakeholders. Please ensure you're selecting the correct status."
+            : "";
         /** @type {boolean} */
         this.checkboxValue = false;
 
@@ -58,7 +63,9 @@ class SelectDialogController {
      * @returns {Object|null} The found option or null if not found.
      */
     _findInitialValue(options, initialValue) {
-        return options.items.find(option => option.text === initialValue) ?? null;
+        return options.items.find(option =>
+            option.text === initialValue || option.id === initialValue
+        ) ?? null;
     }
 
     /**
@@ -71,54 +78,18 @@ class SelectDialogController {
         try {
             this.isLoading = true;
 
-            if (this._fieldName === "DGClass") {
+            if (this.fieldName === "DGClass") {
                 await this._updateDgClass(selectedOption);
-                this._job.dgClass = selectedOption.id;
+                this.job.dgClass = selectedOption.id;
             } else {
-                this._updateJobFields(selectedOption);
                 await this._updateJobDetails(selectedOption);
             }
 
-            this._$mdDialog.hide();
+            this.$mdDialog.hide();
         } catch (error) {
             this.toastrService.showErrorToast(error.message);
         } finally {
             this.isLoading = false;
-        }
-    }
-
-    /**
-     * Updates various job fields based on the selected option.
-     * @private
-     * @param {Object} selectedOption - The selected option.
-     */
-    _updateJobFields(selectedOption) {
-        switch (this._fieldName) {
-            case "Size":
-                this._job.size.text = selectedOption.text;
-                this._job.size.id = selectedOption.id;
-                break;
-            case "SpeedID":
-                this._job.speedName = selectedOption.text;
-                this._job.speedId = selectedOption.id;
-                break;
-            case "AcceptedJobTypeID":
-                this._job.acceptedName = selectedOption.text;
-                this._job.acceptedJobTypeID = selectedOption.id;
-                break;
-            case "NotifiedJobTypeID":
-                this._job.notifiedName = selectedOption.text;
-                this._job.notifiedId = selectedOption.id;
-                break;
-            case "TrackingMethod":
-                this._job.trackingMethod = selectedOption.id;
-                break;
-            case "DeliverToLeaveID":
-                this._job.sigNotRequired = selectedOption.text;
-                this._job.deliverToLeaveId = selectedOption.id;
-                break;
-            case "UndeliverableLocationID":
-                this._job.udStatus = selectedOption.text;
         }
     }
 
@@ -130,12 +101,12 @@ class SelectDialogController {
      * @returns {Promise<void>}
      */
     async _updateJobDetails(selectedOption) {
-        this._job.charge = await this.rateJobService.rateJob(this._job);
+        this.job.charge = await this.rateJobService.rateJob(this.job);
 
-        if (this._job.bulkJob) {
-            await this._dispatchData.updateBulkJobDetail(this._job.id, this._fieldName, selectedOption.id, this._job.charge, FirstName, ContactID);
+        if (this.job.bulkJob) {
+            await this.DispatchData.updateBulkJobDetail(this.job.id, this.fieldName, selectedOption.id, this.job.charge, FirstName, ContactID);
         } else {
-            await this._dispatchData.updateJobDetail(this._job.id, this._fieldName, selectedOption.id, this._job.charge, FirstName, ContactID);
+            await this.DispatchData.updateJobDetail(this.job.id, this.fieldName, selectedOption.id, this.job.charge, FirstName, ContactID);
         }
     }
 
@@ -147,11 +118,11 @@ class SelectDialogController {
      * @returns {Promise<void>}
      */
     async _updateDgClass(selectedOption) {
-        await this._dispatchData.updateJobDetail(this._job.id, this._fieldName, selectedOption.id, this._job.charge, FirstName, ContactID, this._job.preBook);
+        await this.DispatchData.updateJobDetail(this.job.id, this.fieldName, selectedOption.id, this.job.charge, FirstName, ContactID, this.job.preBook);
 
-        if (this._job.dgDocumentation !== this.checkboxValue) {
-            this._job.dgDocumentation = this.checkboxValue;
-            await this._dispatchData.updateJobDetail(this._job.id, "DGDocumentation", this._job.dgDocumentation, this._job.charge, FirstName, ContactID, this._job.preBook);
+        if (this.job.dgDocumentation !== this.checkboxValue) {
+            this.job.dgDocumentation = this.checkboxValue;
+            await this.DispatchData.updateJobDetail(this.job.id, "DGDocumentation", this.job.dgDocumentation, this.job.charge, FirstName, ContactID, this.job.preBook);
         }
     }
 
@@ -159,7 +130,7 @@ class SelectDialogController {
      * Cancels the Angular Material Dialog.
      */
     cancel() {
-        this._$mdDialog.cancel();
+        this.$mdDialog.cancel();
     }
 }
 

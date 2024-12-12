@@ -50,29 +50,6 @@
         }
     };
 
-    /**
-     * Sizes table headings to match the corresponding table body columns.
-     */
-    const sizeHeadings = () => {
-        angular.element("body").find(".box").each(function () {
-            const box = angular.element(this);
-            box.find(".table-headings thead tr th").each((index, element) => {
-                const newWidth = box.find(".table tbody tr td:visible").eq(index).width();
-                angular.element(element).width(newWidth);
-            });
-            box.find(".table-headings table").width(box.find(".table").width());
-        });
-
-        angular.element("body").find(".box").each(function () {
-            const box = angular.element(this);
-            box.find(".table-b-headings thead tr th").each((index, element) => {
-                const newWidth = box.find(".table tbody tr td:visible").eq(index).width();
-                angular.element(element).width(newWidth);
-            });
-            box.find(".table-b-headings table").width(box.find(".table").width());
-        });
-    };
-
     // Event listeners
     document.onkeydown = overrideKeyboardEvent;
     document.onkeyup = overrideKeyboardEvent;

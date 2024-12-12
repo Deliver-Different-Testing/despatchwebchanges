@@ -102,12 +102,21 @@
 
         <section layout="row" layout-sm="column" layout-align="center center" layout-wrap class="space">
             <md-button class="md-raised md-primary" ng-click="refreshAllData(true)">
+                <md-icon md-font-set="material-symbols-outlined">
+                    search
+                </md-icon>
                 Search
             </md-button>
             <md-button class="md-raised md-primary" ng-click="downloadJobList()">
+                <md-icon md-font-set="material-symbols-outlined">
+                    cloud_download
+                </md-icon>
                 Download
             </md-button>
             <md-button class="md-raised md-primary" ng-click="uploadJobList()">
+                <md-icon md-font-set="material-symbols-outlined">
+                    cloud_upload
+                </md-icon>
                 Upload
             </md-button>
             <input onchange="angular.element(this).scope().onUploadJobList()" style="visibility: hidden;" type="file" name="jobListUpload" id="jobListUpload" file-model="myFile" class="inputfile" accept=".xlsx,.xls,.csv" data-multiple-caption="{count} files selected" />

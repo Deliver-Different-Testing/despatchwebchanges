@@ -1,4 +1,14 @@
-<md-content class="md-dense" id="jobDetail" ng-if="jdSvc.currentJob && !jdSvc.currentJob.preBook">
+<md-content class="md-dense" id="jobDetail"
+            ng-if="jdSvc.currentJob && !jdSvc.currentJob.preBook">
+
+    <md-progress-linear
+            class="md-primary"
+            md-mode="indeterminate"
+            ng-if="jdSvc.jobDetailLoading"
+            style="position: absolute; top: 0; left: 0; right: 0;">
+        <md-tooltip md-direction="bottom">Refreshing Job Details...</md-tooltip>
+    </md-progress-linear>
+
     <div class="fields">
         <div class="row row-no-padding row-out">
             <div class="col-md-6">
@@ -101,7 +111,7 @@
                              ng-click="!jdSvc.currentJob.locked && jdSvc.editJobToPhone($event, jdSvc.currentJob)">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">To Phone</label>
                             <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
-                                {{jdSvc.currentJob.phone}}
+                                {{jdSvc.currentJob.toContactPhone}}
                             </div>
                         </div>
                     </div>
@@ -141,7 +151,8 @@
 
                 <div class="notes field">
                     <label>Consignment Note' / AWB</label>
-                    <md-button aria-label="add note" class="md-fab md-raised md-mini" ng-click="!jdSvc.currentJob.locked && jdSvc.showNotesDialog($event, jdSvc.currentJob, 'Consignment Note / AWB','ConNote')"
+                    <md-button aria-label="add note" class="md-fab md-raised md-mini"
+                               ng-click="!jdSvc.currentJob.locked && jdSvc.showNotesDialog($event, jdSvc.currentJob, 'Consignment Note / AWB','ConNote')"
                                ng-if="jdSvc.currentJob"
                                style="float: right;">
                         <md-icon md-font-set="material-symbols-outlined">description</md-icon>
@@ -156,22 +167,26 @@
             <div class="col-md-6">
                 <div class="row row-no-padding">
                     <div class="col-md-4">
-                        <div class="field" ng-if="!jdSvc.currentJob.bulkJob">
-                            <label class="disabled">Status</label>
-                            <div class="disabled value">{{jdSvc.currentJob.statusName}}</div>
+                        <div class="field"
+                             ng-click="!jdSvc.currentJob.locked && jdSvc.statusClick($event, jdSvc.currentJob)"
+                             ng-if="!jdSvc.currentJob.bulkJob">
+                            <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Status</label>
+                            <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
+                                {{jdSvc.currentJob.statusName}}
+                            </div>
                         </div>
 
                         <div class="field" ng-if="!jdSvc.currentJob.bulkJob">
-                              <label ng-class="disabled">Booked
-                                  by Contact</label>&nbsp;
+                            <label ng-class="disabled">Booked
+                                by Contact</label>&nbsp;
                             <i class="material-symbols-outlined job-table-icon"
-                                                              ng-class="disabled"
+                               ng-class="disabled"
                                title="Show Client Contact List">
                                 info
                             </i>
                             <div class="value" ng-class="disabled">
-                                  {{jdSvc.currentJob.contactName}}
-                              </div>
+                                {{jdSvc.currentJob.contactName}}
+                            </div>
                         </div>
 
                         <div class="field">
@@ -300,7 +315,7 @@
                              ng-click="!jdSvc.currentJob.locked && jdSvc.leaveClick($event, jdSvc.currentJob)">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Leave Parcel</label>
                             <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
-                                {{jdSvc.getSelectedLeaveParcel(jdSvc.currentJob.deliverToLeaveId)}}
+                                {{jdSvc.currentJob.igNotRequired}}
                             </div>
                         </div>
                         <div class="field"
@@ -339,24 +354,24 @@
                         <!-- Courier Information for non prebooks-->
                         <div ng-if="jdSvc.currentJob.courierData">
                             <div ng-if="!jdSvc.currentJob.prebook">
-                            <div class="field">
-                                <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Courier Name</label>
-                                <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
-                                    {{jdSvc.currentJob.courierData.courierName}}
+                                <div class="field">
+                                    <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Courier Name</label>
+                                    <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
+                                        {{jdSvc.currentJob.courierData.courierName}}
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="field">
-                                <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Courier Mobile</label>
-                                <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
-                                    {{jdSvc.currentJob.courierData.courierMobile}}
+                                <div class="field">
+                                    <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Courier Mobile</label>
+                                    <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
+                                        {{jdSvc.currentJob.courierData.courierMobile}}
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="field">
-                                <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Dispatcher Name</label>
-                                <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
-                                    {{jdSvc.currentJob.dispatcherName}}
+                                <div class="field">
+                                    <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Dispatcher Name</label>
+                                    <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
+                                        {{jdSvc.currentJob.dispatcherName}}
+                                    </div>
                                 </div>
-                            </div>
                             </div>
 
                             <div class="field" ng-if="jdSvc.currentJob.bulkJob">
@@ -851,9 +866,9 @@ jdSvc.currentJob.completedTime
                     <div class="col-md-6">
 
                         <div class="field" ng-click="jdSvc.contactClick($event, jdSvc.currentJob)"
-                                ng-if="!jdSvc.currentJob.bulkJob">
-                               <label>Booked by Contact</label>
-                               <div class="value">{{jdSvc.currentJob.contactName}}</div>
+                             ng-if="!jdSvc.currentJob.bulkJob">
+                            <label>Booked by Contact</label>
+                            <div class="value">{{jdSvc.currentJob.contactName}}</div>
                         </div>
 
                         <div class="field">
@@ -1174,16 +1189,6 @@ jdSvc.currentJob.completedTime
         </div>
         <div class="text">
             Please Select a Job or Courier
-        </div>
-    </div>
-</div>
-
-<!-- Loading Indicator -->
-<div class="loader-container" ng-if="jdSvc.jobDetailLoading">
-    <div class="full-height" layout="row" layout-align="center center">
-        <div class="material-icon-loader">
-            <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
-            <md-icon class="loader-icon" md-font-set="material-symbols-outlined">assignment</md-icon>
         </div>
     </div>
 </div>

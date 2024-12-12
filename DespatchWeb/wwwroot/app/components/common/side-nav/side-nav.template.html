@@ -1,0 +1,80 @@
+<!-- HTML Template -->
+<link href="app/components/common/side-nav/side-nav.min.css" rel="stylesheet">
+
+<md-sidenav class="md-sidenav-right elevation-1" md-component-id="right">
+    <div class="nav-header">
+        <!-- Account header with updated styling -->
+        <div class="account-header" layout="column" layout-align="center center">
+            <div class="account-avatar">
+                <md-icon md-font-set="material-symbols-outlined">account_circle</md-icon>
+            </div>
+            <div class="account-details">
+                <span class="md-title">{{userName}}</span>
+                <span class="md-caption">{{companyName}}</span>
+            </div>
+        </div>
+    </div>
+
+    <md-divider></md-divider>
+
+    <md-content class="nav-content">
+        <!-- Navigation menu with updated styling -->
+        <md-list>
+            <md-list-item class="nav-item"
+                          md-selected="isActive('home')"
+                          ng-class="{'active': isActive('home')}"
+                          ui-sref="home">
+                <div class="nav-item-content">
+                    <md-icon md-font-set="material-symbols-outlined">dashboard</md-icon>
+                    <p>Dispatch</p>
+                </div>
+                <div class="nav-indicator"></div>
+            </md-list-item>
+
+            <md-list-item class="nav-item"
+                          md-selected="isActive('nw')"
+                          ng-class="{'active': isActive('nw')}"
+                          ui-sref="nw">
+                <div class="nav-item-content">
+                    <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
+                    <p ng-if="isUsCustomer">Domestic</p>
+                    <p ng-if="!isUsCustomer">Nationwide</p>
+                </div>
+                <div class="nav-indicator"></div>
+            </md-list-item>
+
+            <md-list-item class="nav-item"
+                          md-selected="isActive('overview')"
+                          ng-class="{'active': isActive('overview')}"
+                          ui-sref="overview">
+                <div class="nav-item-content">
+                    <md-icon md-font-set="material-symbols-outlined">inventory_2</md-icon>
+                    <p>Overview</p>
+                </div>
+                <div class="nav-indicator"></div>
+            </md-list-item>
+
+            <md-list-item class="nav-item"
+                          md-selected="isActive('cs')"
+                          ng-class="{'active': isActive('cs')}"
+                          ui-sref="cs">
+                <div class="nav-item-content">
+                    <md-icon md-font-set="material-symbols-outlined">search</md-icon>
+                    <p>Job Search</p>
+                </div>
+                <div class="nav-indicator"></div>
+            </md-list-item>
+
+            <md-list-item class="nav-item"
+                          md-selected="isActive('prebooks')"
+                          ng-class="{'active': isActive('prebooks')}"
+                          ui-sref="prebooks">
+                <div class="nav-item-content">
+                    <md-icon md-font-set="material-symbols-outlined">event</md-icon>
+                    <p>PreBooks</p>
+                </div>
+                <div class="nav-indicator"></div>
+            </md-list-item>
+        </md-list>
+    </md-content>
+</md-sidenav>

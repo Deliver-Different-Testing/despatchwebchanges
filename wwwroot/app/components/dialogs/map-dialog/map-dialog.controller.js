@@ -8,16 +8,18 @@ class MapDialogController {
      * @static
      * @description List of dependencies to be injected.
      */
-    static $inject = ['$mdDialog', 'overviewService', 'delivery'];
+    static $inject = ['$mdDialog', 'overviewService', 'configService', 'delivery'];
 
     /**
      * @param $mdDialog
      * @param overviewService
+     * @param configService
      * @param {OverviewTableParentJob} delivery
      */
-    constructor($mdDialog, overviewService, delivery) {
+    constructor($mdDialog, overviewService, configService, delivery) {
         this.$mdDialog = $mdDialog;
         this.overviewService = overviewService;
+        this.configService = configService;
         this.delivery = delivery;
 
         this.title = `${delivery.jobName} Map`;
@@ -25,7 +27,7 @@ class MapDialogController {
         this.selectedJobIndex = 0;
 
         this.hereCredentials = {
-            apiKey: 'KedIcK-HWes4X4mqtK64i4jrxTkD7tAWfJdLCXwGPD8'
+            apiKey: null
         };
 
         /** @type {MapConfig} */
@@ -38,13 +40,25 @@ class MapDialogController {
 
         this.loading = false;
 
-        // Set up config data
-        this.getJob(delivery.jobId).then(data => {
-            console.log(data);
-
-            this.mapConfig = data;
-        })
+        // Initialize the controller
+        this.init();
     }
+
+    async init() {
+        try {
+            // Get API key from backend
+            this.hereCredentials.apiKey = await this.configService.getHereMapsKey();
+
+            // Get job data
+            this.mapConfig = await this.getJob(this.delivery.jobId);
+        } catch (error) {
+            console.error('Error initializing map:', error);
+            // Handle error appropriately
+        } finally {
+            this.loading = false;
+        }
+    }
+
 
     /**
      * @param {number} jobId

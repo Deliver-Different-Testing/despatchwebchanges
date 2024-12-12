@@ -3,6 +3,8 @@
         <md-toolbar class="md-hue-2">
             <div class="md-toolbar-tools">
                 <h2>DFRNT</h2>
+                <md-divider class="vertical-divider"></md-divider>
+                <h2>Job Search</h2>
 
                 <span flex></span>
 
@@ -11,7 +13,7 @@
                 <md-menu>
                     <md-button aria-label="Open layout options menu" class="md-icon-button"
                                ng-click="$mdMenu.open($event)">
-                        <md-icon md-font-set="material-symbols-outlined">widgets</md-icon>
+                        <md-icon md-font-set="material-symbols-outlined">grid_view</md-icon>
                     </md-button>
                     <md-menu-content width="2">
                         <md-menu-item>
@@ -35,23 +37,13 @@
 
                 <md-divider class="vertical-divider"></md-divider>
 
-                <md-button aria-label="Menu" class="md-icon-button" ng-click="toggleSidenav()"
-                           ng-mouseover="toggleSidenav()">
+                <md-button aria-label="Menu" class="md-icon-button" ng-mouseover="toggleSidenav()">
                     <md-icon md-font-set="material-symbols-outlined">menu</md-icon>
                 </md-button>
 
             </div>
         </md-toolbar>
         <material-sidenav></material-sidenav>
-    </div>
-
-    <!-- Delivery Job Search Dashboard Title Section -->
-    <div class="page-title-section md-padding" layout="row" layout-align="start center">
-        <div>
-            <h1 class="md-headline" style="margin: 0; color: rgba(0,0,0,0.87);">Job Search</h1>
-            <p class="md-subhead" style="margin: 4px 0 0 0; color: rgba(0,0,0,0.54);">Search and manage all delivery
-                jobs</p>
-        </div>
     </div>
 
     <div class="">

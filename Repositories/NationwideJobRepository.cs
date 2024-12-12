@@ -75,6 +75,8 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             job.UcjbTime = flight.DepartureTime; // ToDo: Update this to the tenant timezone
             job.Parent.InverseParent.Last().UcjbTime =
                 flight.ArrivalTime.AddMinutes(60); // ToDo: Update this to the tenant timezone
+            job.UcjbStatus = (int)JobStatus.Dispatched;
+
             await Context.SaveChangesAsync();
 
             await Context.TucJobNationwides.AddAsync(jobNationwide);
@@ -126,6 +128,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         {
             var job = await Context.TucJobs.Where(j => j.UcjbId == jobId).FirstOrDefaultAsync();
             job.AgentId = agentId;
+            job.UcjbStatus = (int)JobStatus.Dispatched;
             job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
 
             await Context.SaveChangesAsync();

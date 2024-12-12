@@ -68,7 +68,7 @@
  * @property {Uint8Array} deliverySignature
  * @property {Uint8Array[]} podPhotos
  * @property {string} podName
- * @property {string} phone
+ * @property {string} toContactPhone
  * @property {string} speedAccepted
  * @property {number|null} acceptedJobTypeId
  * @property {number|null} notifiedJobTypeId
@@ -517,4 +517,72 @@
  * @property {string} driver - The assigned driver's name or identifier
  * @property {string} region - The geographical region for the delivery
  * @property {Array<OverviewTableChildJob>} childJobs - List of associated child delivery jobs
+ */
+
+/**
+ * Response object containing job details with associated locations.
+ * @typedef {Object} MegaMapResponse
+ *
+ * @property {number} jobId - The unique identifier for the job
+ * @property {string} jobNumber - The job reference number
+ * @property {string} jobStatus - The job status
+ * @property {Date} estimatedDelivery - The estimated delivery time for the job
+ * @property {AddressDetails} pickupLocation - The pickup address and coordinates
+ * @property {AddressDetails} deliveryLocation - The delivery address and coordinates
+ * @property {CourierLocation} courierLocation - The assigned courier's current location details
+ * @property {boolean} isFlightJob - Indicates if this is a flight job
+ * @property {AssignedFlight} flightInfo - Flight details if this is a flight job
+ */
+
+/**
+ * Object containing courier location information.
+ * @typedef {Object} CourierLocation
+ *
+ * @property {number} courierId - The unique identifier for the courier
+ * @property {string} courierName - The name of the courier
+ * @property {Coordinates} coordinates - The current geographical coordinates of the courier
+ */
+
+/**
+ * @typedef {Object} MegaMapPoint
+ *
+ * @property {number|string} lat - Latitude coordinate of the pickup location
+ * @property {number|string} lng - Longitude coordinate of the pickup location
+ * @property {string} address - Full address of the pickup location
+ * @property {number|string} jobId - Unique identifier for the job
+ * @property {string} jobNumber - Job reference number for display purposes
+ * @property {boolean} isFlightRoute - Whether this pickup is part of a flight route
+ */
+
+/**
+ * Represents a view model for creating a job.
+ * @typedef {Object} JobCreateViewModel
+ *
+ * @property {number} clientId - The ID of the client.
+ * @property {string} deliverToContact - The contact person for delivery.
+ * @property {string} podName - The name of the proof of delivery.
+ * @property {AddressDetails} pickUpAddress - The address for pickup.
+ * @property {AddressDetails} deliveryAddress - The address for delivery.
+ * @property {Date} date - The date of the job.
+ * @property {string} fromContactName - The contact person for pickup.
+ * @property {string} refA - First reference identifier.
+ * @property {string} refB - Second reference identifier.
+ * @property {string} deliveryNotes - Notes related to delivery.
+ * @property {string} pickupNotes - Notes related to pickup.
+ * @property {string} jobNotes - General notes about the job.
+ * @property {boolean} van - Indicates if a van is required.
+ * @property {boolean} truck - Indicates if a truck is required.
+ * @property {boolean} pedal - Indicates if pedal delivery is required.
+ * @property {boolean} attention - Indicates if special attention is needed.
+ * @property {boolean} vanOk - Indicates if van delivery is acceptable.
+ * @property {boolean} reprice - Indicates if the job needs repricing.
+ * @property {boolean} void - Indicates if the job is void.
+ * @property {boolean} done - Indicates if the job is completed.
+ * @property {number} charge - The cost of the job.
+ * @property {number} fromLat - The latitude of the pickup location.
+ * @property {number} fromLong - The longitude of the pickup location.
+ * @property {number} toLat - The latitude of the delivery location.
+ * @property {number} toLong - The longitude of the delivery location.
+ * @property {number} speedId - The ID of the speed requirement.
+ * @property {number} vehicleId - The ID of the assigned vehicle.
  */

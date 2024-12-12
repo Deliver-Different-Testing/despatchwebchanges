@@ -15,6 +15,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Serilog;
 using Vehicle = DespatchWeb.Models.Vehicle;
+using CourierLocation = DespatchWeb.Models.Response.CourierLocation;
 
 namespace DespatchWeb.Repositories;
 
@@ -34,6 +35,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         CreatedDate = j.UcjbDate,
         ScheduleName = j.ScheduleName,
         FollowupTime = j.FollowupTime,
+        Void = j.UcjbVoid,
 
         PickupTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.PickupTime : null,
         DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime : null,
@@ -71,7 +73,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             AddressLine7 = j.PickupAddressLine7,
             AddressLine8 = j.PickupAddressLine8,
             Latitude = j.PickUpLatitude,
-            Longitude = j.PickUpLongitude,
+            Longitude = j.PickUpLongitude
         },
         DeliveryAddress = new AddressViewModel
         {
@@ -84,7 +86,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             AddressLine7 = j.DeliveryAddressLine7,
             AddressLine8 = j.DeliveryAddressLine8,
             Latitude = j.DeliveryLatitude,
-            Longitude = j.DeliveryLongitude,
+            Longitude = j.DeliveryLongitude
         },
 
         // Airport information
@@ -143,6 +145,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         UdStatus = j.UndeliverableLocation.Name,
         SigNotRequired = j.DeliverToLeave.Name,
         DeliverToLeaveId = j.DeliverToLeaveId,
+        DeliverToContact = j.DeliverToContact,
 
         // Location data
         PickUpLatitude = j.PickUpLatitude,
@@ -153,7 +156,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         // Client information
         Client = j.UcjbClientCode,
         ClientName = j.UcjbClient.UcclName,
-        Phone = j.DeliverToPhone,
+        ToContactPhone = j.DeliverToPhone,
         PodName = j.UcjbPodname,
         PuTime = j.PickUpTime,
 
@@ -517,7 +520,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         query = query.Where(j => clientIdList.Contains((int)j.UcjbClientId));
 
         // Only get child jobs
-        query = query.Where(j => j.ParentId != null);
+        query = query.Where(j => !j.InverseParent.Any());
 
         // Block out completed jobs from the domestic/nationwide page
         query = query.Where(j => j.UcjbComplTime != null || j.UcjbComplTime < DateTime.Now);
@@ -628,7 +631,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         };
     }
 
-    protected static int? CalculateRemainTime(TucJob job, TucJobType jobType)
+    private static int? CalculateRemainTime(TucJob job, TucJobType jobType)
     {
         if (job == null)
             return null;
@@ -810,6 +813,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         JobStatusGroup statusGroup,
         int page,
         int limit,
+        bool isUsCustomer = true,
         string search = null,
         DateTime? startDate = null,
         DateTime? endDate = null,
@@ -898,8 +902,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 Status = j.UcjbStatusNavigation.UcjsName,
                 Region =
                     j.TblBulkJobs.FirstOrDefault() != null ? j.TblBulkJobs.FirstOrDefault().Region.Name : null,
-                Pickup = j.PickupAddressLine5 + ", " + j.PickupAddressLine6,
-                Delivery = j.DeliveryAddressLine5 + ", " + j.DeliveryAddressLine6,
+                Pickup = isUsCustomer ? j.PickupAddressLine5 + ", " + j.PickupAddressLine6 : j.UcjbFromAddr,
+                Delivery = isUsCustomer ? j.DeliveryAddressLine5 + ", " + j.DeliveryAddressLine6 : j.UcjbToAddr,
                 Driver = j.UcjbCourier != null ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname : null,
                 Completion = j.InverseParent.Any()
                     ? (int)Math.Round(
@@ -998,32 +1002,113 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     Id = j.UcjbId,
                     Pickup = new Coordinates
                     {
-                        Lat = j.PickUpLatitude != null ? j.PickUpLatitude.Value : 0,
-                        Lng = j.PickUpLongitude != null ? j.PickUpLongitude.Value : 0,
+                        Lat = j.PickUpLatitude ?? 0,
+                        Lng = j.PickUpLongitude ?? 0
                     },
                     Delivery = new Coordinates
                     {
-                        Lat = j.DeliveryLatitude != null ? j.DeliveryLatitude.Value : 0,
-                        Lng = j.DeliveryLongitude != null ? j.DeliveryLongitude.Value : 0,
+                        Lat = j.DeliveryLatitude ?? 0,
+                        Lng = j.DeliveryLongitude ?? 0
                     },
                     ChildJobs = j.InverseParent.Select(c => new OverviewChildJobLocation
                     {
                         Id = c.UcjbId,
                         Pickup = new Coordinates
                         {
-                            Lat = c.PickUpLatitude != null ? c.PickUpLatitude.Value : 0,
-                            Lng = c.PickUpLongitude != null ? c.PickUpLongitude.Value : 0,
+                            Lat = c.PickUpLatitude ?? 0,
+                            Lng = c.PickUpLongitude ?? 0
                         },
                         Delivery = new Coordinates
                         {
-                            Lat = c.DeliveryLatitude != null ? c.DeliveryLatitude.Value : 0,
-                            Lng = c.DeliveryLongitude != null ? c.DeliveryLongitude.Value : 0,
+                            Lat = c.DeliveryLatitude ?? 0,
+                            Lng = c.DeliveryLongitude ?? 0
                         },
-                        Flight = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
+                        Flight = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight ||
+                                 IsFlightJobNumber(j.UcjbNumber)
                     }).ToList()
                 }
             }).AsNoTracking().FirstOrDefaultAsync();
 
         return locations;
     }
+
+    public async Task<List<MegaMapResponse>> GetJobsForMegaMapAsync()
+    {
+        // Get active jobs to display on map
+        var jobs = await _context.TucJobs
+            .Where(j => j.UcjbStatus.HasValue &&
+                        JobStatusGroups.Active.Contains(j.UcjbStatus.Value) &&
+                        !j.UcjbVoid)
+            .Select(j => new MegaMapResponse
+            {
+                JobId = j.UcjbId,
+                JobNumber = j.UcjbNumber,
+                JobStatus = j.UcjbStatus != null ? j.UcjbStatusNavigation.UcjsName : "New",
+                EstimatedDelivery = (j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight ||
+                                     IsFlightJobNumber(j.UcjbNumber)) && j.TucJobNationwides.Any()
+                    ? j.TucJobNationwides.FirstOrDefault().UcnwEta.Value
+                    : j.UcjbDate.Date.Add(j.UcjbTime.Value.TimeOfDay)
+                        .AddMinutes(j.UcjbSpeedNavigation.Minutes ?? 180),
+                IsFlightJob = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight ||
+                              IsFlightJobNumber(j.UcjbNumber),
+                PickupLocation = new AddressViewModel
+                {
+                    Latitude = j.PickUpLatitude ?? 0,
+                    Longitude = j.PickUpLongitude ?? 0,
+                    AddressLine1 = j.PickupAddressLine1,
+                    AddressLine2 = j.PickupAddressLine2,
+                    AddressLine3 = j.PickupAddressLine3,
+                    AddressLine4 = j.PickupAddressLine4,
+                    AddressLine5 = j.PickupAddressLine5,
+                    AddressLine6 = j.PickupAddressLine6,
+                    AddressLine7 = j.PickupAddressLine7,
+                    AddressLine8 = j.PickupAddressLine8
+                },
+                DeliveryLocation = new AddressViewModel
+                {
+                    Latitude = j.DeliveryLatitude ?? 0,
+                    Longitude = j.DeliveryLongitude ?? 0,
+                    AddressLine1 = j.DeliveryAddressLine1,
+                    AddressLine2 = j.DeliveryAddressLine2,
+                    AddressLine3 = j.DeliveryAddressLine3,
+                    AddressLine4 = j.DeliveryAddressLine4,
+                    AddressLine5 = j.DeliveryAddressLine5,
+                    AddressLine6 = j.DeliveryAddressLine6,
+                    AddressLine7 = j.DeliveryAddressLine7,
+                    AddressLine8 = j.DeliveryAddressLine8
+                },
+                CourierLocation = j.UcjbCourierId.HasValue
+                    ? new CourierLocation
+                    {
+                        CourierId = j.UcjbCourier.UccrId,
+                        CourierName = $"{j.UcjbCourier.UccrName} {j.UcjbCourier.UccrSurname}".Trim(),
+                        Coordinates = j.UcjbCourier.CourierGpsid.HasValue
+                            ? new Coordinates
+                            {
+                                Lat = (decimal)j.UcjbCourier.CourierGps.Latitude,
+                                Lng = (decimal)j.UcjbCourier.CourierGps.Longitude
+                            }
+                            : null
+                    }
+                    : null,
+                FlightInfo = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight ||
+                             IsFlightJobNumber(j.UcjbNumber)
+                    ? j.TucJobNationwides
+                        .Select(n => new AssignedFlight
+                        {
+                            FlightNumber = n.UcnwFlightNo,
+                            ExpectedArrival = n.UcnwEta,
+                            ExpectedDeparture = n.UcnwEtd
+                        })
+                        .FirstOrDefault()
+                    : null
+            })
+            .AsNoTracking()
+            .ToListAsync();
+
+        return jobs;
+    }
+
+    private static bool IsFlightJobNumber(string input) =>
+        !string.IsNullOrEmpty(input) && input.EndsWith("2");
 }

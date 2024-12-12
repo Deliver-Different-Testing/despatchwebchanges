@@ -1,0 +1,228 @@
+<link href="app/components/overview/mega-map/mega-map.styles.min.css" rel="stylesheet">
+<!-- Main Map Container -->
+<div class="map-container">
+    <ng-map center="{{ctrl.mapCenter}}"
+            default-style="false"
+            fullscreen-control="false"
+            map-type-control="false"
+            street-view-control="false"
+            style="height: 100vh !important; width: 100% !important;"
+            zoom="5"
+            zoom-control="true"
+            zoom-control-options="{position: 'RIGHT_BOTTOM'}">
+
+        <!-- Pickup Points -->
+        <marker-clusterer options="{
+            styles: ctrl.getClusterStyles(),
+            minimumClusterSize: 2,
+            zoomOnClick: true,
+            averageCenter: true,
+            gridSize: 60
+        }">
+            <custom-marker class="zoom-adaptive"
+                           id="pickup-marker-{{point.jobId}}"
+                           ng-repeat="point in ctrl.pickupPoints"
+                           on-click="ctrl.showPointInfo($event)"
+                           position="[{{point.lat}}, {{point.lng}}]">
+                <div class="marker-container" ng-class="{
+    'airport-marker': point.isFlightRoute,
+    'pickup-marker': !point.isFlightRoute,
+    'compact': ctrl.zoomLevel < 10
+}">
+                    <i class="material-symbols-outlined">
+                        {{point.isFlightRoute ? 'local_airport' : 'location_on'}}
+                    </i>
+                </div>
+            </custom-marker>
+        </marker-clusterer>
+
+        <!-- Delivery Points -->
+        <marker-clusterer options="{
+            styles: ctrl.getClusterStyles(),
+            minimumClusterSize: 2,
+            zoomOnClick: true,
+            averageCenter: true,
+            gridSize: 60
+        }">
+            <custom-marker class="zoom-adaptive"
+                           id="delivery-marker-{{point.jobId}}"
+                           ng-repeat="point in ctrl.deliveryPoints"
+                           on-click="ctrl.showPointInfo($event)"
+                           position="[{{point.lat}}, {{point.lng}}]">
+                <div class="marker-container" ng-class="{
+                    'airport-marker': point.isFlightRoute,
+                    'delivery-marker': !point.isFlightRoute,
+                    'compact': ctrl.zoomLevel < 10
+                }">
+                    <i class="material-symbols-outlined">
+                        {{point.isFlightRoute ? 'local_airport' : 'location_on'}}
+                    </i>
+                </div>
+            </custom-marker>
+        </marker-clusterer>
+
+        <!-- Flight Route Icons -->
+        <custom-marker class="zoom-adaptive"
+                       ng-repeat="route in ctrl.flightRoutes"
+                       on-click="ctrl.showPointInfo($event)"
+                       position="{{route.position}}">
+            <div class="flight-marker" ng-class="{'compact': ctrl.zoomLevel < 10}">
+                <i class="material-symbols-outlined"
+                   style="color: #3EAFC2; transform: rotate({{route.rotation}}deg);">
+                    flight
+                </i>
+            </div>
+        </custom-marker>
+
+        <!-- Route Lines -->
+        <shape name="polyline"
+               ng-repeat="pickup in ctrl.pickupPoints"
+               path="{{ctrl.getRoutePath(pickup)}}"
+               stroke-color="{{pickup.isFlightRoute ? '#3EAFC2' : '#FFB300'}}"
+               stroke-opacity="0.7"
+               stroke-pattern="{{pickup.isFlightRoute ? [20,10] : []}}"
+               stroke-weight="2">
+        </shape>
+    </ng-map>
+
+    <!-- Active Drivers Panel -->
+    <md-card class="active-drivers">
+        <h2 class="md-subtitle">Active Drivers</h2>
+        <md-list class="driver-list">
+            <md-list-item ng-click="ctrl.centerOnDriver(driver)"
+                          class="compact-list-item"
+                          ng-repeat="driver in ctrl.drivers">
+                <i class="material-symbols-outlined driver-icon">local_shipping</i>
+                <div class="md-list-item-text">
+                    <h4>{{driver.name}}</h4>
+                    <small ng-if="driver.assignedJobNumber">Job: {{driver.assignedJobNumber}}</small>
+                </div>
+            </md-list-item>
+        </md-list>
+    </md-card>
+
+    <!-- Job Information Panel -->
+    <md-card class="job-info-panel" ng-if="ctrl.selectedJob">
+        <!-- Header -->
+        <md-toolbar>
+            <div class="md-toolbar-tools">
+                <h2>Job #{{ctrl.selectedJob.jobNumber}}</h2>
+                <span flex></span>
+                <md-button class="md-icon-button" ng-click="ctrl.openJobDispatch(ctrl.selectedJob.jobId)">
+                    <md-icon md-font-set="material-symbols-outlined">visibility</md-icon>
+                    <md-tooltip md-direction="bottom">View Job Details</md-tooltip>
+                </md-button>
+                <md-button class="md-icon-button" ng-click="ctrl.closeJobInfo()">
+                    <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+                    <md-tooltip md-direction="bottom">Close</md-tooltip>
+                </md-button>
+            </div>
+        </md-toolbar>
+
+        <md-card-content>
+            <!-- Status Banner -->
+            <div class="status-banner" ng-class="ctrl.selectedJob.jobStatus | lowercase">
+                <div class="status-content">
+                    <div class="status-left">
+                        <md-tooltip md-direction="bottom">Current Status</md-tooltip>
+                        <md-icon md-font-set="material-symbols-outlined">
+                            {{ctrl.selectedJob.isFlightRoute ? 'flight' : 'navigation'}}
+                        </md-icon>
+                        <span>{{ctrl.selectedJob.jobStatus}}</span>
+                    </div>
+                    <div class="status-right">
+                        <md-tooltip md-direction="bottom">Estimated Delivery</md-tooltip>
+                        <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
+                        <span ng-if="ctrl.isUsCustomer">{{ctrl.selectedJob.estimatedDelivery | date:'MM/dd/yyyy h:mm a'}}</span>
+                        <span ng-if="!ctrl.isUsCustomer">{{ctrl.selectedJob.estimatedDelivery | date:'dd/MM/yyyy h:mm a'}}</span>
+                    </div>
+                </div>
+            </div>
+
+            <md-divider></md-divider>
+
+            <div class="job-details">
+                <!-- Pickup Location -->
+                <div class="detail-section">
+                    <div class="section-header">
+                        <md-icon md-font-set="material-symbols-outlined" style="margin: 5px;">
+                            {{ctrl.selectedJob.isFlightRoute ? 'local_airport' : 'place'}}
+                        </md-icon>
+                        <h3>Pickup Points</h3>
+                    </div>
+                    <p>{{ctrl.selectedJob.pickupLocation.fullAddress}}</p>
+                </div>
+
+                <md-divider></md-divider>
+
+                <!-- Delivery Location -->
+                <div class="detail-section">
+                    <div class="section-header">
+                        <md-icon md-font-set="material-symbols-outlined" style="margin: 5px;">
+                            {{ctrl.selectedJob.isFlightRoute ? 'local_airport' : 'place'}}
+                        </md-icon>
+                        <h3>Delivery Points</h3>
+                    </div>
+                    <p>{{ctrl.selectedJob.deliveryLocation.fullAddress}}</p>
+                </div>
+
+                <md-divider></md-divider>
+
+                <!-- Assigned Driver -->
+                <div class="detail-section">
+                    <div class="section-header">
+                        <md-icon md-font-set="material-symbols-outlined" style="margin: 5px;">
+                            {{ctrl.selectedJob.isFlightRoute ? 'flight' : 'local_shipping'}}
+                        </md-icon>
+                        <h3>{{ctrl.selectedJob.isFlightRoute ? 'Assigned Flight' : 'Assigned Driver'}}</h3>
+                    </div>
+                    <p>{{ctrl.selectedJob.courierLocation.courierName || 'Not Assigned'}}</p>
+                </div>
+            </div>
+        </md-card-content>
+    </md-card>
+
+    <!-- Map Legend -->
+    <div class="map-legend">
+        <h3>Map Legend</h3>
+        <div class="legend-item">
+            <i class="material-symbols-outlined" style="color: #3EAFC2;">navigation</i>
+            <span>Drivers</span>
+        </div>
+        <div class="legend-item">
+            <i class="material-symbols-outlined" style="color: #4CAF50;">location_on</i>
+            <span>Pickup Points</span>
+        </div>
+        <div class="legend-item">
+            <i class="material-symbols-outlined" style="color: #F44336;">location_on</i>
+            <span>Delivery Points</span>
+        </div>
+        <div class="legend-item">
+            <i class="material-symbols-outlined" style="color: #3EAFC2;">local_airport</i>
+            <span>Airport Locations</span>
+        </div>
+        <div class="legend-item">
+            <div class="route-line flight"></div>
+            <span>Flight Routes</span>
+        </div>
+        <div class="legend-item">
+            <div class="route-line road"></div>
+            <span>Road Routes</span>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" ng-if="ctrl.isLoading">
+        <md-progress-circular md-mode="indeterminate"></md-progress-circular>
+    </div>
+</div>
+
+<!-- Floating Refresh Button -->
+<nav active-icon="refresh"
+     label="Refresh Map"
+     main-action="ctrl.refreshData()"
+     mfb-menu
+     position="br"
+     resting-icon="refresh"
+     template-url="ng-mfb-menu-md.tpl.html">
+</nav>

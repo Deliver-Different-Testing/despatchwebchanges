@@ -1,10 +1,10 @@
 class PrebookService {
     constructor($http) {
-        this._http = $http;
+        this.http = $http;
     }
 
     async getPreBookJobs() {
-        const response = await this._http.get('/Job/PreBookJobs');
+        const response = await this.http.get('/Job/PreBookJobs');
         return response.data;
     }
 
@@ -12,7 +12,7 @@ class PrebookService {
      * @param {number} jobId
      */
     async sendPrebookJob(jobId) {
-        const response = await this._http.post('/Job/SendPrebookJob?jobId=' + jobId);
+        const response = await this.http.post('/Job/SendPrebookJob?jobId=' + jobId);
         return response.data;
     }
 
@@ -22,7 +22,7 @@ class PrebookService {
      * @param {number} staffId
      */
     async voidPrebookJob(jobId, despatcherName, staffId) {
-        const response = await this._http.post('/Job/VoidPrebookJob?jobId=' + jobId + '&despatcher=' + despatcherName + '&staffId=' + staffId);
+        const response = await this.http.post('/Job/VoidPrebookJob?jobId=' + jobId + '&despatcher=' + despatcherName + '&staffId=' + staffId);
         return response.data;
     }
 
@@ -30,7 +30,7 @@ class PrebookService {
      * @param {number} preBookJobId
      */
     async getJobDetail(preBookJobId) {
-        const response = await this._http.get('/Job/PreBookDetail?preBookJobId=' + preBookJobId);
+        const response = await this.http.get('/Job/PreBookDetail?preBookJobId=' + preBookJobId);
         return response.data;
     }
 

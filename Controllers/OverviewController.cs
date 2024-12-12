@@ -30,6 +30,7 @@ public class OverviewController(
                 statusEnum,
                 parameters.Page,
                 parameters.Limit,
+                true,
                 parameters.Search,
                 parameters.StartDate,
                 parameters.EndDate,
@@ -105,6 +106,21 @@ public class OverviewController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting speeds");
+            return StatusCode(500);
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetJobsForMegaMap()
+    {
+        try
+        {
+            var jobs = await _jobRepository.GetJobsForMegaMapAsync();
+            return Json(jobs);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting jobs for mega map");
             return StatusCode(500);
         }
     }

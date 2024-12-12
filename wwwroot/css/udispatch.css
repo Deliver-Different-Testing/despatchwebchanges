@@ -1,4 +1,4 @@
-﻿body {
+body {
   font-family: 'Inter', sans-serif;
 }
 md-dialog {
@@ -1826,3 +1826,8 @@ md-list-item:not(.selected):hover {
 .popup-icon {
   margin-right: 8px;
 }
+
+.md-dense {
+  position: relative;
+}
+/*# sourceMappingURL=udispatch.css.map */

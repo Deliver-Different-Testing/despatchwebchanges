@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using DespatchWeb.Controllers;
@@ -88,7 +89,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 FromContactNumber = jb.PickupFromPhone,
                 Courier = jb.Courier != null ? jb.Courier.Code : null,
                 ContactName = jb.UcbkContact,
-                Phone = jb.DeliverToPhone,
+                ToContactPhone = jb.DeliverToPhone,
                 Weight = jb.UcbkWeight,
                 Items = jb.Quantity,
                 RefA = jb.UcbkClientRefa,
@@ -211,7 +212,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 Courier = co.Code,
                 Status = status.UcjsCode,
                 ContactName = j.Contact,
-                Phone = j.DeliverToPhone,
+                ToContactPhone = j.DeliverToPhone,
                 Weight = (double?)j.Weight,
                 Items = j.Qty,
                 RefA = j.ClientRefa,
@@ -1205,18 +1206,19 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .ToListAsync();
     }
 
-    public async Task<List<Lookup>> SpeedsAsync()
+    public async Task<List<Suggestion>> SpeedsAsync()
     {
         return await Context.DesQryAllJobTypes
-            .Select(x => new Lookup
+            .Select(x => new Suggestion
             {
-                ID = x.JobTypeId,
+                Id = x.JobTypeId,
                 Text = x.Name
             })
+            .AsNoTracking()
             .ToListAsync();
     }
 
-    public async Task<List<Lookup>> ContactsAsync(int clientId)
+    public async Task<List<Suggestion>> ContactsAsync(int clientId)
     {
         return await Context.UtlQryContactLookups
             .Join(Context.TblClientContacts,
@@ -1224,12 +1226,13 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 cc => cc.ContactId,
                 (s, cc) => new { s, cc })
             .Where(x => x.cc.ClientId == clientId && x.s.Active)
-            .Select(x => new Lookup
+            .Select(x => new Suggestion
             {
-                ID = x.s.ContactId,
+                Id = x.s.ContactId,
                 Text = x.s.Name
             })
             .Distinct()
+            .AsNoTracking()
             .ToListAsync();
     }
 
@@ -1292,16 +1295,27 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .ToListAsync();
     }
 
-    public async Task<List<Lookup>> EventTypeListAsync()
+    public async Task<List<Suggestion>> GetStatusListAsync()
+    {
+        return await Conttext.TucJobStatuses.OrderBy(s => s.UcjsId)
+            .Select(s => new Suggestion
+            {
+                Id = s.UcjsId,
+                Text = s.UcjsName
+            }).AsNoTracking().ToListAsync();
+    }
+
+    public async Task<List<Suggestion>> EventTypeListAsync()
     {
         return await Context.TucEventTypes
             .Where(u => u.UcetGroup == "CS" || u.UcetGroup == "GE")
             .OrderBy(u => u.UcetName)
-            .Select(x => new Lookup
+            .Select(x => new Suggestion
             {
-                ID = x.UcetId,
+                Id = x.UcetId,
                 Text = x.UcetName
             })
+            .AsNoTracking()
             .ToListAsync();
     }
 
@@ -1707,18 +1721,24 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             bookDate);
     }
 
-    public async Task UpdateJobAsync(int jobId, string field, string value, decimal? rate, string despatcher,
+    public async Task UpdateJobAsync(int jobId, string field, string value, decimal? rate, string userName,
         int staffId)
     {
-        await Context.Procedures.DESWEB_stpUpdateJobAsync(
-            jobId,
-            field,
-            value,
-            rate,
-            despatcher,
-            staffId);
+        try
+        {
+            // Update either active or archived job
+            var isActiveJob = Context.TucJobs.Any(j => j.UcjbId == jobId);
+            if (isActiveJob)
+                await UpdateTucJob(jobId, field, value, userName);
+            else
+                await UpdateTucJobArchive(jobId, field, value, userName);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An error occured updating Job {jobId}", jobId);
+            throw;
+        }
     }
-
 
     public async Task UpdateBulkJobAsync(int bulkJobId, string field, string value, decimal? rate, string despatcher,
         int staffId)
@@ -1768,50 +1788,84 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             despatcher);
     }
 
-    public async Task<int> QuickAddJobAsync(JobCreateViewModel job, int staffId)
+    public async Task<int> QuickAddJobAsync(JobCreateViewModel request, int staffId)
     {
-        var jobId = new OutputParameter<int?>();
+        // Generate request number
+        var jobNumber = await GenerateJobNumberAsync(staffId, request.SpeedId);
 
-        await Context.Procedures.DESWEB_stpQuickCreateJobAsync(
-            job.ClientId,
-            job.PickUpAddress?.AddressLine1,
-            job.PickUpAddress?.AddressLine2,
-            job.PickUpAddress?.AddressLine3,
-            job.PickUpAddress?.AddressLine4,
-            job.PickUpAddress?.AddressLine5,
-            job.PickUpAddress?.AddressLine6,
-            job.PickUpAddress?.AddressLine7,
-            job.PickUpAddress?.AddressLine8,
-            job.FromLat,
-            job.FromLong,
-            job.DeliveryAddress?.AddressLine1,
-            job.DeliveryAddress?.AddressLine2,
-            job.DeliveryAddress?.AddressLine3,
-            job.DeliveryAddress?.AddressLine4,
-            job.DeliveryAddress?.AddressLine5,
-            job.DeliveryAddress?.AddressLine6,
-            job.DeliveryAddress?.AddressLine7,
-            job.DeliveryAddress?.AddressLine8,
-            job.ToLat,
-            job.ToLong,
-            job.FromContactName,
-            job.Date,
-            job.Void,
-            job.Van,
-            job.Attention,
-            job.DeliverToContact,
-            job.PodName,
-            job.Truck,
-            job.VanOk,
-            job.Reprice,
-            job.Charge,
-            job.SpeedId,
-            staffId,
-            job.RefA,
-            job.RefB,
-            jobId);
+        // Create new job
+        var job = new TucJob
+        {
+            UcjbClientId = request.ClientId,
+            UcjbNumber = jobNumber,
 
-        return jobId.Value ?? 0;
+            // Pick Up Address
+            PickupAddressLine1 = request.PickUpAddress?.AddressLine1,
+            PickupAddressLine2 = request.PickUpAddress?.AddressLine2,
+            PickupAddressLine3 = request.PickUpAddress?.AddressLine3,
+            PickupAddressLine4 = request.PickUpAddress?.AddressLine4,
+            PickupAddressLine5 = request.PickUpAddress?.AddressLine5,
+            PickupAddressLine6 = request.PickUpAddress?.AddressLine6,
+            PickupAddressLine7 = request.PickUpAddress?.AddressLine7,
+            PickupAddressLine8 = request.PickUpAddress?.AddressLine8,
+
+            // Pick Up Coordinates
+            PickUpLatitude = request.FromLat,
+            PickUpLongitude = request.FromLong,
+
+            // Delivery Address
+            DeliveryAddressLine1 = request.DeliveryAddress?.AddressLine1,
+            DeliveryAddressLine2 = request.DeliveryAddress?.AddressLine2,
+            DeliveryAddressLine3 = request.DeliveryAddress?.AddressLine3,
+            DeliveryAddressLine4 = request.DeliveryAddress?.AddressLine4,
+            DeliveryAddressLine5 = request.DeliveryAddress?.AddressLine5,
+            DeliveryAddressLine6 = request.DeliveryAddress?.AddressLine6,
+            DeliveryAddressLine7 = request.DeliveryAddress?.AddressLine7,
+            DeliveryAddressLine8 = request.DeliveryAddress?.AddressLine8,
+
+            // Delivery Coordinates
+            DeliveryLatitude = request.ToLat,
+            DeliveryLongitude = request.ToLong,
+
+            // Auckland CBD (Could be removed later)
+            UcjbCbd = IsCbdLocation(request.ToLat, request.ToLong),
+
+            // Details
+            PickupFromContact = request.FromContactName,
+            UcjbDate = request.Date,
+            UcjbVoid = request.Void,
+            UcjbVan = request.Van,
+            UcjbAttention = request.Attention,
+            DeliverToContact = request.DeliverToContact,
+            UcjbPodname = request.PodName,
+            Truck = request.Truck,
+            VanOk = request.VanOk,
+            Reprice = request.Reprice,
+            UcjbAmount = request.Charge,
+            UcjbSpeed = request.SpeedId,
+
+            // References
+            UcjbClientRefa = request.RefA,
+            UcjbClientRefb = request.RefB,
+
+            // Manual
+            RatedManually = true,
+            UcjbType = 3,
+            UcjbLocked = true,
+            SourceId = 13,
+            UcjbStatus = 6,
+            UcjbJobDone = true,
+            ProofOfDelivery = 0,
+            WhenPodnotificationSent = DateTime.Now,
+            UcjbReturn = false,
+            UcjbPaged = false
+        };
+
+        await Context.TucJobs.AddAsync(job);
+        await Context.SaveChangesAsync();
+
+
+        return job.UcjbId;
     }
 
     public async Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel)
@@ -1894,20 +1948,544 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         await Context.SaveChangesAsync();
     }
 
-    private async Task<List<Size>> GetRelatedJobsAsync(int? rootParentId, int clientId)
-    {
-        if (!rootParentId.HasValue) return new List<Size>();
+    private static bool IsCbdLocation(decimal latitude, decimal longitude) =>
+        latitude is >= -37.81897m and <= -37.80647m &&
+        longitude is >= 144.95573m and <= 144.97737m;
 
-        return await Context.TblJobs
-            .Where(r => r.ParentId == rootParentId && r.ClientId == clientId)
-            .OrderBy(t => t.Date)
-            .ThenBy(x => x.Time)
-            .Select(rel => new Size
+    private async Task UpdateTucJob(int jobId, string field, string value, string userName)
+    {
+        var job = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Include(j => j.TucJobNationwides)
+            .Include(j => j.UcjbClient)
+            .Include(j => j.Contact)
+            .Include(j => j.InternalStatusNavigation)
+            .Include(j => j.UndeliverableLocation)
+            .Include(j => j.InverseParent)
+            .Include(j => j.Parent)
+            .ThenInclude(j => j.InverseParent)
+            .Include(j => j.NotifiedJobType)
+            .Include(j => j.UcjbSpeedNavigation)
+            .Include(j => j.DeliverToLeave)
+            .FirstOrDefaultAsync();
+
+        if (job == null) throw new ArgumentException("Job not found");
+
+        var updateNote = string.Empty;
+
+        // Update the correct field prop
+        switch (field)
+        {
+            case "ConNote":
+                job.Connote = value;
+                break;
+            case "AirportOnly":
+                var airportOnly = bool.Parse(value);
+                job.TucJobNationwides.First().UcnwAirportOnly = airportOnly;
+                updateNote = $"Changed AirportOnly to {(airportOnly ? "Yes" : "No")}";
+                break;
+            case "Time":
+                job.UcjbTime = DateTime.Parse(value);
+                break;
+            case "Date":
+                job.UcjbDate = DateTime.Parse(value);
+                break;
+            case "Size":
+                job.UcjbSize = int.Parse(value);
+                updateNote = $"Changed Size to {job.UcjbSize}";
+                break;
+            case "Items":
+                job.UcjbQty = short.Parse(value);
+                break;
+            case "SpeedID":
+                job.UcjbSpeed = short.Parse(value);
+                updateNote = $"Changed Speed to {job.UcjbSpeedNavigation?.UcjtName}";
+                break;
+            case "AcceptedJobTypeID" when !job.UcjbJobDone:
+                job.UcjbSpeed = short.Parse(value);
+                break;
+            case "Weight":
+                var weight = short.Parse(value);
+
+                // Update parent job if it exists
+                if (job.ParentId != null)
+                {
+                    job.Parent.UcjbWeight = weight;
+
+                    // Update all other child jobs of the parent
+                    if (job.Parent.InverseParent.Any())
+                    {
+                        foreach (var siblingJob in job.Parent.InverseParent) siblingJob.UcjbWeight = weight;
+                    }
+                }
+                // If no parent, update this job and its children
+                else
+                {
+                    // Update current job
+                    job.UcjbWeight = weight;
+
+                    // Update child jobs
+                    if (job.InverseParent != null && job.InverseParent.Any())
+                    {
+                        foreach (var childJob in job.InverseParent) childJob.UcjbWeight = weight;
+                    }
+                }
+
+                break;
+            case "ClientID":
+                job.UcjbClientId = int.Parse(value);
+                job.UcjbClientCode = job.UcjbClient.UcclCode;
+                updateNote = $"Changed Client to {job.UcjbClient?.UcclCode}";
+                break;
+            case "ClientCode":
+                job.UcjbClientCode = value[..Math.Min(value.Length, 5)];
+                break;
+            case "ContactID":
+                var contactId = int.Parse(value);
+                job.ContactId = contactId;
+                job.UcjbContact = job.Contact?.UserName;
+                updateNote = $"Changed Contact to {job.Contact?.UserName}";
+                break;
+            case "Pedal":
+                job.UcjbCbd = bool.Parse(value);
+                break;
+            case "Attention":
+                job.UcjbAttention = bool.Parse(value);
+                break;
+            case "Reprice":
+                job.Reprice = bool.Parse(value);
+                break;
+            case "Truck":
+                job.Truck = bool.Parse(value);
+                job.UcjbVan = false; // Set van to false when truck is selected
+                break;
+            case "Van":
+                job.UcjbVan = bool.Parse(value);
+                job.Truck = false; // Set truck to false when van is selected
+                break;
+            case "VanOK":
+                job.VanOk = bool.Parse(value);
+                break;
+            case "InternalStatusID":
+                var internalStatusId = int.Parse(value);
+                job.InternalStatus = internalStatusId;
+
+                // Handle followup time
+                if (!new[] { (int)InternalJobStatus.NewJobs, (int)InternalJobStatus.Reprice }
+                        .Contains(internalStatusId))
+                    job.FollowupTime = DateTime.Now.AddMinutes(job.InternalStatusNavigation.DefaultMinutes ?? 0);
+                else
+                    job.FollowupTime = null;
+
+                job.UcjbStatus = internalStatusId switch
+                {
+                    // Handle status changes
+                    3 when job.UcjbStatus != 9 => 9,
+                    1 when job.UcjbStatus != 1 => 1,
+                    4 when job.UcjbStatus != 6 => 6,
+                    _ => job.UcjbStatus
+                };
+                updateNote = $"Changed Job Follow Up to {job.InternalStatusNavigation.TcisName}";
+                break;
+            case "Status":
+                job.UcjbStatus = int.Parse(value);
+                break;
+            case "RefA":
+                job.UcjbClientRefa = value[..Math.Min(value.Length, 20)];
+                break;
+            case "RefB":
+                job.UcjbClientRefb = value[..Math.Min(value.Length, 15)];
+                break;
+            case "OurRef":
+                job.UcjbOurRef = value[..Math.Min(value.Length, 20)];
+                break;
+            case "FromContactName":
+                job.PickupFromContact = value[..Math.Min(value.Length, 100)];
+                break;
+            case "ToContactName":
+                job.DeliverToContact = value[..Math.Min(value.Length, 100)];
+                break;
+            case "FromContactPhone":
+                job.PickupFromPhone = value[..Math.Min(value.Length, 100)];
+                break;
+            case "ToContactPhone":
+                job.DeliverToPhone = value[..Math.Min(value.Length, 100)];
+                break;
+            case "DeliverToLeaveID":
+                var leaveId = int.Parse(value);
+                job.DeliverToLeaveId = leaveId;
+                job.DeliverToPrivateBusiness = leaveId == 1 ? null : 1;
+                updateNote = $"Changed Leave Parcel to {job.DeliverToLeave?.Name}";
+                break;
+            case "UndeliverableLocationID":
+                job.UndeliverableLocationId = int.Parse(value);
+                job.UcjbStatus = (int)JobStatus.Undeliverable;
+                job.UcjbJobDone = true;
+                job.UcjbComplTime = DateTime.Now;
+                job.UcjbPodname = job.UndeliverableLocation != null ? job.UndeliverableLocation.Podname : string.Empty;
+                updateNote = $"Changed Undeliverable Location to {job.UndeliverableLocation?.Name}";
+                break;
+            case "Delivered":
+                var delivered = bool.Parse(value);
+                job.UcjbJobDone = delivered;
+                if (delivered)
+                {
+                    job.UcjbStatus = (int)JobStatus.Completed;
+                    job.UcjbComplTime = DateTime.Now;
+                }
+
+                break;
+            case "CompletedTime":
+                job.UcjbComplTime = DateTime.Parse(value);
+                break;
+            case "DGClass":
+                job.Dgclass = int.Parse(value);
+                break;
+            case "DGDocumentation":
+                var dgDoc = bool.Parse(value);
+                job.Dgdocument = dgDoc;
+                updateNote = $"Changed DGDocumentation to {(dgDoc ? "Yes" : "No")}";
+                break;
+            case "TrackingMethod":
+                var trackingMethodId = int.Parse(value);
+                job.TrackingMethod = trackingMethodId;
+                updateNote = $"Changed Tracking Method to {GetTrackingName(trackingMethodId)}";
+                break;
+            case "Direct":
+                job.Direct = bool.Parse(value);
+                break;
+            case "Void":
+                job.UcjbVoid = bool.Parse(value);
+                break;
+            case "TrackingMobile":
+                job.TrackingMobile = value[..Math.Min(value.Length, 100)];
+                break;
+            case "TrackingEmail":
+                job.TrackingEmail = value[..Math.Min(value.Length, 100)];
+                break;
+            case "PODName":
+                job.UcjbPodname = value[..Math.Min(value.Length, 100)];
+                break;
+            case "Amount":
+                job.UcjbAmount = decimal.Parse(value);
+                break;
+            case "NotifiedJobTypeID":
+                var notifiedJobTypeId = short.Parse(value);
+                job.NotifiedJobTypeId = notifiedJobTypeId;
+
+                if (notifiedJobTypeId > job.NotifiedJobTypeId &&
+                    job.ContactId != null &&
+                    job.NotifiedJobType.UcjtName == "Email" &&
+                    job.Contact?.HasEmail == true &&
+                    !string.IsNullOrEmpty(job.Contact.UcctEmail))
+                {
+                    job.SpeedChangeNotificationHasBeenSent = false;
+                    job.WhenSpeedChangeNotificationSent = null;
+                }
+                else
+                {
+                    job.SpeedChangeNotificationHasBeenSent = true;
+                }
+
+                break;
+            case "AcceptedJobTypeID":
+                job.AcceptedJobTypeId = short.Parse(value);
+                break;
+            case "Locked":
+                job.UcjbLocked = bool.Parse(value);
+                break;
+        }
+
+        if (!string.IsNullOrEmpty(updateNote))
+        {
+            await AddNoteAsync(jobId, updateNote, userName);
+        }
+
+        // Add additional notes for undeliverable location
+        if (field == "UndeliverableLocationID" && job.UndeliverableLocation?.Message != null)
+        {
+            await AddNoteAsync(jobId, job.UndeliverableLocation.Message, userName);
+        }
+
+        await Context.SaveChangesAsync();
+    }
+
+    private async Task UpdateTucJobArchive(int jobId, string field, string value, string userName)
+    {
+        var archive = await Context.TucJobArchives
+            .Where(j => j.UcjbId == jobId)
+            .Include(j => j.UcjbClient)
+            .Include(j => j.Contact)
+            .Include(j => j.InternalStatusNavigation)
+            .Include(j => j.UndeliverableLocation)
+            .Include(j => j.InverseParent)
+            .Include(j => j.Parent)
+            .ThenInclude(j => j.InverseParent)
+            .Include(j => j.NotifiedJobType)
+            .Select(j => new
             {
-                Id = rel.JobId,
-                Label = rel.Number
+                Job = j,
+                Nationwide = Context.TucJobNationwides
+                    .FirstOrDefault(n => n.UcnwJobId == j.UcjbId)
             })
-            .ToListAsync();
+            .FirstOrDefaultAsync();
+
+        if (archive == null) throw new ArgumentException("Job not found");
+
+        var updateNote = string.Empty;
+
+        // Update the correct field prop
+        switch (field)
+        {
+            case "ConNote":
+                archive.Job.Connote = value;
+                break;
+            case "AirportOnly":
+                var airportOnly = bool.Parse(value);
+                archive.Nationwide.UcnwAirportOnly = airportOnly;
+                updateNote = $"Changed AirportOnly to {(airportOnly ? "Yes" : "No")}";
+                break;
+            case "Time":
+                archive.Job.UcjbTime = DateTime.Parse(field);
+                break;
+            case "Date":
+                archive.Job.UcjbDate = DateTime.Parse(field);
+                break;
+            case "Size":
+                archive.Job.UcjbSize = short.Parse(field);
+                break;
+            case "Items":
+                archive.Job.UcjbQty = short.Parse(value);
+                break;
+            case "SpeedID":
+                archive.Job.UcjbSpeed = short.Parse(value);
+                updateNote = $"Changed Speed to {archive.Job.UcjbSpeedNavigation?.UcjtName}";
+                break;
+            case "AcceptedJobTypeID" when !archive.Job.UcjbJobDone:
+                archive.Job.UcjbSpeed = short.Parse(value);
+                break;
+            case "Weight":
+                var weight = float.Parse(value);
+                // Update parent job if it exists
+                if (archive.Job.ParentId != null)
+                {
+                    archive.Job.Parent.UcjbWeight = weight;
+
+                    // Update all other child jobs of the parent
+                    if (archive.Job.Parent.InverseParent.Any())
+                    {
+                        foreach (var siblingJob in archive.Job.Parent.InverseParent)
+                        {
+                            siblingJob.UcjbWeight = weight;
+                        }
+                    }
+                }
+                // If no parent, update this job and its children
+                else
+                {
+                    // Update current job
+                    archive.Job.UcjbWeight = weight;
+
+                    // Update child jobs
+                    if (archive.Job.InverseParent != null && archive.Job.InverseParent.Any())
+                    {
+                        foreach (var childJob in archive.Job.InverseParent)
+                        {
+                            childJob.UcjbWeight = weight;
+                        }
+                    }
+                }
+
+                break;
+            case "ClientID":
+                archive.Job.UcjbClientId = int.Parse(value);
+                archive.Job.UcjbClientCode = archive.Job.UcjbClient.UcclCode;
+                updateNote = $"Changed Client to {archive.Job.UcjbClient?.UcclCode}";
+                break;
+            case "ClientCode":
+                archive.Job.UcjbClientCode = value[..Math.Min(value.Length, 5)];
+                break;
+            case "ContactID":
+                var contactId = int.Parse(value);
+                archive.Job.ContactId = contactId;
+                archive.Job.UcjbContact = archive.Job.Contact?.UserName;
+                break;
+            case "Pedal":
+                archive.Job.UcjbCbd = bool.Parse(value);
+                break;
+            case "Attention":
+                archive.Job.UcjbAttention = bool.Parse(value);
+                break;
+            case "Reprice":
+                archive.Job.Reprice = bool.Parse(value);
+                break;
+            case "Truck":
+                archive.Job.Truck = bool.Parse(value);
+                archive.Job.UcjbVan = false; // Set van to false when truck is selected
+                break;
+            case "Van":
+                archive.Job.UcjbVan = bool.Parse(value);
+                archive.Job.Truck = false; // Set truck to false when van is selected
+                break;
+            case "VanOK":
+                archive.Job.VanOk = bool.Parse(value);
+                break;
+            case "InternalStatusID":
+                var internalStatusId = int.Parse(value);
+                archive.Job.InternalStatus = internalStatusId;
+
+                // Handle followup time
+                if (!new[] { (int)InternalJobStatus.NewJobs, (int)InternalJobStatus.Reprice }
+                        .Contains(internalStatusId))
+                    archive.Job.FollowupTime =
+                        DateTime.Now.AddMinutes(archive.Job.InternalStatusNavigation.DefaultMinutes ?? 0);
+                else
+                    archive.Job.FollowupTime = null;
+
+                archive.Job.UcjbStatus = internalStatusId switch
+                {
+                    // Handle status changes
+                    3 when archive.Job.UcjbStatus != 9 => 9,
+                    1 when archive.Job.UcjbStatus != 1 => 1,
+                    4 when archive.Job.UcjbStatus != 6 => 6,
+                    _ => archive.Job.UcjbStatus
+                };
+                updateNote = $"Changed Job Follow Up to {archive.Job.InternalStatusNavigation.TcisName}";
+                break;
+            case "Status":
+                archive.Job.UcjbStatus = int.Parse(value);
+                break;
+            case "RefA":
+                archive.Job.UcjbClientRefa = value[..Math.Min(value.Length, 20)];
+                break;
+            case "RefB":
+                archive.Job.UcjbClientRefb = value[..Math.Min(value.Length, 15)];
+                break;
+            case "OurRef":
+                archive.Job.UcjbOurRef = value[..Math.Min(value.Length, 20)];
+                break;
+            case "FromContactName":
+                archive.Job.PickUpFromContact = value[..Math.Min(value.Length, 100)];
+                break;
+            case "ToContactName":
+                archive.Job.DeliverToContact = value[..Math.Min(value.Length, 100)];
+                break;
+            case "FromContactPhone":
+                archive.Job.PickUpFromPhone = value[..Math.Min(value.Length, 100)];
+                break;
+            case "ToContactPhone":
+                archive.Job.DeliverToPhone = value[..Math.Min(value.Length, 100)];
+                break;
+            case "DeliverToLeaveID":
+                var leaveId = int.Parse(value);
+                archive.Job.DeliverToLeaveId = leaveId;
+                archive.Job.DeliverToPrivateBusiness = leaveId == 1 ? null : 1;
+                updateNote = $"Changed Leave Parcel to {archive.Job.DeliverToLeave?.Name}";
+                break;
+            case "UndeliverableLocationID":
+                archive.Job.UndeliverableLocationId = int.Parse(value);
+                archive.Job.UcjbStatus = (int)JobStatus.Undeliverable;
+                archive.Job.UcjbJobDone = true;
+                archive.Job.UcjbComplTime = DateTime.Now;
+                archive.Job.UcjbPodname = archive.Job.UndeliverableLocation != null
+                    ? archive.Job.UndeliverableLocation.Podname
+                    : string.Empty;
+                updateNote = $"Changed Undeliverable Location to {archive.Job.UndeliverableLocation?.Name}";
+                break;
+            case "Delivered":
+                var delivered = bool.Parse(value);
+                archive.Job.UcjbJobDone = delivered;
+                if (delivered)
+                {
+                    archive.Job.UcjbStatus = 6;
+                    archive.Job.UcjbComplTime = DateTime.Now;
+                }
+
+                break;
+            case "CompletedTime":
+                archive.Job.UcjbComplTime = DateTime.Parse(value);
+                break;
+            case "DGClass":
+                archive.Job.Dgclass = int.Parse(value);
+                break;
+            case "DGDocumentation":
+                var dgDoc = bool.Parse(value);
+                archive.Job.Dgdocument = dgDoc;
+                updateNote = $"Changed DGDocumentation to {(dgDoc ? "Yes" : "No")}";
+                break;
+            case "TrackingMethod":
+                var trackingMethodId = int.Parse(value);
+                archive.Job.TrackingMethod = trackingMethodId;
+                updateNote = $"Changed Tracking Method to {GetTrackingName(trackingMethodId)}";
+                break;
+            case "Direct":
+                archive.Job.Direct = bool.Parse(value);
+                break;
+            case "Void":
+                archive.Job.UcjbVoid = bool.Parse(value);
+                break;
+            case "TrackingMobile":
+                archive.Job.TrackingMobile = value[..Math.Min(value.Length, 100)];
+                break;
+            case "TrackingEmail":
+                archive.Job.TrackingEmail = value[..Math.Min(value.Length, 100)];
+                break;
+            case "PODName":
+                archive.Job.UcjbPodname = value[..Math.Min(value.Length, 100)];
+                break;
+            case "Amount":
+                archive.Job.UcjbAmount = decimal.Parse(value);
+                break;
+            case "NotifiedJobTypeID":
+                var notifiedJobTypeId = short.Parse(value);
+                archive.Job.NotifiedJobTypeId = notifiedJobTypeId;
+
+                if (notifiedJobTypeId > archive.Job.NotifiedJobTypeId &&
+                    archive.Job.ContactId != null &&
+                    archive.Job.NotifiedJobType.UcjtName == "Email" &&
+                    archive.Job.Contact?.HasEmail == true &&
+                    !string.IsNullOrEmpty(archive.Job.Contact.UcctEmail))
+                {
+                    archive.Job.SpeedChangeNotificationHasBeenSent = false;
+                    archive.Job.WhenSpeedChangeNotificationSent = null;
+                }
+                else
+                {
+                    archive.Job.SpeedChangeNotificationHasBeenSent = true;
+                }
+
+                break;
+            case "AcceptedJobTypeID":
+                archive.Job.AcceptedJobTypeId = short.Parse(value);
+                break;
+            case "Locked":
+                archive.Job.UcjbLocked = int.Parse(value);
+                break;
+        }
+
+        if (!string.IsNullOrEmpty(updateNote))
+        {
+            await AddNoteAsync(jobId, updateNote, userName);
+        }
+
+        // Add additional notes for undeliverable location
+        if (field == "UndeliverableLocationID" && archive.Job.UndeliverableLocation?.Message != null)
+        {
+            await AddNoteAsync(jobId, archive.Job.UndeliverableLocation.Message, userName);
+        }
+
+        await Context.SaveChangesAsync();
+    }
+
+    private static string GetTrackingName(int trackingMethodId)
+    {
+        return trackingMethodId switch
+        {
+            1 => "Email",
+            2 => "Mobile",
+            3 => "Email & Mobile",
+            _ => string.Empty
+        };
     }
 
     private async Task<List<byte[]>> GetPodPhotosAsync(int jobId, byte[] podPhoto, byte[] deliverySignature)
@@ -1990,7 +2568,8 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         return outputParam.Value ?? 0m;
     }
 
-    private TucJob CreateJobEntry(string jobNumber, int courierId, decimal amount, string reference, string clientRefB,
+    private static TucJob CreateJobEntry(string jobNumber, int courierId, decimal amount, string reference,
+        string clientRefB,
         string ourRef,
         string note, DateTime currentTime, int staffId)
     {
@@ -2041,5 +2620,22 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             DeliverToPrivateBusiness = 0,
             UcjbDispTime = currentTime
         };
+    }
+
+    private async Task<string> GenerateJobNumberAsync(int staffId, int jobTypeId,
+        CancellationToken cancellationToken = default)
+    {
+        var jobNumberOutput = new OutputParameter<string>();
+        var returnValue = new OutputParameter<int>();
+
+        await Context.Procedures.NET_stpJob_Insert_JobNumberAsync(
+            StaffID: staffId,
+            JobTypeID: jobTypeId,
+            JobNumber: jobNumberOutput,
+            returnValue: returnValue,
+            cancellationToken: cancellationToken
+        );
+
+        return jobNumberOutput.Value;
     }
 }

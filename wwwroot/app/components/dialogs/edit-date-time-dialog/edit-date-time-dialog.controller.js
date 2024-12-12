@@ -26,12 +26,12 @@ class EditDateTimeDialogController {
      * @param {boolean} showTime - Whether to show the time picker.
      */
     constructor($mdDialog, toastrService, DispatchData, moment, job, title, fieldName, dateTime, id, showDate, showTime) {
-        this._$mdDialog = $mdDialog;
-        this._toastrService = toastrService;
-        this._dispatchData = DispatchData;
-        this._moment = moment;
+        this.$mdDialog = $mdDialog;
+        this.toastrService = toastrService;
+        this.DispatchData = DispatchData;
+        this.moment = moment;
 
-        this._job = job;
+        this.job = job;
         this.title = title;
         this.fieldName = fieldName;
         this.id = id;
@@ -98,11 +98,9 @@ class EditDateTimeDialogController {
             const newDateTime = this._combineDateTime();
 
             await this._updateJobDetail(newDateTime);
-
-            this._updateJobField(newDateTime);
             this._showMessageAndCloseDialog();
         } catch (error) {
-            this._toastrService.showErrorToast(error.message);
+            this.toastrService.showErrorToast(error.message);
         } finally {
             this.isLoading = false;
         }
@@ -139,31 +137,14 @@ class EditDateTimeDialogController {
         console.log('Formated DateTime: ' + formattedDateTime)
 
         const callData = {
-            "call": "updateDetailField", "field": this.fieldName, "value": formattedDateTime, "jobID": this._job.id
+            "call": "updateDetailField", "field": this.fieldName, "value": formattedDateTime, "jobID": this.job.id
         };
         console.log('CallData: ' + callData);
 
-        if (this._job.bulkJob) {
-            await this._dispatchData.updateBulkJobDetail(this._job.id, callData.field, callData.value, this._job.charge, FirstName, ContactID);
+        if (this.job.bulkJob) {
+            await this.DispatchData.updateBulkJobDetail(this.job.id, callData.field, callData.value, this.job.charge, FirstName, ContactID);
         } else {
-            await this._dispatchData.updateJobDetail(this._job.id, callData.field, callData.value, this._job.charge, FirstName, ContactID, this._job.preBook);
-        }
-    }
-
-    /**
-     * @description Updates the corresponding field in the job object with the new date/time.
-     * @param {Date} newDateTime - The new date and time to update.
-     *
-     * @private
-     */
-    _updateJobField(newDateTime) {
-        let fieldName = this.fieldName.toLowerCase();
-        let matchingField = Object.keys(this._job).find(key => key.toLowerCase() === fieldName);
-
-        if (matchingField) {
-            this._job[matchingField] = newDateTime;
-        } else {
-            console.warn(`Field ${this.fieldName} not found in job object.`);
+            await this.DispatchData.updateJobDetail(this.job.id, callData.field, callData.value, this.job.charge, FirstName, ContactID, this.job.preBook);
         }
     }
 
@@ -173,26 +154,33 @@ class EditDateTimeDialogController {
      * @private
      */
     _showMessageAndCloseDialog() {
-        this._toastrService.showSuccessToast("Updated " + this.title);
-        this._$mdDialog.hide();
+        this.toastrService.showSuccessToast("Updated " + this.title);
+        this.$mdDialog.hide();
     }
 
     /**
      * @description Formats the date/time to the required string format.
      * @param {Date} dateTime - The date and time to format.
-     * @returns {Date} The formatted date.
+     * @returns {string} The formatted date string.
      *
      * @private
      */
     _formatDateTime(dateTime) {
-        return new Date(this._moment(dateTime).format("YYYY-MM-DDTHH:mm"));
+        // Ensure we're working with a valid date
+        if (!(dateTime instanceof Date) || isNaN(dateTime.getTime())) {
+            console.warn('Invalid date provided to _formatDateTime');
+            return null;
+        }
+
+        // Use moment directly without creating a new Date object
+        return this.moment(dateTime).format("YYYY-MM-DDTHH:mm");
     }
 
     /**
      * @description Cancels the dialog operation.
      */
     cancel() {
-        this._$mdDialog.cancel();
+        this.$mdDialog.cancel();
     }
 }
 

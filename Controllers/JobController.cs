@@ -878,49 +878,63 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
 
     }
 
-
+    [HttpGet]
     public async Task<IActionResult> SuburbList()
     {
         var data = await jobRepository.SuburbsAsync();
         return Json(data);
     }
 
+    [HttpGet]
     public async Task<IActionResult> SpeedList()
     {
         var data = await jobRepository.SpeedsAsync();
         return Json(data);
     }
 
+    [HttpGet]
     public async Task<IActionResult> ContactList(int clientId)
     {
         var data = await jobRepository.ContactsAsync(clientId);
         return Json(data);
     }
 
+    [HttpGet]
     public async Task<IActionResult> ContactDetailList(int clientId)
     {
         var data = await jobRepository.ContactDetailList(clientId);
         return Json(data);
     }
 
+    [HttpGet]
     public async Task<IActionResult> LeaveList()
     {
         var data = await jobRepository.LeaveParcelLocationsAsync();
         return Json(data);
     }
 
+    [HttpGet]
     public async Task<IActionResult> UndeliverableList()
     {
         var data = await jobRepository.UndeliverableLocationsAsync();
         return Json(data);
     }
 
+    [HttpGet]
     public async Task<IActionResult> InternalStatusList()
     {
         var data = await jobRepository.GetInternalStatusListAsync();
         return Json(data);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> StatusList()
+    {
+        var data = await _jobRepo.GetStatusListAsync();
+        return Json(data);
+    }
+
+    [HttpGet]
     public async Task<IActionResult> EventTypeList()
     {
         var data = await jobRepository.EventTypeListAsync();
