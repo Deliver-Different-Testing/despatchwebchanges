@@ -18,8 +18,31 @@
   <ItemGroup>
     <Content Remove="bundleconfig.json" />
     <Content Remove="compilerconfig.json" />
+    <Content Remove="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.controller.js" />
+    <Content Remove="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.html" />
+    <Content Remove="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.css" />
+    <Content Remove="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.css.map" />
+    <Content Remove="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.less" />
+    <Content Remove="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.min.css" />
+    <Content Remove="wwwroot\app\components\dialogs\map-dialog\map-dialog.controller.js" />
+    <Content Remove="wwwroot\app\components\dialogs\map-dialog\map-dialog.css" />
+    <Content Remove="wwwroot\app\components\dialogs\map-dialog\map-dialog.css.map" />
+    <Content Remove="wwwroot\app\components\dialogs\map-dialog\map-dialog.html" />
+    <Content Remove="wwwroot\app\components\dialogs\map-dialog\map-dialog.less" />
+    <Content Remove="wwwroot\app\components\dialogs\map-dialog\map-dialog.min.css" />
+    <Content Remove="wwwroot\app\components\dialogs\map-dialog\map-dialog.template.html" />
+    <Content Remove="wwwroot\app\components\overview\overview.controller.js" />
+    <Content Remove="wwwroot\app\components\overview\overview.css" />
+    <Content Remove="wwwroot\app\components\overview\overview.css.map" />
+    <Content Remove="wwwroot\app\components\overview\overview.less" />
+    <Content Remove="wwwroot\app\components\overview\overview.min.css" />
+    <Content Remove="wwwroot\app\components\overview\overview.service.js" />
+    <Content Remove="wwwroot\app\components\overview\overview.template.html" />
     <Content Remove="wwwroot\app\materialTheme.js" />
     <Content Remove="wwwroot\css\udispatch.less" />
+    <Content Remove="wwwroot\lib\here-map-tracking\here-map-tracking.component.js" />
+    <Content Remove="wwwroot\lib\here-map-tracking\here-map-tracking.module.js" />
+    <Content Remove="wwwroot\lib\here-map-tracking\here-map-tracking.service.js" />
   </ItemGroup>
   <ItemGroup>
     <Content Update="appsettings.json">
@@ -220,13 +243,36 @@
     <None Include="bundleconfig.json" />
     <None Include="compilerconfig.json" />
     <None Include="efpt.config.json.user" />
+    <None Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.controller.js" />
+    <None Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.html" />
+    <None Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.css" />
+    <None Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.css.map" />
+    <None Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.less" />
+    <None Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.min.css" />
+    <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.controller.js" />
+    <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.css" />
+    <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.css.map" />
+    <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.html" />
+    <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.less" />
+    <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.min.css" />
+    <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.template.html" />
     <None Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.controller.js" />
     <None Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.html" />
     <None Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.controller.js" />
     <None Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.html" />
+    <None Include="wwwroot\app\components\overview\overview.controller.js" />
+    <None Include="wwwroot\app\components\overview\overview.css" />
+    <None Include="wwwroot\app\components\overview\overview.css.map" />
+    <None Include="wwwroot\app\components\overview\overview.less" />
+    <None Include="wwwroot\app\components\overview\overview.min.css" />
+    <None Include="wwwroot\app\components\overview\overview.service.js" />
+    <None Include="wwwroot\app\components\overview\overview.template.html" />
     <None Include="wwwroot\app\materialTheme.js" />
     <None Include="wwwroot\app\version.js" />
     <None Include="wwwroot\css\udispatch.less" />
+    <None Include="wwwroot\lib\here-map-tracking\here-map-tracking.component.js" />
+    <None Include="wwwroot\lib\here-map-tracking\here-map-tracking.module.js" />
+    <None Include="wwwroot\lib\here-map-tracking\here-map-tracking.service.js" />
     <None Include="wwwroot\lib\material-time-picker\md-time-picker.css" />
     <None Include="wwwroot\lib\material-time-picker\md-time-picker.js" />
     <None Include="wwwroot\lib\material-time-picker\md-time-picker.min.css" />
@@ -262,5 +308,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Certificate" Version="8.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.10" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="wwwroot\lib\lib\" />
   </ItemGroup>
 </Project>
