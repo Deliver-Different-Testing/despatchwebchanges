@@ -31,6 +31,10 @@ public partial class TblDespatchView
 
     public int? ZoneGroupId { get; set; }
 
+    public decimal? CenterLatitude { get; set; }
+
+    public decimal? CenterLongitude { get; set; }
+
     public virtual ICollection<DespatchViewZoneGroup> DespatchViewZoneGroups { get; set; } = new List<DespatchViewZoneGroup>();
 
     public virtual ICollection<DfrntappUserViewPermission> DfrntappUserViewPermissions { get; set; } = new List<DfrntappUserViewPermission>();

@@ -95,6 +95,14 @@ public partial class TucJobType
 
     public virtual ICollection<TucJob> TucJobAcceptedJobTypes { get; set; } = new List<TucJob>();
 
+    public virtual ICollection<TucJobArchive> TucJobArchiveAcceptedJobTypes { get; set; } = new List<TucJobArchive>();
+
+    public virtual ICollection<TucJobArchive> TucJobArchiveDesiredJobTypes { get; set; } = new List<TucJobArchive>();
+
+    public virtual ICollection<TucJobArchive> TucJobArchiveNotifiedJobTypes { get; set; } = new List<TucJobArchive>();
+
+    public virtual ICollection<TucJobArchive> TucJobArchiveUcjbSpeedNavigations { get; set; } = new List<TucJobArchive>();
+
     public virtual ICollection<TucJobBooking> TucJobBookings { get; set; } = new List<TucJobBooking>();
 
     public virtual ICollection<TucJob> TucJobDesiredJobTypes { get; set; } = new List<TucJob>();

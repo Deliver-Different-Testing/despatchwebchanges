@@ -1297,7 +1297,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
     public async Task<List<Suggestion>> GetStatusListAsync()
     {
-        return await Conttext.TucJobStatuses.OrderBy(s => s.UcjsId)
+        return await Context.TucJobStatuses.OrderBy(s => s.UcjsId)
             .Select(s => new Suggestion
             {
                 Id = s.UcjsId,

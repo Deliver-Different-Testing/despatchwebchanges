@@ -101,6 +101,8 @@ public partial class TucStaff
 
     public virtual ICollection<DfrntuserPageLayout> DfrntuserPageLayouts { get; set; } = new List<DfrntuserPageLayout>();
 
+    public virtual ICollection<TucJobArchive> TucJobArchives { get; set; } = new List<TucJobArchive>();
+
     public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
 
     public virtual TucSuburb UcstSuburb { get; set; }

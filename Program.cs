@@ -29,6 +29,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using DespatchWeb.Helpers;
 using Microsoft.Extensions.Logging;
+using DespatchWeb.Models.Config;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -100,6 +101,9 @@ builder.Services.AddSingleton<IAmazonS3>(serviceProvider =>
         RegionEndpoint = awsOptions.Region ?? RegionEndpoint.APSoutheast2 
     });
 });
+
+// Api Keys
+builder.Services.Configure<HereMapsConfig>(builder.Configuration.GetSection("HereMaps"));
 
 
 builder.Services.Configure<CookiePolicyOptions>(options =>

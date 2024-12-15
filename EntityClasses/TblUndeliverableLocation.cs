@@ -31,5 +31,7 @@ public partial class TblUndeliverableLocation
 
     public virtual TucJobType JobType { get; set; }
 
+    public virtual ICollection<TucJobArchive> TucJobArchives { get; set; } = new List<TucJobArchive>();
+
     public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
 }

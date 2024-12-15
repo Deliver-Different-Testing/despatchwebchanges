@@ -466,7 +466,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
 
     private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryNz(int clearListAreaId)
     {
-        return _context.TucCouriers
+        return Context.TucCouriers
             .Where(c => c.CourierLogInOut.LogInTime.Date == DateTime.Today &&
                         c.CourierLogInOut.LogOutTime == null)
             .SelectMany(c => c.TucJobUcjbCouriers

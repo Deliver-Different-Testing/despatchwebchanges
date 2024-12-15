@@ -115,12 +115,12 @@ public class OverviewController(
     {
         try
         {
-            var jobs = await _jobRepository.GetJobsForMegaMapAsync();
+            var jobs = await jobRepository.GetJobsForMegaMapAsync();
             return Json(jobs);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting jobs for mega map");
+            Log.Error(ex, "Error getting jobs for mega map");
             return StatusCode(500);
         }
     }

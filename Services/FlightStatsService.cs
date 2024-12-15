@@ -91,9 +91,10 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
         string departureAirportCode,
         string destinationAirportCode,
         DateTime? departureDateTime = null,
-        DateTime? flightBuffer = null,
+        int flightBuffer = 0,
         string codeType = null,
         string[] extendedOptions = null)
+
     {
         if (string.IsNullOrEmpty(departureAirportCode))
             throw new ArgumentException("Departure airport code is required and cannot be null or empty.",
@@ -108,10 +109,15 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
         var tenantTimeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTimeZone);
         var utcDateTime = DateTime.UtcNow;
         var tenantTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tenantTimeZoneInfo);
-        flightBuffer ??= tenantTime;
 
-        // If departureDateTime is not provided, use current date and time
-        var (year, month, day, hour, minute) = SplitDate(flightBuffer.Value);
+        // Get datetime to sort flights from
+        var flightsFrom = departureDateTime == null || departureDateTime < tenantTime
+            ? tenantTime
+            : departureDateTime;
+        flightsFrom = flightsFrom.Value.AddMinutes(flightBuffer);
+
+        var (year, month, day, hour, minute) = SplitDate(flightsFrom.Value);
+
 
         // Construct the relative URL
         var relativeUrl = $"json/firstflightout/{departureAirportCode}/to/{destinationAirportCode}/leaving_after/{year}/{month}/{day}/{hour}/{minute}";

@@ -930,7 +930,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
     [HttpGet]
     public async Task<IActionResult> StatusList()
     {
-        var data = await _jobRepo.GetStatusListAsync();
+        var data = await jobRepository.GetStatusListAsync();
         return Json(data);
     }
 

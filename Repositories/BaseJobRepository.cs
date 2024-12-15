@@ -1035,7 +1035,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     public async Task<List<MegaMapResponse>> GetJobsForMegaMapAsync()
     {
         // Get active jobs to display on map
-        var jobs = await _context.TucJobs
+        var jobs = await Context.TucJobs
             .Where(j => j.UcjbStatus.HasValue &&
                         JobStatusGroups.Active.Contains(j.UcjbStatus.Value) &&
                         !j.UcjbVoid)

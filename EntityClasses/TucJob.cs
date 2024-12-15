@@ -441,6 +441,8 @@ public partial class TucJob
 
     public virtual TblAirport FromAirport { get; set; }
 
+    public virtual TucJobInternalStatus InternalStatusNavigation { get; set; }
+
     public virtual ICollection<TucJob> InverseParent { get; set; } = new List<TucJob>();
 
     public virtual TblJobRelationshipType JobRelationshipType { get; set; }
