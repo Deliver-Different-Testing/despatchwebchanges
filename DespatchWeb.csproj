@@ -18,7 +18,6 @@
   <ItemGroup>
     <Content Remove="bundleconfig.json" />
     <Content Remove="compilerconfig.json" />
-    <Content Remove="wwwroot\app\components\common\side-nav\side-nav.template.html" />
     <Content Remove="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.controller.js" />
     <Content Remove="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.html" />
     <Content Remove="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.css" />
@@ -241,7 +240,6 @@
     <None Include="bundleconfig.json" />
     <None Include="compilerconfig.json" />
     <None Include="efpt.config.json.user" />
-    <None Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
     <None Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.controller.js" />
     <None Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.html" />
     <None Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.css" />
