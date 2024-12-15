@@ -41,9 +41,6 @@
     <Content Remove="wwwroot\app\components\overview\overview.template.html" />
     <Content Remove="wwwroot\app\materialTheme.js" />
     <Content Remove="wwwroot\css\udispatch.less" />
-    <Content Remove="wwwroot\lib\here-map-tracking\here-map-tracking.component.js" />
-    <Content Remove="wwwroot\lib\here-map-tracking\here-map-tracking.module.js" />
-    <Content Remove="wwwroot\lib\here-map-tracking\here-map-tracking.service.js" />
   </ItemGroup>
   <ItemGroup>
     <Content Update="appsettings.json">
@@ -272,9 +269,6 @@
     <None Include="wwwroot\app\materialTheme.js" />
     <None Include="wwwroot\app\version.js" />
     <None Include="wwwroot\css\udispatch.less" />
-    <None Include="wwwroot\lib\here-map-tracking\here-map-tracking.component.js" />
-    <None Include="wwwroot\lib\here-map-tracking\here-map-tracking.module.js" />
-    <None Include="wwwroot\lib\here-map-tracking\here-map-tracking.service.js" />
     <None Include="wwwroot\lib\material-time-picker\md-time-picker.css" />
     <None Include="wwwroot\lib\material-time-picker\md-time-picker.js" />
     <None Include="wwwroot\lib\material-time-picker\md-time-picker.min.css" />
@@ -310,8 +304,5 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Certificate" Version="8.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.10" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="wwwroot\lib\lib\" />
   </ItemGroup>
 </Project>
