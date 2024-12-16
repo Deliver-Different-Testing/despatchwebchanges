@@ -2,7 +2,14 @@
  * @fileoverview Controller for the Nationwide dispatch system.
  * @module NationwideControl
  */
-angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetailService', "NWData", "$state", "$filter", "$parse", "hotkeys", "NgMap", "$q", "$timeout", "greetingService", "$mdDialog", "$document", "$window", "toastrService", "DispatchData", "moment", "versionUrl", "$mdSidenav", "AppPages", "APP_CONFIG", "$mdEditDialog", "NationwideLayoutService", "$mdMenu", ($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService, $mdDialog, $document, $window, toastrService, DispatchData, moment, versionUrl, $mdSidenav, AppPages, APP_CONFIG, $mdEditDialog, LayoutService, $mdMenu) => {
+angular.module("uDispatch").controller("NationwideControl",
+    ["$scope", 'JobDetailService', "NWData", "$state", "$filter", "$parse", "hotkeys", "NgMap",
+        "$timeout", "greetingService", "$mdDialog", "$document", "$window", "toastrService", "DispatchData",
+        "moment", "versionUrl", "$mdSidenav", "AppPages", "APP_CONFIG", "$mdEditDialog", "NationwideLayoutService",
+        "$mdMenu", "dispatchJobService",
+        ($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $timeout, greetingService,
+         $mdDialog, $document, $window, toastrService, DispatchData, moment, versionUrl, $mdSidenav,
+         AppPages, APP_CONFIG, $mdEditDialog, LayoutService, $mdMenu, dispatchJobService) => {
     $scope.jdSvc = jdSvc;
 
     const JOB_DATA_TYPE = {
@@ -1345,146 +1352,26 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         }
     };
-    ////////////////////////////////////////
-    // RESTORE JOB FROM NEW WINDOW PANE
-    ///////////////////////////////////////
-    $scope.restoreJobsFromNew = async () => {
-        try {
-            const callData = {
-                "call": "restoreJobs", "jobs": [], "splitJobs": [], "jobNos": [], "courierID": null
+
+            /**
+             * @param {Job} job
+             */
+            $scope.restoreJob = async (job) => {
+                try {
+                    const result = await dispatchJobService.restoreJob(job);
+                    $scope.courier = {gpsCourier: result.gpsCourier};
+
+                    await $scope.getData();
+
+                    if ($scope.searchCourier) {
+                        await $scope.searchCourier();
+                    }
+
+                    $scope.$apply();
+                } catch (error) {
+                    console.error('Error restoring job:', error);
+                }
             };
-
-            let foundCourier = null;
-
-            angular.element("#jobList .active").each(function () {
-                const j = $scope.jobList.find(jo => jo.id === angular.element(this).data("jobid"));
-                const jn = j.jobNo;
-                NWData.addRestoreEvent(jn, j.clientId, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
-                if (callData.courierID === null) {
-                    callData.courierID = j.courierData.courierID;
-                    foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
-                }
-                if (j.displaySplitJobDetail) {
-                    callData.splitJobs.push(angular.element(this).data("jobid"));
-                } else {
-                    callData.jobs.push(angular.element(this).attr("data-jobid"));
-                }
-            });
-
-            if (callData.splitJobs.length > 0) {
-                await NWData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.splitJobs);
-            }
-            if (callData.jobs.length > 0) {
-                await NWData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
-            }
-
-            await $scope.getData();
-
-            angular.element("#box-map").find(".loading").show();
-
-            $scope.courier = {gpsCourier: foundCourier.id};
-            await $scope.searchCourier();
-
-        } catch (error) {
-            console.error('Error in restoreJobsFromNew:', error);
-        }
-    };
-
-    ////////////////////////////////////////
-    // RESTORE JOB FROM POD WINDOW PANE
-    ///////////////////////////////////////
-    $scope.restoreJobsFromPOD = async () => {
-        try {
-            const callData = {
-                "call": "restoreJobs", "jobs": [], "splitJobs": [], "jobNos": [], "courierID": null
-            };
-
-            let foundCourier = null;
-
-            angular.element("#jobListPOD .active").each(function () {
-                const j = $scope.jobListPOD.find(jo => jo.id === angular.element(this).data("jobid"));
-                const jn = j.jobNo;
-                NWData.addRestoreEvent(jn, j.clientId, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
-                if (callData.courierID === null) {
-                    callData.courierID = j.courierData.courierID;
-                    foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
-                }
-                if (j.displaySplitJobDetail) {
-                    callData.splitJobs.push(angular.element(this).data("jobid"));
-                } else {
-                    callData.jobs.push(angular.element(this).attr("data-jobid"));
-                }
-            });
-
-            if (callData.splitJobs.length > 0) {
-                await NWData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.splitJobs);
-            }
-            if (callData.jobs.length > 0) {
-                await NWData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
-            }
-
-            await $scope.getData();
-            angular.element("#box-map").find(".loading").show();
-
-            $scope.courier = {gpsCourier: foundCourier.id};
-            await $scope.searchCourier();
-
-        } catch (error) {
-            if (error === undefined) {
-                console.log('User canceled!');
-            } else {
-                console.error(error);
-            }
-        }
-    };
-
-    ////////////////////////////////////////
-    // RESTORE JOB FROM BOOK DELIVERY WINDOW PANE
-    ///////////////////////////////////////
-    $scope.restoreJobsFromDelivery = async () => {
-        try {
-            const callData = {
-                "call": "restoreJobs", "jobs": [], "splitJobs": [], "jobNos": [], "courierID": null
-            };
-
-            let foundCourier = null;
-
-            angular.element("#jobListDelivery .active").each(function () {
-                const j = $scope.jobListDelivery.find(jo => jo.id === angular.element(this).data("jobid"));
-                const jn = j.jobNo;
-                NWData.addRestoreEvent(jn, j.clientId, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
-                if (callData.courierID === null) {
-                    callData.courierID = j.courierData.courierID;
-                    foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
-                }
-                if (j.displaySplitJobDetail) {
-                    callData.splitJobs.push(angular.element(this).data("jobid"));
-                } else {
-                    callData.jobs.push(angular.element(this).attr("data-jobid"));
-                }
-            });
-
-            if (callData.splitJobs.length > 0) {
-                await NWData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.splitJobs);
-            }
-            if (callData.jobs.length > 0) {
-                await NWData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
-            }
-
-            await $scope.getData();
-
-            angular.element("#box-map").find(".loading").show();
-
-            $scope.courier = {gpsCourier: foundCourier.id};
-            await $scope.searchCourier();
-        } catch (error) {
-            if (error === undefined) {
-                console.log('User canceled!');
-            } else {
-                console.error(error);
-            }
-        }
-    };
 
     ////////////////////////////////////////
     // REDESPATCHED JOB

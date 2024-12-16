@@ -293,6 +293,60 @@
  */
 
 /**
+ * Represents the view model for the clear list functionality
+ * @typedef {Object} ClearListViewModel
+ *
+ * @property {Array<AreaClearList>} areas - List of areas in the clear list
+ */
+
+/**
+ * Represents an area within the clear list
+ * @typedef {Object} AreaClearList
+ *
+ * @property {number} id - Unique identifier for the area
+ * @property {string} name - Name of the area
+ * @property {number} order - Sort order of the area
+ * @property {number} percentHeight - Height percentage for display purposes
+ * @property {Array<ClearListSection>} top - List of sections in the top area
+ * @property {Array<ClearListSection>} middle - List of sections in the middle area
+ * @property {Array<ClearListSection>} bottom - List of sections in the bottom area
+ * @property {number} totalRemaining - Total number of remaining items
+ */
+
+/**
+ * Represents a section within an area of the clear list
+ * @typedef {Object} ClearListSection
+ *
+ * @property {string} courierNumber - Unique number identifying the courier
+ * @property {CourierData} courierData - Detailed information about the courier
+ * @property {Array<Destination>} destinations - List of destinations for this section
+ */
+
+/**
+ * Contains detailed information about a courier
+ * @typedef {Object} CourierData
+ *
+ * @property {string} courier - Courier identifier
+ * @property {string} location - Current location of the courier
+ * @property {string} pu - Pickup information
+ * @property {string} del - Delivery information
+ * @property {string} lrm - LRM information
+ * @property {string} eta2Lrm - Estimated time of arrival to LRM
+ * @property {?number} courierId - Optional unique identifier for the courier
+ * @property {string} courierName - Full name of the courier
+ * @property {string} courierMobile - Mobile contact number for the courier
+ * @property {string} courierNumber - Unique number identifying the courier
+ */
+
+/**
+ * Represents a destination in the clear list
+ * @typedef {Object} Destination
+ *
+ * @property {number} id - Unique identifier for the destination
+ * @property {string} label - Display label for the destination
+ */
+
+/**
  * @typedef {Object} TruckCourierStatus
  *
  * @property {number} ucjbCourierID - The unique identifier for the courier in the UCJB system.
@@ -304,20 +358,6 @@
  * @property {number} currentWeight - The current weight (in kg) being carried by the courier.
  * @property {number} availablePallets - The number of additional pallets the courier can carry.
  * @property {number} availableWeight - The additional weight (in kg) the courier can carry.
- */
-
-/**
- * @typedef {Object} CourierData
- *
- * @property {string} courier
- * @property {string} location
- * @property {string} pu
- * @property {string} del
- * @property {string} lrm
- * @property {string} eta2lrm
- * @property {number|null} courierID
- * @property {string|null} courierName
- * @property {string|null} courierMobile
  */
 
 /**
@@ -334,9 +374,11 @@
  * Represents the query parameters for job filtering and sorting.
  * @typedef {Object} JobQueryParams
  *
- * @property {string} [status='all'] - The status filter for jobs.
- * @property {string} [order='time'] - The ordering criteria for jobs.
- * @property {string} [asc='asc'] - The sort direction ('asc' for ascending, 'desc' for descending).
+ * @property {number} [status] - Job status filter
+ * @property {string} [order] - Order by field
+ * @property {string} [asc] - Order direction ('asc' or 'desc')
+ * @property {number} [page] - Current page number (default: 1)
+ * @property {number} [limit] - Number of items per page (default: 10)
  */
 
 /**
@@ -585,4 +627,13 @@
  * @property {number} toLong - The longitude of the delivery location.
  * @property {number} speedId - The ID of the speed requirement.
  * @property {number} vehicleId - The ID of the assigned vehicle.
+ */
+
+/**
+ * @typedef {Object} PaginatedJobResponse
+ *
+ * @property {Job[]} items - Array of jobs
+ * @property {number} total - Total number of jobs
+ * @property {number} page - Current page number
+ * @property {number} pages - Total number of pages
  */

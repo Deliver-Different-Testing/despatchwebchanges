@@ -41,16 +41,14 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime : null,
 
         // Courier
-        Courier = j.UcjbCourier != null ? j.UcjbCourier.Code : null,
-        CourierData = j.UcjbCourier != null
+        Courier = j.UcjbCourierId != null ? j.UcjbCourier.Code : null,
+        CourierData = j.UcjbCourierId != null
             ? new CourierData
             {
-                Courier = string.IsNullOrEmpty(j.UcjbCourier.Code)
-                    ? string.Empty
-                    : j.UcjbCourier.Code + " " + j.UcjbCourier.UccrName,
+                Courier = j.UcjbCourier.Code,
                 CourierId = j.UcjbCourierId,
                 CourierMobile = j.UcjbCourier.UccrMobile,
-                CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
+                CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname,
             }
             : null,
         AssignedCourier = j.UcjbCourier != null
@@ -260,15 +258,25 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     protected async Task<T> Get<T>(int id) where T : class => await Context.Set<T>().FindAsync(id);
 
     // This function replaces the sql view "DESWEB_qryDespatch"
-    protected async Task<List<JobViewModel>> DespatchQry(AppPage page, DispatchStatus status,
-        string order, string ascending, bool isInternal, string clientIds,
+    protected async Task<PaginatedResponse<JobViewModel>> DespatchQry(AppPage page, DispatchStatus status,
+        string order, string orderDirection, bool isInternal, string clientIds,
         List<int> selectedViewIds, NationwideWidget? windowPane = null,
-        ClearListEnvelopeViewModel clearListEnvelope = null)
+        ClearListEnvelopeViewModel clearListEnvelope = null,
+        int pageNumber = 1, int pageSize = 10)
     {
         try
         {
             var query = await BuildBaseQuery(selectedViewIds);
-            if (query == null) return new List<JobViewModel>();
+            if (query == null)
+            {
+                return new PaginatedResponse<JobViewModel>
+                {
+                    Items = new List<JobViewModel>(),
+                    Total = 0,
+                    Page = pageNumber,
+                    Pages = 0
+                };
+            }
 
             query = ApplyGeographicFilters(query, clearListEnvelope);
 
@@ -276,20 +284,42 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             {
                 case AppPage.Dispatch:
                     query = ApplyDashboardSpecificFilters(query, status);
-                    query = ApplyDashboardSpecificOrdering(query, order, ascending);
+                    query = ApplyDashboardSpecificOrdering(query, order, orderDirection);
                     break;
                 case AppPage.Domestic:
                     query = ApplyNationwideSpecificFilters(query, isInternal, status, windowPane.Value, clientIds);
-                    query = ApplyNationwideSpecificOrdering(query, order, ascending);
+                    query = ApplyNationwideSpecificOrdering(query, order, orderDirection);
                     break;
                 default:
-                    return new List<JobViewModel>();
+                    return new PaginatedResponse<JobViewModel>
+                    {
+                        Items = new List<JobViewModel>(),
+                        Total = 0,
+                        Page = pageNumber,
+                        Pages = 0
+                    };
             }
+
+            var total = await query.CountAsync();
+            var pages = (int)Math.Ceiling(total / (double)pageSize);
+
+            query = query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize);
 
             var sql = query.ToQueryString();
             Log.Information($"Generated SQL: {sql}");
 
-            return await query.Select(JobMapping).AsNoTracking().ToListAsync();
+
+            var jobs = await query.Select(JobMapping).AsNoTracking().ToListAsync();
+
+            return new PaginatedResponse<JobViewModel>
+            {
+                Items = jobs,
+                Total = total,
+                Page = pageNumber,
+                Pages = pages
+            };
         }
         catch (Exception e)
         {
@@ -377,12 +407,12 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     }
 
     private static IQueryable<TucJob> ApplyDashboardSpecificOrdering(IQueryable<TucJob> query, string order,
-        string ascending)
+        string orderDirection)
     {
         if (string.IsNullOrEmpty(order))
             return query;
 
-        var isAscending = ascending?.Equals("asc", StringComparison.OrdinalIgnoreCase) == true;
+        var isAscending = orderDirection?.Equals("asc", StringComparison.OrdinalIgnoreCase) == true;
 
         return order.ToLowerInvariant() switch
         {
@@ -530,12 +560,12 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
 
     private static IQueryable<TucJob> ApplyNationwideSpecificOrdering(IQueryable<TucJob> query, string order,
-        string ascending)
+        string orderDirection)
     {
         if (string.IsNullOrEmpty(order))
             return query;
 
-        var isAscending = ascending?.Equals("asc", StringComparison.OrdinalIgnoreCase) == true;
+        var isAscending = orderDirection?.Equals("asc", StringComparison.OrdinalIgnoreCase) == true;
 
         return order.ToLowerInvariant() switch
         {

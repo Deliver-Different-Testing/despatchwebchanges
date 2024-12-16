@@ -717,8 +717,18 @@ angular.module('uDispatch').controller('CSControl', ['$scope', 'JobDetailService
 
     $scope.refreshData = async () => {
         try {
-            const data = await uCSData.getPodJobs($scope.pickDateService.courier, $scope.pickDateService.client, ($scope.pickDateService.wild || ""), ($scope.pickDateService.job || ""), moment($scope.pickDateService.from_date), moment($scope.pickDateService.to_date), $scope.jobQuery.page, $scope.jobQuery.limit);
+            $scope.jobListLoading = uCSData.getPodJobs(
+                $scope.pickDateService.courier,
+                $scope.pickDateService.client,
+                ($scope.pickDateService.wild || ""),
+                ($scope.pickDateService.job || ""),
+                moment($scope.pickDateService.from_date),
+                moment($scope.pickDateService.to_date),
+                $scope.jobQuery.page,
+                $scope.jobQuery.limit
+            );
 
+            const data = await $scope.jobListLoading;
             $scope.jobList = data.item2;
             $scope.totalCount = data.item1;
         } catch (error) {
@@ -728,8 +738,9 @@ angular.module('uDispatch').controller('CSControl', ['$scope', 'JobDetailService
 
     $scope.refreshBulkData = async () => {
         try {
-            const data = await uCSData.searchBulkJobs($scope.pickDateService.courier, $scope.pickDateService.client, ($scope.pickDateService.job || ""), ($scope.pickDateService.wild || ""), moment($scope.pickDateService.from_date), moment($scope.pickDateService.to_date), $scope.bulkJobQuery.page, $scope.bulkJobQuery.limit);
+            $scope.bulkJobPromise = uCSData.searchBulkJobs($scope.pickDateService.courier, $scope.pickDateService.client, ($scope.pickDateService.job || ""), ($scope.pickDateService.wild || ""), moment($scope.pickDateService.from_date), moment($scope.pickDateService.to_date), $scope.bulkJobQuery.page, $scope.bulkJobQuery.limit);
 
+            const data = await $scope.bulkJobPromise;
             $scope.bulkJobList = data.item2;
             $scope.bulkTotalCount = data.item1;
         } catch (error) {
@@ -739,8 +750,9 @@ angular.module('uDispatch').controller('CSControl', ['$scope', 'JobDetailService
 
     $scope.refreshPreBookData = async () => {
         try {
-            const data = await uCSData.searchPreBookJobs($scope.pickDateService.courier, $scope.pickDateService.client, ($scope.pickDateService.wild || ""), ($scope.pickDateService.job || ""), moment($scope.pickDateService.from_date), moment($scope.pickDateService.to_date), $scope.preBookQuery.page, $scope.preBookQuery.limit);
+            $scope.preBookPromise = uCSData.searchPreBookJobs($scope.pickDateService.courier, $scope.pickDateService.client, ($scope.pickDateService.wild || ""), ($scope.pickDateService.job || ""), moment($scope.pickDateService.from_date), moment($scope.pickDateService.to_date), $scope.preBookQuery.page, $scope.preBookQuery.limit);
 
+            const data = await $scope.preBookPromise;
             $scope.pbList = data.item2;
             $scope.pbTotalCount = data.item1;
         } catch (error) {
@@ -844,7 +856,7 @@ angular.module('uDispatch').controller('CSControl', ['$scope', 'JobDetailService
             if ($scope.cancelledSelected) {
                 return true;
             } else {
-                return job.Status !== "Cancelled";
+                return job.status !== "Cancelled";
             }
         } else {
             return false;
@@ -1202,7 +1214,7 @@ angular.module('uDispatch').controller('CSControl', ['$scope', 'JobDetailService
         }
 
         function afterShowAnimation(scope, element, options) {
-            const e = document.getElementById("event-notes");
+            const e = angular.element("event-notes");
             resetCursor(e);
         }
 

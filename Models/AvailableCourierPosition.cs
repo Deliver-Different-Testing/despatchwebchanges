@@ -2,8 +2,8 @@
 
 public class AvailableCourierPosition
 {
-    public int CourierID { get; set; }
-    public int ChannelID { get; set; }
+    public int CourierId { get; set; }
+    public int ChannelId { get; set; }
     public string VehicleType { get; set; }
     public string Code { get; set; }
     public string FleetCode { get; set; }

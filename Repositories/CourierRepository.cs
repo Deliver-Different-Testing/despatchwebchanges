@@ -68,36 +68,65 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
         int jobId, int jobType, string despatcherName, string notes, int eventType, float? lateTime = null,
         DateTime? etaTime = null, bool close = false)
     {
-        int? staffOut = null;
+        var isAutomatic = await _context.TucJobs
+            .Include(j => j.UcjbClient)
+            .Where(j => j.UcjbId == jobId &&
+                        j.UcjbDate.Date == DateTime.Now)
+            .Select(j => jobType == 1
+                ?
+                // LATE PICKUP
+                j.UcjbClient.TucClientContacts
+                    .SelectMany(cc => cc.TblClientContactJobTypes)
+                    .Where(ccjt => ccjt.JobTypeId == j.UcjbSpeed)
+                    .Any(ccjt => new[] { "Web", "Email", "Text" }.Contains(ccjt.PickupType))
+                : jobType == 2 && j.UcjbClient.TucClientContacts
+                    .SelectMany(cc => cc.TblClientContactJobTypes)
+                    .Where(ccjt => ccjt.JobTypeId == j.UcjbSpeed)
+                    .Any(ccjt => new[] { "Web", "Email", "Text" }.Contains(ccjt.DeliveryType)))
+            .FirstOrDefaultAsync();
+
+        // Default variables
         DateTime? responseTime = null;
+        int? staffOut = null;
         const bool pageCourier = false;
-
         string description = null;
-        var date = DateTime.Now;
-        var time = DateTime.Now;
 
-        await Context.Procedures.DES_qdfEvent_InsertAsync(
-            jobNo,
-            clientId,
-            contact,
-            date.Date,
-            time,
-            eventType,
-            lateTime,
-            etaTime,
-            staffId,
-            staffOut,
-            responseTime,
-            notes,
-            pageCourier,
-            close,
-            staffId,
-            description,
-            courierId,
-            jobId,
-            despatcherName,
-            jobType
-        );
+        // If automatic, set defaults to following
+        if (isAutomatic)
+        {
+            close = true;
+            staffOut = 33; // Internet user
+            responseTime = DateTime.Now;
+            contact = "Automatic Response";
+            despatcherName = "Internet";
+        }
+
+        var newEvent = new TucEvent
+        {
+            UcevJobNumber = jobNo,
+            UcevClientId = clientId,
+            UcevContact = contact,
+            UcevDate = DateTime.Today,
+            UcevTime = DateTime.Now,
+            UcevType = jobType,
+            UcevLateTime = lateTime,
+            UcevEtatime = etaTime,
+            UcevStaffIdin = staffId,
+            UcevStaffIdout = staffOut,
+            UcevResponseTime = responseTime,
+            UcevNotes = notes,
+            UcevPageCourier = pageCourier,
+            UcevClosed = close,
+            UcevOriginator = staffId,
+            UcevDescription = description,
+            UcevCourierId = courierId,
+            UcevJobId = jobId,
+            UcevDespatcher = despatcherName,
+            UcevJobType = jobType
+        };
+
+        await Context.TucEvents.AddAsync(newEvent);
+        await Context.SaveChangesAsync();
     }
 
     public List<AvailableCourierPosition> GetAvailableCouriers(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat, bool isUsTenant)

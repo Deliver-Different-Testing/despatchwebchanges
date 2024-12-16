@@ -21,47 +21,47 @@
                     <div class="driverLocations-list-items">
                         <table>
                             <tr class="driverLocations-list-items-item driverLocations-list-items-top droppable-row draggable-row"
-                                ng-class="{'active': courier.isActive}"
-                                data-courier="{{courier.courierNumber}}"
-                                ng-click="selectCourier(courier.courierData)"
-                                ng-if="((courier.courierNumber.indexOf('T') >= 0 && (truckMode=='On' || truckMode=='Only')) || (courier.courierNumber.indexOf('T') < 0 && truckMode !== 'Only'))"
-                                ng-repeat="courier in area.top">
+                                data-courier="{{section.courierNumber}}"
+                                ng-class="{'active': section.isActive}"
+                                ng-click="selectCourier(section.courierData)"
+                                ng-if="((section.courierNumber.indexOf('T') >= 0 && (truckMode=='On' || truckMode=='Only')) || (section.courierNumber.indexOf('T') < 0 && truckMode !== 'Only'))"
+                                ng-repeat="section in area.top">
                                 <td class="driverLocations-list-items-item-number"
-                                    ng-class="{'active': courier.isActive}">{{courier.courierNumber}}
+                                    ng-class="{'active': section.isActive}">{{section.courierNumber}}
                                 </td>
                                 <td>
                                     <div class="driverLocations-list-items-item-dest"
-                                         ng-repeat="destination in courier.destinations">{{destination.label}}
+                                         ng-repeat="destination in section.destinations">{{destination.label}}
                                     </div>
                                 </td>
                             </tr>
                             <tr class="driverLocations-list-items-item driverLocations-list-items-middle droppable-row draggable-row"
-                                ng-class="{'active': courier.isActive}"
-                                data-courier="{{courier.courierNumber}}"
-                                ng-click="selectCourier(courier.courierData)"
-                                ng-if="((courier.courierNumber.indexOf('T') >= 0 && (truckMode=='On' || truckMode=='Only')) || (courier.courierNumber.indexOf('T') < 0 && truckMode !== 'Only'))"
-                                ng-repeat="courier in area.middle">
+                                data-courier="{{section.courierNumber}}"
+                                ng-class="{'active': section.isActive}"
+                                ng-click="selectCourier(section.courierData)"
+                                ng-if="((section.courierNumber.indexOf('T') >= 0 && (truckMode=='On' || truckMode=='Only')) || (section.courierNumber.indexOf('T') < 0 && truckMode !== 'Only'))"
+                                ng-repeat="section in area.middle">
                                 <td class="driverLocations-list-items-item-number"
-                                    ng-class="{'active': courier.isActive}">{{courier.courierNumber}}
+                                    ng-class="{'active': section.isActive}">{{section.courierNumber}}
                                 </td>
                                 <td>
                                     <div class="driverLocations-list-items-item-dest"
-                                         ng-repeat="destination in courier.destinations">{{destination.label}}
+                                         ng-repeat="destination in section.destinations">{{destination.label}}
                                     </div>
                                 </td>
                             </tr>
                             <tr class="driverLocations-list-items-item driverLocations-list-items-bottom droppable-row draggable-row"
-                                ng-class="{'active': courier.isActive}"
-                                data-courier="{{courier.courierNumber}}"
-                                ng-click="selectCourier(courier.courierData)"
-                                ng-if="((courier.courierNumber.indexOf('T') >= 0 && (truckMode=='On' || truckMode=='Only')) || (courier.courierNumber.indexOf('T') < 0 && truckMode !== 'Only'))"
-                                ng-repeat="courier in area.bottom">
+                                data-courier="{{section.courierNumber}}"
+                                ng-class="{'active': section.isActive}"
+                                ng-click="selectCourier(section.courierData)"
+                                ng-if="((section.courierNumber.indexOf('T') >= 0 && (truckMode=='On' || truckMode=='Only')) || (section.courierNumber.indexOf('T') < 0 && truckMode !== 'Only'))"
+                                ng-repeat="section in area.bottom">
                                 <td class="driverLocations-list-items-item-number"
-                                    ng-class="{'active': courier.isActive}">{{courier.courierNumber}}
+                                    ng-class="{'active': section.isActive}">{{section.courierNumber}}
                                 </td>
                                 <td>
                                     <div class="driverLocations-list-items-item-dest"
-                                         ng-repeat="destination in courier.destinations">{{destination.label}}
+                                         ng-repeat="destination in section.destinations">{{destination.label}}
                                     </div>
                                 </td>
                             </tr>

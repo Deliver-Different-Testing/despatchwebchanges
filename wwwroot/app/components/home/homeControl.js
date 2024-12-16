@@ -6,7 +6,8 @@ angular.module("uDispatch")
             $scope.isInternal = (ClientInternal === "True");
             $scope.jdSvc = JobDetailService;
             $scope.jobTableService = JobTableService;
-            $scope.queryParams = JobTableService.createQuery();
+            $scope.queryParams = angular.copy(JobTableService.createQuery());
+            $scope.totalCount = 0;
             $scope.isUsCustomer = APP_CONFIG.US_Customer;
             $scope.selectedCourier = null;
 
@@ -47,6 +48,7 @@ angular.module("uDispatch")
             $scope.jobList = [];
             $scope.supports = [];
 
+            /** @type {ClearListViewModel} */
             $scope.driverLocations = [];
             $scope.markers = [];
             $scope.truckCourierStatus = [];
@@ -207,7 +209,6 @@ angular.module("uDispatch")
         }
 
         function initWidgetLoadingStates() {
-            $scope.jobsLoading = false;
             $scope.driverLocationsLoading = true;
             $scope.supportsLoading = false;
             $scope.potentialCouriersLoading = false;
@@ -432,12 +433,12 @@ angular.module("uDispatch")
         const helperFunctions = {
             /**
              * Finds a courier by ID in the pickCouriers or pickAllCouriers arrays.
-             * @param {number} courierID - The ID of the courier to find.
+             * @param {number} courierId - The ID of the courier to find.
              * @returns {Object|undefined} The courier object if found, otherwise undefined.
              */
-            findCourier: (courierID) => {
-                if (!courierID) return null;
-                return $scope.pickCouriers.find(c => c?.courierID === courierID) || $scope.pickAllCouriers.find(c => c?.courierID === courierID);
+            findCourier: (courierId) => {
+                if (!courierId) return null;
+                return $scope.pickCouriers.find(c => c?.courierId === courierId) || $scope.pickAllCouriers.find(c => c?.courierId === courierId);
             },
 
             /**
@@ -823,63 +824,103 @@ angular.module("uDispatch")
         };
 
         /**
-         * @param {DriverDestination} selectedClearlist
+         * @param {AreaClearList} selectedClearList
          */
-        $scope.selectClearList = async (selectedClearlist) => {
+        $scope.selectClearList = async (selectedClearList) => {
+            const functionName = 'selectClearList';
+            console.log(`${functionName} - Started with clearList ID:`, selectedClearList?.id);
+
             try {
-                const clearListId = selectedClearlist.id;
+                if (!selectedClearList) {
+                    throw new Error('Selected clear list is null or undefined');
+                }
+
+                const clearListId = selectedClearList.id;
+                console.log(`${functionName} - Processing clear list ID:`, clearListId);
 
                 let areaGroupButtons = angular.element("#area-group .btn");
+                console.debug(`${functionName} - Found ${areaGroupButtons.length} area group buttons`);
                 areaGroupButtons.removeClass("topBarActive");
 
                 let driverLocationsActive = angular.element("#driverLocations .listActive");
+                console.debug(`${functionName} - Active driver locations:`, driverLocationsActive.length);
+
                 if (driverLocationsActive.length <= 1) {
+                    console.log(`${functionName} - Fetching envelope for clear list ID:`, clearListId);
                     const envelope = await getClearListEnvelope(clearListId);
 
-                    console.log('Envelope Coordinates:');
-                    console.log('Maximum Latitude:', envelope.maximumLatitude);
-                    console.log('Maximum Longitude:', envelope.maximumLongitude);
-                    console.log('Minimum Latitude:', envelope.minimumLatitude);
-                    console.log('Minimum Longitude:', envelope.minimumLongitude);
+                    if (!envelope) {
+                        throw new Error(`Failed to retrieve envelope for clear list ID: ${clearListId}`);
+                    }
 
-                    await $timeout(() => {
-                        $scope.jobsLoading = true;
+                    console.debug(`${functionName} - Envelope Details:`, {
+                        maximumLatitude: envelope.maximumLatitude,
+                        maximumLongitude: envelope.maximumLongitude,
+                        minimumLatitude: envelope.minimumLatitude,
+                        minimumLongitude: envelope.minimumLongitude
                     });
 
                     const selectedClients = $scope.pickService.clients.map(a => a.id);
-                    $scope.jobList = await DispatchData.getClearListJobs($scope.queryParams, selectedClients, $scope.isInternal, $scope.selectedViews, envelope);
+                    console.debug(`${functionName} - Selected clients:`, selectedClients);
+
+                    console.log(`${functionName} - Fetching jobs with params:`, {
+                        queryParams: $scope.queryParams,
+                        clientCount: selectedClients.length,
+                        isInternal: $scope.isInternal,
+                        selectedViews: $scope.selectedViews
+                    });
+
+                    $scope.jobListPromise = DispatchData.getClearListJobs(
+                        $scope.queryParams,
+                        selectedClients,
+                        $scope.isInternal,
+                        $scope.selectedViews,
+                        envelope
+                    );
+
+                    $scope.jobList = await $scope.jobListPromise;
+                    console.log(`${functionName} - Successfully retrieved ${$scope.jobList?.length || 0} jobs`);
+                } else {
+                    console.log(`${functionName} - Skipped job fetch due to multiple active locations:`, driverLocationsActive.length);
                 }
             } catch (error) {
-                console.log('Error in selectClearList:', error);
-            } finally {
-                await $timeout(() => {
-                    $scope.jobsLoading = false;
+                console.error(`${functionName} - Error occurred:`, {
+                    message: error.message,
+                    stack: error.stack,
+                    clearListId: selectedClearList?.id,
+                    queryParams: $scope.queryParams,
+                    isInternal: $scope.isInternal,
+                    selectedViews: $scope.selectedViews
                 });
+
+                // Optional: Rethrow if you want the error to propagate
+                throw error;
+            } finally {
+                console.log(`${functionName} - Completed`);
             }
         };
 
         /**
          * Gets envelope coordinates for a clear list
          * @param {number} clearListId - ID of the clear list
-         * @param {Object} scope - The controller scope
          * @returns {Promise<Object>} Envelope coordinates
          */
-        async function getClearListEnvelope(clearListId, scope) {
+        async function getClearListEnvelope(clearListId) {
             try {
                 const data = await DispatchData.getDriverDestinationEnvelope(clearListId);
 
                 if (data) {
                     // Update map bounds with envelope data
-                    if (scope.map) {
+                    if ($scope.map) {
                         const swll = new google.maps.LatLng(data.minimumLatitude, data.minimumLongitude);
                         const nell = new google.maps.LatLng(data.maximumLatitude, data.maximumLongitude);
-                        scope.map.fitBounds(new google.maps.LatLngBounds(swll, nell));
-                        scope.map.setZoom(13);
+                        $scope.map.fitBounds(new google.maps.LatLngBounds(swll, nell));
+                        $scope.map.setZoom(13);
                     }
 
                     // Update available courier locations if method exists
-                    if (scope.getAvailableCourierLocation) {
-                        await scope.getAvailableCourierLocation();
+                    if ($scope.getAvailableCourierLocation) {
+                        await $scope.getAvailableCourierLocation();
                     }
                 }
 
@@ -1064,7 +1105,7 @@ angular.module("uDispatch")
          * @param {Job} job
          */
         $scope.messageClick = ($event, job) => {
-            const selectedCourierId = $scope.selectedCourier ? $scope.selectedCourier.id : job.courierData.courierId;
+            const selectedcourierId = $scope.selectedCourier ? $scope.selectedCourier.id : job.courierData.courierId;
 
             $mdDialog.show({
                 controller: 'SendMessageDialogController',
@@ -1074,7 +1115,7 @@ angular.module("uDispatch")
                 clickOutsideToClose: true,
                 fullscreen: true,
                 locals: {
-                    selectedCourierId, contactId: ContactID, dispatcherName: FirstName,
+                    selectedcourierId, contactId: ContactID, dispatcherName: FirstName,
                 },
                 bindToController: true
             }).then(() => {
@@ -1131,7 +1172,7 @@ angular.module("uDispatch")
                 }
 
                 const closestCourier = findClosestCourier(lat, lng, flags, carMarker);
-                const foundCourier = $scope.pickCouriers.find(c => c.courierID === closestCourier.courierId);
+                const foundCourier = $scope.pickCouriers.find(c => c.courierId === closestCourier.courierId);
 
                 await confirmDispatch(jobNumber, closestCourier, foundCourier);
                 await handleDangerousGoodsCheck(foundCourier);
@@ -1152,7 +1193,7 @@ angular.module("uDispatch")
         }
 
         function handleNoAvailableCourier() {
-            const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+            const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierId === null);
             displayPickupPoints(unDispatchedData, true, null);
             return $scope.getAvailableCourierLocation();
         }
@@ -1202,7 +1243,7 @@ angular.module("uDispatch")
                     throw new Error(`Courier ${foundCourier.code} doesn't have a DGLicense or license has expired.`);
                 }
 
-                await DispatchData.addFollowupEvent(job.jobNo, job.clientId, job.contactName, ContactID, foundCourier.courierID, job.id, job.jobType, FirstName);
+                await DispatchData.addFollowupEvent(job.jobNo, job.clientId, job.contactName, ContactID, foundCourier.courierId, job.id, job.jobType, FirstName);
             }
         }
 
@@ -1213,7 +1254,7 @@ angular.module("uDispatch")
         async function dispatchJob(foundCourier, jobNumber) {
             const job = $scope.jobList.find(jo => jo.jobNo === jobNumber);
             const jobs = [job.id];
-            await DispatchData.allocateJobs(foundCourier.courierID, ContactID, jobs);
+            await DispatchData.allocateJobs(foundCourier.courierId, ContactID, jobs);
             await $scope.getData();
 
             $scope.courier = {gpsCourier: foundCourier.id};
@@ -1221,7 +1262,7 @@ angular.module("uDispatch")
         }
 
         function handleDispatchError() {
-            const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+            const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierId === null);
             displayPickupPoints(unDispatchedData, true, null);
             return $scope.getAvailableCourierLocation();
         }
@@ -1285,25 +1326,10 @@ angular.module("uDispatch")
             }
         };
 
-        // Order list handler
-        $scope.orderList = async (list, prop) => {
-            const serverOrder = list === "jobList";
-            if ($scope.sort[list] !== prop) {
-                $scope.sort[list] = prop;
-                $scope.queryParams.asc = "asc";
-            } else {
-                $scope.sort[list] = "d-" + prop;
-                $scope.queryParams.asc = "desc";
-            }
-
-            if (!serverOrder) {
-                $scope[list] = $filter("orderBy")($scope[list], $scope.sort[list].startsWith('d-') ? '-' + prop : prop);
-            }
-
-            if (serverOrder) {
-                await setFilters({"order": prop});
-            }
-        };
+        $scope.onReorderJobList = async () => {
+            $scope.queryParams.page = 1;
+            await getJobList();
+        }
 
         /**
          * Determines the CSS classes to apply to a job row
@@ -1392,14 +1418,14 @@ angular.module("uDispatch")
                 }
 
                 // Perform dispatch operation
-                await dispatchJobService.dispatchJobsByCourierId(courierId, jobsToDispatch);
+                await dispatchJobService.dispatchJobsBycourierId(courierId, jobsToDispatch);
 
                 // Clear selection state
                 $scope.dispatchState.selectedJobs.clear();
 
                 // If we have a current courier, update their job list
                 if ($scope.currentCourier) {
-                    await getCurrentJobs($scope.currentCourier.courierID);
+                    await getCurrentJobs($scope.currentCourier.courierId);
                 }
 
                 // Inform the user
@@ -1422,11 +1448,11 @@ angular.module("uDispatch")
          */
         async function validateCourier(courierId) {
             // First check active couriers
-            let courier = $scope.pickCouriers.find(c => c.courierID === courierId);
+            let courier = $scope.pickCouriers.find(c => c.courierId === courierId);
 
             // If not found in active, check all couriers
             if (!courier) {
-                courier = $scope.pickAllCouriers.find(c => c.courierID === courierId);
+                courier = $scope.pickAllCouriers.find(c => c.courierId === courierId);
             }
 
             return courier;
@@ -1437,82 +1463,9 @@ angular.module("uDispatch")
                 .filter(job => $scope.dispatchState.selectedJobs.has(job.id));
         }
 
-        $scope.restoreJobs = async () => {
-            const callData = initializeRestoreData();
-            let foundCourier = null;
-
-            const activeElements = angular.element('#jobList .active');
-            for (const element of activeElements) {
-                const currentElement = angular.element(element);
-                const jobId = currentElement.data("jobid");
-                const job = $scope.jobList.find(jo => jo.id === jobId);
-
-                if (job) {
-                    await processJobForRestore(job, callData);
-                    foundCourier = findCourierForJob(job, callData);
-                }
-            }
-
-            await executeRestoreJobs(callData, foundCourier);
-            await updateAfterRestore(foundCourier);
-        };
-
-        function initializeRestoreData() {
-            return {
-                call: "restoreJobs", jobs: [], splitJobs: [], jobNos: [], courierID: null
-            };
-        }
-
-        /**
-         * @param {Job} job
-         * @param {{call: string, splitJobs: *[], jobs: *[], courierID: null, jobNos: *[]}} callData
-         */
-        async function processJobForRestore(job, callData) {
-            const jobNo = job.jobNo;
-            await DispatchData.addRestoreEvent(jobNo, job.clientId, job.contactName, ContactID, job.courierData.courierId, job.id, job.jobType, FirstName);
-
-            if (callData.courierID === null) {
-                callData.courierID = job.courierData.courierId;
-            }
-
-            if (job.displaySplitJobDetail) {
-                callData.splitJobs.push(job.id);
-            } else {
-                callData.jobs.push(job.id);
-            }
-        }
-
-        /**
-         * @param {Job} job
-         * @param {{call: string, splitJobs: *[], jobs: *[], courierID: null, jobNos: *[]}} callData
-         */
-        function findCourierForJob(job, callData) {
-            return $scope.pickCouriers.find(c => c.courierID === callData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === callData.courierID);
-        }
-
-        async function executeRestoreJobs(callData, foundCourier) {
-            const promises = [];
-
-            if (callData.splitJobs.length > 0) {
-                promises.push(DispatchData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.splitJobs));
-            }
-            if (callData.jobs.length > 0) {
-                promises.push(DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs));
-            }
-
-            await Promise.all(promises);
-        }
-
-        async function updateAfterRestore(foundCourier) {
-            await $scope.getData();
-            $scope.courier = {gpsCourier: foundCourier.id};
-            await $scope.searchCourier();
-        }
-
-
         $scope.reAllocateJobs = async () => {
             const callData = {
-                "call": "redespatchJobs", "jobs": [], "splitJobs": [], "jobNos": [], "courierID": null
+                "call": "redespatchJobs", "jobs": [], "splitJobs": [], "jobNos": [], "courierId": null
             };
 
             let foundCourier = null;
@@ -1523,13 +1476,13 @@ angular.module("uDispatch")
                 const jobId = currentElement.attr("data-jobid");
                 const job = $scope.jobList.find(jo => jo.id === jobId);
                 if (job) {
-                    foundCourier = $scope.pickCouriers.find(c => c.courierID === job.courierData.courierId) || $scope.pickAllCouriers.find(c => c.courierID === job.courierData.courierId);
+                    foundCourier = $scope.pickCouriers.find(c => c.courierId === job.courierData.courierId) || $scope.pickAllCouriers.find(c => c.courierId === job.courierData.courierId);
                     callData.jobs.push(jobId);
                 }
             }
 
             if (callData.jobs.length > 0) {
-                await DispatchData.reAllocateJobs(foundCourier.courierID, ContactID, callData.jobs);
+                await DispatchData.reAllocateJobs(foundCourier.courierId, ContactID, callData.jobs);
                 toastrService.showSuccessToast("Jobs reallocated successfully");
             }
 
@@ -1557,7 +1510,7 @@ angular.module("uDispatch")
                 const lastJobId = lastJobElement.attr("data-jobid");
                 const lastJob = $scope.jobList.find(job => job.id === lastJobId);
 
-                const foundCourier = $scope.pickCouriers.find(c => c.courierID === lastjob.courierData.courierId) || $scope.pickAllCouriers.find(c => c.courierID === lastjob.courierData.courierId);
+                const foundCourier = $scope.pickCouriers.find(c => c.courierId === lastjob.courierData.courierId) || $scope.pickAllCouriers.find(c => c.courierId === lastjob.courierData.courierId);
 
                 if (foundCourier) {
                     $scope.courier = {gpsCourier: foundCourier.id};
@@ -1567,6 +1520,26 @@ angular.module("uDispatch")
                 angular.element('#box-map .loading').css('display', '');
             } catch (error) {
                 console.log('Error updating data:', error);
+            }
+        };
+
+        /**
+         * @param {Job} job
+         */
+        $scope.restoreJob = async (job) => {
+            try {
+                const result = await dispatchJobService.restoreJob(job);
+                $scope.courier = {gpsCourier: result.gpsCourier};
+
+                await $scope.getData();
+
+                if ($scope.searchCourier) {
+                    await $scope.searchCourier();
+                }
+
+                $scope.$apply();
+            } catch (error) {
+                console.error('Error restoring job:', error);
             }
         };
 
@@ -1582,7 +1555,7 @@ angular.module("uDispatch")
                 await $mdDialog.show(confirm);
 
                 let callData = {
-                    "call": "restoreJobs", "jobs": [], "splitJobs": [], "jobNos": [], "courierID": null
+                    "call": "restoreJobs", "jobs": [], "splitJobs": [], "jobNos": [], "courierId": null
                 };
 
                 let foundCourier = null;
@@ -1592,12 +1565,12 @@ angular.module("uDispatch")
                         return jo.id === angular.element(this).data("jobid")
                     });
                     const jn = j.jobNo;
-                    DispatchData.addRestoreEvent(jn, j.clientId, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
-                    if (callData.courierID === null) {
-                        callData.courierID = j.courierData.courierID;
+                    DispatchData.addRestoreEvent(jn, j.clientId, j.contactName, ContactID, j.courierData.courierId, j.id, j.jobType, FirstName);
+                    if (callData.courierId === null) {
+                        callData.courierId = j.courierData.courierId;
                         foundCourier = $scope.pickCouriers.find(c => {
-                            return c.courierID === j.courierData.courierID
-                        }) || $scope.pickAllCouriers.find(c => c.courierID === j.courierData.courierID);
+                            return c.courierId === j.courierData.courierId
+                        }) || $scope.pickAllCouriers.find(c => c.courierId === j.courierData.courierId);
                     }
                     if (j.displaySplitJobDetail) {
                         callData.splitJobs.push(angular.element(this).data("jobid"));
@@ -1607,16 +1580,16 @@ angular.module("uDispatch")
                 });
 
                 if (callData.splitJobs.length > 0) {
-                    await DispatchData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.jobs)
+                    await DispatchData.restoreSplitJobs(foundCourier.courierId, ContactID, callData.jobs)
                     console.log('Restore split jobs complete');
                 }
                 if (callData.jobs.length > 0) {
-                    await DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
+                    await DispatchData.restoreJobs(foundCourier.courierId, ContactID, callData.jobs);
                     console.log('Restore Jobs complete');
                 }
 
                 $timeout(() => {
-                    getCurrentJobs(foundCourier.courierID);
+                    getCurrentJobs(foundCourier.courierId);
                     $scope.getData();
                 }, 1000);
             } catch (error) {
@@ -1646,18 +1619,18 @@ angular.module("uDispatch")
                     "jobs": [],
                     "splitJobs": [],
                     "jobNos": [],
-                    "courierID": $scope.currentCourier.courierID
+                    "courierId": $scope.currentCourier.courierId
                 };
 
                 let foundCourier = null;
 
                 angular.element("#currentWork tr.droppable-row").each(function () {
                     callData.jobs.push(angular.element(this).attr("data-jobid"));
-                    foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === callData.courierID);
+                    foundCourier = $scope.pickCouriers.find(c => c.courierId === callData.courierId) || $scope.pickAllCouriers.find(c => c.courierId === callData.courierId);
                 });
 
                 if (callData.jobs.length > 0) {
-                    await DispatchData.reAllocateJobs(callData.courierID, ContactID, callData.jobs);
+                    await DispatchData.reAllocateJobs(callData.courierId, ContactID, callData.jobs);
                 }
 
                 await $scope.getData();
@@ -1686,7 +1659,7 @@ angular.module("uDispatch")
                     "jobs": [],
                     "splitJobs": [],
                     "jobNos": [],
-                    "courierID": $scope.currentCourier.courierID
+                    "courierId": $scope.currentCourier.courierId
                 };
 
                 let foundCourier = null;
@@ -1694,14 +1667,14 @@ angular.module("uDispatch")
                 angular.element("#currentWork tr.droppable-row").each(function () {
                     callData.jobs.push(angular.element(this).attr("data-jobid"));
                     foundCourier = $scope.pickCouriers.find(c => {
-                        return c.courierID === callData.courierID
+                        return c.courierId === callData.courierId
                     }) || $scope.pickAllCouriers.find(c => {
-                        return c.courierID === callData.courierID
+                        return c.courierId === callData.courierId
                     });
                 });
 
                 if (callData.jobs.length > 0) {
-                    await DispatchData.resendAllJobs(callData.courierID);
+                    await DispatchData.resendAllJobs(callData.courierId);
                 }
 
                 await $scope.getData();
@@ -1719,19 +1692,19 @@ angular.module("uDispatch")
                 "jobs": [],
                 "splitJobs": [],
                 "jobNos": [],
-                "courierID": $scope.currentCourier.courierID
+                "courierId": $scope.currentCourier.courierId
             };
 
             let foundCourier = null;
 
             angular.element("#currentWork .active").each(function () {
                 callData.jobs.push(angular.element(this).attr("data-jobid"));
-                foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === callData.courierID);
+                foundCourier = $scope.pickCouriers.find(c => c.courierId === callData.courierId) || $scope.pickAllCouriers.find(c => c.courierId === callData.courierId);
             });
 
             try {
                 if (callData.jobs.length > 0) {
-                    await DispatchData.reAllocateJobs(callData.courierID, ContactID, callData.jobs);
+                    await DispatchData.reAllocateJobs(callData.courierId, ContactID, callData.jobs);
                 }
 
                 await $scope.getData();
@@ -1749,7 +1722,7 @@ angular.module("uDispatch")
                 "jobs": [],
                 "splitJobs": [],
                 "jobNos": [],
-                "courierID": $scope.currentCourier.courierID
+                "courierId": $scope.currentCourier.courierId
             };
 
             let foundCourier;
@@ -1759,7 +1732,7 @@ angular.module("uDispatch")
                 callData.jobs.push(angular.element(this).attr("data-jobid"));
             });
 
-            foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === callData.courierID);
+            foundCourier = $scope.pickCouriers.find(c => c.courierId === callData.courierId) || $scope.pickAllCouriers.find(c => c.courierId === callData.courierId);
 
             try {
                 if (callData.jobs.length > 0) {
@@ -1780,7 +1753,7 @@ angular.module("uDispatch")
 
         $scope.restoreJobsFromCurrentWindow = async () => {
             const callData = {
-                call: "restoreJobs", jobs: [], splitJobs: [], jobNos: [], courierID: null
+                call: "restoreJobs", jobs: [], splitJobs: [], jobNos: [], courierId: null
             };
 
             const activeElements = angular.element("#currentWork .active");
@@ -1797,7 +1770,7 @@ angular.module("uDispatch")
                     }
                 }
 
-                const foundCourier = findCourier(callData.courierID);
+                const foundCourier = findCourier(callData.courierId);
                 if (foundCourier) {
                     await restoreJobs(callData, foundCourier);
                 }
@@ -1822,8 +1795,8 @@ angular.module("uDispatch")
         }
 
         const updateCallData = (callData, job, jobIdElement) => {
-            if (!callData.courierID) {
-                callData.courierID = job.courierData.courierId;
+            if (!callData.courierId) {
+                callData.courierId = job.courierData.courierId;
             }
 
             if (job.displaySplitJobDetail) {
@@ -1835,17 +1808,17 @@ angular.module("uDispatch")
 
         const findCourier = (job) => {
             if (!job) return null;
-            return $scope.pickCouriers.find(c => c.courierID === job.courierData.courierId) || $scope.pickAllCouriers.find(c => c.courierID === job.courierData.courierId);
+            return $scope.pickCouriers.find(c => c.courierId === job.courierData.courierId) || $scope.pickAllCouriers.find(c => c.courierId === job.courierData.courierId);
         };
 
         async function restoreJobs(callData, courier) {
             const promises = [];
 
             if (callData.splitJobs.length > 0) {
-                promises.push(DispatchData.restoreSplitJobs(courier.courierID, ContactID, callData.splitJobs));
+                promises.push(DispatchData.restoreSplitJobs(courier.courierId, ContactID, callData.splitJobs));
             }
             if (callData.jobs.length > 0) {
-                promises.push(DispatchData.restoreJobs(courier.courierID, ContactID, callData.jobs));
+                promises.push(DispatchData.restoreJobs(courier.courierId, ContactID, callData.jobs));
             }
 
             try {
@@ -1867,8 +1840,8 @@ angular.module("uDispatch")
                     .textContent('Are you sure you wish to set this as the First Job?')
                     .ok('Yes')
                     .cancel('No'));
-                await DispatchData.setFirstJob(job.id, $scope.currentCourier.courierID);
-                await getCurrentJobs($scope.currentCourier.courierID);
+                await DispatchData.setFirstJob(job.id, $scope.currentCourier.courierId);
+                await getCurrentJobs($scope.currentCourier.courierId);
                 toastrService.showSuccessToast("Job set as first job successfully");
             } catch (error) {
                 console.log('Action cancelled or error occurred:', error);
@@ -2060,7 +2033,7 @@ angular.module("uDispatch")
          */
         $scope.updateCourierData = async (courierId, courierName) => {
             $scope.currentWorkSelection = ` for Courier ${courierName}`;
-            $scope.currentCourier = {courierID: courierId, courier: courierName};
+            $scope.currentCourier = {courierId: courierId, courier: courierName};
             $scope.currentSelection = ` for Courier ${courierName}`;
 
             await getCurrentJobs(courierId);
@@ -2114,28 +2087,16 @@ angular.module("uDispatch")
                 // Set loading states
                 await $timeout(() => {
                     $scope.currentListLoading = true;
-                    $scope.jobsLoading = true;
                 });
 
-                // Deactivate all couriers first
-                deactivateAllCouriers();
-
-                // Activate the selected courier
-                if (courier) {
-                    courier.isActive = true;
-                    if (!courier.courier) {
-                        courier.courier = `${courier.code} ${courier.firstName}`;
-                    }
-                }
-
                 // Find the courier in pickCouriers or pickAllCouriers
-                const foundCourier = $scope.pickCouriers.find(c => c.courierID === courier.courierID) ||
-                    $scope.pickAllCouriers.find(c => c.courierID === courier.courierID);
+                const foundCourier = $scope.pickCouriers.find(c => c.courierId === courier.courierId) ||
+                    $scope.pickAllCouriers.find(c => c.courierId === courier.courierId);
 
                 if (foundCourier) {
                     // Update current courier information
                     $scope.currentCourier = {
-                        courierID: foundCourier.courierID,
+                        courierId: foundCourier.courierId,
                         courier: foundCourier.label || `${foundCourier.code} ${foundCourier.firstName}`
                     };
 
@@ -2144,24 +2105,20 @@ angular.module("uDispatch")
                     $scope.currentSelection = ` for Courier ${$scope.currentCourier.courier}`;
 
                     // Get current jobs for the courier
-                    await getCurrentJobs(foundCourier.courierID);
+                    await getCurrentJobs(foundCourier.courierId);
 
                     // Update truck courier status if available
                     try {
-                        const result = await DispatchData.truckCourierStatus(foundCourier.courierID);
+                        const result = await DispatchData.truckCourierStatus(foundCourier.courierId);
                         if (result && result.data) {
                             $scope.truckCourierStatus = result.data;
                         }
                     } catch (error) {
                         console.warn('Error fetching truck courier status:', error);
                     }
-
-                    // Update headings after a delay
-                    $timeout(() => sizeHeadings(), 1000);
-                    $timeout(() => sizeHeadings(), 2000);
                 } else {
                     console.warn('Courier not found in active or all couriers list');
-                    toastrService.showErrorToast('Could not find courier information');
+                    toastrService.showErrorToast("An unexpected occur occured. Please contact support.");
                 }
 
                 // Ensure view is updated
@@ -2176,52 +2133,13 @@ angular.module("uDispatch")
                 // Reset loading states
                 await $timeout(() => {
                     $scope.currentListLoading = false;
-                    $scope.jobsLoading = false;
                 });
             }
         };
 
-        function deactivateAllCouriers() {
-            angular.forEach($scope.driverLocations.views, (area) => {
-                ['top', 'middle', 'bottom'].forEach((section) => {
-                    angular.forEach(area[section], (c) => {
-                        c.isActive = false;
-                    });
-                });
-            });
-        }
-
-        function activateSelectedCourier(courier) {
-            courier.isActive = true;
-            if (!courier.courier) {
-                courier.courier = `${courier.code} ${courier.firstName}`;
-            }
-        }
-
-        async function fetchTruckCourierStatus(courier) {
-            if (!courier) {
-                return;
-            }
-
-            const result = await DispatchData.truckCourierStatus(courier.courierID);
-            if (!result || !result.data) {
-                return;
-            }
-
-            // Save truck courier status if exists
-            $scope.truckCourierStatus = result.data;
-        }
-
-        function hideLoadingAfterTimeout(loadingElement, mapLoadingElement) {
-            $timeout(() => {
-                helperFunctions.hideLoading(loadingElement);
-                helperFunctions.hideLoading(mapLoadingElement);
-            }, 100);
-        }
-
         $scope.refreshTruckCourierStatus = async () => {
             try {
-                const result = await DispatchData.truckCourierStatus($scope.currentCourier.courierID);
+                const result = await DispatchData.truckCourierStatus($scope.currentCourier.courierId);
                 $scope.truckCourierStatus = result.data;
             } catch (error) {
                 console.error('Error refreshing truck courier status:', error);
@@ -2235,12 +2153,12 @@ angular.module("uDispatch")
             helperFunctions.showLoading("#box-currentWork");
 
             try {
-                const foundCourier = helperFunctions.findCourier(courier.courierID);
+                const foundCourier = helperFunctions.findCourier(courier.courierId);
                 $scope.currentCourier = {
-                    courierID: foundCourier.courierID, courier: foundCourier.label
+                    courierId: foundCourier.courierId, courier: foundCourier.label
                 };
 
-                await fetchAndDisplayCurrentJobs(courier.courierID);
+                await fetchAndDisplayCurrentJobs(courier.courierId);
                 await updateUIAfterCourierSelection(courier, foundCourier);
             } catch (error) {
                 console.error('An error occurred:', error);
@@ -2250,10 +2168,10 @@ angular.module("uDispatch")
         };
 
         /**
-         * @param {number} courierID
+         * @param {number} courierId
          */
-        async function fetchAndDisplayCurrentJobs(courierID) {
-            const data = await DispatchData.getJobsCurrent(courierID, $scope.jobFilters.status === "done");
+        async function fetchAndDisplayCurrentJobs(courierId) {
+            const data = await DispatchData.getJobsCurrent(courierId, $scope.jobFilters.status === "done");
             helperFunctions.hideLoading("#box-currentWork");
 
             $scope.jobsCurrentList = data;
@@ -2267,7 +2185,7 @@ angular.module("uDispatch")
             $scope.currentWorkSelection = ` for Courier ${courier.label}`;
             $scope.currentSelection = ` for Courier ${courier.label}`;
 
-            $scope.truckCourierStatus = await DispatchData.truckCourierStatus(courier.courierID);
+            $scope.truckCourierStatus = await DispatchData.truckCourierStatus(courier.courierId);
 
             $timeout(sizeHeadings, 1000);
             $timeout(sizeHeadings, 2000);
@@ -2311,15 +2229,15 @@ angular.module("uDispatch")
             if ($scope.jobList.length > 0) {
                 const jid = angular.element("#jobList .active").last().data("jobid");
                 const currentJob = $scope.jobList.find(jo => jo.id === jid);
-                const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+                const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierId === null);
                 displayPickupPoints(unDispatchedData, true, currentJob);
             }
         }
 
         async function displayJobsForCourier(courier) {
             helperFunctions.showLoading('#box-currentWork');
-            const code = $scope.pickCouriers.find(x => x.courierID === courier.courierID).id;
-            const data = await DispatchData.getJobsCurrent(courier.courierID, $scope.jobFilters.status === "done");
+            const code = $scope.pickCouriers.find(x => x.courierId === courier.courierId).id;
+            const data = await DispatchData.getJobsCurrent(courier.courierId, $scope.jobFilters.status === "done");
             helperFunctions.hideLoading('#box-currentWork');
 
             if ($scope.currentJob !== null && $scope.currentJob.courier !== code) {
@@ -2506,6 +2424,9 @@ angular.module("uDispatch")
          * @param {Job} job
          */
         $scope.selectJob = async (job) => {
+            console.log('Selected job run...');
+            console.log(job);
+
             if (!job) return;
 
             await $timeout(async () => {
@@ -2621,7 +2542,7 @@ angular.module("uDispatch")
             $scope.currentCourier = null;
             $scope.currentSelection = ` for Job ${job.jobNo}`;
 
-            const unDispatchedData = $scope.jobList.filter(x => !x?.courierData?.courierID);
+            const unDispatchedData = $scope.jobList.filter(x => !x?.courierData?.courierId);
 
             // Verify we have valid coordinates before displaying
             if (isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude)) {
@@ -3011,55 +2932,65 @@ angular.module("uDispatch")
         };
 
         async function getJobList() {
-            if ($scope.jobsLoading) {
-                return; // Prevent concurrent loads
-            }
-
-            await $timeout(() => {
-                $scope.jobsLoading = true;
-            });
-
             try {
-                // Save filters to local storage if available
                 if (Modernizr.localstorage) {
                     localStorage.setItem("disp-filters-" + ContactID, JSON.stringify($scope.queryParams));
                 }
 
                 const selectedClients = $scope.pickService.clients.map(a => a.id);
 
-                const result = await dispatchJobService.getJobListWithCourierData($scope.queryParams, selectedClients, $scope.isInternal, $scope.selectedViews);
+                let orderBy = $scope.queryParams.order || 'jobName';
+                let orderDirection = 'asc';
 
-                // Update scope with new data
-                await $timeout(async () => {
-                    if (result.jobs?.length > 0) {
-                        $scope.jobList = result.jobs;
+                if (orderBy.startsWith('-')) {
+                    orderBy = orderBy.substring(1);
+                    orderDirection = 'desc';
+                }
 
-                        sizeHeadings();
+                // Ensure we have valid pagination parameters
+                const params = {
+                    page: $scope.queryParams.page || 1,
+                    limit: $scope.queryParams.limit || 10,
+                    orderBy: orderBy,
+                    orderDirection: orderDirection
+                };
 
-                        // Only display pickup points if we have undispatched jobs
-                        if (result.undispatchedJobs.length > 0) {
-                            displayPickupPoints(result.undispatchedJobs, true, null);
-                        }
+                $scope.jobListPromise = dispatchJobService.getJobListWithCourierData(
+                    params,
+                    selectedClients,
+                    $scope.isInternal,
+                    $scope.selectedViews
+                );
+                const result = await $scope.jobListPromise;
 
-                        await $scope.getAvailableCourierLocation();
-                    } else {
-                        $scope.jobList = [];
+                if (result.items?.length > 0) {
+                    $scope.jobList = result.items;
+                    $scope.totalCount = result.total;
+
+                    if (result.undispatchedJobs?.length > 0) {
+                        displayPickupPoints(result.undispatchedJobs, true, null);
                     }
-                });
+                } else {
+                    $scope.jobList = [];
+                    $scope.totalCount = 0;
+                }
+
+                await $scope.getAvailableCourierLocation();
 
             } catch (error) {
                 console.error('Error getting job list:', error);
                 toastrService.showErrorToast('Failed to get job list. Please try again.');
 
-                await $timeout(() => {
-                    $scope.jobList = [];
-                });
-            } finally {
-                await $timeout(() => {
-                    $scope.jobsLoading = false;
-                });
+                $scope.jobList = [];
+                $scope.totalCount = 0;
             }
         }
+
+        $scope.jobPageChanged = async (page, limit) => {
+            $scope.queryParams.page = page;
+            $scope.queryParams.limit = limit;
+            await getJobList();
+        };
 
         $scope.closeSupport = async (support) => {
             try {
@@ -3206,13 +3137,7 @@ angular.module("uDispatch")
                     const selectedViews = $scope.views.filter(view => view.selected);
 
                     // Pass only selected views to the backend
-                    const data = await DispatchData.getDriverLocations(selectedViews);
-
-                    $scope.driverLocations = data;
-
-                    $timeout(() => {
-                        angular.element("#driverLocations .loading").fadeOut();
-                    }, 0);
+                    $scope.driverLocations = await DispatchData.getDriverLocations(selectedViews);
 
                     console.log("Driver Locations: ", $scope.driverLocations);
                     await $scope.activateDrop();

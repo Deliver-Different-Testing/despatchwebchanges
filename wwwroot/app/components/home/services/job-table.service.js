@@ -8,7 +8,11 @@ class JobTableService {
      */
     createQuery() {
         return {
-            order: 'time', filter: '', status: 'all', asc: 'asc'
+            page: 1,
+            limit: 10,
+            order: 'time',
+            direction: 'asc',
+            status: 'all'
         };
     }
 
@@ -19,6 +23,10 @@ class JobTableService {
         return job.attention || '';
     };
 
+    /**
+     * @param {Job} job
+     * @param {string} field
+     */
     updateField(job, field) {
         // Handle field update logic
         console.log('Updated ' + field + ' for job ' + job.id);

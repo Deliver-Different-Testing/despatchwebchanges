@@ -4,7 +4,8 @@ angular
         'ui.bootstrap.contextMenu', 'cfp.hotkeys', 'ui.timepicker', 'pickadate', 'ngMap',
         'ngMapAutocomplete', 'angularjs-dropdown-multiselect', 'heremaps', 'ngAnimate',
         'ngMessages', 'ngSanitize', 'ngMaterial', 'angularPromiseButtons', 'ng-mfb',
-        'md.time.picker', 'angularMoment', 'md.data.table', 'ngFileUpload', 'hereMapTracking.services', 'hereMapTracking.components'])
+        'md.time.picker', 'angularMoment', 'md.data.table', 'ngFileUpload', 'hereMapTracking.services', 'hereMapTracking.components',
+        'ui.grid', 'ui.grid.pagination', 'ui.grid.selection', 'ui.grid.autoResize'])
     .constant('APP_CONFIG', {
         US_Customer: serverConfig.isUSCustomer
     })

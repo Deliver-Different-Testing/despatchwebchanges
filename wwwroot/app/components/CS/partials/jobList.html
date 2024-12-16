@@ -42,12 +42,12 @@
                 <td md-cell>{{job.jobNo}}</td>
                 <td md-cell>{{job.client}}</td>
                 <td md-cell>
-                    {{isUsCustomer ? job.pickupAddress.addressLine5 + ' ' + job.pickupAddress.addressLine6 : job.from}}
+                    {{isUsCustomer ? job.pickupAddress.addressLine5 + ', ' + job.pickupAddress.addressLine6 : job.from}}
                     <md-tooltip md-direction="bottom">{{ job.pickupAddress.fullAddress }}</md-tooltip>
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
                 </td>
                 <td md-cell>
-                    {{isUsCustomer ? job.deliveryAddress.addressLine5 + ' ' + job.deliveryAddress.addressLine6 : job.to}}
+                    {{isUsCustomer ? job.deliveryAddress.addressLine5 + ', ' + job.deliveryAddress.addressLine6 : job.to}}
                     <md-tooltip md-direction="bottom">{{ job.deliveryAddress.fullAddress }}</md-tooltip>
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
                 </td>

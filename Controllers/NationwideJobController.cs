@@ -30,7 +30,7 @@ public class NationwideJobController(
 
             var status = (DispatchStatus)queryParams.Status;
             var result = await repository.NationwideJobListAsync(queryParams?.Order,
-                queryParams?.Asc, isInternal, clientIds, NationwideWidget.JobList, despatchViewIds, status);
+                queryParams?.OrderDirection, isInternal, clientIds, NationwideWidget.JobList, despatchViewIds, status);
 
             return Json(result);
         }
@@ -51,7 +51,7 @@ public class NationwideJobController(
 
             var status = (DispatchStatus)queryParams.Status;
             var result = await repository.NationwideJobListAsync(queryParams?.Order,
-                queryParams?.Asc, isInternal, clientIds, NationwideWidget.Pod, despatchViewIds, status);
+                queryParams?.OrderDirection, isInternal, clientIds, NationwideWidget.Pod, despatchViewIds, status);
 
             return Json(result);
         }
@@ -73,7 +73,8 @@ public class NationwideJobController(
 
             var status = (DispatchStatus)queryParams.Status;
             var result = await repository.NationwideJobListAsync(queryParams.Order,
-                queryParams.Asc, isInternal, clientIds, NationwideWidget.ActionRequired, despatchViewIds, status);
+                queryParams.OrderDirection, isInternal, clientIds, NationwideWidget.ActionRequired, despatchViewIds,
+                status);
 
             return Json(result);
         }
@@ -94,7 +95,7 @@ public class NationwideJobController(
 
             var status = (DispatchStatus)queryParams.Status;
             var result = await repository.NationwideJobListAsync(queryParams.Order,
-                queryParams.Asc, isInternal, clientIds, NationwideWidget.Reprice, despatchViewIds, status);
+                queryParams.OrderDirection, isInternal, clientIds, NationwideWidget.Reprice, despatchViewIds, status);
 
             return Json(result);
         }

@@ -144,6 +144,7 @@ class DispatchData {
                 despatcherName
             }
         });
+
         return response.data;
     }
 
@@ -1011,7 +1012,9 @@ class DispatchData {
         const params = new URLSearchParams({
             status: queryParams.status || 'all',
             order: queryParams.order || 'time',
-            asc: queryParams.asc || 'asc',
+            orderDirection: queryParams.orderDirection || 'asc',
+            page: queryParams.page || 1,
+            limit: queryParams.limit || 10,
             isInternal: internal.toString(),
             cid: ContactID,
             clientIds: selectedClients.join(',')
@@ -1023,7 +1026,12 @@ class DispatchData {
         });
 
         const response = await this.$http.get(`job?${params.toString()}`);
-        return response.data;
+        return {
+            items: response.data.items,
+            total: response.data.total,
+            page: queryParams.page || 1,
+            limit: queryParams.limit || 10
+        };
     }
 
     /**

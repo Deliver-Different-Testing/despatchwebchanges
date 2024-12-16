@@ -13,6 +13,7 @@ using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
+using DespatchWeb.Models.Response;
 using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -777,16 +778,32 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .Select(JobMapping).AsNoTracking().ToListAsync();
     }
 
-    public async Task<List<JobViewModel>> JobListAsync(string order,
-        string ascending, bool isInternal, string clientIds, List<int> selectedViewIds,
+    public async Task<PaginatedResponse<JobViewModel>> JobListAsync(JobQueryParams queryParams,
+        bool isInternal, string clientIds, List<int> selectedViewIds,
         ClearListEnvelopeViewModel clearListEnvelope = null, DispatchStatus status = DispatchStatus.Nda)
     {
         if (isInternal == false && string.IsNullOrEmpty(clientIds))
-            return new List<JobViewModel>();
+            return new PaginatedResponse<JobViewModel>
+            {
+                Items = new List<JobViewModel>(),
+                Total = 0,
+                Page = queryParams.Page,
+                Pages = 0
+            };
 
-        return await DespatchQry(AppPage.Dispatch, status, order, ascending, isInternal, clientIds, selectedViewIds,
+        return await DespatchQry(
+            AppPage.Dispatch,
+            status,
+            queryParams.Order,
+            queryParams.OrderDirection,
+            isInternal,
+            clientIds,
+            selectedViewIds,
             null,
-            clearListEnvelope);
+            clearListEnvelope,
+            queryParams.Page,
+            queryParams.Limit
+        );
     }
 
     public async Task<List<SupportViewModel>> SupportEvents(string channel)

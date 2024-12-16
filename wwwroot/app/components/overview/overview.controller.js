@@ -57,6 +57,32 @@ class OverviewController {
 
         this.activeTab = 0;
 
+        // Bind all class methods to maintain correct 'this' context
+        this.initializeData = this.initializeData.bind(this);
+        this.loadStats = this.loadStats.bind(this);
+        this.setTab = this.setTab.bind(this);
+        this.getStatusGroup = this.getStatusGroup.bind(this);
+        this.handleSearchChange = this.handleSearchChange.bind(this);
+        this.getRegions = this.getRegions.bind(this);
+        this.toggleRegion = this.toggleRegion.bind(this);
+        this.toggleAllRegions = this.toggleAllRegions.bind(this);
+        this.getSpeeds = this.getSpeeds.bind(this);
+        this.toggleSpeed = this.toggleSpeed.bind(this);
+        this.toggleAllSpeeds = this.toggleAllSpeeds.bind(this);
+        this.toggleSidenav = this.toggleSidenav.bind(this);
+        this.transformStatus = this.transformStatus.bind(this);
+        this.getProgressClass = this.getProgressClass.bind(this);
+        this.showDateRangeDialog = this.showDateRangeDialog.bind(this);
+        this.hasDateFilter = this.hasDateFilter.bind(this);
+        this.getDateRangeDisplay = this.getDateRangeDisplay.bind(this);
+        this.formatDate = this.formatDate.bind(this);
+        this.clearDateRange = this.clearDateRange.bind(this);
+        this.showMap = this.showMap.bind(this);
+        this.openJobDetail = this.openJobDetail.bind(this);
+        this.openMegaMap = this.openMegaMap.bind(this);
+        this.onReorder = this.onReorder.bind(this);
+        this.refreshData = this.refreshData.bind(this);
+
         // Initialize data and set up watchers
         this.initializeData($scope);
     }
@@ -206,15 +232,13 @@ class OverviewController {
         });
 
         if (this.allRegionsSelected) {
-            this.selectedRegions = this.regions.slice(); // Copy all regions
+            this.selectedRegions = this.regions.slice();
         } else {
-            this.selectedRegions = []; // Clear selections
+            this.selectedRegions = [];
         }
 
-        // Reset to first page when filter changes
         this.query.page = 1;
 
-        // Refresh data with new filter
         await this.refreshData();
     }
 
@@ -242,13 +266,8 @@ class OverviewController {
             this.selectedSpeeds.splice(idx, 1);
         }
 
-        // Update allSpeedsSelected state
         this.allSpeedsSelected = this.speeds.length === this.selectedSpeeds.length;
-
-        // Reset to first page when filter changes
         this.query.page = 1;
-
-        // Refresh data with new filter
         await this.refreshData();
     }
 
@@ -261,15 +280,12 @@ class OverviewController {
         });
 
         if (this.allSpeedsSelected) {
-            this.selectedSpeeds = this.speeds.slice(); // Copy all speeds
+            this.selectedSpeeds = this.speeds.slice();
         } else {
-            this.selectedSpeeds = []; // Clear selections
+            this.selectedSpeeds = [];
         }
 
-        // Reset to first page when filter changes
         this.query.page = 1;
-
-        // Refresh data with new filter
         await this.refreshData();
     }
 
@@ -408,6 +424,14 @@ class OverviewController {
     openMegaMap() {
         const url = this.$state.href('megaMap');
         this.$window.open(url, '_blank');
+    }
+
+    /**
+     * Handle column reordering/sorting
+     */
+    async onReorder() {
+        this.query.page = 1;
+        await this.refreshData();
     }
 
     /**

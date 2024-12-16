@@ -7,7 +7,7 @@ public class ActiveCouriersViewModel
 {
     private string _label;
     private string _text;
-    public int CourierID { get; set; }
+    public int CourierId { get; set; }
 
     [JsonPropertyName("id")] public string Code { get; set; }
 

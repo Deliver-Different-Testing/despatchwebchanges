@@ -99,6 +99,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tblClientContactJobType]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblCourierGPS]",
          "ObjectType": 0
       },

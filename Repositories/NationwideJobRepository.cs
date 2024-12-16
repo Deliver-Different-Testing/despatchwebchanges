@@ -9,6 +9,7 @@ using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.FlightStats;
+using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using System;
@@ -24,15 +25,15 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 {
     
 
-    public async Task<List<JobViewModel>> NationwideJobListAsync(string order, string ascending, bool isInternal,
+    // Ooriginal method for backwards compatibility
+    public async Task<List<JobViewModel>> NationwideJobListAsync(string order, string orderDirection, bool isInternal,
         string clientIds, NationwideWidget windowPane,
         List<int> selectedViewIds, DispatchStatus status = DispatchStatus.All)
     {
-        if (isInternal == false && string.IsNullOrEmpty(clientIds))
-            return new List<JobViewModel>();
+        var result = await NationwideJobListAsync(order, orderDirection, isInternal, clientIds, windowPane,
+            selectedViewIds, status, 1, int.MaxValue); // Get all results in one page
 
-        return await DespatchQry(AppPage.Domestic, status, order, ascending, isInternal, clientIds,
-            selectedViewIds, windowPane);
+        return result.Items.ToList();
     }
 
     public async Task AddJobNationwideAsync(int jobId, ScheduledFlight flight, string webhookAlertId)
@@ -140,6 +141,36 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             Log.Error(e, $"An error occured adding Agent {agentId} to job {jobId}");
             return false;
         }
+    }
+
+// New paginated version
+    public async Task<PaginatedResponse<JobViewModel>> NationwideJobListAsync(string order, string orderDirection,
+        bool isInternal,
+        string clientIds, NationwideWidget windowPane,
+        List<int> selectedViewIds, DispatchStatus status = DispatchStatus.All,
+        int pageNumber = 1, int pageSize = 10)
+    {
+        if (isInternal == false && string.IsNullOrEmpty(clientIds))
+            return new PaginatedResponse<JobViewModel>
+            {
+                Items = new List<JobViewModel>(),
+                Total = 0,
+                Page = pageNumber,
+                Pages = 0
+            };
+
+        return await DespatchQry(
+            AppPage.Domestic,
+            status,
+            order,
+            orderDirection,
+            isInternal,
+            clientIds,
+            selectedViewIds,
+            windowPane,
+            null,
+            pageNumber,
+            pageSize);
     }
 
     private async Task<JobDetails> GetJobDetailsAsync(int jobId)

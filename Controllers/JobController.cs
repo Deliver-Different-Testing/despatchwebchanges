@@ -45,22 +45,18 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
 
         try
         {
-            // Validate Client Access
             if (!isInternal)
             {
                 Log.Debug("Validating client access for cid: {ClientId}", cid);
                 await clientAccessValidator.ValidateClientAccess(cid, clientIds);
             }
 
-            // Get jobs
-            Log.Debug("Retrieving jobs with status: {Status}, order: {Order}, ascending: {Ascending}",
-                queryParams.Status, queryParams.Order, queryParams.Asc);
-
             var status = (DispatchStatus)queryParams.Status;
-            var result = await jobRepository.JobListAsync(queryParams.Order,
-                queryParams.Asc, isInternal, clientIds, despatchViewIds, null, status);
+            var result = await jobRepository.JobListAsync(queryParams, isInternal, clientIds, despatchViewIds, null, status);
 
-            Log.Information("Successfully retrieved {Count} jobs", result.Count);
+            Log.Information("Successfully retrieved {Count} jobs out of {Total} total records",
+                result.Items.Count(), result.Total);
+
             return Json(result);
         }
         catch (UnauthorizedAccessException ex)
@@ -87,8 +83,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
 
             // Get jobs
             var status = (DispatchStatus)queryParams.Status;
-            var result = await jobRepository.JobListAsync(queryParams.Order,
-                queryParams.Asc, isInternal, clientIds, despatchViewIds, clearListEnvelopeViewModel, status);
+            var result = await jobRepository.JobListAsync(queryParams, isInternal, clientIds, despatchViewIds, null, status);
 
             return Json(result);
         }
@@ -423,8 +418,8 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
     public async Task<IActionResult> Upload(IFormFile file)
     {
         if (file == null || string.IsNullOrWhiteSpace(file.FileName) ||
-            !new[] { ".xls", ".xlsx", ".csv" }.Contains(file.FileName.Trim()
-                .Substring(file.FileName.Trim().LastIndexOf(".")).Trim().ToLower()))
+            !new[] { ".xls", ".xlsx", ".csv" }.Contains(file.FileName.Trim()[file.FileName.Trim().LastIndexOf(".")..]
+                .Trim().ToLower()))
             return BadRequest("Invalid file format.");
 
         var folder = DateTime.UtcNow.ToString("yyyyMM");
@@ -808,7 +803,13 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         await courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType,
             despatcherName, "Job Restored", 33);
 
-        return Json("OK");
+            return Json("OK");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     [HttpPost]
