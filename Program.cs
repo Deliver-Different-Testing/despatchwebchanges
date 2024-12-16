@@ -223,11 +223,15 @@ app.MapHealthChecks("/healthz", new HealthCheckOptions
     }
 });
 // Configure the HTTP request pipeline.
-var provider = new FileExtensionContentTypeProvider { Mappings = { [".tpl"] = "text/plain" } };
+var provider = new FileExtensionContentTypeProvider { 
+    Mappings = { 
+        [".tpl"] = "text/plain",
+        [".map"] = "application/json"  // Add this line
+    } 
+};
 
 app.UseStaticFiles(new StaticFileOptions
 {
-
     ContentTypeProvider = provider
 });
 
@@ -235,7 +239,8 @@ app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(
         Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "dist")),
-    RequestPath = "/dist"
+    RequestPath = "/dist",
+    ContentTypeProvider = provider  // Make sure to use the same provider here
 });
 //app.UseRaygun();
 //app.UseHttpsRedirection();
