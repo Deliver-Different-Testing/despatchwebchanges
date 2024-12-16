@@ -31,13 +31,9 @@
     <Content Remove="wwwroot\app\components\dialogs\map-dialog\map-dialog.less" />
     <Content Remove="wwwroot\app\components\dialogs\map-dialog\map-dialog.min.css" />
     <Content Remove="wwwroot\app\components\dialogs\map-dialog\map-dialog.template.html" />
-    <Content Remove="wwwroot\app\components\overview\overview.controller.js" />
     <Content Remove="wwwroot\app\components\overview\overview.css" />
     <Content Remove="wwwroot\app\components\overview\overview.css.map" />
     <Content Remove="wwwroot\app\components\overview\overview.less" />
-    <Content Remove="wwwroot\app\components\overview\overview.min.css" />
-    <Content Remove="wwwroot\app\components\overview\overview.service.js" />
-    <Content Remove="wwwroot\app\components\overview\overview.template.html" />
     <Content Remove="wwwroot\app\materialTheme.js" />
     <Content Remove="wwwroot\css\udispatch.less" />
   </ItemGroup>
@@ -257,13 +253,9 @@
     <None Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.html" />
     <None Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.controller.js" />
     <None Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.html" />
-    <None Include="wwwroot\app\components\overview\overview.controller.js" />
     <None Include="wwwroot\app\components\overview\overview.css" />
     <None Include="wwwroot\app\components\overview\overview.css.map" />
     <None Include="wwwroot\app\components\overview\overview.less" />
-    <None Include="wwwroot\app\components\overview\overview.min.css" />
-    <None Include="wwwroot\app\components\overview\overview.service.js" />
-    <None Include="wwwroot\app\components\overview\overview.template.html" />
     <None Include="wwwroot\app\materialTheme.js" />
     <None Include="wwwroot\app\version.js" />
     <None Include="wwwroot\css\udispatch.less" />
