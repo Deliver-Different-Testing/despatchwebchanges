@@ -98,7 +98,7 @@
                 <td class="icon-cell" ng-click="createEvent($event, job);" title="Create Event">
                     <i class="material-symbols-outlined job-table-icon">calendar_add_on</i>
                 </td>
-                <td class="icon-cell" ng-click="job.courier == null || restoreJobsFromReprice();" title="Restore">
+                <td class="icon-cell" ng-click="job.courier == null || restoreJob(job);" title="Restore">
                     <i class="material-symbols-outlined job-table-icon" ng-if="job.courier !== null">undo</i>
                 </td>
             </tr>

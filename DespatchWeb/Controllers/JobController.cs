@@ -57,22 +57,18 @@ public class JobController : Controller
 
         try
         {
-            // Validate Client Access
             if (!isInternal)
             {
                 _logger.LogDebug("Validating client access for cid: {ClientId}", cid);
                 await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
             }
 
-            // Get jobs
-            _logger.LogDebug("Retrieving jobs with status: {Status}, order: {Order}, ascending: {Ascending}",
-                queryParams.Status, queryParams.Order, queryParams.Asc);
-
             var status = (DispatchStatus)queryParams.Status;
-            var result = await _jobRepo.JobListAsync(queryParams.Order,
-                queryParams.Asc, isInternal, clientIds, despatchViewIds, null, status);
+            var result = await _jobRepo.JobListAsync(queryParams, isInternal, clientIds, despatchViewIds, null, status);
 
-            _logger.LogInformation("Successfully retrieved {Count} jobs", result.Count);
+            _logger.LogInformation("Successfully retrieved {Count} jobs out of {Total} total records",
+                result.Items.Count(), result.Total);
+
             return Json(result);
         }
         catch (UnauthorizedAccessException ex)
@@ -99,8 +95,7 @@ public class JobController : Controller
 
             // Get jobs
             var status = (DispatchStatus)queryParams.Status;
-            var result = await _jobRepo.JobListAsync(queryParams.Order,
-                queryParams.Asc, isInternal, clientIds, despatchViewIds, clearListEnvelopeViewModel, status);
+            var result = await _jobRepo.JobListAsync(queryParams, isInternal, clientIds, despatchViewIds, null, status);
 
             return Json(result);
         }
@@ -311,8 +306,8 @@ public class JobController : Controller
     public async Task<IActionResult> Upload(IFormFile file)
     {
         if (file == null || string.IsNullOrWhiteSpace(file.FileName) ||
-            !new[] { ".xls", ".xlsx", ".csv" }.Contains(file.FileName.Trim()
-                .Substring(file.FileName.Trim().LastIndexOf(".")).Trim().ToLower()))
+            !new[] { ".xls", ".xlsx", ".csv" }.Contains(file.FileName.Trim()[file.FileName.Trim().LastIndexOf(".")..]
+                .Trim().ToLower()))
             return BadRequest("Invalid file format.");
 
         var folderPath = Path.Combine(_hostingEnvironment.ContentRootPath, _configuration["UploadDirectory"]);
@@ -321,11 +316,11 @@ public class JobController : Controller
         if (!Directory.Exists(folderPath))
             Directory.CreateDirectory(folderPath);
 
-        var fileExtension = file.FileName.Trim().ToLower().Substring(file.FileName.Trim().LastIndexOf("."));
-        var filePath = Path.Combine(folderPath, $"Jobs {DateTime.Now.ToString("yyyyMMddHHmmssfff")}{fileExtension}");
+        var fileExtension = file.FileName.Trim().ToLower()[file.FileName.Trim().LastIndexOf(".")..];
+        var filePath = Path.Combine(folderPath, $"Jobs {DateTime.Now:yyyyMMddHHmmssfff}{fileExtension}");
 
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-        string sResult = null;
+        string sResult;
         await using (var stream = System.IO.File.Create(filePath))
         {
             await file.CopyToAsync(stream);
@@ -627,10 +622,18 @@ public class JobController : Controller
     public async Task<IActionResult> AddRestoreEvent(string jobNo, int clientId, string contact, int staffId,
         int courierId, int jobId, int jobType, string despatcherName)
     {
-        await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType,
-            despatcherName, "Job Restored", 33);
+        try
+        {
+            await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType,
+                despatcherName, "Job Restored", 33);
 
-        return Json("OK");
+            return Json("OK");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     [HttpPost]

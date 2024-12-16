@@ -44,6 +44,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TblClientAvailableSpeedItem> TblClientAvailableSpeedItems { get; set; }
         public virtual DbSet<TblClientContact> TblClientContacts { get; set; }
         public virtual DbSet<TblClientContactInternetPermission> TblClientContactInternetPermissions { get; set; }
+        public virtual DbSet<TblClientContactJobType> TblClientContactJobTypes { get; set; }
         public virtual DbSet<TblContact> TblContacts { get; set; }
         public virtual DbSet<TblCourier> TblCouriers { get; set; }
         public virtual DbSet<TblCourierGp> TblCourierGps { get; set; }
@@ -2326,6 +2327,62 @@ namespace DespatchWeb.EntityClasses
                     .HasForeignKey(d => d.InternetPermissionId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_tblClientContactInternetPermission_tblInternetPermission");
+            });
+
+            modelBuilder.Entity<TblClientContactJobType>(entity =>
+            {
+                entity.HasKey(e => e.ClientContactJobTypeId);
+
+                entity.ToTable("tblClientContactJobType");
+
+                entity.HasIndex(e => e.ClientContactId, "ClientContactID");
+
+                entity.HasIndex(e => new { e.ClientContactId, e.JobTypeId }, "ClientContact_JobType")
+                    .IsUnique();
+
+                entity.HasIndex(e => e.JobTypeId, "JobTypeID");
+
+                entity.Property(e => e.ClientContactJobTypeId).HasColumnName("ClientContactJobTypeID");
+
+                entity.Property(e => e.ClientContactId).HasColumnName("ClientContactID");
+
+                entity.Property(e => e.Created).HasColumnType("datetime");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.DeliveryType).HasMaxLength(100);
+
+                entity.Property(e => e.JobTypeId).HasColumnName("JobTypeID");
+
+                entity.Property(e => e.LastModified).HasColumnType("datetime");
+
+                entity.Property(e => e.LastModifiedBy)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Notes).HasColumnType("ntext");
+
+                entity.Property(e => e.PickupType).HasMaxLength(100);
+
+                entity.HasOne(d => d.ClientContact)
+                    .WithMany(p => p.TblClientContactJobTypes)
+                    .HasForeignKey(d => d.ClientContactId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_tblClientContactJobType_tblClientContact");
+
+                entity.HasOne(d => d.ClientContactNavigation)
+                    .WithMany(p => p.TblClientContactJobTypes)
+                    .HasForeignKey(d => d.ClientContactId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_tblClientContactJobType_tucClientContact");
+
+                entity.HasOne(d => d.JobType)
+                    .WithMany(p => p.TblClientContactJobTypes)
+                    .HasForeignKey(d => d.JobTypeId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_tblClientContactJobType_tucJobType");
             });
 
             modelBuilder.Entity<TblContact>(entity =>

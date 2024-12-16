@@ -34,8 +34,8 @@ public interface IJobRepository
     Task<List<PrebookListViewModel>> PreBookJobListAsync();
     Task<List<JobViewModel>> CurrentJobList(int courierId, bool done);
 
-    Task<List<JobViewModel>> JobListAsync(string order,
-        string ascending, bool isInternal, string clientIds, List<int> selectedViewIds,
+    Task<PaginatedResponse<JobViewModel>> JobListAsync(JobQueryParams queryParams,
+        bool isInternal, string clientIds, List<int> selectedViewIds,
         ClearListEnvelopeViewModel clearListEnvelope = null, DispatchStatus status = DispatchStatus.Nda);
 
     Task<List<SupportViewModel>> SupportEvents(string channel);

@@ -2,7 +2,7 @@
 
 public class PotentialCouriersViewModel
 {
-    public int CourierID { get; set; }
+    public int CourierId { get; set; }
     public string Code { get; set; }
     public string Reason { get; set; }
     public int RuleNumber { get; set; }
