@@ -104,7 +104,7 @@ class DispatchData {
     async addFollowupEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
         return;
 
-        /* const response = await this._$http.post('courier/AddFollowupEvent', null, {
+        /* const response = await this.$http.post('courier/AddFollowupEvent', null, {
              params: {
                  jobNo,
                  clientId,
@@ -372,7 +372,7 @@ class DispatchData {
             params.append('despatchViewIds', id.toString());
         });
 
-        const response = await this._$http.get(`courier?${params.toString()}&isUsTenant=${this._isUsCustomer}`);
+        const response = await this.$http.get(`courier?${params.toString()}&isUsTenant=${this.isUsCustomer}`);
         return response.data;
     }
 
@@ -434,7 +434,7 @@ class DispatchData {
      * @param {number} maxLat - The maximum latitude of the boundary.
      */
     async getAvailableCourierLocation(minLng, minLat, maxLng, maxLat) {
-        const response = await this._$http.get('courier/AvailableCourierLocation?minLng=' + minLng + '&minLat=' + minLat + '&maxLng=' + maxLng + '&maxLat=' + maxLat + '&isUsTenant=' + this._isUsCustomer);
+        const response = await this.$http.get('courier/AvailableCourierLocation?minLng=' + minLng + '&minLat=' + minLat + '&maxLng=' + maxLng + '&maxLat=' + maxLat + '&isUsTenant=' + this._isUsCustomer);
         return response.data;
     }
 
