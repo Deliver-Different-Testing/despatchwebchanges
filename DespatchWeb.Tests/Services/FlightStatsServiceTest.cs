@@ -97,7 +97,7 @@ public class FlightStatsServiceTest
         var result = await _service.GetFlightsAsync(
             departureAirportCode,
             destinationAirportCode,
-            now, now
+            now
         );
 
         // Assert

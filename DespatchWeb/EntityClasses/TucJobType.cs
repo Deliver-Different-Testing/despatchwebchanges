@@ -18,10 +18,6 @@ namespace DespatchWeb.EntityClasses
             TucEventSpeeds = new HashSet<TucEvent>();
             TucEventUcevJobTypeNavigations = new HashSet<TucEvent>();
             TucJobAcceptedJobTypes = new HashSet<TucJob>();
-            TucJobArchiveAcceptedJobTypes = new HashSet<TucJobArchive>();
-            TucJobArchiveDesiredJobTypes = new HashSet<TucJobArchive>();
-            TucJobArchiveNotifiedJobTypes = new HashSet<TucJobArchive>();
-            TucJobArchiveUcjbSpeedNavigations = new HashSet<TucJobArchive>();
             TucJobBookings = new HashSet<TucJobBooking>();
             TucJobDesiredJobTypes = new HashSet<TucJob>();
             TucJobNotifiedJobTypes = new HashSet<TucJob>();
@@ -74,10 +70,6 @@ namespace DespatchWeb.EntityClasses
         public virtual ICollection<TucEvent> TucEventSpeeds { get; set; }
         public virtual ICollection<TucEvent> TucEventUcevJobTypeNavigations { get; set; }
         public virtual ICollection<TucJob> TucJobAcceptedJobTypes { get; set; }
-        public virtual ICollection<TucJobArchive> TucJobArchiveAcceptedJobTypes { get; set; }
-        public virtual ICollection<TucJobArchive> TucJobArchiveDesiredJobTypes { get; set; }
-        public virtual ICollection<TucJobArchive> TucJobArchiveNotifiedJobTypes { get; set; }
-        public virtual ICollection<TucJobArchive> TucJobArchiveUcjbSpeedNavigations { get; set; }
         public virtual ICollection<TucJobBooking> TucJobBookings { get; set; }
         public virtual ICollection<TucJob> TucJobDesiredJobTypes { get; set; }
         public virtual ICollection<TucJob> TucJobNotifiedJobTypes { get; set; }

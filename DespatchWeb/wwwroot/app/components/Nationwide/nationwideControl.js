@@ -3,12 +3,12 @@
  * @module NationwideControl
  */
 angular.module("uDispatch").controller("NationwideControl",
-    ["$scope", 'JobDetailService', "NWData", "$state", "$filter", "$parse", "hotkeys", "NgMap",
-        "$timeout", "greetingService", "$mdDialog", "$document", "$window", "toastrService", "DispatchData",
+    ["$scope", 'JobDetailService', "NWData", "$state", "$filter", "hotkeys",
+        "$timeout", "greetingService", "$mdDialog", "$document", "toastrService", "DispatchData",
         "moment", "versionUrl", "$mdSidenav", "AppPages", "APP_CONFIG", "$mdEditDialog", "NationwideLayoutService",
         "$mdMenu", "dispatchJobService",
-        ($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $timeout, greetingService,
-         $mdDialog, $document, $window, toastrService, DispatchData, moment, versionUrl, $mdSidenav,
+        ($scope, jdSvc, NWData, $state, $filter, hotkeys, $timeout, greetingService,
+         $mdDialog, $document, toastrService, DispatchData, moment, versionUrl, $mdSidenav,
          AppPages, APP_CONFIG, $mdEditDialog, LayoutService, $mdMenu, dispatchJobService) => {
     $scope.jdSvc = jdSvc;
 
@@ -2973,12 +2973,6 @@ angular.module("uDispatch").controller("NationwideControl",
             $scope.jdSvc.updateGPS($scope.currentJob, $event.currentTarget.attributes["data-field"].nodeValue);
         }
     }];
-
-    NgMap.getMap().then(map => {
-        $scope.map = map;
-        $scope.marker = map.markers[0];
-        $scope.onMapReady();
-    });
 
     $scope.closeSupport = async (support) => {
         try {

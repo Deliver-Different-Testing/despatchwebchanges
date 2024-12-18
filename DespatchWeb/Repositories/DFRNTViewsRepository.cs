@@ -23,23 +23,26 @@ public class DfrntViewsRepository : IDfrntViewsRepository
         _logger.LogInformation("DfrntViewsRepository initialized");
     }
 
-    public async Task<List<SelectItem>> GetViewsByUserAndPageAsync(int userId, AppPage page)
+    public async Task<List<DfrntPageViewModel>> GetViewsByUserAndPageAsync(int userId, AppPage page)
     {
         _logger.LogInformation("Getting views for user {UserId} and page {Page}", userId, page);
         try
         {
             var views = await _context.DfrntpageViews
                 .Where(pv => pv.PageId == (int)page)
-                .Select(dv => new SelectItem
+                .Select(dv => new DfrntPageViewModel
                 {
                     Id = dv.View.DespatchViewId,
-                    Name = dv.View.Name
+                    Name = dv.View.Name,
+                    CenterLatitude = dv.View.CenterLatitude ?? 0,
+                    CenterLongitude = dv.View.CenterLongitude ?? 0,
                 })
                 .AsNoTracking()
                 .ToListAsync();
 
             _logger.LogInformation("Retrieved {Count} views for user {UserId} and page {Page}",
                 views.Count, userId, page);
+
             return views;
         }
         catch (Exception ex)

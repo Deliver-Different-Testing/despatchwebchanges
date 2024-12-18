@@ -79,35 +79,20 @@ public class CourierRepository : ICourierRepository
             .Include(j => j.UcjbClient)
             .Where(j => j.UcjbId == jobId &&
                         j.UcjbDate.Date == DateTime.Now)
-            .Select(j => jobType == 1
+            .Select(j => eventType == 1
                 ?
                 // LATE PICKUP
                 j.UcjbClient.TucClientContacts
                     .SelectMany(cc => cc.TblClientContactJobTypes)
                     .Where(ccjt => ccjt.JobTypeId == j.UcjbSpeed)
                     .Any(ccjt => new[] { "Web", "Email", "Text" }.Contains(ccjt.PickupType))
-                : jobType == 2 && j.UcjbClient.TucClientContacts
+                : eventType == 2 && j.UcjbClient.TucClientContacts
                     .SelectMany(cc => cc.TblClientContactJobTypes)
                     .Where(ccjt => ccjt.JobTypeId == j.UcjbSpeed)
                     .Any(ccjt => new[] { "Web", "Email", "Text" }.Contains(ccjt.DeliveryType)))
             .FirstOrDefaultAsync();
 
-        // Default variables
-        DateTime? responseTime = null;
-        int? staffOut = null;
-        const bool pageCourier = false;
-        string description = null;
-
-        // If automatic, set defaults to following
-        if (isAutomatic)
-        {
-            close = true;
-            staffOut = 33; // Internet user
-            responseTime = DateTime.Now;
-            contact = "Automatic Response";
-            despatcherName = "Internet";
-        }
-
+        // Create event
         var newEvent = new TucEvent
         {
             UcevJobNumber = jobNo,
@@ -115,22 +100,32 @@ public class CourierRepository : ICourierRepository
             UcevContact = contact,
             UcevDate = DateTime.Today,
             UcevTime = DateTime.Now,
-            UcevType = jobType,
+            UcevType = eventType,
             UcevLateTime = lateTime,
             UcevEtatime = etaTime,
             UcevStaffIdin = staffId,
-            UcevStaffIdout = staffOut,
-            UcevResponseTime = responseTime,
+            UcevStaffIdout = null,
+            UcevResponseTime = null,
             UcevNotes = notes,
-            UcevPageCourier = pageCourier,
+            UcevPageCourier = false,
             UcevClosed = close,
             UcevOriginator = staffId,
-            UcevDescription = description,
+            UcevDescription = string.Empty,
             UcevCourierId = courierId,
             UcevJobId = jobId,
             UcevDespatcher = despatcherName,
             UcevJobType = jobType
         };
+
+        // If automatic, set defaults to following
+        if (isAutomatic)
+        {
+            newEvent.UcevClosed = true;
+            newEvent.UcevStaffIdout = 33; // Internet user
+            newEvent.UcevResponseTime = DateTime.Now;
+            newEvent.UcevContact = "Automatic Response";
+            newEvent.UcevDespatcher = "Internet";
+        }
 
         await _context.TucEvents.AddAsync(newEvent);
         await _context.SaveChangesAsync();

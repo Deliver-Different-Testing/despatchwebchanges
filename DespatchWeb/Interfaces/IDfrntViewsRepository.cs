@@ -7,5 +7,5 @@ namespace DespatchWeb.Interfaces;
 
 public interface IDfrntViewsRepository
 {
-    Task<List<SelectItem>> GetViewsByUserAndPageAsync(int userId, AppPage page);
+    Task<List<DfrntPageViewModel>> GetViewsByUserAndPageAsync(int userId, AppPage page);
 }
