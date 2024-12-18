@@ -73,18 +73,23 @@ let infoWindow = new google.maps.InfoWindow();
     };
 })();
 
+
 function initialize() {
     console.log("Initialize Loaded");
-    const newYork = new google.maps.LatLng(40.7128, -74.0060);
+
+    const defaultCenter = new google.maps.LatLng(40.7128, -74.0060);
     const myOptions = {
-        zoom: 10, mapTypeId: google.maps.MapTypeId.ROADMAP, center: newYork
+        zoom: 10,
+        mapTypeId: google.maps.MapTypeId.ROADMAP,
+        center: defaultCenter
     };
 
     map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+
     oms = new OverlappingMarkerSpiderfier(map, {
-        markersWontMove: false,   // we promise not to move any markers, allowing optimizations
-        markersWontHide: true,   // we promise not to change visibility of any markers, allowing optimizations
-        basicFormatEvents: true  // allow the library to skip calculating advanced formatting information
+        markersWontMove: false,
+        markersWontHide: true,
+        basicFormatEvents: true
     });
 
     google.maps.event.addListener(map, "rightclick", e => {
@@ -94,6 +99,7 @@ function initialize() {
     const trafficLayer = new google.maps.TrafficLayer();
     trafficLayer.setMap(map);
 }
+
 
 const currentDrag = null;
 

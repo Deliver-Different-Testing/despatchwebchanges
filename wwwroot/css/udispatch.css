@@ -1,5 +1,6 @@
 body {
   font-family: 'Inter', sans-serif;
+  overflow: hidden;
 }
 md-dialog {
   min-width: 400px;
@@ -1826,7 +1827,6 @@ md-list-item:not(.selected):hover {
 .popup-icon {
   margin-right: 8px;
 }
-
 .md-dense {
   position: relative;
 }

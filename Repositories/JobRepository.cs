@@ -2213,16 +2213,11 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 break;
         }
 
-        if (!string.IsNullOrEmpty(updateNote))
-        {
-            await AddNoteAsync(jobId, updateNote, userName);
-        }
+        if (!string.IsNullOrEmpty(updateNote)) await AddNoteAsync(jobId, updateNote, userName);
 
         // Add additional notes for undeliverable location
         if (field == "UndeliverableLocationID" && job.UndeliverableLocation?.Message != null)
-        {
             await AddNoteAsync(jobId, job.UndeliverableLocation.Message, userName);
-        }
 
         await Context.SaveChangesAsync();
     }
@@ -2336,12 +2331,11 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 break;
             case "Weight":
                 var weight = float.Parse(value);
-                // Update parent job if it exists
                 if (archive.Job.ParentId != null)
                 {
                     archive.Parent.UcjbWeight = weight;
 
-                    // Update all other child jobs of the parent
+                    // Update all sibling jobs (including current job)
                     if (archive.InverseParent.Any())
                     {
                         foreach (var siblingJob in archive.InverseParent)
@@ -2350,14 +2344,11 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                         }
                     }
                 }
-                // If no parent, update this job and its children
                 else
                 {
-                    // Update current job
+                    // This is a parent job, update it and all its children
                     archive.Job.UcjbWeight = weight;
-
-                    // Update child jobs
-                    if (archive.InverseParent != null && archive.InverseParent.Any())
+                    if (archive.InverseParent.Any())
                     {
                         foreach (var childJob in archive.InverseParent)
                         {
@@ -2378,7 +2369,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             case "ContactID":
                 var contactId = int.Parse(value);
                 archive.Job.ContactId = contactId;
-                archive.Job.UcjbContact = archive.Contact?.UserName;
+                archive.Job.UcjbContact = archive.Contact.UserName;
                 break;
             case "Pedal":
                 archive.Job.UcjbCbd = bool.Parse(value);
@@ -2450,7 +2441,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 var leaveId = int.Parse(value);
                 archive.Job.DeliverToLeaveId = leaveId;
                 archive.Job.DeliverToPrivateBusiness = leaveId == 1 ? null : 1;
-                updateNote = $"Changed Leave Parcel to {archive.Job.DeliverToLeave?.Name}";
+                updateNote = $"Changed Leave Parcel to {archive.DeliverToLeave?.Name}";
                 break;
             case "UndeliverableLocationID":
                 archive.Job.UndeliverableLocationId = int.Parse(value);

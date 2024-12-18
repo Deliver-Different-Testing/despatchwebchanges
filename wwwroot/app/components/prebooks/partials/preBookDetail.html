@@ -396,12 +396,14 @@
     </div>
 </div>
 
-<div class="loading">
-    <div class="text">
-        <md-progress-circular md-mode="indeterminate"></md-progress-circular>
-        <span class="sr-only">Loading...</span>
-    </div>
-</div>
+
+<md-progress-linear
+        class="md-primary"
+        md-mode="indeterminate"
+        ng-if="jobDetailLoading"
+        style="position: absolute; top: 0; left: 0; right: 0;">
+    <md-tooltip md-direction="bottom">Refreshing Job Details...</md-tooltip>
+</md-progress-linear>
 
 <div style="display:none">
     {"ID":1,"Time":"9:30","Direct":"","JobNo":"AP68E","Speed":"Eco","Notify":"","Vehicle":"Car","Client":"UCL Ailsa

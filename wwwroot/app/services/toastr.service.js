@@ -21,7 +21,7 @@ class ToastrService {
      * @param {string} errorMessage
      */
     showErrorToast(errorMessage = "An unexpected error occurred. Please try again or contact support") {
-        console.log('Error:', errorMessage);
+        console.error('Error:', errorMessage);
         this._showToast(errorMessage, "error");
     }
 
@@ -39,7 +39,7 @@ class ToastrService {
      * @param {string} warningMessage
      */
     showWarningToast(warningMessage) {
-        console.log('Warning:', warningMessage);
+        console.warning('Warning:', warningMessage);
         this._showToast(warningMessage, "warning");
     }
 
@@ -48,7 +48,7 @@ class ToastrService {
      * @param {string} infoMessage
      */
     showInfoToast(infoMessage) {
-        console.log('Info:', infoMessage);
+        console.info('Info:', infoMessage);
         this._showToast(infoMessage, "info");
     }
 

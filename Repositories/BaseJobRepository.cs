@@ -541,6 +541,12 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             _ => query
         };
 
+        // Only get child jobs
+        query = query.Where(j => j.ParentId != null);
+
+        // Block out completed jobs from the domestic/nationwide page
+        query = query.Where(j => j.UcjbComplTime == null);
+
         // Apply client viewFilters for non-internal users
         if (isInternal || string.IsNullOrEmpty(clientIds)) return query;
 
@@ -548,12 +554,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             .Select(id => int.Parse(id.Trim()))
             .ToList();
         query = query.Where(j => clientIdList.Contains((int)j.UcjbClientId));
-
-        // Only get child jobs
-        query = query.Where(j => !j.InverseParent.Any());
-
-        // Block out completed jobs from the domestic/nationwide page
-        query = query.Where(j => j.UcjbComplTime != null || j.UcjbComplTime < DateTime.Now);
 
         return query;
     }

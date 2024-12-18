@@ -23,16 +23,19 @@ public class DfrntViewsRepository(IDbContextFactory<DespatchContext> contextFact
         {
             var views = await Context.DfrntpageViews
                 .Where(pv => pv.PageId == (int)page)
-                .Select(dv => new SelectItem
+                .Select(dv => new DfrntPageViewModel
                 {
                     Id = dv.View.DespatchViewId,
-                    Name = dv.View.Name
+                    Name = dv.View.Name,
+                    CenterLatitude = dv.View.CenterLatitude ?? 0,
+                    CenterLongitude = dv.View.CenterLongitude ?? 0,
                 })
                 .AsNoTracking()
                 .ToListAsync();
 
             Log.Information("Retrieved {Count} views for user {UserId} and page {Page}",
                 views.Count, userId, page);
+
             return views;
         }
         catch (Exception ex)

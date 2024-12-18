@@ -15,6 +15,23 @@ class DispatchJobService {
         this.pickCouriers = [];
         /** @type {Array} List of all couriers */
         this.pickAllCouriers = [];
+
+        // Bind all methods to the instance
+        this.fetchCouriersData = this.fetchCouriersData.bind(this);
+        this.getJobListWithCourierData = this.getJobListWithCourierData.bind(this);
+        this.getCurrentJobsForCourier = this.getCurrentJobsForCourier.bind(this);
+        this.dispatchJobByJobId = this.dispatchJobByJobId.bind(this);
+        this.dispatchJobs = this.dispatchJobs.bind(this);
+        this.dispatchJob = this.dispatchJob.bind(this);
+        this.dispatchJobsFromPotentialCouriers = this.dispatchJobsFromPotentialCouriers.bind(this);
+        this.findCourier = this.findCourier.bind(this);
+        this.showOfflineCourierDialog = this.showOfflineCourierDialog.bind(this);
+        this.dispatchJobsContinue = this.dispatchJobsContinue.bind(this);
+        this.requiresFollowupEvent = this.requiresFollowupEvent.bind(this);
+        this.validateJob = this.validateJob.bind(this);
+        this.processValidJobs = this.processValidJobs.bind(this);
+        this.restoreJob = this.restoreJob.bind(this);
+        this._showAlertMessage = this._showAlertMessage.bind(this);
     }
 
     /**
@@ -70,7 +87,7 @@ class DispatchJobService {
 
             // Get unDispatched jobs (safely handle null courierData)
             const unDispatchedJobs = result.items.filter(job =>
-                !job?.courierData?.courierID
+                !job?.courierData?.courierId
             );
 
             console.log(`Retrieved ${result.items.length} jobs, ${unDispatchedJobs.length} unDispatched`);
@@ -104,8 +121,8 @@ class DispatchJobService {
             await this.fetchCouriersData();
 
             // Find courier in both active and all couriers
-            const foundCourier = this.pickCouriers.find(c => c?.courierID === courierId) ||
-                this.pickAllCouriers.find(c => c?.courierID === courierId);
+            const foundCourier = this.pickCouriers.find(c => c?.courierId === courierId) ||
+                this.pickAllCouriers.find(c => c?.courierId === courierId);
 
             console.log('Found courier:', foundCourier);
 
@@ -152,7 +169,7 @@ class DispatchJobService {
             const job = await this.dispatchData.getJobDetail(jobId);
             console.log('Job details fetched:', job);
 
-            const foundCourier = this.pickAllCouriers.find(c => c?.courierID === courierId);
+            const foundCourier = this.pickAllCouriers.find(c => c?.courierId === courierId);
             console.log('Found courier:', foundCourier);
 
             if (!foundCourier) {
@@ -178,7 +195,7 @@ class DispatchJobService {
         console.log('Dispatching multiple jobs by courier ID:', {courierId, jobCount: jobs.length});
         try {
             await this.fetchCouriersData();
-            const foundCourier = this.pickAllCouriers.find(c => c.courierID === courierId);
+            const foundCourier = this.pickAllCouriers.find(c => c.courierId === courierId);
             console.log('Found courier:', foundCourier);
 
             if (foundCourier) {
@@ -187,7 +204,7 @@ class DispatchJobService {
                 console.warn(`Could not find courier with ID ${courierId}`);
             }
         } catch (error) {
-            console.error('Error in dispatchJobsByCourierId:', error);
+            console.error('Error in dispatchJobsBycourierId:', error);
             throw error;
         }
     }
@@ -230,7 +247,7 @@ class DispatchJobService {
 
         // Find courier in active couriers list
         const foundCourier = this.pickCouriers.find(c => c?.id === courierId);
-        if (!foundCourier || !foundCourier.courierID) {
+        if (!foundCourier || !foundCourier.courierId) {
             await this._showAlertMessage(`Could not find active courier with ID ${courierId}`);
             return;
         }
@@ -255,7 +272,7 @@ class DispatchJobService {
                     job.clientId,
                     job.contactName,
                     contactId,
-                    foundCourier.courierID,
+                    foundCourier.courierId,
                     job.id,
                     job.jobType,
                     firstName
@@ -271,7 +288,7 @@ class DispatchJobService {
         // Allocate jobs and update data
         try {
             await this.dispatchData.allocateJobs(
-                foundCourier.courierID,
+                foundCourier.courierId,
                 contactId,
                 validJobs
             );
@@ -375,7 +392,7 @@ class DispatchJobService {
     async validateJob(job, courier) {
         console.log('Validating job:', {
             jobNo: job?.jobNo,
-            courierID: courier?.id,
+            courierId: courier?.id,
             hasDG: job?.dgClass > 0
         });
 
@@ -412,7 +429,7 @@ class DispatchJobService {
      */
     async processValidJobs(courier, jobs) {
         console.log('Processing valid jobs:', {
-            courierID: courier?.id,
+            courierId: courier?.id,
             jobCount: jobs?.length
         });
 
@@ -425,7 +442,7 @@ class DispatchJobService {
                 await Promise.all(jobsRequiringFollowup.map(job =>
                     this.dispatchData.addFollowupEvent(
                         job.jobNo, job.clientId, job.contactName, ContactID,
-                        courier.courierID, job.id, job.jobType, FirstName
+                        courier.courierId, job.id, job.jobType, FirstName
                     )
                 ));
             }
@@ -433,7 +450,7 @@ class DispatchJobService {
             const jobIds = jobs.map(job => job.id);
             console.log('Allocating jobs:', jobIds.length);
 
-            await this.dispatchData.allocateJobs(courier.courierID, ContactID, jobIds);
+            await this.dispatchData.allocateJobs(courier.courierId, ContactID, jobIds);
             console.log('Jobs processed successfully');
 
         } catch (error) {
@@ -472,13 +489,16 @@ class DispatchJobService {
                 ContactID,
                 job.courierData.courierId,
                 job.id,
-                job.jobType,
+                job.speedId,
                 FirstName
             );
 
+            // Fetch the couriers
+            await this.fetchCouriersData();
+
             // Find the courier
-            const foundCourier = this.pickCouriers.find(c => c.courierID === job.courierData.courierId) ||
-                this.pickAllCouriers.find(c => c.courierID === job.courierData.courierId);
+            const foundCourier = this.pickCouriers.find(c => c.courierId === job.courierData.courierId) ||
+                this.pickAllCouriers.find(c => c.courierId === job.courierData.courierId);
 
             if (!foundCourier) {
                 const message = `Could not find courier with ID ${job.courierData.courierId}`;
@@ -490,13 +510,13 @@ class DispatchJobService {
             // Restore the job based on whether it's a split job or not
             if (job.displaySplitJobDetail) {
                 await this.dispatchData.restoreSplitJobs(
-                    foundCourier.courierID,
+                    foundCourier.courierId,
                     ContactID,
                     [job.id]
                 );
             } else {
                 await this.dispatchData.restoreJobs(
-                    foundCourier.courierID,
+                    foundCourier.courierId,
                     ContactID,
                     [job.id]
                 );
@@ -510,7 +530,6 @@ class DispatchJobService {
             await this._showAlertMessage(`Failed to restore job: ${error.message}`);
         }
     }
-
 
     /*
      * Show an alert message dialog.

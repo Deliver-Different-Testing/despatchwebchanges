@@ -1,10 +1,17 @@
 angular.module('uDispatch')
-    .controller('PBControl', ['$scope', 'JobDetailService', 'uPBData', "$state", "$stateParams", "$filter", '$parse', "hotkeys", "$location", 'NgMap', 'GeoCoder', '$mdDialog', '$timeout', 'versionUrl', '$window', '$mdSidenav', 'greetingService',
-        ($scope, jdSvc, uPBData, $state, $stateParams, $filter, $parse, hotkeys, $location, NgMap, GeoCoder, $mdDialog, $timeout, versionUrl, $window, $mdSidenav, greetingService) => {
+    .controller('PBControl', ['$scope', 'JobDetailService', 'uPBData', "$state", "$filter", '$mdDialog', '$timeout', 'versionUrl', '$window', '$mdSidenav', 'greetingService', 'APP_CONFIG',
+        ($scope, jdSvc, uPBData, $state, $filter, $mdDialog, $timeout, versionUrl, $window, $mdSidenav, greetingService, APP_CONFIG) => {
             $scope.isAdmin = (ClientInternal === "True");
             $scope.mapSetting = {
                 "allCouriers": false, "allRuns": false
             };
+
+            // New map
+            $scope.mapCenter = APP_CONFIG.US_Customer ?
+                {lat: 39.8283, lng: -98.5795} : // US center
+                {lat: -36.8485, lng: 174.7633}; // Auckland, NZ
+            $scope.mapZoom = 8;
+            $scope.jobs = [];
 
             $scope.jdSvc = jdSvc;
 
@@ -26,17 +33,11 @@ angular.module('uDispatch')
             $scope.pageIndex = 1;   // Current page number. First page is 1.-->
             $scope.pageSizeSelected = 50; // Maximum number of items per page.
 
-            $scope.checkMapContainer = () => {
-                const mapDiv = document.getElementById("map_canvas");
-                if (mapDiv) {
-                    console.log("Map container found. Dimensions:", mapDiv.offsetWidth, "x", mapDiv.offsetHeight);
-                    console.log("Container visibility:", $window.getComputedStyle(mapDiv).display);
-                    console.log("Container position:", mapDiv.getBoundingClientRect());
-                } else {
-                    console.log("Map container #map_canvas not found in the DOM");
-                }
-            };
-
+            /**
+             * @param {Job} currentJob
+             * @param {string} field
+             * @param {boolean} fromRightClick
+             */
             $scope.updateGPS = (currentJob, field, fromRightClick) => {
                 jdSvc.updateGPS(currentJob, field, fromRightClick);
             };
@@ -247,12 +248,11 @@ angular.module('uDispatch')
                     "showSearch": 0,
                     "showDetailButtons": 1
                 }, "map": {
-                    "title": "Google Map",
+                    "title": "Map",
                     "icon": "pin_drop",
                     "templateUrl": versionUrl("app/components/prebooks/partials/map.html"),
                     "showSearch": 0
                 }
-
             };
 
             ///////////////////////////////
@@ -346,27 +346,13 @@ angular.module('uDispatch')
                 return $scope.refreshData();
             };
 
-            $scope.selectJobData = (lat, lng) => {
-
-                const toCompare = [];
-
-                angular.forEach($scope.runBuilder, (job, key) => {
-                    toCompare.push([key, job.toLat, job.toLng]);
-                });
-
-                const closestIndex = closestLocation(lat, lng, toCompare);
-
-                return $scope.runBuilder[closestIndex[0]];
-            };
-
-
             $scope.showItems = job => {
                 if (job.clientCode !== "Other") {
 
                     if ($scope.cancelledSelected) {
                         return true;
                     } else {
-                        return job.Status !== "Cancelled";
+                        return job.status !== "Cancelled";
                     }
                 } else {
                     return false;
@@ -396,11 +382,8 @@ angular.module('uDispatch')
                 return sn === undefined ? "" : sn.label;
             };
 
-            //Select Job
             $scope.selectJobDetail = async (id) => {
                 console.log(`Selecting Job ${id}`);
-
-                clearTimeout($scope.myTimer);
 
                 try {
                     const loadingElement = angular.element("#box-jobDetail").find(".loading");
@@ -413,6 +396,7 @@ angular.module('uDispatch')
                     $scope.currentSelection = ` for Job ${data.jobNo}`;
                     console.log($scope.currentJob.days);
 
+                    // Handle prebook specific data
                     const days = $scope.currentJob.days;
                     const freq = days.slice(8, 9).trim() || "0";
                     const hol = days.slice(9, 10).trim() || "0";
@@ -420,28 +404,25 @@ angular.module('uDispatch')
                     jdSvc.combos.frequency = [jdSvc.pickFrequency[freq]];
                     jdSvc.combos.holidays = [jdSvc.pickHolidays[hol]];
 
-                    const selectedDays = days.slice(0, 7)
+                    jdSvc.combos.days = days.slice(0, 7)
                         .split('')
                         .reduce((acc, day, index) => day === '1' ? [...acc, jdSvc.pickDays[index]] : acc, []);
 
-                    jdSvc.combos.days = selectedDays;
-
-                    console.log('Frequency:', jdSvc.combos.frequency);
-                    console.log('Holidays:', jdSvc.combos.holidays);
-                    console.log('Selected Days:', selectedDays);
-
-                    displayRoutePointsOnly([$scope.currentJob], true);
-                    setMapBounds();
-                    map.setZoom(14);
+                    // Update map with just this job
+                    if ($scope.currentJob.pickupAddress?.latitude && $scope.currentJob.pickupAddress?.longitude) {
+                        $scope.mapCenter = {
+                            lat: $scope.currentJob.pickupAddress.latitude,
+                            lng: $scope.currentJob.pickupAddress.longitude
+                        };
+                        $scope.jobs = [$scope.currentJob];
+                    }
 
                 } catch (error) {
-                    console.log('Error selecting job detail:', error);
-                    // Handle the error appropriately, e.g., show an error message to the user
+                    console.error('Error selecting job detail:', error);
                 } finally {
-                    angular.element("#box-jobDetail").find(".loading").hide();
+                    loadingElement.hide();
                 }
             };
-
             $scope.pageChanged = i => {
                 $scope.jobQuery.page = i;
                 $scope.updateTable();
@@ -660,44 +641,12 @@ angular.module('uDispatch')
                 }
             };
 
-            NgMap.getMap().then(map => {
-                $scope.map = map;
-                $scope.marker = map.markers[0];
-                $scope.onMapReady();
-                console.log("here...");
-
-            });
-
             $scope.refreshData();
-
-            $scope.onMapReady = () => {
-                const options = {
-                    minimumInputLength: 1, ajax: {
-                        url: 'https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json',
-                        delay: 250,
-                        dataType: "json",
-                        data: params => ({
-                            query: params.term,
-                            app_id: "bBPfh2x8Cauun3ygLMAx",
-                            app_code: "yjfwTdkin_R2rGXYTrwWVg",
-                            beginHighlight: "<b>",
-                            endHighlight: "</b>",
-                            country: "NZL"
-                        }),
-                        processResults: data => ({
-                            results: $.map(data.suggestions, obj => ({
-                                id: obj.locationId, text: obj.label.split(", ").reverse().join(", ")
-                            }))
-                        })
-                    }, escapeMarkup: markup => markup
-                };
-            };
 
             $scope.highlightEvent = () => {
                 angular.element("#jobList .active").each(function () {
                     angular.element(this).removeClass("active");
                 });
-                //loop actives
 
                 $timeout(() => {
                     $scope.selectedEvents = [];
@@ -706,14 +655,7 @@ angular.module('uDispatch')
                         const event = $scope.jobList[eventIndex];
                         $scope.selectedEvents.push(event);
                     });
-                    //$scope.$apply();
                 }, 10);
-
-
-                $timeout(() => {
-                    sizeHeadings(angular.element("#jobList").parents(".column"));
-                }, 1000);
-
             };
 
             $scope.jobListMenu = [{
@@ -735,39 +677,6 @@ angular.module('uDispatch')
                     };
 
                     $scope.gather.showForm();
-
                 }
             }];
         }]);
-
-// Convert Degress to Radians
-function Deg2Rad(deg) {
-    return deg * Math.PI / 180;
-}
-
-function PythagorasEquirectAngular(lat1, lon1, lat2, lon2) {
-    lat1 = Deg2Rad(lat1);
-    lat2 = Deg2Rad(lat2);
-    lon1 = Deg2Rad(lon1);
-    lon2 = Deg2Rad(lon2);
-    const R = 6371; // km
-    const x = (lon2 - lon1) * Math.cos((lat1 + lat2) / 2);
-    const y = (lat2 - lat1);
-    return Math.sqrt(x * x + y * y) * R;
-}
-
-function closestLocation(latitude, longitude, locations) {
-    let minDifference = 99999;
-    let closest;
-
-    for (let index = 0; index < locations.length; ++index) {
-        const dif = PythagorasEquirectAngular(latitude, longitude, locations[index][1], locations[index][2]);
-        if (dif < minDifference) {
-            closest = index;
-            minDifference = dif;
-        }
-    }
-
-    // return the nearest location
-    return (locations[closest]);
-}

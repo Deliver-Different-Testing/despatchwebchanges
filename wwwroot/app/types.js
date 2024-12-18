@@ -637,3 +637,12 @@
  * @property {number} page - Current page number
  * @property {number} pages - Total number of pages
  */
+
+/**
+ * @typedef {Object} DfrntPageViewModel
+ *
+ * @property {number} id - The unique identifier
+ * @property {string} name - The name of the page
+ * @property {number} centerLatitude - The center latitude coordinate
+ * @property {number} centerLongitude - The center longitude coordinate
+ */

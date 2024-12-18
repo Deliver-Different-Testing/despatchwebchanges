@@ -742,8 +742,16 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
     [HttpPost]
     public async Task<IActionResult> RestoreJobs(int courierId, int dispId, string jobIds)
     {
-        await jobRepository.RestoreJobs(jobIds);
-        return Json("OK");
+        try
+        {
+            await jobRepository.RestoreJobs(jobIds);
+            return Json("OK");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     [HttpPost]

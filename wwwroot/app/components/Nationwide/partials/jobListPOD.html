@@ -35,7 +35,7 @@
                 ng-mouseup="selectJob(job)"
                 ng-repeat="job in jobListPOD | filter: box.searchBox">
 
-                <td>{{job.time | date: "HH:mm"}}</td>
+                <td>{{job.booked | date: (isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm")}}</td>
                 <td ng-click="speedColumnClick($event)"
                     context-menu="speedColumnClick($event)"
                     ng-mousedown="$event.button === 2 && $event.preventDefault()">
