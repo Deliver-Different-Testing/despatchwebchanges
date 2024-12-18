@@ -2230,21 +2230,74 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
     private async Task UpdateTucJobArchive(int jobId, string field, string value, string userName)
     {
         var archive = await Context.TucJobArchives
-            .Where(j => j.UcjbId == jobId)
-            .Include(j => j.UcjbClient)
-            .Include(j => j.Contact)
-            .Include(j => j.InternalStatusNavigation)
-            .Include(j => j.UndeliverableLocation)
-            .Include(j => j.InverseParent)
-            .Include(j => j.Parent)
-            .ThenInclude(j => j.InverseParent)
-            .Include(j => j.NotifiedJobType)
+            .Join(Context.TucClients,
+                job => job.UcjbClientId,
+                client => client.UcclId,
+                (job, client) => new { job, client })
+            .Join(Context.TucClientContacts,
+                j => j.job.ContactId,
+                contact => contact.UcctId,
+                (j, contact) => new { j.job, j.client, contact })
+            .Join(Context.TucJobInternalStatuses,
+                j => j.job.InternalStatus,
+                status => status.Tcis,
+                (j, status) => new { j.job, j.client, j.contact, status })
+            .Join(Context.TblUndeliverableLocations,
+                j => j.job.UndeliverableLocationId,
+                loc => loc.UndeliverableLocationId,
+                (j, loc) => new { j.job, j.client, j.contact, j.status, loc })
+            .Join(Context.TucJobTypes,
+                j => j.job.NotifiedJobTypeId,
+                type => type.UcjtId,
+                (j, type) => new { j.job, j.client, j.contact, j.status, j.loc, type })
+            .Join(Context.TucJobTypes,
+                j => j.job.UcjbSpeed,
+                speed => speed.UcjtId,
+                (j, speed) => new { j.job, j.client, j.contact, j.status, j.loc, j.type, speed })
+            .Join(Context.TblJobLeaveNotHomes,
+                j => j.job.DeliverToLeaveId,
+                leave => leave.LeaveNotHomeId,
+                (j, leave) => new { j.job, j.client, j.contact, j.status, j.loc, j.type, j.speed, leave })
+            .GroupJoin(Context.TucJobArchives,
+                j => j.job.ParentId,
+                parent => parent.UcjbId,
+                (j, parent) => new { j.job, j.client, j.contact, j.status, j.loc, j.type, j.speed, j.leave, parent })
             .Select(j => new
             {
-                Job = j,
-                Nationwide = Context.TucJobNationwides
-                    .FirstOrDefault(n => n.UcnwJobId == j.UcjbId)
+                j.job,
+                j.client,
+                j.contact,
+                j.status,
+                j.loc,
+                j.type,
+                j.speed,
+                j.leave,
+                parent = j.parent.FirstOrDefault(),
+                parentId = j.parent.Select(p => p.UcjbId).FirstOrDefault()
             })
+            .GroupJoin(Context.TucJobArchives,
+                j => j.parentId == 0 ? j.job.UcjbId : j.parentId,
+                child => child.ParentId,
+                (j, children) => new
+                    { j.job, j.client, j.contact, j.status, j.loc, j.type, j.speed, j.leave, j.parent, children })
+            .GroupJoin(Context.TucJobNationwides,
+                j => j.job.UcjbId,
+                nationwide => nationwide.UcnwJobId,
+                (j, nationwide) => new
+                {
+                    Job = j.job,
+                    UcjbClient = j.client,
+                    Contact = j.contact,
+                    InternalStatusNavigation = j.status,
+                    UndeliverableLocation = j.loc,
+                    NotifiedJobType = j.type,
+                    SpeedNavigation = j.speed,
+                    DeliverToLeave = j.leave,
+                    Parent = j.parent,
+                    InverseParent = j.children,
+                    Nationwide = nationwide.FirstOrDefault()
+                })
+            .Where(j => j.Job.UcjbId == jobId)
             .FirstOrDefaultAsync();
 
         if (archive == null) throw new ArgumentException("Job not found");
@@ -2276,7 +2329,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 break;
             case "SpeedID":
                 archive.Job.UcjbSpeed = short.Parse(value);
-                updateNote = $"Changed Speed to {archive.Job.UcjbSpeedNavigation?.UcjtName}";
+                updateNote = $"Changed Speed to {archive.SpeedNavigation?.UcjtName}";
                 break;
             case "AcceptedJobTypeID" when !archive.Job.UcjbJobDone:
                 archive.Job.UcjbSpeed = short.Parse(value);
@@ -2286,12 +2339,12 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 // Update parent job if it exists
                 if (archive.Job.ParentId != null)
                 {
-                    archive.Job.Parent.UcjbWeight = weight;
+                    archive.Parent.UcjbWeight = weight;
 
                     // Update all other child jobs of the parent
-                    if (archive.Job.Parent.InverseParent.Any())
+                    if (archive.InverseParent.Any())
                     {
-                        foreach (var siblingJob in archive.Job.Parent.InverseParent)
+                        foreach (var siblingJob in archive.InverseParent)
                         {
                             siblingJob.UcjbWeight = weight;
                         }
@@ -2304,9 +2357,9 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     archive.Job.UcjbWeight = weight;
 
                     // Update child jobs
-                    if (archive.Job.InverseParent != null && archive.Job.InverseParent.Any())
+                    if (archive.InverseParent != null && archive.InverseParent.Any())
                     {
-                        foreach (var childJob in archive.Job.InverseParent)
+                        foreach (var childJob in archive.InverseParent)
                         {
                             childJob.UcjbWeight = weight;
                         }
@@ -2316,8 +2369,8 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 break;
             case "ClientID":
                 archive.Job.UcjbClientId = int.Parse(value);
-                archive.Job.UcjbClientCode = archive.Job.UcjbClient.UcclCode;
-                updateNote = $"Changed Client to {archive.Job.UcjbClient?.UcclCode}";
+                archive.Job.UcjbClientCode = archive.UcjbClient.UcclCode;
+                updateNote = $"Changed Client to {archive.UcjbClient?.UcclCode}";
                 break;
             case "ClientCode":
                 archive.Job.UcjbClientCode = value[..Math.Min(value.Length, 5)];
@@ -2325,7 +2378,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             case "ContactID":
                 var contactId = int.Parse(value);
                 archive.Job.ContactId = contactId;
-                archive.Job.UcjbContact = archive.Job.Contact?.UserName;
+                archive.Job.UcjbContact = archive.Contact?.UserName;
                 break;
             case "Pedal":
                 archive.Job.UcjbCbd = bool.Parse(value);
@@ -2355,7 +2408,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 if (!new[] { (int)InternalJobStatus.NewJobs, (int)InternalJobStatus.Reprice }
                         .Contains(internalStatusId))
                     archive.Job.FollowupTime =
-                        DateTime.Now.AddMinutes(archive.Job.InternalStatusNavigation.DefaultMinutes ?? 0);
+                        DateTime.Now.AddMinutes(archive.InternalStatusNavigation.DefaultMinutes ?? 0);
                 else
                     archive.Job.FollowupTime = null;
 
@@ -2367,7 +2420,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     4 when archive.Job.UcjbStatus != 6 => 6,
                     _ => archive.Job.UcjbStatus
                 };
-                updateNote = $"Changed Job Follow Up to {archive.Job.InternalStatusNavigation.TcisName}";
+                updateNote = $"Changed Job Follow Up to {archive.InternalStatusNavigation.TcisName}";
                 break;
             case "Status":
                 archive.Job.UcjbStatus = int.Parse(value);
@@ -2404,10 +2457,10 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 archive.Job.UcjbStatus = (int)JobStatus.Undeliverable;
                 archive.Job.UcjbJobDone = true;
                 archive.Job.UcjbComplTime = DateTime.Now;
-                archive.Job.UcjbPodname = archive.Job.UndeliverableLocation != null
-                    ? archive.Job.UndeliverableLocation.Podname
+                archive.Job.UcjbPodname = archive.UndeliverableLocation != null
+                    ? archive.UndeliverableLocation.Podname
                     : string.Empty;
-                updateNote = $"Changed Undeliverable Location to {archive.Job.UndeliverableLocation?.Name}";
+                updateNote = $"Changed Undeliverable Location to {archive.UndeliverableLocation?.Name}";
                 break;
             case "Delivered":
                 var delivered = bool.Parse(value);
@@ -2459,9 +2512,9 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
                 if (notifiedJobTypeId > archive.Job.NotifiedJobTypeId &&
                     archive.Job.ContactId != null &&
-                    archive.Job.NotifiedJobType.UcjtName == "Email" &&
-                    archive.Job.Contact?.HasEmail == true &&
-                    !string.IsNullOrEmpty(archive.Job.Contact.UcctEmail))
+                    archive.NotifiedJobType.UcjtName == "Email" &&
+                    archive.Contact?.HasEmail == true &&
+                    !string.IsNullOrEmpty(archive.Contact.UcctEmail))
                 {
                     archive.Job.SpeedChangeNotificationHasBeenSent = false;
                     archive.Job.WhenSpeedChangeNotificationSent = null;
@@ -2486,9 +2539,9 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         }
 
         // Add additional notes for undeliverable location
-        if (field == "UndeliverableLocationID" && archive.Job.UndeliverableLocation?.Message != null)
+        if (field == "UndeliverableLocationID" && archive.UndeliverableLocation?.Message != null)
         {
-            await AddNoteAsync(jobId, archive.Job.UndeliverableLocation.Message, userName);
+            await AddNoteAsync(jobId, archive.UndeliverableLocation.Message, userName);
         }
 
         await Context.SaveChangesAsync();

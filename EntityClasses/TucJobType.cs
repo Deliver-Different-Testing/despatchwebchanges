@@ -87,6 +87,8 @@ public partial class TucJobType
 
     public virtual ICollection<TblClientAvailableSpeed> TblClientAvailableSpeeds { get; set; } = new List<TblClientAvailableSpeed>();
 
+    public virtual ICollection<TblClientContactJobType> TblClientContactJobTypes { get; set; } = new List<TblClientContactJobType>();
+
     public virtual ICollection<TblUndeliverableLocation> TblUndeliverableLocations { get; set; } = new List<TblUndeliverableLocation>();
 
     public virtual ICollection<TucEvent> TucEventSpeeds { get; set; } = new List<TucEvent>();
@@ -94,14 +96,6 @@ public partial class TucJobType
     public virtual ICollection<TucEvent> TucEventUcevJobTypeNavigations { get; set; } = new List<TucEvent>();
 
     public virtual ICollection<TucJob> TucJobAcceptedJobTypes { get; set; } = new List<TucJob>();
-
-    public virtual ICollection<TucJobArchive> TucJobArchiveAcceptedJobTypes { get; set; } = new List<TucJobArchive>();
-
-    public virtual ICollection<TucJobArchive> TucJobArchiveDesiredJobTypes { get; set; } = new List<TucJobArchive>();
-
-    public virtual ICollection<TucJobArchive> TucJobArchiveNotifiedJobTypes { get; set; } = new List<TucJobArchive>();
-
-    public virtual ICollection<TucJobArchive> TucJobArchiveUcjbSpeedNavigations { get; set; } = new List<TucJobArchive>();
 
     public virtual ICollection<TucJobBooking> TucJobBookings { get; set; } = new List<TucJobBooking>();
 

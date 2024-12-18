@@ -16,11 +16,24 @@ files.forEach((file) => {
     const outputPath = path.join(inputDir, file.replace('.js', '.min.js'));
 
     const code = fs.readFileSync(inputPath, 'utf8');
+    
+    // Read the existing source map from Babel
+    let sourceMap;
+    try {
+        sourceMap = fs.readFileSync(inputPath + '.map', 'utf8');
+        sourceMap = JSON.parse(sourceMap);
+    } catch (err) {
+        console.warn(`No source map found for ${file}, creating new one`);
+    }
+
     try {
         const result = uglifyJs.minify(code, {
             sourceMap: {
+                content: sourceMap,
                 filename: path.basename(file),
-                url: path.basename(file) + '.map'
+                url: path.basename(file.replace('.js', '.min.js')) + '.map',
+                includeSources: true,
+                root: '../../../app/'  // Adjust this path to match your source file structure
             },
             compress: {
                 drop_console: true,
@@ -30,6 +43,10 @@ files.forEach((file) => {
                 comments: false
             }
         });
+
+        if (result.error) {
+            throw result.error;
+        }
 
         fs.writeFileSync(outputPath, result.code);
         fs.writeFileSync(outputPath + '.map', result.map);

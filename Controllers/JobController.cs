@@ -800,14 +800,17 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
     public async Task<IActionResult> AddRestoreEvent(string jobNo, int clientId, string contact, int staffId,
         int courierId, int jobId, int jobType, string despatcherName)
     {
-        await courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType,
-            despatcherName, "Job Restored", 33);
+        try
+        {
+
+            await courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType,
+                despatcherName, "Job Restored", 33);
 
             return Json("OK");
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            Log.Error(e,e.Message);
             throw;
         }
     }

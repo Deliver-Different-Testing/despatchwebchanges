@@ -68,7 +68,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
         int jobId, int jobType, string despatcherName, string notes, int eventType, float? lateTime = null,
         DateTime? etaTime = null, bool close = false)
     {
-        var isAutomatic = await _context.TucJobs
+        var isAutomatic = await Context.TucJobs
             .Include(j => j.UcjbClient)
             .Where(j => j.UcjbId == jobId &&
                         j.UcjbDate.Date == DateTime.Now)

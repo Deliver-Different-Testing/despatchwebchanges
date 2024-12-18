@@ -74,4 +74,6 @@ public partial class TblClientContact
     public virtual TucClientContact Contact { get; set; }
 
     public virtual ICollection<TblClientContactInternetPermission> TblClientContactInternetPermissions { get; set; } = new List<TblClientContactInternetPermission>();
+
+    public virtual ICollection<TblClientContactJobType> TblClientContactJobTypes { get; set; } = new List<TblClientContactJobType>();
 }

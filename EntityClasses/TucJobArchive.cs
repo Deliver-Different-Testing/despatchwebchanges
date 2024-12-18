@@ -443,47 +443,9 @@ public partial class TucJobArchive
 
     public string Connote { get; set; }
 
-    public virtual TucJobType AcceptedJobType { get; set; }
-
     public virtual TucAgent Agent { get; set; }
-
-    public virtual TucClientContact Contact { get; set; }
 
     public virtual TblJobLeaveNotHome DeliverToLeave { get; set; }
 
-    public virtual TucJobType DesiredJobType { get; set; }
-
-    public virtual TblAirport FromAirport { get; set; }
-
-    public virtual TucJobInternalStatus InternalStatusNavigation { get; set; }
-
-    public virtual ICollection<TucJobArchive> InverseParent { get; set; } = new List<TucJobArchive>();
-
-    public virtual TblJobRelationshipType JobRelationshipType { get; set; }
-
-    public virtual TucJobType NotifiedJobType { get; set; }
-
-    public virtual TucJobArchive Parent { get; set; }
-
-    public virtual TucSource Source { get; set; }
-
-    public virtual TblAirport ToAirport { get; set; }
-
-    public virtual TucClient UcjbClient { get; set; }
-
-    public virtual TucCourier UcjbCourier { get; set; }
-
-    public virtual TucStaff UcjbDisp { get; set; }
-
-    public virtual TucSuburb UcjbFromNavigation { get; set; }
-
     public virtual VehicleSize UcjbSizeNavigation { get; set; }
-
-    public virtual TucJobType UcjbSpeedNavigation { get; set; }
-
-    public virtual TucJobStatus UcjbStatusNavigation { get; set; }
-
-    public virtual TucSuburb UcjbToNavigation { get; set; }
-
-    public virtual TblUndeliverableLocation UndeliverableLocation { get; set; }
 }
