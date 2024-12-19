@@ -174,7 +174,7 @@ class DispatchJobService {
      * @param {Job[]} jobs - An array of job objects to dispatch.
      * @returns {Promise} A promise that resolves when the job is dispatched.
      */
-    async dispatchJobsByCourierId(courierId, jobs) {
+    async dispatchJobsBycourierId(courierId, jobs) {
         console.log('Dispatching multiple jobs by courier ID:', {courierId, jobCount: jobs.length});
         try {
             await this.fetchCouriersData();
