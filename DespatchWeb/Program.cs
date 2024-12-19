@@ -49,7 +49,8 @@ builder.Services.Configure<KestrelServerOptions>(options =>
 
 // Api Keys
 builder.Services.Configure<HereMapsConfig>(builder.Configuration.GetSection("HereMaps"));
-
+builder.Services.Configure<GoogleMapsConfig>(builder.Configuration.GetSection("GoogleMaps"));
+builder.Services.Configure<FlightStatusConfig>(builder.Configuration.GetSection("FlightStatus"));
 
 // Repositories
 builder.Services.AddScoped<IJobRepository, JobRepository>();
@@ -61,6 +62,7 @@ builder.Services.AddScoped<IDfrntViewsRepository, DfrntViewsRepository>();
 // Services
 builder.Services.AddScoped<IFlightStatsService, FlightStatsService>();
 builder.Services.AddScoped<IClientAccessValidatorService, ClientAccessValidatorService>();
+builder.Services.AddScoped<IRateJobService, RateJobService>();
 
 
 // Automapper

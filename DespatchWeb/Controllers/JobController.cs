@@ -33,11 +33,15 @@ public class JobController : Controller
     private readonly IWebHostEnvironment _hostingEnvironment;
     private readonly IJobRepository _jobRepo;
     private readonly ILogger<JobController> _logger;
+    private readonly IRateJobService _rateJobService;
 
-    public JobController(IJobRepository jobRepository, ICourierRepository courierRepo,
+    public JobController(IJobRepository jobRepository,
+        ICourierRepository courierRepo,
         IClientAccessValidatorService clientAccessValidator,
         IConfiguration configuration,
-        IWebHostEnvironment hostingEnvironment, ILogger<JobController> logger)
+        IWebHostEnvironment hostingEnvironment,
+        ILogger<JobController> logger,
+        IRateJobService rateJobService)
     {
         _jobRepo = jobRepository;
         _courierRepo = courierRepo;
@@ -45,6 +49,7 @@ public class JobController : Controller
         _configuration = configuration;
         _hostingEnvironment = hostingEnvironment;
         _logger = logger;
+        _rateJobService = rateJobService;
     }
 
     [HttpGet]
@@ -57,22 +62,18 @@ public class JobController : Controller
 
         try
         {
-            // Validate Client Access
             if (!isInternal)
             {
                 _logger.LogDebug("Validating client access for cid: {ClientId}", cid);
                 await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
             }
 
-            // Get jobs
-            _logger.LogDebug("Retrieving jobs with status: {Status}, order: {Order}, ascending: {Ascending}",
-                queryParams.Status, queryParams.Order, queryParams.Asc);
-
             var status = (DispatchStatus)queryParams.Status;
-            var result = await _jobRepo.JobListAsync(queryParams.Order,
-                queryParams.Asc, isInternal, clientIds, despatchViewIds, null, status);
+            var result = await _jobRepo.JobListAsync(queryParams, isInternal, clientIds, despatchViewIds, null, status);
 
-            _logger.LogInformation("Successfully retrieved {Count} jobs", result.Count);
+            _logger.LogInformation("Successfully retrieved {Count} jobs out of {Total} total records",
+                result.Items.Count(), result.Total);
+
             return Json(result);
         }
         catch (UnauthorizedAccessException ex)
@@ -99,8 +100,7 @@ public class JobController : Controller
 
             // Get jobs
             var status = (DispatchStatus)queryParams.Status;
-            var result = await _jobRepo.JobListAsync(queryParams.Order,
-                queryParams.Asc, isInternal, clientIds, despatchViewIds, clearListEnvelopeViewModel, status);
+            var result = await _jobRepo.JobListAsync(queryParams, isInternal, clientIds, despatchViewIds, null, status);
 
             return Json(result);
         }
@@ -311,8 +311,8 @@ public class JobController : Controller
     public async Task<IActionResult> Upload(IFormFile file)
     {
         if (file == null || string.IsNullOrWhiteSpace(file.FileName) ||
-            !new[] { ".xls", ".xlsx", ".csv" }.Contains(file.FileName.Trim()
-                .Substring(file.FileName.Trim().LastIndexOf(".")).Trim().ToLower()))
+            !new[] { ".xls", ".xlsx", ".csv" }.Contains(file.FileName.Trim()[file.FileName.Trim().LastIndexOf(".")..]
+                .Trim().ToLower()))
             return BadRequest("Invalid file format.");
 
         var folderPath = Path.Combine(_hostingEnvironment.ContentRootPath, _configuration["UploadDirectory"]);
@@ -321,11 +321,11 @@ public class JobController : Controller
         if (!Directory.Exists(folderPath))
             Directory.CreateDirectory(folderPath);
 
-        var fileExtension = file.FileName.Trim().ToLower().Substring(file.FileName.Trim().LastIndexOf("."));
-        var filePath = Path.Combine(folderPath, $"Jobs {DateTime.Now.ToString("yyyyMMddHHmmssfff")}{fileExtension}");
+        var fileExtension = file.FileName.Trim().ToLower()[file.FileName.Trim().LastIndexOf(".")..];
+        var filePath = Path.Combine(folderPath, $"Jobs {DateTime.Now:yyyyMMddHHmmssfff}{fileExtension}");
 
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-        string sResult = null;
+        string sResult;
         await using (var stream = System.IO.File.Create(filePath))
         {
             await file.CopyToAsync(stream);
@@ -569,8 +569,16 @@ public class JobController : Controller
     [HttpPost]
     public async Task<IActionResult> RestoreJobs(int courierId, int dispId, string jobIds)
     {
-        await _jobRepo.RestoreJobs(jobIds);
-        return Json("OK");
+        try
+        {
+            await _jobRepo.RestoreJobs(jobIds);
+            return Json("OK");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     [HttpPost]
@@ -627,10 +635,18 @@ public class JobController : Controller
     public async Task<IActionResult> AddRestoreEvent(string jobNo, int clientId, string contact, int staffId,
         int courierId, int jobId, int jobType, string despatcherName)
     {
-        await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType,
-            despatcherName, "Job Restored", 33);
+        try
+        {
+            await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType,
+                despatcherName, "Job Restored", 33);
 
-        return Json("OK");
+            return Json("OK");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     [HttpPost]
@@ -691,7 +707,7 @@ public class JobController : Controller
         var e = new ApplicationException(
             $"Exsalerate Activity Failed {restResponse.Content} {Environment.NewLine} CurrentBody= {body}");
         var key = _configuration["RaygunSettings:ApiKey"];
-        var rc = new RaygunClient(key).SendInBackground(e);
+        new RaygunClient(key).SendInBackground(e);
 
         return Json("OK");
     }
@@ -830,6 +846,69 @@ public class JobController : Controller
             includeFuelSurcharge, direct, acceptedJobTypeId,
             ourRef, refA, refB, quantity, booked);
         return Json($"{rate:C}");
+    }
+
+    public async Task<IActionResult> RateJobUs(
+        int jobId,
+        int clientId,
+        int speed,
+        string fromZip,
+        string toZip,
+        int weight,
+        DateTime booked,
+        int size,
+        bool dangerousGoods,
+        int totalPallets,
+        int extraStopOffs,
+        int dryIceWeight,
+        int waitTime,
+        decimal pickUpLat,
+        decimal pickUpLong,
+        decimal deliveryLat,
+        decimal deliveryLong)
+    {
+        try
+        {
+            // Get distances and airport info
+            var distanceResult = await _rateJobService.CalculateJobRateUs(new JobRateRequest
+            {
+                SpeedId = speed,
+                PickupLat = pickUpLat,
+                PickupLong = pickUpLong,
+                DeliveryLat = deliveryLat,
+                DeliveryLong = deliveryLong
+            });
+
+            // Calculate final rate
+            var rate = await _jobRepo.RateJobUsAsync(
+                jobId,
+                clientId,
+                speed,
+                fromZip,
+                toZip,
+                (decimal)distanceResult.TotalMiles, // Used for non-flight jobs
+                (decimal)distanceResult.FromMiles, // Used for flight jobs
+                (decimal)distanceResult.ToMiles, // Used for flight jobs
+                weight,
+                booked,
+                size,
+                dangerousGoods,
+                totalPallets,
+                extraStopOffs,
+                dryIceWeight,
+                waitTime,
+                distanceResult.FromAirport?.AgentId,
+                distanceResult.FromAirport?.AirportId,
+                distanceResult.ToAirport?.AgentId,
+                distanceResult.ToAirport?.AirportId);
+
+            return Json($"{rate:C}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calculating job rate");
+            return StatusCode(500, "An error occurred while calculating the rate.");
+        }
     }
 
     public async Task<IActionResult> PpdExclusiveAmount(int clientId, decimal amount)

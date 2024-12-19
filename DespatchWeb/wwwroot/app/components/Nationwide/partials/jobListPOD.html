@@ -35,11 +35,10 @@
                 ng-mouseup="selectJob(job)"
                 ng-repeat="job in jobListPOD | filter: box.searchBox">
 
-                <td>{{job.time | date: "HH:mm"}}</td>
+                <td>{{job.booked | date: (isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm")}}</td>
                 <td ng-click="speedColumnClick($event)"
                     context-menu="speedColumnClick($event)"
                     ng-mousedown="$event.button === 2 && $event.preventDefault()">
-                    {{job.speed}}
                     <i class="material-symbols-outlined job-table-icon"
                        ng-if="job.fromAirportId || job.toAirportId">{{getFlightIcon(job.jobNo)}}</i>
                 </td>
@@ -98,7 +97,7 @@
                 <td class="icon-cell" ng-click="createEvent($event, job);" title="Create Event">
                     <i class="material-symbols-outlined job-table-icon">calendar_add_on</i>
                 </td>
-                <td class="icon-cell" ng-click="job.courier == null || restoreJobsFromPOD();" title="Restore">
+                <td class="icon-cell" ng-click="job.courier == null || restoreJob(job);" title="Restore">
                     <i class="material-symbols-outlined job-table-icon" ng-if="job.courier !== null">undo</i>
                 </td>
             </tr>

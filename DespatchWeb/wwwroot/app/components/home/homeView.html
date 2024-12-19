@@ -1,3 +1,5 @@
+<link href="app/components/home/home.styles.css" rel="stylesheet">
+
 <div>
     <div>
         <md-toolbar class="md-hue-2">
@@ -30,7 +32,7 @@
                     </md-menu-content>
                 </md-menu>
 
-                <md-menu ng-if="isInternal">
+                <md-menu>
                     <md-button aria-label="Open views menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined" ng-if="views">view_list</md-icon>
                         <md-tooltip md-direction="bottom">Views</md-tooltip>
@@ -110,7 +112,6 @@
                         <md-toolbar class="md-accent">
                             <div class="md-toolbar-tools-m3">
                                 <div class="section section-start">
-
                                     <!--Icon-->
                                     <span class="material-symbols-outlined">{{boxes[box.name].icon}}</span>
 

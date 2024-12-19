@@ -1,4 +1,4 @@
-class DispatchData {
+class DispatchService {
     constructor($http, moment, APP_CONFIG) {
         this.$http = $http;
         this.moment = moment;
@@ -144,13 +144,14 @@ class DispatchData {
                 despatcherName
             }
         });
+
         return response.data;
     }
 
     /**
      * @param {number} courierId
      * @param {number} dispatcherId
-     * @param {Number[]} jobIds
+     * @param {number[]} jobIds
      */
     async allocateJobs(courierId, dispatcherId, jobIds) {
         await this.$http.post('job/Allocate', null, {
@@ -165,7 +166,7 @@ class DispatchData {
     /**
      * @param {number} courierId
      * @param {number} dispatcherId
-     * @param {Number[]} jobIds
+     * @param {number[]} jobIds
      */
     async reAllocateJobs(courierId, dispatcherId, jobIds) {
         await this.$http.post('job/ReAllocate', null, {
@@ -235,7 +236,7 @@ class DispatchData {
     /**
      * @param {number} courierId
      * @param {number} dispatcherId
-     * @param {Number[]} jobIds
+     * @param {number[]} jobIds
      */
     async restoreJobs(courierId, dispatcherId, jobIds) {
         const response = await this.$http.post('job/RestoreJobs?courierId=' + courierId + '&dispId=' + dispatcherId + '&jobIds=' + jobIds);
@@ -245,7 +246,7 @@ class DispatchData {
     /**
      * @param {number} courierId
      * @param {number} dispatcherId
-     * @param {Number[]} jobIds
+     * @param {number[]} jobIds
      */
     async restoreSplitJobs(courierId, dispatcherId, jobIds) {
         const response = await this.$http.post('job/RestoreSplitJobs?courierId=' + courierId + '&dispId=' + dispatcherId + '&jobIds=' + jobIds);
@@ -253,7 +254,7 @@ class DispatchData {
     }
 
     /**
-     * @param {Number[]} jobIds
+     * @param {number[]} jobIds
      */
     async resendJobs(jobIds) {
         const response = await this.$http.post('job/ResendSelected?jobIds=' + jobIds);
@@ -269,7 +270,7 @@ class DispatchData {
     }
 
     /**
-     * @param {Number[]} jobIds
+     * @param {number[]} jobIds
      */
     async reAssignJobs(jobIds) {
         const response = await this.$http.post('job/ReAssignSelected?jobIds=' + jobIds);
@@ -621,6 +622,30 @@ class DispatchData {
     }
 
     /**
+     * @param {number} jobId
+     * @param {number} clientId
+     * @param {number} speed
+     * @param {string} fromZipCode
+     * @param {string} toZipCode
+     * @param {number} weight
+     * @param {Date} booked
+     * @param {number} size
+     * @param {boolean} dangerousGoods
+     * @param {number} totalPallets
+     * @param {number} extraStopOffs
+     * @param {number} dryIceWeight
+     * @param {number} waitTime
+     * @param {number} fromLat
+     * @param {number} fromLong
+     * @param {number} toLat
+     * @param {number} toLong
+     */
+    async rateJobUS(jobId, clientId, speed, fromZipCode, toZipCode, weight, booked, size, dangerousGoods, totalPallets, extraStopOffs, dryIceWeight, waitTime, fromLat, fromLong, toLat, toLong) {
+        const response = await this.$http.get('job/RateJobUs?jobId=' + jobId + '&clientId=' + clientId + '&speed=' + speed + '&fromZip=' + fromZipCode + '&toZip=' + toZipCode + '&weight=' + weight + '&booked=' + booked + '&size=' + size + '&dangerousGoods=' + dangerousGoods + '&totalPallets=' + totalPallets + '&extraStopOffs=' + extraStopOffs + '&dryIceWeight=' + dryIceWeight + '&waitTime=' + waitTime + '&fromLat=' + fromLat + '&fromLong=' + fromLong + '&toLat=' + toLat + '&toLong=' + toLong);
+        return response.data;
+    }
+
+    /**
      * @param {number} clientId
      * @param {number} fromId
      * @param {number} toId
@@ -669,7 +694,7 @@ class DispatchData {
 
     /**
      * @param {number} jobId
-     * @param {Number[]} serviceIds
+     * @param {number[]} serviceIds
      * @param {number} totalCost
      */
     async addServicesToJob(jobId, serviceIds, totalCost) {
@@ -1011,7 +1036,9 @@ class DispatchData {
         const params = new URLSearchParams({
             status: queryParams.status || 'all',
             order: queryParams.order || 'time',
-            asc: queryParams.asc || 'asc',
+            orderDirection: queryParams.orderDirection || 'asc',
+            page: queryParams.page || 1,
+            limit: queryParams.limit || 10,
             isInternal: internal.toString(),
             cid: ContactID,
             clientIds: selectedClients.join(',')
@@ -1023,7 +1050,12 @@ class DispatchData {
         });
 
         const response = await this.$http.get(`job?${params.toString()}`);
-        return response.data;
+        return {
+            items: response.data.items,
+            total: response.data.total,
+            page: queryParams.page || 1,
+            limit: queryParams.limit || 10
+        };
     }
 
     /**
@@ -1159,4 +1191,4 @@ class DispatchData {
     }
 }
 
-angular.module('uDispatch').service('DispatchData', ['$http', 'moment', 'APP_CONFIG', ($http, moment, APP_CONFIG) => new DispatchData($http, moment, APP_CONFIG)]);
+angular.module('uDispatch').service('DispatchData', ['$http', 'moment', 'APP_CONFIG', ($http, moment, APP_CONFIG) => new DispatchService($http, moment, APP_CONFIG)]);

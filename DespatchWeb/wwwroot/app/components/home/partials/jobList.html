@@ -1,85 +1,69 @@
 <!-- Job List Component -->
-<div class="job-list-container">
-    <!-- Loading Indicator -->
-    <div class="loader-container" ng-if="jobsLoading">
-        <div class="full-height" layout="row" layout-align="center center">
-            <div class="material-icon-loader">
-                <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
-                <md-icon class="loader-icon" md-font-set="material-symbols-outlined">list_alt</md-icon>
-            </div>
-        </div>
-    </div>
+<div class="droppable-box">
+    <md-table-container>
+        <table md-dense md-progress="jobListPromise" md-table ng-model="selectedJob">
+            <thead md-head md-on-reorder="onReorderJobList" md-order="queryParams.order">
+            <tr md-row>
+                <th md-column md-order-by="time">Time</th>
+                <th md-column md-order-by="speed">Speed</th>
+                <th md-column md-order-by="notify">N</th>
+                <th md-column>A</th>
+                <th md-column md-order-by="jobNo">Job No</th>
+                <th md-column md-order-by="client">Client</th>
+                <th md-column md-order-by="from">From</th>
+                <th md-column md-order-by="to">To</th>
+                <th md-column>Dispatch</th>
+                <th md-column>Remain</th>
+                <th md-column>Status</th>
+                <th md-column>LP</th>
+                <th md-column>LD</th>
+                <th md-column>Actions</th>
+            </tr>
+            </thead>
 
-    <!-- Job List Table -->
-    <div class="job-list-table" ng-if="!jobsLoading && jobList.length > 0">
-        <!-- Table Headers -->
-        <div class="table-headings sticky-header">
-            <table>
-                <thead class="thead-dark no-select">
-                <tr>
-                    <th ng-click="orderList('jobList', header.key)" ng-repeat="header in jobListHeaders">
-                        <i class="material-symbols-outlined job-table-icon"
-                           ng-if="sort.jobList == header.key">arrow_drop_down</i>
-                        <i class="material-symbols-outlined job-table-icon"
-                           ng-if="sort.jobList == 'd-' + header.key">arrow_drop_up</i>
-                        {{header.label}}
-                    </th>
-                    <th ng-repeat="action in ['', '', 'R', 'RD'] track by $index">{{action}}</th>
-                </tr>
-                </thead>
-            </table>
-        </div>
+            <tbody md-body>
+            <tr md-row
+                md-dense
+                ng-click="selectJob(job)"
+                ng-repeat="job in jobList">
 
-        <!-- Job List Table -->
-        <table class="table table-responsive table-rows" id="jobList">
-            <tbody>
-            <tr class="clickable-row noselect"
-                data-allowDispatch="{{job.allowDispatch}}"
-                data-courier="{{job.courier}}"
-                data-index="{{$index}}"
-                data-jobid="{{job.id}}"
-                data-jobno="{{job.jobNo}}"
-                ng-class="jobClass(job)"
-                ng-mousedown="selectJob(job)"
-                ng-repeat="job in jobList | filter: box.searchBox">
-
-                <td>{{job.time | date: "HH:mm"}}</td>
-                <td action="speedColumnClick($event, job)" right-click>{{job.speed}}</td>
-                <td action="notifyColumnClick($event, job)" ng-if="job.courierData.courierID === null" right-click>
+                <td md-cell>{{job.time | date: "HH:mm"}}</td>
+                <td md-cell ng-click="speedColumnClick($event, job)" right-click>{{job.speed}}</td>
+                <td md-cell ng-click="notifyColumnClick($event, job)" ng-if="job.courierData.courierID === null"
+                    right-click>
                     {{job.notify}}
                 </td>
-                <td ng-if="job.courierData.courierID !== null">{{job.notify}}</td>
-                <td>
+                <td md-cell ng-if="job.courierData.courierID !== null">{{job.notify}}</td>
+                <td md-cell>
                     <div class="attention-cell" title="{{attention(job)}}">{{attention(job)}}</div>
                 </td>
-                <td context-menu="setEventsMenu($event)">{{job.jobNo}}</td>
-                <td action="clientColumnClick($event, job)" right-click>{{job.client}}</td>
-                <td action="fromColumnClick($event, job)" right-click>
-                    {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
-                    <i class="material-symbols-outlined job-table-icon" ng-if="!job.pickUpLongitude">exclamation</i>
+                <td context-menu="setEventsMenu($event)" md-cell>{{job.jobNo}}</td>
+                <td md-cell ng-click="clientColumnClick($event, job)" right-click>{{job.client}}</td>
+                <td md-cell>
+                    {{isUsCustomer ? job.pickupAddress.addressLine5 + ', ' + job.pickupAddress.addressLine6 : job.from}}
+                    <md-tooltip md-direction="bottom">{{ job.pickupAddress.fullAddress }}</md-tooltip>
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
                 </td>
-                <td colspan="2">
-                    <div action="toColumnClick($event, job)" right-click>
-                        {{isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}
-                        <i class="material-symbols-outlined colum-table-icon"
-                           ng-if="!job.deliveryLongitude">exclamation</i>
-                    </div>
+                <td md-cell ng-click="toColumnClick($event, job)" right-click>
+                    <span md-truncate> {{isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}</span>
+                    <md-tooltip md-direction="bottom">{{ job.deliveryAddress.fullAddress }}</md-tooltip>
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
                 </td>
-                <td>
+                <td md-cell>
                     <md-autocomplete
-                            md-autoselect
-                            md-clear-button="false"
-                            md-input-name="dispatchCourierSearch"
-                            md-select-on-focus
                             md-item-text="item.text"
                             md-items="item in courierSearch(dispatchCourierSearchTest)"
                             md-min-length="2"
                             md-search-text="dispatchCourierSearchTest"
+                            md-select-on-focus
                             md-selected-item="job.assignedCourier"
-                            md-selected-item-change="handleDispatchSelection(item, job)"
+                            md-autoselect
+                            md-clear-button="false"
+                            md-input-name="dispatchCourierSearch"
                             ng-click="handleDispatchFieldClick($event, job)"
                             ng-disabled="job.assignedCourier"
-                            placeholder="Dispatch to Courier...">
+                            md-selected-item-change="handleDispatchSelection(item, job)"
+                            placeholder="Search Courier...">
                         <md-item-template>
                             <span md-highlight-flags="^i"
                                   md-highlight-text="dispatchCourierSearchTest">{{item.text}}</span>
@@ -89,45 +73,60 @@
                         </md-not-found>
                     </md-autocomplete>
                 </td>
-                <td>
+                <td md-cell>
                     <span class="remain-time">{{job.remain}}</span>
                 </td>
-                <td class="status" ng-class="job.status">{{job.status}}</td>
-                <td>
-                    <input class="lateCallField no-spinners" ng-focus="selectAllContent($event)"
+                <td class="status" md-cell ng-class="job.status">{{job.status}}</td>
+                <td md-cell>
+                    <input class="lateCallField no-spinners"
+                           inputmode="numeric"
+                           ng-focus="selectAllContent($event)"
                            ng-keydown="$event.keyCode === 13 && latePickup(job.lp, job, this)"
                            ng-model="job.lp"
-                           ng-mouseup="$event.preventDefault();"
                            placeholder="LP"
-                           inputmode="numeric"
+                           ng-mouseup="$event.preventDefault();"
                            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                            pattern="[0-9]*"
                            type="text"/>
                 </td>
-                <td>
-                    <input class="lateCallField no-spinners" ng-focus="selectAllContent($event)"
-                           ng-keydown="$event.keyCode === 13 && lateDelivery(job.ld, job, this)"
+                <td md-cell>
+                    <input class="lateCallField no-spinners"
+                           ng-focus="selectAllContent($event)"
+                           inputmode="numeric"
+                           pattern="[0-9]*"
                            ng-model="job.ld"
+                           ng-keydown="$event.keyCode === 13 && lateDelivery(job.ld, job, this)"
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                            ng-mouseup="$event.preventDefault();"
                            placeholder="LD"
-                           inputmode="numeric"
-                           oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                           pattern="[0-9]*"
                            type="text"/>
                 </td>
-                <td ng-click="job.courier == null || restoreJobs();" title="Restore">
-                    <i class="material-symbols-outlined job-table-icon" ng-if="job.courier !== null">undo</i>
-                </td>
-                <td ng-click="job.courier == null || reAllocateJobs();" title="ReDispatch">
-                    <i class="material-symbols-outlined job-table-icon" ng-if="job.courier !== null">repeat</i>
+                <td class="actions" md-cell>
+    <span class="action-icon" ng-click="job.courier == null || restoreJob(job);">
+        <md-icon md-font-set="material-symbols-outlined" ng-if="job.courier !== null">undo</md-icon>
+        <md-tooltip md-direction="bottom">Restore</md-tooltip>
+    </span>
+                    <span class="action-icon" ng-click="job.courier == null || reAllocateJobs();">
+        <md-icon md-font-set="material-symbols-outlined" ng-if="job.courier !== null">repeat</md-icon>
+        <md-tooltip md-direction="bottom">ReDispatch</md-tooltip>
+    </span>
                 </td>
             </tr>
             </tbody>
         </table>
-    </div>
+    </md-table-container>
+
+    <md-table-pagination
+            md-limit="queryParams.limit"
+            md-limit-options="[5, 10, 25, 50]"
+            md-on-paginate="jobPageChanged"
+            md-page="queryParams.page"
+            md-page-select
+            md-total="{{totalCount}}">
+    </md-table-pagination>
 
     <!-- No Data Message -->
-    <div class="no-data" ng-if="!jobsLoading && (!jobList || jobList.length === 0)">
+    <div class="no-data" ng-if="!jobList || jobList.length === 0">
         <div class="content">
             <div class="icon">
                 <md-icon md-font-set="material-symbols-outlined">list_alt</md-icon>
@@ -138,17 +137,3 @@
         </div>
     </div>
 </div>
-
-<style>
-    /* Remove spinner buttons for Webkit browsers (Chrome, Safari, newer Edge) */
-    input.no-spinners::-webkit-outer-spin-button,
-    input.no-spinners::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
-
-    /* Remove spinner buttons for Firefox */
-    input.no-spinners[type="number"] {
-        -moz-appearance: textfield;
-    }
-</style>

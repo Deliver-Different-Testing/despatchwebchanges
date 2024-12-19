@@ -16,7 +16,6 @@ namespace DespatchWeb.EntityClasses
             TucClientItems = new HashSet<TucClientItem>();
             TucContacts = new HashSet<TucContact>();
             TucEvents = new HashSet<TucEvent>();
-            TucJobArchives = new HashSet<TucJobArchive>();
             TucJobBookings = new HashSet<TucJobBooking>();
             TucJobs = new HashSet<TucJob>();
         }
@@ -307,7 +306,6 @@ namespace DespatchWeb.EntityClasses
         public virtual ICollection<TucClientItem> TucClientItems { get; set; }
         public virtual ICollection<TucContact> TucContacts { get; set; }
         public virtual ICollection<TucEvent> TucEvents { get; set; }
-        public virtual ICollection<TucJobArchive> TucJobArchives { get; set; }
         public virtual ICollection<TucJobBooking> TucJobBookings { get; set; }
         public virtual ICollection<TucJob> TucJobs { get; set; }
     }

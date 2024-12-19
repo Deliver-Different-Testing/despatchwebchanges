@@ -34,8 +34,8 @@ public interface IJobRepository
     Task<List<PrebookListViewModel>> PreBookJobListAsync();
     Task<List<JobViewModel>> CurrentJobList(int courierId, bool done);
 
-    Task<List<JobViewModel>> JobListAsync(string order,
-        string ascending, bool isInternal, string clientIds, List<int> selectedViewIds,
+    Task<PaginatedResponse<JobViewModel>> JobListAsync(JobQueryParams queryParams,
+        bool isInternal, string clientIds, List<int> selectedViewIds,
         ClearListEnvelopeViewModel clearListEnvelope = null, DispatchStatus status = DispatchStatus.Nda);
 
     Task<List<SupportViewModel>> SupportEvents(string channel);
@@ -101,6 +101,28 @@ public interface IJobRepository
     Task<decimal> RateJobAsync(int clientId, int fromId, int toId, int speed, bool pedal, bool van,
         bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
         string ourRef, string refA, string refB, int quantity, DateTime booked);
+
+    Task<decimal> RateJobUsAsync(
+        int jobId,
+        int clientId,
+        int speed,
+        string fromZip,
+        string toZip,
+        decimal totalMiles,
+        decimal fromMiles,
+        decimal toMiles,
+        int weight,
+        DateTime booked,
+        int size,
+        bool dangerousGoods,
+        int totalPallets,
+        int extraStopOffs,
+        int dryIceWeight,
+        int waitTime,
+        int? fromAgentId,
+        int? fromAirportId,
+        int? toAgentId,
+        int? toAirportId);
 
     Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId);
 
@@ -180,4 +202,9 @@ public interface IJobRepository
 
     Task<OverviewDeliveryMapResponse> GetOverviewLocationDataAsync(int jobId);
     Task<List<MegaMapResponse>> GetJobsForMegaMapAsync();
+
+    Task<TucJobType> GetJobTypeById(int speedId);
+
+    Task<TucJobTypeGrouping> GetJobTypeGrouping(int groupingId);
+    Task<List<AddressWithAgent>> GetClosestAirports(decimal latitude, decimal longitude);
 }

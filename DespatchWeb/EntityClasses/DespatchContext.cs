@@ -31,6 +31,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<DfrntappUserViewPermission> DfrntappUserViewPermissions { get; set; }
         public virtual DbSet<DfrntpageView> DfrntpageViews { get; set; }
         public virtual DbSet<DfrntuserPageLayout> DfrntuserPageLayouts { get; set; }
+        public virtual DbSet<FlightCarrier> FlightCarriers { get; set; }
         public virtual DbSet<GlobalAddressMapping> GlobalAddressMappings { get; set; }
         public virtual DbSet<PricingBreakdown> PricingBreakdowns { get; set; }
         public virtual DbSet<TblAirport> TblAirports { get; set; }
@@ -44,6 +45,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TblClientAvailableSpeedItem> TblClientAvailableSpeedItems { get; set; }
         public virtual DbSet<TblClientContact> TblClientContacts { get; set; }
         public virtual DbSet<TblClientContactInternetPermission> TblClientContactInternetPermissions { get; set; }
+        public virtual DbSet<TblClientContactJobType> TblClientContactJobTypes { get; set; }
         public virtual DbSet<TblContact> TblContacts { get; set; }
         public virtual DbSet<TblCourier> TblCouriers { get; set; }
         public virtual DbSet<TblCourierGp> TblCourierGps { get; set; }
@@ -75,6 +77,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TucJobNationwide> TucJobNationwides { get; set; }
         public virtual DbSet<TucJobStatus> TucJobStatuses { get; set; }
         public virtual DbSet<TucJobType> TucJobTypes { get; set; }
+        public virtual DbSet<TucJobTypeGrouping> TucJobTypeGroupings { get; set; }
         public virtual DbSet<TucSource> TucSources { get; set; }
         public virtual DbSet<TucStaff> TucStaffs { get; set; }
         public virtual DbSet<TucSuburb> TucSuburbs { get; set; }
@@ -890,6 +893,37 @@ namespace DespatchWeb.EntityClasses
                     .HasForeignKey(d => d.UserId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_UserPageLayouts_Users");
+            });
+
+            modelBuilder.Entity<FlightCarrier>(entity =>
+            {
+                entity.Property(e => e.FlightCarrierId).HasColumnName("FlightCarrierID");
+
+                entity.Property(e => e.CarrierCode).HasMaxLength(2);
+
+                entity.Property(e => e.Created)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(255);
+
+                entity.Property(e => e.FlightCarrierName)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.IsActive)
+                    .IsRequired()
+                    .HasDefaultValueSql("((1))");
+
+                entity.Property(e => e.LastModified)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.LastModifiedBy)
+                    .IsRequired()
+                    .HasMaxLength(255);
             });
 
             modelBuilder.Entity<GlobalAddressMapping>(entity =>
@@ -2328,6 +2362,62 @@ namespace DespatchWeb.EntityClasses
                     .HasConstraintName("FK_tblClientContactInternetPermission_tblInternetPermission");
             });
 
+            modelBuilder.Entity<TblClientContactJobType>(entity =>
+            {
+                entity.HasKey(e => e.ClientContactJobTypeId);
+
+                entity.ToTable("tblClientContactJobType");
+
+                entity.HasIndex(e => e.ClientContactId, "ClientContactID");
+
+                entity.HasIndex(e => new { e.ClientContactId, e.JobTypeId }, "ClientContact_JobType")
+                    .IsUnique();
+
+                entity.HasIndex(e => e.JobTypeId, "JobTypeID");
+
+                entity.Property(e => e.ClientContactJobTypeId).HasColumnName("ClientContactJobTypeID");
+
+                entity.Property(e => e.ClientContactId).HasColumnName("ClientContactID");
+
+                entity.Property(e => e.Created).HasColumnType("datetime");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.DeliveryType).HasMaxLength(100);
+
+                entity.Property(e => e.JobTypeId).HasColumnName("JobTypeID");
+
+                entity.Property(e => e.LastModified).HasColumnType("datetime");
+
+                entity.Property(e => e.LastModifiedBy)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Notes).HasColumnType("ntext");
+
+                entity.Property(e => e.PickupType).HasMaxLength(100);
+
+                entity.HasOne(d => d.ClientContact)
+                    .WithMany(p => p.TblClientContactJobTypes)
+                    .HasForeignKey(d => d.ClientContactId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_tblClientContactJobType_tblClientContact");
+
+                entity.HasOne(d => d.ClientContactNavigation)
+                    .WithMany(p => p.TblClientContactJobTypes)
+                    .HasForeignKey(d => d.ClientContactId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_tblClientContactJobType_tucClientContact");
+
+                entity.HasOne(d => d.JobType)
+                    .WithMany(p => p.TblClientContactJobTypes)
+                    .HasForeignKey(d => d.JobTypeId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_tblClientContactJobType_tucJobType");
+            });
+
             modelBuilder.Entity<TblContact>(entity =>
             {
                 entity.HasNoKey();
@@ -2902,6 +2992,10 @@ namespace DespatchWeb.EntityClasses
                     .IsUnique();
 
                 entity.Property(e => e.DespatchViewId).HasColumnName("DespatchViewID");
+
+                entity.Property(e => e.CenterLatitude).HasColumnType("decimal(18, 9)");
+
+                entity.Property(e => e.CenterLongitude).HasColumnType("decimal(18, 9)");
 
                 entity.Property(e => e.Created).HasColumnType("datetime");
 
@@ -6124,104 +6218,6 @@ namespace DespatchWeb.EntityClasses
                     .HasColumnName("WhenPODNotificationSent");
 
                 entity.Property(e => e.WhenSpeedChangeNotificationSent).HasColumnType("datetime");
-
-                entity.HasOne(d => d.AcceptedJobType)
-                    .WithMany(p => p.TucJobArchiveAcceptedJobTypes)
-                    .HasForeignKey(d => d.AcceptedJobTypeId);
-
-                entity.HasOne(d => d.Agent)
-                    .WithMany(p => p.TucJobArchives)
-                    .HasForeignKey(d => d.AgentId)
-                    .HasConstraintName("FK_tucJobArchive_Agent");
-
-                entity.HasOne(d => d.Contact)
-                    .WithMany(p => p.TucJobArchives)
-                    .HasForeignKey(d => d.ContactId)
-                    .HasConstraintName("FK_tucJobArchive_tucClientContact");
-
-                entity.HasOne(d => d.DeliverToLeave)
-                    .WithMany(p => p.TucJobArchives)
-                    .HasForeignKey(d => d.DeliverToLeaveId)
-                    .HasConstraintName("FK_tucJobArchive_tblJobLeaveNotHome");
-
-                entity.HasOne(d => d.DesiredJobType)
-                    .WithMany(p => p.TucJobArchiveDesiredJobTypes)
-                    .HasForeignKey(d => d.DesiredJobTypeId);
-
-                entity.HasOne(d => d.FromAirport)
-                    .WithMany(p => p.TucJobArchiveFromAirports)
-                    .HasForeignKey(d => d.FromAirportId)
-                    .HasConstraintName("FK_tucJobArchive_FromAirport");
-
-                entity.HasOne(d => d.InternalStatusNavigation)
-                    .WithMany(p => p.TucJobArchives)
-                    .HasForeignKey(d => d.InternalStatus)
-                    .HasConstraintName("FK_tucJobArchive_tucJobInternalStatus");
-
-                entity.HasOne(d => d.JobRelationshipType)
-                    .WithMany(p => p.TucJobArchives)
-                    .HasForeignKey(d => d.JobRelationshipTypeId)
-                    .HasConstraintName("FK_tucJobArchive_tblJobRelationshipType");
-
-                entity.HasOne(d => d.NotifiedJobType)
-                    .WithMany(p => p.TucJobArchiveNotifiedJobTypes)
-                    .HasForeignKey(d => d.NotifiedJobTypeId)
-                    .HasConstraintName("FK_tucJobArchive_tucJobType_Notified");
-
-                entity.HasOne(d => d.Parent)
-                    .WithMany(p => p.InverseParent)
-                    .HasForeignKey(d => d.ParentId)
-                    .HasConstraintName("FK_tucJobArchive_ParentID");
-
-                entity.HasOne(d => d.Source)
-                    .WithMany(p => p.TucJobArchives)
-                    .HasForeignKey(d => d.SourceId)
-                    .HasConstraintName("FK_tucJobArchive_Source");
-
-                entity.HasOne(d => d.ToAirport)
-                    .WithMany(p => p.TucJobArchiveToAirports)
-                    .HasForeignKey(d => d.ToAirportId)
-                    .HasConstraintName("FK_tucJobArchive_ToAirport");
-
-                entity.HasOne(d => d.UcjbClient)
-                    .WithMany(p => p.TucJobArchives)
-                    .HasForeignKey(d => d.UcjbClientId)
-                    .HasConstraintName("FK_tucJobArchive_Client");
-
-                entity.HasOne(d => d.UcjbCourier)
-                    .WithMany(p => p.TucJobArchives)
-                    .HasForeignKey(d => d.UcjbCourierId)
-                    .HasConstraintName("FK_tucJobArchive_Courier");
-
-                entity.HasOne(d => d.UcjbDisp)
-                    .WithMany(p => p.TucJobArchives)
-                    .HasForeignKey(d => d.UcjbDispId)
-                    .HasConstraintName("FK_tucJobArchive_Dispatcher");
-
-                entity.HasOne(d => d.UcjbFromNavigation)
-                    .WithMany(p => p.TucJobArchiveUcjbFromNavigations)
-                    .HasForeignKey(d => d.UcjbFrom)
-                    .HasConstraintName("FK_tucJobArchive_FromSuburb");
-
-                entity.HasOne(d => d.UcjbSpeedNavigation)
-                    .WithMany(p => p.TucJobArchiveUcjbSpeedNavigations)
-                    .HasForeignKey(d => d.UcjbSpeed)
-                    .HasConstraintName("FK_tucJobArchive_tucJobType");
-
-                entity.HasOne(d => d.UcjbStatusNavigation)
-                    .WithMany(p => p.TucJobArchives)
-                    .HasForeignKey(d => d.UcjbStatus)
-                    .HasConstraintName("FK_tucJobArchive_tucJobStatus");
-
-                entity.HasOne(d => d.UcjbToNavigation)
-                    .WithMany(p => p.TucJobArchiveUcjbToNavigations)
-                    .HasForeignKey(d => d.UcjbTo)
-                    .HasConstraintName("FK_tucJobArchive_ToSuburb");
-
-                entity.HasOne(d => d.UndeliverableLocation)
-                    .WithMany(p => p.TucJobArchives)
-                    .HasForeignKey(d => d.UndeliverableLocationId)
-                    .HasConstraintName("FK_tucJobArchive_tblUndeliverableLocation");
             });
 
             modelBuilder.Entity<TucJobBooking>(entity =>
@@ -6943,6 +6939,25 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.UcjtUnitRate)
                     .HasColumnType("money")
                     .HasColumnName("ucjtUnitRate");
+
+                entity.HasOne(d => d.Grouping)
+                    .WithMany(p => p.TucJobTypes)
+                    .HasForeignKey(d => d.GroupingId)
+                    .HasConstraintName("FK__tucJobTyp__Group__1F3A56BC");
+            });
+
+            modelBuilder.Entity<TucJobTypeGrouping>(entity =>
+            {
+                entity.HasKey(e => e.GroupingId)
+                    .HasName("PK__tucJobTy__573C11ED01D93790");
+
+                entity.ToTable("tucJobTypeGrouping");
+
+                entity.Property(e => e.GroupingId).HasColumnName("GroupingID");
+
+                entity.Property(e => e.GroupingName)
+                    .IsRequired()
+                    .HasMaxLength(100);
             });
 
             modelBuilder.Entity<TucSource>(entity =>

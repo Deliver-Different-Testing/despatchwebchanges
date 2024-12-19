@@ -10,30 +10,13 @@
     <title>Urgent Dispatch</title>
     <link id="favicon" rel="shortcut icon" type="image/x-icon" href="dispmain.ico">
 
-    @* Google Maps *@
-    <environment exclude="Development">
-        <script
-            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB5uAU-zob6rO5n7g1QUqlBl9oVjLQakG4&libraries=places&callback=initMap"
-            async defer></script>
-        <script>googleMapsApiKey = "AIzaSyB5uAU-zob6rO5n7g1QUqlBl9oVjLQakG4"</script>
-    </environment>
-    <environment include="Development">
-        <script
-            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCVgP9vjgRYma7DM0B3tZxQlUS7uvXrgyg&libraries=places&callback=initMap"
-            async defer></script>
-        <script>googleMapsApiKey = "AIzaSyCVgP9vjgRYma7DM0B3tZxQlUS7uvXrgyg"</script>
-    </environment>
-
-    <script>
-        function initMap() {
-            console.log("Maps Loaded");
-        }
-    </script>
-
-
     @* Material *@
     <link href="/lib/ng-material-floating-button/mfb/dist/mfb.min.css" rel="stylesheet"/>
     <link rel="stylesheet" href="lib/material-time-picker/md-time-picker.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-grid/4.12.7/ui-grid.min.css"
+          integrity="sha512-HY4l1OW5NoZWE+45KXUWGPEoiHuqwUfA1LgkgI5dQcKa3xM6q/jk+xEFNyYyFWFMI9mq+DfeGl/UhzlS+hY7+A=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
 
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/angular-material-time-picker@1.0.8/dist/md-time-picker.css"
@@ -86,19 +69,6 @@
           crossorigin="anonymous" referrerpolicy="no-referrer"/>
     <link rel="stylesheet" href="lib/hotkeys/hotkeys.min.css">
     <link rel="stylesheet" href="lib/autocomplete/angular-auto-complete.css">
-
-    <script>
-        !function (a, b, c, d, e, f, g, h) {
-            a.RaygunObject = e, a[e] = a[e] || function () {
-                (a[e].o = a[e].o || []).push(arguments)
-            }, f = b.createElement(c), g = b.getElementsByTagName(c)[0],
-                f.async = 1, f.src = d, g.parentNode.insertBefore(f, g), h = a.onerror, a.onerror = function (b, c, d, f, g) {
-                h && h(b, c, d, f, g), g || (g = new Error(b)), a[e].q = a[e].q || [], a[e].q.push({
-                    e: g
-                })
-            }
-        }(window, document, "script", "//cdn.raygun.io/raygun4js/raygun.min.js", "rg4js");
-    </script>
 
 </head>
 <body ng-app="uDispatch">
@@ -160,6 +130,7 @@
 <script src="~/lib/jquery_timers.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/datejs/1.0/date.min.js"></script>
 
+
 @* Tracking lib*@
 <!--Here Maps-->
 <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
@@ -201,10 +172,19 @@
         "dist/version.js",
         "dist/materialTheme.js",
         "dist/routes.js",
-        "dist/mapLabels.js",
         "dist/filters.js",
+        "dist/services/config.service.js",
+        "dist/services/dispatch.service.js",
+        "dist/services/job-detail.service.js",
+        "dist/services/toastr.service.js",
+        "dist/services/loading.service.js",
+        "dist/services/greeting.service.js",
+        "dist/services/rate-job.service.js",
+        "dist/services/dispatch-job.service.js",
+        "dist/services/getUsStates.service.js",
+        "dist/services/open-job-dispatch.service.js",
         "dist/components/common/side-nav/side-nav.directive.js",
-        "dist/components/home/homeService.js",
+        "dist/components/common/dispatch-map/dispatch-map.directive.js",
         "dist/components/home/homeControl.js",
         "dist/components/home/services/job-table.service.js",
         "dist/components/Nationwide/services/nationwide-layout.service.js",
@@ -235,16 +215,7 @@
         "dist/components/dialogs/edit-parcel-dimensions-dialog/parcel-visualization.directive.js",
         "dist/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.controller.js",
         "dist/components/dialogs/date-range-dialog/date-range-dialog.controller.js",
-        "dist/components/dialogs/map-dialog/map-dialog.controller.js",
-        "dist/services/config.service.js",
-        "dist/services/job-detail.service.js",
-        "dist/services/toastr.service.js",
-        "dist/services/loading.service.js",
-        "dist/services/greeting.service.js",
-        "dist/services/rate-job.service.js",
-        "dist/services/dispatch-job.service.js",
-        "dist/services/getUsStates.service.js",
-        "dist/services/open-job-dispatch.service.js",
+        "dist/components/dialogs/map-dialog/map-dialog.controller.js"
     };
 
     foreach (var script in scripts)

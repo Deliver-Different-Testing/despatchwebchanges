@@ -124,8 +124,8 @@
       <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\homeControl.js.map" />
       <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\homeControl.min.js" />
       <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\homeControl.min.js.map" />
-      <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\homeService.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\homeService.js.map" />
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\dispatch.service.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\dispatch.service.js.map"/>
       <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\homeService.min.js" />
       <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\homeService.min.js.map" />
       <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\Map.js" />

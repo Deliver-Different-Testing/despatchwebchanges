@@ -26,6 +26,8 @@ namespace DespatchWeb.EntityClasses
         public bool? ShowOnAssistDespatch { get; set; }
         public bool? ShowOnJobFollowup { get; set; }
         public int? ZoneGroupId { get; set; }
+        public decimal? CenterLatitude { get; set; }
+        public decimal? CenterLongitude { get; set; }
 
         public virtual ZoneGroup ZoneGroup { get; set; }
         public virtual ICollection<DespatchViewZoneGroup> DespatchViewZoneGroups { get; set; }

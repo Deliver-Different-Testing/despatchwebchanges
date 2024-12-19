@@ -9,7 +9,6 @@ namespace DespatchWeb.EntityClasses
     {
         public TblJobLeaveNotHome()
         {
-            TucJobArchives = new HashSet<TucJobArchive>();
             TucJobs = new HashSet<TucJob>();
         }
 
@@ -26,7 +25,6 @@ namespace DespatchWeb.EntityClasses
         public string CreatedBy { get; set; }
         public string Notes { get; set; }
 
-        public virtual ICollection<TucJobArchive> TucJobArchives { get; set; }
         public virtual ICollection<TucJob> TucJobs { get; set; }
     }
 }

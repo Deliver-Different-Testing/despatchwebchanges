@@ -13,14 +13,11 @@ namespace DespatchWeb.EntityClasses
             TblBulkRunScheduleParentSpeeds = new HashSet<TblBulkRunSchedule>();
             TblBulkRunScheduleSpeeds = new HashSet<TblBulkRunSchedule>();
             TblClientAvailableSpeeds = new HashSet<TblClientAvailableSpeed>();
+            TblClientContactJobTypes = new HashSet<TblClientContactJobType>();
             TblUndeliverableLocations = new HashSet<TblUndeliverableLocation>();
             TucEventSpeeds = new HashSet<TucEvent>();
             TucEventUcevJobTypeNavigations = new HashSet<TucEvent>();
             TucJobAcceptedJobTypes = new HashSet<TucJob>();
-            TucJobArchiveAcceptedJobTypes = new HashSet<TucJobArchive>();
-            TucJobArchiveDesiredJobTypes = new HashSet<TucJobArchive>();
-            TucJobArchiveNotifiedJobTypes = new HashSet<TucJobArchive>();
-            TucJobArchiveUcjbSpeedNavigations = new HashSet<TucJobArchive>();
             TucJobBookings = new HashSet<TucJobBooking>();
             TucJobDesiredJobTypes = new HashSet<TucJob>();
             TucJobNotifiedJobTypes = new HashSet<TucJob>();
@@ -64,18 +61,16 @@ namespace DespatchWeb.EntityClasses
         public int? UcjtClientId { get; set; }
         public int? GroupingId { get; set; }
 
+        public virtual TucJobTypeGrouping Grouping { get; set; }
         public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; }
         public virtual ICollection<TblBulkRunSchedule> TblBulkRunScheduleParentSpeeds { get; set; }
         public virtual ICollection<TblBulkRunSchedule> TblBulkRunScheduleSpeeds { get; set; }
         public virtual ICollection<TblClientAvailableSpeed> TblClientAvailableSpeeds { get; set; }
+        public virtual ICollection<TblClientContactJobType> TblClientContactJobTypes { get; set; }
         public virtual ICollection<TblUndeliverableLocation> TblUndeliverableLocations { get; set; }
         public virtual ICollection<TucEvent> TucEventSpeeds { get; set; }
         public virtual ICollection<TucEvent> TucEventUcevJobTypeNavigations { get; set; }
         public virtual ICollection<TucJob> TucJobAcceptedJobTypes { get; set; }
-        public virtual ICollection<TucJobArchive> TucJobArchiveAcceptedJobTypes { get; set; }
-        public virtual ICollection<TucJobArchive> TucJobArchiveDesiredJobTypes { get; set; }
-        public virtual ICollection<TucJobArchive> TucJobArchiveNotifiedJobTypes { get; set; }
-        public virtual ICollection<TucJobArchive> TucJobArchiveUcjbSpeedNavigations { get; set; }
         public virtual ICollection<TucJobBooking> TucJobBookings { get; set; }
         public virtual ICollection<TucJob> TucJobDesiredJobTypes { get; set; }
         public virtual ICollection<TucJob> TucJobNotifiedJobTypes { get; set; }

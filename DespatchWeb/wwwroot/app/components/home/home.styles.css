@@ -1,0 +1,196 @@
+md-table-container table.md-table th.md-column:nth-child(1),
+md-table-container table.md-table td.md-cell:nth-child(1) {
+    width: 60px !important;
+    max-width: 60px !important;
+    flex: 0 0 60px !important;
+}
+md-table-container table.md-table th.md-column:nth-child(2),
+md-table-container table.md-table td.md-cell:nth-child(2) {
+    width: 60px !important;
+    max-width: 60px !important;
+    flex: 0 0 60px !important;
+}
+md-table-container table.md-table th.md-column:nth-child(3),
+md-table-container table.md-table td.md-cell:nth-child(3) {
+    width: 60px !important;
+    max-width: 60px !important;
+    flex: 0 0 60px !important;
+}
+md-table-container table.md-table th.md-column:nth-child(4),
+md-table-container table.md-table td.md-cell:nth-child(4) {
+    width: 80px !important;
+    max-width: 80px !important;
+    flex: 0 0 80px !important;
+}
+md-table-container table.md-table th.md-column:nth-child(5),
+md-table-container table.md-table td.md-cell:nth-child(5) {
+    width: 80px !important;
+    max-width: 80px !important;
+    flex: 0 0 80px !important;
+}
+md-table-container table.md-table th.md-column:nth-child(6),
+md-table-container table.md-table td.md-cell:nth-child(6) {
+    width: 70px !important;
+    max-width: 70px !important;
+    flex: 0 0 70px !important;
+}
+md-table-container table.md-table th.md-column:nth-child(7),
+md-table-container table.md-table td.md-cell:nth-child(7) {
+    width: 150px !important;
+    max-width: 150px !important;
+    flex: 0 0 150px !important;
+}
+md-table-container table.md-table th.md-column:nth-child(9),
+md-table-container table.md-table td.md-cell:nth-child(9) {
+    width: 250px !important;
+    max-width: 250px !important;
+    flex: 0 0 250px !important;
+}
+md-table-container table.md-table th.md-column:nth-child(10),
+md-table-container table.md-table td.md-cell:nth-child(10) {
+    width: 110px !important;
+    max-width: 110px !important;
+    flex: 0 0 110px !important;
+}
+md-table-container table.md-table th.md-column:nth-child(11),
+md-table-container table.md-table td.md-cell:nth-child(11) {
+    width: 70px !important;
+    max-width: 70px !important;
+    flex: 0 0 70px !important;
+}
+md-table-container table.md-table th.md-column:nth-child(12),
+md-table-container table.md-table td.md-cell:nth-child(12) {
+    width: 80px !important;
+    max-width: 80px !important;
+    flex: 0 0 80px !important;
+}
+md-table-container table.md-table th.md-column:nth-child(13),
+md-table-container table.md-table td.md-cell:nth-child(13),
+md-table-container table.md-table th.md-column:nth-child(14),
+md-table-container table.md-table td.md-cell:nth-child(14) {
+    width: 50px !important;
+    max-width: 50px !important;
+    flex: 0 0 50px !important;
+}
+md-table-container table.md-table th.md-column:nth-child(15),
+md-table-container table.md-table td.md-cell:nth-child(15),
+md-table-container table.md-table th.md-column:nth-child(16),
+md-table-container table.md-table td.md-cell:nth-child(16) {
+    width: 40px !important;
+    max-width: 40px !important;
+    flex: 0 0 40px !important;
+}
+md-table-container table.md-table th.md-column td.md-cell.actions,
+md-table-container table.md-table td.md-cell td.md-cell.actions {
+    width: 80px !important;
+    max-width: 80px !important;
+    flex: 0 0 80px !important;
+    white-space: nowrap;
+}
+md-table-container table.md-table th.md-column td.md-cell.actions .action-icon,
+md-table-container table.md-table td.md-cell td.md-cell.actions .action-icon {
+    cursor: pointer;
+    margin-right: 8px;
+}
+md-table-container table.md-table th.md-column td.md-cell.actions .action-icon:last-child,
+md-table-container table.md-table td.md-cell td.md-cell.actions .action-icon:last-child {
+    margin-right: 0;
+}
+md-table-container table.md-table md-autocomplete {
+    height: 30px;
+    min-height: 24px;
+    width: 110px !important;
+}
+md-table-container table.md-table md-autocomplete,
+md-table-container table.md-table md-autocomplete md-autocomplete-wrap {
+    width: 110px !important;
+    min-width: 110px !important;
+    max-width: 110px !important;
+}
+md-table-container table.md-table md-autocomplete md-autocomplete-wrap {
+    height: 24px;
+}
+md-table-container table.md-table md-autocomplete input {
+    height: 24px !important;
+    line-height: 24px !important;
+    padding: 0 4px !important;
+}
+md-table-container table.md-table td.md-cell {
+    padding: 4px 4px !important;
+    height: 32px !important;
+    font-size: 12px;
+}
+md-table-container table.md-table td.md-cell [md-truncate] {
+    max-width: 250px;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+md-table-container table.md-table td.md-cell md-icon {
+    font-size: 18px !important;
+    height: 18px;
+    width: 18px;
+    min-height: 18px;
+    min-width: 18px;
+}
+md-table-container table.md-table th.md-column {
+    padding: 4px 4px !important;
+    height: 32px !important;
+    font-size: 13px;
+}
+.droppable-box {
+    width: 100%;
+    overflow: auto;
+}
+.clickable-row {
+    cursor: pointer;
+}
+.noselect {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+.attention-cell {
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.lateCallField {
+    width: 50px;
+    text-align: center;
+    height: 24px !important;
+    padding: 2px 4px !important;
+}
+.no-spinners::-webkit-outer-spin-button,
+.no-spinners::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.no-spinners[type="number"] {
+    -moz-appearance: textfield;
+}
+.status {
+    text-transform: uppercase;
+    font-weight: 500;
+}
+.remain-time {
+    white-space: nowrap;
+}
+.no-data {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    text-align: center;
+}
+.no-data .content {
+    color: #666;
+}
+.no-data .icon {
+    font-size: 48px;
+    margin-bottom: 1rem;
+}
+/*# sourceMappingURL=home.styles.css.map */

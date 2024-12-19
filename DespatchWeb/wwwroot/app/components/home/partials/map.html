@@ -1,4 +1,9 @@
-<div class="overlay-map-fix"></div>
-<div id="map_canvas" style="width:100%;height:100%;"></div>
-
-<script src="dist/map.min.js"></script>
+<dispatch-map
+        class="full-height-map"
+        courier-positions="courierPositions"
+        current-job="currentJob"
+        jobs="jobList"
+        map-center="mapCenter"
+        map-zoom="mapZoom"
+        on-marker-click="handleMarkerClick(job)"
+        show-available-couriers="allCouriers.display">

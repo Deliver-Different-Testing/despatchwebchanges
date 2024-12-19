@@ -10,6 +10,7 @@ namespace DespatchWeb.EntityClasses
         public TblClientContact()
         {
             TblClientContactInternetPermissions = new HashSet<TblClientContactInternetPermission>();
+            TblClientContactJobTypes = new HashSet<TblClientContactJobType>();
         }
 
         public int ClientContactId { get; set; }
@@ -47,5 +48,6 @@ namespace DespatchWeb.EntityClasses
         public virtual TucClient Client { get; set; }
         public virtual TucClientContact Contact { get; set; }
         public virtual ICollection<TblClientContactInternetPermission> TblClientContactInternetPermissions { get; set; }
+        public virtual ICollection<TblClientContactJobType> TblClientContactJobTypes { get; set; }
     }
 }

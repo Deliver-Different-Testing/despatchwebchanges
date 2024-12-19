@@ -27,9 +27,10 @@ public class JobControllerTest
         _mockConfig = new Mock<IConfiguration>();
         _mockWebHostEnvironment = new Mock<IWebHostEnvironment>();
         _mockLogger = new Mock<ILogger<JobController>>();
+        _mockRateJobService = new Mock<IRateJobService>();
 
         _controller = new JobController(_mockJobRepo.Object, _mockCourierRepo.Object, _mockClientAccessValidator.Object,
-            _mockConfig.Object, _mockWebHostEnvironment.Object, _mockLogger.Object);
+            _mockConfig.Object, _mockWebHostEnvironment.Object, _mockLogger.Object, _mockRateJobService.Object);
     }
 
     private Mock<IJobRepository> _mockJobRepo;
@@ -38,6 +39,7 @@ public class JobControllerTest
     private Mock<IConfiguration> _mockConfig;
     private Mock<IWebHostEnvironment> _mockWebHostEnvironment;
     private Mock<ILogger<JobController>> _mockLogger;
+    private Mock<IRateJobService> _mockRateJobService;
     private JobController _controller;
 
     [Test]
