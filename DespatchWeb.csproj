@@ -228,6 +228,9 @@
     <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.min.js.map" />
   </ItemGroup>
   <ItemGroup>
+    <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
+  </ItemGroup>
+  <ItemGroup>
     <Content Include="Helpers\DynamicLinqParser.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -240,6 +243,12 @@
     <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.styles.less" />
     <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.styles.min.css" />
     <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.template.html" />
+    <None Include="wwwroot\app\components\common\side-nav\side-nav.directive.js"/>
+    <None Include="wwwroot\app\components\common\side-nav\side-nav.css"/>
+    <None Include="wwwroot\app\components\common\side-nav\side-nav.css.map"/>
+    <None Include="wwwroot\app\components\common\side-nav\side-nav.min.css"/>
+    <None Include="wwwroot\app\components\common\side-nav\side-nav.less"/>
+    <None Include="wwwroot\app\components\common\side-nav\side-nav.template.html"/>
     <Page Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.controller.js" />
     <None Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.css" />
     <None Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.css.map" />
