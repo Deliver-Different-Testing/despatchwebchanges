@@ -64,11 +64,10 @@ builder.Services.AddScoped<IFlightStatsService, FlightStatsService>();
 builder.Services.AddScoped<IClientAccessValidatorService, ClientAccessValidatorService>();
 builder.Services.AddScoped<IRateJobService, RateJobService>();
 
-
 // Automapper
 builder.Services.AddAutoMapper(typeof(GenericMapperProfiles));
 
-
+// Database
 var connectionString = builder.Configuration.GetConnectionString("Connection");
 builder.Services.AddDbContext<DespatchContext>(x =>
 {

@@ -10,7 +10,6 @@ dispatch-map {
   width: 100%;
   height: 100vh;
 }
-
 .dispatch-map-container .map-wrapper {
   height: 100%;
   width: 100%;
@@ -21,7 +20,6 @@ dispatch-map {
   height: 100%;
   display: block;
 }
-
 .dispatch-map-container > div {
   height: 100% !important;
   width: 100% !important;
@@ -50,5 +48,4 @@ dispatch-map {
     height: 100vh;
   }
 }
-
 /*# sourceMappingURL=dispatch-map.styles.css.map */
