@@ -61,6 +61,7 @@ namespace DespatchWeb.EntityClasses
         public int? UcjtClientId { get; set; }
         public int? GroupingId { get; set; }
 
+        public virtual TucJobTypeGrouping Grouping { get; set; }
         public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; }
         public virtual ICollection<TblBulkRunSchedule> TblBulkRunScheduleParentSpeeds { get; set; }
         public virtual ICollection<TblBulkRunSchedule> TblBulkRunScheduleSpeeds { get; set; }

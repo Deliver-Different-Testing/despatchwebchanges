@@ -4,8 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Config;
 using DespatchWeb.Models.FlightStats;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RestSharp;
 using DateTime = System.DateTime;
@@ -17,21 +17,16 @@ public class FlightStatsService : IFlightStatsService
     private const string ScheduleUrl = "https://api.flightstats.com/flex/schedules/rest/v1";
     private const string ConnectionUrl = "https://api.flightstats.com/flex/connections/rest/v3/";
     private const string AlertUrl = "https://api.flightstats.com/flex/alerts/rest/v1/";
-    private readonly string _appId;
-    private readonly string _appKey;
+    private readonly FlightStatusConfig _flightStatusConfig;
     private readonly ILogger<FlightStatsService> _logger;
-    private readonly string _webhookUrl;
 
-    public FlightStatsService(IConfiguration configuration, ILogger<FlightStatsService> logger)
+    public FlightStatsService(ILogger<FlightStatsService> logger, FlightStatusConfig flightStatusConfig)
     {
         _logger = logger;
+        _flightStatusConfig = flightStatusConfig;
         _logger.LogInformation("Initializing FlightStatsService");
 
-        _appId = configuration?["FlightStatusApiKeys:AppId"];
-        _appKey = configuration?["FlightStatusApiKeys:AppKey"];
-        _webhookUrl = configuration?["FlightStatusApiKeys:WebhookUrl"];
-
-        if (string.IsNullOrEmpty(_appId) || string.IsNullOrEmpty(_appKey))
+        if (string.IsNullOrEmpty(_flightStatusConfig.AppId) || string.IsNullOrEmpty(_flightStatusConfig.AppKey))
         {
             _logger.LogError(
                 "FlightStatsService initialization failed: AppId and/or AppKey missing from configuration");
@@ -62,10 +57,10 @@ public class FlightStatsService : IFlightStatsService
             new RestRequest(
                 $"json/create/{carrierCode}/{flightNumber}/from/{departureAirportCode}/departing/{year}/{month}/{day}");
 
-        request.AddQueryParameter("appId", _appId);
-        request.AddQueryParameter("appKey", _appKey);
+        request.AddQueryParameter("appId", _flightStatusConfig.AppId);
+        request.AddQueryParameter("appKey", _flightStatusConfig.AppKey);
         request.AddQueryParameter("type", "JSON");
-        request.AddQueryParameter("deliverTo", _webhookUrl);
+        request.AddQueryParameter("deliverTo", _flightStatusConfig.WebhookUrl);
 
         _logger.LogDebug("Sending alert creation request for carrier {Carrier}, flight {Flight}", carrierCode,
             flightNumber);
@@ -85,9 +80,10 @@ public class FlightStatsService : IFlightStatsService
         string departureAirportCode,
         string destinationAirportCode,
         DateTime? departureDateTime = null,
+        List<string> includeAirlines = null,
         int flightBuffer = 0,
         string codeType = null,
-        string[] extendedOptions = null)
+        List<string> extendedOptions = null)
     {
         _logger.LogInformation("Retrieving flights from {DepartureAirport} to {ArrivalAirport}",
             departureAirportCode, destinationAirportCode);
@@ -120,8 +116,18 @@ public class FlightStatsService : IFlightStatsService
             new RestRequest(
                 $"json/firstflightout/{departureAirportCode}/to/{destinationAirportCode}/leaving_after/{year}/{month}/{day}/{hour}/{minute}");
 
-        request.AddQueryParameter("appId", _appId);
-        request.AddQueryParameter("appKey", _appKey);
+        request.AddQueryParameter("appId", _flightStatusConfig.AppId);
+        request.AddQueryParameter("appKey", _flightStatusConfig.AppKey);
+        request.AddQueryParameter("payloadType", "cargo");
+        request.AddQueryParameter("maxResults", 100);
+        request.AddQueryParameter("includeCodeshares", false);
+
+        if (includeAirlines != null && includeAirlines.Any())
+        {
+            var combinedAirlines = string.Join(",", includeAirlines);
+            _logger.LogDebug("Adding carrier filters: {Carriers}", combinedAirlines);
+            request.AddQueryParameter("includeAirlines", combinedAirlines);
+        }
 
         if (!string.IsNullOrEmpty(codeType))
         {
@@ -129,14 +135,14 @@ public class FlightStatsService : IFlightStatsService
             request.AddQueryParameter("codeType", codeType);
         }
 
-        if (extendedOptions is { Length: > 0 })
+        if (extendedOptions != null && extendedOptions.Any())
         {
-            _logger.LogDebug("Adding extended options: {Options}", string.Join(", ", extendedOptions));
-            foreach (var option in extendedOptions)
-                request.AddQueryParameter("extendedOptions", option);
+            var combinedOptions = string.Join(",", extendedOptions);
+            _logger.LogDebug("Adding extended options: {Options}", combinedOptions);
+            request.AddQueryParameter("extendedOptions", combinedOptions);
         }
 
-        _logger.LogDebug("Executing flight search request");
+        _logger.LogDebug("Executing flight search request to {Url}", request.Resource);
         var response = await connectionClient.ExecuteGetAsync<FlightConnectionsResponse>(request);
 
         if (response.Data?.Connections == null)
@@ -146,7 +152,7 @@ public class FlightStatsService : IFlightStatsService
         }
 
         var flightOptions = response.Data.Connections
-            .Where(conn => conn.ScheduledFlight.Any() && !conn.ScheduledFlight.First().IsCodeshare)
+            .Where(conn => conn.ScheduledFlight.Any())
             .Select(conn =>
             {
                 var firstFlight = conn.ScheduledFlight.First();
@@ -196,8 +202,8 @@ public class FlightStatsService : IFlightStatsService
         var (year, month, day, _, _) = SplitDate(departureTime);
 
         var request = new RestRequest($"json/flight/{carrierCode}/{flightNumber}/departing/{year}/{month}/{day}");
-        request.AddQueryParameter("appId", _appId);
-        request.AddQueryParameter("appKey", _appKey);
+        request.AddQueryParameter("appId", _flightStatusConfig.AppId);
+        request.AddQueryParameter("appKey", _flightStatusConfig.AppKey);
 
         _logger.LogDebug("Executing flight details request for carrier {Carrier}, flight {Flight}",
             carrierCode, flightNumber);
@@ -221,8 +227,8 @@ public class FlightStatsService : IFlightStatsService
 
         var alertClient = new RestClient(AlertUrl);
         var request = new RestRequest($"json/get/{alertId}");
-        request.AddQueryParameter("appId", _appId);
-        request.AddQueryParameter("appKey", _appKey);
+        request.AddQueryParameter("appId", _flightStatusConfig.AppId);
+        request.AddQueryParameter("appKey", _flightStatusConfig.AppKey);
 
         var response = await alertClient.ExecuteGetAsync<RetrieveAlertResponse>(request);
 
@@ -242,8 +248,8 @@ public class FlightStatsService : IFlightStatsService
 
         var alertClient = new RestClient(AlertUrl);
         var request = new RestRequest($"json/delete/{alertId}");
-        request.AddQueryParameter("appId", _appId);
-        request.AddQueryParameter("appKey", _appKey);
+        request.AddQueryParameter("appId", _flightStatusConfig.AppId);
+        request.AddQueryParameter("appKey", _flightStatusConfig.AppKey);
 
         var response = await alertClient.ExecuteGetAsync(request);
 

@@ -31,6 +31,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<DfrntappUserViewPermission> DfrntappUserViewPermissions { get; set; }
         public virtual DbSet<DfrntpageView> DfrntpageViews { get; set; }
         public virtual DbSet<DfrntuserPageLayout> DfrntuserPageLayouts { get; set; }
+        public virtual DbSet<FlightCarrier> FlightCarriers { get; set; }
         public virtual DbSet<GlobalAddressMapping> GlobalAddressMappings { get; set; }
         public virtual DbSet<PricingBreakdown> PricingBreakdowns { get; set; }
         public virtual DbSet<TblAirport> TblAirports { get; set; }
@@ -76,6 +77,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TucJobNationwide> TucJobNationwides { get; set; }
         public virtual DbSet<TucJobStatus> TucJobStatuses { get; set; }
         public virtual DbSet<TucJobType> TucJobTypes { get; set; }
+        public virtual DbSet<TucJobTypeGrouping> TucJobTypeGroupings { get; set; }
         public virtual DbSet<TucSource> TucSources { get; set; }
         public virtual DbSet<TucStaff> TucStaffs { get; set; }
         public virtual DbSet<TucSuburb> TucSuburbs { get; set; }
@@ -891,6 +893,37 @@ namespace DespatchWeb.EntityClasses
                     .HasForeignKey(d => d.UserId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_UserPageLayouts_Users");
+            });
+
+            modelBuilder.Entity<FlightCarrier>(entity =>
+            {
+                entity.Property(e => e.FlightCarrierId).HasColumnName("FlightCarrierID");
+
+                entity.Property(e => e.CarrierCode).HasMaxLength(2);
+
+                entity.Property(e => e.Created)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(255);
+
+                entity.Property(e => e.FlightCarrierName)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.IsActive)
+                    .IsRequired()
+                    .HasDefaultValueSql("((1))");
+
+                entity.Property(e => e.LastModified)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.LastModifiedBy)
+                    .IsRequired()
+                    .HasMaxLength(255);
             });
 
             modelBuilder.Entity<GlobalAddressMapping>(entity =>
@@ -6906,6 +6939,25 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.UcjtUnitRate)
                     .HasColumnType("money")
                     .HasColumnName("ucjtUnitRate");
+
+                entity.HasOne(d => d.Grouping)
+                    .WithMany(p => p.TucJobTypes)
+                    .HasForeignKey(d => d.GroupingId)
+                    .HasConstraintName("FK__tucJobTyp__Group__1F3A56BC");
+            });
+
+            modelBuilder.Entity<TucJobTypeGrouping>(entity =>
+            {
+                entity.HasKey(e => e.GroupingId)
+                    .HasName("PK__tucJobTy__573C11ED01D93790");
+
+                entity.ToTable("tucJobTypeGrouping");
+
+                entity.Property(e => e.GroupingId).HasColumnName("GroupingID");
+
+                entity.Property(e => e.GroupingName)
+                    .IsRequired()
+                    .HasMaxLength(100);
             });
 
             modelBuilder.Entity<TucSource>(entity =>

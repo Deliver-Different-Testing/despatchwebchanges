@@ -10,27 +10,6 @@
     <title>Urgent Dispatch</title>
     <link id="favicon" rel="shortcut icon" type="image/x-icon" href="dispmain.ico">
 
-    @* Google Maps *@
-    <environment exclude="Development">
-        <script
-            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB5uAU-zob6rO5n7g1QUqlBl9oVjLQakG4&libraries=places&callback=initMap"
-            async defer></script>
-        <script>googleMapsApiKey = "AIzaSyB5uAU-zob6rO5n7g1QUqlBl9oVjLQakG4"</script>
-    </environment>
-    <environment include="Development">
-        <script
-            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCVgP9vjgRYma7DM0B3tZxQlUS7uvXrgyg&libraries=places&callback=initMap"
-            async defer></script>
-        <script>googleMapsApiKey = "AIzaSyCVgP9vjgRYma7DM0B3tZxQlUS7uvXrgyg"</script>
-    </environment>
-
-    <script>
-        function initMap() {
-            console.log("Maps Loaded");
-        }
-    </script>
-
-
     @* Material *@
     <link href="/lib/ng-material-floating-button/mfb/dist/mfb.min.css" rel="stylesheet"/>
     <link rel="stylesheet" href="lib/material-time-picker/md-time-picker.css">
@@ -91,19 +70,6 @@
     <link rel="stylesheet" href="lib/hotkeys/hotkeys.min.css">
     <link rel="stylesheet" href="lib/autocomplete/angular-auto-complete.css">
 
-    <script>
-        !function (a, b, c, d, e, f, g, h) {
-            a.RaygunObject = e, a[e] = a[e] || function () {
-                (a[e].o = a[e].o || []).push(arguments)
-            }, f = b.createElement(c), g = b.getElementsByTagName(c)[0],
-                f.async = 1, f.src = d, g.parentNode.insertBefore(f, g), h = a.onerror, a.onerror = function (b, c, d, f, g) {
-                h && h(b, c, d, f, g), g || (g = new Error(b)), a[e].q = a[e].q || [], a[e].q.push({
-                    e: g
-                })
-            }
-        }(window, document, "script", "//cdn.raygun.io/raygun4js/raygun.min.js", "rg4js");
-    </script>
-
 </head>
 <body ng-app="uDispatch">
 
@@ -140,9 +106,6 @@
         integrity="sha512-aItLT6sQatpSW2y7fAzMGlfYDst+OUOZGYsaEK4c3ko3HtGbqgEVS82OlbUPqampP/6s/luuFA5cugAnedU12g=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/markerclustererplus/2.1.4/markerclusterer.min.js"
-        integrity="sha512-/jShpNoGw558bp+NPGFAcyu//1onAk+1OGyDW3aJJoHLaTSi4nr2DXYC4VzgIELeIX3yg+EOVCf6v9PHHOJzTg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="lib/hotkeys/hotkeys.min.js"></script>
 <script src="lib/timepickerdirective.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/angularjs-google-maps/1.18.5/ng-map.min.js"
@@ -163,20 +126,6 @@
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="~/lib/jquery_timers.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/datejs/1.0/date.min.js"></script>
-
-@* Data Tables *@
-<script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-grid/4.12.7/ui-grid.min.js"
-        integrity="sha512-KExk1zDRdt2O1hyYQoGdubed/CQ5D+B5AQKLPRWMC/ZATwxBYWJxVlByy9VJTEEbNCR5bXuepjMfFpUVRStw8Q=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-grid/4.12.7/ui-grid.auto-resize.min.js"
-        integrity="sha512-mJTGcGM6OWL5s1vhEylb2ivtvAIlPj4VVNl7ZV0s764zExSBeo1g/0DsC95zwym5SuU45GbLBAsCe5Gykv6VzQ=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-grid/4.12.7/ui-grid.selection.min.js"
-        integrity="sha512-FyaaDtU21KGZqywoUFyD1WYE5wWPlWSKyS5AAoaLUSrL4RZYsbGb3gUoiQx78ARR565En5aY0NI4ZG6v2nxfDA=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-grid/4.12.7/ui-grid.pagination.min.js"
-        integrity="sha512-7M5KlhaS7cIwHbcwGePXgbHMcr2kbk13w3dUj+Rfg1BVvaPk9tMTj79oSPUA1kZjERfiP2k9c0fZeixrXVWpYg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 
 @* Tracking lib*@
@@ -220,11 +169,19 @@
         "dist/version.js",
         "dist/materialTheme.js",
         "dist/routes.js",
-        "dist/mapLabels.js",
         "dist/filters.js",
+        "dist/services/config.service.js",
+        "dist/services/dispatch.service.js",
+        "dist/services/job-detail.service.js",
+        "dist/services/toastr.service.js",
+        "dist/services/loading.service.js",
+        "dist/services/greeting.service.js",
+        "dist/services/rate-job.service.js",
+        "dist/services/dispatch-job.service.js",
+        "dist/services/getUsStates.service.js",
+        "dist/services/open-job-dispatch.service.js",
         "dist/components/common/side-nav/side-nav.directive.js",
         "dist/components/common/dispatch-map/dispatch-map.directive.js",
-        "dist/components/home/homeService.js",
         "dist/components/home/homeControl.js",
         "dist/components/home/services/job-table.service.js",
         "dist/components/Nationwide/services/nationwide-layout.service.js",
@@ -255,16 +212,7 @@
         "dist/components/dialogs/edit-parcel-dimensions-dialog/parcel-visualization.directive.js",
         "dist/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.controller.js",
         "dist/components/dialogs/date-range-dialog/date-range-dialog.controller.js",
-        "dist/components/dialogs/map-dialog/map-dialog.controller.js",
-        "dist/services/config.service.js",
-        "dist/services/job-detail.service.js",
-        "dist/services/toastr.service.js",
-        "dist/services/loading.service.js",
-        "dist/services/greeting.service.js",
-        "dist/services/rate-job.service.js",
-        "dist/services/dispatch-job.service.js",
-        "dist/services/getUsStates.service.js",
-        "dist/services/open-job-dispatch.service.js",
+        "dist/components/dialogs/map-dialog/map-dialog.controller.js"
     };
 
     foreach (var script in scripts)

@@ -1,10 +1,13 @@
 class DispatchMapController {
-    static $inject = ['$scope', 'NgMap', '$timeout'];
+    static $inject = ['$scope', 'NgMap', '$timeout', 'configService', '$window'];
 
-    constructor($scope, NgMap, $timeout) {
+    constructor($scope, NgMap, $timeout, configService, $window) {
         this.$scope = $scope;
         this.NgMap = NgMap;
         this.$timeout = $timeout;
+        this.configService = configService;
+        this.$window = $window;
+
         this.mapInstance = null;
         this.isUpdating = false;
 
@@ -13,6 +16,7 @@ class DispatchMapController {
         this.$scope.markers = [];
         this.$scope.flags = [];
         this.$scope.labels = [];
+        this.$scope.googleMapsUrl = null;
 
         // Bind methods
         this.updateDisplayedJobs = this.updateDisplayedJobs.bind(this);
@@ -20,7 +24,6 @@ class DispatchMapController {
         this.setupWatchers = this.setupWatchers.bind(this);
 
         // Initialize
-        this.setupMarkerIcons();
         this.initialize();
     }
 
@@ -44,27 +47,36 @@ class DispatchMapController {
             strokeWeight: isHovered ? 2 : 1,
             strokeColor: '#FFFFFF',
             scale: isHovered ? 1.8 : 1.5,
-            anchor: new google.maps.Point(12, 24),
+            anchor: new this.$window.google.maps.Point(12, 24),
             cursor: 'pointer'
         };
     }
 
-    initialize() {
-        this.NgMap.getMap().then(map => {
+    async initialize() {
+        try {
+            // Get API key and set the URL
+            const apiKey = await this.configService.getGoogleMapsKey();
+            this.$scope.googleMapsUrl = `https://maps.google.com/maps/api/js?key=${apiKey}&libraries=places`;
+
+            this.$scope.$apply();
+
+            const map = await this.NgMap.getMap();
+            this.setupMarkerIcons();
+
             this.mapInstance = map;
             this.$scope.map = map;
-            this.$scope.tooltip = new google.maps.InfoWindow({
+            this.$scope.tooltip = new this.$window.google.maps.InfoWindow({
                 disableAutoPan: true
             });
+
             this.setupWatchers();
 
-            // Initial update if we have data
             if (this.$scope.jobs || this.$scope.currentJob) {
                 this.updateDisplayedJobs();
             }
-        }).catch(error => {
+        } catch (error) {
             console.error('Error initializing map:', error);
-        });
+        }
     }
 
     setupWatchers() {
@@ -143,17 +155,17 @@ class DispatchMapController {
      * @param {Job} job
      */
     addPickupMarker(job) {
-        const position = new google.maps.LatLng(
+        const position = new this.$window.google.maps.LatLng(
             job.pickupAddress.latitude,
             job.pickupAddress.longitude
         );
 
-        const marker = new google.maps.Marker({
+        const marker = new this.$window.google.maps.Marker({
             position: position,
             map: this.mapInstance,
             icon: this.PICKUP_ICON,
             title: `Click to open job ${job.jobNo}`,
-            animation: google.maps.Animation.DROP
+            animation: this.$window.google.maps.Animation.DROP
         });
 
         marker.addListener('mouseover', () => {
@@ -187,17 +199,17 @@ class DispatchMapController {
      * @param {Job} job
      */
     addDeliveryMarker(job) {
-        const position = new google.maps.LatLng(
+        const position = new this.$window.google.maps.LatLng(
             job.deliveryAddress.latitude,
             job.deliveryAddress.longitude
         );
 
-        const marker = new google.maps.Marker({
+        const marker = new this.$window.google.maps.Marker({
             position: position,
             map: this.mapInstance,
             icon: this.DELIVERY_ICON,
             title: `Click to open job ${job.jobNo}`,
-            animation: google.maps.Animation.DROP
+            animation: this.$window.google.maps.Animation.DROP
         });
 
         marker.addListener('mouseover', () => {
@@ -219,7 +231,8 @@ class DispatchMapController {
         });
 
         marker.addListener('click', () => {
-            marker.setAnimation(google.maps.Animation.BOUNCE);
+            marker.setAnimation(this.$window.google.maps.Animation.BOUNCE);
+
             setTimeout(() => {
                 marker.setAnimation(null);
             }, 750);
@@ -232,9 +245,9 @@ class DispatchMapController {
     }
 
     addCourierMarker(courier) {
-        const position = new google.maps.LatLng(courier.latitude, courier.longitude);
+        const position = new this.$window.google.maps.LatLng(courier.latitude, courier.longitude);
 
-        const marker = new google.maps.Marker({
+        const marker = new this.$window.google.maps.Marker({
             position: position,
             map: this.mapInstance,
             icon: this.COURIER_ICON,
@@ -259,7 +272,7 @@ class DispatchMapController {
     fitMapToMarkers() {
         if (this.$scope.markers.length === 0) return;
 
-        const bounds = new google.maps.LatLngBounds();
+        const bounds = new this.$window.google.maps.LatLngBounds();
         this.$scope.markers.forEach(marker => bounds.extend(marker.getPosition()));
         this.mapInstance.fitBounds(bounds);
 
@@ -290,8 +303,8 @@ class DispatchMapController {
 }
 
 angular.module('uDispatch')
-    .directive('dispatchMap', ['NgMap', '$timeout', 'versionUrl',
-        (NgMap, $timeout, versionUrl) => ({
+    .directive('dispatchMap', ['NgMap', '$timeout', 'versionUrl', 'configService', '$window',
+        (NgMap, $timeout, versionUrl, configService, $window) => ({
             restrict: 'E',
             templateUrl: versionUrl('app/components/common/dispatch-map/dispatch-map.template.html'),
             scope: {

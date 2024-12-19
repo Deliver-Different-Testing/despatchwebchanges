@@ -17,6 +17,8 @@ public interface INationwideJobRepository
 
     Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId);
 
+    Task<List<string>> GetActiveAirlineCodesAsync();
+
     Task<List<AgentViewModel>> GetAgentsAsync(int jobId);
 
     Task<bool> AddAgentToJobAsync(int agentId, int jobId);

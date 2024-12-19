@@ -1430,34 +1430,6 @@ public class JobRepository : BaseJobRepository, IJobRepository
         return (string)outputDescriptionParam.Value;
     }
 
-    public async Task<decimal> RateJobAsync(int clientId, int fromId, int toId, int speed, bool pedal, bool van,
-        bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
-        string ourRef, string refA, string refB, int quantity, DateTime booked)
-    {
-        var curAmount = new OutputParameter<decimal?>();
-
-        await _context.Procedures.sp_RateJob2Async(
-            clientId,
-            fromId,
-            toId,
-            speed,
-            pedal,
-            van,
-            returnJob,
-            weight,
-            size,
-            includeFuelSurcharge,
-            ourRef,
-            refA,
-            refB,
-            quantity,
-            booked,
-            curAmount
-        );
-
-        return curAmount.Value ?? 0;
-    }
-
     public async Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId)
     {
         return await _context.PricingBreakdowns

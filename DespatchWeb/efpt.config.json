@@ -51,6 +51,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[FlightCarriers]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[GlobalAddressMapping]",
          "ObjectType": 0
       },
@@ -215,6 +219,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucJobTypeGrouping]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucSource]",
          "ObjectType": 0
       },
@@ -287,7 +295,15 @@
          "ObjectType": 3
       },
       {
+         "Name": "[dbo].[DD_InsertPricingBreakdown]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DD_stpGetAgentDistanceRate]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DD_stpJob_Rate_Described]",
          "ObjectType": 1
       },
       {

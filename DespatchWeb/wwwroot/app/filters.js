@@ -13,12 +13,12 @@ angular
      * @param {string} keyname - The key to use for uniqueness
      * @returns {Array} - The filtered array
      */
-    .filter("unique", () => (collection, keyname) => {
+    .filter("unique", () => (collection, keyName) => {
         const output = [],
             keys = [];
 
         angular.forEach(collection, item => {
-            const key = item[keyname];
+            const key = item[keyName];
             if (keys.indexOf(key) === -1) {
                 keys.push(key);
                 output.push(item);
@@ -35,8 +35,8 @@ angular
      * @returns {string} - The fixed URL
      */
     .filter('urlFix', () => $url => {
-        const tarea_regex = /(http(s?))\:\/\//gi;
-        if (!tarea_regex.test($url)) {
+        const regExp = /(http(s?))\:\/\//gi;
+        if (!regExp.test($url)) {
             $url = "http://" + $url;
         }
         return $url;
@@ -46,7 +46,7 @@ angular
      * @ngdoc filter
      * @name getByAttr
      * @param {Array|Object} input - The input array or object
-     * @param {*} val - The value to search for
+     * @param {string} val - The value to search for
      * @param {string} [attr] - The attribute to search in (for arrays)
      * @returns {*} - The found item or null
      */

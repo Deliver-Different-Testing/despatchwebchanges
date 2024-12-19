@@ -33,11 +33,15 @@ public class JobController : Controller
     private readonly IWebHostEnvironment _hostingEnvironment;
     private readonly IJobRepository _jobRepo;
     private readonly ILogger<JobController> _logger;
+    private readonly IRateJobService _rateJobService;
 
-    public JobController(IJobRepository jobRepository, ICourierRepository courierRepo,
+    public JobController(IJobRepository jobRepository,
+        ICourierRepository courierRepo,
         IClientAccessValidatorService clientAccessValidator,
         IConfiguration configuration,
-        IWebHostEnvironment hostingEnvironment, ILogger<JobController> logger)
+        IWebHostEnvironment hostingEnvironment,
+        ILogger<JobController> logger,
+        IRateJobService rateJobService)
     {
         _jobRepo = jobRepository;
         _courierRepo = courierRepo;
@@ -45,6 +49,7 @@ public class JobController : Controller
         _configuration = configuration;
         _hostingEnvironment = hostingEnvironment;
         _logger = logger;
+        _rateJobService = rateJobService;
     }
 
     [HttpGet]
@@ -702,7 +707,7 @@ public class JobController : Controller
         var e = new ApplicationException(
             $"Exsalerate Activity Failed {restResponse.Content} {Environment.NewLine} CurrentBody= {body}");
         var key = _configuration["RaygunSettings:ApiKey"];
-        var rc = new RaygunClient(key).SendInBackground(e);
+        new RaygunClient(key).SendInBackground(e);
 
         return Json("OK");
     }
@@ -841,6 +846,69 @@ public class JobController : Controller
             includeFuelSurcharge, direct, acceptedJobTypeId,
             ourRef, refA, refB, quantity, booked);
         return Json($"{rate:C}");
+    }
+
+    public async Task<IActionResult> RateJobUs(
+        int jobId,
+        int clientId,
+        int speed,
+        string fromZip,
+        string toZip,
+        int weight,
+        DateTime booked,
+        int size,
+        bool dangerousGoods,
+        int totalPallets,
+        int extraStopOffs,
+        int dryIceWeight,
+        int waitTime,
+        decimal pickUpLat,
+        decimal pickUpLong,
+        decimal deliveryLat,
+        decimal deliveryLong)
+    {
+        try
+        {
+            // Get distances and airport info
+            var distanceResult = await _rateJobService.CalculateJobRateUs(new JobRateRequest
+            {
+                SpeedId = speed,
+                PickupLat = pickUpLat,
+                PickupLong = pickUpLong,
+                DeliveryLat = deliveryLat,
+                DeliveryLong = deliveryLong
+            });
+
+            // Calculate final rate
+            var rate = await _jobRepo.RateJobUsAsync(
+                jobId,
+                clientId,
+                speed,
+                fromZip,
+                toZip,
+                (decimal)distanceResult.TotalMiles, // Used for non-flight jobs
+                (decimal)distanceResult.FromMiles, // Used for flight jobs
+                (decimal)distanceResult.ToMiles, // Used for flight jobs
+                weight,
+                booked,
+                size,
+                dangerousGoods,
+                totalPallets,
+                extraStopOffs,
+                dryIceWeight,
+                waitTime,
+                distanceResult.FromAirport?.AgentId,
+                distanceResult.FromAirport?.AirportId,
+                distanceResult.ToAirport?.AgentId,
+                distanceResult.ToAirport?.AirportId);
+
+            return Json($"{rate:C}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calculating job rate");
+            return StatusCode(500, "An error occurred while calculating the rate.");
+        }
     }
 
     public async Task<IActionResult> PpdExclusiveAmount(int clientId, decimal amount)
