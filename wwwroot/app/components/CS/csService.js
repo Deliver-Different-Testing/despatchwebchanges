@@ -123,6 +123,7 @@ class CsService {
     /**
      * @param {Date} runDate
      * @param {string} scan
+     * @returns {Promise<BulkScanDetail[]>}
      */
     async getScanDetail(runDate, scan) {
         const response = await this.$http.get('/Job/ScanJobDetail?runDate=' + runDate.toISOString() + '&scan=' + scan);

@@ -646,3 +646,12 @@
  * @property {number} centerLatitude - The center latitude coordinate
  * @property {number} centerLongitude - The center longitude coordinate
  */
+
+/**
+ * @typedef {Object} BulkScanDetail
+ *
+ * @property {number} bulkScanId - The unique identifier for the bulk scan
+ * @property {Date} scanDateTime - The date and time when the scan was performed
+ * @property {string} scanDetail - Details or description of the scan
+ * @property {string} courier - The name or identifier of the courier associated with the scan
+ */
