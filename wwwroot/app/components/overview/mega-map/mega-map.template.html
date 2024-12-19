@@ -1,89 +1,96 @@
 <link href="app/components/overview/mega-map/mega-map.styles.min.css" rel="stylesheet">
 <!-- Main Map Container -->
 <div class="map-container">
-    <ng-map center="{{ctrl.mapCenter}}"
-            default-style="false"
-            fullscreen-control="false"
-            map-type-control="false"
-            street-view-control="false"
-            style="height: 100vh !important; width: 100% !important;"
-            zoom="5"
-            zoom-control="true"
-            zoom-control-options="{position: 'RIGHT_BOTTOM'}">
 
-        <!-- Pickup Points -->
-        <marker-clusterer options="{
+    <div map-lazy-load="https://maps.google.com/maps/api/js"
+         map-lazy-load-params="{{ctrl.googleMapsUrl}}"
+         ng-if="ctrl.googleMapsUrl">
+        <ng-map
+                center="{{ctrl.mapCenter}}"
+                default-style="false"
+                fullscreen-control="false"
+                id="megaMap"
+                map-type-control="false"
+                street-view-control="false"
+                style="height: 100vh !important; width: 100% !important;"
+                zoom="5"
+                zoom-control="true"
+                zoom-control-options="{position: 'RIGHT_BOTTOM'}">
+
+            <!-- Pickup Points -->
+            <marker-clusterer options="{
             styles: ctrl.getClusterStyles(),
             minimumClusterSize: 2,
             zoomOnClick: true,
             averageCenter: true,
             gridSize: 60
         }">
-            <custom-marker class="zoom-adaptive"
-                           id="pickup-marker-{{point.jobId}}"
-                           ng-repeat="point in ctrl.pickupPoints"
-                           on-click="ctrl.showPointInfo($event)"
-                           position="[{{point.lat}}, {{point.lng}}]">
-                <div class="marker-container" ng-class="{
+                <custom-marker class="zoom-adaptive"
+                               id="pickup-marker-{{point.jobId}}"
+                               ng-repeat="point in ctrl.pickupPoints"
+                               on-click="ctrl.showPointInfo($event)"
+                               position="[{{point.lat}}, {{point.lng}}]">
+                    <div class="marker-container" ng-class="{
     'airport-marker': point.isFlightRoute,
     'pickup-marker': !point.isFlightRoute,
     'compact': ctrl.zoomLevel < 10
 }">
-                    <i class="material-symbols-outlined">
-                        {{point.isFlightRoute ? 'local_airport' : 'location_on'}}
-                    </i>
-                </div>
-            </custom-marker>
-        </marker-clusterer>
+                        <i class="material-symbols-outlined">
+                            {{point.isFlightRoute ? 'local_airport' : 'location_on'}}
+                        </i>
+                    </div>
+                </custom-marker>
+            </marker-clusterer>
 
-        <!-- Delivery Points -->
-        <marker-clusterer options="{
+            <!-- Delivery Points -->
+            <marker-clusterer options="{
             styles: ctrl.getClusterStyles(),
             minimumClusterSize: 2,
             zoomOnClick: true,
             averageCenter: true,
             gridSize: 60
         }">
-            <custom-marker class="zoom-adaptive"
-                           id="delivery-marker-{{point.jobId}}"
-                           ng-repeat="point in ctrl.deliveryPoints"
-                           on-click="ctrl.showPointInfo($event)"
-                           position="[{{point.lat}}, {{point.lng}}]">
-                <div class="marker-container" ng-class="{
+                <custom-marker class="zoom-adaptive"
+                               id="delivery-marker-{{point.jobId}}"
+                               ng-repeat="point in ctrl.deliveryPoints"
+                               on-click="ctrl.showPointInfo($event)"
+                               position="[{{point.lat}}, {{point.lng}}]">
+                    <div class="marker-container" ng-class="{
                     'airport-marker': point.isFlightRoute,
                     'delivery-marker': !point.isFlightRoute,
                     'compact': ctrl.zoomLevel < 10
                 }">
-                    <i class="material-symbols-outlined">
-                        {{point.isFlightRoute ? 'local_airport' : 'location_on'}}
+                        <i class="material-symbols-outlined">
+                            {{point.isFlightRoute ? 'local_airport' : 'location_on'}}
+                        </i>
+                    </div>
+                </custom-marker>
+            </marker-clusterer>
+
+            <!-- Flight Route Icons -->
+            <custom-marker class="zoom-adaptive"
+                           ng-repeat="route in ctrl.flightRoutes"
+                           on-click="ctrl.showPointInfo($event)"
+                           position="{{route.position}}">
+                <div class="flight-marker" ng-class="{'compact': ctrl.zoomLevel < 10}">
+                    <i class="material-symbols-outlined"
+                       style="color: #3EAFC2; transform: rotate({{route.rotation}}deg);">
+                        flight
                     </i>
                 </div>
             </custom-marker>
-        </marker-clusterer>
 
-        <!-- Flight Route Icons -->
-        <custom-marker class="zoom-adaptive"
-                       ng-repeat="route in ctrl.flightRoutes"
-                       on-click="ctrl.showPointInfo($event)"
-                       position="{{route.position}}">
-            <div class="flight-marker" ng-class="{'compact': ctrl.zoomLevel < 10}">
-                <i class="material-symbols-outlined"
-                   style="color: #3EAFC2; transform: rotate({{route.rotation}}deg);">
-                    flight
-                </i>
-            </div>
-        </custom-marker>
-
-        <!-- Route Lines -->
-        <shape name="polyline"
-               ng-repeat="pickup in ctrl.pickupPoints"
-               path="{{ctrl.getRoutePath(pickup)}}"
-               stroke-color="{{pickup.isFlightRoute ? '#3EAFC2' : '#FFB300'}}"
-               stroke-opacity="0.7"
-               stroke-pattern="{{pickup.isFlightRoute ? [20,10] : []}}"
-               stroke-weight="2">
-        </shape>
-    </ng-map>
+            <!-- Route Lines -->
+            <shape name="polyline"
+                   ng-repeat="pickup in ctrl.pickupPoints"
+                   path="{{ctrl.getRoutePath(pickup)}}"
+                   stroke-color="{{pickup.isFlightRoute ? '#3EAFC2' : '#FFB300'}}"
+                   stroke-opacity="0.7"
+                   stroke-pattern="{{pickup.isFlightRoute ? [20,10] : []}}"
+                   stroke-weight="2">
+            </shape>
+        </ng-map>
+    </div>
 
     <!-- Active Drivers Panel -->
     <md-card class="active-drivers">
@@ -212,7 +219,7 @@
     </div>
 
     <!-- Loading Overlay -->
-    <div class="loading-overlay" ng-if="ctrl.isLoading">
+    <div class="loading-overlay" ng-if="ctrl.isLoading || !ctrl.googleMapsUrl">
         <md-progress-circular md-mode="indeterminate"></md-progress-circular>
     </div>
 </div>

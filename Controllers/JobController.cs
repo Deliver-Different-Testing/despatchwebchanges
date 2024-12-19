@@ -32,7 +32,7 @@ using System.Threading;
 
 namespace DespatchWeb.Controllers;
 
-public class JobController(IJobRepository jobRepository, ICourierRepository courierRepo, IClientAccessValidatorService clientAccessValidator, IAmazonS3 s3Client, HttpClient httpClient) : Controller
+public class JobController(IJobRepository jobRepository, ICourierRepository courierRepo, IClientAccessValidatorService clientAccessValidator, IAmazonS3 s3Client, HttpClient httpClient, IRateJobService rateJobService) : Controller
 {
 
     [HttpGet]
@@ -1023,6 +1023,69 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
             includeFuelSurcharge, direct, acceptedJobTypeId,
             ourRef, refA, refB, quantity, booked);
         return Json($"{rate:C}");
+    }
+
+    public async Task<IActionResult> RateJobUs(
+        int jobId,
+        int clientId,
+        int speed,
+        string fromZip,
+        string toZip,
+        int weight,
+        DateTime booked,
+        int size,
+        bool dangerousGoods,
+        int totalPallets,
+        int extraStopOffs,
+        int dryIceWeight,
+        int waitTime,
+        decimal pickUpLat,
+        decimal pickUpLong,
+        decimal deliveryLat,
+        decimal deliveryLong)
+    {
+        try
+        {
+            // Get distances and airport info
+            var distanceResult = await _rateJobService.CalculateJobRateUs(new JobRateRequest
+            {
+                SpeedId = speed,
+                PickupLat = pickUpLat,
+                PickupLong = pickUpLong,
+                DeliveryLat = deliveryLat,
+                DeliveryLong = deliveryLong
+            });
+
+            // Calculate final rate
+            var rate = await _jobRepo.RateJobUsAsync(
+                jobId,
+                clientId,
+                speed,
+                fromZip,
+                toZip,
+                (decimal)distanceResult.TotalMiles, // Used for non-flight jobs
+                (decimal)distanceResult.FromMiles, // Used for flight jobs
+                (decimal)distanceResult.ToMiles, // Used for flight jobs
+                weight,
+                booked,
+                size,
+                dangerousGoods,
+                totalPallets,
+                extraStopOffs,
+                dryIceWeight,
+                waitTime,
+                distanceResult.FromAirport?.AgentId,
+                distanceResult.FromAirport?.AirportId,
+                distanceResult.ToAirport?.AgentId,
+                distanceResult.ToAirport?.AirportId);
+
+            return Json($"{rate:C}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calculating job rate");
+            return StatusCode(500, "An error occurred while calculating the rate.");
+        }
     }
 
     public async Task<IActionResult> PpdExclusiveAmount(int clientId, decimal amount)

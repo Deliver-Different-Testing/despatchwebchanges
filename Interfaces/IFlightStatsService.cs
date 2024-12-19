@@ -12,9 +12,10 @@ public interface IFlightStatsService
         string departureAirportCode,
         string destinationAirportCode,
         DateTime? departureDateTime = null,
+        List<string> includeAirlines = null,
         int flightBuffer = 0,
         string codeType = null,
-        string[] extendedOptions = null);
+        List<string> extendedOptions = null);
 
     Task<ScheduledFlight> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,
         DateTime departureTime);

@@ -105,6 +105,14 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         return (airportCodes?.ToAirport, airportCodes?.FromAirport);
     }
 
+    public async Task<List<string>> GetActiveAirlineCodesAsync()
+    {
+        var airlineCodes = await _context.FlightCarriers.Where(fc => fc.IsActive == true).Select(fc => fc.CarrierCode)
+            .AsNoTracking().ToListAsync();
+
+        return airlineCodes;
+    }
+
     public async Task<List<AgentViewModel>> GetAgentsAsync(int jobId)
     {
         var job = await GetJobDetailsAsync(jobId);

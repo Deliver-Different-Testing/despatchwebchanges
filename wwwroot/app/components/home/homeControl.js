@@ -925,9 +925,9 @@ angular.module("uDispatch")
                     if (data) {
                         // Update map bounds with envelope data
                         if ($scope.map) {
-                            const swll = new google.maps.LatLng(data.minimumLatitude, data.minimumLongitude);
-                            const nell = new google.maps.LatLng(data.maximumLatitude, data.maximumLongitude);
-                            $scope.map.fitBounds(new google.maps.LatLngBounds(swll, nell));
+                            const swll = new $window.google.maps.LatLng(data.minimumLatitude, data.minimumLongitude);
+                            const nell = new $window.google.maps.LatLng(data.maximumLatitude, data.maximumLongitude);
+                            $scope.map.fitBounds(new $window.google.maps.LatLngBounds(swll, nell));
                             $scope.map.setZoom(13);
                         }
 
@@ -2327,13 +2327,13 @@ angular.module("uDispatch")
 
                 if (autoZoom) {
                     // Find center point of all coordinates
-                    const bounds = new google.maps.LatLngBounds();
+                    const bounds = new $window.google.maps.LatLngBounds();
                     validJobs.forEach(job => {
                         if (isValidCoordinates(job.pickupAddress?.latitude, job.pickupAddress?.longitude)) {
-                            bounds.extend(new google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
+                            bounds.extend(new $window.google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
                         }
                         if (isValidCoordinates(job.deliveryAddress?.latitude, job.deliveryAddress?.longitude)) {
-                            bounds.extend(new google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude));
+                            bounds.extend(new $window.google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude));
                         }
                     });
 
@@ -2559,13 +2559,13 @@ angular.module("uDispatch")
                                     displayRoutePointsOnly(jobs, true, $scope.mapZoom.display);
 
                                     // Create bounds that include pickup and delivery points
-                                    const bounds = new google.maps.LatLngBounds();
-                                    bounds.extend(new google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
-                                    bounds.extend(new google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude));
+                                    const bounds = new $window.google.maps.LatLngBounds();
+                                    bounds.extend(new $window.google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
+                                    bounds.extend(new $window.google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude));
 
                                     // If courier position is available, include it
                                     if (isValidCoordinates(job.courierData.latitude, job.courierData.longitude)) {
-                                        bounds.extend(new google.maps.LatLng(job.courierData.latitude, job.courierData.longitude));
+                                        bounds.extend(new $window.google.maps.LatLng(job.courierData.latitude, job.courierData.longitude));
                                     }
                                 } else {
                                     console.warn('Invalid coordinates for job:', job);
@@ -2617,12 +2617,12 @@ angular.module("uDispatch")
                     displayPickupPoints(unDispatchedData, true, job);
 
                     // Set bounds for pickup point
-                    const bounds = new google.maps.LatLngBounds();
-                    bounds.extend(new google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
+                    const bounds = new $window.google.maps.LatLngBounds();
+                    bounds.extend(new $window.google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
 
                     // If delivery coordinates are valid, include them too
                     if (isValidCoordinates(job.deliveryLatitude, job.deliveryAddress.longitude)) {
-                        bounds.extend(new google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude));
+                        bounds.extend(new $window.google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude));
                     }
                 } else {
                     console.warn('Invalid pickup coordinates for job:', job);

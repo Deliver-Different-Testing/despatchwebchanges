@@ -1,12 +1,10 @@
 class MegaMapController {
-    constructor($interval, toastrService, NgMap, overviewService, APP_CONFIG) {
-        this.$interval = $interval;
+    constructor(toastrService, NgMap, overviewService, APP_CONFIG, configService, $window) {
         this.toastrService = toastrService;
         this.NgMap = NgMap;
         this.overviewService = overviewService;
-
-        this.directionsService = new google.maps.DirectionsService();
-        this.routePaths = new Map(); // Cache for route paths
+        this.configService = configService;
+        this.$window = $window;
 
         // Initialize data
         this.isUsCustomer = APP_CONFIG.US_Customer;
@@ -23,31 +21,70 @@ class MegaMapController {
             ? [39.8097343, -98.5556199]  // Central USA coordinates
             : [-36.8484597, 174.7633315]; // Auckland, New Zealand coordinates
         this.isLoading = false;
+        this.googleMapsUrl = null;
 
-        // Bind methods that need to preserve 'this' context
+        // Bind all methods
+        this.initializeMap = this.initializeMap.bind(this);
+        this.refreshData = this.refreshData.bind(this);
+        this.getDeliveryPointForJob = this.getDeliveryPointForJob.bind(this);
+        this.centerOnDriver = this.centerOnDriver.bind(this);
+        this.transformMapData = this.transformMapData.bind(this);
+        this.calculateFlightRoutes = this.calculateFlightRoutes.bind(this);
+        this.checkVisiblePoints = this.checkVisiblePoints.bind(this);
+        this.getRoutePath = this.getRoutePath.bind(this);
+        this.calculateRoadRoute = this.calculateRoadRoute.bind(this);
+        this.formatRoutePath = this.formatRoutePath.bind(this);
+        this.calculateFlightPosition = this.calculateFlightPosition.bind(this);
+        this.calculateRotationAngle = this.calculateRotationAngle.bind(this);
+        this.getInfoWindowContent = this.getInfoWindowContent.bind(this);
+        this.formatDateTime = this.formatDateTime.bind(this);
         this.showPointInfo = this.showPointInfo.bind(this);
         this.closeJobInfo = this.closeJobInfo.bind(this);
+        this.isPickupPoint = this.isPickupPoint.bind(this);
+        this.createClusterIcon = this.createClusterIcon.bind(this);
         this.onZoomChanged = this.onZoomChanged.bind(this);
 
         // Initialize map and start refresh interval
         this.initializeMap();
     }
 
-    initializeMap() {
-        this.NgMap.getMap().then(map => {
-            this.map = map;
-            console.log('Map initialized:', {
-                center: map.getCenter().toJSON(),
-                zoom: map.getZoom()
+    async initializeMap() {
+        try {
+            this.isLoading = true;
+            const apiKey = await this.configService.getGoogleMapsKey();
+            this.googleMapsUrl = `https://maps.google.com/maps/api/js?key=${apiKey}&libraries=places`;
+
+            // Wait for map to be ready
+            const waitForMap = new Promise(resolve => {
+                const checkMap = () => {
+                    this.NgMap.getMap('megaMap').then(map => {
+                        this.map = map;
+                        this.directionsService = new this.$window.google.maps.DirectionsService();
+                        this.routePaths = new Map();
+
+                        // Add zoom change listener
+                        this.$window.google.maps.event.addListener(map, 'zoom_changed', () => {
+                            this.onZoomChanged();
+                        });
+
+                        resolve(map);
+                    }).catch(() => {
+                        setTimeout(checkMap, 100);
+                    });
+                };
+                checkMap();
             });
 
-            // Add zoom change listener
-            google.maps.event.addListener(map, 'zoom_changed', () => {
-                this.onZoomChanged();
-            });
+            await waitForMap;
 
-            this.refreshData();
-        });
+            await this.refreshData();
+
+        } catch (error) {
+            console.error('Error initializing map:', error);
+            this.toastrService.showErrorToast('Error initializing map');
+        } finally {
+            this.isLoading = false;
+        }
     }
 
     async refreshData() {
@@ -71,9 +108,9 @@ class MegaMapController {
                 this.checkVisiblePoints();
 
                 // Optionally, fit bounds to show all points
-                const bounds = new google.maps.LatLngBounds();
+                const bounds = new this.$window.google.maps.LatLngBounds();
                 [...pickups, ...deliveries, ...drivers].forEach(point => {
-                    bounds.extend(new google.maps.LatLng(point.lat, point.lng));
+                    bounds.extend(new this.$window.google.maps.LatLng(point.lat, point.lng));
                 });
                 this.map.fitBounds(bounds);
             }
@@ -283,19 +320,19 @@ class MegaMapController {
 
         // Check pickups
         this.pickupPoints.forEach(point => {
-            const isVisible = bounds.contains(new google.maps.LatLng(point.lat, point.lng));
+            const isVisible = bounds.contains(new this.$window.google.maps.LatLng(point.lat, point.lng));
             console.log(`Pickup ${point.jobNumber} visible: ${isVisible}`, point);
         });
 
         // Check deliveries
         this.deliveryPoints.forEach(point => {
-            const isVisible = bounds.contains(new google.maps.LatLng(point.lat, point.lng));
+            const isVisible = bounds.contains(new this.$window.google.maps.LatLng(point.lat, point.lng));
             console.log(`Delivery ${point.jobNumber} visible: ${isVisible}`, point);
         });
 
         // Check drivers
         this.drivers.forEach(driver => {
-            const isVisible = bounds.contains(new google.maps.LatLng(driver.lat, driver.lng));
+            const isVisible = bounds.contains(new this.$window.google.maps.LatLng(driver.lat, driver.lng));
             console.log(`Driver ${driver.name} visible: ${isVisible}`, driver);
         });
     }
@@ -355,10 +392,10 @@ class MegaMapController {
                 this.directionsService.route({
                     origin: {lat: parseFloat(pickup.lat), lng: parseFloat(pickup.lng)},
                     destination: {lat: parseFloat(delivery.lat), lng: parseFloat(delivery.lng)},
-                    travelMode: google.maps.TravelMode.DRIVING,
+                    travelMode: this.$window.google.maps.TravelMode.DRIVING,
                     optimizeWaypoints: true
                 }, (response, status) => {
-                    if (status === google.maps.DirectionsStatus.OK) {
+                    if (status === this.$window.google.maps.DirectionsStatus.OK) {
                         resolve(response);
                     } else {
                         reject(status);
@@ -495,7 +532,7 @@ class MegaMapController {
         }
 
         if (this.map) {
-            this.map.panTo(new google.maps.LatLng(point.lat, point.lng));
+            this.map.panTo(new this.$window.google.maps.LatLng(point.lat, point.lng));
         }
     }
 
@@ -532,6 +569,6 @@ class MegaMapController {
 
 angular.module('uDispatch')
     .controller('megaMapController',
-        ['$interval', 'toastrService', 'NgMap', 'overviewService', 'APP_CONFIG',
-            ($interval, toastrService, NgMap, overviewService, APP_CONFIG) => new MegaMapController(
-                $interval, toastrService, NgMap, overviewService, APP_CONFIG)]);
+        ['toastrService', 'NgMap', 'overviewService', 'APP_CONFIG', 'configService', '$window',
+            (toastrService, NgMap, overviewService, APP_CONFIG, configService, $window) => new MegaMapController(
+                toastrService, NgMap, overviewService, APP_CONFIG, configService, $window)]);
