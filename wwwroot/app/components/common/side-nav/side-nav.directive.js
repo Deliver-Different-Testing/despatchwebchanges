@@ -24,14 +24,6 @@ class MaterialSidenavController {
 }
 
 class MaterialSidenavDirective {
-    static $inject = [
-        '$mdSidenav',
-        '$timeout',
-        '$state',
-        'versionUrl',
-        'APP_CONFIG'
-    ];
-
     constructor($mdSidenav, $timeout, $state, versionUrl, APP_CONFIG) {
         this.$mdSidenav = $mdSidenav;
         this.$timeout = $timeout;
@@ -48,6 +40,7 @@ class MaterialSidenavDirective {
 
     // Factory method to create the directive
     static directiveFactory($mdSidenav, $timeout, $state, versionUrl, APP_CONFIG) {
+        MaterialSidenavDirective.$inject = ['$mdSidenav', '$timeout', '$state', 'versionUrl', 'APP_CONFIG'];
         const directive = new MaterialSidenavDirective($mdSidenav, $timeout, $state, versionUrl, APP_CONFIG);
         return {
             restrict: directive.restrict,
@@ -109,7 +102,7 @@ class MaterialSidenavDirective {
         });
 
         // User settings
-        scope.userName = FirstName;
+        scope.userName = FirstName || "";
         scope.companyName = 'DFRNT';
         scope.isUsCustomer = this.APP_CONFIG.US_Customer;
 
@@ -126,4 +119,8 @@ class MaterialSidenavDirective {
 
 // Register the directive
 angular.module('uDispatch')
-    .directive('materialSidenav', MaterialSidenavDirective.directiveFactory);
+    .directive('materialSidenav', ['$mdSidenav', '$timeout', '$state', 'versionUrl', 'APP_CONFIG', 
+        function($mdSidenav, $timeout, $state, versionUrl, APP_CONFIG) {
+            return MaterialSidenavDirective.directiveFactory($mdSidenav, $timeout, $state, versionUrl, APP_CONFIG);
+        }
+    ]);
