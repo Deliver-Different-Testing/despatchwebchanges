@@ -1,21 +1,17 @@
+using System;
 using DespatchWeb.Models.Config;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
 namespace DespatchWeb.Controllers;
 
-public class ConfigController : Controller
+public class ConfigController(IOptions<HereMapsConfig> config) : Controller
 {
-    private readonly HereMapsConfig _config;
-
-    public ConfigController(IOptions<HereMapsConfig> config)
-    {
-        _config = config.Value;
-    }
+    private readonly HereMapsConfig _config = config.Value;
 
     [HttpGet]
     public IActionResult GetHereMapsKey()
     {
-        return Json(new { apiKey = _config.ApiKey });
+        return Json(new { apiKey = Environment.GetEnvironmentVariable("HereMapsAPIKey") });
     }
 }
