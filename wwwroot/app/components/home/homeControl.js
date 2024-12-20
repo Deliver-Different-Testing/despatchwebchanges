@@ -1123,7 +1123,7 @@ angular.module("uDispatch")
                 $mdDialog.show({
                     controller: 'SendMessageDialogController',
                     controllerAs: 'ctrl',
-                    parent: angular.element($document.body),
+                    parent: $document.body,
                     templateUrl: versionUrl('app/components/dialogs/send-message-dialog/send-message-dialog.html'),
                     clickOutsideToClose: true,
                     fullscreen: true,
@@ -1145,8 +1145,7 @@ angular.module("uDispatch")
                     controller: 'AddEventDialogController',
                     controllerAs: "ctrl",
                     templateUrl: versionUrl("app/components/dialogs/add-event-dialog/add-event-dialog.html"),
-                    parent: angular.element($document.body),
-
+                    parent: $document.body,
                     clickOutsideToClose: true,
                     fullscreen: true,
                     locals: {
@@ -2203,10 +2202,6 @@ angular.module("uDispatch")
 
                 $scope.jobList = processedJobs;
 
-                if (processedJobs.length > 0) {
-                    displayRoutePointsOnly(processedJobs, false);
-                }
-
                 await $scope.activateDrop();
                 return processedJobs;
             }
@@ -2275,27 +2270,7 @@ angular.module("uDispatch")
                 }
 
                 $scope.jobsCurrentList = data;
-                if (data.length > 0) {
-                    displayRoutePoints(data, false, $scope.mapZoom.display);
-                } else {
-                    const posData = await DispatchData.getCourierPosition(code);
-                    displayCourierPositionOnly(posData.latitude, posData.longitude);
-                }
                 await $scope.activateDrop();
-            }
-
-            /**
-             * @param {number} lat
-             * @param {number} lng
-             */
-            function displayCourierPositionOnly(lat, lng) {
-                if (isValidCoordinates(lat, lng)) {
-                    $scope.mapCenter = {lat, lng};
-                    $scope.courierPositions = [{
-                        latitude: lat,
-                        longitude: lng
-                    }];
-                }
             }
 
             /**
@@ -2309,42 +2284,6 @@ angular.module("uDispatch")
                     lng >= -180 && lng <= 180;
             }
 
-            /**
-             * @param {Job[]} jobs
-             * @param {boolean} clearExisting
-             * @param {boolean} autoZoom
-             */
-            function displayRoutePoints(jobs, clearExisting, autoZoom) {
-                if (!jobs || jobs.length === 0) return;
-
-                // Filter jobs to only those with valid coordinates
-                const validJobs = jobs.filter(job =>
-                    isValidCoordinates(job.pickupAddress?.latitude, job.pickupAddress?.longitude) ||
-                    isValidCoordinates(job.deliveryAddress?.latitude, job.deliveryAddress?.longitude)
-                );
-
-                $scope.jobList = validJobs;
-
-                if (autoZoom) {
-                    // Find center point of all coordinates
-                    const bounds = new $window.google.maps.LatLngBounds();
-                    validJobs.forEach(job => {
-                        if (isValidCoordinates(job.pickupAddress?.latitude, job.pickupAddress?.longitude)) {
-                            bounds.extend(new $window.google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
-                        }
-                        if (isValidCoordinates(job.deliveryAddress?.latitude, job.deliveryAddress?.longitude)) {
-                            bounds.extend(new $window.google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude));
-                        }
-                    });
-
-                    const center = bounds.getCenter();
-                    $scope.mapCenter = {
-                        lat: center.lat(),
-                        lng: center.lng()
-                    };
-                }
-            }
-
             async function updateUIForPotentialCourier(courier) {
                 $timeout(sizeHeadings, 1000);
                 $timeout(sizeHeadings, 2000);
@@ -2355,7 +2294,6 @@ angular.module("uDispatch")
                 $scope.currentCourier = courier;
                 $scope.currentSelection = ` for Courier ${courier.courier}`;
             }
-
 
             /**
              * @param {number} courierId
@@ -2376,12 +2314,6 @@ angular.module("uDispatch")
                     await $timeout(() => {
                         if (result.courier) {
                             $scope.jobsCurrentList = result.jobs;
-
-                            if (result.jobs.length > 0) {
-                                displayRoutePoints(result.jobs, true, $scope.mapZoom.display);
-                            } else if (result.position) {
-                                displayCourierPositionOnly(result.position.latitude, result.position.longitude);
-                            }
                         }
                     });
 
@@ -2495,7 +2427,6 @@ angular.module("uDispatch")
                     helperFunctions.hideLoading("#box-jobDetail");
                     $scope.currentSelection = ` for Job ${support.jobNumber}`;
                     let jobs = [$scope.currentJob];
-                    displayRoutePointsOnly(jobs, true, $scope.mapZoom.display);
 
                     if ($scope.currentJob.rootParentId) {
                         $scope.currentJob.relatedJobs = await DispatchData.getRelatedJobs($scope.currentJob.rootParentId, $scope.currentJob.clientId);
@@ -2556,8 +2487,6 @@ angular.module("uDispatch")
                                 // Display route points for the single job
                                 const jobs = [job];
                                 if (isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude) && isValidCoordinates(job.deliveryAddress.latitude, job.deliveryAddress.longitude)) {
-                                    displayRoutePointsOnly(jobs, true, $scope.mapZoom.display);
-
                                     // Create bounds that include pickup and delivery points
                                     const bounds = new $window.google.maps.LatLngBounds();
                                     bounds.extend(new $window.google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
@@ -2569,10 +2498,6 @@ angular.module("uDispatch")
                                     }
                                 } else {
                                     console.warn('Invalid coordinates for job:', job);
-                                    // Fallback to courier position if available
-                                    if (isValidCoordinates(job.courierData.latitude, job.courierData.longitude)) {
-                                        displayCourierPositionOnly(job.courierData.latitude, job.courierData.longitude);
-                                    }
                                 }
                             } else {
                                 console.warn('Missing courier data for job:', job);
@@ -2636,23 +2561,21 @@ angular.module("uDispatch")
                     isValidCoordinates(job.pickupAddress?.latitude, job.pickupAddress?.longitude)
                 );
 
+                // Update map points instead of job list
+                $scope.mapPoints = validJobs;
+
                 if (selectedJob) {
-                    // Center on selected job
                     $scope.mapCenter = {
                         lat: selectedJob.pickupAddress.latitude,
                         lng: selectedJob.pickupAddress.longitude
                     };
                 } else if (validJobs.length > 0) {
-                    // Center on first valid job
                     $scope.mapCenter = {
                         lat: validJobs[0].pickupAddress.latitude,
                         lng: validJobs[0].pickupAddress.longitude
                     };
                 }
-
-                $scope.jobList = validJobs;
             }
-
             function focusDispatchField() {
                 $timeout(() => {
                     const activeRow = angular.element(".activeTable .active");
@@ -3286,7 +3209,7 @@ angular.module("uDispatch")
                     controller: 'EditAddressDialogController',
                     controllerAs: 'ctrl',
                     templateUrl: versionUrl("app/components/dialogs/edit-address-dialog/edit-address-dialog.html"),
-                    parent: angular.element($document.body),
+                    parent: $document.body,
 
                     clickOutsideToClose: false,
                     fullscreen: true,
@@ -3362,7 +3285,7 @@ angular.module("uDispatch")
                 return $mdDialog.show({
                     controller: 'TruckCourierStatusDialogController',
                     controllerAs: 'ctrl',
-                    parent: angular.element($document.body),
+                    parent: $document.body,
 
                     templateUrl: versionUrl("app/components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.html"),
                     clickOutsideToClose: false,
@@ -3384,7 +3307,7 @@ angular.module("uDispatch")
                     return $mdDialog.show({
                         controller: 'CreateJobDialogController',
                         controllerAs: 'ctrl',
-                        parent: angular.element($document.body),
+                        parent: $document.body,
 
                         templateUrl: versionUrl("app/components/dialogs/create-job-dialog/create-job-dialog.html"),
                         clickOutsideToClose: false,
@@ -3428,7 +3351,7 @@ angular.module("uDispatch")
                     await $mdDialog.show({
                         controller: 'InterCourierChargeDialog',
                         controllerAs: 'ctrl',
-                        parent: angular.element($document.body),
+                        parent: $document.body,
                         templateUrl: versionUrl("app/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.html"),
                         clickOutsideToClose: false,
                         fullscreen: true,
@@ -3459,7 +3382,7 @@ angular.module("uDispatch")
                         controller: 'AddEventDialogController',
                         controllerAs: "ctrl",
                         templateUrl: versionUrl("app/components/dialogs/add-event-dialog/add-event-dialog.html"),
-                        parent: angular.element($document.body),
+                        parent: $document.body,
                         clickOutsideToClose: true,
                         fullscreen: true,
                         locals: {
@@ -3508,7 +3431,7 @@ angular.module("uDispatch")
                     await $mdDialog.show({
                         controller: 'JobFileUploadController',
                         controllerAs: 'ctrl',
-                        parent: angular.element($document.body),
+                        parent: $document.body,
                         templateUrl: versionUrl("app/components/dialogs/job-file-upload-dialog/job-file-upload-dialog.html"),
                         clickOutsideToClose: false,
                         fullscreen: true,
@@ -3550,7 +3473,7 @@ angular.module("uDispatch")
                         controller: 'AdditionalServicesDialogController',
                         controllerAs: "ctrl",
                         templateUrl: versionUrl("app/components/dialogs/additional-services-dialog/additional-services-dialog.html"),
-                        parent: angular.element($document.body),
+                        parent: $document.body,
 
                         clickOutsideToClose: false,
                         fullscreen: true,
