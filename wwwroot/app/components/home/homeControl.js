@@ -3028,7 +3028,7 @@ angular.module("uDispatch")
                         localStorage.setItem("disp-filters-" + ContactID, JSON.stringify($scope.queryParams));
                     }
 
-                    const selectedClients = $scope.pickService.clients.map(a => a.id);
+                const selectedClients = $scope.pickService.clients.map(a => a.id);
 
                     let orderBy = $scope.queryParams.order || 'jobName';
                     let orderDirection = 'asc';
@@ -3057,10 +3057,6 @@ angular.module("uDispatch")
                     if (result.items?.length > 0) {
                         $scope.jobList = result.items;
                         $scope.totalCount = result.total;
-
-                        if (result.undispatchedJobs?.length > 0) {
-                            displayPickupPoints(result.undispatchedJobs, true, null);
-                        }
                     } else {
                         $scope.jobList = [];
                         $scope.totalCount = 0;
@@ -3068,14 +3064,15 @@ angular.module("uDispatch")
 
                     await $scope.getAvailableCourierLocation();
 
-                } catch (error) {
-                    console.error('Error getting job list:', error);
-                    toastrService.showErrorToast('Failed to get job list. Please try again.');
+            } catch (error) {
+                console.error('Error getting job list:', error);
+                toastrService.showErrorToast('Failed to get job list. Please try again.');
 
                     $scope.jobList = [];
                     $scope.totalCount = 0;
                 }
             }
+
 
             $scope.jobPageChanged = async (page, limit) => {
                 $scope.queryParams.page = page;
