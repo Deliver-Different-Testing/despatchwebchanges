@@ -1205,8 +1205,6 @@ angular.module("uDispatch")
             }
 
             function handleNoAvailableCourier() {
-                const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierId === null);
-                displayPickupPoints(unDispatchedData, true, null);
                 return $scope.getAvailableCourierLocation();
             }
 
@@ -1274,8 +1272,6 @@ angular.module("uDispatch")
             }
 
             function handleDispatchError() {
-                const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierId === null);
-                displayPickupPoints(unDispatchedData, true, null);
                 return $scope.getAvailableCourierLocation();
             }
 
@@ -1522,7 +1518,7 @@ angular.module("uDispatch")
                     const lastJobId = lastJobElement.attr("data-jobid");
                     const lastJob = $scope.jobList.find(job => job.id === lastJobId);
 
-                    const foundCourier = $scope.pickCouriers.find(c => c.courierId === lastjob.courierData.courierId) || $scope.pickAllCouriers.find(c => c.courierId === lastjob.courierData.courierId);
+                    const foundCourier = $scope.pickCouriers.find(c => c.courierId === lastJob.courierData.courierId) || $scope.pickAllCouriers.find(c => c.courierId === lastjob.courierData.courierId);
 
                     if (foundCourier) {
                         $scope.courier = {gpsCourier: foundCourier.id};
@@ -2250,13 +2246,6 @@ angular.module("uDispatch")
                 if (courier.courier === undefined) {
                     courier.courier = `${courier.code} ${courier.firstName}`;
                 }
-
-                if ($scope.jobList.length > 0) {
-                    const jid = angular.element("#jobList .active").last().data("jobid");
-                    const currentJob = $scope.jobList.find(jo => jo.id === jid);
-                    const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierId === null);
-                    displayPickupPoints(unDispatchedData, true, currentJob);
-                }
             }
 
             async function displayJobsForCourier(courier) {
@@ -2535,12 +2524,8 @@ angular.module("uDispatch")
                 $scope.currentCourier = null;
                 $scope.currentSelection = ` for Job ${job.jobNo}`;
 
-                const unDispatchedData = $scope.jobList.filter(x => !x?.courierData?.courierId);
-
                 // Verify we have valid coordinates before displaying
                 if (isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude)) {
-                    displayPickupPoints(unDispatchedData, true, job);
-
                     // Set bounds for pickup point
                     const bounds = new $window.google.maps.LatLngBounds();
                     bounds.extend(new $window.google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
@@ -2554,35 +2539,14 @@ angular.module("uDispatch")
                 }
             }
 
-            function displayPickupPoints(jobs, clearExisting, selectedJob) {
-                if (!jobs || jobs.length === 0) return;
-
-                const validJobs = jobs.filter(job =>
-                    isValidCoordinates(job.pickupAddress?.latitude, job.pickupAddress?.longitude)
-                );
-
-                // Update map points instead of job list
-                $scope.mapPoints = validJobs;
-
-                if (selectedJob) {
-                    $scope.mapCenter = {
-                        lat: selectedJob.pickupAddress.latitude,
-                        lng: selectedJob.pickupAddress.longitude
-                    };
-                } else if (validJobs.length > 0) {
-                    $scope.mapCenter = {
-                        lat: validJobs[0].pickupAddress.latitude,
-                        lng: validJobs[0].pickupAddress.longitude
-                    };
-                }
-            }
             function focusDispatchField() {
                 $timeout(() => {
                     const activeRow = angular.element(".activeTable .active");
                     if (activeRow.length) {
                         const dispatchField = activeRow.find(".dispatchField");
                         if (dispatchField.length) {
-                            dispatchField[0].focus();
+                            dispatchField[0].focus()
+                            ;
                         }
                     }
                 }, 100);
