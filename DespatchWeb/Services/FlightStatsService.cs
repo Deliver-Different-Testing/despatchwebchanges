@@ -7,6 +7,7 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Config;
 using DespatchWeb.Models.FlightStats;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using RestSharp;
 using DateTime = System.DateTime;
 
@@ -20,10 +21,10 @@ public class FlightStatsService : IFlightStatsService
     private readonly FlightStatusConfig _flightStatusConfig;
     private readonly ILogger<FlightStatsService> _logger;
 
-    public FlightStatsService(ILogger<FlightStatsService> logger, FlightStatusConfig flightStatusConfig)
+    public FlightStatsService(ILogger<FlightStatsService> logger, IOptions<FlightStatusConfig> flightStatusConfig)
     {
         _logger = logger;
-        _flightStatusConfig = flightStatusConfig;
+        _flightStatusConfig = flightStatusConfig.Value;
         _logger.LogInformation("Initializing FlightStatsService");
 
         if (string.IsNullOrEmpty(_flightStatusConfig.AppId) || string.IsNullOrEmpty(_flightStatusConfig.AppKey))

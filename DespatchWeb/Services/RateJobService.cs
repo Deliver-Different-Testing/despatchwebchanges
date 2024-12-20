@@ -79,9 +79,7 @@ public class RateJobService : IRateJobService
         decimal? toLongitude)
     {
         if (!AreValidCoordinates(fromLatitude, fromLongitude, toLatitude, toLongitude))
-        {
             return 0;
-        }
 
         var fromLatLng = $"{fromLatitude},{fromLongitude}";
         var toLatLng = $"{toLatitude},{toLongitude}";

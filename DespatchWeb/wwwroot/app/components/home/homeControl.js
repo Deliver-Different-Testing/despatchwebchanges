@@ -1123,7 +1123,7 @@ angular.module("uDispatch")
                 $mdDialog.show({
                     controller: 'SendMessageDialogController',
                     controllerAs: 'ctrl',
-                    parent: angular.element($document.body),
+                    parent: $document.body,
                     templateUrl: versionUrl('app/components/dialogs/send-message-dialog/send-message-dialog.html'),
                     clickOutsideToClose: true,
                     fullscreen: true,
@@ -1136,27 +1136,26 @@ angular.module("uDispatch")
                 });
             };
 
-        /**
-         * @param {Object} $event
-         * @param {Job} job
-         */
-        $scope.otherEventForm = ($event, job) => {
-            $mdDialog.show({
-                controller: 'AddEventDialogController',
-                controllerAs: "ctrl",
-                templateUrl: versionUrl("app/components/dialogs/add-event-dialog/add-event-dialog.html"),
-                parent: angular.element($document.body),
-
-                clickOutsideToClose: true,
-                fullscreen: true,
-                locals: {
-                    job: job, dispatcherName: FirstName, contactId: ContactID
-                },
-                bindToController: true
-            }).then(() => {
-                console.log('Pallet Dialog closed!');
-            });
-        };
+            /**
+             * @param {Object} $event
+             * @param {Job} job
+             */
+            $scope.otherEventForm = ($event, job) => {
+                $mdDialog.show({
+                    controller: 'AddEventDialogController',
+                    controllerAs: "ctrl",
+                    templateUrl: versionUrl("app/components/dialogs/add-event-dialog/add-event-dialog.html"),
+                    parent: $document.body,
+                    clickOutsideToClose: true,
+                    fullscreen: true,
+                    locals: {
+                        job: job, dispatcherName: FirstName, contactId: ContactID
+                    },
+                    bindToController: true
+                }).then(() => {
+                    console.log('Pallet Dialog closed!');
+                });
+            };
 
         $scope.getSupportColorClass = support => {
             switch (support.eventType) {
@@ -1206,8 +1205,6 @@ angular.module("uDispatch")
         }
 
             function handleNoAvailableCourier() {
-                const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierId === null);
-                displayPickupPoints(unDispatchedData, true, null);
                 return $scope.getAvailableCourierLocation();
             }
 
@@ -1275,8 +1272,6 @@ angular.module("uDispatch")
         }
 
             function handleDispatchError() {
-                const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierId === null);
-                displayPickupPoints(unDispatchedData, true, null);
                 return $scope.getAvailableCourierLocation();
             }
 
@@ -1523,7 +1518,7 @@ angular.module("uDispatch")
                 const lastJobId = lastJobElement.attr("data-jobid");
                 const lastJob = $scope.jobList.find(job => job.id === lastJobId);
 
-                    const foundCourier = $scope.pickCouriers.find(c => c.courierId === lastjob.courierData.courierId) || $scope.pickAllCouriers.find(c => c.courierId === lastjob.courierData.courierId);
+                    const foundCourier = $scope.pickCouriers.find(c => c.courierId === lastJob.courierData.courierId) || $scope.pickAllCouriers.find(c => c.courierId === lastjob.courierData.courierId);
 
                 if (foundCourier) {
                     $scope.courier = {gpsCourier: foundCourier.id};
@@ -2203,10 +2198,6 @@ angular.module("uDispatch")
 
                 $scope.jobList = processedJobs;
 
-                if (processedJobs.length > 0) {
-                    displayRoutePointsOnly(processedJobs, false);
-                }
-
                 await $scope.activateDrop();
                 return processedJobs;
             }
@@ -2256,11 +2247,30 @@ angular.module("uDispatch")
                 courier.courier = `${courier.code} ${courier.firstName}`;
             }
 
-                if ($scope.jobList.length > 0) {
-                    const jid = angular.element("#jobList .active").last().data("jobid");
-                    const currentJob = $scope.jobList.find(jo => jo.id === jid);
-                    const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierId === null);
-                    displayPickupPoints(unDispatchedData, true, currentJob);
+            $scope.clearCourierSearch = () => {
+                $scope.jobsCurrentList = false;
+                $scope.courier.gpsCourier = '';
+                $scope.currentWorkSelection = '';
+            }
+
+            $scope.selectPotentialCourier = async (courier) => {
+                try {
+                    helperFunctions.showLoading('#box-jobDetail');
+                    helperFunctions.showLoading('#box-map');
+
+                    await updateCourierInfo(courier);
+                    await displayJobsForCourier(courier);
+                    await updateUIForPotentialCourier(courier);
+                } catch (error) {
+                    console.error('Error in selectPotentialCourier:', error);
+                } finally {
+                    hideLoadingElements();
+                }
+            };
+
+            async function updateCourierInfo(courier) {
+                if (courier.courier === undefined) {
+                    courier.courier = `${courier.code} ${courier.firstName}`;
                 }
             }
 
@@ -2270,8 +2280,12 @@ angular.module("uDispatch")
                 const data = await DispatchData.getJobsCurrent(courier.courierId, $scope.jobFilters.status === "done");
                 helperFunctions.hideLoading('#box-currentWork');
 
-            if ($scope.currentJob !== null && $scope.currentJob.courier !== code) {
-                $scope.currentJob = null;
+                if ($scope.currentJob !== null && $scope.currentJob.courier !== code) {
+                    $scope.currentJob = null;
+                }
+
+                $scope.jobsCurrentList = data;
+                await $scope.activateDrop();
             }
 
             $scope.jobsCurrentList = data;
@@ -2288,61 +2302,11 @@ angular.module("uDispatch")
              * @param {number} lat
              * @param {number} lng
              */
-            function displayCourierPositionOnly(lat, lng) {
-                if (isValidCoordinates(lat, lng)) {
-                    $scope.mapCenter = {lat, lng};
-                    $scope.courierPositions = [{
-                        latitude: lat,
-                        longitude: lng
-                    }];
-                }
-            }
-
-            /**
-             * @param {number} lat
-             * @param {number} lng
-             */
             function isValidCoordinates(lat, lng) {
                 return lat && lng && !isNaN(lat) && !isNaN(lng) &&
                     lat !== 0 && lng !== 0 &&
                     lat >= -90 && lat <= 90 &&
                     lng >= -180 && lng <= 180;
-            }
-
-            /**
-             * @param {Job[]} jobs
-             * @param {boolean} clearExisting
-             * @param {boolean} autoZoom
-             */
-            function displayRoutePoints(jobs, clearExisting, autoZoom) {
-                if (!jobs || jobs.length === 0) return;
-
-                // Filter jobs to only those with valid coordinates
-                const validJobs = jobs.filter(job =>
-                    isValidCoordinates(job.pickupAddress?.latitude, job.pickupAddress?.longitude) ||
-                    isValidCoordinates(job.deliveryAddress?.latitude, job.deliveryAddress?.longitude)
-                );
-
-                $scope.jobList = validJobs;
-
-                if (autoZoom) {
-                    // Find center point of all coordinates
-                    const bounds = new $window.google.maps.LatLngBounds();
-                    validJobs.forEach(job => {
-                        if (isValidCoordinates(job.pickupAddress?.latitude, job.pickupAddress?.longitude)) {
-                            bounds.extend(new $window.google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
-                        }
-                        if (isValidCoordinates(job.deliveryAddress?.latitude, job.deliveryAddress?.longitude)) {
-                            bounds.extend(new $window.google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude));
-                        }
-                    });
-
-                    const center = bounds.getCenter();
-                    $scope.mapCenter = {
-                        lat: center.lat(),
-                        lng: center.lng()
-                    };
-                }
             }
 
             async function updateUIForPotentialCourier(courier) {
@@ -2366,22 +2330,25 @@ angular.module("uDispatch")
                 return;
             }
 
-            try {
-                await $timeout(() => {
-                    $scope.currentListLoading = true;
-                });
+            /**
+             * @param {number} courierId
+             */
+            async function getCurrentJobs(courierId) {
+                if (!courierId) {
+                    console.warn('No courier ID provided');
+                    return;
+                }
+
+                try {
+                    await $timeout(() => {
+                        $scope.currentListLoading = true;
+                    });
 
                     const result = await dispatchJobService.getCurrentJobsForCourier(courierId, $scope.jobFilters?.status === "done");
 
-                await $timeout(() => {
-                    if (result.courier) {
-                        $scope.jobsCurrentList = result.jobs;
-
-                            if (result.jobs.length > 0) {
-                                displayRoutePoints(result.jobs, true, $scope.mapZoom.display);
-                            } else if (result.position) {
-                                displayCourierPositionOnly(result.position.latitude, result.position.longitude);
-                            }
+                    await $timeout(() => {
+                        if (result.courier) {
+                            $scope.jobsCurrentList = result.jobs;
                         }
                     });
 
@@ -2492,10 +2459,9 @@ angular.module("uDispatch")
                 await $scope.selectJob(data);
                 $scope.currentJob = data;
 
-                helperFunctions.hideLoading("#box-jobDetail");
-                $scope.currentSelection = ` for Job ${support.jobNumber}`;
-                let jobs = [$scope.currentJob];
-                displayRoutePointsOnly(jobs, true, $scope.mapZoom.display);
+                    helperFunctions.hideLoading("#box-jobDetail");
+                    $scope.currentSelection = ` for Job ${support.jobNumber}`;
+                    let jobs = [$scope.currentJob];
 
                     if ($scope.currentJob.rootParentId) {
                         $scope.currentJob.relatedJobs = await DispatchData.getRelatedJobs($scope.currentJob.rootParentId, $scope.currentJob.clientId);
@@ -2556,8 +2522,6 @@ angular.module("uDispatch")
                                 // Display route points for the single job
                                 const jobs = [job];
                                 if (isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude) && isValidCoordinates(job.deliveryAddress.latitude, job.deliveryAddress.longitude)) {
-                                    displayRoutePointsOnly(jobs, true, $scope.mapZoom.display);
-
                                     // Create bounds that include pickup and delivery points
                                     const bounds = new $window.google.maps.LatLngBounds();
                                     bounds.extend(new $window.google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
@@ -2569,10 +2533,6 @@ angular.module("uDispatch")
                                     }
                                 } else {
                                     console.warn('Invalid coordinates for job:', job);
-                                    // Fallback to courier position if available
-                                    if (isValidCoordinates(job.courierData.latitude, job.courierData.longitude)) {
-                                        displayCourierPositionOnly(job.courierData.latitude, job.courierData.longitude);
-                                    }
                                 }
                             } else {
                                 console.warn('Missing courier data for job:', job);
@@ -2610,12 +2570,8 @@ angular.module("uDispatch")
             $scope.currentCourier = null;
             $scope.currentSelection = ` for Job ${job.jobNo}`;
 
-                const unDispatchedData = $scope.jobList.filter(x => !x?.courierData?.courierId);
-
-            // Verify we have valid coordinates before displaying
-            if (isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude)) {
-                displayPickupPoints(unDispatchedData, true, job);
-
+                // Verify we have valid coordinates before displaying
+                if (isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude)) {
                     // Set bounds for pickup point
                     const bounds = new $window.google.maps.LatLngBounds();
                     bounds.extend(new $window.google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
@@ -2629,37 +2585,15 @@ angular.module("uDispatch")
                 }
             }
 
-            function displayPickupPoints(jobs, clearExisting, selectedJob) {
-                if (!jobs || jobs.length === 0) return;
-
-                const validJobs = jobs.filter(job =>
-                    isValidCoordinates(job.pickupAddress?.latitude, job.pickupAddress?.longitude)
-                );
-
-                if (selectedJob) {
-                    // Center on selected job
-                    $scope.mapCenter = {
-                        lat: selectedJob.pickupAddress.latitude,
-                        lng: selectedJob.pickupAddress.longitude
-                    };
-                } else if (validJobs.length > 0) {
-                    // Center on first valid job
-                    $scope.mapCenter = {
-                        lat: validJobs[0].pickupAddress.latitude,
-                        lng: validJobs[0].pickupAddress.longitude
-                    };
-                }
-
-                $scope.jobList = validJobs;
-            }
-
-        function focusDispatchField() {
-            $timeout(() => {
-                const activeRow = angular.element(".activeTable .active");
-                if (activeRow.length) {
-                    const dispatchField = activeRow.find(".dispatchField");
-                    if (dispatchField.length) {
-                        dispatchField[0].focus();
+            function focusDispatchField() {
+                $timeout(() => {
+                    const activeRow = angular.element(".activeTable .active");
+                    if (activeRow.length) {
+                        const dispatchField = activeRow.find(".dispatchField");
+                        if (dispatchField.length) {
+                            dispatchField[0].focus()
+                            ;
+                        }
                     }
                 }
             }, 100);
@@ -3057,10 +2991,6 @@ angular.module("uDispatch")
                     if (result.items?.length > 0) {
                         $scope.jobList = result.items;
                         $scope.totalCount = result.total;
-
-                        if (result.undispatchedJobs?.length > 0) {
-                            displayPickupPoints(result.undispatchedJobs, true, null);
-                        }
                     } else {
                         $scope.jobList = [];
                         $scope.totalCount = 0;
@@ -3355,8 +3285,12 @@ angular.module("uDispatch")
                 }
             };
 
-            angular.element('.eventForm').css('display', '');
-        };
+            function showEditAddressDialog($event, currentJob, selectedSuburbs, location) {
+                return $mdDialog.show({
+                    controller: 'EditAddressDialogController',
+                    controllerAs: 'ctrl',
+                    templateUrl: versionUrl("app/components/dialogs/edit-address-dialog/edit-address-dialog.html"),
+                    parent: $document.body,
 
         /**
          * @param {Object}  $event
@@ -3367,14 +3301,75 @@ angular.module("uDispatch")
                 controllerAs: 'ctrl',
                 parent: angular.element($document.body),
 
-                templateUrl: versionUrl("app/components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.html"),
-                clickOutsideToClose: false,
-                fullscreen: true,
-                locals: {
-                    data: $scope.truckCourierStatus[0],
-                },
-                bindToController: true
-            }).then(() => {
+            async function handleDialogResult(addressDetails, currentJob) {
+                if (!addressDetails) {
+                    console.log("Split jobs canceled!");
+                    return;
+                }
+
+                const updatedJob = {
+                    ...currentJob, toAddress: addressDetails.address, toSuburbID: addressDetails.our_suburb,
+                };
+
+                const callData = {
+                    jobID: updatedJob.id,
+                    lat: addressDetails.lat,
+                    long: addressDetails.long,
+                    toSuburbId: updatedJob.toSuburbID,
+                    toAddress: updatedJob.toAddress,
+                };
+
+                await DispatchData.updateSplitJobAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long);
+                await DispatchData.reRateSplitJob(callData.jobID);
+                await DispatchData.finishSplitJobProcess(callData.jobID, FirstName);
+                await $scope.getData();
+
+                toastrService.showSuccessToast("Job Successfully Split");
+                console.log("Job splitting complete!");
+                console.log('Dialog closed!');
+
+                return getJobList();
+            }
+
+            $scope.addEvent = () => {
+                let time = new Date();
+                time.setSeconds(0);
+                time.setMilliseconds(0);
+
+                $scope.eventForm = {
+                    "data": {
+                        "jobNum": $scope.currentJob.jobNo,
+                        "client": $scope.currentJob.client,
+                        "event": "Other",
+                        "date": new Date(),
+                        "time": time
+                    }, submit() {
+
+                    }, cancel() {
+                        angular.element('.eventForm').css('display', 'none');
+                    }
+                };
+
+                angular.element('.eventForm').css('display', '');
+            };
+
+            /**
+             * @param {Object}  $event
+             */
+            $scope.truckLoadingStatus = ($event) => {
+                return $mdDialog.show({
+                    controller: 'TruckCourierStatusDialogController',
+                    controllerAs: 'ctrl',
+                    parent: $document.body,
+
+                    templateUrl: versionUrl("app/components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.html"),
+                    clickOutsideToClose: false,
+                    fullscreen: true,
+                    locals: {
+                        data: $scope.truckCourierStatus[0],
+                    },
+                    bindToController: true
+                }).then(() => {
 // Dialog Closed
             });
         };
@@ -3402,7 +3397,37 @@ angular.module("uDispatch")
             /**
              * @param {number} newJobId
              */
-            async function processNewJob(newJobId) {
+            $scope.createNewJob = async ($event) => {
+                async function showCreateJobDialog() {
+                    return $mdDialog.show({
+                        controller: 'CreateJobDialogController',
+                        controllerAs: 'ctrl',
+                        parent: $document.body,
+
+                        templateUrl: versionUrl("app/components/dialogs/create-job-dialog/create-job-dialog.html"),
+                        clickOutsideToClose: false,
+                        fullscreen: true,
+                        locals: {
+                            staffId: ContactID, despatcherName: FirstName
+                        },
+                        bindToController: true
+                    });
+                }
+
+                /**
+                 * @param {number} newJobId
+                 */
+                async function processNewJob(newJobId) {
+                    try {
+                        const job = await DispatchData.getJobDetail(newJobId);
+                        await $scope.getData();
+                        await $scope.selectJob(job);
+                        toastrService.showSuccessToast("New Job Created Successfully");
+                    } finally {
+                        // Any cleanup operations can go here
+                    }
+                }
+
                 try {
                     const job = await DispatchData.getJobDetail(newJobId);
                     await $scope.getData();
@@ -3413,10 +3438,32 @@ angular.module("uDispatch")
                 }
             }
 
-            try {
-                const newJobId = await showCreateJobDialog();
-                if (newJobId) {
-                    await processNewJob(newJobId);
+            /**
+             * @param {Object} $event
+             */
+            $scope.interCourierCharge = async $event => {
+                try {
+                    await $mdDialog.show({
+                        controller: 'InterCourierChargeDialog',
+                        controllerAs: 'ctrl',
+                        parent: $document.body,
+                        templateUrl: versionUrl("app/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.html"),
+                        clickOutsideToClose: false,
+                        fullscreen: true,
+                        locals: {
+                            staffId: ContactID,
+                        },
+                        bindToController: true
+                    });
+
+                    console.log("Inter-courier Charge Added!");
+                    toastrService.showSuccessToast("Inter-courier charge added successfully");
+                } catch (error) {
+                    if (error === undefined) {
+                        console.log("Inter-courier Charge Canceled!");
+                    } else {
+                        throw error;
+                    }
                 }
             } catch (error) {
                 console.log('Error in createNewJob:', error);
@@ -3462,7 +3509,7 @@ angular.module("uDispatch")
                         controller: 'AddEventDialogController',
                         controllerAs: "ctrl",
                         templateUrl: versionUrl("app/components/dialogs/add-event-dialog/add-event-dialog.html"),
-                        parent: angular.element($document.body),
+                        parent: $document.body,
                         clickOutsideToClose: true,
                         fullscreen: true,
                         locals: {
@@ -3482,12 +3529,24 @@ angular.module("uDispatch")
             }
         };
 
-        /**
-         * @param {number} jobId
-         */
-        async function checkForAttachments(jobId) {
-            $scope.isCheckingAttachments = true;
-            $scope.hasAttachedFile = false;
+            /**
+             * @param {Object} $event
+             * @param {Job} job
+             */
+            $scope.openFileAttachmentDialog = async ($event, job) => {
+                try {
+                    await $mdDialog.show({
+                        controller: 'JobFileUploadController',
+                        controllerAs: 'ctrl',
+                        parent: $document.body,
+                        templateUrl: versionUrl("app/components/dialogs/job-file-upload-dialog/job-file-upload-dialog.html"),
+                        clickOutsideToClose: false,
+                        fullscreen: true,
+                        locals: {
+                            jobId: job.id
+                        },
+                        bindToController: true
+                    });
 
             try {
                 const response = await DispatchData.isFilesAttachedToJob(jobId);
@@ -3539,14 +3598,37 @@ angular.module("uDispatch")
             try {
                 const isClientItemsAvailable = await DispatchData.hasClientItemsAvailable(job.clientId, job.speedId);
 
-                if (!isClientItemsAvailable) {
-                    await $mdDialog.show($mdDialog.alert()
-                        .clickOutsideToClose(true)
-                        .title('No Additional Services')
-                        .targetEvent($event)
-                        .textContent('No additional services has been set up for this client. Please add a service through Admin Manager and try again.')
-                        .ok('OK'));
-                    return;
+                    if (!isClientItemsAvailable) {
+                        await $mdDialog.show($mdDialog.alert()
+                            .clickOutsideToClose(true)
+                            .title('No Additional Services')
+                            .targetEvent($event)
+                            .textContent('No additional services has been set up for this client. Please add a service through Admin Manager and try again.')
+                            .ok('OK'));
+                        return;
+                    }
+
+                    await $mdDialog.show({
+                        controller: 'AdditionalServicesDialogController',
+                        controllerAs: "ctrl",
+                        templateUrl: versionUrl("app/components/dialogs/additional-services-dialog/additional-services-dialog.html"),
+                        parent: $document.body,
+
+                        clickOutsideToClose: false,
+                        fullscreen: true,
+                        locals: {
+                            job: job
+                        },
+                        bindToController: true
+                    });
+
+                    console.log('Additional Services Dialog closed!');
+                } catch (error) {
+                    if (error === undefined) {
+                        console.log('User canceled dialog!')
+                    } else {
+                        console.error('Error in showAdditionalServicesMenu:', error);
+                    }
                 }
 
                 await $mdDialog.show({

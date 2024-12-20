@@ -38,6 +38,8 @@ angular.module('uDispatch')
                     $scope.pbPageIndex = 1;
                     $scope.pbPageSizeSelected = 50;
                     $scope.name = "POD";
+                    /** @type {BulkScanDetail[]} */
+                    $scope.scanList = [];
 
                     $scope.jobRecordSearchText = "";
                     $scope.sort = [];
@@ -119,6 +121,7 @@ angular.module('uDispatch')
                     $scope.jobPromise = null;
                     $scope.bulkJobPromise = null;
                     $scope.preBookPromise = null;
+                    $scope.scanPromise = null;
 
                     $scope.jobHeaders = [{key: 'booked', label: 'Booked'}, {key: 'status', label: 'Status'}, {
                         key: 'speed',
@@ -870,18 +873,11 @@ angular.module('uDispatch')
                  */
                 $scope.selectJobDetail = async (jobId) => {
                     try {
-                        $scope.scanList = [];
                         console.log("select Job  " + jobId);
-
-                        const jobDetailLoading = angular.element("#box-jobDetail").find(".loading");
-                        const scanListLoading = angular.element("#box-scanList").find(".loading");
-
-                        jobDetailLoading.show();
 
                         const data = await uCSData.getJobDetail(jobId);
                         $scope.currentJob = data;
                         await jdSvc.setJob($scope.currentJob);
-                        jobDetailLoading.hide();
                         $scope.currentSelection = " for Job " + data.jobNo;
 
                         // Update map with just this job
@@ -893,16 +889,12 @@ angular.module('uDispatch')
                             $scope.jobs = [$scope.currentJob];
                         }
 
-                        if ($scope.currentJob.rootParentID) {
-                            $scope.currentJob.relatedJobs = await uCSData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientId);
+                        if ($scope.currentJob.rootParentId) {
+                            $scope.currentJob.relatedJobs = await uCSData.getRelatedJobs($scope.currentJob.rootParentId, $scope.currentJob.clientId);
                         }
 
-                        scanListLoading.show();
-                        $scope.scanList = await uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo);
-
-                        $timeout(() => {
-                            scanListLoading.fadeOut();
-                        }, 200);
+                        $scope.scanPromise = uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo);
+                        $scope.scanList = await $scope.scanPromise;
 
                         if (!$scope.$$phase) {
                             $scope.$apply();
@@ -914,12 +906,9 @@ angular.module('uDispatch')
 
                 $scope.selectPreBookDetail = async (prebookJobId) => {
                     try {
-                        $scope.scanList = [];
                         console.log("select pre book Job  " + prebookJobId);
 
                         const jobDetailLoading = angular.element("#box-jobDetail").find(".loading");
-                        const scanListLoading = angular.element("#box-scanList").find(".loading");
-
                         jobDetailLoading.show();
 
                         const data = await uCSData.getPreBookDetail(prebookJobId);
@@ -962,12 +951,8 @@ angular.module('uDispatch')
                         console.log(selectedDays);
                         jdSvc.combos.days = selectedDays;
 
-                        scanListLoading.show();
-                        $scope.scanList = await uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo);
-
-                        $timeout(() => {
-                            scanListLoading.fadeOut();
-                        }, 200);
+                        $scope.scanPromise = uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo);
+                        $scope.scanList = await $scope.scanPromise;
 
                         if (!$scope.$$phase) {
                             $scope.$apply();
@@ -979,12 +964,9 @@ angular.module('uDispatch')
 
                 $scope.selectBulkJobDetail = async (bulkJobId) => {
                     try {
-                        $scope.scanList = [];
                         console.log("select Bulk Job  " + bulkJobId);
 
                         const jobDetailLoading = angular.element("#box-jobDetail").find(".loading");
-                        const scanListLoading = angular.element("#box-scanList").find(".loading");
-
                         jobDetailLoading.show();
 
                         const data = await uCSData.getBulkJobDetail(bulkJobId);
@@ -1002,12 +984,8 @@ angular.module('uDispatch')
                             $scope.jobs = [$scope.currentJob];
                         }
 
-                        scanListLoading.show();
-                        $scope.scanList = await uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo);
-
-                        $timeout(() => {
-                            scanListLoading.fadeOut();
-                        }, 200);
+                        $scope.scanPromise = uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo);
+                        $scope.scanList = await $scope.scanPromise;
 
                         if (!$scope.$$phase) {
                             $scope.$apply();
