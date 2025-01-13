@@ -4,7 +4,8 @@
  */
 class OverviewController {
     constructor($mdDialog, $mdSidenav, overviewService, versionUrl, $document,
-                $scope, $timeout, toastrService, moment, $state, $window, greetingService, openJobDispatchService) {
+                $scope, $timeout, toastrService, moment, $state, $window, greetingService, openJobDispatchService,
+                overviewFiltersService) {
         this.$mdDialog = $mdDialog;
         this.$mdSidenav = $mdSidenav;
         this.overviewService = overviewService;
@@ -16,6 +17,7 @@ class OverviewController {
         this.$state = $state;
         this.$window = $window;
         this.openJobDispatchService = openJobDispatchService;
+        this.overviewFiltersService = overviewFiltersService;
 
         this.greeting = greetingService.greetUser(FirstName);
         this.statistics = {
@@ -35,6 +37,9 @@ class OverviewController {
         // Loaders
         this.regionsLoading = false;
         this.speedsLoading = false;
+
+        // Card collapse state
+        this.isOverviewCardCollapsed = false;
 
         // Initialize data containers
         this.deliveries = [];
@@ -82,9 +87,26 @@ class OverviewController {
         this.openMegaMap = this.openMegaMap.bind(this);
         this.onReorder = this.onReorder.bind(this);
         this.refreshData = this.refreshData.bind(this);
+        this.toggleOverviewCard = this.toggleOverviewCard.bind(this);
 
         // Initialize data and set up watchers
         this.initializeData($scope);
+        this.loadOverviewCardState();
+    }
+
+    /**
+     * Loads the Open Jobs card's collapsed state from localStorage
+     */
+    loadOverviewCardState() {
+        this.isOverviewCardCollapsed = this.overviewService.loadCollapseState('overview');
+    }
+
+    /**
+     * Toggles the Overview card's collapsed state and saves it
+     */
+    async toggleOverviewCard() {
+        this.isOverviewCardCollapsed = !this.isOverviewCardCollapsed;
+        await this.overviewService.saveCollapseState('overview', this.isOverviewCardCollapsed);
     }
 
     /**
@@ -213,13 +235,14 @@ class OverviewController {
             this.selectedRegions.splice(idx, 1);
         }
 
-        // Update allRegionsSelected state
         this.allRegionsSelected = this.regions.length === this.selectedRegions.length;
-
-        // Reset to first page when filter changes
         this.query.page = 1;
 
-        // Refresh data with new filter
+        // Update shared filter service
+        this.overviewFiltersService.updateFilters({
+            selectedRegions: this.selectedRegions
+        });
+
         await this.refreshData();
     }
 
@@ -268,6 +291,11 @@ class OverviewController {
 
         this.allSpeedsSelected = this.speeds.length === this.selectedSpeeds.length;
         this.query.page = 1;
+
+        this.overviewFiltersService.updateFilters({
+            selectedSpeeds: this.selectedSpeeds
+        });
+
         await this.refreshData();
     }
 
@@ -324,7 +352,7 @@ class OverviewController {
                 controllerAs: 'ctrl',
                 targetEvent: $event,
                 templateUrl: this.versionUrl('app/components/dialogs/date-range-dialog/date-range-dialog.html'),
-                parent: angular.element(this.$document.body),
+                parent: this.$document.body,
                 clickOutsideToClose: true,
                 fullscreen: false,
                 bindToController: true,
@@ -332,6 +360,11 @@ class OverviewController {
                     dateRange: this.dateRange
                 }
             });
+
+            this.overviewFiltersService.updateFilters({
+                dateRange: this.dateRange
+            });
+
             await this.refreshData();
         } catch (error) {
             // Dialog was cancelled
@@ -386,6 +419,10 @@ class OverviewController {
         this.dateRange = {
             start: null, end: null
         };
+
+        this.overviewFiltersService.updateFilters({
+            dateRange: this.dateRange
+        });
 
         await this.refreshData();
     }
@@ -495,4 +532,10 @@ class OverviewController {
     }
 }
 
-angular.module('uDispatch').controller('deliveryOverview', ['$mdDialog', '$mdSidenav', 'overviewService', 'versionUrl', '$document', '$scope', '$timeout', 'toastrService', 'moment', '$state', '$window', 'greetingService', 'openJobDispatchService', ($mdDialog, $mdSidenav, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state, $window, greetingService, openJobDispatchService) => new OverviewController($mdDialog, $mdSidenav, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment, $state, $window, greetingService, openJobDispatchService)]);
+angular.module('uDispatch').controller('deliveryOverview',
+    ['$mdDialog', '$mdSidenav', 'overviewService', 'versionUrl', '$document', '$scope', '$timeout', 'toastrService', 'moment',
+        '$state', '$window', 'greetingService', 'openJobDispatchService', 'overviewFiltersService', ($mdDialog, $mdSidenav, overviewService,
+                                                                                                     versionUrl, $document, $scope, $timeout, toastrService, moment, $state,
+                                                                                                     $window, greetingService, openJobDispatchService, overviewFiltersService) => new OverviewController($mdDialog,
+        $mdSidenav, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment,
+        $state, $window, greetingService, openJobDispatchService, overviewFiltersService)]);

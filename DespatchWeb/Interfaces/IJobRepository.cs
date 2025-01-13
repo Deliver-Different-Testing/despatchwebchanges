@@ -207,4 +207,12 @@ public interface IJobRepository
 
     Task<TucJobTypeGrouping> GetJobTypeGrouping(int groupingId);
     Task<List<AddressWithAgent>> GetClosestAirports(decimal latitude, decimal longitude);
+
+    Task<IList<OpenJobResponse>> GetOpenJobsAsync(
+        DateTime? startDate = null,
+        DateTime? endDate = null,
+        string regions = null,
+        string speeds = null);
+
+    Task<DriverStats> GetDriverStatsAsync(int courierId);
 }

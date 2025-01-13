@@ -94,6 +94,88 @@ class OverviewService {
         const response = await this.$http.get('/overview/GetJobsForMegaMap');
         return response.data;
     }
+
+    /**
+     * Get all open jobs for drivers
+     * @param {Object} params - Query parameters
+     *
+     * @param {Date} [params.startDate] - Start date filter
+     * @param {Date} [params.endDate] - End date filter
+     * @param {Array} [params.regions] - Array of selected region IDs
+     * @param {Array} [params.speeds] - Array of selected speed IDs
+     * @returns {Promise<OpenJobResponse[]>} Array of open jobs grouped by driver
+     */
+    async getOpenJobs(params) {
+        const regionIds = params.regions?.map(r => r.id).join(',');
+        const speedIds = params.speeds?.map(s => s.id).join(',');
+
+        const response = await this.$http.get('/overview/GetOpenJobs', {
+            params: {
+                startDate: params.startDate ? params.startDate.toISOString() : null,
+                endDate: params.endDate ? params.endDate.toISOString() : null,
+                regions: regionIds || null,
+                speeds: speedIds || null
+            }
+        });
+
+        return response.data;
+    }
+
+    /**
+     * Get statistics for a specific driver
+     * @param {string} driverName - Name of the driver
+     * @returns {Promise<DriverStats>} Driver statistics including completed jobs
+     */
+    async getDriverStats(driverName) {
+        const response = await this.$http.get(`/overview/GetDriverStats/${encodeURIComponent(driverName)}`);
+        return response.data;
+    }
+
+    /**
+     * Save collapse state for a specific card
+     * @param {string} cardName - Name of the card
+     * @param {boolean} isCollapsed - Collapse state for the card
+     * @returns {Promise<Object>} Updated collapse states
+     */
+    async saveCollapseState(cardName, isCollapsed) {
+        if (window.localStorage) {
+            try {
+                const saved = localStorage.getItem('cardCollapseStates');
+                const states = saved ? JSON.parse(saved) : {};
+
+                // Update the state for the specific card
+                states[cardName] = isCollapsed;
+
+                localStorage.setItem('cardCollapseStates', JSON.stringify(states));
+                return states;
+            } catch (error) {
+                console.error('Error saving collapse state:', error);
+                throw error;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Load collapse state for a specific card
+     * @param {string} cardName - Name of the card
+     * @returns {boolean} Collapse state for the card (default: false if not found)
+     */
+    loadCollapseState(cardName) {
+        if (window.localStorage) {
+            try {
+                const saved = localStorage.getItem('cardCollapseStates');
+                if (saved) {
+                    const states = JSON.parse(saved);
+                    // Return the specific card's state or default to false
+                    return states[cardName] || false;
+                }
+            } catch (error) {
+                console.error('Error loading collapse state:', error);
+            }
+        }
+        return false; // Default collapse state if no local storage or error occurs
+    }
 }
 
 angular.module('uDispatch').service('overviewService', ['$http', $http => new OverviewService($http)]);

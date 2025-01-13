@@ -1,0 +1,271 @@
+// Variables
+@primary-blue: #2196F3;
+@primary-green: #4CAF50;
+@error-red: #DC2626;
+@text-dark: rgba(0, 0, 0, 0.87);
+@text-muted: rgba(0, 0, 0, 0.54);
+
+// Status chip colors
+@status-new-bg: #EBF5FF;
+@status-new-text: #1E40AF;
+@status-awaiting-bg: #F3E8FF;
+@status-awaiting-text: #6B21A8;
+@status-despatched-bg: #FEF3C7;
+@status-despatched-text: #92400E;
+@status-undeliverable-bg: #FEE2E2;
+@status-undeliverable-text: #991B1B;
+
+.jobs-widget {
+  margin: 16px;
+}
+
+.expand-arrow {
+  margin-left: 16px;
+  transition: transform 0.3s ease;
+
+  &.rotated {
+    transform: rotate(90deg);
+  }
+}
+
+.sort-select {
+  min-width: 120px;
+}
+
+.success-icon {
+  &.success-green {
+    color: @primary-green !important;
+  }
+
+  &.error-red {
+    color: @error-red !important;
+  }
+}
+
+md-toolbar {
+  &.md-default-theme:not(.md-menu-toolbar),
+  &:not(.md-menu-toolbar) {
+    &.md-accent md-icon {
+      color: black;
+    }
+  }
+}
+
+.driver {
+  &-panel {
+    margin-bottom: 16px;
+  }
+
+  &-header {
+    background-color: #ECEFF1 !important;
+    color: @text-dark !important;
+  }
+
+  &-name {
+    margin-left: 12px;
+    font-weight: 500;
+  }
+
+  &-stats {
+    font-size: 14px;
+    margin-left: auto;
+    padding-right: 16px;
+  }
+}
+
+.job {
+  &-count {
+    margin-left: 8px;
+    color: @text-muted;
+  }
+
+  &-card {
+    margin: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  }
+
+  &-header {
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &-id, &-reference {
+    margin-right: 24px;
+  }
+
+  &-details {
+    margin: 16px 0;
+    display: flex;
+    justify-content: space-between;
+  }
+}
+
+.completed-jobs {
+  display: flex;
+  align-items: center;
+  margin-right: 24px;
+
+  .success-icon {
+    color: @primary-green;
+    margin-right: 8px;
+  }
+}
+
+.last-completed {
+  color: @text-muted;
+  text-align: right;
+
+  .last-time {
+    margin-bottom: 4px;
+
+    .na-warning {
+      color: #F59E0B;
+      font-weight: 500;
+    }
+  }
+
+  .duration-text {
+    font-size: 12px;
+    color: @text-muted;
+  }
+}
+
+.status {
+  &-chip {
+    margin-left: 12px !important;
+    height: 24px;
+    line-height: 24px;
+    padding: 0 12px;
+
+    &.new {
+      background-color: @status-new-bg !important;
+      color: @status-new-text !important;
+    }
+
+    &.awaiting-pod {
+      background-color: @status-awaiting-bg !important;
+      color: @status-awaiting-text !important;
+    }
+
+    &.despatched {
+      background-color: @status-despatched-bg !important;
+      color: @status-despatched-text !important;
+    }
+
+    &.undeliverable {
+      background-color: @status-undeliverable-bg !important;
+      color: @status-undeliverable-text !important;
+    }
+  }
+
+  &-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    vertical-align: middle;
+  }
+}
+
+.pickup-info, .delivery-info {
+  padding: 12px;
+  flex: 1;
+  max-width: 45%;
+
+  .md-icon {
+    margin-right: 8px;
+  }
+}
+
+.location-details {
+  margin-left: 42px;
+  margin-top: 8px;
+
+  .md-body-1 {
+    margin-bottom: 4px;
+  }
+}
+
+.schedule-icon {
+  margin: 8px !important;
+
+  &.md-icon {
+    margin: 8px !important;
+  }
+}
+
+.blue-icon {
+  color: @primary-blue;
+}
+
+.green-icon {
+  color: @primary-green;
+}
+
+.sort-button {
+  min-width: 120px;
+  margin: 8px 16px;
+  height: 36px;
+
+  md-icon {
+    margin-left: 8px;
+  }
+}
+
+md-menu-content {
+  md-icon {
+    margin-right: 8px;
+  }
+}
+
+.job-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+
+  .md-icon {
+    margin-right: 8px;
+  }
+
+  .md-caption {
+    vertical-align: middle;
+  }
+}
+
+
+.job-list {
+  padding: 8px;
+
+  .job-card {
+    margin: 8px;
+    height: calc(100% - 16px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    background-color: #FAFAFA;
+  }
+}
+
+.last-completed {
+  color: @text-muted;
+  text-align: right;
+
+  .last-time {
+    margin-bottom: 4px;
+  }
+
+  .duration-text {
+    font-size: 12px;
+    color: @text-muted;
+
+    &.warning {
+      color: #F59E0B;
+    }
+
+    &.error {
+      color: @error-red;
+    }
+  }
+}

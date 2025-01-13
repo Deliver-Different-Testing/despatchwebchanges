@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
@@ -9,6 +10,7 @@ using AutoMapper;
 using DespatchWeb.Controllers;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
@@ -1030,8 +1032,8 @@ public class JobRepository : BaseJobRepository, IJobRepository
         await _context.LoadStoredProc("GEN_qdfSetting_GetMaxAutoLatePickupAlert")
             .WithSqlParam("@MaxAutoLatePickupAlert", (dbParam) =>
             {
-                dbParam.Direction = System.Data.ParameterDirection.Output;
-                dbParam.DbType = System.Data.DbType.Int32;
+                dbParam.Direction = ParameterDirection.Output;
+                dbParam.DbType = DbType.Int32;
                 outputMaxParam = dbParam;
             })
             .ExecuteStoredNonQueryAsync();
@@ -1045,8 +1047,8 @@ public class JobRepository : BaseJobRepository, IJobRepository
         await _context.LoadStoredProc("GEN_qdfSetting_GetMaxAutoLateDeliveryAlert")
             .WithSqlParam("@MaxAutoLateDeliveryAlert", (dbParam) =>
             {
-                dbParam.Direction = System.Data.ParameterDirection.Output;
-                dbParam.DbType = System.Data.DbType.Int32;
+                dbParam.Direction = ParameterDirection.Output;
+                dbParam.DbType = DbType.Int32;
                 outputMaxParam = dbParam;
             })
             .ExecuteStoredNonQueryAsync();
@@ -1078,8 +1080,8 @@ public class JobRepository : BaseJobRepository, IJobRepository
             .WithSqlParam("@ToSuburbID", to)
             .WithSqlParam("@FuelSurcharge", (dbParam) =>
             {
-                dbParam.Direction = System.Data.ParameterDirection.Output;
-                dbParam.DbType = System.Data.DbType.Currency;
+                dbParam.Direction = ParameterDirection.Output;
+                dbParam.DbType = DbType.Currency;
                 outputMaxParam = dbParam;
             })
             .ExecuteStoredNonQueryAsync();
@@ -1177,8 +1179,8 @@ public class JobRepository : BaseJobRepository, IJobRepository
             .WithSqlParam("@JobID", jobId)
             .WithSqlParam("@Message", (dbParam) =>
             {
-                dbParam.Direction = System.Data.ParameterDirection.Output;
-                dbParam.DbType = System.Data.DbType.String;
+                dbParam.Direction = ParameterDirection.Output;
+                dbParam.DbType = DbType.String;
                 dbParam.Size = 4000;
                 messageOutput = dbParam;
             })
@@ -1372,15 +1374,15 @@ public class JobRepository : BaseJobRepository, IJobRepository
             .WithSqlParam("@TruckHours", truckHours)
             .WithSqlParam("@Description", (dbParam) =>
             {
-                dbParam.Direction = System.Data.ParameterDirection.Output;
-                dbParam.DbType = System.Data.DbType.String;
+                dbParam.Direction = ParameterDirection.Output;
+                dbParam.DbType = DbType.String;
                 dbParam.Size = 1000;
                 outputDescriptionParam = dbParam;
             })
             .WithSqlParam("@Rate", (dbParam) =>
             {
-                dbParam.Direction = System.Data.ParameterDirection.Output;
-                dbParam.DbType = System.Data.DbType.Currency;
+                dbParam.Direction = ParameterDirection.Output;
+                dbParam.DbType = DbType.Currency;
                 outputRateParam = dbParam;
             })
             .ExecuteStoredNonQueryAsync();
@@ -1414,15 +1416,15 @@ public class JobRepository : BaseJobRepository, IJobRepository
             .WithSqlParam("@TruckHours", truckHours)
             .WithSqlParam("@Description", (dbParam) =>
             {
-                dbParam.Direction = System.Data.ParameterDirection.Output;
-                dbParam.DbType = System.Data.DbType.String;
+                dbParam.Direction = ParameterDirection.Output;
+                dbParam.DbType = DbType.String;
                 dbParam.Size = 1000;
                 outputDescriptionParam = dbParam;
             })
             .WithSqlParam("@Rate", (dbParam) =>
             {
-                dbParam.Direction = System.Data.ParameterDirection.Output;
-                dbParam.DbType = System.Data.DbType.Currency;
+                dbParam.Direction = ParameterDirection.Output;
+                dbParam.DbType = DbType.Currency;
                 outputRateParam = dbParam;
             })
             .ExecuteStoredNonQueryAsync();
@@ -1469,14 +1471,14 @@ public class JobRepository : BaseJobRepository, IJobRepository
             .WithSqlParam("@JobID", jobId)
             .WithSqlParam("@JobTypeID", (dbParam) =>
             {
-                dbParam.Direction = System.Data.ParameterDirection.Output;
-                dbParam.DbType = System.Data.DbType.Int32;
+                dbParam.Direction = ParameterDirection.Output;
+                dbParam.DbType = DbType.Int32;
                 outputParam = dbParam;
             })
             .WithSqlParam("@Name", (dbParam) =>
             {
-                dbParam.Direction = System.Data.ParameterDirection.Output;
-                dbParam.DbType = System.Data.DbType.String;
+                dbParam.Direction = ParameterDirection.Output;
+                dbParam.DbType = DbType.String;
                 dbParam.Size = 50;
                 nameOutput = dbParam;
             })
@@ -1879,27 +1881,27 @@ public class JobRepository : BaseJobRepository, IJobRepository
             await _context.Procedures.NET_stpJob_Insert_JobNumberAsync(viewModel.StaffId, 1, toJobNumber);
 
             var fromJob = CreateJobEntry(
-                jobNumber: fromJobNumber.Value,
-                courierId: viewModel.FromCourierId,
-                amount: viewModel.Amount,
-                reference: viewModel.Reference,
-                clientRefB: $"To # {viewModel.ToCourierId}",
-                ourRef: "ICC",
-                note: note,
-                currentTime: currentTime,
-                staffId: viewModel.StaffId);
+                fromJobNumber.Value,
+                viewModel.FromCourierId,
+                viewModel.Amount,
+                viewModel.Reference,
+                $"To # {viewModel.ToCourierId}",
+                "ICC",
+                note,
+                currentTime,
+                viewModel.StaffId);
             await _context.TucJobs.AddAsync(fromJob);
 
             var toJob = CreateJobEntry(
-                jobNumber: toJobNumber.Value,
-                courierId: viewModel.ToCourierId,
-                amount: viewModel.Amount,
-                reference: viewModel.Reference,
-                clientRefB: $"From # {viewModel.FromCourierId}",
-                ourRef: "",
-                note: note,
-                currentTime: currentTime,
-                staffId: viewModel.StaffId);
+                toJobNumber.Value,
+                viewModel.ToCourierId,
+                viewModel.Amount,
+                viewModel.Reference,
+                $"From # {viewModel.FromCourierId}",
+                "",
+                note,
+                currentTime,
+                viewModel.StaffId);
             await _context.TucJobs.AddAsync(toJob);
 
             await _context.SaveChangesAsync();
@@ -1944,6 +1946,140 @@ public class JobRepository : BaseJobRepository, IJobRepository
         _context.Entry(job).Property(x => x.ClientItemIds).IsModified = true;
         _context.Entry(job).Property(x => x.UcjbAmount).IsModified = true;
         await _context.SaveChangesAsync();
+    }
+
+    public async Task<IList<OpenJobResponse>> GetOpenJobsAsync(
+        DateTime? startDate = null,
+        DateTime? endDate = null,
+        string regions = null,
+        string speeds = null)
+    {
+        try
+        {
+            var query = _context.TucJobs
+                .Where(j => j.UcjbStatus != (int)JobStatus.Completed &&
+                            j.UcjbStatus != (int)JobStatus.Rejected);
+
+            // Apply date range filter
+            if (startDate.HasValue) query = query.Where(j => j.UcjbDate >= startDate);
+            if (endDate.HasValue) query = query.Where(j => j.UcjbDate <= endDate);
+
+            // Apply region filter if provided
+            if (!string.IsNullOrWhiteSpace(regions))
+            {
+                var regionIds = regions.Split(',')
+                    .Select(int.Parse)
+                    .ToList();
+
+                query = query.Where(j => j.TblBulkJobs
+                    .Any(b => regionIds.Contains(b.Region.BulkRegionId)));
+            }
+
+            // Apply speed filter if provided
+            if (!string.IsNullOrWhiteSpace(speeds))
+            {
+                var speedIds = speeds.Split(',')
+                    .Select(int.Parse)
+                    .ToList();
+
+                query = query.Where(j => speedIds.Contains(j.UcjbSpeedNavigation.UcjtId));
+            }
+
+            // Order
+            query = query.OrderBy(j => j.PickUpTime.Value);
+
+            var openJobs = await query.Select(j => new OpenJobResponse
+                {
+                    JobId = j.UcjbId,
+                    Reference = j.UcjbNumber,
+                    Status = j.UcjbStatusNavigation.UcjsName,
+                    PickupTime = j.PickUpTime ?? DateTime.Today,
+                    PickupName = j.PickupFromContact,
+                    PickupAddress = AddressFormatter.FormatWithCityStateZip(new AddressFormatter.Address(
+                        j.PickupAddressLine1,
+                        j.PickupAddressLine2,
+                        j.PickupAddressLine3,
+                        j.PickupAddressLine4,
+                        j.PickupAddressLine5,
+                        j.PickupAddressLine6,
+                        j.PickupAddressLine7,
+                        j.PickupAddressLine8
+                    )),
+                    DeliveryTime = j.RequiredDeliveryTime ?? DateTime.Today,
+                    DeliveryName = j.DeliverToContact,
+                    DeliveryAddress = AddressFormatter.FormatWithCityStateZip(new AddressFormatter.Address(
+                        j.DeliveryAddressLine1,
+                        j.DeliveryAddressLine2,
+                        j.DeliveryAddressLine3,
+                        j.DeliveryAddressLine4,
+                        j.DeliveryAddressLine5,
+                        j.DeliveryAddressLine6,
+                        j.DeliveryAddressLine7,
+                        j.DeliveryAddressLine8
+                    )),
+                    DriverName = j.UcjbCourier.UccrName,
+                    CompletedToday = j.UcjbCourier.TucJobUcjbCouriers
+                        .Count(dj => dj.UcjbStatus == (int)JobStatus.Completed &&
+                                     dj.UcjbComplTime.HasValue &&
+                                     dj.UcjbComplTime.Value.Date == DateTime.Today),
+                    LastCompleted = j.UcjbCourier.TucJobUcjbCouriers
+                        .Where(dj => dj.UcjbStatus == (int)JobStatus.Completed &&
+                                     dj.UcjbComplTime.HasValue)
+                        .OrderByDescending(dj => dj.UcjbComplTime)
+                        .Select(dj => dj.UcjbComplTime)
+                        .FirstOrDefault(),
+                    Quantity = j.UcjbQty ?? 0,
+                    PackageType = j.AcceptedJobType.UcjtName,
+                    Mileage = j.PickUpLatitude.HasValue &&
+                              j.PickUpLongitude.HasValue &&
+                              j.DeliveryLatitude.HasValue &&
+                              j.DeliveryLongitude.HasValue
+                        ? DistanceCalculator.CalculateDistance(
+                            new AddressCoordinates(j.PickUpLatitude.Value, j.PickUpLongitude.Value),
+                            new AddressCoordinates(j.DeliveryLatitude.Value, j.DeliveryLongitude.Value))
+                        : 0
+                })
+                .AsNoTracking()
+                .ToListAsync();
+
+            return openJobs;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting open jobs");
+            throw;
+        }
+    }
+
+    public async Task<DriverStats> GetDriverStatsAsync(int courierId)
+    {
+        try
+        {
+            var stats = await _context.TucCouriers
+                .Where(d => d.UccrId == courierId)
+                .Select(d => new DriverStats
+                {
+                    DriverName = d.UccrName,
+                    CompletedToday = d.TucJobUcjbCouriers.Count(j => j.UcjbStatus == (int)JobStatus.Completed &&
+                                                                     j.UcjbComplTime.HasValue &&
+                                                                     j.UcjbComplTime.Value.Date == DateTime.Now),
+                    LastCompleted = d.TucJobUcjbCouriers
+                        .Where(j => j.UcjbStatus == (int)JobStatus.Completed &&
+                                    j.UcjbComplTime.HasValue)
+                        .OrderByDescending(j => j.UcjbComplTime)
+                        .Select(j => j.UcjbComplTime)
+                        .FirstOrDefault()
+                })
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+
+            return stats;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting driver stats for {CourierId}", courierId);
+            throw;
+        }
     }
 
     private static bool IsCbdLocation(decimal latitude, decimal longitude) =>
@@ -2530,20 +2666,6 @@ public class JobRepository : BaseJobRepository, IJobRepository
         };
     }
 
-    private async Task<List<byte[]>> GetPodPhotosAsync(int jobId, byte[] podPhoto, byte[] deliverySignature)
-    {
-        var photos = new List<byte[]>();
-        if (podPhoto != null) photos.Add(podPhoto);
-        if (deliverySignature != null) photos.Add(deliverySignature);
-
-        photos.AddRange(await _context.DeliveryPhotos
-            .Where(d => d.JobId == jobId)
-            .Select(del => del.Photo)
-            .ToListAsync());
-
-        return photos;
-    }
-
     private async Task<JobInfo> GetJobInfo(int jobId)
     {
         return await _context.TucJobs
@@ -2671,11 +2793,11 @@ public class JobRepository : BaseJobRepository, IJobRepository
         var returnValue = new OutputParameter<int>();
 
         await _context.Procedures.NET_stpJob_Insert_JobNumberAsync(
-            StaffID: staffId,
-            JobTypeID: jobTypeId,
-            JobNumber: jobNumberOutput,
-            returnValue: returnValue,
-            cancellationToken: cancellationToken
+            staffId,
+            jobTypeId,
+            jobNumberOutput,
+            returnValue,
+            cancellationToken
         );
 
         return jobNumberOutput.Value;

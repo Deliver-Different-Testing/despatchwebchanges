@@ -110,4 +110,33 @@ angular
         const units = ['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'],
             number = Math.floor(Math.log(bytes) / Math.log(1024));
         return (bytes / Math.pow(1024, Math.floor(number))).toFixed(precision) + ' ' + units[number];
+    })
+    .filter('jobStatusIcon', () => {
+        return (status) => {
+            switch (status.toUpperCase()) {
+                case 'NEW':
+                    return 'fiber_new';
+                case 'PICKEDUP':
+                    return 'local_shipping';
+                case 'ACCEPTED':
+                    return 'check_circle';
+                case 'DISPATCHED':
+                    return 'send';
+                default:
+                    return 'info';
+            }
+        };
+    })
+    /**
+     * Filter that replaces all occurrences of a search string with a replacement string
+     * @ngdoc filter
+     * @name replace
+     * @param {string} input - The input string to perform replacements on
+     * @param {string} search - The string to search for
+     * @param {string} replacement - The string to replace matches with
+     * @returns {string} The input string with all matches replaced
+     */
+    .filter('replace', () => (input, search, replacement) => {
+        if (!input) return input;
+        return input.replace(new RegExp(search, 'g'), replacement);
     });

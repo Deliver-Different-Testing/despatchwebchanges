@@ -1,6 +1,7 @@
-﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+﻿@using Microsoft.AspNetCore.Hosting
+@using Microsoft.AspNetCore.Mvc.TagHelpers
 @using Microsoft.Extensions.Hosting
-@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Environment
+@inject IWebHostEnvironment Environment
 
 <!doctype html>
 <html lang="en">
@@ -194,7 +195,9 @@
         "dist/components/prebooks/prebookControl.js",
         "dist/components/overview/overview.controller.js",
         "dist/components/overview/overview.service.js",
+        "dist/components/overview/services/overview-filters.service.js",
         "dist/components/overview/mega-map/mega-map.controller.js",
+        "dist/components/overview/open-jobs/open-jobs.controller.js",
         "dist/components/dialogs/edit-address-dialog/edit-address-dialog.controller.js",
         "dist/components/dialogs/auto-complete-dialog/auto-complete-dialog.controller.js",
         "dist/components/dialogs/send-message-dialog/send-message-dialog.controller.js",
