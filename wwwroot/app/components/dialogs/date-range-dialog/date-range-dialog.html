@@ -1,3 +1,6 @@
+<link href="app/components/dialogs/date-range-dialog/date-range-dialog.styles.min.css"
+      rel="stylesheet">
+
 <md-dialog aria-label="Select Date Range" class="date-range-dialog">
     <form ng-cloak>
         <md-toolbar>
@@ -26,11 +29,10 @@
                         <md-calendar ng-model="ctrl.endDate"></md-calendar>
                     </div>
 
-                    <!-- Date Summary -->
+                    <!-- Date Summary Section -->
                     <div class="date-summary" flex-order="0" flex-order-gt-sm="2" layout="column">
                         <md-subheader class="md-no-sticky">
                             <div layout="row" layout-align="start center">
-                                <md-icon md-font-set="material-symbols-outlined">date_range</md-icon>
                                 <span class="subheader-text">Summary</span>
                             </div>
                         </md-subheader>
@@ -38,13 +40,13 @@
                         <div class="summary-card">
                             <!-- Start Date -->
                             <div class="date-item">
-                                <div class="date-header" layout="row" layout-align="start center">
+                                <div class="date-content" layout="column">
                                     <md-icon class="date-icon" md-font-set="material-symbols-outlined">calendar_today
                                     </md-icon>
                                     <span class="date-label">Start</span>
-                                </div>
-                                <div class="date-value" ng-class="{'selected': ctrl.startDate}">
-                                    {{ctrl.startDate | date:'MMM d, y'}}
+                                    <div class="date-value" ng-class="{'selected': ctrl.startDate}">
+                                        {{ctrl.startDate | date:'MMM d, y'}}
+                                    </div>
                                 </div>
                             </div>
 
@@ -52,12 +54,12 @@
 
                             <!-- End Date -->
                             <div class="date-item">
-                                <div class="date-header" layout="row" layout-align="start center">
+                                <div class="date-content" layout="column">
                                     <md-icon class="date-icon" md-font-set="material-symbols-outlined">event</md-icon>
                                     <span class="date-label">End</span>
-                                </div>
-                                <div class="date-value" ng-class="{'selected': ctrl.endDate}">
-                                    {{ctrl.endDate | date:'MMM d, y'}}
+                                    <div class="date-value" ng-class="{'selected': ctrl.endDate}">
+                                        {{ctrl.endDate | date:'MMM d, y'}}
+                                    </div>
                                 </div>
                             </div>
 
@@ -65,13 +67,13 @@
 
                             <!-- Duration -->
                             <div class="date-item">
-                                <div class="date-header" layout="row" layout-align="start center">
+                                <div class="date-content" layout="column">
                                     <md-icon class="date-icon" md-font-set="material-symbols-outlined">schedule
                                     </md-icon>
                                     <span class="date-label">Duration</span>
-                                </div>
-                                <div class="date-value">
-                                    {{ctrl.getDuration()}} Days
+                                    <div class="date-value">
+                                        {{ctrl.getDuration()}} Days
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -349,6 +349,24 @@ md-progress-linear .md-container {
 .regions-container::-webkit-scrollbar-track {
   background-color: rgba(0, 0, 0, 0.1);
 }
+
+.empty-state {
+    padding: 48px 0;
+}
+
+.empty-state .empty-icon {
+    font-size: 48px;
+    height: 48px;
+    width: 48px;
+    color: rgba(0, 0, 0, 0.38);
+    margin-bottom: 16px;
+}
+
+.empty-state .md-body-1 {
+    color: rgba(0, 0, 0, 0.54);
+    text-align: center;
+    margin: 0;
+}
 .flex-center {
   display: flex;
   justify-content: center;
@@ -792,7 +810,6 @@ body {
 .job-info-panel .md-icon-button:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
-
 .cluster-small,
 .cluster-medium,
 .cluster-large {
@@ -805,54 +822,45 @@ body {
     color: rgba(0, 0, 0, 0.87);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
 .cluster-small:hover,
 .cluster-medium:hover,
 .cluster-large:hover {
     transform: scale(1.1);
     box-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12);
 }
-
 .cluster-small {
     min-width: 35px;
     min-height: 35px;
     font-size: 12px;
 }
-
 .cluster-small::before {
     content: 'location_on';
     font-size: 18px;
     color: #3EAFC2;
 }
-
 .cluster-medium {
     min-width: 45px;
     min-height: 45px;
     font-size: 14px;
 }
-
 .cluster-medium::before {
     content: 'hub';
     font-size: 20px;
     color: #3EAFC2;
 }
-
 .cluster-large {
     min-width: 55px;
     min-height: 55px;
     font-size: 16px;
 }
-
 .cluster-large::before {
     content: 'hub';
     font-size: 24px;
     color: #3EAFC2;
 }
-
 .marker-animation:hover {
     animation: bounce 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
 @keyframes bounce {
     0%,
     100% {
@@ -862,7 +870,6 @@ body {
         transform: scale(1.2);
     }
 }
-
 .marker-container {
     background: rgba(255, 255, 255, 0.98);
     border-radius: 50%;
@@ -870,34 +877,27 @@ body {
     cursor: pointer;
     transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
-
 .marker-container:hover {
     transform: scale(1.1);
     box-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12);
 }
-
 .marker-container i {
     font-size: 20px;
     display: block;
     transition: font-size 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
 .marker-container.compact {
     padding: 8px/2;
 }
-
 .marker-container.compact i {
     font-size: 14px;
 }
-
 .pickup-marker i {
     color: #4CAF50;
 }
-
 .delivery-marker i {
     color: #F44336;
 }
-
 .flight-marker i {
     color: #3EAFC2;
 }

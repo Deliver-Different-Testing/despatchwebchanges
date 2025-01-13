@@ -655,3 +655,60 @@
  * @property {string} scanDetail - Details or description of the scan
  * @property {string} courier - The name or identifier of the courier associated with the scan
  */
+
+/**
+ * @typedef {Object} OpenJobResponse
+ *
+ * @property {number} jobId - Unique identifier for the job
+ * @property {string} reference - Reference number for the job
+ * @property {string} status - Current status of the job
+ * @property {Date} pickupTime - Scheduled pickup time
+ * @property {string} pickupName - Name of pickup contact/location
+ * @property {string} pickupAddress - Formatted pickup address
+ * @property {Date} deliveryTime - Scheduled delivery time
+ * @property {string} deliveryName - Name of delivery contact/location
+ * @property {string} deliveryAddress - Formatted delivery address
+ * @property {string} driverName - Name of assigned driver
+ * @property {number} completedToday - Number of jobs completed today by the driver
+ * @property {Date|null} lastCompleted - Timestamp of driver's last completed job
+ * @property {number} quantity - Number of items in the job
+ * @property {string} packageType - Type of package being delivered
+ * @property {number} mileage - Estimated mileage for the job
+ */
+
+/**
+ * @typedef {Object} DriverStats
+ *
+ * @property {string} driverName - Name of the driver
+ * @property {number} completedToday - Number of jobs completed today
+ * @property {Date|null} lastCompleted - Timestamp of last completed job
+ */
+
+/**
+ * @typedef {Object} DriverViewModel
+ *
+ * @property {string} name - Name of the driver
+ * @property {ViewJob[]} jobs - Array of jobs assigned to the driver
+ * @property {number} completedToday - Number of jobs completed today
+ * @property {string} lastCompleted - Formatted time of last completed job
+ * @property {boolean} expanded - Whether the driver's job list is expanded
+ */
+
+/**
+ * @typedef {Object} ViewJob
+ *
+ * @property {number} jobId - Unique identifier for the job
+ * @property {string} reference - Reference number for the job
+ * @property {string} status - Current status of the job
+ * @property {Object} pickup - Pickup location details
+ * @property {Date} pickup.time - Scheduled pickup time
+ * @property {string} pickup.name - Name of pickup contact/location
+ * @property {string} pickup.address - Formatted pickup address
+ * @property {Object} delivery - Delivery location details
+ * @property {Date} delivery.time - Scheduled delivery time
+ * @property {string} delivery.name - Name of delivery contact/location
+ * @property {string} delivery.address - Formatted delivery address
+ * @property {number} quantity - Number of items in the job
+ * @property {string} packageType - Type of package being delivered
+ * @property {number} mileage - Estimated mileage for the job
+ */

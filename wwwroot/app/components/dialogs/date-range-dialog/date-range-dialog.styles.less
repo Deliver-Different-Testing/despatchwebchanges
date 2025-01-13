@@ -1,5 +1,5 @@
 // Variables
-@dialog-max-width: 900px;
+@dialog-max-width: 1000px;
 @dialog-width: 90%;
 @calendar-min-width: 300px;
 @summary-min-width: 250px;
@@ -53,6 +53,8 @@
     .summary-card {
       background: white;
       margin-top: @spacing-sm;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .date-item {
@@ -63,30 +65,32 @@
         background-color: @background-hover;
       }
 
-      .date-header {
-        margin-bottom: @spacing-xs;
+      .date-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
       }
 
       .date-icon {
-        margin-right: @spacing-sm;
         color: @text-secondary;
-        font-size: @font-size-large;
+        font-size: @spacing-lg;
+        margin-bottom: @spacing-sm;
       }
 
       .date-label {
         color: @text-secondary;
-        font-size: @font-size-normal;
+        font-size: @font-size-small;
         font-weight: 500;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        margin-bottom: @spacing-xs;
       }
 
       .date-value {
         color: @text-primary;
         font-size: @font-size-medium;
-        margin-left: @spacing-lg + @spacing-sm; // Icon width + margin
         font-weight: 400;
-        transition: color 0.2s ease;
 
         &.selected {
           color: @text-primary;
@@ -101,10 +105,12 @@
 }
 
 // Dialog animations
-.date-range-dialog.md-transition-in {
-  transition: all 0.3s ease-out;
-}
+.date-range-dialog {
+  &.md-transition-in {
+    transition: all 0.3s ease-out;
+  }
 
-.date-range-dialog.md-transition-out {
-  transition: all 0.2s ease-in;
+  &.md-transition-out {
+    transition: all 0.2s ease-in;
+  }
 }

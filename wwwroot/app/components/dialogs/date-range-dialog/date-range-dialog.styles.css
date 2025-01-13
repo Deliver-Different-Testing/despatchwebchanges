@@ -1,44 +1,80 @@
 .date-range-dialog {
-    max-width: 900px;
-    width: 90%;
+  max-width: 1000px;
+  width: 90%;
 }
-
+.date-range-dialog .md-subheader {
+  background-color: transparent;
+  padding-left: 0;
+}
+.date-range-dialog .md-subheader .material-icons {
+  margin-right: 8px;
+}
+.date-range-dialog .md-subheader .subheader-text {
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
 .date-range-dialog .calendar-container {
-    margin: 8px;
-    min-width: 300px;
+  margin: 8px;
+  min-width: 300px;
 }
-
-.date-range-dialog .date-summary {
-    margin: 8px;
-    min-width: 200px;
-}
-
-.date-range-dialog .date-display {
-    padding: 16px;
-}
-
-.date-range-dialog .date-item {
-    margin-bottom: 16px;
-}
-
-.date-range-dialog .date-item label {
-    color: rgba(0, 0, 0, 0.54);
-    font-size: 12px;
-}
-
-.date-range-dialog .date-item .date-value {
-    font-size: 16px;
-    margin-top: 4px;
-}
-
 @media screen and (max-width: 959px) {
-    .date-range-dialog .calendar-container {
-        margin-bottom: 24px;
-    }
+  .date-range-dialog .calendar-container {
+    margin-bottom: 24px;
+  }
 }
-
-label {
-    font-size: x-small;
+.date-range-dialog .date-summary {
+  margin: 8px;
+  min-width: 250px;
 }
-
+.date-range-dialog .date-summary .summary-card {
+  background: white;
+  margin-top: 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.date-range-dialog .date-summary .date-item {
+  padding: 16px;
+  transition: background-color 0.2s ease;
+}
+.date-range-dialog .date-summary .date-item:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+.date-range-dialog .date-summary .date-item .date-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.date-range-dialog .date-summary .date-item .date-icon {
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+.date-range-dialog .date-summary .date-item .date-label {
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 7px;
+}
+.date-range-dialog .date-summary .date-item .date-value {
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 16px;
+  font-weight: 400;
+}
+.date-range-dialog .date-summary .date-item .date-value.selected {
+  color: rgba(0, 0, 0, 0.87);
+}
+.date-range-dialog .date-summary md-divider {
+  margin: 0;
+}
+.date-range-dialog.md-transition-in {
+  transition: all 0.3s ease-out;
+}
+.date-range-dialog.md-transition-out {
+  transition: all 0.2s ease-in;
+}
 /*# sourceMappingURL=date-range-dialog.styles.css.map */
