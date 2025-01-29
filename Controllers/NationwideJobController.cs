@@ -112,7 +112,7 @@ public class NationwideJobController(
         try
         {
             var (toAirport, fromAirport) = await repository.GetAirportCodesByJobIdAsync(jobId);
-            var activeAirlines = await _repository.GetActiveAirlineCodesAsync();
+            var activeAirlines = await repository.GetActiveAirlineCodesAsync();
 
             if (string.IsNullOrEmpty(toAirport) || string.IsNullOrEmpty(fromAirport))
                 return BadRequest("Invalid airport ID(s) provided.");

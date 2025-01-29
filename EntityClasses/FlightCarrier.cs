@@ -3,17 +3,23 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
+namespace DespatchWeb.EntityClasses;
+
+public partial class FlightCarrier
 {
-    public partial class FlightCarrier
-    {
-        public int FlightCarrierId { get; set; }
-        public string FlightCarrierName { get; set; }
-        public DateTime Created { get; set; }
-        public string CreatedBy { get; set; }
-        public DateTime LastModified { get; set; }
-        public string LastModifiedBy { get; set; }
-        public bool? IsActive { get; set; }
-        public string CarrierCode { get; set; }
-    }
+    public int FlightCarrierId { get; set; }
+
+    public string FlightCarrierName { get; set; }
+
+    public DateTime Created { get; set; }
+
+    public string CreatedBy { get; set; }
+
+    public DateTime LastModified { get; set; }
+
+    public string LastModifiedBy { get; set; }
+
+    public bool IsActive { get; set; }
+
+    public string CarrierCode { get; set; }
 }

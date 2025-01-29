@@ -1047,7 +1047,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         try
         {
             // Get distances and airport info
-            var distanceResult = await _rateJobService.CalculateJobRateUs(new JobRateRequest
+            var distanceResult = await rateJobService.CalculateJobRateUs(new JobRateRequest
             {
                 SpeedId = speed,
                 PickupLat = pickUpLat,
@@ -1057,7 +1057,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
             });
 
             // Calculate final rate
-            var rate = await _jobRepo.RateJobUsAsync(
+            var rate = await jobRepository.RateJobUsAsync(
                 jobId,
                 clientId,
                 speed,
@@ -1083,7 +1083,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error calculating job rate");
+            Log.Error(ex, "Error calculating job rate");
             return StatusCode(500, "An error occurred while calculating the rate.");
         }
     }

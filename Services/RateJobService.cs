@@ -1,35 +1,26 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
-using DespatchWeb.Models.Config;
 using DespatchWeb.Models.Response;
-using Microsoft.Extensions.Options;
-using RestSharp;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
 
 namespace DespatchWeb.Services;
 
-public class RateJobService : IRateJobService
+public class RateJobService(
+    IHttpClientFactory httpClientFactory,
+    IJobRepository jobRepository)
+    : IRateJobService
 {
-    private readonly HereMapsConfig _hereConfig;
-    private readonly IJobRepository _jobRepository;
-    private readonly RestClient _restClient;
-
-    public RateJobService(
-        IJobRepository jobRepository,
-        IOptions<HereMapsConfig> hereConfig
-    )
-    {
-        _jobRepository = jobRepository;
-        _hereConfig = hereConfig.Value;
-        _restClient = new RestClient("https://router.hereapi.com/v8/");
-    }
+    private readonly HttpClient _httpClient = httpClientFactory.CreateClient("HereMaps");
 
     public async Task<JobRateResult> CalculateJobRateUs(JobRateRequest request)
     {
-        var speed = await _jobRepository.GetJobTypeById(request.SpeedId);
-        var speedGrouping = await _jobRepository.GetJobTypeGrouping(speed.GroupingId ?? 0);
+        var speed = await jobRepository.GetJobTypeById(request.SpeedId);
+        var speedGrouping = await jobRepository.GetJobTypeGrouping(speed.GroupingId ?? 0);
 
         var result = new JobRateResult
         {
@@ -49,10 +40,10 @@ public class RateJobService : IRateJobService
         else
         {
             // Get closest airports
-            var closestFromAirports = await _jobRepository.GetClosestAirports(
+            var closestFromAirports = await jobRepository.GetClosestAirports(
                 request.PickupLat ?? 0,
                 request.PickupLong ?? 0);
-            var closestToAirports = await _jobRepository.GetClosestAirports(
+            var closestToAirports = await jobRepository.GetClosestAirports(
                 request.DeliveryLat ?? 0,
                 request.DeliveryLong ?? 0);
 
@@ -98,23 +89,34 @@ public class RateJobService : IRateJobService
 
     private async Task<HereMapRouteResponseV8> GetHereMapRoute(string fromLatLng, string toLatLng)
     {
-        var request = new RestRequest("routes")
-            .AddQueryParameter("apiKey", _hereConfig.ApiKey)
-            .AddQueryParameter("origin", fromLatLng)
-            .AddQueryParameter("destination", toLatLng)
-            .AddQueryParameter("routingMode", "fast")
-            .AddQueryParameter("transportMode", "car")
-            .AddQueryParameter("departureTime", "any")
-            .AddQueryParameter("return", "summary");
+        var queryParams = new Dictionary<string, string>
+        {
+            { "apiKey", Environment.GetEnvironmentVariable("HereMapsAPIKey") },
+            { "origin", fromLatLng },
+            { "destination", toLatLng },
+            { "routingMode", "fast" },
+            { "transportMode", "car" },
+            { "departureTime", "any" },
+            { "return", "summary" }
+        };
 
+        var queryString = string.Join("&", queryParams.Select(p => 
+            $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value)}"));
+    
         try
         {
-            var response = await _restClient.ExecuteGetAsync<HereMapRouteResponseV8>(request);
-
-            if (!response.IsSuccessful)
-                throw new ApplicationException($"HERE Maps API request failed: {response.ErrorMessage}");
-
-            return response.Data;
+            var response = await _httpClient.GetAsync($"routes?{queryString}");
+            response.EnsureSuccessStatusCode();
+        
+            var result = await response.Content.ReadFromJsonAsync<HereMapRouteResponseV8>();
+            if (result == null)
+                throw new ApplicationException("Failed to deserialize HERE Maps API response");
+            
+            return result;
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new ApplicationException("HERE Maps API request failed", ex);
         }
         catch (Exception ex)
         {

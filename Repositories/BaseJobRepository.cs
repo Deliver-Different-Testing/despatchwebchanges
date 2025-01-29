@@ -1,20 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
 using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
-using Serilog;
-using Vehicle = DespatchWeb.Models.Vehicle;
 using CourierLocation = DespatchWeb.Models.Response.CourierLocation;
 
 namespace DespatchWeb.Repositories;
@@ -1074,7 +1069,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     {
         var curAmount = new OutputParameter<decimal?>();
 
-        await _context.Procedures.sp_RateJob2Async(
+        await Context.Procedures.sp_RateJob2Async(
             intClientID: clientId,
             intFromID: fromId,
             intToID: toId,
@@ -1121,7 +1116,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         var rate = new OutputParameter<decimal?>();
         var description = new OutputParameter<string>();
 
-        await _context.Procedures.DD_stpJob_Rate_DescribedAsync(
+        await Context.Procedures.DD_stpJob_Rate_DescribedAsync(
             ClientID: clientId,
             SpeedID: speed,
             FromZipCode: string.IsNullOrEmpty(value: fromZip) ? null : int.Parse(s: fromZip),
@@ -1145,14 +1140,14 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             Rate: rate
         );
 
-        await _context.Procedures.DD_InsertPricingBreakdownAsync(JobID: jobId, PrebookJobID: null,
+        await Context.Procedures.DD_InsertPricingBreakdownAsync(JobID: jobId, PrebookJobID: null,
             PricingBreakdown: description.Value);
         return rate.Value ?? 0;
     }
 
     public async Task<TucJobType> GetJobTypeById(int speedId)
     {
-        var jobType = await _context.TucJobTypes
+        var jobType = await Context.TucJobTypes
             .AsNoTracking()
             .FirstOrDefaultAsync(predicate: x => x.UcjtId == speedId);
 
@@ -1164,7 +1159,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
     public async Task<TucJobTypeGrouping> GetJobTypeGrouping(int groupingId)
     {
-        var grouping = await _context.TucJobTypeGroupings
+        var grouping = await Context.TucJobTypeGroupings
             .AsNoTracking()
             .FirstOrDefaultAsync(predicate: x => x.GroupingId == groupingId);
 
@@ -1180,7 +1175,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         {
             var latRad = (double)latitude / 57.3;
 
-            var closestAirports = await _context.TblAirports
+            var closestAirports = await Context.TblAirports
                 .Where(predicate: a => a.Active)
                 .Select(selector: a => new AddressWithAgent
                 {

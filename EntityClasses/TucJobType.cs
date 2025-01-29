@@ -79,6 +79,8 @@ public partial class TucJobType
 
     public int? GroupingId { get; set; }
 
+    public virtual TucJobTypeGrouping Grouping { get; set; }
+
     public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; } = new List<TblBulkJob>();
 
     public virtual ICollection<TblBulkRunSchedule> TblBulkRunScheduleParentSpeeds { get; set; } = new List<TblBulkRunSchedule>();

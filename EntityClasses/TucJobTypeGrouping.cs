@@ -3,18 +3,13 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
+namespace DespatchWeb.EntityClasses;
+
+public partial class TucJobTypeGrouping
 {
-    public partial class TucJobTypeGrouping
-    {
-        public TucJobTypeGrouping()
-        {
-            TucJobTypes = new HashSet<TucJobType>();
-        }
+    public int GroupingId { get; set; }
 
-        public int GroupingId { get; set; }
-        public string GroupingName { get; set; }
+    public string GroupingName { get; set; }
 
-        public virtual ICollection<TucJobType> TucJobTypes { get; set; }
-    }
+    public virtual ICollection<TucJobType> TucJobTypes { get; set; } = new List<TucJobType>();
 }

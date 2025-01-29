@@ -1,22 +1,17 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Net.Http;
-using System.Reflection.Emit;
-using System.Security.Claims;
-using System.Text.Json;
-using System.Threading.Tasks;
-using System.Web;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.FlightStats;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
 using Serilog;
-
-using static System.Net.Mime.MediaTypeNames;
+using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Net.Http;
+using System.Security.Claims;
+using System.Text.Json;
+using System.Threading.Tasks;
+using System.Web;
 
 namespace DespatchWeb.Services;
 
@@ -32,6 +27,8 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
 
     public async Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime, string departureAirportCode)
     {
+        
+        Log.Information("FlightStatsService initialized successfully");
         if (string.IsNullOrEmpty(departureAirportCode))
             throw new ArgumentException("Departure airport code is required and cannot be null or empty.",
                 nameof(departureAirportCode));
@@ -53,7 +50,7 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
         var relativeUrl = $"json/create/{carrierCode}/{flightNumber}/from/{departureAirportCode}/departing/{year}/{month}/{day}";
 
         var query = HttpUtility.ParseQueryString(string.Empty);
-        query["appId"] = _appId;
+        query["appId"] = _appId;;
         query["appKey"] = _appKey;
         query["name"] = uniqueWebhookId.ToString();
         query["type"] = "JSON";
@@ -91,9 +88,10 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
         string departureAirportCode,
         string destinationAirportCode,
         DateTime? departureDateTime = null,
+        List<string> includeAirlines = null,
         int flightBuffer = 0,
         string codeType = null,
-        string[] extendedOptions = null)
+        List<string> extendedOptions = null)
 
     {
         if (string.IsNullOrEmpty(departureAirportCode))
@@ -126,14 +124,27 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
         var query = HttpUtility.ParseQueryString(string.Empty);
         query["appId"] = _appId;
         query["appKey"] = _appKey;
-        query["numHours"] = "24";
+        query["payloadType"] = "cargo";
+        query["maxResults"] = "100";
+        query["includeCodeshares"] = "false";
+
+        if (includeAirlines != null && includeAirlines.Any())
+        {
+            var combinedAirlines = string.Join(",", includeAirlines);
+            Log.Debug("Adding carrier filters: {Carriers}", combinedAirlines);
+            query["includeAirlines"] = combinedAirlines;
+        }
+        //query["numHours"] = "24";
 
         if (!string.IsNullOrEmpty(codeType))
             query["codeType"] = codeType;
 
-        if (extendedOptions is { Length: > 0 })
-            foreach (var option in extendedOptions)
-                query.Add("extendedOptions", option);
+        if (extendedOptions != null && extendedOptions.Any())
+        {
+            var combinedOptions = string.Join(",", extendedOptions);
+            Log.Debug("Adding extended options: {Options}", combinedOptions);
+            query.Add("extendedOptions", combinedOptions);
+        }
 
         // Construct the final URI
         var fullUrl = $"{ConnectionsBaseUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
@@ -158,7 +169,7 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
 
 
         var flightOptions = flightStatusResponse.Connections
-            .Where(conn => conn.ScheduledFlight.Any() && !conn.ScheduledFlight.First().IsCodeShare)
+            .Where(conn => conn.ScheduledFlight.Any())
             .Select(conn =>
             {
                 var firstFlight = conn.ScheduledFlight.First();

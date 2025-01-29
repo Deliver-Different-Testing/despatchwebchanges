@@ -3,7 +3,7 @@ angular.module('uDispatch')
         ['$scope', 'JobDetailService', 'uCSData', "$state", "$filter", '$mdDialog', 'greetingService', '$document', '$timeout',
             'dispatchJobService', 'toastrService', 'moment', 'DispatchData', 'versionUrl', '$mdSidenav', 'CSLayoutService', 'APP_CONFIG',
             ($scope, jdSvc, uCSData, $state, $filter, $mdDialog, greetingService, $document,
-             $timeout, dispatchJobService, toastrService, moment, DispatchData, versionUrl, $mdSidenav, LayoutService, APP_CONFIG) => {
+                $timeout, dispatchJobService, toastrService, moment, DispatchData, versionUrl, $mdSidenav, LayoutService, APP_CONFIG) => {
                 $scope.jdSvc = jdSvc;
                 $scope.dispatchJobService = dispatchJobService;
 
@@ -17,8 +17,8 @@ angular.module('uDispatch')
 
                     // New map
                     $scope.mapCenter = APP_CONFIG.US_Customer ?
-                        {lat: 39.8283, lng: -98.5795} : // US center
-                        {lat: -36.8485, lng: 174.7633}; // Auckland, NZ
+                        { lat: 39.8283, lng: -98.5795 } : // US center
+                        { lat: -36.8485, lng: 174.7633 }; // Auckland, NZ
                     $scope.mapZoom = 12;
                     $scope.jobs = [];
 
@@ -90,9 +90,9 @@ angular.module('uDispatch')
                                 const box = angular.element("#" + ui.item.context.id);
                                 const parent = box.parent();
                                 parent.find(".box").each(function () {
-                                    angular.element(this).css({"flex-basis": angular.element(this).attr("data-height")});
+                                    angular.element(this).css({ "flex-basis": angular.element(this).attr("data-height") });
                                 });
-                                parent.find(".box").last().css({"flex-basis": "0"});
+                                parent.find(".box").last().css({ "flex-basis": "0" });
                             }, 0);
                         }
                     };
@@ -120,13 +120,13 @@ angular.module('uDispatch')
                     $scope.bulkJobPromise = null;
                     $scope.preBookPromise = null;
 
-                    $scope.jobHeaders = [{key: 'booked', label: 'Booked'}, {key: 'status', label: 'Status'}, {
+                    $scope.jobHeaders = [{ key: 'booked', label: 'Booked' }, { key: 'status', label: 'Status' }, {
                         key: 'speed',
                         label: 'Speed'
-                    }, {key: 'jobNo', label: 'Job'}, {key: 'client', label: 'Client'}, {key: 'from', label: 'From'}, {
+                    }, { key: 'jobNo', label: 'Job' }, { key: 'client', label: 'Client' }, { key: 'from', label: 'From' }, {
                         key: 'to',
                         label: 'To'
-                    }, {key: 'street', label: 'Street'}];
+                    }, { key: 'street', label: 'Street' }];
 
                     $scope.options = {
                         "detail": {
@@ -508,7 +508,7 @@ angular.module('uDispatch')
                 $scope.jobRecordSearch = searchText => {
                     return $scope.jobList
                         .filter(job => job.jobNo.toLowerCase().includes(searchText.toLowerCase()))
-                        .map(job => ({id: job.id, text: job.jobNo}));
+                        .map(job => ({ id: job.id, text: job.jobNo }));
                 }
 
                 /**
@@ -773,46 +773,46 @@ angular.module('uDispatch')
                     }
                 };
 
-        $scope.downloadJobList = async () => {
-            try {
-                const response = await uCSData.podJobsDownload(
-                $scope.pickDateService.courier,
-                $scope.pickDateService.client,
-                ($scope.pickDateService.wild || ""),
-                ($scope.pickDateService.job || ""),
-                moment($scope.pickDateService.from_date),
-                moment($scope.pickDateService.to_date),
-                $scope.jobQuery.page,
-                $scope.jobQuery.limit);
+                $scope.downloadJobList = async () => {
+                    try {
+                        const response = await uCSData.podJobsDownload(
+                            $scope.pickDateService.courier,
+                            $scope.pickDateService.client,
+                            ($scope.pickDateService.wild || ""),
+                            ($scope.pickDateService.job || ""),
+                            moment($scope.pickDateService.from_date),
+                            moment($scope.pickDateService.to_date),
+                            $scope.jobQuery.page,
+                            $scope.jobQuery.limit);
 
-                if (response.status === 200) {
-                    let filename = "jobs.csv";  // default filename
-                    const contentDisposition = response.headers()["content-disposition"];
+                        if (response.status === 200) {
+                            let filename = "jobs.csv";  // default filename
+                            const contentDisposition = response.headers()["content-disposition"];
 
-                    if (contentDisposition) {
-                        const filenameMatch = contentDisposition.split(';')
-                            .find(part => part.trim().startsWith('filename='));
-                        if (filenameMatch) {
-                            filename = filenameMatch.split('=')[1].trim().replace(/"/g, '');
+                            if (contentDisposition) {
+                                const filenameMatch = contentDisposition.split(';')
+                                    .find(part => part.trim().startsWith('filename='));
+                                if (filenameMatch) {
+                                    filename = filenameMatch.split('=')[1].trim().replace(/"/g, '');
+                                }
+                            }
+
+                            const blob = new Blob([response.data], { type: 'text/csv' });
+                            const url = window.URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = filename;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            window.URL.revokeObjectURL(url);
+                        } else {
+                            console.error("Error downloading jobs");
                         }
+                    } catch (error) {
+                        console.error("Failed to download jobs:", error);
                     }
-
-                    const blob = new Blob([response.data], { type: 'text/csv' });
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = filename;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
-                } else {
-                    console.error("Error downloading jobs");
-                }
-            } catch (error) {
-                console.error("Failed to download jobs:", error);
-            }
-        };
+                };
 
                 $scope.uploadJobList = () => {
                     angular.element("jobListUpload").trigger('click');
@@ -921,6 +921,15 @@ angular.module('uDispatch')
                         $timeout(() => {
                             scanListLoading.fadeOut();
                         }, 200);
+
+                        if ($scope.currentJob.completedTime) {
+                            const cmpltd = moment($scope.currentJob.completedTime);
+                            const month = cmpltd.month() + 1;
+                            const podData = await uCSData.getJobDeliveryPhotosAndSignature(jobId, cmpltd.year(), month);
+                            $scope.currentJob.podPhotos = podData;
+                        }
+
+
 
                         if (!$scope.$$phase) {
                             $scope.$apply();
@@ -1180,7 +1189,7 @@ angular.module('uDispatch')
                     }
 
                     $mdDialog.show({
-                        locals: {dataToPass: currentEvent},
+                        locals: { dataToPass: currentEvent },
                         controller: $scope.eventDialogController,
                         scope: $scope,
                         preserveScope: true,
@@ -1197,7 +1206,7 @@ angular.module('uDispatch')
                 $scope.createJobEvent = (job) => {
                     $scope.currentJob = job;
                     $mdDialog.show({
-                        locals: {dataToPass: undefined},
+                        locals: { dataToPass: undefined },
                         controller: $scope.eventDialogController,
                         scope: $scope,
                         preserveScope: true,

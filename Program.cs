@@ -1,6 +1,8 @@
-﻿using Amazon.Runtime;
+﻿using Amazon;
+using Amazon.Runtime;
 using Amazon.Runtime.CredentialManagement;
 using Amazon.S3;
+using DespatchWeb;
 using DespatchWeb.Automapper;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
@@ -9,6 +11,7 @@ using DespatchWeb.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -17,19 +20,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
 using Serilog;
 using StackExchange.Redis;
 using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Amazon;
-using DespatchWeb;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Hosting;
-using DespatchWeb.Helpers;
-using Microsoft.Extensions.Logging;
-using DespatchWeb.Models.Config;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -102,8 +99,6 @@ builder.Services.AddSingleton<IAmazonS3>(serviceProvider =>
     });
 });
 
-// Api Keys
-builder.Services.Configure<HereMapsConfig>(builder.Configuration.GetSection("HereMaps"));
 
 
 builder.Services.Configure<CookiePolicyOptions>(options =>
@@ -130,7 +125,14 @@ builder.Services.Configure<KestrelServerOptions>(options =>
 });
 
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient("HereMaps", client =>
+{
+    client.BaseAddress = new Uri("https://router.hereapi.com/v8/");
+});
 builder.Services.AddHttpContextAccessor();
+
+
+
 
 builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<INationwideJobRepository, NationwideJobRepository>();
@@ -140,6 +142,7 @@ builder.Services.AddScoped<IDfrntViewsRepository, DfrntViewsRepository>();
 
 builder.Services.AddScoped<IFlightStatsService, FlightStatsService>();
 builder.Services.AddScoped<IClientAccessValidatorService, ClientAccessValidatorService>();
+builder.Services.AddScoped<IRateJobService, RateJobService>();
 
 // Automapper
 builder.Services.AddAutoMapper(typeof(GenericMapperProfiles));
