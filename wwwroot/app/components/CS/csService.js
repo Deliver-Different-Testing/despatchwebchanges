@@ -107,7 +107,7 @@ class CsService {
      * @param {number} month
      */
     async getJobDeliveryPhotosAndSignature(jobId, year, month) {
-        const response = await this._$http.get('/Job/GetJobDeliveryPhotosAndSignature?jobId=' + jobId + '&year=' + year + '&month=' +month);
+        const response = await this.$http.get('/Job/GetJobDeliveryPhotosAndSignature?jobId=' + jobId + '&year=' + year + '&month=' +month);
         return response.data;
     }
 

@@ -9,7 +9,7 @@
     <title>Deliver Different - Dispatch</title>
     <link id="favicon" rel="shortcut icon" type="image/x-icon" href="dispmain.ico">
 
-  
+
     <script type="text/javascript">
         @{
             var hmid = Environment.GetEnvironmentVariable("HereMapsID");
@@ -29,7 +29,7 @@
     @* Material *@
     <link href="/lib/ng-material-floating-button/mfb/dist/mfb.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="lib/material-time-picker/md-time-picker.css">
-    
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-grid/4.12.7/ui-grid.min.css"
           integrity="sha512-HY4l1OW5NoZWE+45KXUWGPEoiHuqwUfA1LgkgI5dQcKa3xM6q/jk+xEFNyYyFWFMI9mq+DfeGl/UhzlS+hY7+A=="
           crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -66,7 +66,7 @@
 
     <environment include="Development">
         <link rel="stylesheet" href="~/css/udispatch.css" asp-append-version="true" />
-        <link rel="stylesheet" href="~/css/material3.css" asp-append-version="true"/>
+        <link rel="stylesheet" href="~/css/material3.css" asp-append-version="true" />
         <link rel="stylesheet" href="~/css/toasts.css" asp-append-version="true" />
         <link rel="stylesheet" href="~/css/promiseButton.css" asp-append-version="true" />
     </environment>
@@ -85,7 +85,7 @@
     <link rel="stylesheet" href="lib/hotkeys/hotkeys.min.css">
     <link rel="stylesheet" href="lib/autocomplete/angular-auto-complete.css">
 
-  
+
 
 </head>
 <body ng-app="uDispatch">
@@ -144,9 +144,9 @@
             crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="lib/jquery_timers.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/datejs/1.0/date.min.js"></script>
-    
-    
-    
+
+
+
     @* Tracking lib*@
     <!--Here Maps-->
     <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
@@ -182,61 +182,63 @@
         var isDevelopment = WebHostEnvironment.IsDevelopment();
         var scripts = new[]
         {
-            "dist/app.js",
-            "dist/version.js",
-            "dist/materialTheme.js",
-            "dist/routes.js",
-            "dist/filters.js",
-            "dist/services/config.service.js",
-            "dist/services/dispatch.service.js",
-            "dist/services/job-detail.service.js",
-            "dist/services/toastr.service.js",
-            "dist/services/loading.service.js",
-            "dist/services/greeting.service.js",
-            "dist/services/rate-job.service.js",
-            "dist/services/dispatch-job.service.js",
-            "dist/services/getUsStates.service.js",
-            "dist/services/open-job-dispatch.service.js",
-            "dist/components/common/side-nav/side-nav.directive.js",
-            "dist/components/common/dispatch-map/dispatch-map.directive.js",
-            "dist/components/home/homeControl.js",
-            "dist/components/home/services/job-table.service.js",
-            "dist/components/Nationwide/services/nationwide-layout.service.js",
-            "dist/components/Nationwide/nationwideService.js",
-            "dist/components/Nationwide/nationwideControl.js",
-            "dist/components/CS/services/cs-layout.service.js",
-            "dist/components/CS/csService.js",
-            "dist/components/CS/csControl.js",
-            "dist/components/prebooks/prebookService.js",
-            "dist/components/prebooks/prebookControl.js",
-            "dist/components/overview/overview.controller.js",
-            "dist/components/overview/overview.service.js",
-            "dist/components/overview/mega-map/mega-map.controller.js",
-            "dist/components/dialogs/edit-address-dialog/edit-address-dialog.controller.js",
-            "dist/components/dialogs/auto-complete-dialog/auto-complete-dialog.controller.js",
-            "dist/components/dialogs/send-message-dialog/send-message-dialog.controller.js",
-            "dist/components/dialogs/select-dialog/select-dialog.controller.js",
-            "dist/components/dialogs/add-notes-dialog/add-notes-dialog.controller.js",
-            "dist/components/dialogs/create-job-dialog/create-job-dialog.controller.js",
-            "dist/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.js",
-            "dist/components/dialogs/add-pallet-dialog/add-pallet-dialog.Controller.js",
-            "dist/components/dialogs/add-event-dialog/add-event-dialog.controller.js",
-            "dist/components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.controller.js",
-            "dist/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.controller.js",
-            "dist/components/dialogs/additional-services-dialog/additional-services-dialog.controller.js",
-            "dist/components/dialogs/job-file-upload-dialog/job-file-upload.controller.js",
-            "dist/components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.controller.js",
-            "dist/components/dialogs/edit-parcel-dimensions-dialog/parcel-visualization.directive.js",
-            "dist/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.controller.js",
-            "dist/components/dialogs/date-range-dialog/date-range-dialog.controller.js",
-            "dist/components/dialogs/map-dialog/map-dialog.controller.js"
-        };
+    "dist/app.js",
+    "dist/version.js",
+    "dist/materialTheme.js",
+    "dist/routes.js",
+    "dist/filters.js",
+    "dist/services/config.service.js",
+    "dist/services/dispatch.service.js",
+    "dist/services/job-detail.service.js",
+    "dist/services/toastr.service.js",
+    "dist/services/loading.service.js",
+    "dist/services/greeting.service.js",
+    "dist/services/rate-job.service.js",
+    "dist/services/dispatch-job.service.js",
+    "dist/services/getUsStates.service.js",
+    "dist/services/open-job-dispatch.service.js",
+    "dist/components/common/side-nav/side-nav.directive.js",
+    "dist/components/common/dispatch-map/dispatch-map.directive.js",
+    "dist/components/home/homeControl.js",
+    "dist/components/home/services/job-table.service.js",
+    "dist/components/Nationwide/services/nationwide-layout.service.js",
+    "dist/components/Nationwide/nationwideService.js",
+    "dist/components/Nationwide/nationwideControl.js",
+    "dist/components/CS/services/cs-layout.service.js",
+    "dist/components/CS/csService.js",
+    "dist/components/CS/csControl.js",
+    "dist/components/prebooks/prebookService.js",
+    "dist/components/prebooks/prebookControl.js",
+    "dist/components/overview/overview.controller.js",
+    "dist/components/overview/overview.service.js",
+    "dist/components/overview/services/overview-filters.service.js",
+    "dist/components/overview/mega-map/mega-map.controller.js",
+    "dist/components/overview/open-jobs/open-jobs.controller.js",
+    "dist/components/dialogs/edit-address-dialog/edit-address-dialog.controller.js",
+    "dist/components/dialogs/auto-complete-dialog/auto-complete-dialog.controller.js",
+    "dist/components/dialogs/send-message-dialog/send-message-dialog.controller.js",
+    "dist/components/dialogs/select-dialog/select-dialog.controller.js",
+    "dist/components/dialogs/add-notes-dialog/add-notes-dialog.controller.js",
+    "dist/components/dialogs/create-job-dialog/create-job-dialog.controller.js",
+    "dist/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.js",
+    "dist/components/dialogs/add-pallet-dialog/add-pallet-dialog.Controller.js",
+    "dist/components/dialogs/add-event-dialog/add-event-dialog.controller.js",
+    "dist/components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.controller.js",
+    "dist/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.controller.js",
+    "dist/components/dialogs/additional-services-dialog/additional-services-dialog.controller.js",
+    "dist/components/dialogs/job-file-upload-dialog/job-file-upload.controller.js",
+    "dist/components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.controller.js",
+    "dist/components/dialogs/edit-parcel-dimensions-dialog/parcel-visualization.directive.js",
+    "dist/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.controller.js",
+    "dist/components/dialogs/date-range-dialog/date-range-dialog.controller.js",
+    "dist/components/dialogs/map-dialog/map-dialog.controller.js"
+    };
         foreach (var script in scripts)
         {
             var src = isDevelopment ? script : script?.Replace(".js", ".min.js");
             <script src="@src" asp-append-version="true"></script>
         }
     }
-}
+    }
 </body>
 </html>

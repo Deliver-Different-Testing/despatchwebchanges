@@ -1,3 +1,3 @@
 // version.js
 angular.module('uDispatch')
-    .constant('APP_VERSION', '20250129-235247');
+    .constant('APP_VERSION', '20250130-025526');

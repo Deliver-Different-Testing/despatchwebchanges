@@ -2,5 +2,9 @@
   {
     "outputFile": "wwwroot/css/udispatch.css",
     "inputFile": "wwwroot/css/udispatch.less"
+  },
+  {
+    "outputFile": "wwwroot/app/components/overview/overview.css",
+    "inputFile": "wwwroot/app/components/overview/overview.less"
   }
 ]

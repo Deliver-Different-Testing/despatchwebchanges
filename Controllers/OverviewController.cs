@@ -130,18 +130,18 @@ public class OverviewController(
     {
         try
         {
-            _logger.LogInformation("Retrieving open jobs");
-            var jobs = await _jobRepository.GetOpenJobsAsync(
+            Log.Information("Retrieving open jobs");
+            var jobs = await jobRepository.GetOpenJobsAsync(
                 parameters.StartDate,
                 parameters.EndDate,
                 parameters.Regions,
                 parameters.Speeds);
-            _logger.LogInformation("Successfully retrieved {JobCount} open jobs", jobs.Count);
+            Log.Information("Successfully retrieved {JobCount} open jobs", jobs.Count);
             return Json(jobs);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving open jobs");
+            Log.Error(ex, "Error retrieving open jobs");
             return StatusCode(500, new { message = "An unexpected error occurred while retrieving open jobs" });
         }
     }
@@ -151,14 +151,14 @@ public class OverviewController(
     {
         try
         {
-            _logger.LogInformation("Getting driver stats for courier ID: {CourierId}", courierId);
-            var driverStats = await _jobRepository.GetDriverStatsAsync(courierId);
-            _logger.LogInformation("Successfully retrieved driver stats for courier ID: {CourierId}", courierId);
+            Log.Information("Getting driver stats for courier ID: {CourierId}", courierId);
+            var driverStats = await jobRepository.GetDriverStatsAsync(courierId);
+            Log.Information("Successfully retrieved driver stats for courier ID: {CourierId}", courierId);
             return Json(driverStats);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving driver stats for courier ID: {CourierId}", courierId);
+            Log.Error(ex, "Error retrieving driver stats for courier ID: {CourierId}", courierId);
             return StatusCode(500, "An error occurred while retrieving driver statistics");
         }
     }

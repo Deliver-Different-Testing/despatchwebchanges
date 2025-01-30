@@ -1946,7 +1946,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
     {
         try
         {
-            var query = _context.TucJobs
+            var query = Context.TucJobs
                 .Where(j => j.UcjbStatus != (int)JobStatus.Completed &&
                             j.UcjbStatus != (int)JobStatus.Rejected);
 
@@ -2036,7 +2036,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting open jobs");
+            Log.Error(ex, "Error getting open jobs");
             throw;
         }
     }
@@ -2045,7 +2045,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
     {
         try
         {
-            var stats = await _context.TucCouriers
+            var stats = await Context.TucCouriers
                 .Where(d => d.UccrId == courierId)
                 .Select(d => new DriverStats
                 {
@@ -2067,7 +2067,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting driver stats for {CourierId}", courierId);
+            Log.Error(ex, "Error getting driver stats for {CourierId}", courierId);
             throw;
         }
     }
@@ -2662,7 +2662,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         if (podPhoto != null) photos.Add(podPhoto);
         if (deliverySignature != null) photos.Add(deliverySignature);
 
-        photos.AddRange(await _context.DeliveryPhotos
+        photos.AddRange(await Context.DeliveryPhotos
             .Where(d => d.JobId == jobId)
             .Select(del => del.Photo)
             .ToListAsync());

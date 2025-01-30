@@ -1,4 +1,4 @@
-md-progress-linear.md-low .md-bar,
+﻿md-progress-linear.md-low .md-bar,
 md-progress-linear.md-default-theme.md-low .md-bar {
   background-color: #BBF7D0 !important;
 }
@@ -349,11 +349,18 @@ md-progress-linear .md-container {
 .regions-container::-webkit-scrollbar-track {
   background-color: rgba(0, 0, 0, 0.1);
 }
-
-.mega-map-loading-button {
-  position: fixed;
-  top: 80px;
-  right: 20px;
-  z-index: 100;
+.empty-state {
+  padding: 48px 0;
 }
-/*# sourceMappingURL=overview.css.map */
+.empty-state .empty-icon {
+  font-size: 48px;
+  height: 48px;
+  width: 48px;
+  color: rgba(0, 0, 0, 0.38);
+  margin-bottom: 16px;
+}
+.empty-state .md-body-1 {
+  color: rgba(0, 0, 0, 0.54);
+  text-align: center;
+  margin: 0;
+}
