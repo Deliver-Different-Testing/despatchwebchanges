@@ -18,28 +18,7 @@
   <ItemGroup>
     <Content Remove="bundleconfig.json" />
     <Content Remove="compilerconfig.json" />
-    <Content Remove="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.controller.js" />
-    <Content Remove="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.css" />
-    <Content Remove="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.css.map" />
-    <Content Remove="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.min.css" />
-    <Content Remove="wwwroot\app\components\dialogs\map-dialog\map-dialog.controller.js" />
-    <Content Remove="wwwroot\app\components\dialogs\map-dialog\map-dialog.css" />
-    <Content Remove="wwwroot\app\components\dialogs\map-dialog\map-dialog.css.map" />
-    <Content Remove="wwwroot\app\components\dialogs\map-dialog\map-dialog.html" />
-    <Content Remove="wwwroot\app\components\dialogs\map-dialog\map-dialog.less" />
-    <Content Remove="wwwroot\app\components\dialogs\map-dialog\map-dialog.min.css" />
-    <Content Remove="wwwroot\app\components\dialogs\map-dialog\map-dialog.template.html" />
-    <Content Remove="wwwroot\app\components\overview\open-jobs\open-jobs.controller.js" />
-    <Content Remove="wwwroot\app\components\overview\open-jobs\open-jobs.styles.css" />
-    <Content Remove="wwwroot\app\components\overview\open-jobs\open-jobs.styles.css.map" />
-    <Content Remove="wwwroot\app\components\overview\open-jobs\open-jobs.styles.less" />
-    <Content Remove="wwwroot\app\components\overview\open-jobs\open-jobs.styles.min.css" />
-    <Content Remove="wwwroot\app\components\overview\overview.css" />
-    <Content Remove="wwwroot\app\components\overview\overview.css.map" />
-    <Content Remove="wwwroot\app\components\overview\overview.less" />
-    <Content Remove="wwwroot\app\components\overview\services\overview-filters.service.js" />
-    <Content Remove="wwwroot\app\materialTheme.js" />
-    <Content Remove="wwwroot\css\udispatch.less" />
+    
   </ItemGroup>
   <ItemGroup>
     <Content Update="appsettings.json">
@@ -255,10 +234,9 @@
     <None Include="wwwroot\app\components\common\side-nav\side-nav.min.css" />
     <None Include="wwwroot\app\components\common\side-nav\side-nav.less" />
     <None Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
-    <None Include="wwwroot\app\components\overview\open-jobs\open-jobs.controller.js" />
+    <Page Include="wwwroot\app\components\overview\open-jobs\open-jobs.controller.js" />
     <None Include="wwwroot\app\components\overview\open-jobs\open-jobs.styles.css" />
     <None Include="wwwroot\app\components\overview\open-jobs\open-jobs.styles.css.map" />
-    <None Include="wwwroot\app\components\overview\open-jobs\open-jobs.styles.less" />
     <None Include="wwwroot\app\components\overview\open-jobs\open-jobs.styles.min.css" />
     <None Include="wwwroot\app\components\overview\services\overview-filters.service.js" />
     <Page Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.controller.js" />
