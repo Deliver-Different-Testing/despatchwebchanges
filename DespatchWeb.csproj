@@ -34,7 +34,6 @@
     <Content Remove="wwwroot\app\components\overview\open-jobs\open-jobs.styles.css.map" />
     <Content Remove="wwwroot\app\components\overview\open-jobs\open-jobs.styles.less" />
     <Content Remove="wwwroot\app\components\overview\open-jobs\open-jobs.styles.min.css" />
-    <Content Remove="wwwroot\app\components\overview\open-jobs\open-jobs.template.html" />
     <Content Remove="wwwroot\app\components\overview\overview.css" />
     <Content Remove="wwwroot\app\components\overview\overview.css.map" />
     <Content Remove="wwwroot\app\components\overview\overview.less" />
@@ -261,7 +260,6 @@
     <None Include="wwwroot\app\components\overview\open-jobs\open-jobs.styles.css.map" />
     <None Include="wwwroot\app\components\overview\open-jobs\open-jobs.styles.less" />
     <None Include="wwwroot\app\components\overview\open-jobs\open-jobs.styles.min.css" />
-    <None Include="wwwroot\app\components\overview\open-jobs\open-jobs.template.html" />
     <None Include="wwwroot\app\components\overview\services\overview-filters.service.js" />
     <Page Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.controller.js" />
     <None Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.css" />
