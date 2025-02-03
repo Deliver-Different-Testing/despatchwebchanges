@@ -5,6 +5,11 @@
 md-dialog {
   min-width: 400px;
 }
+.toolbar-logo {
+  height: 50px;
+  width: auto;
+  margin-right: 8px;
+}
 /* Global scrollbar styles */
 * {
   scrollbar-width: thin;
@@ -1826,4 +1831,11 @@ md-list-item:not(.selected):hover {
 }
 .popup-icon {
   margin-right: 8px;
+}
+.md-dense {
+  position: relative;
+}
+.scrollable-container {
+  height: 100vh;
+  overflow-y: auto;
 }
