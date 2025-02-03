@@ -6,5 +6,9 @@
   {
     "outputFile": "wwwroot/app/components/overview/overview.css",
     "inputFile": "wwwroot/app/components/overview/overview.less"
+  },
+  {
+    "outputFile": "wwwroot/app/components/overview/open-jobs/open-jobs.styles.css",
+    "inputFile": "wwwroot/app/components/overview/open-jobs/open-jobs.styles.less"
   }
 ]
