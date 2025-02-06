@@ -13,7 +13,7 @@ class AddNotesDialogController {
      * @static
      * @description List of dependencies to be injected.
      */
-    static $inject = ['$mdDialog', 'toastrService', 'DispatchData', 'id', 'fieldName', 'title', 'job'];
+    static $inject = ["$mdDialog", "toastrService", "DispatchData", "id", "fieldName", "title", "job"];
 
     /**
      * Create an AddNotesDialogController.
@@ -26,9 +26,9 @@ class AddNotesDialogController {
      * @param {Job} job - The job for which the selection is being made.
      */
     constructor($mdDialog, toastrService, DispatchData, id, fieldName, title, job) {
-        this._$mdDialog = $mdDialog;
-        this._dispatchData = DispatchData;
-        this._toastrService = toastrService;
+        this.$mdDialog = $mdDialog;
+        this.dispatchData = DispatchData;
+        this.toastrService = toastrService;
 
         /** @type {boolean} */
         this.isLoading = false;
@@ -63,7 +63,7 @@ class AddNotesDialogController {
                 await this.addJobNote(this._job.id, note, FirstName, this._job.preBook, this._job.bulkJob);
                 this._job.internalNotes = note;
             } else if (this._fieldName === "ConNote") {
-                await this._dispatchData.addConNote(this._job.id, note);
+                await this.dispatchData.addConNote(this._job.id, note);
                 this._job.conNote = note;
             } else {
                 // Other type of notes
@@ -78,10 +78,10 @@ class AddNotesDialogController {
                 this._job[this._fieldName] = note;
             }
 
-            this._toastrService.showSuccessToast("Note saved");
-            this._$mdDialog.hide(this._job);
+            this.toastrService.showSuccessToast("Note saved");
+            this.$mdDialog.hide(this._job);
         } catch (error) {
-            this._toastrService.showErrorToast(error.message);
+            this.toastrService.showErrorToast(error.message);
         } finally {
             this.isLoading = false;
         }
@@ -98,9 +98,9 @@ class AddNotesDialogController {
      */
     async addJobNote(id, note, firstName, preBook, bulkJob) {
         if (bulkJob) {
-            await this._dispatchData.addBulkJobNote(id, note, firstName, preBook);
+            await this.dispatchData.addBulkJobNote(id, note, firstName, preBook);
         } else {
-            await this._dispatchData.addNote(id, note, firstName, preBook);
+            await this.dispatchData.addNote(id, note, firstName, preBook);
         }
     }
 
@@ -118,9 +118,9 @@ class AddNotesDialogController {
      */
     async updateJobDetail(bulkJob, jobID, field, value, charge, firstName, contactID, preBook) {
         if (bulkJob) {
-            await this._dispatchData.updateBulkJobDetail(jobID, field, value, charge, firstName, contactID);
+            await this.dispatchData.updateBulkJobDetail(jobID, field, value, charge, firstName, contactID);
         } else {
-            await this._dispatchData.updateJobDetail(jobID, field, value, charge, firstName, contactID, preBook);
+            await this.dispatchData.updateJobDetail(jobID, field, value, charge, firstName, contactID, preBook);
         }
     }
 
@@ -129,8 +129,8 @@ class AddNotesDialogController {
      * Cancels the Angular Material Dialog.
      */
     cancel() {
-        this._$mdDialog.cancel();
+        this.$mdDialog.cancel();
     }
 }
 
-angular.module('uDispatch').controller('AddNotesDialogController', AddNotesDialogController);
+angular.module("uDispatch").controller("AddNotesDialogController", AddNotesDialogController);

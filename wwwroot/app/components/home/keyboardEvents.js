@@ -52,13 +52,13 @@ document.onkeyup = overrideKeyboardEvent;
  */
 const handleLeftClick = ($element, event) => {
     if (event.ctrlKey) {
-        $element.toggleClass('active');
+        $element.toggleClass("active");
     } else if (!$element.hasClass("active")) {
         const group = $element.parents(".table-rows").attr("data-group");
         angular.element(`*[data-group="${group}"]`).each(function () {
-            angular.element(this).find('.active').removeClass('active');
+            angular.element(this).find(".active").removeClass("active");
         });
-        $element.addClass('active');
+        $element.addClass("active");
     }
     angular.element(".activeTable").removeClass("activeTable");
     $element.parents(".table").addClass("activeTable");
@@ -74,9 +74,9 @@ const handleDraggableRow = ($element, event, jobNo) => {
     if (!$element.hasClass("active")) {
         const group = $element.parents(".table-rows").attr("data-group");
         angular.element(`*[data-group="${group}"]`).each(function () {
-            angular.element(this).find('.active').removeClass('active');
+            angular.element(this).find(".active").removeClass("active");
         });
-        $element.addClass('active');
+        $element.addClass("active");
     }
     setTimeout(() => {
         if (mouseDown === 1) {
@@ -98,10 +98,10 @@ angular.element(document).ready(() => {
     const $document = angular.element(document);
 
     $document
-        .on('mousedown', () => {
+        .on("mousedown", () => {
             isDown = true;
         })
-        .on('mouseup', () => {
+        .on("mouseup", () => {
             isDown = false;
         });
 
@@ -109,11 +109,11 @@ angular.element(document).ready(() => {
         if (event.ctrlKey && isDown) {
             const $this = angular.element(event.currentTarget);
             $this.addClass("active");
-            $this.siblings(".test").trigger('click');
+            $this.siblings(".test").trigger("click");
         }
     });
 
-    $document.on('mousedown', '.clickable-row', (event) => {
+    $document.on("mousedown", ".clickable-row", (event) => {
         const $this = angular.element(event.currentTarget);
         const $activeRows = angular.element(".activeTable .clickable-row.active");
         const jobNo = $activeRows.length > 1 ? `${$activeRows.length} Jobs` : $this.attr("data-jobno");
@@ -129,7 +129,7 @@ angular.element(document).ready(() => {
         }
     });
 
-    $document.on('mouseup', '.clickable-row', (event) => {
+    $document.on("mouseup", ".clickable-row", (event) => {
         const $this = angular.element(event.currentTarget);
         if (event.which === 3) {
             angular.element(".rightActiveTable").removeClass("rightActiveTable");
@@ -138,9 +138,9 @@ angular.element(document).ready(() => {
         if (!event.ctrlKey && !$this.hasClass("active")) {
             const group = $this.parents(".table-rows").attr("data-group");
             angular.element(`*[data-group="${group}"]`).each(function () {
-                angular.element(this).find('.active').removeClass('active');
+                angular.element(this).find(".active").removeClass("active");
             });
-            $this.addClass('active');
+            $this.addClass("active");
         }
     });
 
@@ -154,34 +154,34 @@ angular.element(document).ready(() => {
         const $activeTable = angular.element(".activeTable");
         const $active = $activeTable.find(".active");
         if (code === 40) {
-            $active.removeClass("active").next().addClass("active").triggerHandler('mouseup').trigger('click');
+            $active.removeClass("active").next().addClass("active").triggerHandler("mouseup").trigger("click");
         } else if (code === 38) {
-            $active.removeClass("active").prev().addClass("active").triggerHandler('mouseup').trigger('click');
+            $active.removeClass("active").prev().addClass("active").triggerHandler("mouseup").trigger("click");
         }
     });
 });
 
 // Other event listeners
-angular.element(document).on('keydown', '.dispatchField, .lateCallField', (event) => {
+angular.element(document).on("keydown", ".dispatchField, .lateCallField", (event) => {
     if (event.keyCode === 13) {
         angular.element(event.currentTarget).parents(".clickable-row").addClass("doing");
     }
 });
 
-angular.element(document).on('click', '.top-bar .btn-group .btn', (event) => {
+angular.element(document).on("click", ".top-bar .btn-group .btn", (event) => {
     const $this = angular.element(event.currentTarget);
     if (!event.ctrlKey && !event.metaKey) {
-        $this.parent().find('.topBarActive').removeClass('topBarActive');
+        $this.parent().find(".topBarActive").removeClass("topBarActive");
     }
-    $this.addClass('topBarActive');
+    $this.addClass("topBarActive");
 });
 
-angular.element(document).on('click', '.driverLocations-list-title', (event) => {
+angular.element(document).on("click", ".driverLocations-list-title", (event) => {
     const $this = angular.element(event.currentTarget);
     if (!event.ctrlKey && !event.metaKey) {
-        angular.element("#driverLocations").find('.listActive').removeClass('listActive');
+        angular.element("#driverLocations").find(".listActive").removeClass("listActive");
     }
-    $this.addClass('listActive');
+    $this.addClass("listActive");
 });
 
 /**

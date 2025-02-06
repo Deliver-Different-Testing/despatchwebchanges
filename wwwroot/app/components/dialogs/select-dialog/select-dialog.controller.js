@@ -8,7 +8,7 @@ class SelectDialogController {
      * @static
      * @description List of dependencies to be injected.
      */
-    static $inject = ['$mdDialog', 'DispatchData', 'toastrService', 'rateJobService', 'id', 'fieldName', 'title', 'job', 'options', 'initialValue', 'showCheckbox', 'checkboxLabel'];
+    static $inject = ["$mdDialog", "DispatchData", "toastrService", "rateJobService", "id", "fieldName", "title", "job", "options", "initialValue", "showCheckbox", "checkboxLabel"];
 
     /**
      * Create a SelectDialogController
@@ -134,4 +134,4 @@ class SelectDialogController {
     }
 }
 
-angular.module('uDispatch').controller('SelectDialogController', SelectDialogController);
+angular.module("uDispatch").controller("SelectDialogController", SelectDialogController);

@@ -1,4 +1,8 @@
+import app from "../../../app";
+
 class JobTableService {
+    static $inject = ["$mdEditDialog"];
+
     constructor() {
     }
 
@@ -10,9 +14,9 @@ class JobTableService {
         return {
             page: 1,
             limit: 10,
-            order: 'time',
-            direction: 'asc',
-            status: 'all'
+            order: "time",
+            direction: "asc",
+            status: "all"
         };
     }
 
@@ -20,7 +24,7 @@ class JobTableService {
      * @param {Job} job
      */
     attention(job) {
-        return job.attention || '';
+        return job.attention || "";
     };
 
     /**
@@ -29,7 +33,7 @@ class JobTableService {
      */
     updateField(job, field) {
         // Handle field update logic
-        console.log('Updated ' + field + ' for job ' + job.id);
+        console.log(`Updated ${field} for job ${job.id}`);
     };
 
     /**
@@ -37,9 +41,9 @@ class JobTableService {
      */
     getClientBoxStyle(job) {
         return {
-            'background-color': job.clientColor || '#4CAF50'
+            'background-color': job.clientColor || "#4CAF50"
         };
     }
 }
 
-angular.module('uDispatch').service('JobTableService', ['$mdEditDialog', ($mdEditDialog) => new JobTableService($mdEditDialog)]);
+app.service("JobTableService", JobTableService);

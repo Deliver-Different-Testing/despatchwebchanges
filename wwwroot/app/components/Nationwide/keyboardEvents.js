@@ -38,8 +38,8 @@
         }
     };
 
-    document.addEventListener('keydown', overrideKeyboardEvent);
-    document.addEventListener('keyup', overrideKeyboardEvent);
+    document.addEventListener("keydown", overrideKeyboardEvent);
+    document.addEventListener("keyup", overrideKeyboardEvent);
 })();
 
 /**
@@ -77,8 +77,8 @@
     const setActiveRow = ($row) => {
         if (!$row.hasClass("active")) {
             const group = $row.parents(".table-rows").attr("data-group");
-            angular.element(`*[data-group="${group}"]`).find('.active').removeClass('active');
-            $row.addClass('active');
+            angular.element(`*[data-group="${group}"]`).find(".active").removeClass("active");
+            $row.addClass("active");
         }
     };
 
@@ -118,8 +118,8 @@
         }
     };
 
-    angular.element(document).on('mousedown', '.clickable-row', handleMouseDown);
-    angular.element(document).on('mouseup', '.clickable-row', handleMouseUp);
+    angular.element(document).on("mousedown", ".clickable-row", handleMouseDown);
+    angular.element(document).on("mouseup", ".clickable-row", handleMouseUp);
     angular.element(document).on("mouseup", () => {
         angular.element("#draggingItems").hide();
         isMouseDown = false;

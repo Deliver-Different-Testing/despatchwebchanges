@@ -10,12 +10,12 @@ class InterCourierChargeDialog {
      * @description List of dependencies to be injected.
      */
     static $inject = [
-        '$scope',
-        '$mdDialog',
-        '$http',
-        'DispatchData',
-        'toastrService',
-        'staffId'
+        "$scope",
+        "$mdDialog",
+        "$http",
+        "DispatchData",
+        "toastrService",
+        "staffId"
     ];
 
     /**
@@ -28,10 +28,10 @@ class InterCourierChargeDialog {
      * @param {number} staffId - ID of the staff member creating the charge.
      */
     constructor($scope, $mdDialog, $http, DispatchData, toastrService, staffId) {
-        this._$mdDialog = $mdDialog;
+        this.$mdDialog = $mdDialog;
         this._$http = $http;
-        this._dispatchData = DispatchData;
-        this._toastrService = toastrService;
+        this.dispatchData = DispatchData;
+        this.toastrService = toastrService;
 
         this.isLoading = false;
 
@@ -70,9 +70,9 @@ class InterCourierChargeDialog {
     async courierSearch(searchTerm) {
         try {
             const url = "/courier/AllActiveSearch";
-            return await this._dispatchData.autocompleteSearch(searchTerm, url);
+            return await this.dispatchData.autocompleteSearch(searchTerm, url);
         } catch (error) {
-            this._toastrService.showErrorToast(error.message);
+            this.toastrService.showErrorToast(error.message);
         }
     }
 
@@ -83,8 +83,8 @@ class InterCourierChargeDialog {
      * @throws {Error} If zones is not a valid number.
      */
     updateAmountByZones(zones) {
-        if (typeof zones !== 'number' || isNaN(zones)) {
-            throw new Error('zones must be a valid number');
+        if (typeof zones !== "number" || isNaN(zones)) {
+            throw new Error("zones must be a valid number");
         }
 
         this.data.amount = (zones * 7);
@@ -100,7 +100,7 @@ class InterCourierChargeDialog {
             this.isLoading = true;
 
             if (!this.courierChargeForm.$valid) {
-                this._toastrService.showWarningToast("Please complete all the required fields.");
+                this.toastrService.showWarningToast("Please complete all the required fields.");
                 this.isLoading = false;
                 return;
             }
@@ -110,12 +110,12 @@ class InterCourierChargeDialog {
             data.toCourierId = this.toCourierSelectedItem.id;
 
             const url = "job/InterCourierCharge";
-            await this._$http.post(url, data, {headers: {'Content-Type': 'application/json'}});
+            await this._$http.post(url, data, {headers: {'Content-Type': "application/json"}});
 
-            this._toastrService.showSuccessToast("Inter-Courier Charge saved successfully");
-            this._$mdDialog.hide();
+            this.toastrService.showSuccessToast("Inter-Courier Charge saved successfully");
+            this.$mdDialog.hide();
         } catch (error) {
-            this._toastrService.showErrorToast(error.message);
+            this.toastrService.showErrorToast(error.message);
         } finally {
             this.isLoading = false;
         }
@@ -125,8 +125,8 @@ class InterCourierChargeDialog {
      * Cancels the dialog operation.
      */
     cancel() {
-        this._$mdDialog.cancel();
+        this.$mdDialog.cancel();
     }
 }
 
-angular.module('uDispatch').controller('InterCourierChargeDialog', InterCourierChargeDialog);
+angular.module("uDispatch").controller("InterCourierChargeDialog", InterCourierChargeDialog);

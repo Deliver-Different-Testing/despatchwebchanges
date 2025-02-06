@@ -1,6 +1,9 @@
-angular.module('uDispatch')
-    .controller('PBControl', ['$scope', 'JobDetailService', 'uPBData', "$state", "$filter", '$mdDialog', '$timeout', 'versionUrl', '$window', '$mdSidenav', 'greetingService', 'APP_CONFIG',
-        ($scope, jdSvc, uPBData, $state, $filter, $mdDialog, $timeout, versionUrl, $window, $mdSidenav, greetingService, APP_CONFIG) => {
+import app from "../../app";
+
+app.controller("PBControl", ["$scope", "JobDetailService", "uPBData", "$state", "$filter", "$mdDialog", "$timeout",
+    "$window", "$mdSidenav", "greetingService", "APP_CONFIG",
+        ($scope, jdSvc, uPBData, $state, $filter, $mdDialog, $timeout,
+         $window, $mdSidenav, greetingService, APP_CONFIG) => {
             $scope.isAdmin = (ClientInternal === "True");
             $scope.mapSetting = {
                 "allCouriers": false, "allRuns": false
@@ -19,7 +22,7 @@ angular.module('uDispatch')
              * Toggles the sidenav.
              */
             $scope.toggleSidenav = () => {
-                $mdSidenav('right').toggle();
+                $mdSidenav("right").toggle();
             };
 
             $scope.selectedPrebooks = [];
@@ -43,21 +46,21 @@ angular.module('uDispatch')
             };
 
             $scope.jobQuery = {
-                order: 'booked', limit: 50, page: 1
+                order: "booked", limit: 50, page: 1
             };
 
             $scope.jobList = []; // Your original data
             $scope.filteredData = []; // Holds filtered and sorted data
             $scope.pagedData = []; // Holds the current page of data
-            $scope.searchText = '';
+            $scope.searchText = "";
             $scope.promise = null; // This will hold our loading promise
 
             $scope.updateTable = () => {
                 // Apply search filter
-                let orderedData = $filter('filter')($scope.jobList, $scope.searchText);
+                let orderedData = $filter("filter")($scope.jobList, $scope.searchText);
 
                 // Apply sorting
-                orderedData = $filter('orderBy')(orderedData, $scope.jobQuery.order);
+                orderedData = $filter("orderBy")(orderedData, $scope.jobQuery.order);
 
                 $scope.filteredData = orderedData;
 
@@ -76,7 +79,7 @@ angular.module('uDispatch')
                 $scope.updateTable();
             };
 
-            $scope.$watchGroup(['$scope.searchText', '$scope.jobQuery.order'], () => {
+            $scope.$watchGroup(["$scope.searchText", "$scope.jobQuery.order"], () => {
                 $scope.jobQuery.page = 1; // Reset to first page
                 $scope.updateTable();
             });
@@ -89,8 +92,8 @@ angular.module('uDispatch')
                 if (!$scope.showInput) {
                     $scope.showInput = {};
                 }
-                $scope.showInput[boxName + '-' + index] = !$scope.showInput[boxName + '-' + index];
-                $scope.jobRecordSearchText = '';
+                $scope.showInput[boxName + "-" + index] = !$scope.showInput[boxName + "-" + index];
+                $scope.jobRecordSearchText = "";
                 $scope.selectedJobRecord = null;
             };
 
@@ -129,13 +132,13 @@ angular.module('uDispatch')
                         const response = await $scope.gather.form.onSubmit();
                         await $scope.selectJobDetail($scope.currentJob.id);
                     } catch (error) {
-                        console.error('Error submitting gather form:', error);
+                        console.error("Error submitting gather form:", error);
                         // Show an error message to the user
                         $mdDialog.show(
                             $mdDialog.alert()
-                                .title('Error')
-                                .textContent('An error occurred while submitting the form. Please try again.')
-                                .ok('OK')
+                                .title("Error")
+                                .textContent("An error occurred while submitting the form. Please try again.")
+                                .ok("OK")
                         );
                     }
                 },
@@ -144,7 +147,7 @@ angular.module('uDispatch')
                     try {
                         angular.element(".gatherForm").hide();
                     } catch (error) {
-                        console.error('Error cancelling gather form:', error);
+                        console.error("Error cancelling gather form:", error);
                     }
                 },
 
@@ -157,12 +160,12 @@ angular.module('uDispatch')
                                 if (focusElement.length) {
                                     focusElement.focus();
                                 } else {
-                                    console.warn('Focus element not found in gather form');
+                                    console.warn("Focus element not found in gather form");
                                 }
                             }, 100);
                         });
                     } catch (error) {
-                        console.error('Error showing gather form:', error);
+                        console.error("Error showing gather form:", error);
                     }
                 },
 
@@ -217,7 +220,7 @@ angular.module('uDispatch')
                 "jobList": {
                     "title": "Prebooks List",
                     "icon": "list_alt",
-                    "templateUrl": versionUrl("app/components/prebooks/partials/pbList.html"),
+                    "templateUrl": "app/components/prebooks/partials/pbList.html",
                     "showSearch": 1,
                     "showRefresh": 1,
                     "model": "jobList",
@@ -244,13 +247,13 @@ angular.module('uDispatch')
                 }, "jobDetail": {
                     "title": "Detail",
                     "icon": "assignment",
-                    "templateUrl": versionUrl("app/components/prebooks/partials/preBookDetail.html"),
+                    "templateUrl": "app/components/prebooks/partials/preBookDetail.html",
                     "showSearch": 0,
                     "showDetailButtons": 1
                 }, "map": {
                     "title": "Map",
                     "icon": "pin_drop",
-                    "templateUrl": versionUrl("app/components/prebooks/partials/map.html"),
+                    "templateUrl": "app/components/prebooks/partials/map.html",
                     "showSearch": 0
                 }
             };
@@ -290,14 +293,14 @@ angular.module('uDispatch')
 
             $scope.sortableOptions = {
                 connectWith: ".column-sortable",
-                items: '.box',
+                items: ".box",
                 placeholder: "placeholder",
                 scroll: true,
                 scrollSensitivity: 100,
                 scrollSpeed: 20,
-                handle: '.box-handle',
+                handle: ".box-handle",
                 activate: (e, ui) => {
-                    const box = angular.element("#" + ui.item.context.id);
+                    const box = angular.element(`#${ui.item.context.id}`);
                     const parent = box.parent();
                     parent.find(".box").each(function () {
                         angular.element(this).attr("data-height", angular.element(this).height() + "px");
@@ -305,7 +308,7 @@ angular.module('uDispatch')
                 },
                 update: (e, ui) => {
                     $timeout(() => {
-                        const box = angular.element("#" + ui.item.context.id);
+                        const box = angular.element(`#${ui.item.context.id}`);
                         const parent = box.parent();
                         parent.find(".box").each(function () {
                             angular.element(this).css({"flex-basis": angular.element(this).attr("data-height")});
@@ -317,7 +320,7 @@ angular.module('uDispatch')
 
             $scope.goToRunViewer = () => {
                 console.log("goToRunViewer.");
-                $state.go('home');
+                $state.go("home");
             };
 
             //Column Sorting
@@ -325,10 +328,10 @@ angular.module('uDispatch')
             $scope.orderList = (list, prop) => {
                 if ($scope.sort[list] !== prop) {
                     $scope.sort[list] = prop;
-                    $scope[list] = $filter('orderBy')($scope[list], prop);
+                    $scope[list] = $filter("orderBy")($scope[list], prop);
                 } else {
-                    $scope.sort[list] = "d-" + prop;
-                    $scope[list] = $filter('orderBy')($scope[list], "-" + prop);
+                    $scope.sort[list] = `d-${prop}`;
+                    $scope[list] = $filter("orderBy")($scope[list], `-${prop}`);
                 }
             };
 
@@ -405,8 +408,8 @@ angular.module('uDispatch')
                     jdSvc.combos.holidays = [jdSvc.pickHolidays[hol]];
 
                     jdSvc.combos.days = days.slice(0, 7)
-                        .split('')
-                        .reduce((acc, day, index) => day === '1' ? [...acc, jdSvc.pickDays[index]] : acc, []);
+                        .split("")
+                        .reduce((acc, day, index) => day === "1" ? [...acc, jdSvc.pickDays[index]] : acc, []);
 
                     // Update map with just this job
                     if ($scope.currentJob.pickupAddress?.latitude && $scope.currentJob.pickupAddress?.longitude) {
@@ -418,7 +421,7 @@ angular.module('uDispatch')
                     }
 
                 } catch (error) {
-                    console.error('Error selecting job detail:', error);
+                    console.error("Error selecting job detail:", error);
                 } finally {
                     loadingElement.hide();
                 }
@@ -449,10 +452,10 @@ angular.module('uDispatch')
                     `but not cancel them for good. Please confirm that you wish to do this?`;
 
                 const confirm = $mdDialog.confirm()
-                    .title('Accelerate Prebooks')
+                    .title("Accelerate Prebooks")
                     .textContent(confirmMessage)
-                    .ok('Yes')
-                    .cancel('No');
+                    .ok("Yes")
+                    .cancel("No");
 
                 try {
                     await $mdDialog.show(confirm);
@@ -470,22 +473,22 @@ angular.module('uDispatch')
                     // Optionally, show a success message
                     $mdDialog.show(
                         $mdDialog.alert()
-                            .title('Success')
+                            .title("Success")
                             .textContent(`Successfully voided ${selectedPrebookCount} prebook(s).`)
-                            .ok('OK')
+                            .ok("OK")
                     );
                 } catch (error) {
                     if (error === undefined) {
-                        console.log('User Canceled');
+                        console.log("User Canceled");
                     } else {
-                        console.log('Error voiding prebook jobs:', error);
+                        console.log("Error voiding prebook jobs:", error);
 
                         // Show an error dialog to the user
                         $mdDialog.show(
                             $mdDialog.alert()
-                                .title('Error')
-                                .textContent('An error occurred while voiding the prebook jobs. Please try again.')
-                                .ok('OK')
+                                .title("Error")
+                                .textContent("An error occurred while voiding the prebook jobs. Please try again.")
+                                .ok("OK")
                         );
                     }
                     // If error is falsy, it means the user clicked 'No', so we do nothing
@@ -503,10 +506,10 @@ angular.module('uDispatch')
                     "Please confirm that you wish to do this?";
 
                 const confirm = $mdDialog.confirm()
-                    .title('Void Prebook')
+                    .title("Void Prebook")
                     .textContent(confirmMessage)
-                    .ok('Yes')
-                    .cancel('No');
+                    .ok("Yes")
+                    .cancel("No");
 
                 try {
                     await $mdDialog.show(confirm);
@@ -520,22 +523,22 @@ angular.module('uDispatch')
                     // Show a success message
                     await $mdDialog.show(
                         $mdDialog.alert()
-                            .title('Success')
-                            .textContent('The prebook job has been successfully voided for today.')
-                            .ok('OK')
+                            .title("Success")
+                            .textContent("The prebook job has been successfully voided for today.")
+                            .ok("OK")
                     );
                 } catch (error) {
                     if (error === undefined) {
-                        console.log('User Canceled');
+                        console.log("User Canceled");
                     } else {
-                        console.log('Error voiding prebook job:', error);
+                        console.log("Error voiding prebook job:", error);
 
                         // Show an error dialog to the user
                         await $mdDialog.show(
                             $mdDialog.alert()
-                                .title('Error')
-                                .textContent('An error occurred while voiding the prebook job. Please try again.')
-                                .ok('OK')
+                                .title("Error")
+                                .textContent("An error occurred while voiding the prebook job. Please try again.")
+                                .ok("OK")
                         );
                     }
                     // If error is falsy, it means the user clicked 'No', so we do nothing
@@ -554,10 +557,10 @@ angular.module('uDispatch')
                     `Please confirm that you wish to do this?`;
 
                 const confirm = $mdDialog.confirm()
-                    .title('Accelerate Prebooks')
+                    .title("Accelerate Prebooks")
                     .textContent(confirmMessage)
-                    .ok('Yes')
-                    .cancel('No');
+                    .ok("Yes")
+                    .cancel("No");
 
                 try {
                     await $mdDialog.show(confirm);
@@ -572,22 +575,22 @@ angular.module('uDispatch')
                     // Show a success message
                     await $mdDialog.show(
                         $mdDialog.alert()
-                            .title('Success')
+                            .title("Success")
                             .textContent(`Successfully sent ${selectedPrebookCount} prebook(s) to the live dispatch screen.`)
-                            .ok('OK')
+                            .ok("OK")
                     );
                 } catch (error) {
                     if (error === undefined) {
-                        console.log('User Canceled');
+                        console.log("User Canceled");
                     } else {
-                        console.log('Error sending prebook jobs:', error);
+                        console.log("Error sending prebook jobs:", error);
 
                         // Show an error dialog to the user
                         await $mdDialog.show(
                             $mdDialog.alert()
-                                .title('Error')
-                                .textContent('An error occurred while sending the prebook jobs. Please try again.')
-                                .ok('OK')
+                                .title("Error")
+                                .textContent("An error occurred while sending the prebook jobs. Please try again.")
+                                .ok("OK")
                         );
                     }
                 }
@@ -603,10 +606,10 @@ angular.module('uDispatch')
                     "Please confirm that you wish to do this?";
 
                 const confirm = $mdDialog.confirm()
-                    .title('Accelerate Prebook')
+                    .title("Accelerate Prebook")
                     .textContent(confirmMessage)
-                    .ok('Yes')
-                    .cancel('No');
+                    .ok("Yes")
+                    .cancel("No");
 
                 try {
                     await $mdDialog.show(confirm);
@@ -620,22 +623,22 @@ angular.module('uDispatch')
                     // Show a success message
                     await $mdDialog.show(
                         $mdDialog.alert()
-                            .title('Success')
-                            .textContent('The prebook job has been successfully sent to the live dispatch screen.')
-                            .ok('OK')
+                            .title("Success")
+                            .textContent("The prebook job has been successfully sent to the live dispatch screen.")
+                            .ok("OK")
                     );
                 } catch (error) {
                     if (error === undefined) {
-                        console.log('User Canceled');
+                        console.log("User Canceled");
                     } else {
-                        console.log('Error sending prebook job:', error);
+                        console.log("Error sending prebook job:", error);
 
                         // Show an error dialog to the user
                         await $mdDialog.show(
                             $mdDialog.alert()
-                                .title('Error')
-                                .textContent('An error occurred while sending the prebook job. Please try again.')
-                                .ok('OK')
+                                .title("Error")
+                                .textContent("An error occurred while sending the prebook job. Please try again.")
+                                .ok("OK")
                         );
                     }
                 }

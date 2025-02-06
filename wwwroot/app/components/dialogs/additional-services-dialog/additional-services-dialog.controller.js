@@ -13,7 +13,7 @@ class AdditionalServicesDialogController {
      * @static
      * @description List of dependencies to be injected.
      */
-    static $inject = ['$mdDialog', 'DispatchData', 'toastrService', 'job'];
+    static $inject = ["$mdDialog", "DispatchData", "toastrService", "job"];
 
     /**
      * Create an AdditionalServicesDialogController.
@@ -31,7 +31,7 @@ class AdditionalServicesDialogController {
         this._initializeState();
         this._bindMethods();
         this.refreshServices().catch(error => {
-            this.toastrService.showErrorToast("Error initializing services: " + error.message);
+            this.toastrService.showErrorToast(`Error initializing services: ${error.message}`);
         });
     }
 
@@ -104,7 +104,7 @@ class AdditionalServicesDialogController {
 
             this.selected.push(...this.additionalServices.filter(item => item.selected));
         } catch (error) {
-            this.toastrService.showErrorToast("Error fetching services: " + error.message);
+            this.toastrService.showErrorToast(`Error fetching services: ${error.message}`);
         } finally {
             this.isLoading = false;
         }
@@ -119,7 +119,7 @@ class AdditionalServicesDialogController {
         try {
             this.totalCost = await this.getTotal();
         } catch (error) {
-            this.toastrService.showErrorToast("Error calculating total: " + error.message);
+            this.toastrService.showErrorToast(`Error calculating total: ${error.message}`);
         } finally {
             this.isTotalCostCalculating = false;
         }
@@ -166,4 +166,4 @@ class AdditionalServicesDialogController {
     }
 }
 
-angular.module('uDispatch').controller('AdditionalServicesDialogController', AdditionalServicesDialogController);
+angular.module("uDispatch").controller("AdditionalServicesDialogController", AdditionalServicesDialogController);

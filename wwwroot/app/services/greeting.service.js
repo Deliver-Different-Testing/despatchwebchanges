@@ -1,12 +1,10 @@
-/**
- * A service for writing a greeting message to the user
- * @class
- */
+import app from "../app";
+
 class GreetingService {
     /**
-     * Method to greet user based on current time
-     * @param {string} userName
-     * @returns {string}
+     * Returns a time-appropriate greeting for the user
+     * @param {string} userName - The name of the user to greet
+     * @returns {string} The formatted greeting message
      */
     greetUser(userName) {
         const currentHour = new Date().getHours();
@@ -24,4 +22,4 @@ class GreetingService {
     }
 }
 
-angular.module('uDispatch').service('greetingService', GreetingService);
+app.service("greetingService", GreetingService);

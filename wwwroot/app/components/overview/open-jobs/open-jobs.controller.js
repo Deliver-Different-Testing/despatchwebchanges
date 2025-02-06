@@ -1,8 +1,12 @@
+import app from "../../../app";
+
 /**
  * Controller for the Open Jobs Widget component.
  * Manages the display and sorting of open delivery jobs grouped by driver.
  */
 class OpenJobsWidgetController {
+    static $inject = ["overviewService", "moment", "APP_CONFIG", "overviewFiltersService"];
+
     constructor(overviewService, moment, APP_CONFIG, overviewFiltersService) {
         this.overviewService = overviewService;
         this.moment = moment;
@@ -14,7 +18,7 @@ class OpenJobsWidgetController {
         /** @type {DriverViewModel[]} */
         this.drivers = [];
         /** @type {'jobId'|'pickup'|'delivery'} */
-        this.sortBy = 'jobId';
+        this.sortBy = "jobId";
 
         // Bind methods
         this.loadOpenJobs = this.loadOpenJobs.bind(this);
@@ -35,33 +39,36 @@ class OpenJobsWidgetController {
     }
 
     /**
-     * Loads the Open Jobs card's collapsed state from localStorage
+     * @returns {Promise<void>}
      */
     async loadCardState() {
-        this.isCardCollapsed = this.overviewService.loadCollapseState('openJobs');
+        this.isCardCollapsed = this.overviewService.loadCollapseState("openJobs");
     }
 
     /**
-     * Toggles the Open Jobs card's collapsed state and saves it
+     * @returns {Promise<void>}
      */
     async toggleCard() {
         this.isCardCollapsed = !this.isCardCollapsed;
-        await this.overviewService.saveCollapseState('openJobs', this.isCardCollapsed);
+        await this.overviewService.saveCollapseState("openJobs", this.isCardCollapsed);
     }
 
     /**
-     * Loads and processes open jobs from the backend.
-     * Groups jobs by driver and applies current sorting.
      * @returns {Promise<void>}
      */
     async loadOpenJobs() {
         try {
+            /** @type {OverviewQueryParams} */
             const params = {
+                limit: 0,
+                page: 0,
+                statusGroup: 0,
                 startDate: this.overviewFiltersService.dateRange?.start,
                 endDate: this.overviewFiltersService.dateRange?.end,
                 regions: this.overviewFiltersService.selectedRegions,
                 speeds: this.overviewFiltersService.selectedSpeeds
             };
+
 
             /** @type {OpenJobResponse[]} */
             const jobs = await this.overviewService.getOpenJobs(params);
@@ -77,12 +84,12 @@ class OpenJobsWidgetController {
                         jobs: [],
                         completedToday: job.completedToday,
                         lastCompleted: job.lastCompleted ?
-                            this.formatTime(job.lastCompleted) : 'N/A',
+                            this.formatTime(job.lastCompleted) : "N/A",
                         expanded: false
                     };
                 }
 
-                // Transform backend model to view model
+                /** @type {ViewJob} */
                 const viewJob = {
                     jobId: job.jobId,
                     reference: job.reference,
@@ -111,63 +118,58 @@ class OpenJobsWidgetController {
                 return driver;
             });
         } catch (error) {
-            console.error('Error loading open jobs:', error);
+            console.error("Error loading open jobs:", error);
         }
     }
 
     /**
-     * Formats a timestamp into HH:mm format.
-     * @param {Date} timestamp - The timestamp to format
-     * @returns {string} Formatted time string
+     * @param {Date} timestamp
+     * @returns {string}
      */
     formatTime(timestamp) {
-        return this.moment(timestamp).format('HH:mm');
+        return this.moment(timestamp).format("HH:mm");
     }
 
     /**
-     * Compares two jobs for sorting based on the current sort criteria.
-     * @param {ViewJob} a - First job to compare
-     * @param {ViewJob} b - Second job to compare
-     * @returns {number} Comparison result (-1, 0, or 1)
+     * @param {ViewJob} a
+     * @param {ViewJob} b
+     * @returns {number}
      */
     compareJobs(a, b) {
         try {
             switch (this.sortBy) {
-                case 'pickup':
+                case "pickup":
                     return this.moment(a.pickup.time).valueOf() -
                         this.moment(b.pickup.time).valueOf();
-                case 'delivery':
+                case "delivery":
                     return this.moment(a.delivery.time).valueOf() -
                         this.moment(b.delivery.time).valueOf();
-                case 'jobId':
+                case "jobId":
                 default:
                     // jobId is a number from backend
                     return a.jobId - b.jobId;
             }
         } catch (error) {
-            console.error('Error comparing jobs:', error);
+            console.error("Error comparing jobs:", error);
             return 0;
         }
     }
 
     /**
-     * Gets the display label for the current sort option
-     * @returns {string} The formatted label for display
+     * @returns {string}
      */
     getSortLabel() {
         switch (this.sortBy) {
-            case 'pickup':
-                return 'Pickup Time';
-            case 'delivery':
-                return 'Delivery Time';
+            case "pickup":
+                return "Pickup Time";
+            case "delivery":
+                return "Delivery Time";
             default:
-                return 'Job ID';
+                return "Job ID";
         }
     }
 
     /**
-     * Handles changes to the sort criteria.
-     * Re-sorts all jobs in each driver group.
      * @returns {Promise<void>}
      */
     async onSortChange() {
@@ -176,19 +178,18 @@ class OpenJobsWidgetController {
                 driver.jobs.sort(this.compareJobs);
             });
         } catch (error) {
-            console.error('Error during sort:', error);
+            console.error("Error during sort:", error);
         }
     }
 
     /**
-     * Formats time display based on customer region preference
-     * @param {string|Date} timestamp - The timestamp to format
-     * @returns {string} Formatted time string in regional format
+     * @param {string|Date} timestamp
+     * @returns {string}
      */
     formatRegionalTime(timestamp) {
-        if (!timestamp) return '';
+        if (!timestamp) return "";
 
-        const format = this.isUsCustomer ? 'MM/DD HH:mm' : 'DD/MM HH:mm';
+        const format = this.isUsCustomer ? "MM/DD HH:mm" : "DD/MM HH:mm";
         return this.moment(timestamp).format(format);
     }
 
@@ -197,9 +198,9 @@ class OpenJobsWidgetController {
      * @returns {number}
      */
     getTimeSinceLastCompleted(lastCompletedTime) {
-        if (lastCompletedTime === 'N/A') return '';
+        if (lastCompletedTime === "N/A") return "";
 
-        const lastCompleted = this.moment(lastCompletedTime, 'HH:mm');
+        const lastCompleted = this.moment(lastCompletedTime, "HH:mm");
         const now = this.moment();
         const duration = this.moment.duration(now.diff(lastCompleted));
 
@@ -207,12 +208,8 @@ class OpenJobsWidgetController {
     }
 }
 
-// Register the component
-angular.module('uDispatch').component('openJobsWidget', {
-    templateUrl: 'app/components/overview/open-jobs/open-jobs.template.html',
-    controller: ['overviewService', 'moment', 'APP_CONFIG', 'overviewFiltersService',
-        (overviewService, moment, APP_CONFIG, overviewFiltersService) =>
-            new OpenJobsWidgetController(overviewService, moment, APP_CONFIG, overviewFiltersService)
-    ],
-    controllerAs: 'ctrl'
+app.component("openJobsWidget", {
+    templateUrl: "app/components/overview/open-jobs/open-jobs.template.html",
+    controller: OpenJobsWidgetController,
+    controllerAs: "ctrl"
 });

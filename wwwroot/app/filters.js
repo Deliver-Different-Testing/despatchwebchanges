@@ -1,10 +1,6 @@
-/**
- * @fileoverview Custom Angular filters for the uDispatch module
- * @module uDispatch
- */
+import app from "./app";
 
-angular
-    .module("uDispatch")
+app
     /**
      * Filter to remove duplicates from a collection based on a key
      * @ngdoc filter
@@ -14,8 +10,7 @@ angular
      * @returns {Array} - The filtered array
      */
     .filter("unique", () => (collection, keyName) => {
-        const output = [],
-            keys = [];
+        const output = [], keys = [];
 
         angular.forEach(collection, item => {
             const key = item[keyName];
@@ -34,10 +29,10 @@ angular
      * @param {string} $url - The URL to fix
      * @returns {string} - The fixed URL
      */
-    .filter('urlFix', () => $url => {
+    .filter("urlFix", () => $url => {
         const regExp = /(http(s?))\:\/\//gi;
         if (!regExp.test($url)) {
-            $url = "http://" + $url;
+            $url = `http://${$url}`;
         }
         return $url;
     })
@@ -50,7 +45,7 @@ angular
      * @param {string} [attr] - The attribute to search in (for arrays)
      * @returns {*} - The found item or null
      */
-    .filter('getByAttr', () => (input, val, attr) => {
+    .filter("getByAttr", () => (input, val, attr) => {
         if (attr === undefined) {
             for (let k in input) {
                 if (k === val) {
@@ -76,7 +71,7 @@ angular
      * @param {Object} map - The map of input to output values
      * @returns {*} - The mapped value or an empty string
      */
-    .filter('switch', () => (input, map) => map[input] || '')
+    .filter("switch", () => (input, map) => map[input] || "")
     /**
      * Filter to move a selected item to the top of a list
      * @ngdoc filter
@@ -85,8 +80,8 @@ angular
      * @param {*} selected - The id of the selected contact
      * @returns {Array} - The reordered array
      */
-    .filter('selectedToTop', () => (contacts, selected) => {
-        let newList = [];
+    .filter("selectedToTop", () => (contacts, selected) => {
+        const newList = [];
         angular.forEach(contacts, u => {
             if (u.id === selected) {
                 newList.unshift(u);
@@ -104,26 +99,25 @@ angular
      * @param {number} [precision=1] - The number of decimal places
      * @returns {string} - The formatted byte size
      */
-    .filter('bytes', () => (bytes, precision) => {
-        if (isNaN(parseFloat(bytes)) || !isFinite(bytes)) return '-';
-        if (typeof precision === 'undefined') precision = 1;
-        const units = ['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'],
-            number = Math.floor(Math.log(bytes) / Math.log(1024));
-        return (bytes / Math.pow(1024, Math.floor(number))).toFixed(precision) + ' ' + units[number];
+    .filter("bytes", () => (bytes, precision) => {
+        if (isNaN(parseFloat(bytes)) || !isFinite(bytes)) return "-";
+        if (typeof precision === "undefined") precision = 1;
+        const units = ["bytes", "kB", "MB", "GB", "TB", "PB"], number = Math.floor(Math.log(bytes) / Math.log(1024));
+        return (bytes / Math.pow(1024, Math.floor(number))).toFixed(precision) + " " + units[number];
     })
-    .filter('jobStatusIcon', () => {
+    .filter("jobStatusIcon", () => {
         return (status) => {
             switch (status.toUpperCase()) {
-                case 'NEW':
-                    return 'fiber_new';
-                case 'PICKEDUP':
-                    return 'local_shipping';
-                case 'ACCEPTED':
-                    return 'check_circle';
-                case 'DISPATCHED':
-                    return 'send';
+                case "NEW":
+                    return "fiber_new";
+                case "PICKEDUP":
+                    return "local_shipping";
+                case "ACCEPTED":
+                    return "check_circle";
+                case "DISPATCHED":
+                    return "send";
                 default:
-                    return 'info';
+                    return "info";
             }
         };
     })
@@ -136,7 +130,7 @@ angular
      * @param {string} replacement - The string to replace matches with
      * @returns {string} The input string with all matches replaced
      */
-    .filter('replace', () => (input, search, replacement) => {
+    .filter("replace", () => (input, search, replacement) => {
         if (!input) return input;
-        return input.replace(new RegExp(search, 'g'), replacement);
+        return input.replace(new RegExp(search, "g"), replacement);
     });

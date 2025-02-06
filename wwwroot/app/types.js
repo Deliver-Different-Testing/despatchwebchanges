@@ -630,15 +630,6 @@
  */
 
 /**
- * @typedef {Object} PaginatedJobResponse
- *
- * @property {Job[]} items - Array of jobs
- * @property {number} total - Total number of jobs
- * @property {number} page - Current page number
- * @property {number} pages - Total number of pages
- */
-
-/**
  * @typedef {Object} DfrntPageViewModel
  *
  * @property {number} id - The unique identifier
@@ -711,4 +702,28 @@
  * @property {number} quantity - Number of items in the job
  * @property {string} packageType - Type of package being delivered
  * @property {number} mileage - Estimated mileage for the job
+ */
+
+/**
+ * @typedef {Object} PaginatedResponse
+ *
+ * @property {Array<any>} items
+ * @property {number} total
+ * @property {number} page
+ * @property {number} pages
+ */
+
+/**
+ * @typedef {Object} OverviewQueryParams
+ *
+ * @property {string} [statusGroup]
+ * @property {number} page
+ * @property {number} limit
+ * @property {string} [search]
+ * @property {Date} [startDate]
+ * @property {Date} [endDate]
+ * @property {string} [orderBy]
+ * @property {string} [orderDirection]
+ * @property {Array<Region>} [regions]
+ * @property {Array<Speed>} [speeds]
  */

@@ -1,33 +1,30 @@
+import app from "../../app";
+
 /**
  * @class OverviewService
  * @description Service to handle api calls for Overview dashboard
  */
-class OverviewService {
+class overviewService {
+    static $inject = ["$http"];
+
+    /**
+     * @param {angular.IHttpService} $http
+     */
     constructor($http) {
         this.$http = $http;
     }
 
     /**
-     * Get paginated jobs with filters and sorting
-     * @param {Object} params - Query parameters
-     * @param {number} params.statusGroup - The status group enum value
-     * @param {number} params.page - Current page number (1-based)
-     * @param {number} params.limit - Number of items per page
-     * @param {string} [params.search] - Search term
-     * @param {Date} [params.startDate] - Start date filter
-     * @param {Date} [params.endDate] - End date filter
-     * @param {string} [params.orderBy] - Field to sort by
-     * @param {string} [params.orderDirection] - Sort direction ('asc' or 'desc')
-     * @param {Array} [params.regions] - Array of selected region IDs
-     * @param {Array} [params.speeds] - Array of selected speed IDs
-     * @returns {Promise<Object>} Object containing jobs array and pagination metadata
+     * Get all jobs with pagination and filtering
+     * @param {OverviewQueryParams} params
+     * @returns {Promise<PaginatedResponse<Job>>}
      */
     async getAllJobs(params) {
         // Convert regions and speeds arrays to comma-separated strings if present
-        const regionIds = params.regions?.map(r => r.id).join(',');
-        const speedIds = params.speeds?.map(s => s.id).join(',');
+        const regionIds = params.regions?.map(r => r.id).join(",");
+        const speedIds = params.speeds?.map(s => s.id).join(",");
 
-        const response = await this.$http.get('/overview', {
+        const response = await this.$http.get("/overview", {
             params: {
                 statusGroup: params.statusGroup,
                 page: params.page,
@@ -35,7 +32,7 @@ class OverviewService {
                 search: params.search,
                 startDate: params.startDate ? params.startDate.toISOString() : null,
                 endDate: params.endDate ? params.endDate.toISOString() : null,
-                orderBy: params.orderBy || 'jobName',
+                orderBy: params.orderBy || "jobName",
                 orderDirection: params.orderDirection,
                 regions: regionIds || null,
                 speeds: speedIds || null
@@ -52,64 +49,60 @@ class OverviewService {
 
     /**
      * Get all available regions
-     * @returns {Promise<Array>} Array of region objects
+     * @returns {Promise<Array<Suggestion>>}
      */
     async getAllRegions() {
-        const response = await this.$http.get('/overview/GetAllRegions');
+        const response = await this.$http.get("/overview/GetAllRegions");
         return response.data;
     }
 
     /**
-     * Get all available regions
-     * @returns {Promise<Array>} Array of region objects
+     * Get all available speeds
+     * @returns {Promise<Array<Suggestion>>}
      */
     async getAllSpeeds() {
-        const response = await this.$http.get('/overview/GetAllSpeeds');
-        return response.data;
-    }
-
-    async getStats() {
-        const response = await this.$http.get('/overview/GetStats');
+        const response = await this.$http.get("/overview/GetAllSpeeds");
         return response.data;
     }
 
     /**
-     * Get coordinate info for parent and child jobs to display on heremaps
-     * @param {number} jobId - Id of the parent job
-     * @returns {Promise<Object>} Object containing jobs array and pagination metadata
+     * Get overview statistics
+     * @returns {Promise<any>}
+     */
+    async getStats() {
+        const response = await this.$http.get("/overview/GetStats");
+        return response.data;
+    }
+
+    /**
+     * Get map configuration for parent job
+     * @param {number} jobId
+     * @returns {Promise<MapConfig>}
      */
     async getParentJobMap(jobId) {
-        const response = await this.$http.get('/overview/GetParentJobMap?jobId=' + jobId);
+        const response = await this.$http.get(`/overview/GetParentJobMap?jobId=${jobId}`);
         return response.data;
     }
 
     /**
-     * Fetches jobs data for the mega map display from the server.
-     * @async
-     * @returns {Promise<Array<MegaMapResponse>>} Array of jobs with their locations and assigned couriers.
-     *
-     * @throws {Error} If the server request fails
+     * Get data for mega map visualization
+     * @returns {Promise<Array<MegaMapResponse>>}
      */
     async getMegaMapData() {
-        const response = await this.$http.get('/overview/GetJobsForMegaMap');
+        const response = await this.$http.get("/overview/GetJobsForMegaMap");
         return response.data;
     }
 
     /**
-     * Get all open jobs for drivers
-     * @param {Object} params - Query parameters
-     *
-     * @param {Date} [params.startDate] - Start date filter
-     * @param {Date} [params.endDate] - End date filter
-     * @param {Array} [params.regions] - Array of selected region IDs
-     * @param {Array} [params.speeds] - Array of selected speed IDs
-     * @returns {Promise<OpenJobResponse[]>} Array of open jobs grouped by driver
+     * Get open jobs with filtering
+     * @param {Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds'>} params
+     * @returns {Promise<Array<OpenJobResponse>>}
      */
     async getOpenJobs(params) {
-        const regionIds = params.regions?.map(r => r.id).join(',');
-        const speedIds = params.speeds?.map(s => s.id).join(',');
+        const regionIds = params.regions?.map(r => r.id).join(",");
+        const speedIds = params.speeds?.map(s => s.id).join(",");
 
-        const response = await this.$http.get('/overview/GetOpenJobs', {
+        const response = await this.$http.get("/overview/GetOpenJobs", {
             params: {
                 startDate: params.startDate ? params.startDate.toISOString() : null,
                 endDate: params.endDate ? params.endDate.toISOString() : null,
@@ -132,24 +125,24 @@ class OverviewService {
     }
 
     /**
-     * Save collapse state for a specific card
-     * @param {string} cardName - Name of the card
-     * @param {boolean} isCollapsed - Collapse state for the card
-     * @returns {Promise<Object>} Updated collapse states
+     * Save collapse state to localStorage
+     * @param {string} cardName
+     * @param {boolean} isCollapsed
+     * @returns {Promise<Record<string, boolean> | null>}
      */
     async saveCollapseState(cardName, isCollapsed) {
         if (window.localStorage) {
             try {
-                const saved = localStorage.getItem('cardCollapseStates');
+                const saved = localStorage.getItem("cardCollapseStates");
                 const states = saved ? JSON.parse(saved) : {};
 
                 // Update the state for the specific card
                 states[cardName] = isCollapsed;
 
-                localStorage.setItem('cardCollapseStates', JSON.stringify(states));
+                localStorage.setItem("cardCollapseStates", JSON.stringify(states));
                 return states;
             } catch (error) {
-                console.error('Error saving collapse state:', error);
+                console.error("Error saving collapse state:", error);
                 throw error;
             }
         }
@@ -157,25 +150,25 @@ class OverviewService {
     }
 
     /**
-     * Load collapse state for a specific card
-     * @param {string} cardName - Name of the card
-     * @returns {boolean} Collapse state for the card (default: false if not found)
+     * Load collapse state from localStorage
+     * @param {string} cardName
+     * @returns {boolean}
      */
     loadCollapseState(cardName) {
         if (window.localStorage) {
             try {
-                const saved = localStorage.getItem('cardCollapseStates');
+                const saved = localStorage.getItem("cardCollapseStates");
                 if (saved) {
                     const states = JSON.parse(saved);
                     // Return the specific card's state or default to false
                     return states[cardName] || false;
                 }
             } catch (error) {
-                console.error('Error loading collapse state:', error);
+                console.error("Error loading collapse state:", error);
             }
         }
         return false; // Default collapse state if no local storage or error occurs
     }
 }
 
-angular.module('uDispatch').service('overviewService', ['$http', $http => new OverviewService($http)]);
+app.service("overviewService", overviewService);

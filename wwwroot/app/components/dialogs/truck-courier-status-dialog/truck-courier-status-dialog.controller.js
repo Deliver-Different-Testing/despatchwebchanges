@@ -9,10 +9,10 @@ class TruckCourierStatusDialogController {
      * @description List of dependencies to be injected.
      */
     static $inject = [
-        '$mdDialog',
-        'DispatchData',
-        'toastrService',
-        'data'
+        "$mdDialog",
+        "DispatchData",
+        "toastrService",
+        "data"
     ];
 
     /**
@@ -25,9 +25,9 @@ class TruckCourierStatusDialogController {
      * @property {Object} data - The current truck courier status data.
      */
     constructor($mdDialog, DispatchData, toastrService, data) {
-        this._$mdDialog = $mdDialog;
-        this._dispatchData = DispatchData;
-        this._toastrService = toastrService;
+        this.$mdDialog = $mdDialog;
+        this.dispatchData = DispatchData;
+        this.toastrService = toastrService;
         this.data = data;
     }
 
@@ -39,10 +39,10 @@ class TruckCourierStatusDialogController {
      */
     async refresh(courierId) {
         try {
-            const result = await this._dispatchData.truckCourierStatus(courierId);
+            const result = await this.dispatchData.truckCourierStatus(courierId);
             this.data = result.data[0];
         } catch (error) {
-            this._toastrService.showErrorToast(error.message);
+            this.toastrService.showErrorToast(error.message);
         }
     }
 
@@ -50,8 +50,8 @@ class TruckCourierStatusDialogController {
      * Cancels the dialog operation.
      */
     cancel() {
-        this._$mdDialog.cancel();
+        this.$mdDialog.cancel();
     }
 }
 
-angular.module('uDispatch').controller('TruckCourierStatusDialogController', TruckCourierStatusDialogController);
+angular.module("uDispatch").controller("TruckCourierStatusDialogController", TruckCourierStatusDialogController);

@@ -9,221 +9,212 @@
 
 // Mixins
 .no-select() {
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 .truncate() {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 // Column width mixin
 .column-width(@width) {
-  width: @width !important;
-  max-width: @width !important;
-  flex: 0 0 @width !important;
+    width: @width !important;
+    max-width: @width !important;
+    flex: 0 0 @width !important;
 }
 
-md-table-container {
-  table.md-table {
-    // Column specific widths
-    th.md-column, td.md-cell {
-      // Time column
-      &:nth-child(1) {
-        .column-width(60px);
-      }
+.home-view {
+    .box-content {
+        md-table-container {
+            table.md-table {
+                // Column specific widths
+                th.md-column, td.md-cell {
+                    // Time column
+                    &:nth-child(1) {
+                        .column-width(60px);
+                    }
+                    // Speed column
+                    &:nth-child(2) {
+                        .column-width(60px);
+                    }
+                    // Notify column
+                    &:nth-child(3) {
+                        .column-width(60px);
+                    }
+                    // Attention column
+                    &:nth-child(4) {
+                        .column-width(80px);
+                    }
+                    // Job No column
+                    &:nth-child(5) {
+                        .column-width(80px);
+                    }
+                    // Client column
+                    &:nth-child(6) {
+                        .column-width(70px);
+                    }
+                    // From column
+                    &:nth-child(7) {
+                        .column-width(150px);
+                    }
+                    // To column
+                    &:nth-child(9) {
+                        .column-width(@to-address-width);
+                    }
+                    // Dispatch column
+                    &:nth-child(10) {
+                        .column-width(@autocomplete-width);
+                    }
+                    // Remain column
+                    &:nth-child(11) {
+                        .column-width(70px);
+                    }
+                    // Status column
+                    &:nth-child(12) {
+                        .column-width(80px);
+                    }
+                    // LP, LD columns
+                    &:nth-child(13),
+                    &:nth-child(14) {
+                        .column-width(50px);
+                    }
+                    // R, RD columns
+                    &:nth-child(15),
+                    &:nth-child(16) {
+                        .column-width(40px);
+                    }
 
-      // Speed column
-      &:nth-child(2) {
-        .column-width(60px);
-      }
+                    &.actions {
+                        .column-width(80px);
+                        white-space: nowrap;
 
-      // Notify column
-      &:nth-child(3) {
-        .column-width(60px);
-      }
+                        .action-icon {
+                            cursor: pointer;
+                            margin-right: 8px;
 
-      // Attention column
-      &:nth-child(4) {
-        .column-width(80px);
-      }
+                            &:last-child {
+                                margin-right: 0;
+                            }
+                        }
+                    }
+                }
+                // Autocomplete component
+                md-autocomplete {
+                    height: 30px;
+                    min-height: 24px;
+                    width: @autocomplete-width !important;
 
-      // Job No column
-      &:nth-child(5) {
-        .column-width(80px);
-      }
+                    &, md-autocomplete-wrap {
+                        width: @autocomplete-width !important;
+                        min-width: @autocomplete-width !important;
+                        max-width: @autocomplete-width !important;
+                    }
 
-      // Client column
-      &:nth-child(6) {
-        .column-width(70px);
-      }
+                    md-autocomplete-wrap {
+                        height: 24px;
+                    }
 
-      // From column
-      &:nth-child(7) {
-        .column-width(150px);
-      }
+                    input {
+                        height: 24px !important;
+                        line-height: 24px !important;
+                        padding: 0 4px !important;
+                    }
+                }
 
-      // To column
-      &:nth-child(9) {
-        .column-width(@to-address-width);
-      }
+                td.md-cell {
+                    padding: @cell-padding !important;
+                    height: @row-height !important;
+                    font-size: @cell-font-size;
 
-      // Dispatch column
-      &:nth-child(10) {
-        .column-width(@autocomplete-width);
-      }
+                    [md-truncate] {
+                        max-width: @to-address-width;
+                        display: block;
+                        .truncate();
+                    }
 
-      // Remain column
-      &:nth-child(11) {
-        .column-width(70px);
-      }
+                    md-icon {
+                        font-size: @icon-size !important;
+                        height: @icon-size;
+                        width: @icon-size;
+                        min-height: @icon-size;
+                        min-width: @icon-size;
+                    }
+                }
 
-      // Status column
-      &:nth-child(12) {
-        .column-width(80px);
-      }
-
-      // LP, LD columns
-      &:nth-child(13),
-      &:nth-child(14) {
-        .column-width(50px);
-      }
-
-      // R, RD columns
-      &:nth-child(15),
-      &:nth-child(16) {
-        .column-width(40px);
-      }
-
-      td.md-cell.actions {
-        .column-width(80px);
-        white-space: nowrap;
-
-        .action-icon {
-          cursor: pointer;
-          margin-right: 8px;
-
-          &:last-child {
-            margin-right: 0;
-          }
+                th.md-column {
+                    padding: @cell-padding !important;
+                    height: @row-height !important;
+                    font-size: @header-font-size;
+                }
+            }
         }
-      }
     }
 
-    // Autocomplete component
-    md-autocomplete {
-      height: 30px;
-      min-height: 24px;
-      width: @autocomplete-width !important;
-
-      &, md-autocomplete-wrap {
-        width: @autocomplete-width !important;
-        min-width: @autocomplete-width !important;
-        max-width: @autocomplete-width !important;
-      }
-
-      md-autocomplete-wrap {
-        height: 24px;
-      }
-
-      input {
-        height: 24px !important;
-        line-height: 24px !important;
-        padding: 0 4px !important;
-      }
+    .droppable-box {
+        width: 100%;
+        overflow: auto;
     }
 
-    td.md-cell {
-      padding: @cell-padding !important;
-      height: @row-height !important;
-      font-size: @cell-font-size;
+    .clickable-row {
+        cursor: pointer;
+    }
 
-      [md-truncate] {
-        max-width: @to-address-width;
-        display: block;
+    .noselect {
+        .no-select();
+    }
+
+    .attention-cell {
+        max-width: 150px;
         .truncate();
-      }
-
-      md-icon {
-        font-size: @icon-size !important;
-        height: @icon-size;
-        width: @icon-size;
-        min-height: @icon-size;
-        min-width: @icon-size;
-      }
     }
 
-    th.md-column {
-      padding: @cell-padding !important;
-      height: @row-height !important;
-      font-size: @header-font-size;
+    .lateCallField {
+        width: 50px;
+        text-align: center;
+        height: 24px !important;
+        padding: 2px 4px !important;
     }
-  }
-}
 
-.droppable-box {
-  width: 100%;
-  overflow: auto;
-}
+    .no-spinners {
+        &::-webkit-outer-spin-button,
+        &::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
 
-.clickable-row {
-  cursor: pointer;
-}
+        &[type="number"] {
+            -moz-appearance: textfield;
+        }
+    }
 
-.noselect {
-  .no-select();
-}
+    .status {
+        text-transform: uppercase;
+        font-weight: 500;
+    }
 
-.attention-cell {
-  max-width: 150px;
-  .truncate();
-}
+    .remain-time {
+        white-space: nowrap;
+    }
 
-.lateCallField {
-  width: 50px;
-  text-align: center;
-  height: 24px !important;
-  padding: 2px 4px !important;
-}
+    .no-data {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 2rem;
+        text-align: center;
 
-.no-spinners {
-  &::-webkit-outer-spin-button,
-  &::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
+        .content {
+            color: #666;
+        }
 
-  &[type="number"] {
-    -moz-appearance: textfield;
-  }
-}
-
-.status {
-  text-transform: uppercase;
-  font-weight: 500;
-}
-
-.remain-time {
-  white-space: nowrap;
-}
-
-.no-data {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 2rem;
-  text-align: center;
-
-  .content {
-    color: #666;
-  }
-
-  .icon {
-    font-size: 48px;
-    margin-bottom: 1rem;
-  }
+        .icon {
+            font-size: 48px;
+            margin-bottom: 1rem;
+        }
+    }
 }

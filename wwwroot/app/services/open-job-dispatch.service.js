@@ -1,4 +1,14 @@
-class OpenJobDispatchService {
+import app from "../app";
+
+/**
+ * @typedef {Object} OpenJobOptions
+ * @property {string} [stateName='home'] - The state to navigate to
+ * @property {string} [target='_blank'] - The target window for opening the job
+ */
+
+class openJobDispatchService {
+    static $inject = ["$window", "$state", "toastrService"];
+
     constructor($window, $state, toastrService) {
         this.$window = $window;
         this.$state = $state;
@@ -6,17 +16,15 @@ class OpenJobDispatchService {
     }
 
     /**
-     * Opens job detail in dispatch screen in a new tab
-     * @param {string|number} jobId The ID of the job to view
-     * @param {Object} [options] Optional configuration
-     * @param {string} [options.stateName='home'] The target state name
-     * @param {string} [options.target='_blank'] The window target
+     * Opens job details in a new window
+     * @param {string|number} jobId - The ID of the job to open
+     * @param {OpenJobOptions} [options={}] - Options for opening the job
      * @returns {boolean} True if successful, false otherwise
      */
     openJobDetail(jobId, options = {}) {
         const {
-            stateName = 'home',
-            target = '_blank'
+            stateName = "home",
+            target = "_blank"
         } = options;
 
         if (!jobId) {
@@ -25,7 +33,7 @@ class OpenJobDispatchService {
         }
 
         try {
-            const url = this.$state.href(stateName, {jobId});
+            const url = this.$state.href(stateName, { jobId });
             this.$window.open(url, target);
             return true;
         } catch (error) {
@@ -35,5 +43,5 @@ class OpenJobDispatchService {
     }
 }
 
-angular.module("uDispatch")
-    .service("openJobDispatchService", ["$window", "$state", "toastrService", ($window, $state, toastrService) => new OpenJobDispatchService($window, $state, toastrService)]);
+app.service("openJobDispatchService", openJobDispatchService);
+export default openJobDispatchService;

@@ -1,13 +1,24 @@
-class MegaMapController {
-    constructor(toastrService, NgMap, overviewService, APP_CONFIG, configService, $window) {
+import app from "../../../app";
+
+class megaMapController {
+    static $inject = [
+        "toastrService",
+        "NgMap",
+        "overviewService",
+        "APP_CONFIG",
+        "configService",
+        "$window"
+    ];
+
+    constructor(toastrService, ngMap, overviewService, appConfig, configService, $window) {
         this.toastrService = toastrService;
-        this.NgMap = NgMap;
+        this.NgMap = ngMap;
         this.overviewService = overviewService;
         this.configService = configService;
         this.$window = $window;
 
         // Initialize data
-        this.isUsCustomer = APP_CONFIG.US_Customer;
+        this.isUsCustomer = appConfig.US_Customer;
 
         this.jobs = [];
         this.drivers = [];
@@ -24,6 +35,13 @@ class MegaMapController {
         this.googleMapsUrl = null;
 
         // Bind all methods
+        this.bindMethods();
+
+        // Initialize map and start refresh interval
+        this.initializeMap();
+    }
+
+    bindMethods() {
         this.initializeMap = this.initializeMap.bind(this);
         this.refreshData = this.refreshData.bind(this);
         this.getDeliveryPointForJob = this.getDeliveryPointForJob.bind(this);
@@ -43,11 +61,11 @@ class MegaMapController {
         this.isPickupPoint = this.isPickupPoint.bind(this);
         this.createClusterIcon = this.createClusterIcon.bind(this);
         this.onZoomChanged = this.onZoomChanged.bind(this);
-
-        // Initialize map and start refresh interval
-        this.initializeMap();
     }
 
+    /**
+     * @returns {Promise<void>}
+     */
     async initializeMap() {
         try {
             this.isLoading = true;
@@ -57,13 +75,13 @@ class MegaMapController {
             // Wait for map to be ready
             const waitForMap = new Promise(resolve => {
                 const checkMap = () => {
-                    this.NgMap.getMap('megaMap').then(map => {
+                    this.NgMap.getMap("megaMap").then(map => {
                         this.map = map;
                         this.directionsService = new this.$window.google.maps.DirectionsService();
                         this.routePaths = new Map();
 
                         // Add zoom change listener
-                        this.$window.google.maps.event.addListener(map, 'zoom_changed', () => {
+                        this.$window.google.maps.event.addListener(map, "zoom_changed", () => {
                             this.onZoomChanged();
                         });
 
@@ -80,13 +98,16 @@ class MegaMapController {
             await this.refreshData();
 
         } catch (error) {
-            console.error('Error initializing map:', error);
-            this.toastrService.showErrorToast('Error initializing map');
+            console.error("Error initializing map:", error);
+            this.toastrService.showErrorToast("Error initializing map");
         } finally {
             this.isLoading = false;
         }
     }
 
+    /**
+     * @returns {Promise<void>}
+     */
     async refreshData() {
         this.isLoading = true;
 
@@ -115,10 +136,10 @@ class MegaMapController {
                 this.map.fitBounds(bounds);
             }
 
-            this.toastrService.showSuccessToast('Map updated! Calculating driver routes...');
+            this.toastrService.showSuccessToast("Map updated! Calculating driver routes...");
         } catch (error) {
-            this.toastrService.showErrorToast('Error updating data');
-            console.error('Error:', error);
+            this.toastrService.showErrorToast("Error updating data");
+            console.error("Error:", error);
         } finally {
             this.isLoading = false;
         }
@@ -142,14 +163,14 @@ class MegaMapController {
      * @returns {Object} Object containing pickups, deliveries, and drivers arrays
      */
     transformMapData(jobs) {
-        console.log('Starting transformMapData with %d jobs', jobs.length);
+        console.log("Starting transformMapData with %d jobs", jobs.length);
 
         const pickups = [];
         const deliveries = [];
         const driversMap = new Map();
 
         jobs.forEach(job => {
-            console.log('Processing job %s:', job.jobNumber, job);
+            console.log("Processing job %s:", job.jobNumber, job);
 
             const isFlightRoute = job?.isFlightJob || false;
 
@@ -159,7 +180,7 @@ class MegaMapController {
                 const lng = parseFloat(job.pickupLocation.longitude);
 
                 if (!isNaN(lat) && !isNaN(lng)) {
-                    console.log('Adding pickup point for job %s at [%d, %d]',
+                    console.log("Adding pickup point for job %s at [%d, %d]",
                         job.jobNumber, lat, lng
                     );
 
@@ -172,10 +193,10 @@ class MegaMapController {
                         isFlightRoute
                     });
                 } else {
-                    console.warn('Job %s has invalid pickup coordinates', job.jobNumber);
+                    console.warn("Job %s has invalid pickup coordinates", job.jobNumber);
                 }
             } else {
-                console.warn('Job %s missing valid pickup location', job.jobNumber);
+                console.warn("Job %s missing valid pickup location", job.jobNumber);
             }
 
             // Add delivery points
@@ -184,7 +205,7 @@ class MegaMapController {
                 const lng = parseFloat(job.deliveryLocation.longitude);
 
                 if (!isNaN(lat) && !isNaN(lng)) {
-                    console.log('Adding delivery point for job %s at [%d, %d]',
+                    console.log("Adding delivery point for job %s at [%d, %d]",
                         job.jobNumber, lat, lng
                     );
 
@@ -197,10 +218,10 @@ class MegaMapController {
                         isFlightRoute
                     });
                 } else {
-                    console.warn('Job %s has invalid delivery coordinates', job.jobNumber);
+                    console.warn("Job %s has invalid delivery coordinates", job.jobNumber);
                 }
             } else {
-                console.warn('Job %s missing valid delivery location', job.jobNumber);
+                console.warn("Job %s missing valid delivery location", job.jobNumber);
             }
 
             // Add driver location if exists
@@ -234,7 +255,7 @@ class MegaMapController {
                         });
                     }
                 } else {
-                    console.warn('Job %s has invalid driver coordinates', job.jobNumber);
+                    console.warn("Job %s has invalid driver coordinates", job.jobNumber);
                 }
             }
         });
@@ -244,10 +265,10 @@ class MegaMapController {
             ...driver,
             assignedJobNumber: driver.assignedJobs
                 .map(job => job.jobNumber)
-                .join(', ')
+                .join(", ")
         }));
 
-        console.log('Transformed data:', {
+        console.log("Transformed data:", {
             pickups: pickups.length,
             deliveries: deliveries.length,
             drivers: drivers.length,
@@ -306,17 +327,17 @@ class MegaMapController {
 
     checkVisiblePoints() {
         if (!this.map) {
-            console.warn('Map not initialized yet');
+            console.warn("Map not initialized yet");
             return;
         }
 
         const bounds = this.map.getBounds();
         if (!bounds) {
-            console.warn('Map bounds not available');
+            console.warn("Map bounds not available");
             return;
         }
 
-        console.log('Current map bounds:', bounds.toJSON());
+        console.log("Current map bounds:", bounds.toJSON());
 
         // Check pickups
         this.pickupPoints.forEach(point => {
@@ -343,9 +364,9 @@ class MegaMapController {
      * @returns {Array<Array<number>>} Array of coordinate pairs forming the route path
      */
     getRoutePath(pickup) {
-        console.log('Getting route path for pickup:', pickup);
+        console.log("Getting route path for pickup:", pickup);
         if (pickup.isFlightRoute) {
-            console.log('Drawing FLIGHT route for job:', pickup.jobId);
+            console.log("Drawing FLIGHT route for job:", pickup.jobId);
             const delivery = this.getDeliveryPointForJob(pickup.jobId);
             if (!delivery) return [];
 
@@ -353,7 +374,7 @@ class MegaMapController {
             return [[pickup.lat, pickup.lng], [delivery.lat, delivery.lng]];
         }
 
-        console.log('Drawing ROAD route for job:', pickup.jobId);
+        console.log("Drawing ROAD route for job:", pickup.jobId);
         // Get cached road route if available
         const cacheKey = `${pickup.jobId}`;
         const cachedPath = this.routePaths.get(cacheKey);
@@ -381,10 +402,9 @@ class MegaMapController {
     }
 
     /**
-     * Calculate road route between points
      * @param {MegaMapPoint} pickup
      * @param {MegaMapPoint} delivery
-     * @returns {Promise<Array>}
+     * @returns {Promise<Array<Array<number>>|null>}
      */
     async calculateRoadRoute(pickup, delivery) {
         try {
@@ -415,17 +435,16 @@ class MegaMapController {
      * @returns {string} Formatted path string
      */
     formatRoutePath(path) {
-        return path.map(point => `[${point[0]}, ${point[1]}]`).join(',');
+        return path.map(point => `[${point[0]}, ${point[1]}]`).join(",");
     }
 
     /**
-     * Calculate flight position based on time and flight info
-     * @param {number} startLat - Pickup latitude
-     * @param {number} startLng - Pickup longitude
-     * @param {number} endLat - Delivery latitude
-     * @param {number} endLng - Delivery longitude
-     * @param {AssignedFlight} flightInfo - Flight information
-     * @returns {{lat: number, lng: number, progress: number}} Flight position and progress
+     * @param {number} startLat
+     * @param {number} startLng
+     * @param {number} endLat
+     * @param {number} endLng
+     * @param {AssignedFlight} flightInfo
+     * @returns {{lat: number, lng: number, progress: number}}
      */
     calculateFlightPosition(startLat, startLng, endLat, endLng, flightInfo) {
         const now = new Date();
@@ -459,10 +478,9 @@ class MegaMapController {
     }
 
     /**
-     * Calculate the rotation angle between two points on the map
-     * @param {Coordinates} start - Starting point coordinates
-     * @param {Coordinates} end - Ending point coordinates
-     * @returns {number} Rotation angle in degrees (0-360)
+     * @param {Coordinates} start
+     * @param {Coordinates} end
+     * @returns {number}
      */
     calculateRotationAngle(start, end) {
         // Calculate differences in coordinates
@@ -490,7 +508,7 @@ class MegaMapController {
         <div class="flight-info-window">
             <h4>Flight ${route.flightNumber}</h4>
             <p>Job: ${route.jobNumber}</p>
-            ${route.notes ? `<p class="notes">${route.notes}</p>` : ''}
+            ${route.notes ? `<p class="notes">${route.notes}</p>` : ""}
             <p>ETD: ${this.formatDateTime(route.etd)}</p>
             <p>ETA: ${this.formatDateTime(route.eta)}</p>
         </div>
@@ -501,7 +519,7 @@ class MegaMapController {
      * @param {number|string|Date|VarDate} date
      */
     formatDateTime(date) {
-        if (!date) return 'Not scheduled';
+        if (!date) return "Not scheduled";
         return new Date(date).toLocaleString();
     }
 
@@ -515,19 +533,19 @@ class MegaMapController {
         const point = scope.point;
 
         if (!point) {
-            console.error('Could not get point data from event');
+            console.error("Could not get point data from event");
             return;
         }
 
         if (!this.jobs) {
-            console.error('No jobs saved!');
+            console.error("No jobs saved!");
         }
         this.selectedJob = this.jobs.find(job => job.jobId === point.jobId);
 
         console.log(this.selectedJob);
 
         if (!this.selectedJob) {
-            console.error('Could not find job data for point:', point);
+            console.error("Could not find job data for point:", point);
             return;
         }
 
@@ -551,13 +569,13 @@ class MegaMapController {
      * @param {string} type
      */
     createClusterIcon(type) {
-        const color = type === 'pickup' ? '#4CAF50' : '#F44336';
+        const color = type === "pickup" ? "#4CAF50" : "#F44336";
         const svg = `
             <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
                 <circle cx="20" cy="20" r="19" fill="white" stroke="${color}" stroke-width="2"/>
             </svg>
         `;
-        return 'data:image/svg+xml;base64,' + btoa(svg);
+        return `data:image/svg+xml;base64,${btoa(svg)}`;
     }
 
     onZoomChanged() {
@@ -567,8 +585,4 @@ class MegaMapController {
     }
 }
 
-angular.module('uDispatch')
-    .controller('megaMapController',
-        ['toastrService', 'NgMap', 'overviewService', 'APP_CONFIG', 'configService', '$window',
-            (toastrService, NgMap, overviewService, APP_CONFIG, configService, $window) => new MegaMapController(
-                toastrService, NgMap, overviewService, APP_CONFIG, configService, $window)]);
+app.controller("megaMapController", megaMapController);

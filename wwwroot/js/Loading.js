@@ -1,6 +1,6 @@
 ﻿
 var waitingDialog = waitingDialog || (function ($) {
-    'use strict';
+    "use strict";
 
     // Creating modal dialog's DOM
     var $dialog = $(
@@ -10,35 +10,35 @@ var waitingDialog = waitingDialog || (function ($) {
         '<div class="modal-header"><h3 style="margin:0;"></h3></div>' +
         '<div class="modal-body">' +
         '<div class="progress progress-striped active" style="margin-bottom:0;"><div class="progress-bar" style="width: 100%"></div></div>' +
-        '</div>' +
-        '</div></div></div>');
+        "</div>" +
+        "</div></div></div>");
 
     return {
 		
         show: function (message, options) {
             // Assigning defaults
-            if (typeof options === 'undefined') {
+            if (typeof options === "undefined") {
                 options = {};
             }
-            if (typeof message === 'undefined') {
-                message = 'Loading';
+            if (typeof message === "undefined") {
+                message = "Loading";
             }
             var settings = $.extend({
-                dialogSize: 'm',
-                progressType: '',
+                dialogSize: "m",
+                progressType: "",
                 onHide: null // This callback runs after the dialog was hidden
             }, options);
 
             // Configuring dialog
-            $dialog.find('.modal-dialog').attr('class', 'modal-dialog').addClass('modal-' + settings.dialogSize);
-            $dialog.find('.progress-bar').attr('class', 'progress-bar');
+            $dialog.find(".modal-dialog").attr("class", "modal-dialog").addClass("modal-" + settings.dialogSize);
+            $dialog.find(".progress-bar").attr("class", "progress-bar");
             if (settings.progressType) {
-                $dialog.find('.progress-bar').addClass('progress-bar-' + settings.progressType);
+                $dialog.find(".progress-bar").addClass("progress-bar-" + settings.progressType);
             }
-            $dialog.find('h3').text(message);
+            $dialog.find("h3").text(message);
             // Adding callbacks
-            if (typeof settings.onHide === 'function') {
-                $dialog.off('hidden.bs.modal').on('hidden.bs.modal', function (e) {
+            if (typeof settings.onHide === "function") {
+                $dialog.off("hidden.bs.modal").on("hidden.bs.modal", function (e) {
                     settings.onHide.call($dialog);
                 });
             }
@@ -49,7 +49,7 @@ var waitingDialog = waitingDialog || (function ($) {
 		 * Closes dialog
 		 */
         hide: function () {
-            $dialog.modal('hide');
+            $dialog.modal("hide");
         }
     };
 

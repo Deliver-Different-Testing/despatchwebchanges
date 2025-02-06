@@ -1,5 +1,8 @@
+import app from "../../../app";
+import "./side-nav.styles.less";
+
 class MaterialSidenavController {
-    static $inject = ['$scope', '$state'];
+    static $inject = ["$scope", "$state"];
 
     constructor($scope, $state) {
         this.$scope = $scope;
@@ -17,56 +20,52 @@ class MaterialSidenavController {
 
     /**
      * @param {string} stateName
+     * @returns {boolean}
      */
     isActive(stateName) {
         return this.$state.current.name === stateName;
     }
 }
 
-class MaterialSidenavDirective {
-    constructor($mdSidenav, $timeout, $state, versionUrl, APP_CONFIG) {
+class SideNavDirective {
+    static $inject = ["$mdSidenav", "$timeout", "APP_CONFIG"];
+
+    constructor($mdSidenav, $timeout, APP_CONFIG) {
         this.$mdSidenav = $mdSidenav;
         this.$timeout = $timeout;
-        this.$state = $state;
-        this.versionUrl = versionUrl;
         this.APP_CONFIG = APP_CONFIG;
 
-        // Define directive configuration
-        this.restrict = 'E';
-        this.templateUrl = versionUrl('app/components/common/side-nav/side-nav.template.html');
+        this.restrict = "E";
+        this.templateUrl = "app/components/common/side-nav/side-nav.template.html";
         this.scope = true;
         this.controller = MaterialSidenavController;
+        this.controllerAs = "$ctrl";
+
+        this.link = this.link.bind(this);
     }
 
-    // Factory method to create the directive
-    static directiveFactory($mdSidenav, $timeout, $state, versionUrl, APP_CONFIG) {
-        MaterialSidenavDirective.$inject = ['$mdSidenav', '$timeout', '$state', 'versionUrl', 'APP_CONFIG'];
-        const directive = new MaterialSidenavDirective($mdSidenav, $timeout, $state, versionUrl, APP_CONFIG);
-        return {
-            restrict: directive.restrict,
-            templateUrl: directive.templateUrl,
-            scope: directive.scope,
-            controller: directive.controller,
-            link: directive.link.bind(directive)
+    static factory() {
+        const directive = ($mdSidenav, $timeout, APP_CONFIG) => {
+            return new SideNavDirective($mdSidenav, $timeout, APP_CONFIG);
         };
+        directive.$inject = ["$mdSidenav", "$timeout", "APP_CONFIG"];
+        return directive;
     }
 
-    link(scope, element, attrs) {
+    link(scope, element) {
         let timeoutId = null;
         const HOVER_DELAY = 300;
         const ANIMATION_DURATION = 200;
 
         // Store the initial sidenav instance
-        const sideNav = this.$mdSidenav('right');
-        const sidenav = element.find('md-sidenav');
+        const sideNav = this.$mdSidenav("right");
+        const sidenav = element.find("md-sidenav");
 
         /**
          * @param {boolean} shouldOpen
          */
         const toggleNav = (shouldOpen) => {
             if (scope.navState.isAnimating) return;
-
-            // If the nav is already in the desired state, do nothing
             if (shouldOpen === scope.navState.isOpen) return;
 
             scope.navState.isAnimating = true;
@@ -80,47 +79,35 @@ class MaterialSidenavDirective {
             });
         };
 
-        // Simplified mouseenter handler
-        sidenav.on('mouseenter', () => {
+        sidenav.on("mouseenter", () => {
             if (timeoutId) {
                 this.$timeout.cancel(timeoutId);
                 timeoutId = null;
             }
-
             scope.$apply(() => toggleNav(true));
         });
 
-        // Simplified mouseleave handler
-        sidenav.on('mouseleave', () => {
+        sidenav.on("mouseleave", () => {
             if (timeoutId) {
                 this.$timeout.cancel(timeoutId);
             }
-
             timeoutId = this.$timeout(() => {
                 scope.$apply(() => toggleNav(false));
             }, HOVER_DELAY);
         });
 
-        // User settings
-        scope.userName = FirstName || "";
-        scope.companyName = 'DFRNT';
+        scope.userName = FirstName;
+        scope.companyName = "DFRNT";
         scope.isUsCustomer = this.APP_CONFIG.US_Customer;
 
-        // Cleanup
-        scope.$on('$destroy', () => {
+        scope.$on("$destroy", () => {
             if (timeoutId) {
                 this.$timeout.cancel(timeoutId);
             }
-            sidenav.off('mouseenter');
-            sidenav.off('mouseleave');
+            sidenav.off("mouseenter");
+            sidenav.off("mouseleave");
         });
     }
 }
 
-// Register the directive
-angular.module('uDispatch')
-    .directive('materialSidenav', ['$mdSidenav', '$timeout', '$state', 'versionUrl', 'APP_CONFIG', 
-        function($mdSidenav, $timeout, $state, versionUrl, APP_CONFIG) {
-            return MaterialSidenavDirective.directiveFactory($mdSidenav, $timeout, $state, versionUrl, APP_CONFIG);
-        }
-    ]);
+app.directive("materialSidenav", SideNavDirective.factory());
