@@ -9,16 +9,16 @@ class CreateJobDialogController {
      * @description List of dependencies to be injected.
      */
     static $inject = [
-        '$scope',
-        '$mdDialog',
-        'DispatchData',
-        'toastrService',
-        '$http',
-        'dispatchJobService',
-        'staffId',
-        'despatcherName',
-        'APP_CONFIG',
-        'UsStatesService'
+        "$scope",
+        "$mdDialog",
+        "DispatchData",
+        "toastrService",
+        "$http",
+        "dispatchJobService",
+        "staffId",
+        "despatcherName",
+        "APP_CONFIG",
+        "UsStatesService"
     ];
 
     constructor($scope, $mdDialog, DispatchData, toastrService, $http, dispatchJobService, staffId, despatcherName, APP_CONFIG, UsStatesService) {
@@ -33,8 +33,8 @@ class CreateJobDialogController {
         this.APP_CONFIG = APP_CONFIG;
         this.UsStatesService = UsStatesService;
 
-        this.vehicleSearchText = '';
-        this.speedSearchText = '';
+        this.vehicleSearchText = "";
+        this.speedSearchText = "";
 
         this._initializeOptions();
         this._initializeFormData($scope);
@@ -171,7 +171,7 @@ class CreateJobDialogController {
         try {
             return this.dispatchData.autocompleteSearch(searchTerm, url);
         } catch (error) {
-            console.error("Search failed: " + error.message);
+            console.error(`Search failed: ${error.message}`);
             return [];
         }
     }
@@ -218,7 +218,7 @@ class CreateJobDialogController {
                 (localSuburb.alias && localSuburb.alias.toLowerCase() === lowerCaseDistrict)
             );
         } catch (error) {
-            console.error("Failed to find suburb: " + error.message);
+            console.error(`Failed to find suburb: ${error.message}`);
             return null;
         }
     }
@@ -234,8 +234,8 @@ class CreateJobDialogController {
             const data = await this.dispatchData.getGeoCodeInformation(item);
             const returnedLocation = data.Response.View[0].Result[0].Location;
 
-            console.log("Suburb/City = " + returnedLocation.Address.District);
-            console.log("PostCode/ZIP = " + returnedLocation.Address.PostalCode);
+            console.log(`Suburb/City = ${returnedLocation.Address.District}`);
+            console.log(`PostCode/ZIP = ${returnedLocation.Address.PostalCode}`);
 
             const addressDetails = isToAddress ? this.job.deliveryAddress : this.job.pickupAddress;
 
@@ -254,14 +254,14 @@ class CreateJobDialogController {
                 }
             } else {
                 // NZ address format
-                addressDetails.addressLine1 = returnedLocation.Address.Place || ''; // Business name or building name
-                addressDetails.addressLine2 = returnedLocation.Address.Subunit || ''; // Apartment or unit number
-                addressDetails.addressLine3 = returnedLocation.Address.HouseNumber || '';
-                addressDetails.addressLine4 = returnedLocation.Address.Street || '';
-                addressDetails.addressLine5 = returnedLocation.Address.District || ''; // Suburb
-                addressDetails.addressLine6 = returnedLocation.Address.City || '';
-                addressDetails.addressLine7 = returnedLocation.Address.County || ''; // Region
-                addressDetails.addressLine8 = returnedLocation.Address.PostalCode || '';
+                addressDetails.addressLine1 = returnedLocation.Address.Place || ""; // Business name or building name
+                addressDetails.addressLine2 = returnedLocation.Address.Subunit || ""; // Apartment or unit number
+                addressDetails.addressLine3 = returnedLocation.Address.HouseNumber || "";
+                addressDetails.addressLine4 = returnedLocation.Address.Street || "";
+                addressDetails.addressLine5 = returnedLocation.Address.District || ""; // Suburb
+                addressDetails.addressLine6 = returnedLocation.Address.City || "";
+                addressDetails.addressLine7 = returnedLocation.Address.County || ""; // Region
+                addressDetails.addressLine8 = returnedLocation.Address.PostalCode || "";
 
                 const mappedSub = await this.findSuburbByDistrict(returnedLocation.Address.District);
                 if (mappedSub) {
@@ -302,7 +302,7 @@ class CreateJobDialogController {
 
             this.$mdDialog.hide(jobId);
         } catch (error) {
-            console.error("Job creation failed: " + error.message);
+            console.error(`Job creation failed: ${error.message}`);
         } finally {
             this.isLoading = false;
         }
@@ -331,7 +331,7 @@ class CreateJobDialogController {
         job.vehicleId = this.selectedVehicle.id;
 
         // Ensure fullAddress is up-to-date for both pickup and delivery addresses
-        ['pickupAddress', 'deliveryAddress'].forEach(addressType => {
+        ["pickupAddress", "deliveryAddress"].forEach(addressType => {
             const address = job[addressType];
             address.fullAddress = [
                 address.addressLine1,
@@ -342,7 +342,7 @@ class CreateJobDialogController {
                 address.addressLine6,
                 address.addressLine7,
                 address.addressLine8
-            ].filter(line => line && line.trim() !== '').join(', ');
+            ].filter(line => line && line.trim() !== "").join(", ");
         });
     }
 
@@ -359,7 +359,7 @@ class CreateJobDialogController {
             staffId: this.staffId,
             despatcherName: this.despatcherName
         };
-        return this.$http.post(url, callData, {headers: {'Content-Type': 'application/json'}});
+        return this.$http.post(url, callData, {headers: {'Content-Type': "application/json"}});
     }
 
     /**
@@ -380,4 +380,4 @@ class CreateJobDialogController {
     }
 }
 
-angular.module('uDispatch').controller('CreateJobDialogController', CreateJobDialogController);
+angular.module("uDispatch").controller("CreateJobDialogController", CreateJobDialogController);

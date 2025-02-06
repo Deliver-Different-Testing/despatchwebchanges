@@ -13,7 +13,7 @@ class AddEventDialogController {
      * @static
      * @description List of dependencies to be injected.
      */
-    static $inject = ['$scope', '$mdDialog', 'NWData', 'toastrService', 'job', 'dispatcherName', 'contactId'];
+    static $inject = ["$scope", "$mdDialog", "NWData", "toastrService", "job", "dispatcherName", "contactId"];
 
     /**
      * Create an AddEventDialogController.
@@ -26,11 +26,11 @@ class AddEventDialogController {
      * @param {string} contactId - ID of the contact.
      */
     constructor($scope, $mdDialog, NWData, toastrService, job, dispatcherName, contactId) {
-        this._$mdDialog = $mdDialog;
+        this.$mdDialog = $mdDialog;
         this._NWData = NWData;
-        this._toastrService = toastrService;
-        this._dispatcherName = dispatcherName;
-        this._contactId = contactId;
+        this.toastrService = toastrService;
+        this.dispatcherName = dispatcherName;
+        this.contactId = contactId;
         this._job = job;
 
         /** @type {boolean} */
@@ -85,7 +85,7 @@ class AddEventDialogController {
     async submit(event) {
         try {
             if (!this.eventForm.$valid) {
-                this._toastrService.showWarningToast("Please complete all the required fields.");
+                this.toastrService.showWarningToast("Please complete all the required fields.");
                 return;
             }
 
@@ -96,7 +96,7 @@ class AddEventDialogController {
 
             // Exsalerate Event
             if (eventId === "7" || eventId === "92") {
-                await this._NWData.exsalerateActivity(eventName, event.notes, this._job.clientId, event.jobNumber, this._dispatcherName);
+                await this._NWData.exsalerateActivity(eventName, event.notes, this._job.clientId, event.jobNumber, this.dispatcherName);
             }
 
             //Process Event
@@ -106,26 +106,26 @@ class AddEventDialogController {
                 await this._NWData.addNote(event.jobId, newNote, FirstName, false);
             }
 
-            await this._NWData.addEvent(event.jobNumber, this._job.clientId, this._job.contact, this._contactId, this._job.courierData.courierID, this._job.id, this._job.jobType, this._dispatcherName, event.notes, eventId);
+            await this._NWData.addEvent(event.jobNumber, this._job.clientId, this._job.contact, this.contactId, this._job.courierData.courierID, this._job.id, this._job.jobType, this.dispatcherName, event.notes, eventId);
 
             if (eventId === "6") {
                 this._NWData.voidJob(this._job.id);
             }
         } catch (error) {
-            this._toastrService.showErrorToast(error.message);
+            this.toastrService.showErrorToast(error.message);
         } finally {
             this.isLoading = false;
         }
 
-        this._$mdDialog.hide();
+        this.$mdDialog.hide();
     }
 
     /**
      * Cancel the dialog.
      */
     cancel() {
-        this._$mdDialog.cancel();
+        this.$mdDialog.cancel();
     }
 }
 
-angular.module('uDispatch').controller('AddEventDialogController', AddEventDialogController);
+angular.module("uDispatch").controller("AddEventDialogController", AddEventDialogController);

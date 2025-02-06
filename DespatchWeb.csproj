@@ -147,8 +147,8 @@
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\prebooks\prebookControl.js.map" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\prebooks\prebookControl.min.js" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\prebooks\prebookControl.min.js.map" />
-    <_ContentIncludedByDefault Remove="wwwroot\dist\components\prebooks\prebookService.js" />
-    <_ContentIncludedByDefault Remove="wwwroot\dist\components\prebooks\prebookService.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\prebooks\prebook.service.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\prebooks\prebook.service.js.map" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\prebooks\prebookService.min.js" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\prebooks\prebookService.min.js.map" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\filters.js" />
@@ -211,6 +211,11 @@
     <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.js.map" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.min.js" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\sendMessageDialog\sendMessageDialog.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\sendMessageDialog\sendMessageDialogController.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\gpsForm\gpsForm.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\gpsForm\gpsFormController.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\Nationwide\tpls\map.tpl" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
@@ -223,21 +228,11 @@
     <None Include="compilerconfig.json" />
     <None Include="efpt.config.json.user" />
     <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.directive.js" />
-    <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.styles.css" />
-    <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.styles.css.map" />
     <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.styles.less" />
-    <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.styles.min.css" />
     <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.template.html" />
     <None Include="wwwroot\app\components\common\side-nav\side-nav.directive.js" />
-    <None Include="wwwroot\app\components\common\side-nav\side-nav.css" />
-    <None Include="wwwroot\app\components\common\side-nav\side-nav.css.map" />
-    <None Include="wwwroot\app\components\common\side-nav\side-nav.min.css" />
-    <None Include="wwwroot\app\components\common\side-nav\side-nav.less" />
     <None Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
     <Page Include="wwwroot\app\components\overview\open-jobs\open-jobs.controller.js" />
-    <None Include="wwwroot\app\components\overview\open-jobs\open-jobs.styles.css" />
-    <None Include="wwwroot\app\components\overview\open-jobs\open-jobs.styles.css.map" />
-    <None Include="wwwroot\app\components\overview\open-jobs\open-jobs.styles.min.css" />
     <None Include="wwwroot\app\components\overview\services\overview-filters.service.js" />
     <Page Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.controller.js" />
     <None Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.css" />
@@ -254,8 +249,6 @@
     <None Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.html" />
     <None Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.controller.js" />
     <None Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.html" />
-    <None Include="wwwroot\app\components\overview\overview.css" />
-    <None Include="wwwroot\app\components\overview\overview.css.map" />
     <None Include="wwwroot\app\components\overview\overview.less" />
     <None Include="wwwroot\app\materialTheme.js" />
     <None Include="wwwroot\app\version.js" />

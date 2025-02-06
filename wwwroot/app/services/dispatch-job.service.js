@@ -1,10 +1,14 @@
+import app from "../app";
+
 /**
  * @fileoverview Service for managing job dispatching operations.
  * @module DispatchJobService
  */
 class DispatchJobService {
+    static $inject = ["$mdDialog", "$document", "DispatchData", "moment"];
+
     constructor($mdDialog, $document, DispatchData, moment) {
-        console.log('Initializing DispatchJobService');
+        console.log("Initializing DispatchJobService");
 
         this.$mdDialog = $mdDialog;
         this.$document = $document;
@@ -39,7 +43,7 @@ class DispatchJobService {
      * @returns {Promise<void>} A promise that resolves when the data is fetched.
      */
     async fetchCouriersData() {
-        console.log('Fetching couriers data...');
+        console.log("Fetching couriers data...");
         try {
             const [activeCouriers, allCouriers] = await Promise.all([
                 this.dispatchData.getActiveCouriers(),
@@ -49,12 +53,12 @@ class DispatchJobService {
             this.pickCouriers = activeCouriers;
             this.pickAllCouriers = allCouriers;
 
-            console.log('Couriers data fetched:', {
+            console.log("Couriers data fetched:", {
                 activeCouriers: this.pickCouriers.length,
                 allCouriers: this.pickAllCouriers.length
             });
         } catch (error) {
-            console.error('Error fetching couriers data:', error);
+            console.error("Error fetching couriers data:", error);
             throw error;
         }
     }
@@ -68,7 +72,7 @@ class DispatchJobService {
      * @returns {Promise<{jobs: Array, undispatchedJobs: Array}>}
      */
     async getJobListWithCourierData(queryParams, selectedClients, isInternal, selectedAreas) {
-        console.log('Getting job list with courier data:', {
+        console.log("Getting job list with courier data:", {
             queryParams,
             clientCount: selectedClients?.length,
             isInternal,
@@ -103,7 +107,7 @@ class DispatchJobService {
             };
 
         } catch (error) {
-            console.error('Error in getJobListWithCourierData:', error);
+            console.error("Error in getJobListWithCourierData:", error);
             throw error;
         }
     }
@@ -115,7 +119,7 @@ class DispatchJobService {
      * @returns {Promise<{jobs: Array, courier: Object}>}
      */
     async getCurrentJobsForCourier(courierId, isDone = false) {
-        console.log('Getting current jobs for courier:', courierId);
+        console.log("Getting current jobs for courier:", courierId);
 
         try {
             await this.fetchCouriersData();
@@ -124,7 +128,7 @@ class DispatchJobService {
             const foundCourier = this.pickCouriers.find(c => c?.courierId === courierId) ||
                 this.pickAllCouriers.find(c => c?.courierId === courierId);
 
-            console.log('Found courier:', foundCourier);
+            console.log("Found courier:", foundCourier);
 
             if (!foundCourier) {
                 console.warn(`No courier found for ID: ${courierId}`);
@@ -140,9 +144,9 @@ class DispatchJobService {
             if (jobs.length === 0 && foundCourier.id) {
                 try {
                     courierPosition = await this.dispatchData.getCourierPosition(foundCourier.id);
-                    console.log('Retrieved courier position:', courierPosition);
+                    console.log("Retrieved courier position:", courierPosition);
                 } catch (error) {
-                    console.warn('Error getting courier position:', error);
+                    console.warn("Error getting courier position:", error);
                 }
             }
 
@@ -152,7 +156,7 @@ class DispatchJobService {
                 position: courierPosition
             };
         } catch (error) {
-            console.error('Error in getCurrentJobsForCourier:', error);
+            console.error("Error in getCurrentJobsForCourier:", error);
             throw error;
         }
     }
@@ -163,14 +167,14 @@ class DispatchJobService {
      * @param {number} jobId - The ID of the job to dispatch.
      */
     async dispatchJobByJobId(courierId, jobId) {
-        console.log('Dispatching job by ID:', {courierId, jobId});
+        console.log("Dispatching job by ID:", {courierId, jobId});
         try {
             await this.fetchCouriersData();
             const job = await this.dispatchData.getJobDetail(jobId);
-            console.log('Job details fetched:', job);
+            console.log("Job details fetched:", job);
 
             const foundCourier = this.pickAllCouriers.find(c => c?.courierId === courierId);
-            console.log('Found courier:', foundCourier);
+            console.log("Found courier:", foundCourier);
 
             if (!foundCourier) {
                 console.warn(`Could not find courier with ID ${courierId}`);
@@ -180,7 +184,7 @@ class DispatchJobService {
 
             await this.dispatchJob(foundCourier.id, job);
         } catch (error) {
-            console.error('Error in dispatchJobByJobId:', error);
+            console.error("Error in dispatchJobByJobId:", error);
             throw error;
         }
     }
@@ -192,11 +196,11 @@ class DispatchJobService {
      * @returns {Promise} A promise that resolves when the job is dispatched.
      */
     async dispatchJobsBycourierId(courierId, jobs) {
-        console.log('Dispatching multiple jobs by courier ID:', {courierId, jobCount: jobs.length});
+        console.log("Dispatching multiple jobs by courier ID:", {courierId, jobCount: jobs.length});
         try {
             await this.fetchCouriersData();
             const foundCourier = this.pickAllCouriers.find(c => c.courierId === courierId);
-            console.log('Found courier:', foundCourier);
+            console.log("Found courier:", foundCourier);
 
             if (foundCourier) {
                 await this.dispatchJobsContinue(foundCourier, jobs);
@@ -204,7 +208,7 @@ class DispatchJobService {
                 console.warn(`Could not find courier with ID ${courierId}`);
             }
         } catch (error) {
-            console.error('Error in dispatchJobsBycourierId:', error);
+            console.error("Error in dispatchJobsBycourierId:", error);
             throw error;
         }
     }
@@ -298,7 +302,7 @@ class DispatchJobService {
                 gpsCourier: foundCourier.id
             };
         } catch (error) {
-            await this._showAlertMessage("Failed to dispatch jobs: " + error.message);
+            await this._showAlertMessage(`Failed to dispatch jobs: ${error.message}`);
             throw error;
         }
     }
@@ -329,10 +333,10 @@ class DispatchJobService {
     showOfflineCourierDialog() {
         return this.$mdDialog.show(
             this.$mdDialog.confirm()
-                .title('Courier Offline')
-                .textContent('Dispatch anyway?')
-                .ok('Yes')
-                .cancel('No')
+                .title("Courier Offline")
+                .textContent("Dispatch anyway?")
+                .ok("Yes")
+                .cancel("No")
         );
     }
 
@@ -362,7 +366,7 @@ class DispatchJobService {
 
         // If there are any error messages, show them
         if (errorMessages.length > 0) {
-            await this._showAlertMessage(errorMessages.join('\n'));
+            await this._showAlertMessage(errorMessages.join("\n"));
             // If all jobs are invalid, return early
             if (validJobs.length === 0) {
                 return;
@@ -390,7 +394,7 @@ class DispatchJobService {
      * @returns {Promise<{isValid: boolean, message: string}>} Validation result and error message if invalid
      */
     async validateJob(job, courier) {
-        console.log('Validating job:', {
+        console.log("Validating job:", {
             jobNo: job?.jobNo,
             courierId: courier?.id,
             hasDG: job?.dgClass > 0
@@ -398,26 +402,26 @@ class DispatchJobService {
 
         if (job.courierData !== null) {
             const message = `Restore ${job.jobNo} prior to dispatching to another courier`;
-            console.warn('Job validation failed:', message);
+            console.warn("Job validation failed:", message);
             return {isValid: false, message};
         }
 
         if (job.dgClass !== null && job.dgClass > 0) {
             if (!courier.dangerousGoods) {
                 const message = `DG job ${job.jobNo} can not be dispatched to courier ${courier.id} - doesn't have DGLicense.`;
-                console.warn('Job validation failed:', message);
+                console.warn("Job validation failed:", message);
                 return {isValid: false, message};
             }
 
-            if (job.DGLicenseExpiry === null || this.moment(courier.dgLicenseExpiry) < this.moment().add(1, 'days')) {
+            if (job.DGLicenseExpiry === null || this.moment(courier.dgLicenseExpiry) < this.moment().add(1, "days")) {
                 const message = `Courier ${courier.id} doesn't have a DGLicense or license has expired.`;
-                console.warn('Job validation failed:', message);
+                console.warn("Job validation failed:", message);
                 return {isValid: false, message};
             }
         }
 
-        console.log('Job validation passed:', job.jobNo);
-        return {isValid: true, message: ''};
+        console.log("Job validation passed:", job.jobNo);
+        return {isValid: true, message: ""};
     }
 
     /**
@@ -428,17 +432,17 @@ class DispatchJobService {
      * @returns {Promise<void>}
      */
     async processValidJobs(courier, jobs) {
-        console.log('Processing valid jobs:', {
+        console.log("Processing valid jobs:", {
             courierId: courier?.id,
             jobCount: jobs?.length
         });
 
         try {
             const jobsRequiringFollowup = jobs.filter(job => this.requiresFollowupEvent(job));
-            console.log('Jobs requiring followup:', jobsRequiringFollowup.length);
+            console.log("Jobs requiring followup:", jobsRequiringFollowup.length);
 
             if (jobsRequiringFollowup.length > 0) {
-                console.log('Processing followup events');
+                console.log("Processing followup events");
                 await Promise.all(jobsRequiringFollowup.map(job =>
                     this.dispatchData.addFollowupEvent(
                         job.jobNo, job.clientId, job.contactName, ContactID,
@@ -448,13 +452,13 @@ class DispatchJobService {
             }
 
             const jobIds = jobs.map(job => job.id);
-            console.log('Allocating jobs:', jobIds.length);
+            console.log("Allocating jobs:", jobIds.length);
 
             await this.dispatchData.allocateJobs(courier.courierId, ContactID, jobIds);
-            console.log('Jobs processed successfully');
+            console.log("Jobs processed successfully");
 
         } catch (error) {
-            console.error('Error processing valid jobs:', error);
+            console.error("Error processing valid jobs:", error);
             await this._showAlertMessage(`Failed to dispatch jobs: ${error.message}`);
             throw error;
         }
@@ -467,14 +471,14 @@ class DispatchJobService {
      * @throws {Error} If restoration fails
      */
     async restoreJob(job) {
-        console.log('Restoring job:', {
+        console.log("Restoring job:", {
             jobNo: job?.jobNo,
             jobId: job?.id,
             courierId: job?.courierData?.courierId
         });
 
         if (!job?.courierData?.courierId) {
-            const message = 'Job has no assigned courier to restore from';
+            const message = "Job has no assigned courier to restore from";
             console.warn(message);
             await this._showAlertMessage(message);
             throw new Error(message);
@@ -522,11 +526,11 @@ class DispatchJobService {
                 );
             }
 
-            console.log('Job restored successfully');
+            console.log("Job restored successfully");
             return {gpsCourier: foundCourier.id};
 
         } catch (error) {
-            console.error('Error restoring job:', error);
+            console.error("Error restoring job:", error);
             await this._showAlertMessage(`Failed to restore job: ${error.message}`);
         }
     }
@@ -541,19 +545,13 @@ class DispatchJobService {
         const alert = this.$mdDialog.alert()
             .parent(this.$document.body)
             .clickOutsideToClose(true)
-            .title('Unable to Despatch')
+            .title("Unable to Despatch")
             .textContent(textContent)
-            .ariaLabel('unable to despatch')
-            .ok('OK');
+            .ariaLabel("unable to despatch")
+            .ok("OK");
 
         return await this.$mdDialog.show(alert);
     }
 }
 
-angular.module('uDispatch').service('dispatchJobService', [
-    '$mdDialog',
-    '$document',
-    'DispatchData',
-    'moment',
-    ($mdDialog, $document, DispatchData, moment) => new DispatchJobService($mdDialog, $document, DispatchData, moment)
-]);
+app.service("dispatchJobService", DispatchJobService);

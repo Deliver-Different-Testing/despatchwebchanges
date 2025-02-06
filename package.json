@@ -1,32 +1,34 @@
 {
   "name": "despatchweb",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "main": "index.js",
   "dependencies": {
-    "angular": "^1.8.3",
     "entities": "^4.5.0",
-    "moment": "^2.30.1",
     "parse5": "^7.1.2",
     "rxjs": "^7.8.1",
-    "tslib": "^2.7.0",
     "zone.js": "^0.14.10"
   },
   "devDependencies": {
-    "@babel/cli": "^7.25.6",
-    "@babel/core": "^7.25.2",
+    "@babel/cli": "^7.26.4",
+    "@babel/core": "^7.26.0",
     "@babel/plugin-proposal-class-properties": "^7.18.6",
-    "@babel/plugin-transform-classes": "^7.25.4",
-    "@babel/preset-env": "^7.25.4",
+    "@babel/plugin-transform-classes": "^7.25.9",
+    "@babel/preset-env": "^7.26.0",
+    "@swc/helpers": "^0.5.15",
+    "browserslist": "^4.24.4",
+    "browserslist-to-esbuild": "^2.1.1",
     "core-js": "^3.38.1",
-    "eslint": "^9.10.0",
-    "glob": "^11.0.0",
+    "esbuild": "^0.24.2",
+    "esbuild-plugin-babel": "^0.2.3",
+    "esbuild-plugin-es5": "^2.1.1",
+    "esbuild-plugin-less": "^1.3.14",
+    "eslint": "^9.19.0",
+    "glob": "^11.0.1",
     "uglify-js": "^3.19.3"
   },
   "scripts": {
-    "build": "npm run update-version && npm run babel && npm run minify",
-    "update-version": "node update-version.js",
-    "babel": "babel wwwroot/app/ --out-dir wwwroot/dist --source-maps",
-    "minify": "node minification-script.js"
+    "build": "node build.js",
+    "dev": "node build.js --watch"
   },
   "keywords": [],
   "author": "",

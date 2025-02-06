@@ -8,7 +8,7 @@ class MapDialogController {
      * @static
      * @description List of dependencies to be injected.
      */
-    static $inject = ['$mdDialog', 'overviewService', 'configService', 'delivery'];
+    static $inject = ["$mdDialog", "overviewService", "configService", "delivery"];
 
     /**
      * @param $mdDialog
@@ -52,7 +52,7 @@ class MapDialogController {
             // Get job data
             this.mapConfig = await this.getJob(this.delivery.jobId);
         } catch (error) {
-            console.error('Error initializing map:', error);
+            console.error("Error initializing map:", error);
             // Handle error appropriately
         } finally {
             this.loading = false;
@@ -71,7 +71,7 @@ class MapDialogController {
      * @param {number} index - 0 for parent job, 1+ for child jobs
      */
     switchMapJob(index) {
-        console.log('Setting job on map to ' + (index === 0 ? 'parent' : index));
+        console.log(`Setting job on map to ${index === 0 ? "parent" : index}`);
         this.selectedJobIndex = index;
         this.mapConfig.selectedJobIndex = index;
         console.log(this.mapConfig);
@@ -85,4 +85,4 @@ class MapDialogController {
     }
 }
 
-angular.module('uDispatch').controller('MapDialogController', MapDialogController);
+angular.module("uDispatch").controller("MapDialogController", MapDialogController);

@@ -1,18 +1,16 @@
+import app from "../../../app";
+
 /**
  * @fileoverview Service for managing layout configurations on the nationwide page
  * @module NationwideLayoutService
  */
 class NationwideLayoutService {
-    /**
-     * Create a NationwideLayoutService.
-     * @param {Object} $window
-     * @param {Object} $mdDialog
-     * @param {Object} $rootScope
-     */
+static $inject = ["$window", "$mdDialog", "$rootScope"];
+
     constructor($window, $mdDialog, $rootScope) {
-        this._$window = $window;
-        this._$mdDialog = $mdDialog;
-        this._$rootScope = $rootScope;
+        this.$window = $window;
+        this.$mdDialog = $mdDialog;
+        this.$rootScope = $rootScope;
 
         // Column width options
         /** @type {string} */
@@ -133,8 +131,8 @@ class NationwideLayoutService {
      */
     setMapZoom(newMapZoom) {
         this.mapZoom = newMapZoom;
-        if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
-            this._$window.localStorage.setItem(`mapZoomNW-${this._$window.ContactID}`, JSON.Stringify(this.mapZoom));
+        if (this.$window.Modernizr && this.$window.Modernizr.localstorage) {
+            this.$window.localStorage.setItem(`mapZoomNW-${this.$window.ContactID}`, JSON.Stringify(this.mapZoom));
         }
     }
 
@@ -143,18 +141,18 @@ class NationwideLayoutService {
      * @returns {string} The user's first name.
      */
     getUserName() {
-        return this._$window.FirstName;
+        return this.$window.FirstName;
     }
     /**
      * Initialize the service.
      * @private
      */
     _initializeLayouts() {
-        if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
+        if (this.$window.Modernizr && this.$window.Modernizr.localstorage) {
             try {
                 // Load stored layouts
-                const storedLayouts = JSON.parse(this._$window.localStorage.getItem(`layoutsNW-${this._$window.ContactID}`)) || [this.defaultLayout[0]];
-                const lastActiveLayoutName = this._$window.localStorage.getItem(`lastActiveLayoutNW-${this._$window.ContactID}`);
+                const storedLayouts = JSON.parse(this.$window.localStorage.getItem(`layoutsNW-${this.$window.ContactID}`)) || [this.defaultLayout[0]];
+                const lastActiveLayoutName = this.$window.localStorage.getItem(`lastActiveLayoutNW-${this.$window.ContactID}`);
 
                 // Ensure default layout is always first and up to date
                 this.currentLayouts = storedLayouts;
@@ -173,14 +171,14 @@ class NationwideLayoutService {
                 this.loadLayout(layoutIndex);
 
                 // Broadcast layout update with current index
-                if (this._$rootScope) {
-                    this._$rootScope.$broadcast('layoutUpdated', {
+                if (this.$rootScope) {
+                    this.$rootScope.$broadcast("layoutUpdated", {
                         currentLayoutIndex: layoutIndex,
                         currentLayoutName: this.currentLayoutName
                     });
                 }
             } catch (error) {
-                console.error('Error loading stored layouts:', error);
+                console.error("Error loading stored layouts:", error);
                 this.currentLayouts = [this.defaultLayout[0]];
                 this.loadLayout(0);
             }
@@ -198,21 +196,21 @@ class NationwideLayoutService {
             const capturedLayout = {
                 columns: layout.columns.map(column => ({
                     ...column,
-                    width: angular.element(`#co-${column.id}`).css('flex-basis'),
+                    width: angular.element(`#co-${column.id}`).css("flex-basis"),
                     boxes: column.boxes.map(box => ({
                         ...box,
-                        height: angular.element(`#box-${box.name}`).css('flex-basis')
+                        height: angular.element(`#box-${box.name}`).css("flex-basis")
                     }))
                 }))
             };
 
-            const layoutName = await this._$mdDialog.show(this._$mdDialog.prompt()
-                .title('Save Layout')
-                .textContent('Please enter a name for this layout.')
-                .ariaLabel('Layout name')
+            const layoutName = await this.$mdDialog.show(this.$mdDialog.prompt()
+                .title("Save Layout")
+                .textContent("Please enter a name for this layout.")
+                .ariaLabel("Layout name")
                 .required(true)
-                .ok('Save')
-                .cancel('Cancel'));
+                .ok("Save")
+                .cancel("Cancel"));
 
             const newLayout = {
                 name: layoutName,
@@ -228,12 +226,12 @@ class NationwideLayoutService {
             this.currentLayoutName = layoutName;
             this.currentLayout = capturedLayout;
 
-            if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
-                this._$window.localStorage.setItem(`layoutsNW-${this._$window.ContactID}`, JSON.stringify(this.currentLayouts));
-                this._$window.localStorage.setItem(`lastActiveLayoutNW-${this._$window.ContactID}`, layoutName);
+            if (this.$window.Modernizr && this.$window.Modernizr.localstorage) {
+                this.$window.localStorage.setItem(`layoutsNW-${this.$window.ContactID}`, JSON.stringify(this.currentLayouts));
+                this.$window.localStorage.setItem(`lastActiveLayoutNW-${this.$window.ContactID}`, layoutName);
             }
 
-            this._$rootScope.$broadcast('layoutUpdated');
+            this.$rootScope.$broadcast("layoutUpdated");
             return {name: layoutName, layout: capturedLayout};
         } catch (error) {
             if (error === undefined) {
@@ -253,11 +251,11 @@ class NationwideLayoutService {
         if (index === 0) return; // Prevent deleting default layout
 
         try {
-            await this._$mdDialog.show(this._$mdDialog.confirm()
-                .title('Delete Layout?')
-                .textContent('Are you sure you would like to delete this layout?')
-                .ok('Delete')
-                .cancel('Cancel'));
+            await this.$mdDialog.show(this.$mdDialog.confirm()
+                .title("Delete Layout?")
+                .textContent("Are you sure you would like to delete this layout?")
+                .ok("Delete")
+                .cancel("Cancel"));
 
             // Make sure we have currentLayouts
             if (!this.currentLayouts) {
@@ -266,8 +264,8 @@ class NationwideLayoutService {
 
             this.currentLayouts.splice(index, 1);
 
-            if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
-                this._$window.localStorage.setItem(`layoutsNW-${this._$window.ContactID}`, JSON.stringify(this.currentLayouts));
+            if (this.$window.Modernizr && this.$window.Modernizr.localstorage) {
+                this.$window.localStorage.setItem(`layoutsNW-${this.$window.ContactID}`, JSON.stringify(this.currentLayouts));
             }
 
             // Load default if we deleted the current layout
@@ -275,7 +273,7 @@ class NationwideLayoutService {
                 this.loadLayout(0);
             }
 
-            this._$rootScope.$broadcast('layoutUpdated');
+            this.$rootScope.$broadcast("layoutUpdated");
         } catch (error) {
             if (error === undefined) {
                 console.log("Save Layout Cancelled!");
@@ -292,7 +290,7 @@ class NationwideLayoutService {
      */
     loadLayout(index) {
         if (!this.currentLayouts[index]) {
-            console.warn('Invalid layout index, loading default');
+            console.warn("Invalid layout index, loading default");
             index = 0;
         }
 
@@ -301,16 +299,16 @@ class NationwideLayoutService {
         this.currentLayout = angular.copy(this.currentLayouts[index].layout);
 
         // Save as last active layout
-        if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
-            this._$window.localStorage.setItem(`lastActiveLayoutNW-${this._$window.ContactID}`, this.currentLayoutName);
+        if (this.$window.Modernizr && this.$window.Modernizr.localstorage) {
+            this.$window.localStorage.setItem(`lastActiveLayoutNW-${this.$window.ContactID}`, this.currentLayoutName);
         }
 
         // Apply the layout dimensions
         this._applyLayoutDimensions(this.currentLayout);
 
         // Broadcast layout update
-        if (this._$rootScope) {
-            this._$rootScope.$broadcast('layoutUpdated', {
+        if (this.$rootScope) {
+            this.$rootScope.$broadcast("layoutUpdated", {
                 currentLayoutIndex: index,
                 currentLayoutName: this.currentLayoutName
             });
@@ -331,12 +329,12 @@ class NationwideLayoutService {
         layout.columns.forEach(column => {
             const columnElement = angular.element(`#co-${column.id}`);
             if (columnElement.length) {
-                columnElement.css('flex-basis', column.width);
+                columnElement.css("flex-basis", column.width);
 
                 column.boxes.forEach(box => {
                     const boxElement = angular.element(`#box-${box.name}`);
                     if (boxElement.length) {
-                        boxElement.css('flex-basis', box.height);
+                        boxElement.css("flex-basis", box.height);
                     }
                 });
             }
@@ -344,4 +342,4 @@ class NationwideLayoutService {
     }
 }
 
-angular.module('uDispatch').service('NationwideLayoutService', ['$window', '$mdDialog', '$rootScope', ($window, $mdDialog, $rootScope) => new NationwideLayoutService($window, $mdDialog, $rootScope)]);
+app.service("NationwideLayoutService", NationwideLayoutService);

@@ -1,5 +1,5 @@
 class DateRangeDialogController {
-    static $inject = ['$mdDialog', 'dateRange',];
+    static $inject = ["$mdDialog", "dateRange",];
 
     constructor($mdDialog, dateRange) {
         this.$mdDialog = $mdDialog;
@@ -43,4 +43,4 @@ class DateRangeDialogController {
     }
 }
 
-angular.module('uDispatch').controller('DateRangeDialogController', DateRangeDialogController);
+angular.module("uDispatch").controller("DateRangeDialogController", DateRangeDialogController);

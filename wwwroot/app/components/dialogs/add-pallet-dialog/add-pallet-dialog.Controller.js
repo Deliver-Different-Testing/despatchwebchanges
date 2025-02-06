@@ -13,7 +13,7 @@ class PalletDialogController {
      * @static
      * @description List of dependencies to be injected.
      */
-    static $inject = ['$scope', '$mdDialog', 'DispatchData', 'toastrService', 'rateJobService', 'job', 'dispatcherName', 'contactId', 'existingPallet'];
+    static $inject = ["$scope", "$mdDialog", "DispatchData", "toastrService", "rateJobService", "job", "dispatcherName", "contactId", "existingPallet"];
 
     /**
      * Create a PalletDialogController.
@@ -36,13 +36,13 @@ class PalletDialogController {
                 dispatcherName,
                 contactId,
                 existingPallet) {
-        this._$mdDialog = $mdDialog;
-        this._dispatchData = DispatchData;
-        this._toastrService = toastrService;
+        this.$mdDialog = $mdDialog;
+        this.dispatchData = DispatchData;
+        this.toastrService = toastrService;
         this._rateJobService = rateJobService;
         this._job = job;
-        this._dispatcherName = dispatcherName;
-        this._contactId = contactId;
+        this.dispatcherName = dispatcherName;
+        this.contactId = contactId;
 
         /** @type {boolean} */
         this.isLoading = false;
@@ -86,7 +86,7 @@ class PalletDialogController {
     async submit() {
         try {
             if (!this.palletForm.$valid) {
-                this._toastrService.showWarningToast("Please complete all the required fields.");
+                this.toastrService.showWarningToast("Please complete all the required fields.");
                 return;
             }
             this.isLoading = true;
@@ -100,9 +100,9 @@ class PalletDialogController {
             if (this.isEditing) {
                 palletData.id = this.pallet.id;
                 palletData.itemId = this.pallet.itemID;
-                response = await this._dispatchData.editPallet(palletData, this._job.preBook, this._dispatcherName);
+                response = await this.dispatchData.editPallet(palletData, this._job.preBook, this.dispatcherName);
             } else {
-                response = await this._dispatchData.addPallet(palletData, this._job.preBook, this._dispatcherName);
+                response = await this.dispatchData.addPallet(palletData, this._job.preBook, this.dispatcherName);
             }
 
             if (response === "OK") {
@@ -122,34 +122,34 @@ class PalletDialogController {
                 const rate = await this._rateJobService.rateJob(this._job);
 
                 if (rate !== this._job.charge) {
-                    await this._dispatchData.updateJobDetail(
+                    await this.dispatchData.updateJobDetail(
                         this._job.id,
                         "rate",
                         Number(rate.replace(/[^0-9.-]+/g, "")),
                         Number(rate.replace(/[^0-9.-]+/g, "")),
-                        this._dispatcherName,
-                        this._contactId,
+                        this.dispatcherName,
+                        this.contactId,
                         this._job.preBook
                     );
                 }
 
-                this._toastrService.showSuccessToast(`Pallet ${this.isEditing ? 'updated' : 'added'} successfully`);
+                this.toastrService.showSuccessToast(`Pallet ${this.isEditing ? "updated" : "added"} successfully`);
             }
         } catch (error) {
-            this._toastrService.showErrorToast(error.message);
+            this.toastrService.showErrorToast(error.message);
         } finally {
             this.isLoading = false;
         }
 
-        this._$mdDialog.hide();
+        this.$mdDialog.hide();
     }
 
     /**
      * Cancel the dialog.
      */
     cancel() {
-        this._$mdDialog.cancel();
+        this.$mdDialog.cancel();
     }
 }
 
-angular.module('uDispatch').controller('PalletDialogController', PalletDialogController);
+angular.module("uDispatch").controller("PalletDialogController", PalletDialogController);

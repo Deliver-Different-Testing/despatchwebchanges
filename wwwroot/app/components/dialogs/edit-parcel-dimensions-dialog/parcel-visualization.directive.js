@@ -37,11 +37,11 @@ class ParcelVisualizationController {
  */
 function parcelVisualizationDirective() {
     return {
-        restrict: 'E',
+        restrict: "E",
         scope: {
-            length: '@',
-            width: '@',
-            height: '@'
+            length: "@",
+            width: "@",
+            height: "@"
         },
         template: `
             <svg width="100%" height="300" viewBox="0 0 400 300">
@@ -103,10 +103,10 @@ function parcelVisualizationDirective() {
                 </g>
             </svg>
         `,
-        controllerAs: '$ctrl',
+        controllerAs: "$ctrl",
         controller: ParcelVisualizationController
     };
 }
 
-angular.module('uDispatch')
-    .directive('parcelVisualization', parcelVisualizationDirective);
+angular.module("uDispatch")
+    .directive("parcelVisualization", parcelVisualizationDirective);

@@ -14,17 +14,17 @@ class AutoCompleteDialogController {
      * @description List of dependencies to be injected.
      */
     static $inject = [
-        '$mdDialog',
-        'DispatchData',
-        'toastrService',
-        'rateJobService',
-        'id',
-        'fieldName',
-        'title',
-        'job',
-        'options',
-        'existingItem',
-        'showRerateOption'
+        "$mdDialog",
+        "DispatchData",
+        "toastrService",
+        "rateJobService",
+        "id",
+        "fieldName",
+        "title",
+        "job",
+        "options",
+        "existingItem",
+        "showRerateOption"
     ];
 
     /**
@@ -42,9 +42,9 @@ class AutoCompleteDialogController {
      * @param {boolean} showRerateOption - Whether to show the rerate option.
      */
     constructor($mdDialog, DispatchData, toastrService, rateJobService, id, fieldName, title, job, options, existingItem, showRerateOption) {
-        this._$mdDialog = $mdDialog;
-        this._dispatchData = DispatchData;
-        this._toastrService = toastrService;
+        this.$mdDialog = $mdDialog;
+        this.dispatchData = DispatchData;
+        this.toastrService = toastrService;
         this._rateJobService = rateJobService;
         this._job = job;
 
@@ -77,9 +77,9 @@ class AutoCompleteDialogController {
     async querySearch(searchTerm) {
         try {
             const url = this.options.searchUrl;
-            return await this._dispatchData.autocompleteSearch(searchTerm, url);
+            return await this.dispatchData.autocompleteSearch(searchTerm, url);
         } catch (error) {
-            this._toastrService.showErrorToast(error.message);
+            this.toastrService.showErrorToast(error.message);
         }
     }
 
@@ -103,7 +103,7 @@ class AutoCompleteDialogController {
 
             if (reRate && !this._job.bulkJob) {
                 const rate = await this._rateJobService.rateJob(this._job);
-                await this._dispatchData
+                await this.dispatchData
                     .updateJobDetail(callData.jobID,
                         callData.field,
                         callData.value,
@@ -113,11 +113,11 @@ class AutoCompleteDialogController {
                         this._job.preBook);
             } else {
                 this._job.bulkJob ?
-                    await this._dispatchData.updateBulkJobDetail(this._job.id, callData.field, callData.value, this._job.charge, FirstName, ContactID) :
-                    await this._dispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, this._job.charge, FirstName, ContactID);
+                    await this.dispatchData.updateBulkJobDetail(this._job.id, callData.field, callData.value, this._job.charge, FirstName, ContactID) :
+                    await this.dispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, this._job.charge, FirstName, ContactID);
             }
         } catch (error) {
-            this._toastrService.showErrorToast(error.message);
+            this.toastrService.showErrorToast(error.message);
         } finally {
             this.isLoading = false;
 
@@ -135,8 +135,8 @@ class AutoCompleteDialogController {
                 this._job.clientName = selectedOption.text;
             }
 
-            this._toastrService.showSuccessToast(this.title + " successfully updated to " + selectedOption.text);
-            this._$mdDialog.hide();
+            this.toastrService.showSuccessToast(this.title + " successfully updated to " + selectedOption.text);
+            this.$mdDialog.hide();
         }
     }
 
@@ -144,8 +144,8 @@ class AutoCompleteDialogController {
      * Cancel the dialog.
      */
     cancel() {
-        this._$mdDialog.cancel();
+        this.$mdDialog.cancel();
     }
 }
 
-angular.module('uDispatch').controller('AutoCompleteDialogController', AutoCompleteDialogController);
+angular.module("uDispatch").controller("AutoCompleteDialogController", AutoCompleteDialogController);

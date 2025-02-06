@@ -1,12 +1,15 @@
+import app from "../app";
+
 class JobDetailService {
-    constructor(DispatchData, $mdDialog, toastrService, rateJobService, $document, moment, versionUrl, APP_CONFIG, $rootScope) {
+    static $inject = ["$http", "$mdDialog", "toastrService", "rateJobService", "$document", "moment", "APP_CONFIG", "$rootScope"];
+
+    constructor(DispatchData, $mdDialog, toastrService, rateJobService, $document, moment, APP_CONFIG, $rootScope) {
         this.DispatchData = DispatchData;
         this.$mdDialog = $mdDialog;
         this.toastrService = toastrService;
         this.rateJobService = rateJobService;
         this.$document = $document;
         this.moment = moment;
-        this.versionUrl = versionUrl;
         this.APP_CONFIG = APP_CONFIG;
         this.$rootScope = $rootScope;
 
@@ -209,38 +212,38 @@ class JobDetailService {
      * @param {Job} job
      */
     async displayPriceBreakdown($event, job) {
-        console.log('Starting displayPriceBreakdown for job:', job.id);
+        console.log("Starting displayPriceBreakdown for job:", job.id);
         $event.stopPropagation();
 
         /**
          * @param {string} description
          */
         const showDialog = async (description) => {
-            console.log('Opening price breakdown dialog');
+            console.log("Opening price breakdown dialog");
             return this.$mdDialog.show(this.$mdDialog.alert()
                 .parent(this.$document.body)
                 .clickOutsideToClose(true)
-                .title('Charge Information')
+                .title("Charge Information")
                 .htmlContent(description)
-                .ariaLabel('Alert Dialog')
-                .ok('OK'));
+                .ariaLabel("Alert Dialog")
+                .ok("OK"));
         };
 
         try {
-            console.log('Fetching price breakdown data for job:', job.id);
+            console.log("Fetching price breakdown data for job:", job.id);
             const data = await this.DispatchData.getPriceBreakdown(job.id);
-            console.log('Received price breakdown data:', data);
+            console.log("Received price breakdown data:", data);
 
-            console.log('Formatting price breakdown');
+            console.log("Formatting price breakdown");
             const formattedBreakdown = this.formatPriceBreakDown(data);
-            console.log('Formatted breakdown:', formattedBreakdown);
+            console.log("Formatted breakdown:", formattedBreakdown);
 
-            console.log('Showing dialog with formatted breakdown');
+            console.log("Showing dialog with formatted breakdown");
             await showDialog(formattedBreakdown);
-            console.log('Dialog closed successfully');
+            console.log("Dialog closed successfully");
         } catch (error) {
-            console.error('Error in displayPriceBreakdown:', error);
-            this.toastrService.showErrorToast('An error occurred while fetching the price breakdown. Please try again.');
+            console.error("Error in displayPriceBreakdown:", error);
+            this.toastrService.showErrorToast("An error occurred while fetching the price breakdown. Please try again.");
         }
     }
 
@@ -249,7 +252,7 @@ class JobDetailService {
      * @returns {string} Formatted price breakdown string with HTML line breaks
      */
     formatPriceBreakDown(data) {
-        let breakdownString = '';
+        let breakdownString = "";
         let total = 0;
 
         data.forEach(item => {
@@ -271,9 +274,9 @@ class JobDetailService {
     async showNotesDialog($event, job, title, fieldName, id = "editField") {
         try {
             await this.$mdDialog.show({
-                controller: 'AddNotesDialogController',
+                controller: "AddNotesDialogController",
                 controllerAs: "ctrl",
-                templateUrl: this.versionUrl("app/components/dialogs/add-notes-dialog/add-notes-dialog.html"),
+                templateUrl: "app/components/dialogs/add-notes-dialog/add-notes-dialog.html",
                 parent: this.$document.body,
                 targetEvent: $event,
                 clickOutsideToClose: true,
@@ -305,11 +308,11 @@ class JobDetailService {
     async showEditDateDialog($event, job, title, fieldName, date, id = "editForm") {
         try {
             await this.$mdDialog.show({
-                controller: 'EditDateTimeDialogController',
-                controllerAs: 'ctrl',
+                controller: "EditDateTimeDialogController",
+                controllerAs: "ctrl",
                 parent: this.$document.body,
                 targetEvent: $event,
-                templateUrl: this.versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
+                templateUrl: "app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html",
                 clickOutsideToClose: false,
                 fullscreen: true,
                 locals: {
@@ -347,11 +350,11 @@ class JobDetailService {
 
         try {
             await this.$mdDialog.show({
-                controller: 'EditDateTimeDialogController',
-                controllerAs: 'ctrl',
+                controller: "EditDateTimeDialogController",
+                controllerAs: "ctrl",
                 parent: this.$document.body,
                 targetEvent: $event,
-                templateUrl: this.versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
+                templateUrl: "app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html",
                 clickOutsideToClose: false,
                 fullscreen: true,
                 locals: {
@@ -395,11 +398,11 @@ class JobDetailService {
     async showEditDateTimeDialog($event, job, title, fieldName, datetime, id = "editForm") {
         try {
             await this.$mdDialog.show({
-                controller: 'EditDateTimeDialogController',
-                controllerAs: 'ctrl',
+                controller: "EditDateTimeDialogController",
+                controllerAs: "ctrl",
                 parent: this.$document.body,
                 targetEvent: $event,
-                templateUrl: this.versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
+                templateUrl: "app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html",
                 clickOutsideToClose: false,
                 fullscreen: true,
                 locals: {
@@ -442,8 +445,8 @@ class JobDetailService {
             .initialValue(initialValue)
             .targetEvent($event)
             .required(true)
-            .ok('Save')
-            .cancel('Cancel');
+            .ok("Save")
+            .cancel("Cancel");
 
         try {
             // Get new value
@@ -468,7 +471,7 @@ class JobDetailService {
      * @param {Job} job
      */
     async editClientCode($event, job) {
-        await this.showEditPrompt($event, job, 'Edit Client Code', 'Client Code...', 'client code', job.client, 'ClientCode');
+        await this.showEditPrompt($event, job, "Edit Client Code", "Client Code...", "client code", job.client, "ClientCode");
     }
 
     /**
@@ -476,7 +479,7 @@ class JobDetailService {
      * @param {Job} job
      */
     async editItems($event, job) {
-        await this.showEditPrompt($event, job, 'Edit Items', 'Items...', 'items', job.items, 'Items');
+        await this.showEditPrompt($event, job, "Edit Items", "Items...", "items", job.items, "Items");
     }
 
     /**
@@ -484,7 +487,7 @@ class JobDetailService {
      * @param {Job} job
      */
     async editJobToPhone($event, job) {
-        return this.showEditPrompt($event, job, 'Edit To Contact Phone', 'To Contact Phone...', 'to contact phone', job.toContactPhone, 'ToContactPhone');
+        return this.showEditPrompt($event, job, "Edit To Contact Phone", "To Contact Phone...", "to contact phone", job.toContactPhone, "ToContactPhone");
     }
 
     /**
@@ -492,7 +495,7 @@ class JobDetailService {
      * @param {Job} job
      */
     async editJobFromPhone($event, job) {
-        await this.showEditPrompt($event, job, 'Edit From Contact Phone', 'From Contact Phone...', 'from contact phone', job.fromContactNumber, 'FromContactPhone');
+        await this.showEditPrompt($event, job, "Edit From Contact Phone", "From Contact Phone...", "from contact phone", job.fromContactNumber, "FromContactPhone");
     }
 
     /**
@@ -500,7 +503,7 @@ class JobDetailService {
      * @param {Job} job
      */
     async editToJobContact($event, job) {
-        await this.showEditPrompt($event, job, 'Edit To Contact Name', 'To Contact Name...', 'to contact name', job.deliverToContact, 'DeliverToContact');
+        await this.showEditPrompt($event, job, "Edit To Contact Name", "To Contact Name...", "to contact name", job.deliverToContact, "DeliverToContact");
     }
 
     /**
@@ -509,7 +512,7 @@ class JobDetailService {
      */
 
     async editPodName($event, job) {
-        await this.showEditPrompt($event, job, 'Edit POD Name', 'POD Name...', 'pod name', job.podName, 'PODName');
+        await this.showEditPrompt($event, job, "Edit POD Name", "POD Name...", "pod name", job.podName, "PODName");
     }
 
     /**
@@ -517,7 +520,7 @@ class JobDetailService {
      * @param {Job} job
      */
     async editFromJobContact($event, job) {
-        await this.showEditPrompt($event, job, 'Edit From Contact Name', 'From Contact Name...', 'from contact name', job.fromContactName, 'FromContactName');
+        await this.showEditPrompt($event, job, "Edit From Contact Name", "From Contact Name...", "from contact name", job.fromContactName, "FromContactName");
     }
 
     /**
@@ -525,7 +528,7 @@ class JobDetailService {
      * @param {Job} job
      */
     async editJobWeight($event, job) {
-        await this.showEditPrompt($event, job, 'Edit Weight', 'Job Weight...', 'job weight', job.weight, 'Weight');
+        await this.showEditPrompt($event, job, "Edit Weight", "Job Weight...", "job weight", job.weight, "Weight");
     }
 
     /**
@@ -533,7 +536,7 @@ class JobDetailService {
      * @param {Job} job
      */
     async editAmount($event, job) {
-        await this.showEditPrompt($event, job, 'Amount', 'Amount...', 'job weight', job.charge, 'Amount');
+        await this.showEditPrompt($event, job, "Amount", "Amount...", "job weight", job.charge, "Amount");
     }
 
     /**
@@ -543,9 +546,9 @@ class JobDetailService {
      */
     async editRef($event, job, isRefA) {
         if (isRefA) {
-            await this.showEditPrompt($event, job, 'Edit RefA', 'RefA...', 'refa', job.refA, 'RefA');
+            await this.showEditPrompt($event, job, "Edit RefA", "RefA...", "refa", job.refA, "RefA");
         } else {
-            await this.showEditPrompt($event, job, 'Edit RefA', 'RefB...', 'refb', job.refB, 'RefB');
+            await this.showEditPrompt($event, job, "Edit RefA", "RefB...", "refb", job.refB, "RefB");
         }
     }
 
@@ -555,7 +558,7 @@ class JobDetailService {
      * @param {Job} job
      */
     async editOurRef($event, job) {
-        await this.showEditPrompt($event, job, 'Edit Our Reference', 'Our Reference...', 'our reference', job.ourRef, 'OurRef');
+        await this.showEditPrompt($event, job, "Edit Our Reference", "Our Reference...", "our reference", job.ourRef, "OurRef");
     }
 
     /**
@@ -563,7 +566,7 @@ class JobDetailService {
      * @param {Job} job
      */
     async editTrackingMobile($event, job) {
-        await this.showEditPrompt($event, job, 'Edit Tracking Mobile', 'Tracking Mobile...', 'tracking mobile', job.trackingMobile, 'TrackingMobile');
+        await this.showEditPrompt($event, job, "Edit Tracking Mobile", "Tracking Mobile...", "tracking mobile", job.trackingMobile, "TrackingMobile");
     }
 
     /**
@@ -571,7 +574,7 @@ class JobDetailService {
      * @param {Job} job
      */
     async editTrackingEmail($event, job) {
-        await this.showEditPrompt($event, job, 'Edit Tracking Email', 'Tracking Email...', 'tracking email', job.trackingEmail, 'TrackingEmail');
+        await this.showEditPrompt($event, job, "Edit Tracking Email", "Tracking Email...", "tracking email", job.trackingEmail, "TrackingEmail");
     }
 
     /**
@@ -583,11 +586,11 @@ class JobDetailService {
         const jobId = currentJob.id;
 
         await this.$mdDialog.show({
-            controller: 'EditParcelDimensionsDialogController',
-            controllerAs: 'ctrl',
+            controller: "EditParcelDimensionsDialogController",
+            controllerAs: "ctrl",
             parent: this.$document.body,
             targetEvent: $event,
-            templateUrl: this.versionUrl("app/components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.html"),
+            templateUrl: "app/components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -611,17 +614,17 @@ class JobDetailService {
                 const rate = await this.rateJobService.rateJob(job);
 
                 // Ensure rate is decimal
-                const numericRate = parseFloat(rate.replace(/[^\d.-]/g, ''));
+                const numericRate = parseFloat(rate.replace(/[^\d.-]/g, ""));
                 if (isNaN(numericRate)) {
-                    console.error('Failed to convert rate to a number:', rate);
+                    console.error("Failed to convert rate to a number:", rate);
                 }
 
                 await this.DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, numericRate, FirstName, ContactID, job.preBook);
             } else {
                 // Ensure rate is decimal
-                const numericRate = parseFloat(job.charge.replace(/[^\d.-]/g, ''));
+                const numericRate = parseFloat(job.charge.replace(/[^\d.-]/g, ""));
                 if (isNaN(numericRate)) {
-                    console.error('Failed to convert rate to a number:', rate);
+                    console.error("Failed to convert rate to a number:", rate);
                 }
 
                 if (job.bulkJob) {
@@ -631,8 +634,8 @@ class JobDetailService {
                 }
             }
         } catch (error) {
-            console.error('Error updating job:', error);
-            this.toastrService.showErrorToast('Failed to update job. Please try again.');
+            console.error("Error updating job:", error);
+            this.toastrService.showErrorToast("Failed to update job. Please try again.");
             throw error;
         }
     }
@@ -650,7 +653,7 @@ class JobDetailService {
             const result = await this.showAddressDialog($event, currentJob, isDeliveryAddress);
             return this._processAddressUpdate(currentJob, field, result, isDeliveryAddress);
         } catch (error) {
-            console.log('Error updating GPS:', error);
+            console.log("Error updating GPS:", error);
         }
     }
 
@@ -664,11 +667,11 @@ class JobDetailService {
         const pickSuburbs = await this.DispatchData.getSuburbList();
 
         return this.$mdDialog.show({
-            controller: 'EditAddressDialogController',
-            controllerAs: 'ctrl',
+            controller: "EditAddressDialogController",
+            controllerAs: "ctrl",
             parent: this.$document.body,
             targetEvent: event,
-            templateUrl: this.versionUrl("app/components/dialogs/edit-address-dialog/edit-address-dialog.html"),
+            templateUrl: "app/components/dialogs/edit-address-dialog/edit-address-dialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -688,7 +691,7 @@ class JobDetailService {
      * @param {boolean} isDeliveryAddress
      */
     async _processAddressUpdate(job, field, addressResult, isDeliveryAddress) {
-        console.log('isDeliveryAddress: ' + isDeliveryAddress);
+        console.log(`isDeliveryAddress: ${isDeliveryAddress}`);
 
         // Update job by address format
         const updatedJob = this.isUsCustomer ? this._updateJobAddressUs(job, addressResult, isDeliveryAddress) : this._updateJobAddressNz(job, addressResult, isDeliveryAddress);
@@ -709,9 +712,9 @@ class JobDetailService {
      * @param {boolean} isDeliveryAddress
      */
     _updateJobAddressNz(job, result, isDeliveryAddress) {
-        const addressField = isDeliveryAddress ? 'toAddress' : 'from';
-        const suburbIdField = isDeliveryAddress ? 'toSuburbId' : 'fromSuburbId';
-        const suburbField = isDeliveryAddress ? 'toSuburbName' : 'fromSuburbName';
+        const addressField = isDeliveryAddress ? "toAddress" : "from";
+        const suburbIdField = isDeliveryAddress ? "toSuburbId" : "fromSuburbId";
+        const suburbField = isDeliveryAddress ? "toSuburbName" : "fromSuburbName";
 
         job[addressField] = result.addressData.address;
         job[suburbIdField] = result.addressData.suburbId;
@@ -728,8 +731,8 @@ class JobDetailService {
      * @private
      */
     _updateJobAddressUs(job, addressResult, isDeliveryAddress) {
-        const addressField = isDeliveryAddress ? 'deliveryAddress' : 'pickupAddress';
-        console.log('Address Field: ' + addressField);
+        const addressField = isDeliveryAddress ? "deliveryAddress" : "pickupAddress";
+        console.log(`Address Field: ${addressField}`);
 
         job[addressField] = addressResult.addressData;
         return job;
@@ -746,7 +749,7 @@ class JobDetailService {
         job.charge = await this.rateJobService.rateJob(job);
         const rate = Number(job.charge.replace(/[^0-9.-]+/g, ""));
 
-        console.log('Job Rate: ' + rate);
+        console.log(`Job Rate: ${rate}`);
 
         if (isDeliveryAddress) {
             await this.DispatchData.updateDeliveryAddress(job.id, rate, FirstName, job.preBook, addressResult.addressData);
@@ -762,7 +765,7 @@ class JobDetailService {
     async unlockJob(job) {
         try {
             const callData = {
-                "call": "updateDetailField", "field": 'Locked', "value": false, "jobID": job.id
+                "call": "updateDetailField", "field": "Locked", "value": false, "jobID": job.id
             };
 
             await this.updateField(false, job, callData);
@@ -770,7 +773,7 @@ class JobDetailService {
             this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
-            console.error('An error occured unlocking the job.');
+            console.error("An error occured unlocking the job.");
         }
     }
 
@@ -781,7 +784,7 @@ class JobDetailService {
     async lockJob(job) {
         try {
             const callData = {
-                "call": "updateDetailField", "field": 'Locked', "value": true, "jobID": job.id
+                "call": "updateDetailField", "field": "Locked", "value": true, "jobID": job.id
             };
 
             await this.updateField(false, job, callData);
@@ -789,7 +792,7 @@ class JobDetailService {
             this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
-            console.error('An error occured locking the job.');
+            console.error("An error occured locking the job.");
         }
     }
 
@@ -816,7 +819,7 @@ class JobDetailService {
         const vanOkValue = !job.vanOK;
         try {
             const callData = {
-                "call": "updateDetailField", "field": 'VanOK', "value": vanOkValue, "jobID": job.id
+                "call": "updateDetailField", "field": "VanOK", "value": vanOkValue, "jobID": job.id
             };
 
             await this.updateField(true, job, callData);
@@ -835,7 +838,7 @@ class JobDetailService {
 
         try {
             const callData = {
-                "call": "updateDetailField", "field": 'Van', "value": vanValue, "jobID": job.id
+                "call": "updateDetailField", "field": "Van", "value": vanValue, "jobID": job.id
             };
 
             await this.updateField(true, job, callData);
@@ -889,7 +892,7 @@ class JobDetailService {
      * @param {Job} job - The job to update
      */
     async pedalClick(job) {
-        await this.toggleJobProperty(job, 'pedal');
+        await this.toggleJobProperty(job, "pedal");
     }
 
     /**
@@ -897,7 +900,7 @@ class JobDetailService {
      * @param {Job} job - The job to update
      */
     async truckClick(job) {
-        await this.toggleJobProperty(job, 'truck');
+        await this.toggleJobProperty(job, "truck");
     }
 
     /**
@@ -905,7 +908,7 @@ class JobDetailService {
      * @param {Job} job - The job to update
      */
     async directClick(job) {
-        await this.toggleJobProperty(job, 'direct');
+        await this.toggleJobProperty(job, "direct");
     }
 
     /**
@@ -913,7 +916,7 @@ class JobDetailService {
      * @param {Job} job - The job to update
      */
     async attentionClick(job) {
-        await this.toggleJobProperty(job, 'attention');
+        await this.toggleJobProperty(job, "attention");
     }
 
     /**
@@ -927,7 +930,7 @@ class JobDetailService {
 
             // Prepare the call data for updating the reprice status
             const callData = {
-                "call": "updateDetailField", "field": 'Reprice', "value": !job.reprice, "jobID": job.id
+                "call": "updateDetailField", "field": "Reprice", "value": !job.reprice, "jobID": job.id
             };
 
             // Update the job
@@ -947,8 +950,8 @@ class JobDetailService {
             this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
-            console.error('Error in repriceClick:', error);
-            this.toastrService.showErrorToast('Failed to update reprice status. Please try again.');
+            console.error("Error in repriceClick:", error);
+            this.toastrService.showErrorToast("Failed to update reprice status. Please try again.");
         }
     }
 
@@ -957,7 +960,7 @@ class JobDetailService {
      * @param {Job} job - The job to update
      */
     async preBookReturnClick(job) {
-        await this.toggleJobProperty(job, 'return');
+        await this.toggleJobProperty(job, "return");
     }
 
     /**
@@ -965,7 +968,7 @@ class JobDetailService {
      * @param {Job} job - The job to update
      */
     async oneOffClick(job) {
-        await this.toggleJobProperty(job, 'oneOff');
+        await this.toggleJobProperty(job, "oneOff");
     }
 
     /**
@@ -973,7 +976,7 @@ class JobDetailService {
      * @param {Job} job - The job to update
      */
     async activeClick(job) {
-        await this.toggleJobProperty(job, 'Active');
+        await this.toggleJobProperty(job, "Active");
     }
 
     /**
@@ -981,7 +984,7 @@ class JobDetailService {
      * @param {Job} job - The job to update
      */
     async voidClick(job) {
-        await this.toggleJobProperty(job, 'Void');
+        await this.toggleJobProperty(job, "Void");
     }
 
     /**
@@ -1017,17 +1020,17 @@ class JobDetailService {
      * @returns {Promise} A promise that resolves when the dialog is closed
      */
     showMissingInfoDialog($event, job) {
-        let message = '';
+        let message = "";
         if (!job.completedTime) {
-            message = 'You must set completed time (POD Time) first';
+            message = "You must set completed time (POD Time) first";
         } else if (!job.podName) {
-            message = 'You must set POD Name first';
+            message = "You must set POD Name first";
         }
 
         const confirm = this.$mdDialog.confirm()
             .title(message)
             .targetEvent($event)
-            .ok('OK');
+            .ok("OK");
 
         return this.$mdDialog.show(confirm);
     }
@@ -1037,7 +1040,7 @@ class JobDetailService {
      * @param {Job} job - The job to update
      */
     async deliveredClick(job) {
-        await this.toggleJobProperty(job, 'done');
+        await this.toggleJobProperty(job, "done");
     }
 
     /**
@@ -1045,7 +1048,7 @@ class JobDetailService {
      * @param {Job} job - The job to update
      */
     async airportOnlyClick(job) {
-        await this.toggleJobProperty(job, 'airportOnly');
+        await this.toggleJobProperty(job, "airportOnly");
     }
 
     /**
@@ -1107,11 +1110,11 @@ class JobDetailService {
 
         try {
             await this.$mdDialog.show({
-                controller: 'SelectDialogController',
-                controllerAs: 'ctrl',
+                controller: "SelectDialogController",
+                controllerAs: "ctrl",
                 parent: this.$document.body,
                 targetEvent: $event,
-                templateUrl: this.versionUrl('app/components/dialogs/select-dialog/select-dialog.html'),
+                templateUrl: "app/components/dialogs/select-dialog/select-dialog.html",
                 clickOutsideToClose: true,
                 fullscreen: true,
                 locals: {
@@ -1209,11 +1212,11 @@ class JobDetailService {
      */
     async jobTypeClick($event, job) {
         const data = [{
-            id: 1, text: 'Pickup'
+            id: 1, text: "Pickup"
         }, {
-            id: 2, text: 'Delivery'
+            id: 2, text: "Delivery"
         }, {
-            id: 3, text: '3rd-Party'
+            id: 3, text: "3rd-Party"
         }];
 
         const jobTypeDes = this.getJobTypeDescription(job.jobType);
@@ -1238,11 +1241,11 @@ class JobDetailService {
 
         try {
             await this.$mdDialog.show({
-                controller: 'AutoCompleteDialogController',
-                controllerAs: 'ctrl',
+                controller: "AutoCompleteDialogController",
+                controllerAs: "ctrl",
                 parent: this.$document.body,
                 targetEvent: $event,
-                templateUrl: this.versionUrl('app/components/dialogs/auto-complete-dialog/auto-complete-dialog.html'),
+                templateUrl: "app/components/dialogs/auto-complete-dialog/auto-complete-dialog.html",
                 clickOutsideToClose: true,
                 fullscreen: true,
                 locals: {
@@ -1292,13 +1295,13 @@ class JobDetailService {
      */
     async showPalletDialog($event, job, existingPallet = undefined) {
         const isEditing = !!existingPallet;
-        const dialogTitle = isEditing ? 'Edit Pallet' : 'New Pallet';
+        const dialogTitle = isEditing ? "Edit Pallet" : "New Pallet";
 
         try {
             await this.$mdDialog.show({
-                controller: 'PalletDialogController',
+                controller: "PalletDialogController",
                 controllerAs: "ctrl",
-                templateUrl: this.versionUrl("app/components/dialogs/add-pallet-dialog/add-pallet-dialog.html"),
+                templateUrl: "app/components/dialogs/add-pallet-dialog/add-pallet-dialog.html",
                 parent: this.$document.body,
                 targetEvent: $event,
                 clickOutsideToClose: true,
@@ -1340,9 +1343,9 @@ class JobDetailService {
     async _showFeatureInDevelopment() {
         // Show feature in development dialog
         await this.$mdDialog.show({
-            controller: 'FeatureInDevelopmentDialogController',
-            controllerAs: 'ctrl',
-            templateUrl: this.versionUrl('app/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.html'),
+            controller: "FeatureInDevelopmentDialogController",
+            controllerAs: "ctrl",
+            templateUrl: "app/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.html",
             parent: this.$document.body,
             clickOutsideToClose: true,
             bindToController: true
@@ -1362,7 +1365,7 @@ class JobDetailService {
                 this.currentJob = await this.DispatchData.getJobDetail(jobId);
             }
         } catch (error) {
-            console.error('Error refreshing job details:', error);
+            console.error("Error refreshing job details:", error);
             this.toastrService.showErrorToast();
         } finally {
             this.jobDetailLoading = false; // Hide loader
@@ -1371,7 +1374,7 @@ class JobDetailService {
 
     _handleError(error) {
         if (error === undefined) {
-            console.log('User closed dialog');
+            console.log("User closed dialog");
         } else {
             console.error(error);
             this.toastrService.showErrorToast();
@@ -1379,4 +1382,4 @@ class JobDetailService {
     }
 }
 
-angular.module('uDispatch').service('JobDetailService', ["DispatchData", "$mdDialog", "toastrService", "rateJobService", "$document", "moment", "versionUrl", "APP_CONFIG", "$rootScope", (DispatchData, $mdDialog, toastrService, rateJobService, $document, moment, versionUrl, APP_CONFIG, $rootScope) => new JobDetailService(DispatchData, $mdDialog, toastrService, rateJobService, $document, moment, versionUrl, APP_CONFIG, $rootScope)]);
+app.service("JobDetailService", JobDetailService);

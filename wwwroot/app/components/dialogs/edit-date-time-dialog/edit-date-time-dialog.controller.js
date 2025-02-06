@@ -9,7 +9,7 @@ class EditDateTimeDialogController {
      * @static
      * @description List of dependencies to be injected.
      */
-    static $inject = ['$mdDialog', 'toastrService', 'DispatchData', 'moment', 'job', 'title', 'fieldName', 'dateTime', 'id', 'showDate', 'showTime'];
+    static $inject = ["$mdDialog", "toastrService", "DispatchData", "moment", "job", "title", "fieldName", "dateTime", "id", "showDate", "showTime"];
 
     /**
      * @constructor
@@ -43,7 +43,7 @@ class EditDateTimeDialogController {
 
         this.isLoading = false;
         this.message = {
-            hour: 'Hour is required', minute: 'Minute is required',
+            hour: "Hour is required", minute: "Minute is required",
         };
     }
 
@@ -57,7 +57,7 @@ class EditDateTimeDialogController {
         let parsedDate;
 
         if (dateTime === null || dateTime === undefined || isNaN(new Date(dateTime).getTime())) {
-            console.warn('Invalid or null date provided. Using current date/time.');
+            console.warn("Invalid or null date provided. Using current date/time.");
             parsedDate = new Date();
         } else {
             parsedDate = new Date(dateTime);
@@ -134,12 +134,12 @@ class EditDateTimeDialogController {
      */
     async _updateJobDetail(newDateTime) {
         const formattedDateTime = this._formatDateTime(newDateTime);
-        console.log('Formated DateTime: ' + formattedDateTime)
+        console.log(`Formated DateTime: ${formattedDateTime}`)
 
         const callData = {
             "call": "updateDetailField", "field": this.fieldName, "value": formattedDateTime, "jobID": this.job.id
         };
-        console.log('CallData: ' + callData);
+        console.log(`CallData: ${callData}`);
 
         if (this.job.bulkJob) {
             await this.DispatchData.updateBulkJobDetail(this.job.id, callData.field, callData.value, this.job.charge, FirstName, ContactID);
@@ -154,7 +154,7 @@ class EditDateTimeDialogController {
      * @private
      */
     _showMessageAndCloseDialog() {
-        this.toastrService.showSuccessToast("Updated " + this.title);
+        this.toastrService.showSuccessToast(`Updated ${this.title}`);
         this.$mdDialog.hide();
     }
 
@@ -168,7 +168,7 @@ class EditDateTimeDialogController {
     _formatDateTime(dateTime) {
         // Ensure we're working with a valid date
         if (!(dateTime instanceof Date) || isNaN(dateTime.getTime())) {
-            console.warn('Invalid date provided to _formatDateTime');
+            console.warn("Invalid date provided to _formatDateTime");
             return null;
         }
 
@@ -184,4 +184,4 @@ class EditDateTimeDialogController {
     }
 }
 
-angular.module('uDispatch').controller('EditDateTimeDialogController', EditDateTimeDialogController);
+angular.module("uDispatch").controller("EditDateTimeDialogController", EditDateTimeDialogController);

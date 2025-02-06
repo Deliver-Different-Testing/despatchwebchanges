@@ -3,14 +3,11 @@
  * @module CSLayoutService
  */
 class CSLayoutService {
-    /**
-     * Create a CSLayoutService.
-     * @param {Object} $window
-     * @param {Object} $mdDialog
-     */
+    static $inject = ['$window', '$mdDialog'];
+
     constructor($window, $mdDialog) {
-        this._$window = $window;
-        this._$mdDialog = $mdDialog;
+        this.$window = $window;
+        this.$mdDialog = $mdDialog;
 
         // Column width options
         /** @type {string} */
@@ -95,9 +92,9 @@ class CSLayoutService {
      * Initialize the service.
      */
     init() {
-        if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
-            const storedLayouts = this._$window.localStorage.getItem(`layoutsNW-${this._$window.ContactID}`);
-            const storedMapZoom = this._$window.localStorage.getItem(`mapZoomCS-${this._$window.ContactID}`);
+        if (this.$window.Modernizr && this.$window.Modernizr.localstorage) {
+            const storedLayouts = this.$window.localStorage.getItem(`layoutsNW-${this.$window.ContactID}`);
+            const storedMapZoom = this.$window.localStorage.getItem(`mapZoomCS-${this.$window.ContactID}`);
 
             if (storedLayouts) {
                 try {
@@ -133,8 +130,8 @@ class CSLayoutService {
      * @param {string} layoutName - The name of the layout to set as last active.
      */
     setLastActiveLayoutName(layoutName) {
-        if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
-            this._$window.localStorage.setItem(`lastActiveLayoutCS-${this._$window.ContactID}`, layoutName);
+        if (this.$window.Modernizr && this.$window.Modernizr.localstorage) {
+            this.$window.localStorage.setItem(`lastActiveLayoutCS-${this.$window.ContactID}`, layoutName);
         }
     }
 
@@ -176,8 +173,8 @@ class CSLayoutService {
      */
     setMapZoom(newMapZoom) {
         this.mapZoom = newMapZoom;
-        if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
-            this._$window.localStorage.setItem(`mapZoomCS-${this._$window.ContactID}`, JSON.Stringify(this.mapZoom));
+        if (this.$window.Modernizr && this.$window.Modernizr.localstorage) {
+            this.$window.localStorage.setItem(`mapZoomCS-${this.$window.ContactID}`, JSON.Stringify(this.mapZoom));
         }
     }
 
@@ -186,7 +183,7 @@ class CSLayoutService {
      * @returns {string} The user's first name.
      */
     getUserName() {
-        return this._$window.FirstName;
+        return this.$window.FirstName;
     }
 
 
@@ -196,7 +193,7 @@ class CSLayoutService {
      * @returns {Promise<void>}
      */
     async deleteLayout(index) {
-        const deleteConfirm = this._$mdDialog.confirm()
+        const deleteConfirm = this.$mdDialog.confirm()
             .title('Delete Layout?')
             .textContent('Are you sure you would like to delete this layout?')
             .ariaLabel('delete layout')
@@ -204,11 +201,11 @@ class CSLayoutService {
             .cancel('Cancel');
 
         try {
-            await this._$mdDialog.show(deleteConfirm);
+            await this.$mdDialog.show(deleteConfirm);
 
             this.layoutsObject.splice(index, 1);
-            if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
-                this._$window.localStorage.setItem(`layoutsCS-${this._$window.ContactID}`, JSON.Stringify(this.layoutsObject));
+            if (this.$window.Modernizr && this.$window.Modernizr.localstorage) {
+                this.$window.localStorage.setItem(`layoutsCS-${this.$window.ContactID}`, JSON.Stringify(this.layoutsObject));
             }
         } catch (error) {
             console.log("Delete layout canceled!");
@@ -237,7 +234,7 @@ class CSLayoutService {
      * @returns {Promise<Object>} A promise that resolves with the saved layout information.
      */
     async saveLayout(currentLayout) {
-        const saveLayoutPrompt = this._$mdDialog.prompt()
+        const saveLayoutPrompt = this.$mdDialog.prompt()
             .title('Save Layout')
             .textContent('Please enter a name for this layout.')
             .ariaLabel('Layout name')
@@ -246,14 +243,14 @@ class CSLayoutService {
             .cancel('Cancel');
 
         try {
-            const layoutName = await this._$mdDialog.show(saveLayoutPrompt);
+            const layoutName = await this.$mdDialog.show(saveLayoutPrompt);
 
-            if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
+            if (this.$window.Modernizr && this.$window.Modernizr.localstorage) {
                 this.layoutsObject = this.layoutsObject.concat({
                     name: layoutName, layout: angular.copy(currentLayout)
                 });
 
-                this._$window.localStorage.setItem(`layoutsCS-${this._$window.ContactID}`, JSON.Stringify(this.layoutsObject));
+                this.$window.localStorage.setItem(`layoutsCS-${this.$window.ContactID}`, JSON.Stringify(this.layoutsObject));
 
                 this.setLastActiveLayoutName(layoutName);
             }

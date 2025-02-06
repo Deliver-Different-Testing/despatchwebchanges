@@ -1,6 +1,29 @@
-﻿@using Microsoft.AspNetCore.Hosting
-@using Microsoft.Extensions.Hosting
-@inject IWebHostEnvironment WebHostEnvironment
+﻿@using System.IO
+@using System.Text.Json
+@{
+    Dictionary<string, string> manifest;
+    try
+    {
+        var manifestPath = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "dist", "manifest.json");
+        var manifestContent = await File.ReadAllTextAsync(manifestPath);
+        manifest = JsonSerializer.Deserialize<Dictionary<string, string>>(manifestContent);
+    }
+    catch (Exception ex)
+    {
+        // Fallback to non-hashed filenames if manifest cannot be read
+        manifest = new Dictionary<string, string>
+                {
+                    ["bundle.js"] = "bundle.js",
+                    ["styles.css"] = "styles.css"
+                };
+        // Log the error for debugging
+        await Console.Error.WriteLineAsync($"Error reading manifest: {ex.Message}");
+    }
+
+    var bundleFile = manifest["bundle.js"];
+    var stylesFile = manifest["styles.css"];
+}
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -27,7 +50,6 @@
     </script>
 
     @* Material *@
-    <link href="/lib/ng-material-floating-button/mfb/dist/mfb.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="lib/material-time-picker/md-time-picker.css">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-grid/4.12.7/ui-grid.min.css"
@@ -51,6 +73,8 @@
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
           rel="stylesheet">
 
+    <link rel="stylesheet" href="/dist/@stylesFile" />
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css"
           integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
@@ -64,30 +88,13 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/leaflet.css" rel="stylesheet" />
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/octicons/2.1.2/octicons.css">
 
-    <environment include="Development">
-        <link rel="stylesheet" href="~/css/udispatch.css" asp-append-version="true" />
-        <link rel="stylesheet" href="~/css/material3.css" asp-append-version="true" />
-        <link rel="stylesheet" href="~/css/toasts.css" asp-append-version="true" />
-        <link rel="stylesheet" href="~/css/promiseButton.css" asp-append-version="true" />
-    </environment>
-    <environment exclude="Development">
-        <link rel="stylesheet" href="~/css/udispatch.min.css" asp-append-version="true" />
-        <link rel="stylesheet" href="~/css/material3.min.css" asp-append-version="true" />
-        <link rel="stylesheet" href="~/css/toasts.min.css" asp-append-version="true" />
-        <link rel="stylesheet" href="~/css/promiseButton.min.css" asp-append-version="true" />
-    </environment>
-
     <!-- My CSS -->
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/angular-resizable/1.2.0/angular-resizable.min.css"
           integrity="sha512-OncwQ0Lmp3hEoPCJODdMTZg/9Du3lgSUKZI2bu5OE2EMxdxLMe17hdvJ2TGGOImPQgYJB1Ej6kKfxdMPuPh4Xw=="
           crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="lib/hotkeys/hotkeys.min.css">
-    <link rel="stylesheet" href="lib/autocomplete/angular-auto-complete.css">
-
-
-
 </head>
+
 <body ng-app="uDispatch">
 
     @RenderBody()
@@ -178,67 +185,8 @@
             integrity="sha512-z+sBc2xakvN/ch4Ik9ljGFYinKUjdyOw4PjB02Myt109VhrC56jef4x7mHJo/LOw17e4z61wvg00QAroiIL3nQ=="
             crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-    @{
-        var isDevelopment = WebHostEnvironment.IsDevelopment();
-        var scripts = new[]
-        {
-    "dist/app.js",
-    "dist/version.js",
-    "dist/materialTheme.js",
-    "dist/routes.js",
-    "dist/filters.js",
-    "dist/services/config.service.js",
-    "dist/services/dispatch.service.js",
-    "dist/services/job-detail.service.js",
-    "dist/services/toastr.service.js",
-    "dist/services/loading.service.js",
-    "dist/services/greeting.service.js",
-    "dist/services/rate-job.service.js",
-    "dist/services/dispatch-job.service.js",
-    "dist/services/getUsStates.service.js",
-    "dist/services/open-job-dispatch.service.js",
-    "dist/components/common/side-nav/side-nav.directive.js",
-    "dist/components/common/dispatch-map/dispatch-map.directive.js",
-    "dist/components/home/homeControl.js",
-    "dist/components/home/services/job-table.service.js",
-    "dist/components/Nationwide/services/nationwide-layout.service.js",
-    "dist/components/Nationwide/nationwideService.js",
-    "dist/components/Nationwide/nationwideControl.js",
-    "dist/components/CS/services/cs-layout.service.js",
-    "dist/components/CS/csService.js",
-    "dist/components/CS/csControl.js",
-    "dist/components/prebooks/prebookService.js",
-    "dist/components/prebooks/prebookControl.js",
-    "dist/components/overview/overview.controller.js",
-    "dist/components/overview/overview.service.js",
-    "dist/components/overview/services/overview-filters.service.js",
-    "dist/components/overview/mega-map/mega-map.controller.js",
-    "dist/components/overview/open-jobs/open-jobs.controller.js",
-    "dist/components/dialogs/edit-address-dialog/edit-address-dialog.controller.js",
-    "dist/components/dialogs/auto-complete-dialog/auto-complete-dialog.controller.js",
-    "dist/components/dialogs/send-message-dialog/send-message-dialog.controller.js",
-    "dist/components/dialogs/select-dialog/select-dialog.controller.js",
-    "dist/components/dialogs/add-notes-dialog/add-notes-dialog.controller.js",
-    "dist/components/dialogs/create-job-dialog/create-job-dialog.controller.js",
-    "dist/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.js",
-    "dist/components/dialogs/add-pallet-dialog/add-pallet-dialog.Controller.js",
-    "dist/components/dialogs/add-event-dialog/add-event-dialog.controller.js",
-    "dist/components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.controller.js",
-    "dist/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.controller.js",
-    "dist/components/dialogs/additional-services-dialog/additional-services-dialog.controller.js",
-    "dist/components/dialogs/job-file-upload-dialog/job-file-upload.controller.js",
-    "dist/components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.controller.js",
-    "dist/components/dialogs/edit-parcel-dimensions-dialog/parcel-visualization.directive.js",
-    "dist/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.controller.js",
-    "dist/components/dialogs/date-range-dialog/date-range-dialog.controller.js",
-    "dist/components/dialogs/map-dialog/map-dialog.controller.js"
-    };
-        foreach (var script in scripts)
-        {
-            var src = isDevelopment ? script : script?.Replace(".js", ".min.js");
-            <script src="@src" asp-append-version="true"></script>
-        }
-    }
-    }
+    @* Bundled Scripts*@
+    <script src="/dist/@bundleFile"></script>
+
 </body>
 </html>

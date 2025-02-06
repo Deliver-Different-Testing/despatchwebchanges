@@ -1,15 +1,9 @@
-/**
- * @fileoverview Controller for the Nationwide dispatch system.
- * @module NationwideControl
- */
-angular.module("uDispatch").controller("NationwideControl",
-    ["$scope", 'JobDetailService', "NWData", "$state", "$filter", "hotkeys",
-        "$timeout", "greetingService", "$mdDialog", "$document", "toastrService", "DispatchData",
-        "moment", "versionUrl", "$mdSidenav", "AppPages", "APP_CONFIG", "$mdEditDialog", "NationwideLayoutService",
-        "$mdMenu", "dispatchJobService",
-        ($scope, jdSvc, NWData, $state, $filter, hotkeys, $timeout, greetingService,
-         $mdDialog, $document, toastrService, DispatchData, moment, versionUrl, $mdSidenav,
-         AppPages, APP_CONFIG, $mdEditDialog, LayoutService, $mdMenu, dispatchJobService) => {
+import app from "../../app";
+
+function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $timeout,
+    greetingService, $mdDialog, $document, toastrService, DispatchData, moment,
+    $mdSidenav, AppPages, APP_CONFIG, $mdEditDialog, LayoutService, $mdMenu,
+    dispatchJobService) {
     $scope.jdSvc = jdSvc;
 
     const JOB_DATA_TYPE = {
@@ -167,48 +161,55 @@ angular.module("uDispatch").controller("NationwideControl",
         /** @type {boolean} */
         $scope.showChat = false;
         $scope.chatBox = "";
+
         $scope.boxes = {
             "jobsList": {
                 "title": "New Jobs",
                 "icon": "new_releases",
-                "templateUrl": versionUrl("app/components/Nationwide/partials/jobList.html"),
+                "templateUrl": "app/components/Nationwide/partials/jobList.html",
                 "showSearch": 1,
                 "showRefresh": 1
-            }, "jobsListPOD": {
+            },
+            "jobsListPOD": {
                 "title": "Awaiting POD",
                 "icon": "pending_actions",
-                "templateUrl": versionUrl("app/components/Nationwide/partials/jobListPOD.html"),
+                "templateUrl": "app/components/Nationwide/partials/jobListPOD.html",
                 "showSearch": 1,
                 "showRefresh": 1
-            }, "jobsListDelivery": {
+            },
+            "jobsListDelivery": {
                 "title": "Action Required",
                 "icon": "warning",
-                "templateUrl": versionUrl("app/components/Nationwide/partials/jobListDelivery.html"),
+                "templateUrl": "app/components/Nationwide/partials/jobListDelivery.html",
                 "showSearch": 1,
                 "showRefresh": 1
-            }, "jobsListReprice": {
+            },
+            "jobsListReprice": {
                 "title": "Reprice",
                 "icon": "price_change",
-                "templateUrl": versionUrl("app/components/Nationwide/partials/jobListReprice.html"),
+                "templateUrl": "app/components/Nationwide/partials/jobListReprice.html",
                 "showSearch": 1,
                 "showRefresh": 1
-            }, "jobDetail": {
+            },
+            "jobDetail": {
                 "title": "Detail",
                 "icon": "assignment",
-                "templateUrl": versionUrl("app/components/common/partials/jobDetail.html"),
+                "templateUrl": "app/components/common/partials/jobDetail.html",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
-            }, "map": {
+            },
+            "map": {
                 "title": "Map",
                 "icon": "pin_drop",
-                "templateUrl": versionUrl("app/components/Nationwide/partials/map.html"),
+                "templateUrl": "app/components/Nationwide/partials/map.html",
                 "showSearch": 0,
                 "showRefresh": 1
-            }, "flightAgentDataTable": {
+            },
+            "flightAgentDataTable": {
                 "title": "Available",
                 "icon": "docs_add_on",
-                "templateUrl": versionUrl("app/components/Nationwide/partials/flightAgentDataTableBox.html"),
+                "templateUrl": "app/components/Nationwide/partials/flightAgentDataTableBox.html",
                 "showSearch": 0,
                 "showRefresh": 1
             }
@@ -938,7 +939,7 @@ angular.module("uDispatch").controller("NationwideControl",
         $mdDialog.show({
             controller: 'AddEventDialogController',
             controllerAs: "ctrl",
-            templateUrl: versionUrl("app/components/dialogs/add-event-dialog/add-event-dialog.html"),
+            templateUrl: "app/components/dialogs/add-event-dialog/add-event-dialog.html",
             parent: $document.body,
             targetEvent: $event,
             clickOutsideToClose: true,
@@ -2993,7 +2994,7 @@ angular.module("uDispatch").controller("NationwideControl",
             await $mdDialog.show({
                 controller: 'AddEventDialogController',
                 controllerAs: "ctrl",
-                templateUrl: versionUrl("app/components/dialogs/add-event-dialog/add-event-dialog.html"),
+                templateUrl: "app/components/dialogs/add-event-dialog/add-event-dialog.html",
                 parent: $document.body,
                 targetEvent: $event,
                 clickOutsideToClose: true,
@@ -3025,7 +3026,7 @@ angular.module("uDispatch").controller("NationwideControl",
                 controllerAs: 'ctrl',
                 parent: $document.body,
                 targetEvent: $event,
-                templateUrl: versionUrl("app/components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.html"),
+                templateUrl: "app/components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.html",
                 clickOutsideToClose: false,
                 fullscreen: true,
                 locals: {
@@ -3086,8 +3087,33 @@ angular.module("uDispatch").controller("NationwideControl",
             return 'status-current';
         }
     };
-}]);
+};
 
+NationwideControl.$inject = [
+    '$scope',
+    'JobDetailService',
+    'NWData',
+    '$state',
+    '$filter',
+    'hotkeys',
+    '$timeout',
+    'greetingService',
+    '$mdDialog',
+    '$document',
+    'toastrService',
+    'DispatchData',
+    'moment',
+    '$mdSidenav',
+    'AppPages',
+    'APP_CONFIG',
+    '$mdEditDialog',
+    'NationwideLayoutService',
+    '$mdMenu',
+    'dispatchJobService'
+];
+
+app.controller('NationwideControl', NationwideControl);
+export default NationwideControl;
 
 /**
  * Converts degrees to radians.

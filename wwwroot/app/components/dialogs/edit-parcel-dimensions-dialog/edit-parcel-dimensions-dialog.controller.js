@@ -8,39 +8,38 @@
  * @class
  */
 class EditParcelDimensionsDialogController {
-    static $inject = ['$mdDialog', 'toastrService', 'DispatchData', '$document', 'versionUrl', 'jobId', 'dimensions'];
+    static $inject = ["$mdDialog", "toastrService", "DispatchData", "$document", "jobId", "dimensions"];
 
-    constructor($mdDialog, toastrService, DispatchData, $document, versionUrl, jobId, dimensions) {
-        this._$mdDialog = $mdDialog;
-        this._dispatchData = DispatchData;
-        this._toastrService = toastrService;
+    constructor($mdDialog, toastrService, DispatchData, $document, jobId, dimensions) {
+        this.$mdDialog = $mdDialog;
+        this.dispatchData = DispatchData;
+        this.toastrService = toastrService;
         this._$document = $document;
-        this._versionUrl = versionUrl;
         this._jobId = jobId;
 
-        console.log('Initializing EditParcelDimensionsDialog with jobId:', jobId);
-        console.log('Initial dimensions:', dimensions);
+        console.log("Initializing EditParcelDimensionsDialog with jobId:", jobId);
+        console.log("Initial dimensions:", dimensions);
 
         /** @type {ParcelDimensions} */
         this.dimensions = {
-            itemName: dimensions?.itemName || '',
+            itemName: dimensions?.itemName || "",
             length: dimensions?.length || null,
             depth: dimensions?.depth || null,
             height: dimensions?.height || null,
-            dimensions: dimensions?.dimensions || ''
+            dimensions: dimensions?.dimensions || ""
         };
 
-        console.log('Initialized dimensions:', this.dimensions);
+        console.log("Initialized dimensions:", this.dimensions);
         this.isLoading = false;
     }
 
     isValid() {
         const isValid = this.dimensions &&
-            typeof this.dimensions.length === 'number' && this.dimensions.length > 0 &&
-            typeof this.dimensions.depth === 'number' && this.dimensions.depth > 0 &&
-            typeof this.dimensions.height === 'number' && this.dimensions.height > 0;
+            typeof this.dimensions.length === "number" && this.dimensions.length > 0 &&
+            typeof this.dimensions.depth === "number" && this.dimensions.depth > 0 &&
+            typeof this.dimensions.height === "number" && this.dimensions.height > 0;
 
-        console.log('Form validation result:', isValid, {
+        console.log("Form validation result:", isValid, {
             length: this.dimensions?.length,
             depth: this.dimensions?.depth,
             height: this.dimensions?.height
@@ -52,15 +51,15 @@ class EditParcelDimensionsDialogController {
     _formatDimensions(dimensions) {
         if (dimensions.length && dimensions.depth && dimensions.height) {
             const formatted = `${this._formatNumber(dimensions.length)}x${this._formatNumber(dimensions.depth)}x${this._formatNumber(dimensions.height)}`;
-            console.log('Formatted dimensions string:', formatted);
+            console.log("Formatted dimensions string:", formatted);
             return formatted;
         }
-        console.log('Using existing dimensions string:', dimensions.dimensions);
-        return dimensions.dimensions || '';
+        console.log("Using existing dimensions string:", dimensions.dimensions);
+        return dimensions.dimensions || "";
     }
 
     _formatNumber(value) {
-        const formatted = value.toLocaleString('en-US', {
+        const formatted = value.toLocaleString("en-US", {
             minimumFractionDigits: 0,
             maximumFractionDigits: 1
         });
@@ -69,18 +68,18 @@ class EditParcelDimensionsDialogController {
     }
 
     cancel() {
-        console.log('Dialog cancelled');
-        this._$mdDialog.cancel();
+        console.log("Dialog cancelled");
+        this.$mdDialog.cancel();
     }
 
     async submit(dimensions) {
-        console.log('Submit called with dimensions:', dimensions);
+        console.log("Submit called with dimensions:", dimensions);
 
         // Show feature in development dialog
-        await this._$mdDialog.show({
-            controller: 'FeatureInDevelopmentDialogController',
-            controllerAs: 'ctrl',
-            templateUrl: this._versionUrl('app/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.html'),
+        await this.$mdDialog.show({
+            controller: "FeatureInDevelopmentDialogController",
+            controllerAs: "ctrl",
+            templateUrl: "app/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.html",
             parent: angular.element(this._$document.body),
             clickOutsideToClose: true,
             bindToController: true
@@ -88,5 +87,5 @@ class EditParcelDimensionsDialogController {
     }
 }
 
-angular.module('uDispatch')
-    .controller('EditParcelDimensionsDialogController', EditParcelDimensionsDialogController);
+angular.module("uDispatch")
+    .controller("EditParcelDimensionsDialogController", EditParcelDimensionsDialogController);

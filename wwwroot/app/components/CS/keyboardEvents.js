@@ -54,17 +54,17 @@
     document.onkeydown = overrideKeyboardEvent;
     document.onkeyup = overrideKeyboardEvent;
 
-    angular.element(document).on('focus', '.searchBox input', () => {
+    angular.element(document).on("focus", ".searchBox input", () => {
         angular.element(".results").fadeIn(100);
     });
 
-    angular.element(document).on('blur', '.searchBox input', () => {
+    angular.element(document).on("blur", ".searchBox input", () => {
         angular.element(".results").fadeOut(100);
     });
 
-    angular.element(document).on('click', '.top-bar .btn-group .btn', function () {
-        angular.element(this).parent().find('.topBarActive').removeClass('topBarActive');
-        angular.element(this).addClass('topBarActive');
+    angular.element(document).on("click", ".top-bar .btn-group .btn", function () {
+        angular.element(this).parent().find(".topBarActive").removeClass("topBarActive");
+        angular.element(this).addClass("topBarActive");
     });
 
     angular.element(document).ready(() => {
@@ -96,7 +96,7 @@
             isOnRow = false;
         });
 
-        angular.element(document).on('click', '.box-content', (event) => {
+        angular.element(document).on("click", ".box-content", (event) => {
             event.stopPropagation();
             if (isOnRow) {
                 angular.element(".activeTable .active").removeClass("active");
@@ -106,7 +106,7 @@
 
     let mouseDown = 0;
 
-    angular.element(document).on('mousedown', '.clickable-row', function (event) {
+    angular.element(document).on("mousedown", ".clickable-row", function (event) {
         let group;
         const jobNo = angular.element(".activeTable .clickable-row.active").length > 1
             ? `${angular.element(".activeTable .clickable-row.active").length} Jobs`
@@ -117,13 +117,13 @@
 
             if (event.which === 1) {
                 if (event.ctrlKey) {
-                    angular.element(this).toggleClass('active');
+                    angular.element(this).toggleClass("active");
                 } else if (!angular.element(this).hasClass("active")) {
                     group = angular.element(this).parents(".table-rows").attr("data-group");
                     angular.element(`*[data-group="${group}"]`).each(function () {
-                        angular.element(this).find('.active').removeClass('active');
+                        angular.element(this).find(".active").removeClass("active");
                     });
-                    angular.element(this).addClass('active');
+                    angular.element(this).addClass("active");
                 }
 
                 angular.element(".activeTable").removeClass("activeTable");
@@ -134,9 +134,9 @@
                 if (!angular.element(this).hasClass("active")) {
                     group = angular.element(this).parents(".table-rows").attr("data-group");
                     angular.element(`*[data-group="${group}"]`).each(function () {
-                        angular.element(this).find('.active').removeClass('active');
+                        angular.element(this).find(".active").removeClass("active");
                     });
-                    angular.element(this).addClass('active');
+                    angular.element(this).addClass("active");
                 }
                 setTimeout(() => {
                     if (mouseDown === 1) {
@@ -151,7 +151,7 @@
         }
     });
 
-    angular.element(document).on('mouseup', '.clickable-row', function (event) {
+    angular.element(document).on("mouseup", ".clickable-row", function (event) {
         if (event.which === 3) {
             angular.element(".rightActiveTable").removeClass("rightActiveTable");
             angular.element(this).parents(".table").addClass("rightActiveTable");
@@ -159,13 +159,13 @@
         if (!event.ctrlKey && !angular.element(this).hasClass("active")) {
             const group = angular.element(this).parents(".table-rows").attr("data-group");
             angular.element(`*[data-group="${group}"]`).each(function () {
-                angular.element(this).find('.active').removeClass('active');
+                angular.element(this).find(".active").removeClass("active");
             });
-            angular.element(this).addClass('active');
+            angular.element(this).addClass("active");
         }
     });
 
-    angular.element(document).on('click', '.clickable-row', (event) => {
+    angular.element(document).on("click", ".clickable-row", (event) => {
         event.stopPropagation();
     });
 
