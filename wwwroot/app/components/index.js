@@ -17,7 +17,7 @@ import "./CS/csControl";
 
 // Prebooks
 import "./prebooks/prebook.service";
-import "./prebooks/prebookControl";
+import "./prebooks/prebook.controller";
 
 // Overview
 import "./overview/index";

@@ -271,4 +271,4 @@ class CSLayoutService {
     }
 }
 
-angular.module('uDispatch').service('CSLayoutService', ['$window', '$mdDialog', ($window, $mdDialog) => new CSLayoutService($window, $mdDialog)]);
+angular.module('uDispatch').service('CSLayoutService', CSLayoutService);

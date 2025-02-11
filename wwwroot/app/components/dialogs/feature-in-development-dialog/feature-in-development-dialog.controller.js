@@ -1,3 +1,5 @@
+import "./feature-in-development-dialog.styles.less";
+
 /**
  * @fileoverview Controller for the Feature in Development Dialog
  * @module FeatureInDevelopmentDialogController

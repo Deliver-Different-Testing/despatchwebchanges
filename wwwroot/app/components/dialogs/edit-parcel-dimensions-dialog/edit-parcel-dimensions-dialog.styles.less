@@ -1,4 +1,5 @@
-// Variables
+// Variables (keep at root level)
+@text-primary: rgba(0, 0, 0, 0.87);
 @text-secondary: rgba(0, 0, 0, 0.54);
 @background-light: #f5f5f5;
 @dialog-padding: 24px;
@@ -6,39 +7,239 @@
 @font-small: 12px;
 @border-radius: 4px;
 
-// Dialog styles
-#edit-dimensions-dialog {
-  max-width: 800px;
-  width: 90%;
+.parcel-dimensions-dialog-component {
+    &.md-dialog-container {
+        z-index: 999;
+    }
 
-  .md-dialog-content {
-    padding: @dialog-padding;
-  }
-}
+    #edit-dimensions-dialog {
+        max-width: 800px;
+        width: 90%;
 
-// Form elements
-.dimension-unit {
-  color: @text-secondary;
-  margin-top: 4px;
-  font-size: @font-small;
-}
+        .md-toolbar-tools {
+            .popup-icon {
+                margin-right: @spacing-unit;
+            }
+        }
 
-md-input-container {
-  margin-bottom: @spacing-unit;
-}
+        .md-dialog-content {
+            padding: @spacing-unit @dialog-padding;
+            margin-bottom: 64px;
+        }
+    }
 
-// Visualization container
-.dimension-visualization {
-  padding: @spacing-unit;
-  background-color: @background-light;
-  border-radius: @border-radius;
-  min-height: 300px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+    // Empty state styling
+    .empty-state {
+        padding: @dialog-padding;
+        text-align: center;
 
-// SVG text labels
-.dimension-label {
-  font-size: @font-small;
+        .empty-state-icon {
+            font-size: 64px;
+            height: 64px;
+            width: 64px;
+            color: @text-secondary;
+            margin-bottom: @spacing-unit;
+        }
+
+        h3 {
+            margin: 0 0 @spacing-unit/2;
+            font-weight: 500;
+            color: @text-primary;
+        }
+
+        p {
+            margin: 0 0 @spacing-unit;
+            color: @text-secondary;
+        }
+
+        .md-button {
+            margin: @spacing-unit 0 0;
+
+            md-icon {
+                margin-right: @spacing-unit/2;
+            }
+        }
+    }
+
+    // Timeline styling
+    .parcel-timeline {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(255, 255, 255, 0.9);
+        padding: @spacing-unit;
+        border-top: 1px solid rgba(0, 0, 0, 0.12);
+
+        .timeline-container {
+            max-width: 100%;
+            overflow-x: auto;
+            padding: 0 @spacing-unit;
+        }
+
+        .timeline-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 0 8px;
+
+            .step-circle {
+                position: relative;
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: 500;
+                transition: background-color 0.3s ease;
+
+                &.add-button {
+                    background-color: white !important;
+                    border: 1px dashed @text-secondary;
+                    color: @text-secondary;
+
+                    &:hover {
+                        background-color: rgba(0, 0, 0, 0.04) !important;
+                    }
+
+                    md-icon {
+                        font-size: 20px;
+                        width: 20px;
+                        height: 20px;
+                    }
+                }
+
+                .delete-button {
+                    position: absolute;
+                    top: -4px;
+                    right: -4px;
+                    width: 16px;
+                    height: 16px;
+                    min-height: 16px;
+                    line-height: 16px;
+                    padding: 0;
+                    margin: 0;
+                    background-color: rgba(0, 0, 0, 0.54) !important;
+                    border-radius: 50%;
+
+                    md-icon {
+                        color: white;
+                        font-size: 12px;
+                        width: 12px;
+                        height: 12px;
+                        min-width: 12px;
+                        min-height: 12px;
+                        line-height: 12px;
+                    }
+
+                    &:hover {
+                        background-color: rgba(0, 0, 0, 0.87) !important;
+                    }
+                }
+            }
+
+            .step-label {
+                margin-top: 4px;
+                font-size: @font-small;
+                color: @text-primary;
+                text-align: center;
+                max-width: 100px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            &.active {
+                .step-label {
+                    color: @text-primary;
+                    font-weight: 500;
+                }
+            }
+        }
+
+        .timeline-connector {
+            display: flex;
+            align-items: center;
+            width: 48px;
+            margin: 0 4px;
+            position: relative;
+
+            md-icon {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 20px;
+                color: @text-secondary;
+            }
+        }
+    }
+
+    // Form elements
+    .dimension-form {
+        margin-top: @spacing-unit/2;
+    }
+
+    .dimensions-group {
+        margin-top: @spacing-unit;
+    }
+
+    .dimension-unit {
+        color: @text-secondary;
+        font-size: @font-small;
+        position: absolute;
+        right: 0;
+        top: 0;
+        line-height: 26px;
+    }
+
+    md-input-container {
+        margin: @spacing-unit/2 0;
+        padding-bottom: 16px;
+
+        &.md-block {
+            margin: @spacing-unit/2 0;
+        }
+
+        label {
+            color: @text-secondary;
+        }
+
+        .md-input {
+            border-color: rgba(0, 0, 0, 0.12);
+            height: 26px;
+        }
+    }
+
+    // Visualization container
+    .dimension-visualization {
+        padding: @spacing-unit;
+        background-color: @background-light;
+        border-radius: @border-radius;
+        min-height: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: @spacing-unit/2;
+    }
+
+    // Dialog actions
+    md-dialog-actions {
+        border-top: 1px solid rgba(0, 0, 0, 0.12);
+        padding: @spacing-unit @dialog-padding;
+        margin: 0;
+        background: white;
+
+        .md-button {
+            margin: 0;
+            min-width: 88px;
+
+            &.md-primary {
+                margin-left: @spacing-unit;
+            }
+        }
+    }
 }

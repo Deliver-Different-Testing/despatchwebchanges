@@ -1,3 +1,14 @@
+/**
+ * @fileoverview Build script for bundling and optimizing application assets using esbuild.
+ * Handles JavaScript bundling, CSS/LESS processing, and generation of content-hashed files.
+ * @requires esbuild
+ * @requires fs
+ * @requires path
+ * @requires crypto
+ * @requires esbuild-plugin-less
+ * @requires esbuild-plugin-es5
+ */
+
 const esbuild = require("esbuild");
 const fs = require("fs");
 const path = require("path");
@@ -5,12 +16,22 @@ const crypto = require("crypto");
 const { lessLoader } = require("esbuild-plugin-less");
 const { es5Plugin } = require("esbuild-plugin-es5");
 
-// Helper to generate content hash
+/**
+ * Generates an MD5 hash of the provided content and returns the first 8 characters.
+ * @param {string|Buffer} content - The content to hash
+ * @returns {string} The truncated MD5 hash
+ */
 function generateHash(content) {
     return crypto.createHash('md5').update(content).digest('hex').slice(0, 8);
 }
 
-// Helper to clean dist folder
+/**
+ * Cleans or creates the distribution folder.
+ * If the folder exists, all files within it are deleted.
+ * If it doesn't exist, it is created.
+ * @param {string} distPath - Path to the distribution folder
+ * @returns {Promise<void>}
+ */
 async function cleanDistFolder(distPath) {
     if (fs.existsSync(distPath)) {
         const files = fs.readdirSync(distPath);
@@ -24,6 +45,18 @@ async function cleanDistFolder(distPath) {
     }
 }
 
+/**
+ * Main build function that bundles and processes application assets.
+ * Performs the following steps:
+ * 1. Cleans the distribution folder
+ * 2. Performs an initial build to generate content for hashing
+ * 3. Creates content-hashed versions of bundle files
+ * 4. Generates and writes a manifest file
+ * 5. Handles sourcemap generation
+ * @async
+ * @returns {Promise<void>}
+ * @throws {Error} If the build process fails
+ */
 async function build() {
     const rootDir = __dirname;
     const distPath = path.join(rootDir, "wwwroot/dist");

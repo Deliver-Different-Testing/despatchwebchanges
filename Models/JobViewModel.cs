@@ -31,12 +31,15 @@ public class JobViewModel
     public string Source { get; set; }
     public string NotifiedName { get; set; }
     public string AcceptedName { get; set; }
-    [JsonPropertyName("speedID")] public int? SpeedId { get; set; }
+
+    [JsonPropertyName("speedID")]
+    public int? SpeedId { get; set; }
 
     public string Notify { get; set; }
     public Vehicle Vehicle { get; set; }
 
-    [JsonPropertyName("clientID")] public int? ClientId { get; set; }
+    [JsonPropertyName("clientID")]
+    public int? ClientId { get; set; }
 
     public int? JobType { get; set; }
     public string Client { get; set; }
@@ -94,7 +97,8 @@ public class JobViewModel
     public string ContactName { get; set; }
     public string LoggedInContactName { get; set; }
 
-    [JsonPropertyName("deliverToContact")] public string DeliverToContact { get; set; }
+    [JsonPropertyName("deliverToContact")]
+    public string DeliverToContact { get; set; }
 
     public int? TrackingMethod { get; set; }
     public string TrackingMobile { get; set; }
@@ -193,7 +197,7 @@ public class JobViewModel
 
     public Suggestion AssignedCourier { get; set; }
 
-    public ParcelDimensions ParcelDimensions { get; set; }
+    public List<ParcelDimensions> ParcelDimensions { get; set; }
 
     public int? DeliverToLeaveId { get; set; }
 }
@@ -213,6 +217,7 @@ public class Size
 public class ParcelDimensions
 {
     private string _dimensions;
+    public int? ItemId { get; set; }
     public string ItemName { get; set; }
     public double? Height { get; set; }
     public double? Length { get; set; }
@@ -270,7 +275,9 @@ public class AddressViewModel
     public decimal? Longitude { get; set; }
 
     public string FullAddress =>
-        string.Join(", ", new[]
+        string.Join(
+            ", ",
+            new[]
             {
                 AddressLine1,
                 AddressLine2,
@@ -279,9 +286,9 @@ public class AddressViewModel
                 AddressLine5,
                 AddressLine6,
                 AddressLine7,
-                AddressLine8
-            }
-            .Where(line => !string.IsNullOrWhiteSpace(line)));
+                AddressLine8,
+            }.Where(line => !string.IsNullOrWhiteSpace(line))
+        );
 }
 
 public class Suggestion

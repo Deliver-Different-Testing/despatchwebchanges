@@ -141,7 +141,7 @@
  * @property {AssignedFlight} assignedFlight
  * @property {Agent} assignedAgent
  * @property {Suggestion} assignedCourier
- * @property {ParcelDimensions} parcelDimensions
+ * @property {ParcelDimensions[]} parcelDimensions
  * @property {number} deliverToLeaveId
  */
 

@@ -1,7 +1,5 @@
-<link href="app/components/dialogs/map-dialog/map-dialog.min.css" rel="stylesheet">
-
-<md-dialog aria-label="Map">
-    <md-toolbar>
+<md-dialog aria-label="Map" class="map-dialog-component">
+<md-toolbar>
         <div class="md-toolbar-tools">
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">map</md-icon>
             <h2>{{ctrl.title}}</h2>
@@ -29,7 +27,6 @@
                     </md-icon>
                 </div>
             </div>
-
 
             <!-- Map (shown when not loading) -->
             <div ng-if="!ctrl.loading">

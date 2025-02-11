@@ -1,8 +1,5 @@
-<link href="app/components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.styles.min.css"
-      rel="stylesheet">
-
-<md-dialog aria-label="Edit Dimensions" id="edit-dimensions-dialog">
-    <md-toolbar>
+<md-dialog aria-label="Edit Dimensions" id="edit-dimensions-dialog" class="parcel-dimensions-dialog-component">
+<md-toolbar class="md-primary">
         <div class="md-toolbar-tools">
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">inventory_2</md-icon>
             <h2>Edit Dimensions</h2>
@@ -16,68 +13,125 @@
         </div>
     </md-toolbar>
 
-    <md-dialog-content>
-        <div class="md-dialog-content">
-            <div layout="row" layout-align="space-between start">
-                <!-- Left side - Form -->
-                <div flex="45">
-                    <form ng-submit="ctrl.submit(ctrl.dimensions)">
-                        <!-- Item Name -->
-                        <md-input-container class="md-block" flex-gt-sm>
-                            <label for="itemName">Item Name</label>
-                            <input id="itemName" ng-model="ctrl.dimensions.itemName" type="text">
-                        </md-input-container>
+    <!-- Empty State -->
+    <div ng-if="!ctrl.hasCurrentParcel()" class="empty-state" layout="column" layout-align="center center">
+        <md-icon md-font-set="material-symbols-outlined" class="empty-state-icon">inventory_2</md-icon>
+        <h3>No Parcels Added</h3>
+        <p>Add a parcel to begin entering dimensions</p>
+        <md-button class="md-raised md-primary" ng-click="ctrl.addNewParcel()">
+            <md-icon md-font-set="material-symbols-outlined">add</md-icon>
+            Add Parcel
+        </md-button>
+    </div>
 
-                        <!-- Dimensions Input Group -->
-                        <div layout="column">
-                            <md-input-container>
-                                <label>Length</label>
-                                <input min="0" ng-model="ctrl.dimensions.length" step="0.1" type="number">
-                                <div class="md-caption dimension-unit">inches</div>
-                            </md-input-container>
-
-                            <md-input-container>
-                                <label>Width</label>
-                                <input min="0" ng-model="ctrl.dimensions.depth" step="0.1" type="number">
-                                <div class="md-caption dimension-unit">inches</div>
-                            </md-input-container>
-
-                            <md-input-container>
-                                <label>Height</label>
-                                <input min="0" ng-model="ctrl.dimensions.height" step="0.1" type="number">
-                                <div class="md-caption dimension-unit">inches</div>
-                            </md-input-container>
+    <!-- Parcel Content - Only show when there are parcels -->
+    <div ng-if="ctrl.hasCurrentParcel()">
+        <!-- Parcel Timeline -->
+        <div class="parcel-timeline" layout="row" layout-align="center center">
+            <div class="timeline-container" layout="row" layout-align="center center">
+                <div layout="row" layout-align="center center" ng-repeat="parcel in ctrl.parcels">
+                    <!-- Parcel Step -->
+                    <div class="timeline-step"
+                         ng-class="{'active': ctrl.selectedParcelIndex === $index}"
+                         ng-click="ctrl.switchParcel($index)">
+                        <div class="step-circle"
+                             md-colors="{background: ctrl.selectedParcelIndex === $index ? 'primary' : 'background-400'}">
+                            {{$index + 1}}
+                            <md-button class="md-icon-button delete-button"
+                                       ng-click="ctrl.deleteParcel($index, $event)"
+                                       ng-show="ctrl.parcels.length > 1">
+                                <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+                                <md-tooltip md-direction="top">Delete Parcel</md-tooltip>
+                            </md-button>
                         </div>
-                    </form>
+                        <div class="step-label">{{parcel.itemName || 'Parcel ' + ($index + 1)}}</div>
+                    </div>
+                    <!-- Connector Line (don't show after last item) -->
+                    <div class="timeline-connector"
+                         md-colors="{background: 'background-400'}"
+                         ng-if="!$last">
+                        <md-icon md-font-set="material-symbols-outlined">arrow_forward</md-icon>
+                    </div>
                 </div>
-
-                <!-- Right side - Visual representation -->
-                <div class="dimension-visualization" flex="50">
-                    <parcel-visualization
-                            height="{{ctrl.dimensions.height}}"
-                            length="{{ctrl.dimensions.length}}"
-                            width="{{ctrl.dimensions.depth}}">
-                    </parcel-visualization>
+                <!-- Add Parcel Button -->
+                <div layout="row" layout-align="center center">
+                    <div class="timeline-connector"
+                         md-colors="{background: 'background-400'}">
+                        <md-icon md-font-set="material-symbols-outlined">arrow_forward</md-icon>
+                    </div>
+                    <div class="timeline-step">
+                        <div class="step-circle add-button" ng-click="ctrl.addNewParcel()">
+                            <md-icon md-font-set="material-symbols-outlined">add</md-icon>
+                        </div>
+                        <div class="step-label">Add Parcel</div>
+                    </div>
                 </div>
             </div>
         </div>
-    </md-dialog-content>
 
-    <md-dialog-actions>
-        <md-progress-circular
-                class="md-primary"
-                md-diameter="40"
-                md-mode="indeterminate"
-                ng-disabled="!ctrl.isValid()"
-                ng-show="ctrl.isLoading">
-        </md-progress-circular>
+        <md-dialog-content>
+            <div class="md-dialog-content">
+                <div layout="row" layout-align="space-between start">
+                    <!-- Left side - Form -->
+                    <div flex="45">
+                        <form ng-submit="ctrl.submit()" class="dimension-form">
+                            <!-- Item Name -->
+                            <md-input-container class="md-block">
+                                <label for="itemName">Item Name</label>
+                                <input id="itemName" ng-model="ctrl.getCurrentParcel().itemName" type="text">
+                            </md-input-container>
 
-        <md-button
-                class="md-raised md-primary"
-                ng-click="ctrl.submit(ctrl.dimensions)"
-                ng-disabled="!ctrl.isValid()"
-                ng-show="!ctrl.isLoading">
-            Save
-        </md-button>
-    </md-dialog-actions>
+                            <!-- Dimensions Input Group -->
+                            <div class="dimensions-group">
+                                <md-input-container class="md-block">
+                                    <label for="length">Length</label>
+                                    <input id="length" min="0" ng-model="ctrl.getCurrentParcel().length" step="0.1" type="number">
+                                    <div class="md-caption dimension-unit">inches</div>
+                                </md-input-container>
+
+                                <md-input-container class="md-block">
+                                    <label for="width">Width</label>
+                                    <input id="width" min="0" ng-model="ctrl.getCurrentParcel().depth" step="0.1" type="number">
+                                    <div class="md-caption dimension-unit">inches</div>
+                                </md-input-container>
+
+                                <md-input-container class="md-block">
+                                    <label for="height">Height</label>
+                                    <input id="height" min="0" ng-model="ctrl.getCurrentParcel().height" step="0.1" type="number">
+                                    <div class="md-caption dimension-unit">inches</div>
+                                </md-input-container>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Right side - Visual representation -->
+                    <div class="dimension-visualization" flex="50">
+                        <parcel-visualization
+                                height="{{ctrl.getCurrentParcel().height}}"
+                                length="{{ctrl.getCurrentParcel().length}}"
+                                width="{{ctrl.getCurrentParcel().depth}}">
+                        </parcel-visualization>
+                    </div>
+                </div>
+            </div>
+        </md-dialog-content>
+
+        <md-dialog-actions>
+            <span flex></span>
+            <md-progress-circular
+                    class="md-primary"
+                    md-diameter="20"
+                    md-mode="indeterminate"
+                    ng-show="ctrl.isLoading">
+            </md-progress-circular>
+
+            <md-button
+                    class="md-raised md-primary"
+                    ng-click="ctrl.submit()"
+                    ng-disabled="!ctrl.isValid()"
+                    ng-show="!ctrl.isLoading">
+                Save
+            </md-button>
+        </md-dialog-actions>
+    </div>
 </md-dialog>

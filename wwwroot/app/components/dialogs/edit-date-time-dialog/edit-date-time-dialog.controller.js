@@ -1,3 +1,5 @@
+import "./edit-date-time-dialog.less";
+
 /**
  * @class EditDateTimeDialogController
  * @description Controller for the Edit Date/Time dialog in the uDispatch Angular module.

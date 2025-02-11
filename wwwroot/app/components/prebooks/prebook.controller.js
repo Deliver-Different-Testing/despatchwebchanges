@@ -1,9 +1,9 @@
 import app from "../../app";
 
 app.controller("PBControl", ["$scope", "JobDetailService", "uPBData", "$state", "$filter", "$mdDialog", "$timeout",
-    "$window", "$mdSidenav", "greetingService", "APP_CONFIG",
+    "$mdSidenav", "greetingService", "APP_CONFIG",
         ($scope, jdSvc, uPBData, $state, $filter, $mdDialog, $timeout,
-         $window, $mdSidenav, greetingService, APP_CONFIG) => {
+        $mdSidenav, greetingService, APP_CONFIG) => {
             $scope.isAdmin = (ClientInternal === "True");
             $scope.mapSetting = {
                 "allCouriers": false, "allRuns": false

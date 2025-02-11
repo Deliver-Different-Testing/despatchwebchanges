@@ -1184,6 +1184,24 @@ class dispatchService {
     }
 
     /**
+     * @param {number} jobId
+     * @param {ParcelDimensions[]} parcels
+     * @returns {Promise<any>}
+     */
+    async updatePackages(jobId, parcels) {
+        try {
+            const response = await this.$http.post('job/UpdateJobPackages', {
+                jobId: jobId,
+                parcels: parcels
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error updating packages:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Returns a list of the individual components that make up the price
      *
      * @param {number} jobId

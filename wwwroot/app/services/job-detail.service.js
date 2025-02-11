@@ -1,7 +1,7 @@
 import app from "../app";
 
 class JobDetailService {
-    static $inject = ["$http", "$mdDialog", "toastrService", "rateJobService", "$document", "moment", "APP_CONFIG", "$rootScope"];
+    static $inject = ["DispatchData", "$mdDialog", "toastrService", "rateJobService", "$document", "moment", "APP_CONFIG", "$rootScope"];
 
     constructor(DispatchData, $mdDialog, toastrService, rateJobService, $document, moment, APP_CONFIG, $rootScope) {
         this.DispatchData = DispatchData;
@@ -582,9 +582,6 @@ class JobDetailService {
      * @param {Job} currentJob
      */
     async editJobDimensions($event, currentJob) {
-        const dimensions = currentJob.parcelDimensions;
-        const jobId = currentJob.id;
-
         await this.$mdDialog.show({
             controller: "EditParcelDimensionsDialogController",
             controllerAs: "ctrl",
@@ -594,13 +591,14 @@ class JobDetailService {
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
-                jobId, dimensions
+                jobId: currentJob.id,
+                parcels: currentJob.parcelDimensions
             },
             bindToController: true
         });
 
-        // Show feature in development dialog
-        await this._showFeatureInDevelopment();
+        // Refresh and update job details
+        await this._refreshJobDetails(job.id);
     }
 
     /**

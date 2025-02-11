@@ -1,3 +1,5 @@
+import "./map-dialog.styles.less"
+
 /**
  * @fileoverview Controller for the custom map delivery/pickup location dialog
  * @module MapDialogController
