@@ -18,6 +18,7 @@
   <ItemGroup>
     <Content Remove="bundleconfig.json" />
     <Content Remove="compilerconfig.json" />
+    <Content Remove="wwwroot\css\udispatch.min.css" />
     
   </ItemGroup>
   <ItemGroup>
@@ -235,15 +236,7 @@
     <Page Include="wwwroot\app\components\overview\open-jobs\open-jobs.controller.js" />
     <None Include="wwwroot\app\components\overview\services\overview-filters.service.js" />
     <Page Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.controller.js" />
-    <None Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.css" />
-    <None Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.css.map" />
-    <None Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.styles.min.css" />
     <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.controller.js" />
-    <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.css" />
-    <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.css.map" />
-    <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.html" />
-    <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.less" />
-    <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.min.css" />
     <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.template.html" />
     <None Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.controller.js" />
     <None Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.html" />
@@ -251,7 +244,6 @@
     <None Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.html" />
     <None Include="wwwroot\app\components\overview\overview.less" />
     <None Include="wwwroot\app\materialTheme.js" />
-    <None Include="wwwroot\app\version.js" />
     <None Include="wwwroot\css\udispatch.less" />
     <None Include="wwwroot\lib\material-time-picker\md-time-picker.css" />
     <None Include="wwwroot\lib\material-time-picker\md-time-picker.js" />

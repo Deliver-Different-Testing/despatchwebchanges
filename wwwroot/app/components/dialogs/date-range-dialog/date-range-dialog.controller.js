@@ -1,3 +1,5 @@
+import "./date-range-dialog.styles.less";
+
 class DateRangeDialogController {
     static $inject = ["$mdDialog", "dateRange",];
 

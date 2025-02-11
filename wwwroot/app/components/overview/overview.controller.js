@@ -480,7 +480,6 @@ class OverviewController {
    * @param {OverviewTableParentJob} delivery The delivery job to view
    */
   async showMap(delivery) {
-    // Show feature in development dialog
     await this.$mdDialog.show({
       controller: "MapDialogController",
       controllerAs: "ctrl",

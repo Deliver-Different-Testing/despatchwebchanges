@@ -222,7 +222,7 @@
                              ng-click="!jdSvc.currentJob.locked && jdSvc.editJobDimensions($event, jdSvc.currentJob)">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Dimensions</label>
                             <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
-                                {{(jdSvc.currentJob.parcelDimensions.itemName ? jdSvc.currentJob.parcelDimensions.itemName + ' ' : '') + jdSvc.currentJob.parcelDimensions.dimensions}}
+                                ({{jdSvc.currentJob.parcelDimensions.length || 0}} {{jdSvc.currentJob.parcelDimensions.length === 1 ? 'package' : 'packages'}})
                             </div>
                         </div>
                         <div class="field"

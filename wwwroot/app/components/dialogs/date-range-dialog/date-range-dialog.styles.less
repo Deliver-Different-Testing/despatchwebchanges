@@ -1,4 +1,4 @@
-// Variables
+// Variables (keep at root level)
 @dialog-max-width: 1000px;
 @dialog-width: 90%;
 @calendar-min-width: 300px;
@@ -17,9 +17,17 @@
 @divider-color: rgba(0, 0, 0, 0.12);
 @background-hover: rgba(0, 0, 0, 0.04);
 
-.date-range-dialog {
-  max-width: @dialog-max-width;
-  width: @dialog-width;
+.date-range-dialog-component {
+  &.date-range-dialog {
+    max-width: @dialog-max-width;
+    width: @dialog-width;
+  }
+
+  .md-toolbar-tools {
+    .popup-icon {
+      margin-right: @spacing-md;
+    }
+  }
 
   .md-subheader {
     background-color: transparent;
@@ -102,10 +110,8 @@
       margin: 0;
     }
   }
-}
 
-// Dialog animations
-.date-range-dialog {
+  // Dialog animations
   &.md-transition-in {
     transition: all 0.3s ease-out;
   }
