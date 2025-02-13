@@ -89,7 +89,7 @@ public partial class DesQrySupportEventsCustomerAndCourier
 
     public bool? VanOk { get; set; }
 
-    public short? UcjbSize { get; set; }
+    public int? UcjbSize { get; set; }
 
     public int? UcjbSpeed { get; set; }
 

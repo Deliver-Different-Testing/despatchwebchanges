@@ -356,8 +356,4 @@ public partial class TblJob
     public decimal? DryIceWeight { get; set; }
 
     public DateTime? DeliverByTime { get; set; }
-
-    public int? AgentId { get; set; }
-
-    public string Connote { get; set; }
 }

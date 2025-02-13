@@ -462,8 +462,6 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                             + " "
                             + (j.ClientReferenceA ?? "")
                             + " "
-                            + j.Connote.ToLower()
-                            + " "
                             + (j.ClientReferenceB ?? "")
                             + " "
                             + (j.OurRef ?? "")
@@ -2287,28 +2285,28 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             );
 
             var fromJob = CreateJobEntry(
-                jobNumber: fromJobNumber.Value,
-                courierId: viewModel.FromCourierId,
-                amount: viewModel.Amount,
-                reference: viewModel.Reference,
-                clientRefB: $"To # {viewModel.ToCourierId}",
-                ourRef: "ICC",
-                note: note,
-                currentTime: currentTime,
-                staffId: viewModel.StaffId
+                fromJobNumber.Value,
+                viewModel.FromCourierId,
+                viewModel.Amount,
+                viewModel.Reference,
+                $"To # {viewModel.ToCourierId}",
+                "ICC",
+                note,
+                currentTime,
+                viewModel.StaffId
             );
             await Context.TucJobs.AddAsync(fromJob);
 
             var toJob = CreateJobEntry(
-                jobNumber: toJobNumber.Value,
-                courierId: viewModel.ToCourierId,
-                amount: viewModel.Amount,
-                reference: viewModel.Reference,
-                clientRefB: $"From # {viewModel.FromCourierId}",
-                ourRef: "",
-                note: note,
-                currentTime: currentTime,
-                staffId: viewModel.StaffId
+                toJobNumber.Value,
+                viewModel.ToCourierId,
+                viewModel.Amount,
+                viewModel.Reference,
+                $"From # {viewModel.FromCourierId}",
+                "",
+                note,
+                currentTime,
+                viewModel.StaffId
             );
             await Context.TucJobs.AddAsync(toJob);
 
@@ -3385,11 +3383,11 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         var returnValue = new OutputParameter<int>();
 
         await Context.Procedures.NET_stpJob_Insert_JobNumberAsync(
-            StaffID: staffId,
-            JobTypeID: jobTypeId,
-            JobNumber: jobNumberOutput,
-            returnValue: returnValue,
-            cancellationToken: cancellationToken
+            staffId,
+            jobTypeId,
+            jobNumberOutput,
+            returnValue,
+            cancellationToken
         );
 
         return jobNumberOutput.Value;

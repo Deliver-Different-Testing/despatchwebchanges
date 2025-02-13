@@ -12,19 +12,12 @@ using DespatchWeb.Models.FlightStats;
 using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using DespatchWeb.Helpers;
-using Vehicle = DespatchWeb.Models.Vehicle;
+
 namespace DespatchWeb.Repositories;
 
-public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextFactory) : BaseJobRepository(contextFactory), INationwideJobRepository
+public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextFactory)
+    : BaseJobRepository(contextFactory), INationwideJobRepository
 {
-    
-
     // Ooriginal method for backwards compatibility
     public async Task<List<JobViewModel>> NationwideJobListAsync(string order, string orderDirection, bool isInternal,
         string clientIds, NationwideWidget windowPane,
@@ -203,7 +196,14 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                     j.UcjbTime != null ? j.UcjbTime.Value.Second : 0
                 ),
                 DangerousGoods = j.Dgdocument,
-                DryIceWeight = j.DryIceWeight
+                DryIceWeight = j.DryIceWeight,
+                Quantity = j.UcjbQty,
+                FromState = j.PickupAddressLine5,
+                ToState = j.DeliveryAddressLine5,
+                TotalPallets = null,
+                ExtraStopOffs = true,
+                WaitTime = null,
+                Cubic = null
             })
             .FirstOrDefaultAsync();
     }
@@ -255,19 +255,23 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         AgentInfo agent, CancellationToken ct)
     {
         var rates = await Context.Procedures.DD_stpGetAgentDistanceRateAsync(
-            ClientID: job.ClientId,
-            FromZipCode: int.Parse(job.FromZipCode),
-            ToZipCode: int.Parse(job.ToZipCode),
-            TotalMiles: job.TotalMiles,
-            TotalWeight: job.TotalWeight,
-            TotalPallets: null,
-            ExtraStopOffs: null,
-            BookTime: job.BookTime,
-            VehicleSizeID: job.VehicleSizeId,
-            DangerousGoods: job.DangerousGoods,
-            DryIceWeight: job.DryIceWeight,
-            WaitTime: null,
-            DistanceRateID: agent.DistanceRateId,
+            job.ClientId,
+            int.Parse(job.FromZipCode),
+            job.FromState,
+            int.Parse(job.ToZipCode),
+            job.ToState,
+            job.TotalMiles,
+            job.TotalWeight,
+            job.Quantity, // Added missing parameter
+            job.Cubic, // Added missing parameter
+            job.TotalPallets,
+            job.ExtraStopOffs ? 1 : 0,
+            job.BookTime,
+            job.VehicleSizeId,
+            job.DangerousGoods,
+            job.DryIceWeight,
+            job.WaitTime,
+            agent.DistanceRateId,
             cancellationToken: ct
         );
 
@@ -276,11 +280,59 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .FirstOrDefault();
     }
 
+    public async Task<decimal> GetCarrierFlightRateByJobIdAsync(int jobId, string carrierName, bool extraStopOffs, DateTime? bookTime)
+    {
+        try
+        {
+            var job = await Context.TucJobs.Include(j => j.TucJobItems).FirstOrDefaultAsync(j => j.UcjbId == jobId);
+            var returnValue = new OutputParameter<int>();
+
+                var results = await Context.Procedures.DD_stpGetCarrierFlightRateAsync(
+                    clientID: job.UcjbClientId,
+                    fromCity: job.PickupAddressLine4,
+                    fromState: job.PickupAddressLine5,
+                    toCity: job.DeliveryAddressLine4,
+                    toState: job.DeliveryAddressLine5,
+                    carrierName: carrierName,
+                    totalWeight: (decimal)job.UcjbWeight,
+                    quantity: job.UcjbQty,
+                    cubic: null,
+                    totalPallets: job.TucJobItems.Count,
+                    extraStopOffs: extraStopOffs ? 1 : 0,
+                    bookTime: bookTime,
+                    vehicleSizeID: job.UcjbSize,
+                    dangerousGoods: false,
+                    dryIceWeight: job.DryIceWeight,
+                    waitTime: null,
+                    returnValue: returnValue);
+
+            if (returnValue.Value != 0)
+                throw new NullReferenceException($"Failed to retrieve carrier rates. Return value: {returnValue.Value}");
+
+            if (results != null && results.Count != 0)
+            {
+                return results.Select(r => r.Rate ?? 0).FirstOrDefault();
+            }
+
+            Log.Warning("No carrier flight rates found for job {JobId}", jobId);
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error retrieving carrier flight rates for job {JobId}", jobId);
+            return 0;
+        }
+    }
+
+    #region Private Classes
+
     private class JobDetails
     {
         public int? AirPortId { get; init; }
         public int? VehicleSizeId { get; init; }
         public int? ClientId { get; init; }
+        public string FromState { get; init; }
+        public string ToState { get; init; }
         public string FromZipCode { get; init; }
         public string ToZipCode { get; init; }
         public int? TotalMiles { get; init; }
@@ -288,6 +340,11 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         public DateTime? BookTime { get; init; }
         public bool? DangerousGoods { get; init; }
         public decimal? DryIceWeight { get; init; }
+        public int? Quantity { get; set; }
+        public decimal? Cubic { get; set; }
+        public int? TotalPallets { get; set; }
+        public bool ExtraStopOffs { get; set; }
+        public int? WaitTime {get;set;}
     }
 
     private class AgentInfo
@@ -297,4 +354,6 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         public string AgentRanking { get; init; }
         public int? DistanceRateId { get; init; }
     }
+
+    #endregion
 }

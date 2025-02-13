@@ -2176,7 +2176,6 @@ public partial class DespatchContext : DbContext
                 .ToView("tblJob");
 
             entity.Property(e => e.AcceptedJobTypeId).HasColumnName("AcceptedJobTypeID");
-            entity.Property(e => e.AgentId).HasColumnName("AgentID");
             entity.Property(e => e.Amount).HasColumnType("money");
             entity.Property(e => e.Barcode).HasMaxLength(300);
             entity.Property(e => e.BulkParentId).HasColumnName("BulkParentID");
@@ -2546,7 +2545,9 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucAgent>(entity =>
         {
-            entity.HasKey(e => e.UcagId).IsClustered(false);
+            entity.HasKey(e => e.UcagId)
+                .IsClustered(false)
+                .HasAnnotation("SqlServer:FillFactor", 80);
 
             entity.ToTable("tucAgents");
 
@@ -2638,7 +2639,9 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucClient>(entity =>
         {
-            entity.HasKey(e => e.UcclId).IsClustered(false);
+            entity.HasKey(e => e.UcclId)
+                .IsClustered(false)
+                .HasAnnotation("SqlServer:FillFactor", 80);
 
             entity.ToTable("tucClient", tb =>
                 {
@@ -2646,7 +2649,9 @@ public partial class DespatchContext : DbContext
                     tb.HasTrigger("tucClient_Insert");
                 });
 
-            entity.HasIndex(e => e.UcclCode, "IDX_tucClient_ucclCode").IsUnique();
+            entity.HasIndex(e => e.UcclCode, "IDX_tucClient_ucclCode")
+                .IsUnique()
+                .HasFillFactor(80);
 
             entity.HasIndex(e => e.InvoiceTemplateId, "IX_InvoiceTemplateId");
 
@@ -3031,7 +3036,8 @@ public partial class DespatchContext : DbContext
         {
             entity.HasKey(e => e.UcctId)
                 .HasName("PK_tucClientContacts")
-                .IsClustered(false);
+                .IsClustered(false)
+                .HasAnnotation("SqlServer:FillFactor", 80);
 
             entity.ToTable("tucClientContact", tb => tb.HasTrigger("UTL_trgContact_Update"));
 
@@ -3129,7 +3135,9 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucContact>(entity =>
         {
-            entity.HasKey(e => e.UccoId).IsClustered(false);
+            entity.HasKey(e => e.UccoId)
+                .IsClustered(false)
+                .HasAnnotation("SqlServer:FillFactor", 80);
 
             entity.ToTable("tucContact");
 
@@ -3151,7 +3159,9 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucCourier>(entity =>
         {
-            entity.HasKey(e => e.UccrId).IsClustered(false);
+            entity.HasKey(e => e.UccrId)
+                .IsClustered(false)
+                .HasAnnotation("SqlServer:FillFactor", 80);
 
             entity.ToTable("tucCourier", tb => tb.HasTrigger("UTL_trgCourier_Update"));
 
@@ -3401,7 +3411,9 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucEvent>(entity =>
         {
-            entity.HasKey(e => e.UcevId).IsClustered(false);
+            entity.HasKey(e => e.UcevId)
+                .IsClustered(false)
+                .HasAnnotation("SqlServer:FillFactor", 80);
 
             entity.ToTable("tucEvent");
 
@@ -3471,7 +3483,7 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("ucevTime");
             entity.Property(e => e.UcevType).HasColumnName("ucevType");
 
-            entity.HasOne(d => d.Speed).WithMany(p => p.TucEventSpeeds)
+            entity.HasOne(d => d.Speed).WithMany(p => p.TucEvents)
                 .HasForeignKey(d => d.SpeedId)
                 .HasConstraintName("FK_tucEvent_tucJobType");
 
@@ -3486,15 +3498,13 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.UcevJob).WithMany(p => p.TucEvents)
                 .HasForeignKey(d => d.UcevJobId)
                 .HasConstraintName("FK_tucEvent_Job");
-
-            entity.HasOne(d => d.UcevJobTypeNavigation).WithMany(p => p.TucEventUcevJobTypeNavigations)
-                .HasForeignKey(d => d.UcevJobType)
-                .HasConstraintName("FK_tucEvent_JobType");
         });
 
         modelBuilder.Entity<TucEventType>(entity =>
         {
-            entity.HasKey(e => e.UcetId).IsClustered(false);
+            entity.HasKey(e => e.UcetId)
+                .IsClustered(false)
+                .HasAnnotation("SqlServer:FillFactor", 80);
 
             entity.ToTable("tucEventType");
 
@@ -3512,7 +3522,9 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucJob>(entity =>
         {
-            entity.HasKey(e => e.UcjbId).IsClustered(false);
+            entity.HasKey(e => e.UcjbId)
+                .IsClustered(false)
+                .HasAnnotation("SqlServer:FillFactor", 80);
 
             entity.ToTable("tucJob", tb =>
                 {
@@ -3613,7 +3625,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.UcjbNumber, "ucjbNumber")
                 .IsUnique()
-                .IsClustered();
+                .IsClustered()
+                .HasFillFactor(80);
 
             entity.HasIndex(e => e.UcjbSpeed, "ucjbSpeed");
 
@@ -3969,7 +3982,9 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucJobArchive>(entity =>
         {
-            entity.HasKey(e => e.UcjbId).IsClustered(false);
+            entity.HasKey(e => e.UcjbId)
+                .IsClustered(false)
+                .HasAnnotation("SqlServer:FillFactor", 80);
 
             entity.ToTable("tucJobArchive", tb =>
                 {
@@ -4342,18 +4357,24 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.Agent).WithMany(p => p.TucJobArchives)
                 .HasForeignKey(d => d.AgentId)
-                .HasConstraintName("FK_tucJobArchive_tucAgents");
+                .HasConstraintName("FK_tucJobArchive_Agent");
 
-            entity.HasOne(d => d.DeliverToLeave).WithMany(p => p.TucJobArchives)
-                .HasForeignKey(d => d.DeliverToLeaveId)
-                .HasConstraintName("FK_tucJobArchive_LeaveNotHome");
+            entity.HasOne(d => d.FromAirport).WithMany(p => p.TucJobArchiveFromAirports)
+                .HasForeignKey(d => d.FromAirportId)
+                .HasConstraintName("FK_tucJobArchive_FromAirport");
+
+            entity.HasOne(d => d.ToAirport).WithMany(p => p.TucJobArchiveToAirports)
+                .HasForeignKey(d => d.ToAirportId)
+                .HasConstraintName("FK_tucJobArchive_ToAirport");
 
             entity.HasOne(d => d.UcjbSizeNavigation).WithMany(p => p.TucJobArchives).HasForeignKey(d => d.UcjbSize);
         });
 
         modelBuilder.Entity<TucJobBooking>(entity =>
         {
-            entity.HasKey(e => e.UcbkId).IsClustered(false);
+            entity.HasKey(e => e.UcbkId)
+                .IsClustered(false)
+                .HasAnnotation("SqlServer:FillFactor", 80);
 
             entity.ToTable("tucJobBooking");
 
@@ -4717,7 +4738,9 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucJobNationwide>(entity =>
         {
-            entity.HasKey(e => e.UcnwId).IsClustered(false);
+            entity.HasKey(e => e.UcnwId)
+                .IsClustered(false)
+                .HasAnnotation("SqlServer:FillFactor", 80);
 
             entity.ToTable("tucJobNationwide");
 
@@ -4779,7 +4802,9 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucJobStatus>(entity =>
         {
-            entity.HasKey(e => e.UcjsId).IsClustered(false);
+            entity.HasKey(e => e.UcjsId)
+                .IsClustered(false)
+                .HasAnnotation("SqlServer:FillFactor", 80);
 
             entity.ToTable("tucJobStatus");
 
@@ -4805,7 +4830,9 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucJobType>(entity =>
         {
-            entity.HasKey(e => e.UcjtId).IsClustered(false);
+            entity.HasKey(e => e.UcjtId)
+                .IsClustered(false)
+                .HasAnnotation("SqlServer:FillFactor", 80);
 
             entity.ToTable("tucJobType");
 
@@ -4895,7 +4922,9 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucStaff>(entity =>
         {
-            entity.HasKey(e => e.UcstId).IsClustered(false);
+            entity.HasKey(e => e.UcstId)
+                .IsClustered(false)
+                .HasAnnotation("SqlServer:FillFactor", 80);
 
             entity.ToTable("tucStaff", tb =>
                 {
@@ -5224,8 +5253,6 @@ public partial class DespatchContext : DbContext
             entity.HasKey(e => e.ZipPolygonId).HasName("PK__ZipPolyg__6A8AEEE3127F7A1C");
 
             entity.ToTable("ZipPolygon");
-
-            entity.HasIndex(e => e.Zip, "IX_ZipPolygon_Zip");
 
             entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
             entity.Property(e => e.Latitude).HasColumnType("decimal(18, 8)");

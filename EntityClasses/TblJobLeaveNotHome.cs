@@ -31,7 +31,5 @@ public partial class TblJobLeaveNotHome
 
     public string Notes { get; set; }
 
-    public virtual ICollection<TucJobArchive> TucJobArchives { get; set; } = new List<TucJobArchive>();
-
     public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
 }

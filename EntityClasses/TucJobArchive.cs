@@ -445,7 +445,9 @@ public partial class TucJobArchive
 
     public virtual TucAgent Agent { get; set; }
 
-    public virtual TblJobLeaveNotHome DeliverToLeave { get; set; }
+    public virtual TblAirport FromAirport { get; set; }
+
+    public virtual TblAirport ToAirport { get; set; }
 
     public virtual VehicleSize UcjbSizeNavigation { get; set; }
 }

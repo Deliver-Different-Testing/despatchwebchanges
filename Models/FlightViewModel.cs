@@ -16,5 +16,6 @@ public class FlightViewModel
     public string Aircraft { get; set; }
     public List<string> ServiceClasses { get; set; }
     public bool IsCodeShare { get; set; }
+    public decimal Amount { get; set; }
     public string CodeShareAirline { get; set; }
 }

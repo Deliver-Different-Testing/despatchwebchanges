@@ -25,5 +25,7 @@ public partial class ZoneZip
 
     public DateTime? LastModified { get; set; }
 
+    public bool? ApplyCongestion { get; set; }
+
     public virtual ZoneName ZoneName { get; set; }
 }

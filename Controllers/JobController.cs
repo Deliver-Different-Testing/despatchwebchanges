@@ -18,11 +18,9 @@ using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
-using DespatchWeb.Repositories;
 using ExcelDataReader;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.VisualBasic;
 using Serilog;
 
@@ -1828,12 +1826,12 @@ public class JobController(
 
     private static List<string> GenerateNotesList(JobCreateViewModel job)
     {
-        return new List<string>
-        {
+        return
+        [
             FormatNote($"Job Notes: {job.JobNotes}"),
             FormatNote($"Pickup Notes: {job.PickupNotes}"),
-            FormatNote($"Delivery Notes: {job.DeliveryNotes}"),
-        };
+            FormatNote($"Delivery Notes: {job.DeliveryNotes}")
+        ];
     }
 
     private async Task AddNotesToJob(List<string> notesList, int jobId, string despatcherName)
