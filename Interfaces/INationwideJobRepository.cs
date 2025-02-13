@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
@@ -22,4 +23,7 @@ public interface INationwideJobRepository
     Task<List<AgentViewModel>> GetAgentsAsync(int jobId);
 
     Task<bool> AddAgentToJobAsync(int agentId, int jobId);
+
+    Task<decimal> GetCarrierFlightRateByJobIdAsync(int jobId, string carrierName, bool extraStopOffs,
+        DateTime? bookTime);
 }

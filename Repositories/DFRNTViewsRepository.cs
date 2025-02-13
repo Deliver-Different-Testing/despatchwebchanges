@@ -2,13 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoMapper;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Serilog;
 
 namespace DespatchWeb.Repositories;

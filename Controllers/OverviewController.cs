@@ -4,7 +4,6 @@ using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Serilog;
 
 namespace DespatchWeb.Controllers;

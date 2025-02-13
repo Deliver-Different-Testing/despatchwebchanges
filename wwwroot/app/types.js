@@ -396,6 +396,7 @@
  * @property {string} aircraft - The type of aircraft used for the flight.
  * @property {string[]} serviceClasses - An array of service classes available on the flight.
  * @property {boolean} isCodeShare - Indicates whether the flight is a codeshare flight.
+ * @property {number} amount - The estimated amount of this flight
  * @property {string|null} codeShareAirline - The airline code of the operating carrier if it's a codeshare flight, null otherwise.
  */
 
@@ -572,6 +573,9 @@
  * @property {AddressDetails} pickupLocation - The pickup address and coordinates
  * @property {AddressDetails} deliveryLocation - The delivery address and coordinates
  * @property {CourierLocation} courierLocation - The assigned courier's current location details
+ *
+ *
+ *
  * @property {boolean} isFlightJob - Indicates if this is a flight job
  * @property {AssignedFlight} flightInfo - Flight details if this is a flight job
  */

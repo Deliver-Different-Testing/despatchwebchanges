@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
@@ -9,7 +8,6 @@ using DespatchWeb.Models.FlightStats;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Serilog;
 
 namespace DespatchWeb.Controllers;
@@ -29,8 +27,8 @@ public class NationwideJobController(
             if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
             var status = (DispatchStatus)queryParams.Status;
-            var result = await repository.NationwideJobListAsync(queryParams?.Order,
-                queryParams?.OrderDirection, isInternal, clientIds, NationwideWidget.JobList, despatchViewIds, status);
+            var result = await repository.NationwideJobListAsync(queryParams.Order,
+                queryParams.OrderDirection, isInternal, clientIds, NationwideWidget.JobList, despatchViewIds, status);
 
             return Json(result);
         }
@@ -50,8 +48,8 @@ public class NationwideJobController(
             if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
             var status = (DispatchStatus)queryParams.Status;
-            var result = await repository.NationwideJobListAsync(queryParams?.Order,
-                queryParams?.OrderDirection, isInternal, clientIds, NationwideWidget.Pod, despatchViewIds, status);
+            var result = await repository.NationwideJobListAsync(queryParams.Order,
+                queryParams.OrderDirection, isInternal, clientIds, NationwideWidget.Pod, despatchViewIds, status);
 
             return Json(result);
         }
@@ -118,9 +116,12 @@ public class NationwideJobController(
                 return BadRequest("Invalid airport ID(s) provided.");
 
             var flightOptions =
-                await flightService.GetFlightsAsync(fromAirport, toAirport, departureDate, activeAirlines);
+                await flightService.GetFlightsAsync(jobId, fromAirport, toAirport, departureDate, activeAirlines);
 
-            return Json(flightOptions ?? new List<FlightViewModel>());
+            if(flightOptions == null || flightOptions.Count == 0)
+                return Ok(new List<ScheduledFlight>());
+
+            return Json(flightOptions);
         }
         catch (Exception e)
         {
@@ -143,6 +144,7 @@ public class NationwideJobController(
             {
                 flight = await flightService.GetFlightDetailsByFlightNumberAsync(request.FlightNumber,
                     request.DepartureDate);
+
                 if (flight == null)
                 {
                     var warning =
@@ -218,7 +220,7 @@ public class NationwideJobController(
         try
         {
             var agents = await repository.GetAgentsAsync(jobId);
-            if (agents != null && agents.Any())
+            if (agents != null && agents.Count != 0)
             {
                 return Json(agents);
             }

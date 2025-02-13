@@ -109,7 +109,7 @@ public partial class DeswebQryDespatch
 
     public DateTime? UcjbDispDate { get; set; }
 
-    public short? UcjbSize { get; set; }
+    public int? UcjbSize { get; set; }
 
     public int? UcjbStatus { get; set; }
 

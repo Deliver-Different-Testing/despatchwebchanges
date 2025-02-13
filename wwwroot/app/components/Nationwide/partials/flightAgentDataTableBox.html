@@ -116,6 +116,12 @@
                             <i class="material-symbols-outlined"
                                ng-if="sort.flightList == 'd-duration'">arrow_drop_up</i>Stops
                         </th>
+                        <th ng-click="orderList('flightList','amount')" scope="col">
+                            <i class="material-symbols-outlined"
+                               ng-if="sort.flightList == 'amount'">arrow_drop_down</i>
+                            <i class="material-symbols-outlined"
+                               ng-if="sort.flightList == 'd-amount'">arrow_drop_up</i>Rate
+                        </th>
                         <th ng-click="orderList('flightList','aircraft')" scope="col">
                             <i class="material-symbols-outlined"
                                ng-if="sort.flightList == 'aircraft'">arrow_drop_down</i>
@@ -139,6 +145,7 @@
                     <td>{{flight.arrivalTime | date: "HH:mm"}}</td>
                     <td>{{flight.duration | date: "H:mm"}}</td>
                     <td>{{flight.stops === 0 ? 'D' : flight.stops}}</td>
+                    <td>{{flight.amount}}</td>
                     <td>{{flight.aircraft}}</td>
                 </tr>
                 </tbody>

@@ -9,6 +9,7 @@ namespace DespatchWeb.Interfaces;
 public interface IFlightStatsService
 {
     Task<List<FlightViewModel>> GetFlightsAsync(
+        int jobId,
         string departureAirportCode,
         string destinationAirportCode,
         DateTime? departureDateTime = null,

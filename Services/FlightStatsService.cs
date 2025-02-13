@@ -15,8 +15,10 @@ using System.Web;
 
 namespace DespatchWeb.Services;
 
-
-public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor contextAccessor) : IFlightStatsService
+public class FlightStatsService(
+    HttpClient httpClient,
+    IHttpContextAccessor contextAccessor,
+    INationwideJobRepository repository) : IFlightStatsService
 {
     private const string ConnectionsBaseUrl = "https://api.flightstats.com/flex/connections/rest/v3/";
     private const string SchedulesBaseUrl = "https://api.flightstats.com/flex/schedules/rest/v1";
@@ -25,16 +27,17 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
     private readonly string _appKey = Environment.GetEnvironmentVariable("FlightStatusApiAppKey");
     private readonly string _webhookUrl = Environment.GetEnvironmentVariable("FlightWebhook");
 
-    public async Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime, string departureAirportCode)
+    public async Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
+        string departureAirportCode)
     {
-        
         Log.Information("FlightStatsService initialized successfully");
         if (string.IsNullOrEmpty(departureAirportCode))
             throw new ArgumentException("Departure airport code is required and cannot be null or empty.",
                 nameof(departureAirportCode));
 
         var uniqueWebhookId = Guid.NewGuid();
-        var connectionString = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "Connection")?.Value;
+        var connectionString =
+            contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "Connection")?.Value;
         var tenantId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
         var timeZone = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
         var userName = contextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Name)?.Value;
@@ -47,10 +50,12 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
 
 
         // Construct the relative URL
-        var relativeUrl = $"json/create/{carrierCode}/{flightNumber}/from/{departureAirportCode}/departing/{year}/{month}/{day}";
+        var relativeUrl =
+            $"json/create/{carrierCode}/{flightNumber}/from/{departureAirportCode}/departing/{year}/{month}/{day}";
 
         var query = HttpUtility.ParseQueryString(string.Empty);
-        query["appId"] = _appId;;
+        query["appId"] = _appId;
+        ;
         query["appKey"] = _appKey;
         query["name"] = uniqueWebhookId.ToString();
         query["type"] = "JSON";
@@ -61,7 +66,7 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
         var fullUrl = $"{AlertUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
         var uriBuilder = new UriBuilder(fullUrl)
         {
-            Query = query.ToString()
+            Query = query.ToString() ?? string.Empty
         };
 
 
@@ -80,11 +85,11 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
 
         var createAlertResponse = JsonSerializer.Deserialize<CreateAlertResponse>(content);
 
-
         return createAlertResponse.Rule?.Id;
     }
 
     public async Task<List<FlightViewModel>> GetFlightsAsync(
+        int jobId,
         string departureAirportCode,
         string destinationAirportCode,
         DateTime? departureDateTime = null,
@@ -92,7 +97,6 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
         int flightBuffer = 0,
         string codeType = null,
         List<string> extendedOptions = null)
-
     {
         if (string.IsNullOrEmpty(departureAirportCode))
             throw new ArgumentException("Departure airport code is required and cannot be null or empty.",
@@ -116,10 +120,9 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
 
         var (year, month, day, hour, minute) = SplitDate(flightsFrom.Value);
 
-
         // Construct the relative URL
-        var relativeUrl = $"json/firstflightout/{departureAirportCode}/to/{destinationAirportCode}/leaving_after/{year}/{month}/{day}/{hour}/{minute}";
-
+        var relativeUrl =
+            $"json/firstflightout/{departureAirportCode}/to/{destinationAirportCode}/leaving_after/{year}/{month}/{day}/{hour}/{minute}";
 
         var query = HttpUtility.ParseQueryString(string.Empty);
         query["appId"] = _appId;
@@ -128,18 +131,17 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
         query["maxResults"] = "100";
         query["includeCodeshares"] = "false";
 
-        if (includeAirlines != null && includeAirlines.Any())
+        if (includeAirlines != null && includeAirlines.Count != 0)
         {
             var combinedAirlines = string.Join(",", includeAirlines);
             Log.Debug("Adding carrier filters: {Carriers}", combinedAirlines);
             query["includeAirlines"] = combinedAirlines;
         }
-        //query["numHours"] = "24";
 
         if (!string.IsNullOrEmpty(codeType))
             query["codeType"] = codeType;
 
-        if (extendedOptions != null && extendedOptions.Any())
+        if (extendedOptions != null && extendedOptions.Count != 0)
         {
             var combinedOptions = string.Join(",", extendedOptions);
             Log.Debug("Adding extended options: {Options}", combinedOptions);
@@ -150,14 +152,14 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
         var fullUrl = $"{ConnectionsBaseUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
         var uriBuilder = new UriBuilder(fullUrl)
         {
-            Query = query.ToString()
+            Query = query.ToString() ?? string.Empty
         };
 
         var uri = uriBuilder.Uri;
         Log.Debug($"FlightRequest: {uri}");
+
         // Execute the request
         var response = await httpClient.GetAsync(uri);
-        //response.EnsureSuccessStatusCode();
 
         Log.Debug($"FlightService StatusCode: {response.StatusCode}");
 
@@ -167,17 +169,24 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
         if (flightStatusResponse?.Connections == null)
             return [];
 
-
-        var flightOptions = flightStatusResponse.Connections
-            .Where(conn => conn.ScheduledFlight.Any())
-            .Select(conn =>
+        var flightOptions = await Task.WhenAll(flightStatusResponse.Connections
+            .Where(conn => conn.ScheduledFlight.Count != 0)
+            .Select(async conn =>
             {
                 var firstFlight = conn.ScheduledFlight.First();
                 var lastFlight = conn.ScheduledFlight.Last();
 
+                // Get amount from stored proc
+                var amount = await repository.GetCarrierFlightRateByJobIdAsync(
+                    jobId,
+                    firstFlight.CarrierFsCode,
+                    conn.ScheduledFlight.Count != 0,
+                    firstFlight.DepartureTime);
+
                 return new FlightViewModel
                 {
-                    Airline = flightStatusResponse.Appendix?.Airlines.FirstOrDefault(a => a.Fs == firstFlight.CarrierFsCode)
+                    Airline = flightStatusResponse.Appendix?.Airlines
+                        .FirstOrDefault(a => a.Fs == firstFlight.CarrierFsCode)
                         ?.Name,
                     FlightNumber = firstFlight.CarrierFsCode + firstFlight.FlightNumber,
                     DepartureTime = firstFlight.DepartureTime,
@@ -191,11 +200,12 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
                         ?.Name,
                     ServiceClasses = firstFlight.ServiceClasses,
                     IsCodeShare = firstFlight.IsCodeShare,
+                    Amount = amount,
                     CodeShareAirline = firstFlight.IsCodeShare ? firstFlight.CarrierFsCode : null
                 };
-            }).OrderBy(flight => flight.DepartureTime).ToList();
+            }));
 
-        return flightOptions;
+        return flightOptions.OrderBy(flight => flight.DepartureTime).ToList();
     }
 
     public async Task<ScheduledFlight> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,
@@ -219,7 +229,7 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
         var fullUrl = $"{SchedulesBaseUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
         var uriBuilder = new UriBuilder(fullUrl)
         {
-            Query = query.ToString()
+            Query = query.ToString() ?? string.Empty
         };
 
         var uri = uriBuilder.Uri;
@@ -240,14 +250,14 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
     }
 
     private static (int year, int month, int day, int hour, int min) SplitDate(DateTime effectiveDateTime) =>
-        (effectiveDateTime.Year, effectiveDateTime.Month, effectiveDateTime.Day, effectiveDateTime.Hour, effectiveDateTime.Minute);
+        (effectiveDateTime.Year, effectiveDateTime.Month, effectiveDateTime.Day, effectiveDateTime.Hour,
+            effectiveDateTime.Minute);
 
     private static (string carrierCode, string flightNumber) SplitFlightCode(string completeFlightNumber) =>
         (completeFlightNumber?[..2], completeFlightNumber?[2..]);
 
     public async Task<Rule> GetAlertSubscriptionByIdAsync(string alertId)
     {
-        
         // Construct the relative URL
         var relativeUrl = $"json/get/{alertId}";
 
@@ -255,12 +265,12 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
         query["appId"] = _appId;
         query["appKey"] = _appKey;
 
-        
+
         // Construct the final URI
         var fullUrl = $"{AlertUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
         var uriBuilder = new UriBuilder(fullUrl)
         {
-            Query = query.ToString()
+            Query = query.ToString() ?? string.Empty
         };
 
 
@@ -289,14 +299,13 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
         query["appId"] = _appId;
         query["appKey"] = _appKey;
 
-        
+
         // Construct the final URI
         var fullUrl = $"{AlertUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
         var uriBuilder = new UriBuilder(fullUrl)
         {
-            Query = query.ToString()
+            Query = query.ToString() ?? string.Empty
         };
-
 
         var uri = uriBuilder.Uri;
         Log.Debug($"DeleteAlertRequest: {uri}");
@@ -309,5 +318,4 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
 
         throw new Exception($"Failed to retrieve alert information: {response.ReasonPhrase}");
     }
-
 }

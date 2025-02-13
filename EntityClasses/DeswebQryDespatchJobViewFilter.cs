@@ -17,7 +17,7 @@ public partial class DeswebQryDespatchJobViewFilter
 
     public int IsParentJob { get; set; }
 
-    public short? VehicleSizeId { get; set; }
+    public int? VehicleSizeId { get; set; }
 
     public int? UcjbClientId { get; set; }
 

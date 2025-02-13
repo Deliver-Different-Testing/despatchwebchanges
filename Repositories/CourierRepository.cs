@@ -11,7 +11,6 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Serilog;
 
 namespace DespatchWeb.Repositories;
