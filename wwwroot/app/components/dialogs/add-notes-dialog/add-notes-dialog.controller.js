@@ -2,11 +2,6 @@
  * @fileoverview Controller for the Add Notes Dialog in the uDispatch application.
  * @module AddNotesDialogController
  */
-
-/**
- * Controller for the Add Notes Dialog
- * @class
- */
 class AddNotesDialogController {
     /**
      * @type {string[]}

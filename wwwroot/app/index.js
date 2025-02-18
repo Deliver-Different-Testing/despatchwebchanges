@@ -29,6 +29,7 @@ import "./routes";
 // Common components
 import "./components/common/side-nav/side-nav.directive";
 import "./components/common/dispatch-map/dispatch-map.directive";
+import "./components/common/job-details/job-details.controller";
 
 // Service imports
 import "./services";
