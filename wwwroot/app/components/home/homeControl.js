@@ -391,15 +391,15 @@ function HomeControl(
               id: "col1",
               width: "65%",
               boxes: [
-                { name: "jobsList", height: "50%" },
-                { name: "jobDetail", height: "50%" },
+                { name: "jobsList", height: "45%" },
+                { name: "jobDetail", height: "65%" },
               ],
             },
             {
               id: "col2",
               width: "17.5%",
               boxes: [
-                { name: "currentWork", height: "50%" }, //{name: "potentialCouriers", height: "30%"},
+                { name: "currentWork", height: "50%" },
                 { name: "supports", height: "50%" },
               ],
             },

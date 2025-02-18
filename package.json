@@ -27,8 +27,8 @@
     "uglify-js": "^3.19.3"
   },
   "scripts": {
-    "build": "node build.js",
-    "dev": "node build.js --watch"
+    "dev": "node build.js --dev",
+    "build": "node build.js"
   },
   "keywords": [],
   "author": "",

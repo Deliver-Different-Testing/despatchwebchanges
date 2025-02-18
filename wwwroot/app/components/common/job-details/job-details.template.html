@@ -1,0 +1,576 @@
+<div class="job-detail-page" ng-if="ctrl.job">
+
+    <!-- Progress bar for updating details-->
+    <md-progress-linear
+            class="md-primary"
+            md-mode="indeterminate"
+            ng-if="ctrl.jobDetailLoading"
+            style="position: absolute; top: 0; left: 0; right: 0;">
+        <md-tooltip md-direction="bottom">Refreshing Job Details...</md-tooltip>
+    </md-progress-linear>
+
+    <md-card class="job-detail-widget">
+        <!-- Top Bar -->
+        <div class="header-bar">
+            <div class="navigation-group">
+                <md-button class="md-icon-button nav-button"
+                           ng-disabled="!ctrl.job.relatedJobs.length"
+                           ng-click="ctrl.navigateTab('prev')">
+                    <md-icon md-font-set="material-symbols-outlined">chevron_left</md-icon>
+                </md-button>
+                <md-button class="md-icon-button nav-button"
+                           ng-disabled="!ctrl.job.relatedJobs.length"
+                           ng-click="ctrl.navigateTab('next')">
+                    <md-icon md-font-set="material-symbols-outlined">chevron_right</md-icon>
+                </md-button>
+            </div>
+
+            <div class="job-ids-container">
+                <md-tabs md-selected="ctrl.selectedTab"
+                         md-stretch-tabs="never"
+                         class="job-id-tabs"
+                         md-on-select="ctrl.onTabSelected($index)"
+                         ng-class="{'single-tab': !ctrl.job.relatedJobs.length}">
+                    <md-tab md-tab-click="ctrl.job.relatedJobs.length ? undefined : false">
+                        <md-tab-label>{{ctrl.job.jobNo}}</md-tab-label>
+                    </md-tab>
+                    <md-tab ng-repeat="relatedJob in ctrl.job.relatedJobs">
+                        <md-tab-label>{{relatedJob.label}}</md-tab-label>
+                    </md-tab>
+                </md-tabs>
+            </div>
+
+            <div class="status">{{ctrl.job.statusName}}</div>
+        </div>
+
+        <!-- Timing Section -->
+        <div class="timing-section md-whiteframe-1dp">
+            <div layout="row" layout-align="space-between center">
+                <!-- Left Column -->
+                <div flex="50" flex-xs="100" class="timing-column">
+                    <md-list class="timing-list">
+                        <md-list-item>
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="Created date">calendar_today
+                            </md-icon>
+                            <div class="timing-detail">
+                                <span class="timing-label">Created:</span>
+                                <span class="timing-value">{{ctrl.job.createdDate ? (ctrl.job.createdDate | date:'MM/dd/yyyy') : 'Not available'}}</span>
+                            </div>
+                        </md-list-item>
+
+                        <md-list-item md-ink-ripple ng-click="!this.job.locked && ctrl.editLogTime($event, ctrl.job)">
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="Log time">schedule</md-icon>
+                            <div class="timing-detail">
+                                <span class="timing-label">Log Time:</span>
+                                <span class="timing-value">{{ctrl.job.time ? (ctrl.job.time | date:'shortTime') : 'Not available'}}</span>
+                            </div>
+                        </md-list-item>
+
+                        <md-list-item>
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="Dispatch status">
+                                local_shipping
+                            </md-icon>
+                            <div class="timing-detail">
+                                <span class="timing-label">Dispatch:</span>
+                                <span class="timing-value">{{ctrl.job.dispatchTime ? (ctrl.job.dispatchTime | date:'shortTime') : 'Not available'}}</span>
+                            </div>
+                        </md-list-item>
+                    </md-list>
+                </div>
+
+                <md-divider vertical></md-divider>
+
+                <!-- Right Column -->
+                <div flex="50" flex-xs="100" class="timing-column">
+                    <md-list class="timing-list">
+                        <md-list-item>
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="Due date">event</md-icon>
+                            <div class="timing-detail">
+                                <span class="timing-label">Due Date:</span>
+                                <span class="timing-value">{{ctrl.job.bookedDate ? (ctrl.job.bookedDate | date:'MM/dd/yyyy') : 'Not available'}}</span>
+                            </div>
+                        </md-list-item>
+
+                        <md-list-item>
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="Pickup time">access_time
+                            </md-icon>
+                            <div class="timing-detail">
+                                <span class="timing-label">PU Time:</span>
+                                <span class="timing-value">{{ctrl.job.puTime ? (ctrl.job.puTime | date:'shortTime') : 'Not available'}}</span>
+                            </div>
+                        </md-list-item>
+
+                        <md-list-item md-ink-ripple
+                                      ng-click="!this.job.locked && ctrl.editCompletedTime($event, ctrl.job)">
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="POD time">inventory_2</md-icon>
+                            <div class="timing-detail">
+                                <span class="timing-label">POD Time:</span>
+                                <span class="timing-value">{{ctrl.job.completedTime ? (ctrl.job.completedTime | date:'shortTime') : 'Not available'}}</span>
+                            </div>
+                        </md-list-item>
+                    </md-list>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content" layout="row">
+            <!-- Left Column -->
+            <div flex="60" class="left-column">
+                <!-- From/To Section -->
+                <div layout="row" layout-xs="column" class="address-section md-whiteframe-1dp">
+                    <!-- Pickup Location -->
+                    <div flex="50" flex-xs="100" class="address-block pickup-block">
+                        <md-subheader class="address-header">
+                            <md-icon md-font-set="material-symbols-outlined"
+                                     class="location-icon"
+                                     aria-label="Pickup location">
+                                {{ctrl.getJobAddressIcon()}}
+                            </md-icon>
+                            <span>Pickup Location</span>
+                        </md-subheader>
+
+                        <md-divider></md-divider>
+
+                        <md-card-content class="address-content">
+                            <div ng-click="!ctrl.job.locked && ctrl.updateAddress($event, ctrl.job, 'fromAddress')">
+                                <h3 class="location-name md-title">{{ctrl.job.pickupAddress.addressLine1}}</h3>
+
+                                <div class="address-lines">
+                                    <p class="md-body-1">{{ctrl.job.pickupAddress.addressLine2}},
+                                        {{ctrl.job.pickupAddress.addressLine3}}</p>
+                                    <p class="md-body-1">{{ctrl.job.pickupAddress.addressLine4}},
+                                        {{ctrl.job.pickupAddress.addressLine5}},
+                                        {{ctrl.job.pickupAddress.addressLine6}}</p>
+                                </div>
+                            </div>
+
+                            <md-list class="contact-info">
+                                <md-list-item md-ink-ripple
+                                              ng-click="!ctrl.job.locked && ctrl.editJobContact($event, ctrl.job, 'from')">
+                                    <md-icon md-font-set="material-symbols-outlined">person</md-icon>
+                                    <p>Contact: {{ctrl.job.fromContactName || 'Not available'}}</p>
+                                </md-list-item>
+                                <md-list-item md-ink-ripple
+                                              ng-click="!ctrl.job.locked && ctrl.editJobContactPhone($event, ctrl.job, 'from')">
+                                    <md-icon md-font-set="material-symbols-outlined">phone</md-icon>
+                                    <p>Phone: {{ctrl.job.fromContactNumber || 'Not available'}}</p>
+                                </md-list-item>
+                            </md-list>
+                        </md-card-content>
+                    </div>
+
+                    <md-divider vertical hide-xs></md-divider>
+
+                    <!-- Delivery Location -->
+                    <div flex="50" flex-xs="100" class="address-block delivery-block">
+                        <md-subheader class="address-header">
+                            <md-icon md-font-set="material-symbols-outlined"
+                                     class="location-icon"
+                                     aria-label="Delivery location">
+                                {{ctrl.getJobAddressIcon()}}
+                            </md-icon>
+                            <span>Delivery Location</span>
+                        </md-subheader>
+
+                        <md-divider></md-divider>
+
+                        <md-card-content class="address-content">
+                            <div md-ink-ripple
+                                 ng-click="!ctrl.job.locked && ctrl.updateAddress($event, ctrl.job, 'toAddress')">
+                                <h3 class="location-name md-title">{{ctrl.job.deliveryAddress.addressLine1}}</h3>
+
+                                <div class="address-lines">
+                                    <p class="md-body-1">{{ctrl.job.deliveryAddress.addressLine2}},
+                                        {{ctrl.job.deliveryAddress.addressLine3}}</p>
+                                    <p class="md-body-1">{{ctrl.job.deliveryAddress.addressLine4}},
+                                        {{ctrl.job.deliveryAddress.addressLine5}},
+                                        {{ctrl.job.deliveryAddress.addressLine6}}</p>
+                                </div>
+                            </div>
+
+                            <md-list class="contact-info">
+                                <md-list-item md-ink-ripple
+                                              ng-click="!ctrl.job.locked && ctrl.editJobContact($event, ctrl.job, 'to')">
+                                    <md-icon md-font-set="material-symbols-outlined">person</md-icon>
+                                    <p>Contact: {{ctrl.job.deliverToContact || 'Not available'}}</p>
+                                </md-list-item>
+                                <md-list-item md-ink-ripple
+                                              ng-click="!ctrl.job.locked && ctrl.editJobContactPhone($event, ctrl.job, 'to')">
+                                    <md-icon md-font-set="material-symbols-outlined">phone</md-icon>
+                                    <p>Phone: {{ctrl.job.toContactPhone || 'Not available'}}</p>
+                                </md-list-item>
+                            </md-list>
+                        </md-card-content>
+                    </div>
+                </div>
+
+                <!-- Notes Section -->
+                <div class="notes-section md-whiteframe-1dp">
+                    <div class="section-header">
+                        <div layout="row">
+                            <div class="title-group" flex="50">
+                                <md-button class="md-icon-button info-button" ng-click="ctrl.showNotesInfo($event)"
+                                           aria-label="Notes information">
+                                    <md-icon md-font-set="material-symbols-outlined">info</md-icon>
+                                </md-button>
+                                <span>Notes</span>
+                            </div>
+                            <div class="md-dense" style="display: flex; justify-content: flex-end; flex: 0 0 50%;">
+                                <md-button class="md-raised md-primary" aria-label="add note"
+                                           ng-click="ctrl.showNotesDialog($event)">
+                                    <md-icon md-font-set="material-symbols-outlined">add</md-icon>
+                                    Add Note
+                                </md-button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <md-divider></md-divider>
+
+                    <div class="notes-list">
+                        <div class="note-item pickup" ng-repeat="note in ctrl.notes">
+                            <div class="note-time">
+                                <md-icon md-font-set="material-symbols-outlined">note_stack</md-icon>
+                            </div>
+                            <div class="note-text">{{note.text}}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Package Details -->
+                <div layout="row" layout-xs="column" class="info-sections-container md-whiteframe-1dp">
+                    <!-- Package Details -->
+                    <div flex="50" flex-xs="100" class="info-section">
+                        <md-subheader class="section-header">
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="Package details">
+                                inventory_2
+                            </md-icon>
+                            <span>Package Details</span>
+                        </md-subheader>
+
+                        <md-divider></md-divider>
+
+                        <md-list>
+                            <md-list-item class="info-row" md-ink-ripple
+                                          ng-click="!ctrl.job.locked && ctrl.showJobDimensionsDialog($event, ctrl.job)">
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Dimensions">
+                                    straighten
+                                </md-icon>
+                                <div class="info-detail">
+                                    <span class="label">Dimensions/Items:</span>
+                                    <span class="value">{{ctrl.job.parcelDimensions.length || 0}} packages</span>
+                                </div>
+                            </md-list-item>
+
+                            <md-list-item class="info-row" md-ink-ripple
+                                          ng-click="!ctrl.job.locked && ctrl.editJobWeight($event, ctrl.job)">
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Weight">
+                                    scale
+                                </md-icon>
+                                <div class="info-detail">
+                                    <span class="label">Weight:</span>
+                                    <span class="value">{{ctrl.job.weight || 0}}</span>
+                                </div>
+                            </md-list-item>
+                        </md-list>
+                    </div>
+
+                    <md-divider vertical hide-xs></md-divider>
+
+                    <!-- Additional Info -->
+                    <div flex="50" flex-xs="100" class="info-section">
+                        <md-subheader class="section-header">
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="Additional information">
+                                description
+                            </md-icon>
+                            <span>Additional Info</span>
+                        </md-subheader>
+
+                        <md-divider></md-divider>
+
+                        <md-list>
+                            <md-list-item class="info-row" md-ink-ripple
+                                          ng-click="!ctrl.job.locked && jdSvc.dgClassClick($event, ctrl.job)"
+                                          ng-if="!ctrl.job.bulkJob">
+
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Documents">
+                                    article
+                                </md-icon>
+                                <div class="info-detail">
+                                    <span class="label">DG#/Docs:</span>
+                                    <span class="value">    {{ctrl.job.dgClass}} /
+                                {{ctrl.hasDGDocs(ctrl.job)}}</span>
+                                </div>
+                            </md-list-item>
+
+                            <md-list-item class="info-row"
+                                          md-ink-ripple
+                                          ng-click="!ctrl.job.locked && jdSvc.leaveClick($event, ctrl.job)">
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Delivery instructions">
+                                    local_shipping
+                                </md-icon>
+                                <div class="info-detail">
+                                    <span class="label">Leave Parcel:</span>
+                                    <span class="value">{{ctrl.job.deliverToLeaveId || 'Not available'}}</span>
+                                </div>
+                            </md-list-item>
+                        </md-list>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div flex="40" class="right-column">
+                <!-- Combined Info Sections -->
+                <div class="info-sections-container md-whiteframe-1dp" style="background: #f5f5f5;">
+                    <!-- Client Information -->
+                    <section class="info-section client-section">
+                        <md-subheader class="section-header">
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="Client information">business
+                            </md-icon>
+                            <span>Client Information</span>
+                        </md-subheader>
+
+                        <md-divider></md-divider>
+
+                        <md-list>
+                            <md-list-item class="info-row" md-ink-ripple ng-click="ctrl.clientClick($event, ctrl.job)">
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Company">apartment
+                                </md-icon>
+                                <div class="info-detail">
+                                    <span class="label">Client Name:</span>
+                                    <span class="value">{{ctrl.job.clientName || 'Not available'}}</span>
+                                </div>
+                            </md-list-item>
+
+                            <md-list-item class="info-row" md-ink-ripple ng-click="ctrl.clientClick($event, ctrl.job)">
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Account number">tag
+                                </md-icon>
+                                <div class="info-detail">
+                                    <span class="label">Account #:</span>
+                                    <span class="value">{{ctrl.job.client || 'Not available'}}</span>
+                                </div>
+                            </md-list-item>
+                        </md-list>
+                    </section>
+
+                    <!-- Booked By -->
+                    <section class="info-section booker-section">
+                        <md-subheader class="section-header">
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="Booking information">
+                                person_outline
+                            </md-icon>
+                            <span>Booked By</span>
+                        </md-subheader>
+
+                        <md-divider></md-divider>
+
+                        <md-list>
+                            <md-list-item class="info-row" ng-click="ctrl.contactClick($event, ctrl.job)"
+                                          ng-if="!ctrl.job.bulkJob">
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Contact name">badge
+                                </md-icon>
+                                <div class="info-detail">
+                                    <span class="label">Client Name:</span>
+                                    <span class="value">{{ctrl.job.clientName || 'Not available'}}</span>
+                                </div>
+                            </md-list-item>
+
+                            <md-list-item class="info-row" md-ink-ripple
+                                          ng-click="!ctrl.job.locked && ctrl.editJobContactPhone($event, ctrl.job, 'from')">
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Phone number">phone
+                                </md-icon>
+                                <div class="info-detail">
+                                    <span class="label">Phone:</span>
+                                    <span class="value">{{ctrl.job.fromContactNumber || 'Not available'}}</span>
+                                </div>
+                            </md-list-item>
+                        </md-list>
+                    </section>
+                </div>
+
+                <!-- Job Details -->
+                <div class="info-sections-container job-details-info md-whiteframe-1dp">
+                    <div class="info-section">
+                        <md-subheader class="section-header">
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="Job details">
+                                assignment
+                            </md-icon>
+                            <span>Job Details</span>
+                        </md-subheader>
+
+                        <md-divider></md-divider>
+
+                        <md-list>
+                            <md-list-item class="info-row" md-ink-ripple
+                                          ng-click="!ctrl.job.locked && ctrl.speedClick($event, ctrl.job)">
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Speed">speed</md-icon>
+                                <div class="info-detail">
+                                    <span class="label">Speed:</span>
+                                    <span class="value">{{ctrl.job.speedName || 'Not available'}}</span>
+                                </div>
+                            </md-list-item>
+
+                            <md-list-item class="info-row" md-ink-ripple
+                                          ng-click="!ctrl.job.locked && ctrl.jobTypeClick($event, ctrl.job)">
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Job type">local_shipping
+                                </md-icon>
+                                <div class="info-detail">
+                                    <span class="label">Job Type:</span>
+                                    <span class="value">{{jdSvc.getJobTypeDescription(ctrl.job.jobType)}}</span>
+                                </div>
+                            </md-list-item>
+
+                            <md-list-item class="info-row" md-ink-ripple
+                                          ng-click="!ctrl.job.locked && ctrl.sizeClick($event, ctrl.job)">
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Vehicle size">
+                                    directions_car
+                                </md-icon>
+                                <div class="info-detail">
+                                    <span class="label">Size:</span>
+                                    <span class="value">{{ctrl.job.size.text}}</span>
+                                </div>
+                            </md-list-item>
+
+                            <md-list-item class="info-row" md-ink-ripple
+                                          ng-click="ctrl.editRef($event, ctrl.job, true)">
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Reference A">tag</md-icon>
+                                <div class="info-detail">
+                                    <span class="label">Ref A:</span>
+                                    <span class="value">{{ctrl.job.refA || '-'}}</span>
+                                </div>
+                            </md-list-item>
+
+                            <md-list-item class="info-row" md-ink-ripple
+                                          ng-click="ctrl.editRef($event, ctrl.job, false)">
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Reference B">tag</md-icon>
+                                <div class="info-detail">
+                                    <span class="label">Ref B:</span>
+                                    <span class="value">{{ctrl.job.refB || '-'}}</span>
+                                </div>
+                            </md-list-item>
+
+                            <md-list-item class="info-row" md-ink-ripple ng-click="ctrl.editOurRef($event, ctrl.job)">
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Our reference">numbers
+                                </md-icon>
+                                <div class="info-detail">
+                                    <span class="label">Our Ref:</span>
+                                    <span class="value">{{ctrl.job.ourRef}}</span>
+                                </div>
+                            </md-list-item>
+
+                            <md-list-item class="info-row" md-ink-ripple ng-click="ctrl.courierClick($event, ctrl.job)">
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Courier">person</md-icon>
+                                <div class="info-detail">
+                                    <span class="label">Courier:</span>
+                                    <span class="value">{{ctrl.job.courier}}</span>
+                                </div>
+                            </md-list-item>
+                        </md-list>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-section md-whiteframe-1dp">
+            <div layout="row">
+                <!-- Left side - Input group -->
+                <div flex="33" class="input-group">
+                    <div class="inputs-container">
+                        <md-input-container class="md-block compact">
+                            <md-icon md-font-set="material-symbols-outlined">location_on</md-icon>
+                            <input placeholder="Tracking Method" ng-model="ctrl.job.trackingMethod">
+                        </md-input-container>
+                        <md-input-container class="md-block compact">
+                            <md-icon md-font-set="material-symbols-outlined">phone</md-icon>
+                            <input placeholder="Mobile" ng-model="ctrl.job.mobile">
+                        </md-input-container>
+                        <md-input-container class="md-block compact">
+                            <md-icon md-font-set="material-symbols-outlined">email</md-icon>
+                            <input placeholder="Email" ng-model="ctrl.job.email">
+                        </md-input-container>
+                    </div>
+                </div>
+
+                <md-divider vertical></md-divider>
+
+                <!-- Right side - Checkbox group -->
+                <div flex="60" flex-offset="5" class="checkbox-group">
+                    <div class="checkboxes-container">
+                        <div class="checkbox-grid">
+                            <div layout="row" layout-wrap>
+                                <div flex="20">
+                                    <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'van')"
+                                                 ng-model="ctrl.job.van" class="compact">Van
+                                    </md-checkbox>
+                                </div>
+                                <div flex="20">
+                                    <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'truck')"
+                                                 ng-model="ctrl.job.truck" class="compact">Truck
+                                    </md-checkbox>
+                                </div>
+                                <div flex="20">
+                                    <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'pedal')"
+                                                 ng-model="ctrl.job.ped" class="compact">PED
+                                    </md-checkbox>
+                                </div>
+                                <div flex="20">
+                                    <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'attention')"
+                                                 ng-model="ctrl.job.attention" class="compact">Attention
+                                    </md-checkbox>
+                                </div>
+                                <div flex="20">
+                                    <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'vanOK')"
+                                                 ng-model="ctrl.job.vanOk" class="compact">Van OK?
+                                    </md-checkbox>
+                                </div>
+                            </div>
+
+                            <div layout="row" layout-wrap>
+                                <div flex="20">
+                                    <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'reprice')"
+                                                 ng-model="ctrl.job.reprice" class="compact">Reprice
+                                    </md-checkbox>
+                                </div>
+                                <div flex="20">
+                                    <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'void')"
+                                                 ng-model="ctrl.job.void" class="compact">Void
+                                    </md-checkbox>
+                                </div>
+                                <div flex="20">
+                                    <md-checkbox ng-click="ctrl.markJobAsDone($event, ctrl.job)"
+                                                 ng-model="ctrl.job.done" class="compact">Done
+                                    </md-checkbox>
+                                </div>
+                                <div flex="20">
+                                    <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'delivered')"
+                                                 ng-model="ctrl.delivered" class="compact">Delivered
+                                    </md-checkbox>
+                                </div>
+                            </div>
+                        </div>
+
+                        <md-divider></md-divider>
+
+                        <div layout="row" layout-align="end">
+                            <span class="charge">Charge: {{ctrl.job.amount | currency}}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </md-card>
+</div>
+
+<div class="no-data" ng-if="!ctrl.job">
+    <div class="content">
+        <div class="icon">
+            <md-icon md-font-set="material-symbols-outlined">assignment</md-icon>
+        </div>
+        <div class="text">
+            Please Select a Job or Courier
+        </div>
+    </div>
+</div>
