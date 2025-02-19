@@ -114,12 +114,6 @@
                                             ng-if="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span>
                                         <span
                                             ng-if="box.name == 'currentWork' || box.name == 'map'">{{currentWorkSelection}}</span>
-                                        <span ng-repeat="jo in currentJob.relatedJobs"
-                                            ng-if="box.name == 'jobDetail' && currentJob.relatedJobs.length > 1">
-                                            &nbsp;<span ng-click="loadRelatedJobDetail(jo.id, jo.label)"
-                                                ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}"
-                                                style="cursor:pointer;text-decoration:underline;">{{jo.text}}</span>
-                                        </span>
                                     </span>
                                 </div>
 

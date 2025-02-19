@@ -3,6 +3,11 @@ import app from "../app";
 class dispatchService {
     static $inject = ["$http", "moment", "APP_CONFIG"];
 
+    /**
+     * @param {Object} $http
+     * @param {Object} moment
+     * @param {APP_CONFIG} appConfig
+     */
     constructor($http, moment, appConfig) {
         this.$http = $http;
         this.moment = moment;
@@ -70,22 +75,6 @@ class dispatchService {
      */
     async editPallet(pallet, preBook, despatcherName) {
         const response = await this.$http.post("job/EditPallet", pallet, {
-            params: {
-                preBook,
-                despatcher: despatcherName
-            }
-        });
-
-        return response.data;
-    }
-
-    /**
-     * @param {Pallet} pallet
-     * @param {boolean} preBook
-     * @param {string} despatcherName
-     */
-    async deletePallet(pallet, preBook, despatcherName) {
-        const response = await this.$http.post("job/DeletePallet", pallet, {
             params: {
                 preBook,
                 despatcher: despatcherName
@@ -224,17 +213,6 @@ class dispatchService {
      */
     async voidJob(jobId) {
         await this.$http.post(`job/Void?jobId=${jobId}`);
-    }
-
-    /**
-     * @param {number} jobId
-     * @param {string} despatcherName
-     * @param {number} staffId
-     * @param {string} currentSpeed
-     */
-    async processUncheckDirect(jobId, despatcherName, staffId, currentSpeed) {
-        const response = await this.$http.post(`job/ProcessUncheckDirect?jobId=${jobId}&despatcher=${despatcherName}&staffId=${staffId}&currentSpeed=${currentSpeed}`);
-        return response.data;
     }
 
     /**
@@ -463,16 +441,6 @@ class dispatchService {
         return response.data;
     }
 
-    /**
-     * Retrieves the detailed contact list for the client with the provided clientId.
-     *
-     * @param {number} clientId - The unique identifier of the client.
-     */
-    async getContactDetailList(clientId) {
-        const response = await this.$http.get(`job/ContactDetailList?clientId=${clientId}`);
-        return response.data;
-    }
-
     async getLeaveList() {
         const response = await this.$http.get("job/LeaveList");
         return response.data;
@@ -490,15 +458,6 @@ class dispatchService {
 
     async getStatusList() {
         const response = await this.$http.get("job/StatusList");
-        return response.data;
-    }
-
-    /**
-     * @param {number} jobId
-     * @param {number} truckWeightLimit
-     */
-    async getTruckItemsSummary(jobId, truckWeightLimit) {
-        const response = await this.$http.get(`job/TruckItemsSummary?jobId=${jobId}&truckWeightLimit=${truckWeightLimit}`);
         return response.data;
     }
 
@@ -632,28 +591,38 @@ class dispatchService {
     }
 
     /**
-     * @param {number} jobId
-     * @param {number} clientId
-     * @param {number} speed
-     * @param {string} fromZipCode
-     * @param {string} toZipCode
-     * @param {number} weight
-     * @param {Date} booked
-     * @param {number} size
-     * @param {boolean} dangerousGoods
-     * @param {number} totalPallets
-     * @param {number} extraStopOffs
-     * @param {number} dryIceWeight
-     * @param {number} waitTime
-     * @param {number} fromLat
-     * @param {number} fromLong
-     * @param {number} toLat
-     * @param {number} toLong
+     * @param {object} jobDetails - An object containing all the job details.
+     * @param {number} jobDetails.jobId
+     * @param {number} jobDetails.clientId
+     * @param {number} jobDetails.speed
+     * @param {string} jobDetails.fromZipCode
+     * @param {string} jobDetails.toZipCode
+     * @param {number} jobDetails.weight
+     * @param {Date} jobDetails.booked
+     * @param {number} jobDetails.size
+     * @param {boolean} jobDetails.dangerousGoods
+     * @param {number} jobDetails.totalPallets
+     * @param {number} jobDetails.extraStopOffs
+     * @param {number} jobDetails.dryIceWeight
+     * @param {number} jobDetails.waitTime
+     * @param {number} jobDetails.fromLat
+     * @param {number} jobDetails.fromLong
+     * @param {number} jobDetails.toLat
+     * @param {number} jobDetails.toLong
      */
-    async rateJobUS(jobId, clientId, speed, fromZipCode, toZipCode, weight, booked, size, dangerousGoods, totalPallets, extraStopOffs, dryIceWeight, waitTime, fromLat, fromLong, toLat, toLong) {
-        const response = await this.$http.get(`job/RateJobUs?jobId=${jobId}&clientId=${clientId}&speed=${speed}&fromZip=${fromZipCode}&toZip=${toZipCode}&weight=${weight}&booked=${booked}&size=${size
-            }&dangerousGoods=${dangerousGoods}&totalPallets=${totalPallets}&extraStopOffs=${extraStopOffs}&dryIceWeight=${dryIceWeight}&waitTime=${waitTime}&fromLat=${fromLat}&fromLong=${fromLong
-            }&toLat=${toLat}&toLong=${toLong}`);
+    async rateJobUS(jobDetails) {
+        // Helper function to generate a query string
+        const generateQueryString = (params) => {
+            return Object.entries(params)
+                .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+                .join("&");
+        };
+
+        // Prepare query string from jobDetails object
+        const queryString = generateQueryString(jobDetails);
+
+        // Make the HTTP request
+        const response = await this.$http.get(`job/RateJobUs?${queryString}`);
         return response.data;
     }
 

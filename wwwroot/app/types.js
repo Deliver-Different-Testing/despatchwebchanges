@@ -731,3 +731,10 @@
  * @property {Array<Region>} [regions]
  * @property {Array<Speed>} [speeds]
  */
+
+/**
+ * @typedef {Object} APP_CONFIG
+ *
+ * @constant
+ * @property {boolean} US_Customer - Indicates whether the current user is a US-based customer
+ */
