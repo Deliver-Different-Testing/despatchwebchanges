@@ -2911,21 +2911,6 @@ function HomeControl(
       }
     };
 
-    /**
-     * @param {number} jobId
-     * @param {string} jobNumber
-     */
-    $scope.loadRelatedJobDetail = async (jobId, jobNumber) => {
-      try {
-        const currentJob = await DispatchData.getJobDetail(jobId);
-
-        await $scope.selectJob(currentJob);
-        $scope.currentSelection = ` for Job ${jobNumber}`;
-      } catch (error) {
-        console.error("Error loading related job detail:", error);
-      }
-    };
-
     $scope.selectSupportJobDetail = async (support) => {
       console.log(`select Job ${support.jobId}`);
 

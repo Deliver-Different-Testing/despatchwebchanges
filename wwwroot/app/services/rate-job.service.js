@@ -1,21 +1,22 @@
-/**
- * A service for rating jobs - determines the cost of hiring and dispatching for a job
- * @class
- */
+import app from "../app";
+
 class RateJobService {
+    static $inject = ["DispatchData", "moment"];
+
     constructor(DispatchData, moment) {
         this.dispatchData = DispatchData;
-        this._moment = moment;
+        this.moment = moment;
     }
 
     /**
      * Rate a job
      * @param {Job} job - A job to rate
      */
-    async rateJob(job) { //hardcoded 0 pallets, 0 extrastopoffs, 0 dryiceweight, 0 waittime
-        return this.dispatchData.rateJobUS(job.id, job.clientId, job.speedId, job.pickupAddress.addressLine7,
-            job.deliveryAddress.addressLine7, job.weight, job.booked, job.size.id, job.dgDocumentation, 0, 0, 0, 0,
-            job.pickupAddress.latitude, job.pickupAddress.longitude, job.deliveryAddress.latitude, job.deliveryAddress.longitude);
+    async rateJob(job) {
+        //hardcoded 0 pallets, 0 extrastopoffs, 0 dryiceweight, 0 waittime
+        /*  return this.dispatchData.rateJobUS(job.id, job.clientId, job.speedId, job.pickupAddress.addressLine7,
+              job.deliveryAddress.addressLine7, job.weight, job.booked, job.size.id, job.dgDocumentation, 0, 0, 0, 0,
+              job.pickupAddress.latitude, job.pickupAddress.longitude, job.deliveryAddress.latitude, job.deliveryAddress.longitude);*/
         //return job.charge;
         /*const pedal = job.fromSuburbId === 1 && job.toSuburbID === 1 || job.fromSuburbId === 112 && job.toSuburbID === 112 || job.fromSuburbId === 480 && job.toSuburbID === 480;
         if (job.size.id === 4 && (job.speedId === 41 || job.speedId === 42 || job.speedId === 43 || job.speedId === 44 || job.speedId === 46 || job.speedId === 51 || job.speedId === 52 || job.speedId === 124 || job.speedId === 125 || job.speedId === 150 || job.speedId === 151 || job.speedId === 152)) {
@@ -28,5 +29,4 @@ class RateJobService {
     }
 }
 
-
-angular.module("uDispatch").service("rateJobService", ["DispatchData", "moment", (DispatchData, moment) => new RateJobService(DispatchData, moment)]);
+app.service("rateJobService", RateJobService);

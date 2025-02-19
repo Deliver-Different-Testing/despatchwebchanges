@@ -225,11 +225,6 @@
         }
       }
 
-      .timing-divider {
-        height: auto;
-        margin: 0 @spacing-unit*4;
-      }
-
       .timing-column {
         padding: @spacing-unit 0;
       }
@@ -255,10 +250,6 @@
       .timing-value {
         color: @text-dark;
         font-size: 14px;
-
-        &.timing-na {
-          color: @text-light;
-        }
       }
 
       // Mobile styles
@@ -394,22 +385,6 @@
           }
         }
       }
-
-      .package-section {
-        .info-section {
-          &:first-child {
-            .section-header md-icon {
-              color: @pickup-color;
-            }
-          }
-
-          &:last-child {
-            .section-header md-icon {
-              color: @delivery-color;
-            }
-          }
-        }
-      }
     }
 
     // Notes Section
@@ -420,12 +395,6 @@
         font-size: 14px;
         margin-bottom: 12px;
         font-weight: 500;
-
-        .small-icon {
-          font-size: 20px;
-          margin-right: 8px;
-          color: @primary-color;
-        }
 
         .md-fab.md-mini {
           margin: 0;
@@ -512,260 +481,70 @@
           }
         }
       }
-
-      .job-details-section {
-        padding: 8px;
-        margin-bottom: 10px;
-
-        .section-header {
-          align-items: center;
-          color: rgba(0, 0, 0, 0.54);
-          font-size: 14px;
-          margin-bottom: 12px;
-          font-weight: 500;
-
-          .small-icon {
-            font-size: 20px;
-            margin-right: 8px;
-            color: @primary-color;
-          }
-        }
-
-        .info-grid {
-          display: grid;
-          grid-row-gap: 12px;
-
-          .info-row {
-            display: grid;
-            grid-template-columns: 24px 80px 1fr;
-            align-items: center;
-            gap: 8px;
-
-            .detail-icon {
-              font-size: 18px;
-              color: rgba(0, 0, 0, 0.54);
-              justify-self: center;
-            }
-
-            .label {
-              color: rgba(0, 0, 0, 0.54);
-              font-size: 14px;
-              text-align: right;
-            }
-
-            .value {
-              color: rgba(0, 0, 0, 0.87);
-              font-size: 14px;
-              text-align: left;
-
-              // Style for empty values
-              &:empty::before {
-                content: "-";
-                color: rgba(0, 0, 0, 0.38);
-              }
-            }
-          }
-        }
-
-        // Compact styling for the input container
-        md-input-container.compact {
-          margin: 0;
-          padding: 0;
-          height: 30px;
-
-          input {
-            height: 30px;
-            padding: 0 8px;
-            background: white;
-            border-radius: 4px;
-            border: 1px solid rgba(0, 0, 0, 0.12);
-          }
-        }
-      }
     }
 
-    // Footer Section
     .footer-section {
       background: #f5f5f5;
+      padding: @spacing-unit*2;
 
-      .section-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 12px;
+      .info-section {
+        // Match the styling of other info sections
+        md-list {
+          padding: 0;
 
-        .small-icon {
-          font-size: 20px;
-          margin-right: 8px;
-          color: rgba(0, 0, 0, 0.54);
-        }
-
-        span {
-          font-size: 14px;
-          font-weight: 500;
-          color: rgba(0, 0, 0, 0.87);
-        }
-      }
-
-      md-divider {
-        margin-bottom: 8px;
-
-        &[vertical] {
-          margin: 0 24px;
-          height: auto;
-        }
-      }
-
-      .input-group {
-        .inputs-container {
-          padding-right: 8px;
-
-          md-input-container.compact {
-            margin: 8px 0;
-            height: 40px;
-
-            input {
-              height: 32px;
-              padding-left: 36px;
-              background: white;
-              border: 1px solid rgba(0, 0, 0, 0.12);
-              border-radius: 4px;
-            }
+          md-list-item {
+            min-height: @spacing-unit*6 !important;
+            padding: 0;
 
             md-icon {
-              left: 8px;
-              top: 8px;
-              color: rgba(0, 0, 0, 0.54);
+              margin-right: @spacing-unit*2;
+              color: @text-medium;
+            }
+
+            .info-detail {
+              display: flex;
+              align-items: center;
+              gap: @spacing-unit;
+              flex: 1;
+
+              .label {
+                color: @text-medium;
+                font-size: 14px;
+                min-width: 100px;
+                font-weight: normal;
+              }
+
+              .value {
+                color: @text-dark;
+                font-size: 14px;
+
+                &:empty::before {
+                  content: "Not available";
+                  color: @text-light;
+                }
+              }
+            }
+
+            &:hover {
+              background-color: rgba(0, 0, 0, 0.04);
+            }
+
+            .md-button {
+              margin: 0;
             }
           }
         }
       }
 
+      // Maintain existing checkbox group styles
       .checkbox-group {
         .checkboxes-container {
-          .checkbox-grid {
-            margin-bottom: 8px;
-
-            [layout="row"] {
-              margin-bottom: 4px; // Reduced spacing between rows
-            }
-          }
-
-          md-checkbox.compact {
-            margin: 4px 0;
-
-            .md-container {
-              width: 18px;
-              height: 18px;
-            }
-
-            .md-label {
-              font-size: 14px;
-            }
-          }
-        }
-
-        .charge {
-          font-size: 14px;
-          font-weight: 500;
-          color: rgba(0, 0, 0, 0.87);
-        }
-      }
-    }
-  }
-
-  .color-guide {
-    padding: 8px 0;
-
-    .guide-item {
-      display: flex;
-      align-items: flex-start;
-      margin-bottom: 8px;
-      padding: 8px;
-      border-radius: 4px;
-      transition: background-color 0.2s ease;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-
-      &:hover {
-        background-color: rgba(0, 0, 0, 0.02);
-      }
-
-      .color-bar {
-        width: 4px;
-        height: 24px;
-        border-radius: 2px;
-        margin-right: 12px;
-        flex-shrink: 0;
-      }
-
-      .content {
-        flex: 1;
-
-        .header {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          margin-bottom: 4px;
-
-          .material-symbols-outlined {
-            font-size: 18px;
-          }
-
-          strong {
-            font-weight: 500;
-            font-size: 14px;
-            color: rgba(0, 0, 0, 0.87);
-          }
-        }
-
-        .description {
-          color: rgba(0, 0, 0, 0.6);
-          font-size: 13px;
-          line-height: 1.4;
+          padding: @spacing-unit*2;
         }
       }
 
-      // Color variants
-      &.pickup {
-        .color-bar {
-          background: #4CAF50;
-        }
-
-        .material-symbols-outlined {
-          color: #4CAF50;
-        }
-      }
-
-      &.delivery {
-        .color-bar {
-          background: #FFC107;
-        }
-
-        .material-symbols-outlined {
-          color: #FFC107;
-        }
-      }
-
-      &.flight {
-        .color-bar {
-          background: #2196F3;
-        }
-
-        .material-symbols-outlined {
-          color: #2196F3;
-        }
-      }
-
-      &.info {
-        .color-bar {
-          background: #9C27B0;
-        }
-
-        .material-symbols-outlined {
-          color: #9C27B0;
-        }
+      md-divider[vertical] {
+        margin: 0 @spacing-unit*3;
       }
     }
   }

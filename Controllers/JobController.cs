@@ -46,7 +46,7 @@ public class JobController(
     {
         Log.Information(
             "Index endpoint called with params: {@QueryParams}, IsInternal: {IsInternal}, "
-                + "ClientId: {ClientId}, ClientIds: {ClientIds}, DespatchViewIds: {@DespatchViewIds}",
+            + "ClientId: {ClientId}, ClientIds: {ClientIds}, DespatchViewIds: {@DespatchViewIds}",
             queryParams,
             isInternal,
             cid,
@@ -578,6 +578,7 @@ public class JobController(
                     var value = row[col];
                     dict[col.ColumnName] = value == DBNull.Value ? null : value;
                 }
+
                 rows.Add(dict);
             }
 
@@ -1503,7 +1504,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error calculating job rate");
-            return StatusCode(500, "An error occurred while calculating the rate.");
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -2023,6 +2024,7 @@ public class JobController(
         {
             message.Attachments.Add(attachment);
         }
+
         if (!string.IsNullOrEmpty(replyTo))
         {
             message.ReplyToList.Add(new MailAddress(replyTo));
@@ -2358,28 +2360,28 @@ public class JobController(
         }
     }
 
-  [HttpPost]
-  public async Task<IActionResult> UpdateJobPackages([FromBody] UpdateJobPackagesRequest request)
-  {
-      try
-      {
-          await jobRepository.UpdatePackagesForJobAsync(request.JobId, request.Parcels);
-          return Ok(new { message = "Parcels updated successfully" });
-      }
-      catch (Exception ex)
-      {
-          Log.Error(
-              ex,
-              "Error updating packages for job {JobId}. Error: {ErrorMessage}",
-              request.JobId,
-              ex.Message
-          );
-          return StatusCode(
-              500,
-              new { message = ex.Message }
-          );
-      }
-  }
+    [HttpPost]
+    public async Task<IActionResult> UpdateJobPackages([FromBody] UpdateJobPackagesRequest request)
+    {
+        try
+        {
+            await jobRepository.UpdatePackagesForJobAsync(request.JobId, request.Parcels);
+            return Ok(new { message = "Parcels updated successfully" });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(
+                ex,
+                "Error updating packages for job {JobId}. Error: {ErrorMessage}",
+                request.JobId,
+                ex.Message
+            );
+            return StatusCode(
+                500,
+                new { message = ex.Message }
+            );
+        }
+    }
 
     #region Single use Api models
 
