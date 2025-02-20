@@ -1,4 +1,5 @@
 import app from "../../app";
+import "./keyboardEvents";
 
 function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $timeout,
     greetingService, $mdDialog, $document, toastrService, DispatchData, moment,
