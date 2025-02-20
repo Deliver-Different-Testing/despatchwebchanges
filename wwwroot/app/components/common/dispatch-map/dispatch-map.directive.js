@@ -2,6 +2,8 @@ import app from "../../../app";
 import "./dispatch-map.styles.less";
 
 class DispatchMapController {
+    static $inject = ["$scope", "NgMap", "$timeout", "configService", "$window"];
+
     constructor($scope, NgMap, $timeout, configService, $window) {
         this.$scope = $scope;
         this.NgMap = NgMap;
@@ -9,20 +11,16 @@ class DispatchMapController {
         this.configService = configService;
         this.$window = $window;
 
-        /** @type {google.maps.Map|null} */
         this.mapInstance = null;
-        /** @type {boolean} */
         this.isUpdating = false;
-        /** @type {google.maps.Symbol} */
         this.PICKUP_ICON = null;
-        /** @type {google.maps.Symbol} */
         this.DELIVERY_ICON = null;
-        /** @type {google.maps.Symbol} */
         this.COURIER_ICON = null;
-        /** @type {google.maps.Symbol} */
         this.PICKUP_ICON_HOVER = null;
-        /** @type {google.maps.Symbol} */
         this.DELIVERY_ICON_HOVER = null;
+
+        this.$scope.polylines = [];
+        this.$scope.directionsRenderers = [];
 
         this.$scope.mapZoom = this.$scope.mapZoom || 12;
         this.$scope.markers = [];
@@ -32,17 +30,18 @@ class DispatchMapController {
 
         this.updateDisplayedJobs = this.updateDisplayedJobs.bind(this);
         this.updateCourierMarkers = this.updateCourierMarkers.bind(this);
-        this.setupWatchers = this.setupWatchers.bind(this);
+        this._setupWatchers = this._setupWatchers.bind(this);
 
-        this.initialize();
+        this._initialize();
     }
 
     /**
      * @param {string} color
      * @param {boolean} [isHovered=false]
      * @returns {google.maps.Symbol}
+     * @private
      */
-    createMarkerIcon(color, isHovered = false) {
+    _createMarkerIcon(color, isHovered = false) {
         return {
             path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
             fillColor: color,
@@ -54,15 +53,21 @@ class DispatchMapController {
         };
     }
 
-    setupMarkerIcons() {
-        this.PICKUP_ICON = this.createMarkerIcon("#4CAF50");
-        this.DELIVERY_ICON = this.createMarkerIcon("#F44336");
-        this.COURIER_ICON = this.createMarkerIcon("#2196F3");
-        this.PICKUP_ICON_HOVER = this.createMarkerIcon("#4CAF50", true);
-        this.DELIVERY_ICON_HOVER = this.createMarkerIcon("#F44336", true);
+    /**
+     * @private
+     */
+    _setupMarkerIcons() {
+        this.PICKUP_ICON = this._createMarkerIcon("#4CAF50");
+        this.DELIVERY_ICON = this._createMarkerIcon("#F44336");
+        this.COURIER_ICON = this._createMarkerIcon("#2196F3");
+        this.PICKUP_ICON_HOVER = this._createMarkerIcon("#4CAF50", true);
+        this.DELIVERY_ICON_HOVER = this._createMarkerIcon("#F44336", true);
     }
 
-    async initialize() {
+    /**
+     * @private
+     */
+    async _initialize() {
         try {
             const apiKey = await this.configService.getGoogleMapsKey();
             this.$scope.googleMapsUrl = `https://maps.google.com/maps/api/js?key=${apiKey}&libraries=places`;
@@ -70,7 +75,7 @@ class DispatchMapController {
             this.$scope.$apply();
 
             const map = await this.NgMap.getMap();
-            this.setupMarkerIcons();
+            this._setupMarkerIcons();
 
             this.mapInstance = map;
             this.$scope.map = map;
@@ -78,7 +83,14 @@ class DispatchMapController {
                 disableAutoPan: true
             });
 
-            this.setupWatchers();
+            // Initialize directions service and renderer
+            this.directionsService = new this.$window.google.maps.DirectionsService();
+            this.directionsRenderer = new this.$window.google.maps.DirectionsRenderer({
+                suppressMarkers: true,
+                preserveViewport: true
+            });
+
+            this._setupWatchers();
 
             if (this.$scope.jobs || this.$scope.currentJob) {
                 await this.updateDisplayedJobs();
@@ -88,28 +100,40 @@ class DispatchMapController {
         }
     }
 
-    setupWatchers() {
+    /**
+     * @private
+     */
+    _setupWatchers() {
         this.$scope.$watch("mapCenter", (newCenter) => {
             if (newCenter && this.mapInstance) {
                 this.mapInstance.setCenter(newCenter);
             }
         });
 
-        this.$scope.$watch("currentJob", () => {
+        this.$scope.$watch("currentJob", async  () => {
             if (this.mapInstance) {
-                this.updateDisplayedJobs();
+                await this.updateDisplayedJobs();
             }
         });
 
-        this.$scope.$watchCollection("jobs", () => {
+        this.$scope.$watchCollection("jobs", async () => {
             if (this.mapInstance) {
-                this.updateDisplayedJobs();
+                await this.updateDisplayedJobs();
             }
         });
 
         this.$scope.$watchCollection("courierPositions", (newPositions) => {
             if (newPositions && this.mapInstance) {
                 this.updateCourierMarkers(newPositions);
+            }
+        });
+
+        this.$scope.$watchCollection("jobs", async () => {
+            if (this.mapInstance) {
+                await this.updateDisplayedJobs();
+                if (this.$scope.showJobLines) {
+                    await this.drawJobLines();
+                }
             }
         });
     }
@@ -122,13 +146,13 @@ class DispatchMapController {
             this.clearJobMarkers();
 
             if (this.$scope.currentJob) {
-                if (this.isValidCoordinates(
+                if (this._isValidCoordinates(
                     this.$scope.currentJob.pickupAddress?.latitude,
                     this.$scope.currentJob.pickupAddress?.longitude
                 )) {
                     this.addPickupMarker(this.$scope.currentJob);
                 }
-                if (this.isValidCoordinates(
+                if (this._isValidCoordinates(
                     this.$scope.currentJob.deliveryAddress?.latitude,
                     this.$scope.currentJob.deliveryAddress?.longitude
                 )) {
@@ -136,13 +160,13 @@ class DispatchMapController {
                 }
             } else if (this.$scope.jobs?.length) {
                 this.$scope.jobs.forEach(job => {
-                    if (this.isValidCoordinates(
+                    if (this._isValidCoordinates(
                         job.pickupAddress?.latitude,
                         job.pickupAddress?.longitude
                     )) {
                         this.addPickupMarker(job);
                     }
-                    if (this.isValidCoordinates(
+                    if (this._isValidCoordinates(
                         job.deliveryAddress?.latitude,
                         job.deliveryAddress?.longitude
                     )) {
@@ -160,14 +184,14 @@ class DispatchMapController {
     }
 
     /**
-     * @param {Array<Courier>} couriers
+     * @param {Courier[]} couriers
      */
     updateCourierMarkers(couriers) {
         if (!couriers || !this.$scope.showAvailableCouriers) return;
         this.clearCourierMarkers();
 
         couriers.forEach(courier => {
-            if (this.isValidCoordinates(courier.latitude, courier.longitude)) {
+            if (this._isValidCoordinates(courier.latitude, courier.longitude)) {
                 this.addCourierMarker(courier);
             }
         });
@@ -300,12 +324,92 @@ class DispatchMapController {
         }
     }
 
+    clearJobLines() {
+        // Clear polylines (flight routes)
+        this.$scope.polylines.forEach(line => line.setMap(null));
+        this.$scope.polylines = [];
+
+        // Clear direction renderers (road routes)
+        this.$scope.directionsRenderers.forEach(renderer => renderer.setMap(null));
+        this.$scope.directionsRenderers = [];
+    }
+
+    async drawJobLines() {
+        this.clearJobLines();
+
+        const jobs = this.$scope.currentJob ? [this.$scope.currentJob] : this.$scope.jobs;
+        if (!jobs?.length) return;
+
+        for (const job of jobs) {
+            if (!job.pickupAddress || !job.deliveryAddress) continue;
+
+            const pickup = new this.$window.google.maps.LatLng(
+                job.pickupAddress.latitude,
+                job.pickupAddress.longitude
+            );
+
+            const delivery = new this.$window.google.maps.LatLng(
+                job.deliveryAddress.latitude,
+                job.deliveryAddress.longitude
+            );
+
+            if (job.assignedFlight) {
+                // Create straight line for flight jobs
+                const flightPath = new this.$window.google.maps.Polyline({
+                    path: [pickup, delivery],
+                    geodesic: true,
+                    strokeColor: "#2196F3",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2
+                });
+
+                flightPath.setMap(this.mapInstance);
+                this.$scope.polylines.push(flightPath);
+            } else {
+                // Create road-following route for ground jobs
+                try {
+                    const renderer = new this.$window.google.maps.DirectionsRenderer({
+                        suppressMarkers: true,
+                        preserveViewport: true,
+                        polylineOptions: {
+                            strokeColor: "#FF5722",
+                            strokeOpacity: 0.7,
+                            strokeWeight: 3
+                        }
+                    });
+
+                    renderer.setMap(this.mapInstance);
+
+                    const result = await new Promise((resolve, reject) => {
+                        this.directionsService.route({
+                            origin: pickup,
+                            destination: delivery,
+                            travelMode: this.$window.google.maps.TravelMode.DRIVING
+                        }, (response, status) => {
+                            if (status === "OK") {
+                                resolve(response);
+                            } else {
+                                reject(status);
+                            }
+                        });
+                    });
+
+                    renderer.setDirections(result);
+                    this.$scope.directionsRenderers.push(renderer);
+                } catch (error) {
+                    console.error("Error getting directions:", error);
+                }
+            }
+        }
+    }
+
     /**
      * @param {number} [lat]
      * @param {number} [lng]
      * @returns {boolean}
+     * @private
      */
-    isValidCoordinates(lat, lng) {
+    _isValidCoordinates(lat, lng) {
         return Boolean(
             lat && lng && !isNaN(lat) && !isNaN(lng) &&
             lat !== 0 && lng !== 0 &&
@@ -315,12 +419,6 @@ class DispatchMapController {
     }
 }
 
-DispatchMapController.$inject = ["$scope", "NgMap", "$timeout", "configService", "$window"];
-
-/**
- * @class DispatchMapDirective
- * @implements {angular.IDirective}
- */
 class DispatchMapDirective {
     constructor() {
         this.restrict = "E";
@@ -333,12 +431,13 @@ class DispatchMapDirective {
             courierPositions: "=?",
             onMarkerClick: "&",
             showAvailableCouriers: "=?",
+            showJobLines: "=?"
         };
         this.controller = DispatchMapController;
     }
 
     /**
-     * @returns {angular.IDirectiveFactory}
+     * @returns {Object}
      */
     static factory() {
         return () => new DispatchMapDirective();

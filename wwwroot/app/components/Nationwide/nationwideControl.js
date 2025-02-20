@@ -21,6 +21,13 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
         /** @type {string} */
         $scope.jobRecordSearchText = "";
 
+        // New map
+        $scope.mapCenter = APP_CONFIG.US_Customer
+            ? { lat: 39.8283, lng: -98.5795 } // US center
+            : { lat: -36.8485, lng: 174.7633 }; // Auckland, NZ
+        $scope.courierPositions = [];
+        $scope.mapZoom = 4;
+
         /**
          * @type {JobDataType}
          * @constant

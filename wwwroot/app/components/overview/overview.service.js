@@ -1,14 +1,10 @@
 import app from "../../app";
 
-/**
- * @class OverviewService
- * @description Service to handle api calls for Overview dashboard
- */
-class overviewService {
+class OverviewService {
     static $inject = ["$http"];
 
     /**
-     * @param {angular.IHttpService} $http
+     * @param {Object} $http
      */
     constructor($http) {
         this.$http = $http;
@@ -171,4 +167,4 @@ class overviewService {
     }
 }
 
-app.service("overviewService", overviewService);
+app.service("overviewService", OverviewService);

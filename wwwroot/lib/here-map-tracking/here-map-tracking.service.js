@@ -217,22 +217,6 @@ angular.module("hereMapTracking.services")
                 }
             };
 
-            /*service.getIconPlacement = function (fromLat, fromLong, toLat, toLong, percentage, extraMarkers, map) {
-             //Sets courier tracking icon as a percentage of flight completion
-                var diffLat = fromLat - toLat;
-                var diffLong = fromLong - toLong;
-                var iconLat = fromLat - (diffLat - diffLat * percentage);
-                var iconLong = fromLong - (diffLong - diffLong * percentage);
-
-                var point = new H.geo.Point(iconLat, iconLong);
-                var icon = new H.map.Icon("https://img.icons8.com/ios-filled/50/FFC0CB/marker.png", { size: { w: 50, h: 50 } });
-                var marker = new H.map.Marker(point, { icon: icon });
-                extraMarkers.push(marker);
-                map.addObject(marker);
-
-                return extraMarkers;
-            };*/
-
             service.drawRouteLine = (fromLat, fromLong, toLat, toLong, routeLine, job, map, platform) => {
                 //Draws a single routeline
                 const routingParameters = {
@@ -313,13 +297,14 @@ angular.module("hereMapTracking.services")
                     // ensure that at least one route was found
                     if (result.routes.length) {
                         result.routes[0].sections.forEach((section) => {
+                            let routeLine;
                             if (flight) {
                                 // Create a linestring to use as a point source for the route line and add start and end points
                                 const lineString = new H.geo.LineString();
                                 lineString.pushPoint({lat: fromLat, lng: fromLong});
                                 lineString.pushPoint({lat: toLat, lng: toLong});
 
-                                var routeLine = new H.map.Polyline(lineString, {
+                                routeLine = new H.map.Polyline(lineString, {
                                     style: {lineWidth: 4}
                                 });
 
@@ -334,7 +319,7 @@ angular.module("hereMapTracking.services")
                                 const linestring = H.geo.LineString.fromFlexiblePolyline(section.polyline);
 
                                 // Create a polyline to display the route:
-                                var routeLine = new H.map.Polyline(linestring, {
+                                routeLine = new H.map.Polyline(linestring, {
                                     style: {strokeColor: 'purple', lineWidth: 3}
                                 });
 
@@ -374,10 +359,10 @@ angular.module("hereMapTracking.services")
 
             service.removeExtraRouteLines = (extraRouteLines, map) => {
                 //Remove all extra routelines
-                for (i in extraRouteLines) {
+                for (let i in extraRouteLines) {
                     service.removeObjectById('route' + i, map);
                 }
-                ;
+
                 extraRouteLines = [];
 
                 return extraRouteLines;
