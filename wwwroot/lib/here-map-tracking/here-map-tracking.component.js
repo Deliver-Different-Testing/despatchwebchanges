@@ -95,7 +95,7 @@ angular.module('hereMapTracking.components', [])
                         });
                     }
                 }
-            };
+            }
 
             //Watch for changes in config
             $scope.$watchGroup(['config', 'credentials'], (newValues, oldValues) => {
@@ -122,7 +122,7 @@ angular.module('hereMapTracking.components', [])
 
             $scope.$watch('config.courierLocation', (newValue, oldValue) => {
                 if (newValue && newValue.lat !== null && newValue.lng !== null && (!oldValue ||
-                    (newValue.lat != oldValue.lat && newValue.lng != oldValue.lng))) {
+                    (newValue.lat !== oldValue.lat && newValue.lng !== oldValue.lng))) {
                     courierMarker = HereMapService.getHereCourierMarker(newValue.lat, newValue.lng, courierMarker, mapInstance.map);
                 }
             });
@@ -141,7 +141,7 @@ angular.module('hereMapTracking.components', [])
 
             $scope.getScopedJob = selectedJobIndex => {
                 let index = selectedJobIndex - 1;
-                let thisJob = null;
+                let thisJob;
                 if (index !== -1) {
                     //Scope map to selected leg of job
                     thisJob = $scope.config.job.childJobs[index];
@@ -161,18 +161,18 @@ angular.module('hereMapTracking.components', [])
                 if (extraMarkers.length > 0) {
                     extraMarkers = HereMapService.removeExtraMarkers(extraMarkers, mapInstance.map);
                 }
-                ;
+
                 if (fromMarker && toMarker) {
                     mapInstance.map.removeObjects([fromMarker, toMarker]);
                     fromMarker = null;
                     toMarker = null;
                 }
-                ;
+
                 if (courierMarker) {
                     mapInstance.map.removeObject(courierMarker);
                     courierMarker = null;
                 }
-                ;
+
 
                 //Add all markers
                 fromMarker = HereMapService.getHereFromMarker(job.pickup.lat, job.pickup.lng, fromMarker, mapInstance.map);
@@ -180,25 +180,25 @@ angular.module('hereMapTracking.components', [])
                 if (courierLocation) {
                     courierMarker = HereMapService.getHereCourierMarker(courierLocation.lat, courierLocation.lng, courierMarker, mapInstance.map);
                 }
-                ;
+
 
                 //Remove all route lines
                 if (extraRouteLines.length > 0) {
                     extraRouteLines = HereMapService.removeExtraRouteLines(extraRouteLines, mapInstance.map);
                 }
-                ;
+
                 if (routeLine) {
                     HereMapService.removeObjectById('route', mapInstance.map);
                     routeLine = null;
                 }
-                ;
+
 
                 //Get scoped job in case initialised with it
                 let scopedJob = null;
                 if ($scope.config.selectedJobIndex && $scope.config.selectedJobIndex !== 0) {
                     scopedJob = $scope.getScopedJob($scope.config.selectedJobIndex);
                 }
-                ;
+
 
                 //Add all route lines (and extra markers if needed), also centers map
                 if (job.childJobs.length > 0) {
@@ -222,5 +222,4 @@ angular.module('hereMapTracking.components', [])
                 }
             };
         }]
-
     })]);

@@ -36,7 +36,9 @@
                 </md-tabs>
             </div>
 
-            <div class="status">{{ctrl.job.statusName}}</div>
+            <div class="status" md-ink-ripple ng-click="ctrl.statusClick($event, ctrl.job)">
+                {{ctrl.job.statusName}}
+            </div>
         </div>
 
         <!-- Timing Section -->
@@ -217,7 +219,8 @@
 
                         <md-list>
                             <md-list-item class="info-row">
-                                <md-icon md-font-set="material-symbols-outlined" aria-label="flight number">flight_takeoff
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="flight number">
+                                    flight_takeoff
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Flight Number:</span>
@@ -246,7 +249,7 @@
                     </section>
 
                     <!-- Agent information -->
-                    <section class="info-section booker-section"  ng-if="ctrl.job.assignedAgent">
+                    <section class="info-section booker-section" ng-if="ctrl.job.assignedAgent">
                         <md-subheader class="section-header">
                             <md-icon md-font-set="material-symbols-outlined" aria-label="Booking information">
                                 badge

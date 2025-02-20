@@ -1,4 +1,5 @@
-@primary-color: #3EAFC2;
+@import "../../../../css/variables.less";
+
 @text-dark: rgba(0, 0, 0, 0.87);
 @text-medium: rgba(0, 0, 0, 0.54);
 @text-light: rgba(0, 0, 0, 0.38);
@@ -10,8 +11,6 @@
 @divider-color: rgba(0, 0, 0, 0.12);
 @text-primary: rgba(0, 0, 0, 0.87);
 @text-secondary: rgba(0, 0, 0, 0.54);
-@pickup-color: #1976D2;    // Material Blue
-@delivery-color: #43A047;  // Material Green
 
 // Mixins
 .flex-center() {
@@ -22,7 +21,6 @@
 .section-transition() {
   transition: all @transition-speed cubic-bezier(0.4, 0, 0.2, 1);
 }
-
 
 // Reusable Info Sections Container Component
 .info-sections-container {
@@ -350,13 +348,13 @@
         // Specific block styles
         .pickup-block {
           .location-icon {
-            color: @pickup-color;
+            color: @status-blue;
           }
         }
 
         .delivery-block {
           .location-icon {
-            color: @delivery-color;
+            color: @status-green-dark;
           }
         }
 

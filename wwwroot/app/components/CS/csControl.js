@@ -1,4 +1,5 @@
 import app from "../../app";
+import './keyboardEvents';
 
 function CSControl($scope, jdSvc, uCSData, $state, $filter, $mdDialog, greetingService,
     $document, $timeout, dispatchJobService, toastrService, moment, DispatchData,
@@ -36,7 +37,6 @@ function CSControl($scope, jdSvc, uCSData, $state, $filter, $mdDialog, greetingS
         $scope.pbTotalCount = 0;
         $scope.pbPageIndex = 1;
         $scope.pbPageSizeSelected = 50;
-        $scope.name = "POD";
         /** @type {BulkScanDetail[]} */
         $scope.scanList = [];
 

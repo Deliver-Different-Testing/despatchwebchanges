@@ -269,9 +269,8 @@ class JobDetailController {
      * @param {Job} job
      * @param {string} title
      * @param {string} fieldName
-     * @param {string} id
      */
-    async showNotesDialog($event, job, title, fieldName, id = "editField") {
+    async showNotesDialog($event, job, title, fieldName) {
         try {
             await this.$mdDialog.show({
                 controller: "AddNotesDialogController",
@@ -282,7 +281,7 @@ class JobDetailController {
                 clickOutsideToClose: true,
                 fullscreen: true,
                 locals: {
-                    id: id, fieldName: fieldName, title: title, job: job,
+                    id: "editField", fieldName: fieldName, title: title, job: job,
                 },
                 bindToController: true
             });
@@ -856,6 +855,15 @@ class JobDetailController {
 
         await this.showSelectDialog($event, job, trackingArray,
             "TrackingMethod", "Tracking Method", trackingMethod);
+    }
+
+    /**
+     * @param $event
+     * @param {Job} job
+     */
+    async statusClick($event, job) {
+        const statusList = await this.dispatchData.getStatusList();
+        await this.showSelectDialog($event, job, statusList, "Status", "Status", job.statusName);
     }
 
     /**

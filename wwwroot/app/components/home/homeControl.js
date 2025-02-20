@@ -8,7 +8,6 @@ function HomeControl(
   greetingService,
   JobDetailService,
   $mdDialog,
-  $q,
   $scope,
   $state,
   $window,
@@ -31,7 +30,6 @@ function HomeControl(
     let initialViewSet = false; // Flag to track if the view has been set
 
     function initializeVariables() {
-      $scope.name = "Home";
       $scope.isInternal = ClientInternal === "True";
       $scope.jdSvc = JobDetailService;
       $scope.jobTableService = JobTableService;
@@ -3417,18 +3415,17 @@ function HomeControl(
        * @param {string} text
        * @param {function(): Promise<void>} action
        */
-      function createMenuItem(text, action) {
+      async function createMenuItem(text, action) {
         return {
-          text: text,
-          click: ($itemScope, $event) =>
-            $q
-              .when(action($itemScope, $event))
-              .then(() => {
-                console.log(text + " completed successfully");
-              })
-              .catch((error) => {
-                console.log("Error in " + text + ":", error);
-              }),
+          text,
+          click: async ($itemScope, $event) => {
+            try {
+              await action($itemScope, $event);
+              console.log(`${text} completed successfully`);
+            } catch (error) {
+              console.log(`Error in ${text}:`, error);
+            }
+          }
         };
       }
 
@@ -4205,7 +4202,6 @@ HomeControl.$inject = [
   'greetingService',
   'JobDetailService',
   '$mdDialog',
-  '$q',
   '$scope',
   '$state',
   '$window',
