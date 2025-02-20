@@ -36,9 +36,15 @@
                 </md-tabs>
             </div>
 
-            <div class="status" md-ink-ripple ng-click="ctrl.statusClick($event, ctrl.job)">
+            <md-chip class="status {{ctrl.job.statusName | lowercase | replace:' ':'-'}}"
+                     md-ink-ripple
+                     ng-click="ctrl.statusClick($event, ctrl.job)">
+                <md-icon class="status-icon"
+                         md-font-set="material-symbols-outlined">
+                    package_2
+                </md-icon>
                 {{ctrl.job.statusName}}
-            </div>
+            </md-chip>
         </div>
 
         <!-- Timing Section -->

@@ -91,7 +91,13 @@
                 </td>
                 <td>{{job.pod}}</td>
                 <td><span class="remain-time">{{job.remain}}</span></td>
-                <td class="status" ng-class="job.status">{{job.status}}</td>
+
+                <td md-cell>
+                    <md-chip class="status {{job.statusName | lowercase | replace:' ':'-'}}">
+                        {{job.status}}
+                    </md-chip>
+                </td>
+
                 <td class="selectjob" ng-click="selectForDispatch(job); $event.stopPropagation();"
                     title="placeholder selector"></td>
                 <td class="icon-cell" ng-click="createEvent($event, job);" title="Create Event">

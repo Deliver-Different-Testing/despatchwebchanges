@@ -112,16 +112,14 @@
                                                         <div class="md-body-1">{{job.reference}}</div>
                                                     </div>
                                                 </div>
-                                                <div class="job-status">
+                                                <md-chip
+                                                        class="status-chip {{job.statusName | lowercase | replace:' ':'-'}}">
                                                     <md-icon class="status-icon"
                                                              md-font-set="material-symbols-outlined">
                                                         package_2
                                                     </md-icon>
-                                                    <md-chip
-                                                            class="status-chip {{job.status | lowercase | replace:' ':'-'}}">
-                                                        {{job.status}}
-                                                    </md-chip>
-                                                </div>
+                                                    {{job.statusName}}
+                                                </md-chip>
                                             </div>
 
                                             <md-divider style="margin: 16px 0;"></md-divider>

@@ -76,7 +76,13 @@
                 <td md-cell>
                     <span class="remain-time">{{job.remain}}</span>
                 </td>
-                <td class="status" md-cell ng-class="job.status">{{job.status}}</td>
+
+                <td md-cell>
+                    <md-chip class="status {{job.statusName | lowercase | replace:' ':'-'}}">
+                        {{job.status}}
+                    </md-chip>
+                </td>
+
                 <td md-cell>
                     <input class="lateCallField no-spinners"
                            inputmode="numeric"

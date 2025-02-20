@@ -484,7 +484,7 @@ class OverviewController {
       controller: "MapDialogController",
       controllerAs: "ctrl",
       templateUrl: "app/components/dialogs/map-dialog/map-dialog.template.html",
-      parent: angular.element(this.$document.body),
+      parent: this.$document.body,
       clickOutsideToClose: true,
       fullscreen: true,
       locals: {
