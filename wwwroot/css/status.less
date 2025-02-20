@@ -1,0 +1,75 @@
+@import "variables.less";
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  line-height: 24px;
+  padding: 0 12px;
+  font-weight: 600;
+  border-radius: 4px;
+  margin: 5px;
+  text-transform: uppercase;
+
+  // Blue group (#BFDBFE with black text)
+  &.new, &.N,
+  &.preassigned, &.PA {
+    background-color: @status-blue;
+    color: black;
+  }
+
+  // Light green group (#BBF7D0 with black text)
+  &.despatched, &.D,
+  &.accepted, &.A {
+    background-color: @status-green;
+    color: black;
+  }
+
+  // Dark green group (#86EFAC with black text)
+  &.picked-up, &.P,
+  &.in-transit, &.IT,
+  &.out-for-delivery, &.OFD {
+    background-color: @status-green-dark;
+    color: black;
+  }
+
+  // Light red group (#FCA5A5 with black text)
+  &.rejected, &.R,
+  &.late-pickup, &.LP,
+  &.late-delivery, &.LD,
+  &.warning, &.W {
+    background-color: @status-red-light;
+    color: black;
+  }
+
+  // Red group (#EF4444 with white text)
+  &.undeliverable, &.UD {
+    background-color: @status-red;
+    color: white;
+  }
+
+  // Gray group (#9CA3AF with white text)
+  &.completed, &.C,
+  &.awaiting-pod, &.AW,
+  &.assuming-completed, &.ASC {
+    background-color: @status-gray;
+    color: white;
+  }
+
+  // Additional statuses
+  &.awaiting-quote {
+    background-color: @status-blue;
+    color: black;
+  }
+
+  // Icon styling
+  &-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+}
