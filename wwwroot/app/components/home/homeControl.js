@@ -125,7 +125,7 @@ function HomeControl(
         jobDetail: {
           title: "Detail",
           icon: "assignment",
-          templateUrl: "app/components/common/partials/jobDetail.html",
+          templateUrl: "app/components/home/partials/jobDetail.html",
           showSearch: 0,
           showRefresh: 0,
           showDetailButtons: 1,
@@ -918,22 +918,6 @@ function HomeControl(
         ],
       },
     };
-
-    $rootScope.$on("jobUpdated", (event, updatedJob) => {
-      // Find the job in the list and update it
-      const index = $scope.jobList.findIndex((job) => job.id === updatedJob.id);
-      if (index !== -1) {
-        $scope.jobList[index] = updatedJob;
-      }
-
-      // If it's the currently selected job, update that as well
-      if ($scope.currentJob && $scope.currentJob.id === updatedJob.id) {
-        $scope.currentJob = updatedJob;
-      }
-
-      // Ensure the view is updated
-      $scope.$apply();
-    });
 
     $scope.truckMode = "On";
     $scope.supportChannel =
@@ -2951,14 +2935,24 @@ function HomeControl(
 
         clearActiveJobs();
 
-        console.log("selectJob");
-        $scope.currentJob = job;
-        $scope.$apply();
-        console.log(job);
+        // Create a new reference to trigger change detection
+        $scope.currentJob = angular.copy(job);
+
+        // Add watcher for currentJob changes
+        const unwatchJob = $scope.$watch('currentJob', (newValue, oldValue) => {
+          if (newValue && oldValue && !angular.equals(newValue, oldValue)) {
+            const jobIndex = $scope.jobList.findIndex(j => j.id === newValue.id);
+            if (jobIndex !== -1) {
+              $scope.jobList[jobIndex] = angular.copy(newValue);
+            }
+          }
+        }, true);
+
+        // Clean up watcher when job changes
+        $scope.$on('$destroy', unwatchJob);
 
         await JobDetailService.setJob($scope.currentJob);
         await checkForAttachments(job.id);
-
         try {
           $scope.pickCouriers = await DispatchData.getActiveCouriers();
         } catch (error) {

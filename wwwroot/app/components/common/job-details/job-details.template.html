@@ -309,13 +309,13 @@
 
                             <div style="display: flex; gap: 8px;">
                                 <md-button class="md-fab md-raised md-mini md-primary" aria-label="add note"
-                                           ng-click="ctrl.showNotesDialog($event, ctrl.currentJob, 'Notes','Note')">
+                                           ng-click="ctrl.showNotesDialog($event, ctrl.job, 'Notes','Note')">
                                     <md-icon md-font-set="material-symbols-outlined">note_add</md-icon>
                                     <md-tooltip md-direction="bottom">Edit Note</md-tooltip>
                                 </md-button>
 
                                 <md-button class="md-fab md-raised md-mini md-primary" aria-label="add con note"
-                                           ng-click="ctrl.showNotesDialog($event, ctrl.currentJob, 'Consignment Note / AWB','ConNote')">
+                                           ng-click="ctrl.showNotesDialog($event, ctrl.job, 'Consignment Note / AWB','ConNote')">
                                     <md-icon md-font-set="material-symbols-outlined">inventory</md-icon>
                                     <md-tooltip md-direction="bottom">Edit Consignment / AWB</md-tooltip>
                                 </md-button>
@@ -403,7 +403,6 @@
                             </md-list-item>
 
                             <md-list-item class="info-row"
-                                          md-ink-ripple
                                           ng-click="!ctrl.job.locked && jdSvc.leaveClick($event, ctrl.job)">
                                 <md-icon md-font-set="material-symbols-outlined" aria-label="Delivery instructions">
                                     local_shipping

@@ -110,7 +110,7 @@ class DispatchMapController {
             }
         });
 
-        this.$scope.$watch("currentJob", async  () => {
+        this.$scope.$watch("currentJob", async () => {
             if (this.mapInstance) {
                 await this.updateDisplayedJobs();
             }
@@ -131,9 +131,7 @@ class DispatchMapController {
         this.$scope.$watchCollection("jobs", async () => {
             if (this.mapInstance) {
                 await this.updateDisplayedJobs();
-                if (this.$scope.showJobLines) {
-                    await this.drawJobLines();
-                }
+                await this.drawJobLines();
             }
         });
     }
@@ -335,6 +333,10 @@ class DispatchMapController {
     }
 
     async drawJobLines() {
+        if (this.$scope.showJobLines) {
+            return;
+        }
+        
         this.clearJobLines();
 
         const jobs = this.$scope.currentJob ? [this.$scope.currentJob] : this.$scope.jobs;

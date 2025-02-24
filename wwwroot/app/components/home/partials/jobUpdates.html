@@ -1,13 +1,13 @@
 <div class="table-headings">
     <table>
         <thead class="thead-dark no select">
-            <th scope="col" ng-click="orderList('jobUpdates', 'event')">Event <i class="fa fa-caret-down" ng-show="sort.jobUpdates == 'event'"></i><i class="fa fa-caret-up" ng-show="sort.jobUpdates == 'd-event'"></i></th>
-            <th scope="col" ng-click="orderList('jobUpdates', 'courier')">Courier <i class="fa fa-caret-down" ng-show="sort.jobUpdates == 'courier'"></i><i class="fa fa-caret-up" ng-show="sort.jobUpdates == 'd-courier'"></i></th>
-            <th scope="col" ng-click="orderList('jobUpdates', 'client')">Client <i class="fa fa-caret-down" ng-show="sort.jobUpdates == 'client'"></i><i class="fa fa-caret-up" ng-show="sort.jobUpdates == 'd-client'"></i></th>
-            <th scope="col" ng-click="orderList('jobUpdates', 'from')">From <i class="fa fa-caret-down" ng-show="sort.jobUpdates == 'from'"></i><i class="fa fa-caret-up" ng-show="sort.jobUpdates == 'd-from'"></i></th>
-            <th scope="col" ng-click="orderList('jobUpdates', 'to')">To<i class="fa fa-caret-down" ng-show="sort.jobUpdates == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobUpdates == 'd-to'"></i></th>
-            <th scope="col" ng-click="orderList('jobUpdates', 'address')">Address<i class="fa fa-caret-down" ng-show="sort.jobUpdates == 'address'"></i><i class="fa fa-caret-up" ng-show="sort.jobUpdates == 'd-address'"></i></th>
-            <th scope="col" ng-click="orderList('jobUpdates', 'operator')">Operator<i class="fa fa-caret-down" ng-show="sort.jobUpdates == 'operator'"></i><i class="fa fa-caret-up" ng-show="sort.jobUpdates == 'd-operator'"></i></th>
+            <th scope="col" ng-click="orderList('jobUpdates', 'event')">Event <i class="fa fa-caret-down" ng-if="sort.jobUpdates == 'event'"></i><i class="fa fa-caret-up" ng-if="sort.jobUpdates == 'd-event'"></i></th>
+            <th scope="col" ng-click="orderList('jobUpdates', 'courier')">Courier <i class="fa fa-caret-down" ng-if="sort.jobUpdates == 'courier'"></i><i class="fa fa-caret-up" ng-if="sort.jobUpdates == 'd-courier'"></i></th>
+            <th scope="col" ng-click="orderList('jobUpdates', 'client')">Client <i class="fa fa-caret-down" ng-if="sort.jobUpdates == 'client'"></i><i class="fa fa-caret-up" ng-if="sort.jobUpdates == 'd-client'"></i></th>
+            <th scope="col" ng-click="orderList('jobUpdates', 'from')">From <i class="fa fa-caret-down" ng-if="sort.jobUpdates == 'from'"></i><i class="fa fa-caret-up" ng-if="sort.jobUpdates == 'd-from'"></i></th>
+            <th scope="col" ng-click="orderList('jobUpdates', 'to')">To<i class="fa fa-caret-down" ng-if="sort.jobUpdates == 'to'"></i><i class="fa fa-caret-up" ng-if="sort.jobUpdates == 'd-to'"></i></th>
+            <th scope="col" ng-click="orderList('jobUpdates', 'address')">Address<i class="fa fa-caret-down" ng-if="sort.jobUpdates == 'address'"></i><i class="fa fa-caret-up" ng-if="sort.jobUpdates == 'd-address'"></i></th>
+            <th scope="col" ng-click="orderList('jobUpdates', 'operator')">Operator<i class="fa fa-caret-down" ng-if="sort.jobUpdates == 'operator'"></i><i class="fa fa-caret-up" ng-if="sort.jobUpdates == 'd-operator'"></i></th>
         </thead>
     </table>
 </div>
@@ -44,10 +44,8 @@
 </div>
 
 <script>
-
     angular.element(".box-content").on("scroll", function () {
-        var newTop = angular.element(this).scrollTop();
+        const newTop = angular.element(this).scrollTop();
         angular.element(this).find(".table-headings").css({"top": newTop});
     });
-
 </script>

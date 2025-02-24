@@ -1,25 +1,21 @@
-const esbuild = require("esbuild");
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
-const {lessLoader} = require("esbuild-plugin-less");
-const {es5Plugin} = require("esbuild-plugin-es5");
+import esbuild from "esbuild";
+import fs from "fs";
+import path from "path";
+import crypto from "crypto";
+import {lessLoader} from "esbuild-plugin-less";
+import {es5Plugin} from "esbuild-plugin-es5";
+import esbuildPluginTsc from 'esbuild-plugin-tsc';
 
 // Cross-platform environment configuration
 const isDev = process.argv.includes('--dev') || process.env.NODE_ENV === 'development';
 const rootDir = __dirname;
 const distPath = path.join(rootDir, "wwwroot/dist");
 
-/**
- * Generates an MD5 hash of the provided content and returns the first 8 characters.
- * @param {string|Buffer} content - The content to hash
- * @returns {string} The truncated MD5 hash
- */
-function generateHash(content) {
+function generateHash(content: string | Uint8Array): string {
     return crypto.createHash('md5').update(content).digest('hex').slice(0, 8);
 }
 
-async function cleanDistFolder(distPath) {
+async function cleanDistFolder(distPath: string): Promise<void> {
     if (fs.existsSync(distPath)) {
         const files = fs.readdirSync(distPath);
         for (const file of files) {
@@ -35,16 +31,16 @@ async function cleanDistFolder(distPath) {
 // Error reporting plugin
 const errorReportingPlugin = {
     name: 'error-reporting',
-    setup(build) {
+    setup(build: esbuild.PluginBuild) {
         build.onEnd(result => {
             if (result.errors.length > 0) {
-                console.error('\n🔴 Build errors:');
+                console.error('\n Build errors:');
                 result.errors.forEach(error => {
                     console.error(`  ${error.location?.file}:${error.location?.line}: ${error.text}`);
                 });
             }
             if (result.warnings.length > 0) {
-                console.warn('\n⚠️ Build warnings:');
+                console.warn('\n Build warnings:');
                 result.warnings.forEach(warning => {
                     console.warn(`  ${warning.location?.file}:${warning.location?.line}: ${warning.text}`);
                 });
@@ -56,34 +52,21 @@ const errorReportingPlugin = {
 // Live reload plugin
 const liveReloadPlugin = {
     name: 'live-reload',
-    setup(build) {
+    setup(build: esbuild.PluginBuild) {
         if (isDev) {
             build.onEnd(() => {
-                console.log('🔄 Build complete - reloading...');
+                console.log('Build complete - reloading...');
             });
         }
     }
 };
 
-
-/**
- * Main build function that bundles and processes application assets.
- * Performs the following steps:
- * 1. Cleans the distribution folder
- * 2. Performs an initial build to generate content for hashing
- * 3. Creates content-hashed versions of bundle files
- * 4. Generates and writes a manifest file
- * 5. Handles sourcemap generation
- * @async
- * @returns {Promise<void>}
- * @throws {Error} If the build process fails
- */
-async function build() {
+async function build(): Promise<void> {
     try {
         await cleanDistFolder(distPath);
 
-        const commonConfig = {
-            entryPoints: [path.join(rootDir, "wwwroot/app/index.js")],
+        const commonConfig: esbuild.BuildOptions = {
+            entryPoints: [path.join(rootDir, "wwwroot/app/index.ts")],
             bundle: true,
             sourcemap: true,
             minify: !isDev,
@@ -96,8 +79,8 @@ async function build() {
             logLevel: isDev ? 'info' : 'error',
             drop: isDev ? [] : ['console', 'debugger'],
             plugins: [
+                esbuildPluginTsc(),
                 lessLoader({
-                    javascriptEnabled: true,
                     math: 'always'
                 }),
                 es5Plugin(),
@@ -146,7 +129,7 @@ async function build() {
 
         if (isDev) {
             // Development build configuration
-            const devConfig = {
+            const devConfig: esbuild.BuildOptions = {
                 ...commonConfig,
                 outfile: path.join(distPath, 'bundle.js'),  // Single output file for development
                 splitting: false
@@ -179,7 +162,7 @@ async function build() {
                 JSON.stringify(manifest, null, 2)
             );
 
-            console.log(`🚀 Development server running at http://${host}:${port}`);
+            console.log(`Development server running at http://${host}:${port}`);
             // Keep the process running
             await new Promise(() => {
             });
@@ -191,8 +174,8 @@ async function build() {
                 outfile: path.join(distPath, 'bundle.js')
             });
 
-            const outputFiles = tempResult.outputFiles;
-            const jsContent = outputFiles.find(f => f.path.endsWith('.js')).contents;
+            const outputFiles = tempResult.outputFiles!;
+            const jsContent = outputFiles.find(f => f.path.endsWith('.js'))!.contents;
             const contentHash = generateHash(jsContent);
 
             const jsFilename = `bundle.${contentHash}.js`;
@@ -204,10 +187,10 @@ async function build() {
                 outfile: path.join(distPath, jsFilename),
                 write: true,
                 plugins: [
-                    ...commonConfig.plugins,
+                    ...commonConfig.plugins!,
                     {
                         name: 'css-output',
-                        setup(build) {
+                        setup(build: esbuild.PluginBuild) {
                             build.onEnd(result => {
                                 if (result.outputFiles) {
                                     const cssContent = result.outputFiles
@@ -238,8 +221,8 @@ async function build() {
                 JSON.stringify(manifest, null, 2)
             );
 
-            console.log("✅ Build completed successfully!");
-            console.log("📦 Generated manifest:", manifest);
+            console.log("Build completed successfully!");
+            console.log("Generated manifest:", manifest);
 
             if (result.metafile) {
                 const analysis = await esbuild.analyzeMetafile(result.metafile);
@@ -247,7 +230,7 @@ async function build() {
             }
         }
     } catch (error) {
-        console.error("❌ Build failed:", error);
+        console.error("Build failed:", error);
         process.exit(1);
     }
 }
