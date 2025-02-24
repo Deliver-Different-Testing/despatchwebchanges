@@ -7,7 +7,7 @@ import "./home/homeControl";
 
 // Nationwide/Domestic
 import "./Nationwide/services/nationwide-layout.service";
-import "./Nationwide/nationwideService";
+import "./Nationwide/nationwide.service";
 import "./Nationwide/nationwideControl";
 
 // Job Search

@@ -7,7 +7,6 @@ import "../lib/ng-material-floating-button/mfb/dist/mfb.css";
 import "../lib/material-time-picker/md-time-picker.css";
 import "../lib/hotkeys/hotkeys.css";
 
-
 // Local libs
 import "../lib/material-time-picker/md-time-picker.min.js";
 import "../lib/ng-material-floating-button/src/mfb-directive.min.js";

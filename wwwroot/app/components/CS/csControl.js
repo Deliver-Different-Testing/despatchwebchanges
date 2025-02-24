@@ -221,7 +221,7 @@ function CSControl($scope, jdSvc, uCSData, $state, $filter, $mdDialog, greetingS
             "jobDetail": {
                 "title": "Detail",
                 "icon": "assignment",
-                "templateUrl": "app/components/common/partials/jobDetail.html",
+                "templateUrl": "app/components/CS/partials/jobDetail.html",
                 "showSearch": 0,
                 "showDetailButtons": 1
             },

@@ -1,17 +1,13 @@
 import app from "./app";
+import angular from "angular";
 
 class RouterConfig {
-    /**
-     * @param {Object} $urlRouterProvider
-     * @param {Object} $stateProvider
-     */
-    constructor($urlRouterProvider, $stateProvider) {
-        this.$urlRouterProvider = $urlRouterProvider;
-        this.$stateProvider = $stateProvider;
+    constructor(private $urlRouterProvider: angular.ui.IUrlRouterProvider,
+                private $stateProvider: angular.ui.IStateProvider) {
         this.configureRoutes();
     }
 
-    configureRoutes() {
+    private configureRoutes(): void {
         // Set default route
         this.$urlRouterProvider.otherwise("/");
 
@@ -24,7 +20,7 @@ class RouterConfig {
             .configureMegaMapState();
     }
 
-    configureHomeState() {
+    private configureHomeState(): this {
         this.$stateProvider.state("home", {
             url: "/?jobId",
             templateUrl: "app/components/home/homeView.html",
@@ -39,17 +35,17 @@ class RouterConfig {
         return this;
     }
 
-    configureNationwideState() {
+    private configureNationwideState(): this {
         this.$stateProvider.state("nw", {
             url: "/Nationwide",
-            templateUrl: "app/components/Nationwide/nationwideView.html",
+            templateUrl: "app/components/Nationwide/nationwide.template.html",
             controller: "NationwideControl",
             reloadOnSearch: false
         });
         return this;
     }
 
-    configureCSState() {
+    private configureCSState(): this {
         this.$stateProvider.state("cs", {
             url: "/CS",
             templateUrl: "app/components/CS/csView.html",
@@ -59,7 +55,7 @@ class RouterConfig {
         return this;
     }
 
-    configurePrebooksState() {
+    private configurePrebooksState(): this {
         this.$stateProvider.state("prebooks", {
             url: "/prebooks",
             templateUrl: "app/components/prebooks/prebookView.html",
@@ -69,7 +65,7 @@ class RouterConfig {
         return this;
     }
 
-    configureOverviewState() {
+    private configureOverviewState(): this {
         this.$stateProvider.state("overview", {
             url: "/overview",
             templateUrl: "app/components/overview/overview.template.html",
@@ -80,7 +76,7 @@ class RouterConfig {
         return this;
     }
 
-    configureMegaMapState() {
+    private configureMegaMapState(): this {
         this.$stateProvider.state("megaMap", {
             url: "/megaMap",
             templateUrl: "app/components/overview/mega-map/mega-map.template.html",
@@ -94,7 +90,8 @@ class RouterConfig {
 
 // Register the configuration
 app.config(["$urlRouterProvider", "$stateProvider",
-    ($urlRouterProvider, $stateProvider) => {
+    ($urlRouterProvider: angular.ui.IUrlRouterProvider,
+     $stateProvider: angular.ui.IStateProvider) => {
         new RouterConfig($urlRouterProvider, $stateProvider);
     }
 ]);

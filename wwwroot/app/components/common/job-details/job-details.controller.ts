@@ -1,139 +1,85 @@
 import app from "../../../app";
+import angular from "angular";
+import ToastrService from "../../../services/toastr.service";
+import {AppConfig} from "../../../interfaces/app-config.interface";
+import {Job} from "../../../interfaces/job.interface";
+import {FirstName, ContactID} from "../../../contants";
+import {JobNote, JobOptions, TabItem} from "./job-details.interfaces";
 import "./job-details.styles.less";
 
 class JobDetailController {
-    static $inject = ["$mdDialog", "$document", "toastrService", "DispatchData", "$scope", "APP_CONFIG", "rateJobService"];
+    static $inject = ["$mdDialog", "toastrService", "DispatchData", "APP_CONFIG", "rateJobService"];
 
-    /**
-     * @param {Object} $mdDialog
-     * @param {Object} $document
-     * @param {Object} toastrService
-     * @param {Object} dispatchData
-     * @param {Object} $scope
-     * @param {APP_CONFIG} APP_CONFIG
-     * @param {Object} rateJobService
-     */
-    constructor($mdDialog, $document, toastrService, dispatchData, $scope, APP_CONFIG, rateJobService) {
-        this.$mdDialog = $mdDialog;
-        this.$document = $document;
-        this.toastrService = toastrService;
-        this.dispatchData = dispatchData;
-        this.$scope = $scope;
-        this.rateJobService = rateJobService;
+    private readonly isUsCustomer: boolean;
+    public job?: Job;
+    public internalJob?: Job;
+    public notes: JobNote[];
+    public selectedTab: number;
+    public allTabs: TabItem[];
+    public options: JobOptions;
 
-        /** @type {boolean} */
+    constructor(private $mdDialog: angular.material.IDialogService,
+                private toastrService: ToastrService,
+                private dispatchData: any,
+                APP_CONFIG: AppConfig,
+                private rateJobService: any) {
         this.isUsCustomer = APP_CONFIG.US_Customer;
-
-        /** @type {Job|undefined} */
-        this.job = undefined; // This will be injected by the bindings
-
-        /** @type {{icon: string, text: string, type?: string}[]} */
+        this.job = undefined;
+        this.internalJob = undefined;
         this.notes = [];
-
-        /** @type {boolean} */
-        this.jobDetailLoading = false
-
-        /** @type {number} */
         this.selectedTab = 0;
-
-        /** @type {Array} */
         this.allTabs = [];
 
-        this.$scope.$watch(() => this.job, (newValue, oldValue) => {
-            console.log('Job data changed:', {
-                newValue,
-                oldValue,
-                hasData: !!newValue,
-                isInternalUpdate: this.isInternalUpdate
-            });
-
-            if (newValue) {
-                if (!this.isInternalUpdate) {
-                    this.selectedTab = 0;
-                    this._initializeJobData();
-                    this._updateTabsArray();
-                } else {
-                    this._initializeJobData();
-                }
-
-                this.isInternalUpdate = false;
-            }
-        });
-
         this.options = {
-            "detail": {
-                "size": [{
-                    "id": 1, "label": "Bike"
-                }, {
-                    "id": 2, "label": "Car"
-                }, {
-                    "id": 3, "label": "Van"
-                }, {
-                    "id": 4, "label": "Truck"
-                }, {
-                    "id": 5, "label": "Scooter"
-                }], "tracking": [{
-                    "id": 1, "label": "Email"
-                }, {
-                    "id": 2, "label": "Mobile"
-                }, {
-                    "id": 3, "label": "Email & Mobile"
-                }], "DGClass": [{
-                    "id": 0, "label": "0"
-                }, {
-                    "id": 1, "label": "1"
-                }, {
-                    "id": 2, "label": "2"
-                }, {
-                    "id": 3, "label": "3"
-                }, {
-                    "id": 4, "label": "4"
-                }, {
-                    "id": 5, "label": "5"
-                }, {
-                    "id": 6, "label": "6"
-                }, {
-                    "id": 7, "label": "7"
-                }, {
-                    "id": 8, "label": "8"
-                }, {
-                    "id": 9, "label": "9"
-                }]
+            detail: {
+                size: [
+                    {id: 1, label: "Bike"},
+                    {id: 2, label: "Car"},
+                    {id: 3, label: "Van"},
+                    {id: 4, label: "Truck"},
+                    {id: 5, label: "Scooter"}
+                ],
+                tracking: [
+                    {id: 1, label: "Email"},
+                    {id: 2, label: "Mobile"},
+                    {id: 3, label: "Email & Mobile"}
+                ],
+                DGClass: Array.from({length: 10}, (_, i) => ({
+                    id: i,
+                    label: i.toString()
+                }))
             }
-        }
+        };
+
+        console.log('Job Details Controller loaded');
+        this._updateTabsArray();
+        this._initializeJobData();
     }
 
-    /**
-     * Updates the tabs array whenever the job or related jobs change
-     * @private
-     */
-    _updateTabsArray() {
-        if (!this.job) return;
+    private _updateTabsArray(): void {
+        if (!this.internalJob) return;
 
         this.allTabs = [{
-            id: this.job.id,
-            text: this.job.jobNo,
+            id: this.internalJob.id,
+            text: this.internalJob.jobNo,
             isMainJob: true
         }];
 
-        if (this.job.relatedJobs && this.job.relatedJobs.length) {
+        if (this.internalJob.relatedJobs?.length) {
             this.allTabs = this.allTabs.concat(
-                this.job.relatedJobs.map(job => ({
-                    ...job,
+                this.internalJob.relatedJobs.map(job => ({
+                    id: job.id,
+                    text: job.text,
                     isMainJob: false
                 }))
             );
         }
     }
 
-    /**
-     * Handles tab navigation
-     * @param {'prev'|'next'} direction
-     */
-    async navigateTab(direction) {
+    async navigateTab(direction: 'prev' | 'next'): Promise<void> {
         if (!this.allTabs.length) return;
 
-        let newIndex;
+        let newIndex: number;
         if (direction === 'prev') {
             newIndex = this.selectedTab > 0 ? this.selectedTab - 1 : this.allTabs.length - 1;
         } else {
@@ -144,29 +90,20 @@ class JobDetailController {
         await this._loadJobDetails(this.allTabs[newIndex].id);
     }
 
-    /**
-     * Handles when a user changes tabs
-     * @param {number} tabIndex
-     */
-    async onTabSelected(tabIndex) {
+    public async onTabSelected(tabIndex: number): Promise<void> {
         const selectedTab = this.allTabs[tabIndex];
         if (!selectedTab) return;
 
         await this._loadJobDetails(selectedTab.id);
     }
 
-    /**
-     * Loads job details while preserving tab state
-     * @param {number} jobId
-     * @private
-     */
-    async _loadJobDetails(jobId) {
+
+    private async _loadJobDetails(jobId: number) {
         if (!jobId) {
             console.error('Invalid job ID');
             return;
         }
 
-        this.jobDetailLoading = true;
         try {
             // Store current tabs and selected index
             const currentTabs = [...this.allTabs];
@@ -176,50 +113,45 @@ class JobDetailController {
             const updatedJob = await this.dispatchData.getJobDetail(jobId);
 
             // If this is loading a related job, we need to preserve the original related jobs array
-            if (!currentTabs[currentIndex].isMainJob) {
-                updatedJob.relatedJobs = this.job.relatedJobs;
+            if (!currentTabs[currentIndex].isMainJob && this.internalJob?.relatedJobs) {
+                updatedJob.relatedJobs = this.internalJob.relatedJobs;
             }
 
-            // Set flag to indicate internal update
-            this.isInternalUpdate = true;
-
             // Update the job
-            this.job = updatedJob;
+            this.internalJob = updatedJob;
 
             // Keep the tabs and selection state
             this.allTabs = currentTabs;
             this.selectedTab = currentIndex;
-
-            this.$scope.currentSelection = ` for Job ${this.job.jobNo}`;
         } catch (error) {
-            console.error("Error loading job details:", error);
             this.toastrService.showErrorToast("Failed to load job details");
-            // Optionally reset to main job
-            if (this.job && this.job.id) {
-                await this._loadJobDetails(this.job.id);
+
+            // Reset to main jon
+            if (this.internalJob && this.internalJob.id) {
+                await this._loadJobDetails(this.internalJob.id);
             }
-        } finally {
-            this.jobDetailLoading = false;
         }
     }
 
 
-    _initializeJobData() {
-        console.log('Initializing job data:', this.job.id);
+    private _initializeJobData() {
+        if (!this.internalJob) return;
 
-        const notes = [];
+        console.log('Initializing job data:', this.internalJob.id);
+
+        const notes: JobNote[] = [];
 
         // Split internal notes by newline and add each as separate entry
-        if (this.job.internalNotes) {
-            console.log('Processing internal notes:', this.job.internalNotes);
-            const internalNoteLines = this.job.internalNotes.split(/\r?\n/).filter(note => note.trim());
+        if (this.internalJob.internalNotes) {
+            console.log('Processing internal notes:', this.internalJob.internalNotes);
+            const internalNoteLines = this.internalJob.internalNotes.split(/\r?\n/).filter(note => note.trim());
             console.log('Split internal notes into', internalNoteLines.length, 'lines:', internalNoteLines);
 
             internalNoteLines.forEach((noteLine, index) => {
                 const trimmedNote = noteLine.trim();
                 console.log(`Adding internal note ${index + 1}:`, trimmedNote);
                 notes.push({
-                    icon: 'note_stack' ,text: trimmedNote, type: 'internal'
+                    icon: 'note_stack', text: trimmedNote, type: 'internal'
                 });
             });
         } else {
@@ -227,9 +159,9 @@ class JobDetailController {
         }
 
         // Split contractor notes by newline and add each as separate entry
-        if (this.job.conNote) {
-            console.log('Processing contractor notes:', this.job.conNote);
-            const contractorNoteLines = this.job.conNote.split(/\r?\n/).filter(note => note.trim());
+        if (this.internalJob.conNote) {
+            console.log('Processing contractor notes:', this.internalJob.conNote);
+            const contractorNoteLines = this.internalJob.conNote.split(/\r?\n/).filter(note => note.trim());
             console.log('Split contractor notes into', contractorNoteLines.length, 'lines:', contractorNoteLines);
 
             contractorNoteLines.forEach((noteLine, index) => {
@@ -247,36 +179,23 @@ class JobDetailController {
         console.log('Final notes array:', this.notes);
     }
 
-    $onInit() {
-        console.log('$onInit called - job exists:', !!this.job);
-        if (this.job) {
-            this._initializeJobData();
-        }
-    }
-
-    getJobAddressIcon() {
-        const icon = this.job?.assignedFlight ? 'flight_takeoff' : 'pin_drop';
+    public getJobAddressIcon() {
+        const icon = this.internalJob?.assignedFlight ? 'flight_takeoff' : 'pin_drop';
         console.log(`[getJobAddressIcon] Icon selected: ${icon}`);
         return icon || 'pin_drop';
     }
 
-    async showNotesInfo($event) {
+    public async showNotesInfo() {
         this.toastrService.showWarningToast(`Notes are not available for this job`);
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     * @param {string} title
-     * @param {string} fieldName
-     */
-    async showNotesDialog($event, job, title, fieldName) {
+    public async showNotesDialog($event: MouseEvent, job: Job, title: string, fieldName: string) {
         try {
             await this.$mdDialog.show({
                 controller: "AddNotesDialogController",
                 controllerAs: "ctrl",
                 templateUrl: "app/components/dialogs/add-notes-dialog/add-notes-dialog.html",
-                parent: this.$document.body,
+                parent: document.body,
                 targetEvent: $event,
                 clickOutsideToClose: true,
                 fullscreen: true,
@@ -287,24 +206,15 @@ class JobDetailController {
             });
 
             // Refresh job detail in background
-            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
         }
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     * @param {string} url
-     * @param {string} placeholder
-     * @param {string} fieldName
-     * @param {string} title
-     * @param {any} existingItem
-     * @param {boolean} showRerateOption
-     */
-    async showAutocompleteDialog($event, job, url, placeholder, fieldName, title, existingItem, showRerateOption) {
+    public async showAutocompleteDialog($event: MouseEvent, job: Job, url: string, placeholder: string,
+                                        fieldName: string, title: string, existingItem: any, showRerateOption: boolean) {
         const options = {
             placeholder, minimumInputLength: 3, searchUrl: url
         };
@@ -313,7 +223,7 @@ class JobDetailController {
             await this.$mdDialog.show({
                 controller: "AutoCompleteDialogController",
                 controllerAs: "ctrl",
-                parent: this.$document.body,
+                parent: document.body,
                 targetEvent: $event,
                 templateUrl: "app/components/dialogs/auto-complete-dialog/auto-complete-dialog.html",
                 clickOutsideToClose: true,
@@ -324,26 +234,20 @@ class JobDetailController {
                 bindToController: true
             });
 
-            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
         }
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     * @param {string} title
-     * @param {string} fieldName
-     * @param {Date} time
-     */
-    async showEditTimeDialog($event, job, title, fieldName, time) {
+    public async showEditTimeDialog($event: MouseEvent, job: Job,
+                                    title: string, fieldName: string, time?: Date) {
         try {
             await this.$mdDialog.show({
                 controller: "EditDateTimeDialogController",
                 controllerAs: "ctrl",
-                parent: this.$document.body,
+                parent: document.body,
                 targetEvent: $event,
                 templateUrl: "app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html",
                 clickOutsideToClose: false,
@@ -355,24 +259,16 @@ class JobDetailController {
             });
 
             // Refresh job detail in background
-            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
         }
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     * @param {[]} data
-     * @param {string} fieldName
-     * @param {string} title
-     * @param {string|number|null} initialValue
-     * @param {boolean} showCheckbox
-     * @param {string} checkboxLabel
-     */
-    async showSelectDialog($event, job, data, fieldName, title, initialValue = null, showCheckbox = false, checkboxLabel = "") {
+    public async showSelectDialog($event: MouseEvent, job: Job, data: Array<any>,
+                                  fieldName: string, title: string, initialValue: string | null | number = null,
+                                  showCheckbox: boolean = false, checkboxLabel: string = "") {
         const options = {
             minimumInputLength: 1, items: data, placeholder: title
         };
@@ -381,7 +277,7 @@ class JobDetailController {
             await this.$mdDialog.show({
                 controller: "SelectDialogController",
                 controllerAs: "ctrl",
-                parent: this.$document.body,
+                parent: document.body,
                 targetEvent: $event,
                 templateUrl: "app/components/dialogs/select-dialog/select-dialog.html",
                 clickOutsideToClose: true,
@@ -392,28 +288,22 @@ class JobDetailController {
                 bindToController: true
             });
 
-            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
         }
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     * @param {string} title
-     * @param {string} placeholder
-     * @param {string} ariaLabel
-     * @param {string|number} initialValue
-     * @param {string} field
-     */
-    async showEditDialog($event, job, title, placeholder, ariaLabel, initialValue, field) {
+    public async showEditDialog($event: MouseEvent, job: Job, title: string,
+                                placeholder: string, ariaLabel: string, initialValue: string | number | undefined, field: string) {
+        const formatedValue = initialValue ? initialValue.toString() : "";
+
         const prompt = this.$mdDialog.prompt()
             .title(title)
             .placeholder(placeholder)
             .ariaLabel(ariaLabel)
-            .initialValue(initialValue)
+            .initialValue(formatedValue)
             .targetEvent($event)
             .required(true)
             .ok("Save")
@@ -430,26 +320,21 @@ class JobDetailController {
             await this.updateField(false, job, callData);
 
             // Refresh job detail in background
-            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
         }
     }
 
-    /**
-     * @param {Object} $event
-     * @param {Job} job
-     * @param {boolean} isDeliveryAddress
-     */
-    async showAddressDialog($event, job, isDeliveryAddress) {
+    public async showAddressDialog($event: MouseEvent, job: Job, isDeliveryAddress: boolean) {
         const addressToUpdate = isDeliveryAddress ? job.deliveryAddress : job.pickupAddress;
         const pickSuburbs = await this.dispatchData.getSuburbList();
 
         return this.$mdDialog.show({
             controller: "EditAddressDialogController",
             controllerAs: "ctrl",
-            parent: this.$document.body,
+            parent: document.body,
             targetEvent: $event,
             templateUrl: "app/components/dialogs/edit-address-dialog/edit-address-dialog.html",
             clickOutsideToClose: false,
@@ -464,15 +349,11 @@ class JobDetailController {
         });
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     */
-    async showJobDimensionsDialog($event, job) {
+    public async showJobDimensionsDialog($event: MouseEvent, job: Job) {
         await this.$mdDialog.show({
             controller: "EditParcelDimensionsDialogController",
             controllerAs: "ctrl",
-            parent: this.$document.body,
+            parent: document.body,
             targetEvent: $event,
             templateUrl: "app/components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.html",
             clickOutsideToClose: false,
@@ -487,13 +368,7 @@ class JobDetailController {
         await this._refreshJobDetails(job.id);
     }
 
-    /**
-     * Shows a dialog for missing information
-     * @param $event
-     * @param {Job} job - The job being updated
-     * @returns {Promise} A promise that resolves when the dialog is closed
-     */
-    async showMissingInfoDialog($event, job) {
+    public async showMissingInfoDialog($event: MouseEvent, job: Job) {
         let message = "";
         if (!job.completedTime) {
             message = "You must set completed time (POD Time) first";
@@ -509,47 +384,26 @@ class JobDetailController {
         await this.$mdDialog.show(confirm);
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     */
-    async editLogTime($event, job) {
+    public async editLogTime($event: MouseEvent, job: Job) {
         await this.showEditTimeDialog($event, job, "Log Time", "Time", job.time);
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     */
-    async editCompletedTime($event, job) {
+    public async editCompletedTime($event: MouseEvent, job: Job) {
         await this.showEditTimeDialog($event, job, "POD Time", "CompletedTime", job.completedTime);
     }
 
-    /**
-     * Updates the GPS coordinates and address for a job
-     * @param $event
-     * @param {Job} job - The job to update
-     * @param {string} field - The field to update ('deliveryAddress' or 'pickupAddress')
-     */
-    async updateAddress($event, job, field) {
-        //this.$myElementInkRipple.attach(this.$scope, $event.target);
+    public async updateAddress($event: MouseEvent, job: Job, field: string) {
         const isDeliveryAddress = field === "toAddress";
 
         try {
             const result = await this.showAddressDialog($event, job, isDeliveryAddress);
-            return this._processAddressUpdate(job, field, result, isDeliveryAddress);
+            return this._processAddressUpdate(job, result, isDeliveryAddress);
         } catch (error) {
             console.log("Error updating GPS:", error);
         }
     }
 
-    /**
-     * @param {Job} job
-     * @param {string} field
-     * @param {Object} addressResult
-     * @param {boolean} isDeliveryAddress
-     */
-    async _processAddressUpdate(job, field, addressResult, isDeliveryAddress) {
+    private async _processAddressUpdate(job: Job, addressResult: any, isDeliveryAddress: boolean) {
         console.log(`isDeliveryAddress: ${isDeliveryAddress}`);
 
         // Update job by address format
@@ -558,19 +412,14 @@ class JobDetailController {
         try {
             await this.updateJobRateAndAddress(updatedJob, addressResult, isDeliveryAddress);
 
-            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully. Refreshing..`);
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
         }
     }
 
-    /**
-     * @param {Job} job
-     * @param {Object} result
-     * @param {boolean} isDeliveryAddress
-     */
-    _updateJobAddressNz(job, result, isDeliveryAddress) {
+    private _updateJobAddressNz(job: Job, result: any, isDeliveryAddress: boolean) {
         const addressField = isDeliveryAddress ? "toAddress" : "from";
         const suburbIdField = isDeliveryAddress ? "toSuburbId" : "fromSuburbId";
         const suburbField = isDeliveryAddress ? "toSuburbName" : "fromSuburbName";
@@ -582,14 +431,7 @@ class JobDetailController {
         return job;
     }
 
-    /**
-     * @param {Job} job
-     * @param {Object} addressResult
-     * @param {boolean} isDeliveryAddress
-     *
-     * @private
-     */
-    _updateJobAddressUs(job, addressResult, isDeliveryAddress) {
+    private _updateJobAddressUs(job: Job, addressResult: any, isDeliveryAddress: boolean) {
         const addressField = isDeliveryAddress ? "deliveryAddress" : "pickupAddress";
         console.log(`Address Field: ${addressField}`);
 
@@ -597,14 +439,7 @@ class JobDetailController {
         return job;
     }
 
-    /**
-     * @param {Job} job
-     * @param {Object} addressResult
-     * @param {boolean} isDeliveryAddress
-     *
-     * @private
-     */
-    async updateJobRateAndAddress(job, addressResult, isDeliveryAddress) {
+    private async updateJobRateAndAddress(job: Job, addressResult: any, isDeliveryAddress: boolean) {
         job.charge = await this.rateJobService.rateJob(job);
         const rate = Number(job.charge.replace(/[^0-9.-]+/g, ""));
 
@@ -617,13 +452,7 @@ class JobDetailController {
         }
     }
 
-    /**
-     * Edit a contact for the job dynamically
-     * @param $event
-     * @param {Job} job
-     * @param {'from'|'to'} contactType - Type of contact to edit ('from' or 'to')
-     */
-    async editJobContact($event, job, contactType) {
+    public async editJobContact($event: MouseEvent, job: Job, contactType: 'from' | 'to') {
         const contactMapping = {
             from: {
                 title: "Edit From Contact Name",
@@ -649,13 +478,7 @@ class JobDetailController {
         await this.showEditDialog($event, job, contactDetails.title, contactDetails.placeholder, contactDetails.fieldLabel, contactDetails.contactValue, contactDetails.contactProperty);
     }
 
-    /**
-     * Edit a contact phone number for the job dynamically
-     * @param $event
-     * @param {Job} job
-     * @param {'from'|'to'} contactType - Type of contact phone to edit ('from' or 'to')
-     */
-    async editJobContactPhone($event, job, contactType) {
+    public async editJobContactPhone($event: MouseEvent, job: Job, contactType: 'from' | 'to') {
         const phoneMapping = {
             from: {
                 title: "Edit From Contact Phone",
@@ -681,12 +504,7 @@ class JobDetailController {
         await this.showEditDialog($event, job, phoneDetails.title, phoneDetails.placeholder, phoneDetails.fieldLabel, phoneDetails.phoneValue, phoneDetails.phoneProperty);
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     * @param {boolean} isRefA
-     */
-    async editRef($event, job, isRefA) {
+    public async editRef($event: MouseEvent, job: Job, isRefA: boolean) {
         if (isRefA) {
             await this.showEditDialog($event, job, "Edit RefA", "RefA...", "refa", job.refA, "RefA");
         } else {
@@ -695,45 +513,27 @@ class JobDetailController {
     }
 
 
-    /**
-     * @param $event
-     * @param {Job} job
-     */
-    async editOurRef($event, job) {
+    public async editOurRef($event: MouseEvent, job: Job) {
         await this.showEditDialog($event, job, "Edit Our Reference", "Our Reference...", "our reference", job.ourRef, "OurRef");
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     */
-    async editJobWeight($event, job) {
+
+    public async editJobWeight($event: MouseEvent, job: Job) {
         await this.showEditDialog($event, job, "Edit Weight", "Job Weight...", "job weight", job.weight, "Weight");
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     */
-    async editTrackingMobile($event, job) {
-        await this.showEditDialog($event, job, "Edit Tracking Mobile", "Tracking Mobile...",
-            "tracking mobile", job.trackingMobile, "TrackingMobile");
+
+    public async editTrackingMobile($event: MouseEvent, job: Job) {
+        await this.showEditDialog($event, job, "Edit Tracking Mobile", "Tracking Mobile...", "tracking mobile", job.trackingMobile, "TrackingMobile");
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     */
-    async editTrackingEmail($event, job) {
-        await this.showEditDialog($event, job, "Edit Tracking Email", "Tracking Email...",
-            "tracking email", job.trackingEmail, "TrackingEmail");
+
+    public async editTrackingEmail($event: MouseEvent, job: Job) {
+        await this.showEditDialog($event, job, "Edit Tracking Email", "Tracking Email...", "tracking email", job.trackingEmail, "TrackingEmail");
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     */
-    async clientClick($event, job) {
+
+    public async clientClick($event: MouseEvent, job: Job) {
         const url = "/home/ActiveClients";
         const placeholder = "Start typing to enter new client...";
 
@@ -744,44 +544,30 @@ class JobDetailController {
         await this.showAutocompleteDialog($event, job, url, placeholder, "clientId", "Client", existingItem, true)
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     */
-    async courierClick($event, job) {
+
+    public async courierClick($event: MouseEvent, job: Job) {
         const url = "/courier/AllActiveSearch";
         const placeholder = "Start typing to search courier...";
 
         await this.showAutocompleteDialog($event, job, url, placeholder, "CourierID", "Courier", null, false)
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     */
-    async contactClick($event, job) {
+
+    public async contactClick($event: MouseEvent, job: Job) {
         const pickContacts = await this.dispatchData.getContactList(job.clientId);
         await this.showSelectDialog($event, job, pickContacts, "ContactID", "Contact", job.contactName);
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     */
-    async speedClick($event, job) {
+
+    public async speedClick($event: MouseEvent, job: Job) {
         const pickSpeeds = await this.dispatchData.getSpeedList();
         await this.showSelectDialog($event, job, pickSpeeds, "SpeedID", "Speed", job.speedName);
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     */
-    async jobTypeClick($event, job) {
+
+    public async jobTypeClick($event: MouseEvent, job: Job) {
         console.log('jobTypeClick initiated', {
-            eventType: $event.type,
-            jobId: job.id,
-            currentJobType: job.jobType
+            eventType: $event.type, jobId: job.id, currentJobType: job.jobType
         });
 
         const data = [{
@@ -794,9 +580,7 @@ class JobDetailController {
 
         const jobTypeDes = this.getJobTypeDescription(job.jobType);
         console.log('Showing select dialog', {
-            jobId: job.id,
-            jobTypeDes,
-            availableOptions: data.length
+            jobId: job.id, jobTypeDes, availableOptions: data.length
         });
 
         try {
@@ -808,20 +592,14 @@ class JobDetailController {
         }
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     */
-    async sizeClick($event, job) {
+
+    public async sizeClick($event: MouseEvent, job: Job) {
         const pickVehicleSizes = await this.dispatchData.getVehicleSizes();
         await this.showSelectDialog($event, job, pickVehicleSizes, "Size", "Size", job.size.text);
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     */
-    async dgClassClick($event, job) {
+
+    public async dgClassClick($event: MouseEvent, job: Job) {
         let dgClassOptions = [];
         for (let i = 1; i <= 9; i++) {
             dgClassOptions.push({id: i, text: i.toString()});
@@ -832,20 +610,14 @@ class JobDetailController {
         await this.showSelectDialog($event, job, dgClassOptions, "DGClass", "DG Class", initialValue, true, "Has Documentation?");
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     */
-    async leaveClick($event, job) {
+
+    public async leaveClick($event: MouseEvent, job: Job) {
         const pickLeaveList = await this.dispatchData.getLeaveList();
         await this.showSelectDialog($event, job, pickLeaveList, "DeliverToLeaveID", "Leave Parcel", job.sigNotRequired || "Signature Required");
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     */
-    async trackingMethodClick($event, job) {
+
+    public async trackingMethodClick($event: MouseEvent, job: Job) {
         const trackingArray = this.options.detail.tracking.map(item => {
             return {
                 id: item.id, text: item.label
@@ -853,25 +625,21 @@ class JobDetailController {
         });
         const trackingMethod = this.getTrackingMethod(job.trackingMethod);
 
-        await this.showSelectDialog($event, job, trackingArray,
-            "TrackingMethod", "Tracking Method", trackingMethod);
+        await this.showSelectDialog($event, job, trackingArray, "TrackingMethod", "Tracking Method", trackingMethod);
     }
 
-    /**
-     * @param $event
-     * @param {Job} job
-     */
-    async statusClick($event, job) {
+
+    public async statusClick($event: MouseEvent, job: Job) {
         const statusList = await this.dispatchData.getStatusList();
         await this.showSelectDialog($event, job, statusList, "Status", "Status", job.statusName);
     }
 
-    /**
-     * @param {boolean} reRate
-     * @param {Job} job
-     * @param callData
-     */
-    async updateField(reRate, job, callData) {
+    public async updateField(reRate: boolean, job: Job, callData: {
+        call?: string;
+        field: string;
+        value: any;
+        jobID: number;
+    }) {
         try {
             if (reRate && !job.bulkJob) {
                 const rate = await this.rateJobService.rateJob(job);
@@ -903,10 +671,7 @@ class JobDetailController {
         }
     }
 
-    /**
-     * @param {number} jobTypeId
-     */
-    getJobTypeDescription(jobTypeId) {
+    public getJobTypeDescription(jobTypeId?: number) {
         console.log(`Getting job type description for jobTypeId: ${jobTypeId}`);
         const description = (() => {
             switch (jobTypeId || 1) {
@@ -926,30 +691,19 @@ class JobDetailController {
         return description;
     }
 
-
-    /**
-     * @param {Job} job
-     */
-    hasDGDocs(job) {
+    public hasDGDocs(job: Job) {
         if (job.dgClass) {
-            return ((job.dgDocumentation || 0) === 1) || ((job.dgDocumentation || false) === true) ? "Yes" : "No";
+            return ((job.dgClass || 0) === 1) || ((job.dgDocumentation || false)) ? "Yes" : "No";
         } else {
             return "";
         }
     }
 
-    /**
-     * Generic function to toggle any job property
-     * Handles unique behavior for specific properties, including 'reprice'
-     * @param {Job} job - The job to update
-     * @param {string} property - The property to toggle
-     * @param {boolean} useCharge - Whether to use the job's charge value (default: true)
-     */
-    async toggleJobProperty(job, property, useCharge = true) {
-        const newValue = !job[property];
+    public async toggleJobProperty(job: Job, property: string, useCharge: boolean = true) {
+        const newValue = job ? !(property in job && job[property as keyof typeof job]) : false;
         const capitalizedProperty = property.charAt(0).toUpperCase() + property.slice(1);
 
-        const updateJob = async (rate) => {
+        const updateJob = async (rate: number) => {
             await this.dispatchData.updateJobDetail(job.id, capitalizedProperty, newValue, rate, FirstName, ContactID, job.preBook);
         };
 
@@ -966,7 +720,7 @@ class JobDetailController {
                 await this.updateField(false, job, callData);
 
                 if (newValue) {
-                    const repriceStatusId = 4; // Assuming ID 4 is for reprice status
+                    const repriceStatusId = 4;
                     await this.dispatchData.updateJobDetail(job.id, "InternalStatusID", repriceStatusId, job.charge, FirstName, ContactID, job.preBook);
                 } else if (previousStatus) {
                     await this.dispatchData.updateJobDetail(job.id, "InternalStatusID", previousStatus, job.charge, FirstName, ContactID, job.preBook);
@@ -990,7 +744,7 @@ class JobDetailController {
             else {
                 // General toggle logic for other properties
                 if (useCharge) {
-                    await updateJob(job.charge);
+                    await updateJob(this._extractNumericRate(job.charge));
                 } else {
                     const rate = await this.rateJobService.rateJob(job);
                     await updateJob(this._extractNumericRate(rate));
@@ -1006,24 +760,13 @@ class JobDetailController {
         }
     }
 
-    /**
-     * Toggles a specific property of a job
-     * Certain properties may require special handling
-     * @param {Job} job - The job to update
-     * @param {string} property - The property to toggle
-     */
-    async toggleProperty(job, property) {
+    public async toggleProperty(job: Job, property: string) {
         const propertiesUsingDefaultCharge = ["pedal", "truck", "direct", "attention", "return", "oneOff", "Active", "Void", "van", "vanOK", "done", "reprice"];
         const useCharge = propertiesUsingDefaultCharge.includes(property);
         await this.toggleJobProperty(job, property, useCharge);
     }
 
-    /**
-     * Special handling for marking a job as done
-     * @param $event
-     * @param {Job} job - The job to update
-     */
-    async markJobAsDone($event, job) {
+    public async markJobAsDone($event: MouseEvent, job: Job) {
         if (!job.completedTime || !job.podName) {
             try {
                 await this.showMissingInfoDialog($event, job);
@@ -1036,7 +779,7 @@ class JobDetailController {
         try {
             await this.dispatchData.updatePODDetail(job.jobNo, 6, job.podName, job.completedTime);
 
-            this.toastrService.showSuccessToast(`Job ${job.jobNo} marked as done successfully. Refreshing..`);
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} marked as done successfully`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             const message = "Failed to mark job as done. Please try again.";
@@ -1045,27 +788,16 @@ class JobDetailController {
         }
     }
 
-    /**
-     * Refreshes the job details in the background after an update
-     * @param {number} jobId - The ID of the job to refresh
-     * @returns {Promise<void>}
-     * @private
-     */
-    async _refreshJobDetails(jobId) {
-        this.jobDetailLoading = true; // Show loader
+    private async _refreshJobDetails(jobId: number) {
         try {
-            if (this.job) {
-                this.job = await this.dispatchData.getJobDetail(jobId);
-            }
+            this.internalJob = await this.dispatchData.getJobDetail(jobId);
         } catch (error) {
             console.error("Error refreshing job details:", error);
             this.toastrService.showErrorToast();
-        } finally {
-            this.jobDetailLoading = false; // Hide loader
         }
     }
 
-    _handleError(error) {
+    private _handleError(error: any) {
         if (error === undefined) {
             console.log("User closed dialog");
         } else {
@@ -1074,19 +806,11 @@ class JobDetailController {
         }
     }
 
-    /**
-     * Extracts the numeric rate from a string
-     * @param {string} rate - The rate string to parse
-     * @returns {number} The numeric rate
-     */
-    _extractNumericRate(rate) {
+    private _extractNumericRate(rate: string): number {
         return Number(rate.replace(/[^0-9.-]+/g, ""));
     }
 
-    /**
-     * @param {number} trackingMethod
-     */
-    getTrackingMethod(trackingMethod) {
+    public getTrackingMethod(trackingMethod?: number) {
         switch (trackingMethod || 0) {
             case 1:
                 return "Email";
@@ -1098,10 +822,38 @@ class JobDetailController {
                 return "";
         }
     }
+
+    $onInit() {
+        console.log('$onInit called - job exists:', !!this.job);
+        if (this.job) {
+            this.internalJob = this.job;
+            this._initializeJobData();
+        }
+    }
 }
 
-app.component('jobDetailWidget', {
-    templateUrl: 'app/components/common/job-details/job-details.template.html', controllerAs: 'ctrl', bindings: {
-        job: '='
-    }, controller: JobDetailController
-});
+class JobDetailDirective implements angular.IDirective {
+    restrict: 'E';
+    templateUrl: string;
+    scope: { job: string };
+    controller: any;
+    controllerAs: string;
+    bindToController: boolean;
+
+    constructor() {
+        this.restrict = 'E';
+        this.templateUrl = "app/components/common/job-details/job-details.template.html";
+        this.scope = {
+            job: "="
+        };
+        this.controller = JobDetailController;
+        this.controllerAs = "ctrl";
+        this.bindToController = true;
+    }
+
+    static factory(): angular.IDirectiveFactory {
+        return () => new JobDetailDirective();
+    }
+}
+
+app.directive("jobDetailWidget", JobDetailDirective.factory());

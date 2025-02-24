@@ -202,7 +202,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             "jobDetail": {
                 "title": "Detail",
                 "icon": "assignment",
-                "templateUrl": "app/components/common/partials/jobDetail.html",
+                "templateUrl": "app/components/Nationwide/partials/jobDetail.html",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
@@ -688,12 +688,13 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
 
 
     $scope.getSelectedStatusText = () => {
+        const defaultText = 'Stage';
         if (!$scope.internalStatusOptions || !$scope.currentJob) {
-            return 'Status';
+            return defaultText;
         }
 
         const selectedStatus = $scope.internalStatusOptions.find(status => status.id === $scope.currentJob.internalStatusId);
-        return selectedStatus ? selectedStatus.text : 'Status';
+        return selectedStatus ? selectedStatus.text : defaultText;
     };
 
     /**

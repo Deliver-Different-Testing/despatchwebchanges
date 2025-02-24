@@ -1,14 +1,10 @@
 import app from "../app";
-
-/**
- * @typedef {Object} StateInfo
- * @property {string} abbreviation - Two-letter state abbreviation
- * @property {string} name - Full state name
- */
+import StateInfo from "../interfaces/state-info.interface";
 
 class UsStatesService {
+    private readonly usStates: StateInfo[]
+
     constructor() {
-        /** @type {Array<StateInfo>} */
         this.usStates = [
             {abbreviation: "AL", name: "Alabama"},
             {abbreviation: "AK", name: "Alaska"},
@@ -63,29 +59,15 @@ class UsStatesService {
         ];
     }
 
-    /**
-     * Gets the list of all US states
-     * @returns {Array<StateInfo>} Array of all US states with their abbreviations and names
-     */
-    getStates() {
+    public getStates(): StateInfo[] {
         return this.usStates;
     }
 
-    /**
-     * Finds a state by its abbreviation
-     * @param {string} abbreviation - The two-letter state abbreviation to search for
-     * @returns {StateInfo|undefined} The matching state info or undefined if not found
-     */
-    getStateByAbbreviation(abbreviation) {
+    public getStateByAbbreviation(abbreviation: string): StateInfo | undefined {
         return this.usStates.find(state => state.abbreviation === abbreviation);
     }
 
-    /**
-     * Finds a state by its name (case-insensitive)
-     * @param {string} name - The state name to search for
-     * @returns {StateInfo|undefined} The matching state info or undefined if not found
-     */
-    getStateByName(name) {
+    public getStateByName(name: string): StateInfo | undefined {
         return this.usStates.find(state => state.name.toLowerCase() === name.toLowerCase());
     }
 }

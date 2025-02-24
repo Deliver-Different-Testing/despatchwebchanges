@@ -177,19 +177,6 @@ class NationwideService {
     }
 
     /**
-     * Processes an uncheck direct operation for a job.
-     * @param {number} jobId - The ID of the job.
-     * @param {string} despatcherName - The name of the dispatcher.
-     * @param {number} staffId - The ID of the staff member.
-     * @param {number} currentSpeed - The current speed of the job.
-     * @returns {Promise<Object>} A promise that resolves with the response data.
-     */
-    async processUncheckDirect(jobId, despatcherName, staffId, currentSpeed) {
-        const response = await this.$http.post(`job/ProcessUncheckDirect?jobId=${jobId}&despatcher=${despatcherName}&staffId=${staffId}&currentSpeed=${currentSpeed}`);
-        return response.data;
-    }
-
-    /**
      * Restores jobs to a courier.
      * @param {number} courierId - The ID of the courier.
      * @param {number} dispatcherId - The ID of the dispatcher.
