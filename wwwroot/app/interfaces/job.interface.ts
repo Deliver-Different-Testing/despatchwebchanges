@@ -194,11 +194,19 @@ export interface AddressViewModel {
     latitude?: number;
     longitude?: number;
     fullAddress: string;
+    toSuburbId?: number;
+    cbd?: boolean;
+    address?: string;
 }
+
 
 export interface Suggestion {
     id: number;
     text: string;
+}
+
+export interface Views extends Suggestion {
+    selected?: boolean;
 }
 
 export interface ClearListViewModel {
@@ -245,4 +253,51 @@ export interface AgentViewModel {
     agentName: string;
     agentRate: number;
     agentRanking: string;
+}
+
+export interface Pallet {
+    id: number;
+    quantity: number;
+    weight: number;
+    length: number;
+    depth: number;
+    height: number;
+    pu: boolean;
+    do: boolean;
+    dgClass: string;
+    notes: string;
+}
+
+export interface JobQueryParams {
+    status?: number;
+    order?: string;
+    orderDirection?: string;
+    page?: number;
+    limit?: number;
+}
+
+export interface PriceBreakdown {
+    chargeId: number;
+    name: string;
+    amount: number;
+}
+
+export interface JobRateDetails {
+    jobId: number;
+    clientId: number;
+    speed: number;
+    fromZipCode: string;
+    toZipCode: string;
+    weight: number;
+    booked: Date;
+    size: number;
+    dangerousGoods: boolean;
+    totalPallets: number;
+    extraStopOffs: number;
+    dryIceWeight: number;
+    waitTime: number;
+    fromLat: number;
+    fromLong: number;
+    toLat: number;
+    toLong: number;
 }

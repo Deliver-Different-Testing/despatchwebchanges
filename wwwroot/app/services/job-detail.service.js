@@ -181,6 +181,15 @@ class JobDetailService {
     }
 
     /**
+     * @param {number} jobId
+     * @param {string} email
+     */
+    async sendPOD(jobId, email) {
+        const response = await this.$http.get(`job/SendPOD?jobId=${jobId}&toEmail=${email}`);
+        return response.data;
+    }
+
+    /**
      * @param {number} trackingMethod
      */
     getTrackingMethod(trackingMethod) {

@@ -281,19 +281,26 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.10" />
   </ItemGroup>
   <ItemGroup>
-    <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.directive.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\pod-photo-viewer\pod-photo-viewer.directive.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\pod-photo-viewer\pod-photo-viewer.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\side-nav\side-nav.directive.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\side-nav\side-nav.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\contants.ts" />
     <TypeScriptCompile Include="wwwroot\app\index.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\app-config.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\courier.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\job-field.types.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\job.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\open-job-options.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\paginated-response.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\state-info.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\materialTheme.ts" />
     <TypeScriptCompile Include="wwwroot\app\routes.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\config.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\dispatch-job.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\services\dispatch.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\getUsStates.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\greeting.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\index.ts" />

@@ -354,6 +354,7 @@
                                 <md-icon md-font-set="material-symbols-outlined" aria-label="Dimensions">
                                     straighten
                                 </md-icon>
+
                                 <div class="info-detail">
                                     <span class="label">Dimensions/Items:</span>
                                     <span class="value">{{ctrl.job.parcelDimensions.length || 0}} packages</span>
@@ -755,3 +756,73 @@
         </div>
     </div>
 </div>
+
+
+<div class="pod-photo-section md-whiteframe-1dp" ng-if="ctrl.formattedPodPhotos.length > 0">
+    <div class="section-header">
+        <div class="md-dense"
+             style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px;">
+            <div style="display: flex; align-items: center;">
+                <md-icon md-font-set="material-symbols-outlined" style="margin-right: 8px;">photo_library</md-icon>
+                <span>Proof of Delivery Photos</span>
+                <span class="photo-count">{{ctrl.formattedPodPhotos.length}} photos</span>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+                <md-button class="md-icon-button" ng-click="ctrl.sendPOD($event)" aria-label="Send POD">
+                    <md-icon md-font-set="material-symbols-outlined">send</md-icon>
+                    <md-tooltip>Send POD</md-tooltip>
+                </md-button>
+            </div>
+        </div>
+    </div>
+
+    <md-divider></md-divider>
+
+    <!-- Main selected photo view -->
+    <div class="pod-main-photo" ng-if="ctrl.formattedPodPhotos.length > 0">
+        <img ng-src="{{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].url}}"
+             alt="POD Photo {{ctrl.selectedPhotoIndex + 1}}">
+
+        <div class="pod-photo-info">
+            <p class="timestamp">{{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].timestamp | date:'medium'}}</p>
+            <p class="uploader">Uploaded by {{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].uploadedBy}}</p>
+        </div>
+
+        <!-- Navigation arrows -->
+        <md-button class="md-icon-button nav-button prev-button"
+                   ng-click="ctrl.prevPhoto()"
+                   ng-if="ctrl.formattedPodPhotos.length > 1">
+            <md-icon md-font-set="material-symbols-outlined">chevron_left</md-icon>
+        </md-button>
+
+        <md-button class="md-icon-button nav-button next-button"
+                   ng-click="ctrl.nextPhoto()"
+                   ng-if="ctrl.formattedPodPhotos.length > 1">
+            <md-icon md-font-set="material-symbols-outlined">chevron_right</md-icon>
+        </md-button>
+    </div>
+
+    <!-- Thumbnail grid using md-grid-list -->
+    <div class="pod-thumbnails-container">
+        <md-grid-list md-cols="5" md-cols-xs="3" md-cols-sm="4" md-row-height="1:1" md-gutter="8px">
+            <md-grid-tile ng-repeat="photo in ctrl.formattedPodPhotos track by $index"
+                          ng-click="ctrl.setSelectedPhoto($index)"
+                          ng-class="{'active-thumbnail': $index === ctrl.selectedPhotoIndex}">
+                <img ng-src="{{photo.url}}" alt="Photo {{$index + 1}}">
+                <md-grid-tile-footer>
+                    <h3>{{photo.timestamp | date:'shortTime'}}</h3>
+                </md-grid-tile-footer>
+            </md-grid-tile>
+        </md-grid-list>
+    </div>
+</div>
+
+<!-- POD Photo -->
+<pod-photo-viewer
+        ng-if="!ctrl.job.bulkJob && ctrl.job.podPhotos.length > 0"
+        photos="ctrl.formattedPodPhotos"
+        is-open="ctrl.isPodViewerOpen"
+        initial-photo-index="0"
+        on-close="ctrl.closePodViewer()">
+</pod-photo-viewer>
