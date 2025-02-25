@@ -1,40 +1,37 @@
 import app from "../../../app";
 import "./side-nav.styles.less";
+import angular from "angular";
+import {SideNavScope} from "./side-nav.interfaces";
+import {AppConfig} from "../../../interfaces/app-config.interface";
 
-class MaterialSidenavController {
+class MaterialSidenavController implements angular.IController {
     static $inject = ["$scope", "$state"];
 
-    constructor($scope, $state) {
-        this.$scope = $scope;
-        this.$state = $state;
-
-        // Initialize scope methods
+    constructor(private $scope: SideNavScope,
+                private $state: angular.ui.IStateService) {
         this.$scope.isActive = this.isActive.bind(this);
-
-        // Initialize scope properties
         this.$scope.navState = {
             isOpen: false,
             isAnimating: false
         };
     }
 
-    /**
-     * @param {string} stateName
-     * @returns {boolean}
-     */
-    isActive(stateName) {
+    public isActive(stateName: string): boolean {
         return this.$state.current.name === stateName;
     }
 }
 
-class SideNavDirective {
+class SideNavDirective implements angular.IDirective {
     static $inject = ["$mdSidenav", "$timeout", "APP_CONFIG"];
+    restrict: 'E';
+    templateUrl: string;
+    scope: boolean;
+    controller: typeof MaterialSidenavController;
+    controllerAs: string;
 
-    constructor($mdSidenav, $timeout, APP_CONFIG) {
-        this.$mdSidenav = $mdSidenav;
-        this.$timeout = $timeout;
-        this.APP_CONFIG = APP_CONFIG;
-
+    constructor(private $mdSidenav: angular.material.ISidenavService,
+                private $timeout: angular.ITimeoutService,
+                private APP_CONFIG: AppConfig) {
         this.restrict = "E";
         this.templateUrl = "app/components/common/side-nav/side-nav.template.html";
         this.scope = true;
@@ -44,16 +41,18 @@ class SideNavDirective {
         this.link = this.link.bind(this);
     }
 
-    static factory() {
-        const directive = ($mdSidenav, $timeout, APP_CONFIG) => {
+    static factory(): any {
+        const directive = ($mdSidenav: angular.material.ISidenavService,
+                           $timeout: angular.ITimeoutService, APP_CONFIG: AppConfig) => {
             return new SideNavDirective($mdSidenav, $timeout, APP_CONFIG);
         };
         directive.$inject = ["$mdSidenav", "$timeout", "APP_CONFIG"];
         return directive;
     }
 
-    link(scope, element) {
-        let timeoutId = null;
+    link(scope: angular.IScope, element: angular.IAugmentedJQuery): void {
+        const $scope = scope as SideNavScope;
+        let timeoutId: angular.IPromise<void> | null = null;
         const HOVER_DELAY = 300;
         const ANIMATION_DURATION = 200;
 
@@ -61,20 +60,17 @@ class SideNavDirective {
         const sideNav = this.$mdSidenav("right");
         const sidenav = element.find("md-sidenav");
 
-        /**
-         * @param {boolean} shouldOpen
-         */
-        const toggleNav = (shouldOpen) => {
-            if (scope.navState.isAnimating) return;
-            if (shouldOpen === scope.navState.isOpen) return;
+        const toggleNav = (shouldOpen: boolean) => {
+            if ($scope.navState.isAnimating) return;
+            if (shouldOpen === $scope.navState.isOpen) return;
 
-            scope.navState.isAnimating = true;
+            $scope.navState.isAnimating = true;
 
             const action = shouldOpen ? sideNav.open() : sideNav.close();
             action.then(() => {
-                scope.navState.isOpen = shouldOpen;
+                $scope.navState.isOpen = shouldOpen;
                 this.$timeout(() => {
-                    scope.navState.isAnimating = false;
+                    $scope.navState.isAnimating = false;
                 }, ANIMATION_DURATION);
             });
         };
@@ -84,7 +80,7 @@ class SideNavDirective {
                 this.$timeout.cancel(timeoutId);
                 timeoutId = null;
             }
-            scope.$apply(() => toggleNav(true));
+            $scope.$apply(() => toggleNav(true));
         });
 
         sidenav.on("mouseleave", () => {
@@ -92,15 +88,15 @@ class SideNavDirective {
                 this.$timeout.cancel(timeoutId);
             }
             timeoutId = this.$timeout(() => {
-                scope.$apply(() => toggleNav(false));
+                $scope.$apply(() => toggleNav(false));
             }, HOVER_DELAY);
         });
 
-        scope.userName = FirstName;
-        scope.companyName = "DFRNT";
-        scope.isUsCustomer = this.APP_CONFIG.US_Customer;
+        $scope.userName = FirstName;
+        $scope.companyName = "DFRNT";
+        $scope.isUsCustomer = this.APP_CONFIG.US_Customer;
 
-        scope.$on("$destroy", () => {
+        $scope.$on("$destroy", () => {
             if (timeoutId) {
                 this.$timeout.cancel(timeoutId);
             }

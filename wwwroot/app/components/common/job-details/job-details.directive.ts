@@ -6,8 +6,9 @@ import {Job} from "../../../interfaces/job.interface";
 import {FirstName, ContactID} from "../../../contants";
 import {JobNote, JobOptions, TabItem} from "./job-details.interfaces";
 import "./job-details.styles.less";
+import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
 
-class JobDetailController {
+class JobDetailController implements angular.IController {
     static $inject = ["$mdDialog", "toastrService", "DispatchData", "APP_CONFIG", "rateJobService"];
 
     private readonly isUsCustomer: boolean;
@@ -17,6 +18,11 @@ class JobDetailController {
     public selectedTab: number;
     public allTabs: TabItem[];
     public options: JobOptions;
+    public isPodViewerOpen: boolean = false;
+    public formattedPodPhotos: PodPhoto[] = [];
+    public selectedPhotoIndex: number = 0;
+    public showLeftScroll: boolean = false;
+    public showRightScroll: boolean = false;
 
     constructor(private $mdDialog: angular.material.IDialogService,
                 private toastrService: ToastrService,
@@ -823,11 +829,147 @@ class JobDetailController {
         }
     }
 
+    public setSelectedPhoto(index: number): void {
+        this.selectedPhotoIndex = index;
+    }
+
+    public nextPhoto(): void {
+        if (!this.formattedPodPhotos.length) return;
+        this.selectedPhotoIndex = (this.selectedPhotoIndex + 1) % this.formattedPodPhotos.length;
+    }
+
+    public prevPhoto(): void {
+        if (!this.formattedPodPhotos.length) return;
+        this.selectedPhotoIndex = (this.selectedPhotoIndex - 1 + this.formattedPodPhotos.length) % this.formattedPodPhotos.length;
+    }
+
+    private handleKeydown = (event: Event) => {
+        const keyboardEvent = event as KeyboardEvent;
+        if (keyboardEvent.key === 'ArrowLeft') {
+            this.prevPhoto();
+        } else if (keyboardEvent.key === 'ArrowRight') {
+            this.nextPhoto();
+        }
+    };
+
+    public setupPhotoKeyboardNavigation(): void {
+        const photoSection = document.querySelector('.pod-photo-section');
+        if (!photoSection) return;
+
+        photoSection.addEventListener('keydown', this.handleKeydown);
+        photoSection.setAttribute('tabindex', '0');
+    }
+
+
+    private formatPodPhotos(): void {
+        if(!this.internalJob?.podPhotos) return;
+
+        console.log("Formatting POD photos");
+
+        // Ensure formattedPodPhotos is always initialized as an array
+        this.formattedPodPhotos = [];
+
+        try {
+            this.formattedPodPhotos = this.internalJob.podPhotos.map((base64Image, index) => ({
+                url: `data:image/png;base64,${base64Image}`,
+                timestamp: this.getPhotoTimestamp(index),
+                uploadedBy: this.getPhotoUploader(index)
+            }));
+
+            console.log(`Formatted ${this.formattedPodPhotos.length} POD photos`);
+        } catch (error) {
+            console.error("Error formatting POD photos:", error);
+        }
+
+        // Ensure selectedPhotoIndex is within bounds
+        if (this.selectedPhotoIndex >= this.formattedPodPhotos.length) {
+            this.selectedPhotoIndex = 0;
+        }
+    }
+
+    private getPhotoTimestamp(index: number): string {
+        const now = new Date();
+        const timestamp = new Date(now.getTime() - (index * 10 * 60 * 1000));
+        return timestamp.toISOString();
+    }
+
+    private getPhotoUploader(index: number): string {
+        const uploadedByOptions = ['Driver', 'Customer', 'Dispatcher', 'Admin'];
+        return uploadedByOptions[index % uploadedByOptions.length];
+    }
+
+    public openPodViewer(index: number): void {
+        this.selectedPhotoIndex = index;
+        this.isPodViewerOpen = true;
+    }
+
+    public closePodViewer(): void {
+        this.isPodViewerOpen = false;
+    }
+
+    public async sendPOD($event: MouseEvent): Promise<void> {
+        if (!this.internalJob?.podPhotos) return;
+
+        try {
+            if (!this.internalJob?.podPhoto) {
+                await this.$mdDialog.show(this.$mdDialog.alert()
+                    .clickOutsideToClose(true)
+                    .title('No Photo')
+                    .textContent('Sorry no photo for this job.')
+                    .ok('OK'));
+                console.log("Alert closed.");
+                return;
+            }
+
+            const confirm = this.$mdDialog.prompt()
+                .title('Email the photo POD')
+                .textContent('Please enter an email address to send the POD.')
+                .placeholder('Email Address')
+                .ariaLabel('Email Address')
+                .targetEvent($event)
+                .required(true)
+                .ok('Send')
+                .cancel('Cancel');
+
+            const email = await this.$mdDialog.show(confirm);
+
+            await this.dispatchData.sendPOD(this.internalJob.id, email);
+
+            await this.$mdDialog.show(this.$mdDialog.alert()
+                .clickOutsideToClose(true)
+                .title('Email Sent')
+                .textContent('POD email has been sent')
+                .ok('OK'));
+
+        } catch (error: any) {
+            this._handleError(error);
+        }
+    }
+
+    // Lifecycle hooks
     $onInit() {
         console.log('$onInit called - job exists:', !!this.job);
         if (this.job) {
             this.internalJob = this.job;
             this._initializeJobData();
+
+            setTimeout(() => {
+                this.formatPodPhotos();
+                this.setupPhotoKeyboardNavigation();
+            }, 100);
+        }
+    }
+
+    $onChanges(changes: angular.IOnChangesObject): void {
+        if (changes['job'] && !changes['job'].isFirstChange()) {
+            this.formatPodPhotos();
+        }
+    }
+
+    $onDestroy(): void {
+        const photoSection = document.querySelector('.pod-photo-section');
+        if (photoSection) {
+            photoSection.removeEventListener('keydown', this.handleKeydown);
         }
     }
 }
