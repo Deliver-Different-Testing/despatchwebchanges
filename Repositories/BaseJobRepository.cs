@@ -579,7 +579,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 j.UcjbStatusNavigation != null
                 && (
                     j.UcjbCourierId == null
-                    || j.UcjbStatus == (int)JobStatus.Dispatched
                     || j.UcjbStatus == (int)JobStatus.New
                 )
             ),
@@ -590,6 +589,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 || j.UcjbStatus == (int)JobStatus.Dispatched
                 || j.UcjbStatus == (int)JobStatus.AwaitingPod
                 || j.UcjbStatus == (int)JobStatus.LatePickup
+                || j.UcjbStatus == (int)JobStatus.Accepted
             ),
 
             DispatchStatus.Active => query.Where(j =>
