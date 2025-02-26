@@ -662,7 +662,7 @@ function HomeControl(
 
         // Run functions sequentially to prevent race conditions
         await initializeViews();
-        await $scope.updateFilters($scope.selectedFilter);
+        await $scope.updateDashboardFilters($scope.selectedFilter);
         await fetchDriverLocations();
       } catch (error) {
         console.error("Error fetching dispatch views:", error);
@@ -755,35 +755,49 @@ function HomeControl(
       true
     );
 
-    $scope.updateFilters = async (selectedFilter) => {
-      try {
-        // Set all filters to inactive
-        $scope.filters.forEach((filter) => {
-          filter.active = false;
-        });
+  $scope.updateDashboardFilters = async (selectedFilter) => {
+    console.log('updateFilters started with filter:', selectedFilter);
+    try {
+      // Set all filters to inactive
+      console.log('Current filters state:', JSON.stringify($scope.filters));
+      $scope.filters.forEach((filter) => {
+        filter.active = false;
+      });
 
-        // Set the selected filter to active
-        const selectedFilterObj = $scope.filters.find(
+      $scope.queryParams.status = selectedFilter;
+      console.log('Updated query params:', $scope.queryParams);
+
+      console.log('Fetching job list...');
+      await getJobList();
+      console.log('Job list fetched successfully');
+
+      // Save the selected filter
+      saveFilterToStorage(selectedFilter);
+
+      // Set the selected filter to active
+      const selectedFilterObj = $scope.filters.find(
           (filter) => filter.value === selectedFilter
-        );
-        if (selectedFilterObj) {
-          selectedFilterObj.active = true;
-        }
+      );
+      console.log('Selected filter object:', selectedFilterObj);
 
-        // Save the selected filter
-        saveFilterToStorage(selectedFilter);
-
-        // Pass the numeric value directly to setFilters
-        await setFilters({ status: selectedFilter });
-
-        // Ensure Angular updates the UI
-        if (!$scope.$$phase) {
-          $scope.$apply();
-        }
-      } catch (error) {
-        console.error("Error updating filters:", error);
+      if (selectedFilterObj) {
+        selectedFilterObj.active = true;
+        console.log('Filter activated:', selectedFilterObj.label);
       }
-    };
+
+      // Ensure Angular updates the UI
+      if (!$scope.$$phase) {
+        console.log('Triggering $scope.$apply()');
+        $scope.$apply();
+      }
+    } catch (error) {
+      console.error('Error updating filters:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
+    }
+  };
 
     /**
      * Sets the active area in the driverLocations.
@@ -2821,54 +2835,6 @@ function HomeControl(
       }
     }
 
-    async function setFilters(data) {
-      await $timeout(async () => {
-        if (data.status) {
-          $scope.queryParams.status = data.status; // Now passing numeric value
-        } else {
-          const selectedStatus = Object.entries($scope.filters)
-            .filter(([key, value]) => value && key !== "all")
-            .map(([key]) => key);
-
-          if (selectedStatus.length > 0) {
-            $scope.queryParams.status = selectedStatus.join(",");
-          } else if ($scope.filters.all) {
-            $scope.queryParams.status = 5; // Use numeric value for 'all'
-          } else {
-            delete $scope.queryParams.status;
-          }
-        }
-
-        if (data.area) {
-          let selected = angular.element(
-            "#area-group > .btn.topBarActive"
-          ).length;
-          if (selected > 1) {
-            $scope.queryParams.area += "," + data.area;
-          } else {
-            $scope.queryParams.area = data.area;
-          }
-        }
-
-        if (data.clearList) {
-          let clSelected = angular
-            .element("#driverLocations")
-            .find(".listActive").length;
-          if (clSelected > 1) {
-            $scope.queryParams.area += "," + data.clearList;
-          } else {
-            $scope.queryParams.area = data.clearList;
-          }
-        }
-
-        if (data.order) {
-          $scope.queryParams.order = data.order;
-        }
-
-        await $scope.getData();
-      }, 300);
-    }
-
     /**
      * @param {Job} job
      */
@@ -3538,11 +3504,14 @@ function HomeControl(
 
         // Ensure we have valid pagination parameters
         const params = {
+          status: $scope.queryParams.status | 0,
           page: $scope.queryParams.page || 1,
           limit: $scope.queryParams.limit || 10,
           orderBy: orderBy,
           orderDirection: orderDirection,
         };
+
+        console.log('Params:', params);
 
         $scope.jobListPromise = dispatchJobService.getJobListWithCourierData(
           params,

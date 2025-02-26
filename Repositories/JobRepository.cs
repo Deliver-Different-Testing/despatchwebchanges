@@ -982,9 +982,8 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         bool isInternal,
         string clientIds,
         List<int> selectedViewIds,
-        ClearListEnvelopeViewModel clearListEnvelope = null,
-        DispatchStatus status = DispatchStatus.Nda
-    )
+        DispatchStatus status,
+        ClearListEnvelopeViewModel clearListEnvelope = null)
     {
         if (isInternal == false && string.IsNullOrEmpty(clientIds))
             return new PaginatedResponse<JobViewModel>

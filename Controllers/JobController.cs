@@ -68,9 +68,7 @@ public class JobController(
                 isInternal,
                 clientIds,
                 despatchViewIds,
-                null,
-                status
-            );
+                status);
 
             Log.Information(
                 "Successfully retrieved {Count} jobs out of {Total} total records",
@@ -118,7 +116,6 @@ public class JobController(
                 isInternal,
                 clientIds,
                 despatchViewIds,
-                null,
                 status
             );
 
@@ -337,7 +334,6 @@ public class JobController(
         try
         {
             var job = await jobRepository.GetJobByIdAsync(jobId);
-
             return Json(job);
         }
         catch (OperationCanceledException)

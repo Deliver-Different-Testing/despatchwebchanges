@@ -17,6 +17,7 @@
 .flex-center() {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
 }
 
 .section-transition() {
@@ -65,28 +66,46 @@
       md-list-item {
         min-height: @spacing-unit*6 !important;
 
+        &._md-button-wrap {
+          .md-button.md-no-style {
+            text-align: left;
+            width: 100%;
+          }
+        }
+
+        &.md-no-proxy {
+          padding: 0 16px;
+        }
+
+        .md-button.md-no-style {
+          text-align: left;
+        }
+
+        .md-list-item-inner {
+          justify-content: flex-start;
+          width: 100%;
+        }
+
         md-icon {
           margin-right: @spacing-unit*2;
           color: @text-secondary;
         }
 
-        &.md-no-proxy {
-          padding: 0;
-        }
-
         .info-detail {
           .flex-center();
-          gap: @spacing-unit;
+          width: 100%;
 
           .label {
             color: @text-secondary;
             font-size: 14px;
             min-width: 70px;
+            text-align: left;
           }
 
           .value {
             color: @text-primary;
             font-size: 14px;
+            text-align: left;
 
             &:empty::before {
               content: "Not available";
@@ -120,6 +139,26 @@
 
       md-list-item {
         padding: 0 @spacing-unit;
+
+        &._md-button-wrap {
+          .md-button.md-no-style {
+            text-align: left;
+            width: 100%;
+          }
+        }
+
+        &.md-no-proxy {
+          padding: 0 16px;
+        }
+
+        .md-button.md-no-style {
+          text-align: left;
+        }
+
+        .md-list-item-inner {
+          justify-content: flex-start;
+          width: 100%; // Ensure inner content takes full width
+        }
       }
 
       .info-row {
@@ -131,6 +170,42 @@
 }
 
 .job-detail-page {
+  .warning-section {
+    margin: 0 0 12px 0;
+    background-color: #FFF8E1;
+    border-left: 4px solid #FFB300;
+
+    .md-card-content {
+      padding: 8px 16px;
+    }
+
+    md-icon {
+      color: #FF8F00;
+      margin-right: 16px;
+      font-size: 24px;
+    }
+
+    .warning-text {
+      color: rgba(0, 0, 0, 0.87);
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    // Responsive adjustments
+    @media (max-width: 599px) {
+      margin-bottom: 8px;
+
+      .md-card-content {
+        padding: 8px 12px;
+      }
+
+      md-icon {
+        margin-right: 12px;
+        font-size: 20px;
+      }
+    }
+  }
+
   .job-detail-widget {
     background: white;
     margin: 0;
@@ -139,12 +214,20 @@
     // Header Bar
     .header-bar {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       align-items: center;
       padding: 0;
       border-bottom: 1px solid #e0e0e0;
       height: 48px;
       background: white;
+
+      > * {
+        margin-right: 16px;
+
+        &:last-child {
+          margin-right: 0;
+        }
+      }
 
       .navigation-group {
         display: flex;
@@ -209,6 +292,25 @@
 
         md-list-item {
           min-height: @spacing-unit*5 !important;
+
+          &._md-button-wrap {
+            .md-button.md-no-style {
+              text-align: left;
+              width: 100%;
+            }
+          }
+
+          &.md-no-proxy {
+            padding: 0 16px;
+          }
+
+          .md-button.md-no-style {
+            text-align: left;
+          }
+
+          .md-list-item-inner {
+            justify-content: flex-start;
+          }
         }
       }
 
@@ -318,6 +420,25 @@
 
               md-list-item {
                 min-height: @spacing-unit*4 !important;
+
+                &._md-button-wrap {
+                  .md-button.md-no-style {
+                    text-align: left;
+                    width: 100%;
+                  }
+                }
+
+                &.md-no-proxy {
+                  padding: 0 16px;
+                }
+
+                .md-button.md-no-style {
+                  text-align: left;
+                }
+
+                .md-list-item-inner {
+                  justify-content: flex-start;
+                }
 
                 md-icon {
                   margin-right: @spacing-unit*2;
@@ -483,16 +604,35 @@
             min-height: @spacing-unit*6 !important;
             padding: 0;
 
+            &._md-button-wrap {
+              .md-button.md-no-style {
+                text-align: left;
+                width: 100%;
+              }
+            }
+
+            &.md-no-proxy {
+              padding: 0 16px;
+            }
+
+            .md-button.md-no-style {
+              text-align: left;
+            }
+
+            .md-list-item-inner {
+              justify-content: flex-start;
+            }
+
             md-icon {
               margin-right: @spacing-unit*2;
               color: @text-medium;
             }
 
             .info-detail {
-              display: flex;
-              align-items: center;
+              .flex-center();
               gap: @spacing-unit;
-              flex: 1;
+              justify-content: flex-start;
+              margin-left: 0;
 
               .label {
                 color: @text-medium;
@@ -565,6 +705,7 @@
   }
 
   /* Main photo view */
+
   .pod-main-photo {
     position: relative;
     height: 300px;
@@ -635,6 +776,7 @@
   }
 
   /* Thumbnail grid */
+
   .pod-thumbnails-container {
     padding: 8px;
     border-top: 1px solid #e0e0e0;

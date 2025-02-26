@@ -217,6 +217,7 @@
     <_ContentIncludedByDefault Remove="wwwroot\app\components\common\gpsForm\gpsForm.html" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\common\gpsForm\gpsFormController.js" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\Nationwide\tpls\map.tpl" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\dispatch-map\services\marker.factory.ts" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
@@ -231,7 +232,6 @@
     <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.directive.js" />
     <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.styles.less" />
     <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.template.html" />
-    <None Include="wwwroot\app\components\common\side-nav\side-nav.directive.js" />
     <None Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
     <Page Include="wwwroot\app\components\overview\open-jobs\open-jobs.controller.js" />
     <None Include="wwwroot\app\components\overview\services\overview-filters.service.js" />
@@ -281,12 +281,16 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.10" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="wwwroot\app\components\common\dispatch-map\dispatch-map.directive.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\dispatch-map\dispatch-map.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.directive.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\pod-photo-viewer\pod-photo-viewer.directive.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\pod-photo-viewer\pod-photo-viewer.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\side-nav\side-nav.directive.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\side-nav\side-nav.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\CS\cs.types.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\CS\services\cs-layout.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\contants.ts" />
     <TypeScriptCompile Include="wwwroot\app\index.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\app-config.interface.ts" />
