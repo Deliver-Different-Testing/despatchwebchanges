@@ -6,6 +6,7 @@
     "@types/angular": "^1.8.9",
     "@types/angular-material": "^1.1.78",
     "@types/angular-ui-router": "^1.1.44",
+    "@types/ngmap": "^1.17.11",
     "@types/node": "^22.13.5",
     "entities": "^4.5.0",
     "parse5": "^7.1.2",

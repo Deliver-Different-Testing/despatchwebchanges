@@ -67,9 +67,8 @@ public interface IJobRepository
         bool isInternal,
         string clientIds,
         List<int> selectedViewIds,
-        ClearListEnvelopeViewModel clearListEnvelope = null,
-        DispatchStatus status = DispatchStatus.Nda
-    );
+        DispatchStatus status,
+        ClearListEnvelopeViewModel clearListEnvelope = null);
 
     Task<List<SupportViewModel>> SupportEvents(string channel);
     Task<TucEvent> GetSupportEventAsync(int eventId);

@@ -140,6 +140,7 @@ export interface Job {
     parcelDimensions: ParcelDimensions[];
     deliverToLeaveId?: number;
     isActive: boolean;
+    isArchived: boolean;
 }
 
 export interface Vehicle {

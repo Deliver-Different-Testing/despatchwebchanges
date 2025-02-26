@@ -200,6 +200,8 @@ public class JobViewModel
     public List<ParcelDimensions> ParcelDimensions { get; set; }
 
     public int? DeliverToLeaveId { get; set; }
+
+    public bool IsArchived { get; set; }
 }
 
 public class Vehicle

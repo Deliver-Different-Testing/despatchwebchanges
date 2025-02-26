@@ -1,13 +1,13 @@
 <div class="job-detail-page" ng-if="ctrl.job">
 
-    <!-- Progress bar for updating details-->
-    <md-progress-linear
-            class="md-primary"
-            md-mode="indeterminate"
-            ng-if="ctrl.jobDetailLoading"
-            style="position: absolute; top: 0; left: 0; right: 0;">
-        <md-tooltip md-direction="bottom">Refreshing Job Details...</md-tooltip>
-    </md-progress-linear>
+    <md-card class="warning-section md-whiteframe-1dp" ng-if="ctrl.job.isArchived">
+        <md-card-content>
+            <div layout="row" layout-align="start center">
+                <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
+                <span class="warning-text">This job has been archived. Some information may not be available.</span>
+            </div>
+        </md-card-content>
+    </md-card>
 
     <md-card class="job-detail-widget">
         <!-- Top Bar -->

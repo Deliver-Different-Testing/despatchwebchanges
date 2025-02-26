@@ -68,7 +68,7 @@ angular.module('hereMapTracking.components', [])
             config: '=',
             onMapReady: '&'
         },
-        template: '<div class="here-map" id="{{mapId}}"  style="width: 800px; height:500px;"></div>',
+        template: '<div class="here-map" id="{{mapId}}" style="width: 800px; height:500px;"></div>',
         controller: ['$scope', 'HereMapService', ($scope, HereMapService) => {
             let platform;
             let mapInstance;
