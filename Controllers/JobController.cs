@@ -306,13 +306,12 @@ public class JobController(
             Log.Debug($"Get S3 Object List for {key}");
             var s3List = await SearchDeliveryFilesByPatternAsync(bucketName, key, year, month);
             Log.Debug($"Found {s3List.Count} objects for {key}");
-            foreach (var s3Object in s3List)
+            foreach (var getObjectRequest in s3List.Select(s3Object => new GetObjectRequest
+                     {
+                         BucketName = bucketName,
+                         Key = s3Object.Key,
+                     }))
             {
-                var getObjectRequest = new GetObjectRequest
-                {
-                    BucketName = bucketName,
-                    Key = s3Object.Key,
-                };
                 using var response = await s3Client.GetObjectAsync(getObjectRequest);
                 await using var responseStream = response.ResponseStream;
                 using var reader = new StreamReader(responseStream);
@@ -1983,7 +1982,7 @@ public class JobController(
             return NotFound();
         }
 
-        Attachment att = new Attachment(
+        var att = new Attachment(
             new MemoryStream(selectedJob.PodPhoto),
             selectedJob.JobNo.ToString() + ".png"
         );
@@ -1999,7 +1998,7 @@ public class JobController(
         return Json("OK");
     }
 
-    private void SendEmail(
+    private static void SendEmail(
         string toAddress,
         string fromAddress,
         string body,
@@ -2148,42 +2147,44 @@ public class JobController(
                 return BadRequest("File size exceeds the limit of 10MB.");
 
             using var memoryStream = new MemoryStream();
-            if (request.File != null)
+            if (request.File == null)
+                return Ok(
+                    new { message = "File uploaded successfully", fileName = request.File.FileName }
+                );
+
+            await request.File.CopyToAsync(memoryStream);
+
+            var byteArray = memoryStream.ToArray();
+
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+            var key = $"JobAttachments/{request.JobId}-{timestamp}";
+
+            using var ms = new MemoryStream(byteArray);
+            try
             {
-                await request.File.CopyToAsync(memoryStream);
-
-                var byteArray = memoryStream.ToArray();
-
-                var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
-                var key = $"JobAttachments/{request.JobId}-{timestamp}";
-
-                using var ms = new MemoryStream(byteArray);
-                try
+                var putRequest = new PutObjectRequest
                 {
-                    var putRequest = new PutObjectRequest
-                    {
-                        BucketName = Environment.GetEnvironmentVariable("S3BucketMars"),
-                        Key = key,
-                        ContentType = request.File.ContentType,
-                        InputStream = ms,
-                    };
-                    putRequest.Metadata.Add("FileName", request.File.FileName);
-                    await s3Client.PutObjectAsync(putRequest);
-                }
-                catch (AmazonS3Exception e)
-                {
-                    Log.Error(
-                        e,
-                        $"{nameof(UploadFile)} Error encountered when writing job file upload object to S3: "
-                    );
-                }
-                catch (Exception e)
-                {
-                    Log.Error(
-                        e,
-                        $"{nameof(UploadFile)} Error encountered when writing file upload object to S3: "
-                    );
-                }
+                    BucketName = Environment.GetEnvironmentVariable("S3BucketMars"),
+                    Key = key,
+                    ContentType = request.File.ContentType,
+                    InputStream = ms,
+                };
+                putRequest.Metadata.Add("FileName", request.File.FileName);
+                await s3Client.PutObjectAsync(putRequest);
+            }
+            catch (AmazonS3Exception e)
+            {
+                Log.Error(
+                    e,
+                    $"{nameof(UploadFile)} Error encountered when writing job file upload object to S3: "
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Error(
+                    e,
+                    $"{nameof(UploadFile)} Error encountered when writing file upload object to S3: "
+                );
             }
 
             return Ok(

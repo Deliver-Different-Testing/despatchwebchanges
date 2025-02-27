@@ -121,8 +121,8 @@ export interface Job {
     stopDate?: Date;
     restartDate?: Date;
     days: string;
-    preBook?: boolean;
-    bulkJob?: boolean;
+    preBook: boolean;
+    bulkJob: boolean;
     runName: string;
     scheduleName: string;
     conNote: string;
@@ -141,6 +141,7 @@ export interface Job {
     deliverToLeaveId?: number;
     isActive: boolean;
     isArchived: boolean;
+    clientColor?: string;
 }
 
 export interface Vehicle {
@@ -270,7 +271,7 @@ export interface Pallet {
 }
 
 export interface JobQueryParams {
-    status?: number;
+    status?: string;
     order?: string;
     orderDirection?: string;
     page?: number;
@@ -301,4 +302,26 @@ export interface JobRateDetails {
     fromLong: number;
     toLat: number;
     toLong: number;
+}
+
+export interface DfrntEvent {
+    id: number;
+    jobNumber: string;
+    clientCode: string;
+    eventDate: Date;
+    closedDate: Date;
+    eventTime: string;
+    eventType: string;
+    notes: string;
+}
+
+export interface ClientItemsViewModel {
+    itemId: number;
+    clientId: number;
+    name: string;
+    description: string;
+    perItem: boolean;
+    rate: number;
+    onlyVan: boolean;
+    selected: boolean;
 }

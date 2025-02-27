@@ -307,7 +307,7 @@ public interface IJobRepository
     Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel);
     Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId);
 
-    Task<PagedList<ClientItemsViewModel>> GetClientItemsBySpeedAsync(
+    Task<PaginatedResponse<ClientItemsViewModel>> GetClientItemsBySpeedAsync(
         int clientId,
         int speedId,
         int jobId

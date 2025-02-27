@@ -525,7 +525,9 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 ),
             };
 
-        var orderedQuery = jobsQuery.OrderBy(a => a.BookedDate).ThenBy(v => v.Time);
+        var orderedQuery = jobsQuery
+            .OrderBy(a => a.BookedDate)
+            .ThenBy(v => v.Time);
 
         var total = orderedQuery.Count();
 
@@ -2331,7 +2333,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .AnyAsync();
     }
 
-    public async Task<PagedList<ClientItemsViewModel>> GetClientItemsBySpeedAsync(
+    public async Task<PaginatedResponse<ClientItemsViewModel>> GetClientItemsBySpeedAsync(
         int clientId,
         int speedId,
         int jobId
@@ -3293,14 +3295,14 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             );
     }
 
-    private static async Task<PagedList<ClientItemsViewModel>> CreatePagedList(
+    private static async Task<PaginatedResponse<ClientItemsViewModel>> CreatePagedList(
         IQueryable<ClientItemsViewModel> query
     )
     {
         var count = await query.CountAsync();
         var items = await query.ToListAsync();
 
-        return new PagedList<ClientItemsViewModel> { Items = items, TotalCount = count };
+        return new PaginatedResponse<ClientItemsViewModel> { Items = items, Total = count };
     }
 
     private async Task<decimal> CalculateAmountAsync(int clientId, decimal amount)

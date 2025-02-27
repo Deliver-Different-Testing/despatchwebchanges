@@ -699,6 +699,11 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             "time" => isAscending
                 ? query.OrderBy(j => j.UcjbTime)
                 : query.OrderByDescending(j => j.UcjbTime),
+
+            "courier" => isAscending
+            ? query.OrderBy(j => j.UcjbCourier.UccrName)
+            : query.OrderByDescending(j => j.UcjbCourier.UccrName),
+
             _ => throw new ArgumentOutOfRangeException()
         };
     }
