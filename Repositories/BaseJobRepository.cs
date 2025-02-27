@@ -417,6 +417,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 : null,
             IsArchived = true
         };
+    private static readonly int[] sourceArray = new[] { 41, 42, 43, 51, 52 };
 
     // Create
     public async Task<T> Add<T>(T entity)
@@ -437,6 +438,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         string order,
         string orderDirection,
         bool isInternal,
+        bool isUsTenant,
         string clientIds,
         List<int> selectedViewIds,
         NationwideWidget? windowPane = null,
@@ -468,7 +470,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     query = ApplyDashboardSpecificOrdering(
                         query,
                         order,
-                        orderDirection
+                        orderDirection,
+                        isUsTenant
                     );
                     break;
                 case AppPage.Domestic:
@@ -612,11 +615,11 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     private static IQueryable<TucJob> ApplyDashboardSpecificOrdering(
         IQueryable<TucJob> query,
         string order,
-        string orderDirection
+        string orderDirection,
+        bool isUsTenant
     )
     {
-        if (string.IsNullOrEmpty(order))
-            return query;
+        if (string.IsNullOrEmpty(order)) return query;
 
         var isAscending =
             orderDirection?.Equals("asc", StringComparison.OrdinalIgnoreCase)
@@ -634,27 +637,28 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
             "to" => isAscending
                 ? query
-                    .OrderBy(j => j.UcjbTo)
+                    .OrderBy(j => isUsTenant ? j.DeliveryAddressLine5 : j.UcjbToNavigation.UcsuName)
                     .ThenBy(j => j.UcjbTime)
-                    .ThenBy(j => j.UcjbFrom)
+                    .ThenBy(j => isUsTenant ? j.PickupAddressLine5 : j.UcjbFromNavigation.UcsuName)
                     .ThenBy(j => j.UcjbCourier.Code)
                 : query
-                    .OrderByDescending(j => j.UcjbTo)
+                    .OrderByDescending(j => isUsTenant ? j.DeliveryAddressLine5 : j.UcjbToNavigation.UcsuName)
                     .ThenByDescending(j => j.UcjbTime)
-                    .ThenByDescending(j => j.UcjbFrom)
+                    .ThenByDescending(j => isUsTenant ? j.PickupAddressLine5 : j.UcjbFromNavigation.UcsuName)
                     .ThenByDescending(j => j.UcjbCourier.Code),
 
             "from" => isAscending
                 ? query
-                    .OrderBy(j => j.UcjbFrom)
-                    .ThenBy(j => j.UcjbTo)
+                    .OrderBy(j => isUsTenant ? j.DeliveryAddressLine5 : j.UcjbToNavigation.UcsuName)
                     .ThenBy(j => j.UcjbTime)
+                    .ThenBy(j => isUsTenant ? j.DeliveryAddressLine5 : j.UcjbToNavigation.UcsuName)
                     .ThenBy(j => j.UcjbCourier.Code)
                 : query
-                    .OrderByDescending(j => j.UcjbFrom)
-                    .ThenByDescending(j => j.UcjbTo)
+                    .OrderByDescending(j => isUsTenant ? j.DeliveryAddressLine5 : j.UcjbToNavigation.UcsuName)
                     .ThenByDescending(j => j.UcjbTime)
+                    .ThenByDescending(j => isUsTenant ? j.DeliveryAddressLine5 : j.UcjbToNavigation.UcsuName)
                     .ThenByDescending(j => j.UcjbCourier.Code),
+
 
             "client" => isAscending
                 ? query
@@ -677,8 +681,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     .ThenByDescending(j => j.UcjbCourier.Code),
 
             "status" => isAscending
-                ? query.OrderBy(j => j.UcjbStatus)
-                : query.OrderByDescending(j => j.UcjbStatus),
+                ? query.OrderBy(j => j.UcjbStatusNavigation.UcjsName)
+                : query.OrderByDescending(j => j.UcjbStatusNavigation.UcjsName),
 
             "speed" => isAscending
                 ? query.OrderBy(j => j.UcjbSpeedNavigation.ShortName)
@@ -701,8 +705,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 : query.OrderByDescending(j => j.UcjbTime),
 
             "courier" => isAscending
-            ? query.OrderBy(j => j.UcjbCourier.UccrName)
-            : query.OrderByDescending(j => j.UcjbCourier.UccrName),
+                ? query.OrderBy(j => j.UcjbCourier.UccrName)
+                : query.OrderByDescending(j => j.UcjbCourier.UccrName),
 
             _ => throw new ArgumentOutOfRangeException()
         };
@@ -939,7 +943,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         // Handle Special Speeds (41,42,43,51,52) with Required Delivery Time
         if (
             job.UcjbSpeed != null
-            && new[] { 41, 42, 43, 51, 52 }.Contains(job.UcjbSpeed.Value)
+            && sourceArray.Contains(job.UcjbSpeed.Value)
             && job.RequiredDeliveryTime.HasValue
         )
         {

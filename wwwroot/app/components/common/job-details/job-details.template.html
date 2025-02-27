@@ -416,6 +416,62 @@
                         </md-list>
                     </div>
                 </div>
+
+
+                <!-- Additional Details  2-->
+                <div  flex="50" flex-xs="100" class="info-sections-container job-details-info md-whiteframe-1dp" ng-if="!ctrl.job.prebook">
+                    <div class="info-section">
+                        <md-subheader class="section-header">
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="Additional details">
+                                info
+                            </md-icon>
+                            <span>Additional Details</span>
+                        </md-subheader>
+
+                        <md-divider></md-divider>
+
+                        <md-list>
+                            <md-list-item class="info-row">
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="dispatcher">
+                                    supervisor_account
+                                </md-icon>
+                                <div class="info-detail">
+                                    <span class="label">Dispatcher Name:</span>
+                                    <span class="value">{{ctrl.job.dispatcherName || 'Not available'}}</span>
+                                </div>
+                            </md-list-item>
+
+                            <md-list-item class="info-row">
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="courier name">
+                                    local_shipping
+                                </md-icon>
+                                <div class="info-detail">
+                                    <span class="label">Courier Name:</span>
+                                    <span class="value">{{ctrl.job.courierData.courierName || 'Not available'}}</span>
+                                </div>
+                            </md-list-item>
+
+                            <md-list-item class="info-row">
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="courier phone">phone
+                                </md-icon>
+                                <div class="info-detail">
+                                    <span class="label">Courier Mobile:</span>
+                                    <span class="value">{{ctrl.job.courierData.courierMobile || 'Not available'}}</span>
+                                </div>
+                            </md-list-item>
+
+                            <md-list-item class="info-row">
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="schedule name">event
+                                </md-icon>
+                                <div class="info-detail">
+                                    <span class="label">Schedule Name:</span>
+                                    <span class="value">{{ctrl.job.scheduleName || 'Not available'}}</span>
+                                </div>
+                            </md-list-item>
+
+                        </md-list>
+                    </div>
+                </div>
             </div>
 
             <!-- Right Column -->
@@ -577,62 +633,6 @@
                         </md-list>
                     </div>
                 </div>
-
-
-                <!-- Additional Details -->
-                <div class="info-sections-container job-details-info md-whiteframe-1dp" ng-if="!ctrl.job.prebook">
-                    <div class="info-section">
-                        <md-subheader class="section-header">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="Additional details">
-                                info
-                            </md-icon>
-                            <span>Additional Details</span>
-                        </md-subheader>
-
-                        <md-divider></md-divider>
-
-                        <md-list>
-                            <md-list-item class="info-row">
-                                <md-icon md-font-set="material-symbols-outlined" aria-label="dispatcher">
-                                    supervisor_account
-                                </md-icon>
-                                <div class="info-detail">
-                                    <span class="label">Dispatcher Name:</span>
-                                    <span class="value">{{ctrl.job.dispatcherName || 'Not available'}}</span>
-                                </div>
-                            </md-list-item>
-
-                            <md-list-item class="info-row">
-                                <md-icon md-font-set="material-symbols-outlined" aria-label="courier name">
-                                    local_shipping
-                                </md-icon>
-                                <div class="info-detail">
-                                    <span class="label">Courier Name:</span>
-                                    <span class="value">{{ctrl.job.courierData.courierName || 'Not available'}}</span>
-                                </div>
-                            </md-list-item>
-
-                            <md-list-item class="info-row">
-                                <md-icon md-font-set="material-symbols-outlined" aria-label="courier phone">phone
-                                </md-icon>
-                                <div class="info-detail">
-                                    <span class="label">Courier Mobile:</span>
-                                    <span class="value">{{ctrl.job.courierData.courierMobile || 'Not available'}}</span>
-                                </div>
-                            </md-list-item>
-
-                            <md-list-item class="info-row">
-                                <md-icon md-font-set="material-symbols-outlined" aria-label="schedule name">event
-                                </md-icon>
-                                <div class="info-detail">
-                                    <span class="label">Schedule Name:</span>
-                                    <span class="value">{{ctrl.job.scheduleName || 'Not available'}}</span>
-                                </div>
-                            </md-list-item>
-
-                        </md-list>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -780,7 +780,7 @@
     <md-divider></md-divider>
 
     <!-- Main selected photo view -->
-    <div class="pod-main-photo" ng-if="ctrl.formattedPodPhotos.length > 0">
+    <div class="pod-main-photo">
         <img ng-src="{{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].url}}"
              alt="POD Photo {{ctrl.selectedPhotoIndex + 1}}">
 
@@ -818,9 +818,34 @@
     </div>
 </div>
 
+<div class="pod-photo-section md-whiteframe-1dp"
+     ng-if="ctrl.formattedPodPhotos.length === 0 && ctrl.job.done">
+    <div class="section-header">
+        <div class="md-dense"
+             style="display: flex; align-items: center; padding: 8px 16px;">
+            <md-icon md-font-set="material-symbols-outlined" style="margin-right: 8px;">photo_library</md-icon>
+            <span>Proof of Delivery Photos</span>
+        </div>
+    </div>
+
+    <md-divider></md-divider>
+
+    <div class="no-photos-message" style="padding: 24px; text-align: center;">
+        <md-icon md-font-set="material-symbols-outlined"
+                 style="font-size: 48px; height: 48px; width: 48px; color: rgba(0,0,0,0.54);">
+            photo_library
+        </md-icon>
+        <h3 style="margin: 16px 0 8px; color: rgba(0,0,0,0.87);">No POD Photos Available</h3>
+        <p style="color: rgba(0,0,0,0.54); margin: 0;">
+            This completed job has no proof of delivery photos attached.
+        </p>
+    </div>
+</div>
+
+
 <!-- POD Photo -->
 <pod-photo-viewer
-        ng-if="!ctrl.job.bulkJob && ctrl.job.podPhotos.length > 0"
+        ng-if="ctrl.formattedPodPhotos.length > 0"
         photos="ctrl.formattedPodPhotos"
         is-open="ctrl.isPodViewerOpen"
         initial-photo-index="0"

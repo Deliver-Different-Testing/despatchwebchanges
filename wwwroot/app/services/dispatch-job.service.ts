@@ -1,7 +1,8 @@
 import app from "../app";
 import angular from "angular";
-import {Job} from "../interfaces/job.interface";
+import {Job, JobQueryParams} from "../interfaces/job.interface";
 import {ActiveCourier} from "../interfaces/courier.interface";
+import {JobListResponse} from "../interfaces/job-list-response.interface";
 
 class DispatchJobService {
     static $inject = ["$mdDialog", "DispatchData", "moment"];
@@ -58,19 +59,11 @@ class DispatchJobService {
     }
 
     public async getJobListWithCourierData(
-        queryParams: object,
+        queryParams: JobQueryParams,
         selectedClients: Array<any>,
         isInternal: boolean,
         selectedAreas: Array<any>
-    ): Promise<{
-        items: Array<any>;
-        total: number;
-        page: number;
-        limit: number;
-        undispatchedJobs: Array<any>;
-        activeCouriers: Array<any>;
-        allCouriers: Array<any>;
-    }> {
+    ): Promise<JobListResponse> {
         console.log("Getting job list with courier data:", {
             queryParams,
             clientCount: selectedClients?.length,

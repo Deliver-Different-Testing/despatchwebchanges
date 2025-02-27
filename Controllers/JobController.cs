@@ -32,7 +32,8 @@ public class JobController(
     IClientAccessValidatorService clientAccessValidator,
     IAmazonS3 s3Client,
     HttpClient httpClient,
-    IRateJobService rateJobService
+    IRateJobService rateJobService,
+    ICountryService countryService
 ) : Controller
 {
     [HttpGet]
@@ -56,6 +57,8 @@ public class JobController(
 
         try
         {
+            var isUsTenant = countryService.IsUsTenant();
+
             if (!isInternal)
             {
                 Log.Debug("Validating client access for cid: {ClientId}", cid);
@@ -66,6 +69,7 @@ public class JobController(
             var result = await jobRepository.JobListAsync(
                 queryParams,
                 isInternal,
+                isUsTenant,
                 clientIds,
                 despatchViewIds,
                 status);
@@ -105,6 +109,8 @@ public class JobController(
     {
         try
         {
+            var isUsTenant = countryService.IsUsTenant();
+
             // Validate Client Access
             if (!isInternal)
                 await clientAccessValidator.ValidateClientAccess(cid, clientIds);
@@ -114,6 +120,7 @@ public class JobController(
             var result = await jobRepository.JobListAsync(
                 queryParams,
                 isInternal,
+                isUsTenant,
                 clientIds,
                 despatchViewIds,
                 status
