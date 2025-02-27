@@ -58,20 +58,81 @@ class JobDetailController implements angular.IController {
         };
 
         console.log('Job Details Controller loaded');
+    }
+
+    // Lifecycle hooks
+    $onInit() {
+        console.log('$onInit called - job exists:', !!this.job);
+        if (this.job) {
+            this.internalJob = this.job;
+            this._initializeJobData();
+
+            setTimeout(() => {
+                this._updateTabsArray();
+                this.loadPodPhotos().then(r => console.log('Loaded POD photos:', r));
+                this.setupPhotoKeyboardNavigation();
+            }, 100);
+        }
+    }
+
+    $onChanges(changes: angular.IOnChangesObject): void {
         this._updateTabsArray();
-        this._initializeJobData();
+
+        if (changes['job'] && !changes['job'].isFirstChange()) {
+            this.loadPodPhotos().then(r => console.log('Loaded POD photos:', r));
+        }
+    }
+
+    $onDestroy(): void {
+        const photoSection = document.querySelector('.pod-photo-section');
+        if (photoSection) {
+            photoSection.removeEventListener('keydown', this.handleKeydown);
+        }
+    }
+
+    private async loadPodPhotos(): Promise<void> {
+        try {
+            if (!this.internalJob?.completedTime) {
+                console.log('No POD time available for job');
+                return;
+            }
+
+            const podDate = new Date(this.internalJob.completedTime);
+            const year = podDate.getFullYear();
+            const month = podDate.getMonth() + 1;
+
+            const photoData = await this.dispatchData.getJobDeliveryPhotosAndSignature(this.internalJob.id, year, month);
+            this.formattedPodPhotos = photoData.map((photo: any, index: number) => ({
+                id: index,
+                url: photo.url,
+                timestamp: photo.timestamp
+            }));
+        } catch (error) {
+            this.toastrService.showErrorToast('Failed to load POD photos');
+            console.error('Error loading POD photos:', error);
+        }
     }
 
     private _updateTabsArray(): void {
-        if (!this.internalJob) return;
+        // Only proceed if we have a job loaded
+        if (!this.internalJob) {
+            console.log('_updateTabsArray: No job available yet');
+            return;
+        }
 
+        console.log('Updating tabs array with job:', this.internalJob.id, 'Job No:', this.internalJob.jobNo);
+
+        // Start with the main job
         this.allTabs = [{
             id: this.internalJob.id,
             text: this.internalJob.jobNo,
             isMainJob: true
         }];
 
-        if (this.internalJob.relatedJobs?.length) {
+        // Add related jobs if they exist
+        if (this.internalJob.relatedJobs && this.internalJob.relatedJobs.length) {
+            console.log(`Adding ${this.internalJob.relatedJobs.length} related jobs to tabs`);
+
             this.allTabs = this.allTabs.concat(
                 this.internalJob.relatedJobs.map(job => ({
                     id: job.id,
@@ -80,10 +141,17 @@ class JobDetailController implements angular.IController {
                 }))
             );
         }
+
+        console.log('Updated tabs array:', this.allTabs);
     }
 
     async navigateTab(direction: 'prev' | 'next'): Promise<void> {
-        if (!this.allTabs.length) return;
+        if (!this.allTabs.length) {
+            console.log('Cannot navigate: no tabs available');
+            return;
+        }
+
+        console.log(`Navigating ${direction} from tab index ${this.selectedTab}`);
 
         let newIndex: number;
         if (direction === 'prev') {
@@ -92,17 +160,52 @@ class JobDetailController implements angular.IController {
             newIndex = this.selectedTab < this.allTabs.length - 1 ? this.selectedTab + 1 : 0;
         }
 
+        console.log(`New tab index: ${newIndex}, tab: ${this.allTabs[newIndex]?.text || 'unknown'}`);
+
+        // Verify the tab has a valid ID before loading
+        if (!this.allTabs[newIndex] || !this.allTabs[newIndex].id) {
+            console.error('Invalid tab or missing ID', this.allTabs[newIndex]);
+            return;
+        }
+
         this.selectedTab = newIndex;
-        await this._loadJobDetails(this.allTabs[newIndex].id);
+        try {
+            await this._loadJobDetails(this.allTabs[newIndex].id);
+        } catch (error) {
+            console.error('Failed to load job details during tab navigation:', error);
+            this.toastrService.showErrorToast("Failed to load job details");
+        }
     }
 
     public async onTabSelected(tabIndex: number): Promise<void> {
+        console.log(`Tab selected: ${tabIndex}`);
+
+        if (tabIndex < 0 || tabIndex >= this.allTabs.length) {
+            console.error(`Invalid tab index: ${tabIndex}, available tabs: ${this.allTabs.length}`);
+            return;
+        }
+
         const selectedTab = this.allTabs[tabIndex];
-        if (!selectedTab) return;
+        if (!selectedTab) {
+            console.error('Selected tab not found at index', tabIndex);
+            return;
+        }
 
-        await this._loadJobDetails(selectedTab.id);
+        console.log(`Loading job details for tab: ${selectedTab.text}, id: ${selectedTab.id}`);
+
+        if (!selectedTab.id) {
+            console.error('Selected tab has no ID', selectedTab);
+            return;
+        }
+
+        try {
+            this.selectedTab = tabIndex;
+            await this._loadJobDetails(selectedTab.id);
+        } catch (error) {
+            console.error('Failed to load job details after tab selection:', error);
+            this.toastrService.showErrorToast("Failed to load job details");
+        }
     }
-
 
     private async _loadJobDetails(jobId: number) {
         if (!jobId) {
@@ -117,9 +220,11 @@ class JobDetailController implements angular.IController {
 
             // Load new job details
             const updatedJob = await this.dispatchData.getJobDetail(jobId);
+            console.log('Loaded job details:', updatedJob);
 
             // If this is loading a related job, we need to preserve the original related jobs array
-            if (!currentTabs[currentIndex].isMainJob && this.internalJob?.relatedJobs) {
+            if (currentTabs.length > 0 && currentIndex < currentTabs.length &&
+                !currentTabs[currentIndex].isMainJob && this.internalJob?.relatedJobs) {
                 updatedJob.relatedJobs = this.internalJob.relatedJobs;
             }
 
@@ -132,13 +237,12 @@ class JobDetailController implements angular.IController {
         } catch (error) {
             this.toastrService.showErrorToast("Failed to load job details");
 
-            // Reset to main jon
+            // Reset to main job if available
             if (this.internalJob && this.internalJob.id) {
                 await this._loadJobDetails(this.internalJob.id);
             }
         }
     }
-
 
     private _initializeJobData() {
         if (!this.internalJob) return;
@@ -860,33 +964,6 @@ class JobDetailController implements angular.IController {
         photoSection.setAttribute('tabindex', '0');
     }
 
-
-    private formatPodPhotos(): void {
-        if(!this.internalJob?.podPhotos) return;
-
-        console.log("Formatting POD photos");
-
-        // Ensure formattedPodPhotos is always initialized as an array
-        this.formattedPodPhotos = [];
-
-        try {
-            this.formattedPodPhotos = this.internalJob.podPhotos.map((base64Image, index) => ({
-                url: `data:image/png;base64,${base64Image}`,
-                timestamp: this.getPhotoTimestamp(index),
-                uploadedBy: this.getPhotoUploader(index)
-            }));
-
-            console.log(`Formatted ${this.formattedPodPhotos.length} POD photos`);
-        } catch (error) {
-            console.error("Error formatting POD photos:", error);
-        }
-
-        // Ensure selectedPhotoIndex is within bounds
-        if (this.selectedPhotoIndex >= this.formattedPodPhotos.length) {
-            this.selectedPhotoIndex = 0;
-        }
-    }
-
     private getPhotoTimestamp(index: number): string {
         const now = new Date();
         const timestamp = new Date(now.getTime() - (index * 10 * 60 * 1000));
@@ -943,33 +1020,6 @@ class JobDetailController implements angular.IController {
 
         } catch (error: any) {
             this._handleError(error);
-        }
-    }
-
-    // Lifecycle hooks
-    $onInit() {
-        console.log('$onInit called - job exists:', !!this.job);
-        if (this.job) {
-            this.internalJob = this.job;
-            this._initializeJobData();
-
-            setTimeout(() => {
-                this.formatPodPhotos();
-                this.setupPhotoKeyboardNavigation();
-            }, 100);
-        }
-    }
-
-    $onChanges(changes: angular.IOnChangesObject): void {
-        if (changes['job'] && !changes['job'].isFirstChange()) {
-            this.formatPodPhotos();
-        }
-    }
-
-    $onDestroy(): void {
-        const photoSection = document.querySelector('.pod-photo-section');
-        if (photoSection) {
-            photoSection.removeEventListener('keydown', this.handleKeydown);
         }
     }
 }

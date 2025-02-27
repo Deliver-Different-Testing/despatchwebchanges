@@ -2,7 +2,7 @@ import app from "../app";
 import angular from "angular";
 import {AppConfig} from "../interfaces/app-config.interface";
 import {
-    AddressViewModel,
+    AddressViewModel, ClientItemsViewModel,
     Job,
     JobQueryParams, JobRateDetails,
     Pallet,
@@ -13,11 +13,10 @@ import {
 import {PaginatedResponse} from "../interfaces/paginated-response.interface";
 import {DateField, JobField} from "../interfaces/job-field.types";
 
-class dispatchService {
+class DispatchService {
     static $inject = ["$http", "moment", "APP_CONFIG"];
 
     private readonly isUsCustomer: boolean;
-
 
     constructor(private $http: angular.IHttpService,
                 private moment: any,
@@ -388,14 +387,14 @@ class dispatchService {
         return response.data;
     }
 
-    public async ppdExclusiveAmount(clientId: number, amount: number) {
-        const response = await this.$http.get(`job/PPDExclusiveAmount?clientId=${clientId}&amount=${amount}`);
+    public async ppdExclusiveAmount(clientId: number, amount: number): Promise<number> {
+        const response = await this.$http.get<number>(`job/PPDExclusiveAmount?clientId=${clientId}&amount=${amount}`);
         return response.data;
     }
 
-    public async getServices(clientId: number, speedId: number, jobId: number) {
+    public async getServices(clientId: number, speedId: number, jobId: number): Promise<PaginatedResponse<ClientItemsViewModel>> {
         const url = "job/GetAllClientItems";
-        const response = await this.$http.get(url + "?clientId=" + clientId + "&speedId=" + speedId + "&jobId=" + jobId);
+        const response = await this.$http.get<PaginatedResponse<ClientItemsViewModel>>(url + "?clientId=" + clientId + "&speedId=" + speedId + "&jobId=" + jobId);
 
         return response.data;
     }
@@ -633,7 +632,7 @@ class dispatchService {
     }
 
 
-    public async updateBulkJobDetail(bulkJobId: number, field: string, value: string | number | Date, rate: number, despatcherName: string, staffId: number) {
+    public async updateBulkJobDetail(bulkJobId: number, field: string, value: string | number | Date, rate: number | string, despatcherName: string, staffId: number) {
         if (field === "Time" || field === "CompletedTime") {
             value = this.moment().format("YYYY-MM-DD") + " " + this.moment(value).format("HH:mm:ss");
         }
@@ -790,6 +789,11 @@ class dispatchService {
         return response.data;
     }
 
+    async getJobDeliveryPhotosAndSignature(jobId: number, year: number, month: number): Promise<any> {
+        const response = await this.$http.get<number[][]>(`/Job/GetJobDeliveryPhotosAndSignature?jobId=${jobId}&year=${year}&month=${month}`);
+        return response.data;
+    }
+
     private _prepareViewIdsForRequest(selectedAreas: Views[]): number[] {
         return selectedAreas.map(area => {
             return typeof area === "object" && area.id ? area.id : 0;
@@ -797,4 +801,5 @@ class dispatchService {
     }
 }
 
-app.service("DispatchData", dispatchService);
+app.service("DispatchData", DispatchService);
+export default DispatchService;

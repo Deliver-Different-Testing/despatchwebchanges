@@ -12,7 +12,7 @@ public class DeliveryJob
     public string Delivery { get; set; }
     public string Driver { get; set; }
     public string Region { get; set; }
-    public List<ChildDeliveryJob> ChildJobs { get; set; } = new();
+    public List<ChildDeliveryJob> ChildJobs { get; set; } = [];
 }
 
 public class ChildDeliveryJob

@@ -1,0 +1,580 @@
+import app from "../../app";
+import OverviewService from "./overview.service";
+import ToastrService from "../../services/toastr.service";
+import GreetingService from "../../services/greeting.service";
+import OpenJobDispatchService from "../../services/open-job-dispatch.service";
+import OverviewFiltersService from "./services/overview-filters.service";
+import {OverviewTableChildJob, OverviewTableParentJob, Region, Speed} from "./overview.interfaces";
+
+class OverviewController implements angular.IController {
+    static $inject = [
+        "$mdDialog",
+        "$mdSidenav",
+        "overviewService",
+        "$scope",
+        "$timeout",
+        "toastrService",
+        "moment",
+        "$state",
+        "$window",
+        "greetingService",
+        "openJobDispatchService",
+        "overviewFiltersService",
+    ];
+
+    isLoading: boolean;
+    greeting: string;
+    statistics: { active: number; inactive: number; completed: number };
+    query: {
+        order: string;
+        direction: string;
+        page: number;
+        limit: number;
+        total: number;
+    };
+
+    regionsLoading: boolean;
+    speedsLoading: boolean;
+    isOverviewCardCollapsed: boolean;
+
+    deliveries: any[];
+    regions: any[];
+    speeds: any[];
+    promise: Promise<any> | null;
+
+    search: string;
+    searchTimeout: any;
+
+    dateRange: { start: Date | null; end: Date | null };
+    selectedRegions: any[];
+    allRegionsSelected: boolean;
+    selectedSpeeds: any[];
+    allSpeedsSelected: boolean;
+
+    activeTab: number;
+
+    constructor(
+        private $mdDialog: angular.material.IDialogService,
+        private $mdSidenav: angular.material.ISidenavService,
+        private overviewService: OverviewService,
+        private $scope: angular.IScope,
+        private $timeout: angular.ITimeoutService,
+        private toastrService: ToastrService,
+        private moment: any,
+        private $state: angular.ui.IStateService,
+        private $window: angular.IWindowService,
+        greetingService: GreetingService,
+        private openJobDispatchService: OpenJobDispatchService,
+       private overviewFiltersService: OverviewFiltersService
+    ) {
+
+        // Initialize properties
+        this.isLoading = false;
+        this.greeting = greetingService.greetUser((FirstName as any) as string);
+        this.statistics = { active: 0, inactive: 0, completed: 0 };
+        this.query = {
+            order: "jobName",
+            direction: "asc",
+            page: 1,
+            limit: 20,
+            total: 0,
+        };
+
+        // Loaders
+        this.regionsLoading = false;
+        this.speedsLoading = false;
+
+        // Card collapse state
+        this.isOverviewCardCollapsed = false;
+
+        // Initialize data containers
+        this.deliveries = [];
+        this.regions = [];
+        this.speeds = [];
+        this.promise = null;
+
+        // Search properties
+        this.search = "";
+        this.searchTimeout = null;
+
+        // Filters
+        this.dateRange = { start: null, end: null };
+        this.selectedRegions = [];
+        this.allRegionsSelected = false;
+        this.selectedSpeeds = [];
+        this.allSpeedsSelected = false;
+
+        this.activeTab = 0;
+
+        this.loadOverviewCardState();
+        this.setupWatchers();
+        this.loadSavedLimit();
+        this.initialDataLoad();
+        this.bindMethods();
+    }
+
+    private bindMethods(): void {
+        this.initializeData = this.initializeData.bind(this);
+        this.loadStats = this.loadStats.bind(this);
+        this.setTab = this.setTab.bind(this);
+        this.getStatusGroup = this.getStatusGroup.bind(this);
+        this.handleSearchChange = this.handleSearchChange.bind(this);
+        this.getRegions = this.getRegions.bind(this);
+        this.toggleRegion = this.toggleRegion.bind(this);
+        this.toggleAllRegions = this.toggleAllRegions.bind(this);
+        this.getSpeeds = this.getSpeeds.bind(this);
+        this.toggleSpeed = this.toggleSpeed.bind(this);
+        this.toggleAllSpeeds = this.toggleAllSpeeds.bind(this);
+        this.toggleSidenav = this.toggleSidenav.bind(this);
+        this.transformStatus = this.transformStatus.bind(this);
+        this.getProgressClass = this.getProgressClass.bind(this);
+        this.showDateRangeDialog = this.showDateRangeDialog.bind(this);
+        this.hasDateFilter = this.hasDateFilter.bind(this);
+        this.getDateRangeDisplay = this.getDateRangeDisplay.bind(this);
+        this.formatDate = this.formatDate.bind(this);
+        this.clearDateRange = this.clearDateRange.bind(this);
+        this.showMap = this.showMap.bind(this);
+        this.openJobDetail = this.openJobDetail.bind(this);
+        this.openMegaMap = this.openMegaMap.bind(this);
+        this.onReorder = this.onReorder.bind(this);
+        this.refreshData = this.refreshData.bind(this);
+        this.toggleOverviewCard = this.toggleOverviewCard.bind(this);
+    }
+
+    private setupWatchers(): void {
+        // Watch for tab changes
+        this.$scope.$watch(
+            () => this.activeTab,
+            (newValue: number, oldValue: number) => {
+                if (newValue !== oldValue) {
+                    this.refreshData();
+                }
+            }
+        );
+
+        // Watch for search changes with debounce
+        this.$scope.$watch(
+            () => this.search,
+            (newValue: string, oldValue: string) => {
+                if (newValue !== oldValue) {
+                    this.handleSearchChange();
+                }
+            }
+        );
+
+        // Watch for changes to query limit
+        this.$scope.$watch(
+            () => this.query.limit,
+            (newValue: number, oldValue: number) => {
+                if (newValue !== oldValue) {
+                    if (Modernizr.localstorage) {
+                        localStorage.setItem(`overviewJobLimitDisplay`, `${this.query.limit}`);
+                    }
+                }
+            }
+        );
+    }
+
+    private loadSavedLimit(): void {
+        const savedLimit = localStorage.getItem(`overviewJobLimitDisplay`);
+        console.log(`Saved limit is: ${savedLimit}`);
+        if (savedLimit) {
+            this.query.limit = parseInt(savedLimit);
+        }
+    }
+
+    private initialDataLoad(): void {
+        Promise.all([
+            this.loadStats(),
+            this.getRegions(),
+            this.getSpeeds(),
+            this.refreshData(),
+        ])
+            .then(() => {
+                console.log("All data loaded successfully");
+            })
+            .catch((error) => {
+                console.error("Error loading data:", error);
+            });
+    }
+
+    loadOverviewCardState(): void {
+        this.isOverviewCardCollapsed =
+            this.overviewService.loadCollapseState("overview");
+    }
+
+    async toggleOverviewCard(): Promise<void> {
+        this.isOverviewCardCollapsed = !this.isOverviewCardCollapsed;
+        await this.overviewService.saveCollapseState(
+            "overview",
+            this.isOverviewCardCollapsed
+        );
+    }
+
+
+    private initializeData($scope: angular.IScope) {
+        // Watch for tab changes
+        $scope.$watch(
+            () => this.activeTab,
+            (newValue: number, oldValue: number) => {
+                if (newValue !== oldValue) {
+                    this.refreshData();
+                }
+            }
+        );
+
+        // Watch for search changes with debounce
+        $scope.$watch(
+            () => this.search,
+            (newValue: string, oldValue: string) => {
+                if (newValue !== oldValue) {
+                    this.handleSearchChange();
+                }
+            }
+        );
+
+        // Watch for changes to query limit
+        $scope.$watch(
+            () => this.query.limit,
+            (newValue: number, oldValue: number) => {
+                if (newValue !== oldValue) {
+                    if (Modernizr.localstorage) {
+                        localStorage.setItem(`overviewJobLimitDisplay`, `${this.query.limit}`);
+                    }
+                }
+            }
+        );
+
+        // Local settings
+        const savedLimit = localStorage.getItem(`overviewJobLimitDisplay`);
+        console.log(`Saved limit is: ${savedLimit}`);
+        if (savedLimit) {
+            this.query.limit = parseInt(savedLimit);
+        }
+
+        // Initial data load
+        Promise.all([
+            this.loadStats(),
+            this.getRegions(),
+            this.getSpeeds(),
+            this.refreshData(),
+        ])
+            .then(() => {
+                console.log("All data loaded successfully");
+            })
+            .catch((error) => {
+                console.error("Error loading data:", error);
+            });
+    }
+
+
+    async loadStats() {
+        try {
+            const stats = await this.overviewService.getStats();
+            this.statistics = {
+                active: stats.active || 0,
+                inactive: stats.inactive || 0,
+                completed: stats.completed || 0,
+            };
+        } catch (error) {
+            console.error("Error loading statistics:", error);
+            this.statistics = {active: 0, inactive: 0, completed: 0};
+        }
+    }
+
+    async setTab(tabIndex: number) {
+        if (this.activeTab !== tabIndex) {
+            this.activeTab = tabIndex;
+            await this.refreshData();
+        }
+    }
+
+    getStatusGroup(): number {
+        return this.activeTab + 1; // Maps to JobStatusGroup enum (1-based)
+    }
+
+    handleSearchChange() {
+        // Cancel any pending timeout
+        if (this.searchTimeout) {
+            this.$timeout.cancel(this.searchTimeout);
+        }
+
+        // Set new timeout
+        this.searchTimeout = this.$timeout(async () => {
+            this.query.page = 1; // Reset to first page on new search
+            await this.refreshData();
+        }, 300); // 300ms debounce
+    }
+
+    async getRegions() {
+        try {
+            this.regionsLoading = true;
+            this.regions = await this.overviewService.getAllRegions();
+        } catch (error) {
+            console.error("An error occured getting regions.");
+        } finally {
+            this.regionsLoading = false;
+        }
+    }
+
+    async toggleRegion(region: Region) {
+        const idx = this.selectedRegions.indexOf(region);
+
+        if (region.selected && idx === -1) {
+            this.selectedRegions.push(region);
+        } else if (!region.selected && idx !== -1) {
+            this.selectedRegions.splice(idx, 1);
+        }
+
+        this.allRegionsSelected =
+            this.regions.length === this.selectedRegions.length;
+        this.query.page = 1;
+
+        // Update shared filter service
+        this.overviewFiltersService.updateFilters({
+            selectedRegions: this.selectedRegions,
+        });
+
+        await this.refreshData();
+    }
+
+    async toggleAllRegions() {
+        this.regions.forEach((region) => {
+            region.selected = this.allRegionsSelected;
+        });
+
+        if (this.allRegionsSelected) {
+            this.selectedRegions = this.regions.slice();
+        } else {
+            this.selectedRegions = [];
+        }
+
+        this.query.page = 1;
+
+        await this.refreshData();
+    }
+
+   async getSpeeds() {
+        try {
+            this.speedsLoading = true;
+            this.speeds = await this.overviewService.getAllSpeeds();
+        } catch (error) {
+            console.error("An error occured getting speeds.");
+        } finally {
+            this.speedsLoading = false;
+        }
+    }
+
+   async toggleSpeed(speed: Speed) {
+        const idx = this.selectedSpeeds.indexOf(speed);
+
+        if (speed.selected && idx === -1) {
+            this.selectedSpeeds.push(speed);
+        } else if (!speed.selected && idx !== -1) {
+            this.selectedSpeeds.splice(idx, 1);
+        }
+
+        this.allSpeedsSelected = this.speeds.length === this.selectedSpeeds.length;
+        this.query.page = 1;
+
+        this.overviewFiltersService.updateFilters({
+            selectedSpeeds: this.selectedSpeeds,
+        });
+
+        await this.refreshData();
+    }
+
+   async toggleAllSpeeds() {
+        this.speeds.forEach((speed) => {
+            speed.selected = this.allSpeedsSelected;
+        });
+
+        if (this.allSpeedsSelected) {
+            this.selectedSpeeds = this.speeds.slice();
+        } else {
+            this.selectedSpeeds = [];
+        }
+
+        this.query.page = 1;
+        await this.refreshData();
+    }
+
+   toggleSidenav() {
+        this.$mdSidenav("right").toggle();
+    }
+
+   transformStatus(status: string): string {
+        // Remove spaces and special characters, convert to uppercase
+        return status.toUpperCase().replace(/[\s-]/g, "_");
+    }
+
+
+   getProgressClass(completion: number): string {
+        if (completion < 30) {
+            return "md-low"; // Light green for low progress
+        } else if (completion < 70) {
+            return "md-medium"; // Medium green for medium progress
+        }
+        return "md-high"; // Gray for high progress
+    }
+
+   async showDateRangeDialog($event: MouseEvent) {
+        try {
+            this.dateRange = await this.$mdDialog.show({
+                controller: "DateRangeDialogController",
+                controllerAs: "ctrl",
+                targetEvent: $event,
+                templateUrl:
+                    "app/components/dialogs/date-range-dialog/date-range-dialog.html",
+                parent: document.body,
+                clickOutsideToClose: true,
+                fullscreen: false,
+                bindToController: true,
+                locals: {
+                    dateRange: this.dateRange,
+                },
+            });
+
+            this.overviewFiltersService.updateFilters({
+                dateRange: this.dateRange,
+            });
+
+            await this.refreshData();
+        } catch (error) {
+            if (error !== undefined) {
+                console.error("Error selecting date range:", error);
+            }
+        }
+    }
+
+   hasDateFilter(): boolean {
+        return this.dateRange.start !== null || this.dateRange.end !== null;
+    }
+
+   getDateRangeDisplay(): string {
+        if (!this.hasDateFilter()) return "";
+
+        if (this.dateRange.start && this.dateRange.end) {
+            return `${this.formatDate(this.dateRange.start)} - ${this.formatDate(
+                this.dateRange.end
+            )}`;
+        } else if (this.dateRange.start) {
+            return `From ${this.formatDate(this.dateRange.start)}`;
+        } else {
+            return `Until ${this.formatDate(this.dateRange.end)}`;
+        }
+    }
+
+   formatDate(date: Date | null): string {
+        return date ? this.moment(date).format("MMM D, YYYY") : "";
+    }
+
+   async clearDateRange($event: MouseEvent | undefined) {
+        if ($event) {
+            $event.stopPropagation();
+        }
+
+        this.dateRange = {
+            start: null,
+            end: null,
+        };
+
+        this.overviewFiltersService.updateFilters({
+            dateRange: this.dateRange,
+        });
+
+        await this.refreshData();
+    }
+
+   async showMap(delivery: OverviewTableParentJob) {
+        await this.$mdDialog.show({
+            controller: "MapDialogController",
+            controllerAs: "ctrl",
+            templateUrl: "app/components/dialogs/map-dialog/map-dialog.template.html",
+            parent: document.body,
+            clickOutsideToClose: true,
+            fullscreen: true,
+            locals: {
+                delivery,
+            },
+            bindToController: true,
+        });
+    }
+
+   openJobDetail(delivery: OverviewTableParentJob) {
+        if (delivery && delivery.jobId) {
+            this.openJobDispatchService.openJobDetail(delivery.jobId);
+        }
+    }
+
+   openMegaMap() {
+        const url = this.$state.href("megaMap");
+        this.$window.open(url, "_blank");
+    }
+
+   async onReorder() {
+        this.query.page = 1;
+        await this.refreshData();
+    }
+
+    async refreshData() {
+        try {
+            const statusGroup = this.getStatusGroup();
+
+            // Show loading state
+            this.isLoading = true;
+
+            // Parse sort order
+            let orderBy = this.query.order || "jobName";
+            let orderDirection = "asc";
+
+            if (orderBy.startsWith("-")) {
+                orderBy = orderBy.substring(1);
+                orderDirection = "desc";
+            }
+
+            // Set promise to trigger loading state in md-table
+            this.promise = this.overviewService.getAllJobs({
+                statusGroup,
+                page: this.query.page || 1,
+                limit: this.query.limit || 20,
+                search: this.search,
+                startDate: this.dateRange.start || undefined,
+                endDate: this.dateRange.end || undefined,
+                orderBy,
+                orderDirection,
+                regions: this.selectedRegions.length > 0 ? this.selectedRegions : undefined,
+                speeds: this.selectedSpeeds.length > 0 ? this.selectedSpeeds : undefined,
+            });
+
+            const response = await this.promise;
+
+            // Transform status for each delivery and child job
+            this.deliveries = response.items.map((delivery: OverviewTableParentJob) => ({
+                ...delivery,
+                status: this.transformStatus(delivery.status),
+                childJobs: Array.isArray(delivery.childJobs)
+                    ? delivery.childJobs.map((childJob: OverviewTableChildJob) => ({
+                        ...childJob,
+                        status: this.transformStatus(childJob.status),
+                    }))
+                    : [],
+            }));
+
+            // Update query metadata
+            this.query.total = response.total;
+
+            // Refresh statistics after data load
+            await this.loadStats();
+        } catch (error) {
+            console.error("Error loading deliveries:", error);
+            this.toastrService.showErrorToast(
+                "An unexpected error occurred. Please try again."
+            );
+        } finally {
+            this.isLoading = false;
+        }
+    }
+}
+
+app.controller("deliveryOverview", OverviewController);

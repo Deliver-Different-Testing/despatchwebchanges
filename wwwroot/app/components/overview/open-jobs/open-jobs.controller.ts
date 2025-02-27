@@ -1,23 +1,23 @@
 import app from "../../../app";
+import OverviewService from "../overview.service";
+import OverviewFiltersService from "../services/overview-filters.service";
+import {AppConfig} from "../../../interfaces/app-config.interface";
+import {DriverViewModel, OpenJobResponse, OverviewQueryParams, ViewJob} from "../overview.interfaces";
 
-/**
- * Controller for the Open Jobs Widget component.
- * Manages the display and sorting of open delivery jobs grouped by driver.
- */
-class OpenJobsWidgetController {
+class OpenJobsWidgetController implements angular.IController {
     static $inject = ["overviewService", "moment", "APP_CONFIG", "overviewFiltersService"];
 
-    constructor(overviewService, moment, APP_CONFIG, overviewFiltersService) {
-        this.overviewService = overviewService;
-        this.moment = moment;
-        this.overviewFiltersService = overviewFiltersService;
+    private readonly isUsCustomer: boolean;
+    private readonly sortBy: string;
 
-        // Initialize properties
-        /** @type {boolean} */
+    private isCardCollapsed?: boolean;
+    private drivers?: DriverViewModel[];
+
+    constructor(private overviewService: OverviewService,
+                private moment: any,
+                APP_CONFIG: AppConfig,
+                private overviewFiltersService: OverviewFiltersService) {
         this.isUsCustomer = APP_CONFIG.US_Customer;
-        /** @type {DriverViewModel[]} */
-        this.drivers = [];
-        /** @type {'jobId'|'pickup'|'delivery'} */
         this.sortBy = "jobId";
 
         // Bind methods
@@ -38,44 +38,28 @@ class OpenJobsWidgetController {
         setInterval(this.loadOpenJobs, 60000);
     }
 
-    /**
-     * @returns {Promise<void>}
-     */
-    async loadCardState() {
+    async loadCardState(): Promise<void> {
         this.isCardCollapsed = this.overviewService.loadCollapseState("openJobs");
     }
 
-    /**
-     * @returns {Promise<void>}
-     */
-    async toggleCard() {
+    async toggleCard(): Promise<void> {
         this.isCardCollapsed = !this.isCardCollapsed;
         await this.overviewService.saveCollapseState("openJobs", this.isCardCollapsed);
     }
 
-    /**
-     * @returns {Promise<void>}
-     */
-    async loadOpenJobs() {
+    async loadOpenJobs(): Promise<void> {
         try {
-            /** @type {OverviewQueryParams} */
-            const params = {
-                limit: 0,
-                page: 0,
-                statusGroup: 0,
-                startDate: this.overviewFiltersService.dateRange?.start,
-                endDate: this.overviewFiltersService.dateRange?.end,
-                regions: this.overviewFiltersService.selectedRegions,
-                speeds: this.overviewFiltersService.selectedSpeeds
+            const params: Pick<OverviewQueryParams, "startDate" | "endDate" | "regions" | "speeds"> = {
+                startDate: this.overviewFiltersService.dateRange?.start || undefined,
+                endDate: this.overviewFiltersService.dateRange?.end || undefined,
+                regions: this.overviewFiltersService.selectedRegions || undefined,
+                speeds: this.overviewFiltersService.selectedSpeeds || undefined
             };
 
-
-            /** @type {OpenJobResponse[]} */
-            const jobs = await this.overviewService.getOpenJobs(params);
+            const jobs: OpenJobResponse[] = await this.overviewService.getOpenJobs(params);
 
             // Group jobs by driver
-            /** @type {Object.<string, DriverViewModel>} */
-            const groupedJobs = {};
+            const groupedJobs: Record<string, DriverViewModel> = {};
 
             jobs.forEach(job => {
                 if (!groupedJobs[job.driverName]) {
@@ -89,8 +73,7 @@ class OpenJobsWidgetController {
                     };
                 }
 
-                /** @type {ViewJob} */
-                const viewJob = {
+                const viewJob: ViewJob = {
                     jobId: job.jobId,
                     reference: job.reference,
                     status: job.status,
@@ -122,20 +105,11 @@ class OpenJobsWidgetController {
         }
     }
 
-    /**
-     * @param {Date} timestamp
-     * @returns {string}
-     */
-    formatTime(timestamp) {
+    formatTime(timestamp: Date): string {
         return this.moment(timestamp).format("HH:mm");
     }
 
-    /**
-     * @param {ViewJob} a
-     * @param {ViewJob} b
-     * @returns {number}
-     */
-    compareJobs(a, b) {
+    compareJobs(a: ViewJob, b: ViewJob): number {
         try {
             switch (this.sortBy) {
                 case "pickup":
@@ -155,10 +129,7 @@ class OpenJobsWidgetController {
         }
     }
 
-    /**
-     * @returns {string}
-     */
-    getSortLabel() {
+    getSortLabel(): string {
         switch (this.sortBy) {
             case "pickup":
                 return "Pickup Time";
@@ -169,11 +140,10 @@ class OpenJobsWidgetController {
         }
     }
 
-    /**
-     * @returns {Promise<void>}
-     */
-    async onSortChange() {
+    async onSortChange(): Promise<void> {
         try {
+            if(!this.drivers) return;
+
             this.drivers.forEach(driver => {
                 driver.jobs.sort(this.compareJobs);
             });
@@ -182,23 +152,15 @@ class OpenJobsWidgetController {
         }
     }
 
-    /**
-     * @param {string|Date} timestamp
-     * @returns {string}
-     */
-    formatRegionalTime(timestamp) {
+    formatRegionalTime(timestamp: string | Date): string {
         if (!timestamp) return "";
 
         const format = this.isUsCustomer ? "MM/DD HH:mm" : "DD/MM HH:mm";
         return this.moment(timestamp).format(format);
     }
 
-    /**
-     * @param {string} lastCompletedTime
-     * @returns {number}
-     */
-    getTimeSinceLastCompleted(lastCompletedTime) {
-        if (lastCompletedTime === "N/A") return "";
+    getTimeSinceLastCompleted(lastCompletedTime: string): number {
+        if (lastCompletedTime === "N/A") return 0;
 
         const lastCompleted = this.moment(lastCompletedTime, "HH:mm");
         const now = this.moment();

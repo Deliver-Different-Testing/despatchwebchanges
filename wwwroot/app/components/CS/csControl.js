@@ -723,16 +723,6 @@ function CSControl($scope, jdSvc, uCSData, $state, $filter, $mdDialog, greetingS
     };
 
     $scope.refreshAllData = async () => {
-        if (($scope.pickDateService.client || "") === "" && ($scope.pickDateService.courier || "") === "" && ($scope.pickDateService.job || "") === "" && ($scope.pickDateService.wild || "") === "") {
-
-            await $mdDialog.show($mdDialog.alert()
-                .clickOutsideToClose(true)
-                .title('Missing Criteria')
-                .textContent('Please provide more detailed search criteria.')
-                .ok('Understood'));
-            return;
-        }
-
         await Promise.all([$scope.refreshData(), $scope.refreshBulkData(), $scope.refreshPreBookData()]);
     };
 
@@ -922,8 +912,7 @@ function CSControl($scope, jdSvc, uCSData, $state, $filter, $mdDialog, greetingS
             if ($scope.currentJob.completedTime) {
                 const cmpltd = moment($scope.currentJob.completedTime);
                 const month = cmpltd.month() + 1;
-                const podData = await uCSData.getJobDeliveryPhotosAndSignature(jobId, cmpltd.year(), month);
-                $scope.currentJob.podPhotos = podData;
+                $scope.currentJob.podPhotos = await uCSData.getJobDeliveryPhotosAndSignature(jobId, cmpltd.year(), month);
             }
 
 
