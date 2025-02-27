@@ -642,24 +642,16 @@ class DispatchService {
         await this.$http.post(`job/UpdateBulkJob?bulkJobId=${bulkJobId}&field=${field}&value=${value}&rate=${rate}&despatcherName=${despatcherName}&staffId=${staffId}`, null);
     }
 
-    async getJobsWithFilters(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: Suggestion[]) {
+    async getJobsWithFilters(queryParams: JobQueryParams, selectedClients: string[],
+                             internal: boolean, selectedAreas: Suggestion[]) {
         const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
 
-        const defaultParams = {
-            status: 'all',
-            order: 'time',
-            orderDirection: 'asc',
-            page: 1,
-            limit: 10
-        };
-
-        // Create params object first to ensure all values are strings
         const paramObject = {
-            status: String(queryParams.status ?? defaultParams.status),
-            order: String(queryParams.order ?? defaultParams.order),
-            orderDirection: String(queryParams.orderDirection ?? defaultParams.orderDirection),
-            page: String(queryParams.page ?? defaultParams.page),
-            limit: String(queryParams.limit ?? defaultParams.limit),
+            status: String(queryParams.status ?? "all"),
+            order: String(queryParams.order ?? "time"),
+            orderDirection: String(queryParams.orderDirection ?? "asc"),
+            page: String(queryParams.page ?? 1),
+            limit: String(queryParams.limit ?? 10),
             isInternal: String(internal),
             cid: String(ContactID),
             clientIds: selectedClients.length ? selectedClients.join(',') : ''

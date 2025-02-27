@@ -19,11 +19,11 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
     : BaseJobRepository(contextFactory), INationwideJobRepository
 {
     // Ooriginal method for backwards compatibility
-    public async Task<List<JobViewModel>> NationwideJobListAsync(string order, string orderDirection, bool isInternal,
+    public async Task<List<JobViewModel>> NationwideJobListAsync(string order, string orderDirection, bool isInternal, bool isUsTenant,
         string clientIds, NationwideWidget windowPane,
         List<int> selectedViewIds, DispatchStatus status = DispatchStatus.All)
     {
-        var result = await NationwideJobListAsync(order, orderDirection, isInternal, clientIds, windowPane,
+        var result = await NationwideJobListAsync(order, orderDirection, isInternal, isUsTenant, clientIds, windowPane,
             selectedViewIds, status, 1, int.MaxValue); // Get all results in one page
 
         return result.Items.ToList();
@@ -146,7 +146,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
 // New paginated version
     public async Task<PaginatedResponse<JobViewModel>> NationwideJobListAsync(string order, string orderDirection,
-        bool isInternal,
+        bool isInternal, bool isUsTenant,
         string clientIds, NationwideWidget windowPane,
         List<int> selectedViewIds, DispatchStatus status = DispatchStatus.All,
         int pageNumber = 1, int pageSize = 10)
@@ -166,6 +166,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             order,
             orderDirection,
             isInternal,
+            isUsTenant,
             clientIds,
             selectedViewIds,
             windowPane,

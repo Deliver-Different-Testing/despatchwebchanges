@@ -89,13 +89,13 @@ builder.Services.AddSingleton<IConnectionStringManager, ConnectionStringManager>
 builder.Services.AddSingleton<IAmazonS3>(serviceProvider =>
 {
     var awsOptions = builder.Configuration.GetAWSOptions();
-    
+
     Log.Information("AWS Region from config: {Region}", awsOptions.Region?.SystemName ?? "null");
-    
+
     var ssoCreds = LoadSsoCredentials("default");
-    return new AmazonS3Client(ssoCreds, new AmazonS3Config 
-    { 
-        RegionEndpoint = awsOptions.Region ?? RegionEndpoint.APSoutheast2 
+    return new AmazonS3Client(ssoCreds, new AmazonS3Config
+    {
+        RegionEndpoint = awsOptions.Region ?? RegionEndpoint.APSoutheast2
     });
 });
 
@@ -143,6 +143,7 @@ builder.Services.AddScoped<IDfrntViewsRepository, DfrntViewsRepository>();
 builder.Services.AddScoped<IFlightStatsService, FlightStatsService>();
 builder.Services.AddScoped<IClientAccessValidatorService, ClientAccessValidatorService>();
 builder.Services.AddScoped<IRateJobService, RateJobService>();
+builder.Services.AddScoped<ICountryService, CountryService>();
 
 // Automapper
 builder.Services.AddAutoMapper(typeof(GenericMapperProfiles));
@@ -226,11 +227,11 @@ app.MapHealthChecks("/healthz", new HealthCheckOptions
     }
 });
 // Configure the HTTP request pipeline.
-var provider = new FileExtensionContentTypeProvider { 
-    Mappings = { 
+var provider = new FileExtensionContentTypeProvider {
+    Mappings = {
         [".tpl"] = "text/plain",
         [".map"] = "application/json"  // Add this line
-    } 
+    }
 };
 
 app.UseStaticFiles(new StaticFileOptions

@@ -232,7 +232,6 @@
     <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.styles.less" />
     <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.template.html" />
     <None Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
-    <None Include="wwwroot\app\components\overview\services\overview-filters.service.js" />
     <Page Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.controller.js" />
     <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.controller.js" />
     <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.template.html" />
@@ -306,6 +305,7 @@
     <TypeScriptCompile Include="wwwroot\app\interfaces\app-config.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\courier.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\job-field.types.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\job-list-response.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\job.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\open-job-options.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\paginated-response.interface.ts" />

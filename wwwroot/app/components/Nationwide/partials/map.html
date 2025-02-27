@@ -1,11 +1,8 @@
-<dispatch-map
-        class="full-height-map"
-        courier-positions="null"
-        current-job="currentJob"
-        jobs="jobList"
-        map-center="mapCenter"
-        map-zoom="mapZoom"
-        on-marker-click="handleMarkerClick(job)"
-        show-available-couriers="false"
-        show-job-lines="true">
-</dispatch-map>
+<div class="overlay-map-fix"></div>
+<here-map-tracking
+        config="mapConfig"
+        credentials="hereCredentials"
+        map-id="mapContainer"
+        on-map-ready=""
+        style="width:100%;height:100%;">
+</here-map-tracking>

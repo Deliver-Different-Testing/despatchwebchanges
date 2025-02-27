@@ -74,7 +74,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     AddressLine7 = jb.PickupAddressLine7,
                     AddressLine8 = jb.PickupAddressLine8,
                     Latitude = jb.PickUpLatitude,
-                    Longitude = jb.PickUpLongitude,
+                    Longitude = jb.PickUpLongitude
                 },
                 DeliveryAddress = new AddressViewModel
                 {
@@ -87,7 +87,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     AddressLine7 = jb.DeliveryAddressLine7,
                     AddressLine8 = jb.DeliveryAddressLine8,
                     Latitude = jb.DeliveryLatitude,
-                    Longitude = jb.DeliveryLongitude,
+                    Longitude = jb.DeliveryLongitude
                 },
                 FromContactName = jb.PickupFromContact,
                 FromContactNumber = jb.PickupFromPhone,
@@ -112,7 +112,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                                 + " "
                                 + jb.Courier.UccrSurname
                             : null,
-                    CourierId = jb.Courier != null ? jb.Courier.UccrId : null,
+                    CourierId = jb.Courier != null ? jb.Courier.UccrId : null
                 },
                 DgClass = jb.Dgclass,
                 DgDocumentation = jb.Dgdocument,
@@ -151,9 +151,9 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                         Pu = i.Pu,
                         Do = i.Do,
                         DgClass = i.Dgclass,
-                        Notes = i.Notes,
+                        Notes = i.Notes
                     })
-                    .ToList(),
+                    .ToList()
             })
             .FirstOrDefaultAsync();
     }
@@ -246,7 +246,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 CourierData = new CourierData
                 {
                     Courier = co.Code + " " + co.FirstName + " " + co.Surname,
-                    CourierId = co.CourierId,
+                    CourierId = co.CourierId
                 },
 
                 DeliverToContact = j.DeliverToContact,
@@ -261,7 +261,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 ScheduleName = schedule.Name,
                 LoggedInContactName = $"{contact.Firstname} {contact.Surname ?? ""}",
                 Source = source.Name,
-                StatusName = status.UcjsName,
+                StatusName = status.UcjsName
             }
         ).FirstOrDefaultAsync();
     }
@@ -338,7 +338,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     AddressLine7 = x.PickupAddressLine7,
                     AddressLine8 = x.PickupAddressLine8,
                     Latitude = decimal.Parse(x.PickUpLatitude),
-                    Longitude = decimal.Parse(x.PickUpLongitude),
+                    Longitude = decimal.Parse(x.PickUpLongitude)
                 },
                 DeliveryAddress = new AddressViewModel
                 {
@@ -351,7 +351,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     AddressLine7 = x.DeliveryAddressLine7,
                     AddressLine8 = x.DeliveryAddressLine8,
                     Latitude = decimal.Parse(x.DeliveryLatitude),
-                    Longitude = decimal.Parse(x.DeliveryLongitude),
+                    Longitude = decimal.Parse(x.DeliveryLongitude)
                 },
                 JobNo = x.JobNumber,
                 Courier = courier.Code,
@@ -359,7 +359,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 Status = status.UcjsCode,
                 Speed = speed.ShortName,
                 SpeedId = x.Speed,
-                BookedDate = x.BookDate,
+                BookedDate = x.BookDate
             };
 
         var stopwatch = new Stopwatch();
@@ -400,7 +400,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     v.BookedDate.Value.ToString("yyyy-MM-dd")
                         + " "
                         + v.Time.Value.ToString("HH:mm:ss")
-                ),
+                )
             })
             .ToList();
         stopwatch.Stop();
@@ -494,7 +494,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     AddressLine7 = j.PickupAddressLine7,
                     AddressLine8 = j.PickupAddressLine8,
                     Latitude = j.PickUpLatitude,
-                    Longitude = j.PickUpLongitude,
+                    Longitude = j.PickUpLongitude
                 },
                 DeliveryAddress = new AddressViewModel
                 {
@@ -507,7 +507,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     AddressLine7 = j.DeliveryAddressLine7,
                     AddressLine8 = j.DeliveryAddressLine8,
                     Latitude = j.DeliveryLatitude,
-                    Longitude = j.DeliveryLongitude,
+                    Longitude = j.DeliveryLongitude
                 },
                 Courier = co.Code,
                 StatusId = j.Status,
@@ -522,7 +522,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 BookedDate = j.Date,
                 Booked = DateTime.Parse(
                     j.Date.Value.ToString("yyyy-MM-dd") + " " + j.Time.Value.ToString("HH:mm:ss")
-                ),
+                )
             };
 
         var orderedQuery = jobsQuery
@@ -627,7 +627,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 ParentId = j.ParentId ?? j.UcjbId,
                 j.UcjbAmount,
                 j.FuelSurchargeAmount,
-                j.PpdexclusiveAmount,
+                j.PpdexclusiveAmount
             })
             .Concat(
                 dbDataArchive.Select(j => new
@@ -636,7 +636,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     ParentId = j.ParentId ?? j.UcjbId,
                     j.UcjbAmount,
                     j.FuelSurchargeAmount,
-                    j.PpdexclusiveAmount,
+                    j.PpdexclusiveAmount
                 })
             )
             .GroupBy(j => j.ParentId)
@@ -785,7 +785,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 DeliveryAddressLine8 = j.DeliveryAddressLine8,
                 ClientReferenceA = j.ClientReferenceA,
                 ClientReferenceB = j.ClientReferenceB,
-                ClientReferenceC = j.ClientReferenceC,
+                ClientReferenceC = j.ClientReferenceC
             };
 
         var result = await query.ToListAsync();
@@ -873,7 +873,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 DeliveryLongitude = x.DeliveryLongitude,
                 BookedDate = x.UcbkNextDue,
                 FollowupTime = x.UcbkTime,
-                PreBook = true,
+                PreBook = true
             };
         var stopwatch = new Stopwatch();
         stopwatch.Start();
@@ -904,7 +904,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 JobNo = j.JobNo,
                 ClientId = j.ClientId,
                 Courier = j.Courier,
-                Speed = j.Speed,
+                Speed = j.Speed
             })
             .ToList();
         stopwatch.Stop();
@@ -946,7 +946,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     AddressLine7 = j.PickupAddressLine7,
                     AddressLine8 = j.PickupAddressLine8,
                     Latitude = j.PickUpLatitude,
-                    Longitude = j.PickUpLongitude,
+                    Longitude = j.PickUpLongitude
                 },
                 DeliveryAddress = new AddressViewModel
                 {
@@ -959,8 +959,8 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     AddressLine7 = j.DeliveryAddressLine7,
                     AddressLine8 = j.DeliveryAddressLine8,
                     Latitude = j.DeliveryLatitude,
-                    Longitude = j.DeliveryLongitude,
-                },
+                    Longitude = j.DeliveryLongitude
+                }
             })
             .AsNoTracking()
             .ToListAsync();
@@ -982,6 +982,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
     public async Task<PaginatedResponse<JobViewModel>> JobListAsync(
         JobQueryParams queryParams,
         bool isInternal,
+        bool isUsTenant,
         string clientIds,
         List<int> selectedViewIds,
         DispatchStatus status,
@@ -993,7 +994,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 Items = new List<JobViewModel>(),
                 Total = 0,
                 Page = queryParams.Page,
-                Pages = 0,
+                Pages = 0
             };
 
         return await DespatchQry(
@@ -1002,6 +1003,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             queryParams.Order,
             queryParams.OrderDirection,
             isInternal,
+            isUsTenant,
             clientIds,
             selectedViewIds,
             null,
@@ -1096,7 +1098,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 Staff = e.UcstWindowsLogonName,
                 TimeStamp = e.UcevTime,
                 JobId = e.UcevJobId,
-                EventId = e.UcevId,
+                EventId = e.UcevId
             }
         ).ToList();
         return evm;
@@ -1480,7 +1482,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             {
                 ID = x.UcsuId,
                 Text = x.UcsuName,
-                Alias = x.GoogleSuburbAlias,
+                Alias = x.GoogleSuburbAlias
             })
             .ToListAsync();
     }
@@ -1523,7 +1525,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 Mobile = s.Mobile,
                 DirectDial = s.DirectDial,
                 Email = s.Email,
-                JobTitle = s.JobTitle,
+                JobTitle = s.JobTitle
             }
         ).Distinct();
         return data.ToListAsync();
@@ -1545,7 +1547,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             {
                 ID = x.UndeliverableLocationId,
                 Text = x.Name,
-                JobStatusId = x.JobTypeId,
+                JobStatusId = x.JobTypeId
             })
             .ToListAsync();
     }
@@ -1560,7 +1562,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 ID = x.Tcis,
                 Text = x.TcisName,
                 DefaultSchedule = x.DefaultSchedule,
-                DefaultMins = x.DefaultMinutes,
+                DefaultMins = x.DefaultMinutes
             })
             .ToListAsync();
     }
@@ -1720,7 +1722,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             {
                 ChargeId = p.PricingBreakdownId,
                 Amount = p.ChargeAmount,
-                Name = p.ChargeName,
+                Name = p.ChargeName
             })
             .AsNoTracking()
             .ToListAsync();
@@ -1793,7 +1795,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         var updateReturn = new UpdateFirstAvailableSpeedResult
         {
             JobTypeId = (int)outputParam.Value,
-            Name = (string)nameOutput.Value,
+            Name = (string)nameOutput.Value
         };
         return updateReturn;
     }
@@ -1878,7 +1880,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     intDO = item.intDO,
                     intOverSizeItems = item.intOversizeItems,
                     intOverWeightItems = item.intOverWeightItems,
-                    DGClass = item.DGClass,
+                    DGClass = item.DGClass
                 })
                 .FirstOrDefault() ?? new TruckItemsSummary();
     }
@@ -2256,7 +2258,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             ProofOfDelivery = 0,
             WhenPodnotificationSent = DateTime.Now,
             UcjbReturn = false,
-            UcjbPaged = false,
+            UcjbPaged = false
         };
 
         await Context.TucJobs.AddAsync(job);
@@ -2360,7 +2362,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         {
             UcjbId = jobId,
             ClientItemIds = clientItemsString,
-            UcjbAmount = totalCost,
+            UcjbAmount = totalCost
         };
 
         Context.TucJobs.Attach(job);
@@ -2473,7 +2475,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                                     j.DeliveryLongitude.Value
                                 )
                             )
-                            : 0,
+                            : 0
                 })
                 .AsNoTracking()
                 .ToListAsync();
@@ -2507,7 +2509,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                         )
                         .OrderByDescending(j => j.UcjbComplTime)
                         .Select(j => j.UcjbComplTime)
-                        .FirstOrDefault(),
+                        .FirstOrDefault()
                 })
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
@@ -2650,7 +2652,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     !new[]
                     {
                         (int)InternalJobStatus.NewJobs,
-                        (int)InternalJobStatus.Reprice,
+                        (int)InternalJobStatus.Reprice
                     }.Contains(internalStatusId)
                 )
                     job.FollowupTime = DateTime.Now.AddMinutes(
@@ -2665,7 +2667,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     3 when job.UcjbStatus != 9 => 9,
                     1 when job.UcjbStatus != 1 => 1,
                     4 when job.UcjbStatus != 6 => 6,
-                    _ => job.UcjbStatus,
+                    _ => job.UcjbStatus
                 };
                 updateNote = $"Changed Job Follow Up to {job.InternalStatusNavigation.TcisName}";
                 break;
@@ -2811,7 +2813,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     {
                         j.job,
                         j.client,
-                        contact,
+                        contact
                     }
             )
             .Join(
@@ -2824,7 +2826,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                         j.job,
                         j.client,
                         j.contact,
-                        status,
+                        status
                     }
             )
             .Join(
@@ -2838,7 +2840,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                         j.client,
                         j.contact,
                         j.status,
-                        loc,
+                        loc
                     }
             )
             .Join(
@@ -2853,7 +2855,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                         j.contact,
                         j.status,
                         j.loc,
-                        type,
+                        type
                     }
             )
             .Join(
@@ -2869,7 +2871,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                         j.status,
                         j.loc,
                         j.type,
-                        speed,
+                        speed
                     }
             )
             .Join(
@@ -2886,7 +2888,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                         j.loc,
                         j.type,
                         j.speed,
-                        leave,
+                        leave
                     }
             )
             .GroupJoin(
@@ -2904,7 +2906,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                         j.type,
                         j.speed,
                         j.leave,
-                        parent,
+                        parent
                     }
             )
             .Select(j => new
@@ -2918,7 +2920,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 j.speed,
                 j.leave,
                 parent = j.parent.FirstOrDefault(),
-                parentId = j.parent.Select(p => p.UcjbId).FirstOrDefault(),
+                parentId = j.parent.Select(p => p.UcjbId).FirstOrDefault()
             })
             .GroupJoin(
                 Context.TucJobArchives,
@@ -2936,7 +2938,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                         j.speed,
                         j.leave,
                         j.parent,
-                        children,
+                        children
                     }
             )
             .GroupJoin(
@@ -2956,7 +2958,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                         DeliverToLeave = j.leave,
                         Parent = j.parent,
                         InverseParent = j.children,
-                        Nationwide = nationwide.FirstOrDefault(),
+                        Nationwide = nationwide.FirstOrDefault()
                     }
             )
             .Where(j => j.Job.UcjbId == jobId)
@@ -3068,7 +3070,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     !new[]
                     {
                         (int)InternalJobStatus.NewJobs,
-                        (int)InternalJobStatus.Reprice,
+                        (int)InternalJobStatus.Reprice
                     }.Contains(internalStatusId)
                 )
                     archive.Job.FollowupTime = DateTime.Now.AddMinutes(
@@ -3083,7 +3085,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     3 when archive.Job.UcjbStatus != 9 => 9,
                     1 when archive.Job.UcjbStatus != 1 => 1,
                     4 when archive.Job.UcjbStatus != 6 => 6,
-                    _ => archive.Job.UcjbStatus,
+                    _ => archive.Job.UcjbStatus
                 };
                 updateNote =
                     $"Changed Job Follow Up to {archive.InternalStatusNavigation.TcisName}";
@@ -3224,7 +3226,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             1 => "Email",
             2 => "Mobile",
             3 => "Email & Mobile",
-            _ => string.Empty,
+            _ => string.Empty
         };
     }
 
@@ -3290,7 +3292,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                         PerItem = casi.ClientItem.PerItem,
                         Rate = casi.ClientItem.Rate,
                         OnlyVan = casi.ClientItem.OnlyVan,
-                        Selected = clientItemIds.Contains(casi.ClientItem.ItemId),
+                        Selected = clientItemIds.Contains(casi.ClientItem.ItemId)
                     })
             );
     }
@@ -3370,7 +3372,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             Reprice = false,
             FuelSurchargeAmount = 0,
             DeliverToPrivateBusiness = 0,
-            UcjbDispTime = currentTime,
+            UcjbDispTime = currentTime
         };
     }
 

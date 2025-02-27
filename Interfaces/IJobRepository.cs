@@ -65,6 +65,7 @@ public interface IJobRepository
     Task<PaginatedResponse<JobViewModel>> JobListAsync(
         JobQueryParams queryParams,
         bool isInternal,
+        bool isUsTenant,
         string clientIds,
         List<int> selectedViewIds,
         DispatchStatus status,

@@ -254,6 +254,9 @@ function HomeControl(
       // Set up table headers
       initTableHeaders();
 
+      //Job Detail Watcher
+      initJobWatcher();
+
       $scope.courierMenu = [
         {
           text: "Dispatch Selected",
@@ -287,6 +290,33 @@ function HomeControl(
           },
         },
       ];
+    }
+
+    function initJobWatcher() {
+      $scope.$on('refreshJobRequested', (event, jobId) => {
+        console.log(`Parent received refresh request for jobId: ${jobId}`);
+
+        // Fetch fresh job data
+        DispatchData.getJobDetail(jobId)
+            .then(updatedJob => {
+              console.log('Received updated job data:', updatedJob);
+
+              $timeout(() => {
+                // First clear the job to force a complete refresh
+                $scope.currentJob = null;
+
+                // Then set the updated job in the next digest cycle
+                $timeout(() => {
+                  $scope.currentJob = updatedJob;
+                  console.log('Job data refreshed successfully');
+                });
+              });
+            })
+            .catch(error => {
+              console.error('Failed to refresh job data:', error);
+              toastrService.showErrorToast('Failed to refresh job data');
+            });
+      });
     }
 
     function initTableLimit() {
@@ -3494,7 +3524,7 @@ function HomeControl(
 
         const selectedClients = $scope.pickService.clients.map((a) => a.id);
 
-        let orderBy = $scope.queryParams.order || "jobName";
+        let orderBy = $scope.queryParams.order;
         let orderDirection = "asc";
 
         if (orderBy.startsWith("-")) {
@@ -3504,10 +3534,10 @@ function HomeControl(
 
         // Ensure we have valid pagination parameters
         const params = {
-          status: $scope.queryParams.status | 0,
-          page: $scope.queryParams.page || 1,
-          limit: $scope.queryParams.limit || 10,
-          orderBy: orderBy,
+          status: $scope.queryParams.status,
+          page: $scope.queryParams.page,
+          limit: $scope.queryParams.limit,
+          order: orderBy,
           orderDirection: orderDirection,
         };
 
