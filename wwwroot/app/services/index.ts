@@ -1,6 +1,6 @@
 // Import all services
 import "./config.service";
-import "./dispatchService";
+import "./dispatch.service";
 import "./job-detail.service";
 import "./toastr.service";
 import "./greeting.service";

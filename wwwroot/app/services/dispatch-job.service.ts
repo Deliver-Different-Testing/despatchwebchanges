@@ -487,3 +487,4 @@ class DispatchJobService {
 }
 
 app.service("dispatchJobService", DispatchJobService);
+export default DispatchJobService;

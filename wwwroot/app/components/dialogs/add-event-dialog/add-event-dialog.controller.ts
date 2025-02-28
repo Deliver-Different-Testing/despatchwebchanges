@@ -51,7 +51,6 @@ class AddEventDialogController implements angular.IController {
             eventType: "",
             notes: ""
         };
-
     }
 
     $onInit(): void {

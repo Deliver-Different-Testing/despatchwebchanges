@@ -1,14 +1,24 @@
-/**
- * @fileoverview Controller for the Create Job Dialog in the uDispatch application.
- * @module CreateJobDialogController
- */
+import DispatchService from "../../../services/dispatch.service";
+import ToastrService from "../../../services/toastr.service";
+import DispatchJobService from "../../../services/dispatch-job.service";
+import {AppConfig} from "../../../interfaces/app-config.interface";
+import UsStatesService from "../../../services/getUsStates.service";
+import {AddressViewModel, JobCreateViewModel, SelectOption, Suggestion} from "../../../interfaces/job.interface";
+import app from "../../../app";
+
+interface CreateJobDialogControllerScope extends angular.IScope {
+    jobForm: angular.IFormController;
+    fromAddressSearchText: string;
+    toAddressSearchText: string;
+    searchClientText: string;
+    courierSearchText: string;
+    isLoading: boolean;
+    selectedCourier: any;
+    selectedClient: any;
+    selectedVehicle: any;
+}
 class CreateJobDialogController {
-    /**
-     * @type {string[]}
-     * @static
-     * @description List of dependencies to be injected.
-     */
-    static $inject = [
+    static $inject: string[] = [
         "$scope",
         "$mdDialog",
         "DispatchData",
@@ -21,24 +31,49 @@ class CreateJobDialogController {
         "UsStatesService"
     ];
 
-    constructor($scope, $mdDialog, DispatchData, toastrService, $http, dispatchJobService, staffId, despatcherName, APP_CONFIG, UsStatesService) {
-        this.$scope = $scope;
-        this.$mdDialog = $mdDialog;
-        this.dispatchData = DispatchData;
-        this.$http = $http;
-        this.toastrService = toastrService;
+    private readonly staffId: number;
+    private readonly useUsFormat: boolean;
+    private readonly despatcherName: any;
+    dispatchJobService: any;
+    UsStatesService: any;
+    vehicleSearchText: string = "";
+    speedSearchText: string = "";
+    states: any;
+    jobForm: any;
+    fromAddressSearchText: string = "";
+    toAddressSearchText: string = "";
+    searchClientText: string = "";
+    courierSearchText: string = "";
+    isLoading: boolean = false;
+    selectedCourier: any = null;
+    selectedClient: any = null;
+    selectedVehicle: any = null;
+    selectedSpeed: any = null;
+    speedOptions: Suggestion[] = [];
+    jobDate: Date = new Date();
+    job: any;
+    vehicleSizes: Suggestion[] = [];
+
+    constructor(
+        $scope:CreateJobDialogControllerScope,
+        private $mdDialog: angular.material.IDialogService,
+        private dispatchData: DispatchService,
+        private toastrService: ToastrService,
+        private $http: angular.IHttpService,
+        dispatchJobService: DispatchJobService,
+        staffId: number,
+        despatcherName: string,
+        APP_CONFIG: AppConfig,
+        UsStatesService: UsStatesService
+    ) {
         this.staffId = staffId;
         this.despatcherName = despatcherName;
         this.dispatchJobService = dispatchJobService;
-        this.APP_CONFIG = APP_CONFIG;
         this.UsStatesService = UsStatesService;
 
-        this.vehicleSearchText = "";
-        this.speedSearchText = "";
-
-        this._initializeOptions();
-        this._initializeFormData($scope);
-        this._initializeJob();
+        this.initializeOptions();
+        this.initializeFormData($scope);
+        this.initializeJob();
 
         this.useUsFormat = APP_CONFIG.US_Customer;
         if (this.useUsFormat) {
@@ -46,12 +81,7 @@ class CreateJobDialogController {
         }
     }
 
-    /**
-     * Initialize form data.
-     * @param {Object} $scope - Angular scope object.
-     * @private
-     */
-    _initializeFormData($scope) {
+    private initializeFormData($scope: CreateJobDialogControllerScope): void {
         this.jobForm = $scope.jobForm;
         this.fromAddressSearchText = "";
         this.toAddressSearchText = "";
@@ -66,24 +96,17 @@ class CreateJobDialogController {
         this.jobDate = new Date();
     }
 
-    async _initializeOptions() {
-        const [speedOptions, vehicleSizes] = await Promise.all([
+    private initializeOptions(): void {
+        Promise.all([
             this.dispatchData.getSpeedList(),
             this.dispatchData.getVehicleSizes()
-        ]);
-
-        /** @type {Suggestion[]} */
-        this.speedOptions = speedOptions;
-        /** @type {Suggestion[]} */
-        this.vehicleSizes = vehicleSizes;
+        ]).then(([speedOptions, vehicleSizes]) => {
+            this.speedOptions = speedOptions;
+            this.vehicleSizes = vehicleSizes;
+        });
     }
 
-    /**
-     * Initialize job object.
-     * @private
-     */
-    _initializeJob() {
-        /** @type {JobCreateViewModel} */
+    private initializeJob(): void {
         this.job = {
             clientId: "",
             deliverToContact: "",
@@ -109,129 +132,75 @@ class CreateJobDialogController {
         };
     }
 
-    /**
-     * @param {string} searchText
-     * @returns {Suggestion[]}
-     */
-    vehicleSearch(searchText) {
+    vehicleSearch(searchText: string): Suggestion[] {
         searchText = searchText.toLowerCase();
         return this.vehicleSizes.filter(item => item.text.toLowerCase().includes(searchText));
     }
 
-
-    /**
-     * @param {Suggestion} item
-     */
-    onVehicleSelect(item) {
+    onVehicleSelect(item: Suggestion): void {
         this.selectedVehicle = item;
     }
 
-    /**
-     * @param {string} searchText
-     * @returns {Suggestion[]}
-     */
-    speedSearch(searchText) {
+    speedSearch(searchText: string): Suggestion[] {
         searchText = searchText.toLowerCase();
-        return this.speedOptions.filter(item => item.text.toLowerCase().includes(searchText)
-        );
+        return this.speedOptions.filter(item => item.text.toLowerCase().includes(searchText));
     }
 
-    /**
-     * @param {Suggestion} item
-     */
-    onSpeedSelect(item) {
+    onSpeedSelect(item: Suggestion): void {
         this.selectedSpeed = item;
     }
 
-    /**
-     * Perform client search autocomplete.
-     * @param {string} searchTerm - The search term.
-     * @returns {Promise<Suggestion[]>}
-     */
-    clientSearch(searchTerm) {
+    clientSearch(searchTerm: string): Promise<SelectOption[]> {
         return this.performAutocompleteSearch(searchTerm, "/home/ActiveClients");
     }
 
-    /**
-     * Perform courier search.
-     * @param {string} searchText - The search text.
-     * @returns {Promise<Array>} A promise that resolves to the search results.
-     */
-    courierSearch(searchText) {
+    courierSearch(searchText: string): Promise<SelectOption[]> {
         return this.performAutocompleteSearch(searchText, "/courier/AllActiveSearch");
     }
 
-    /**
-     * Perform autocomplete search.
-     * @param {string} searchTerm - The search term.
-     * @param {string} url - The URL to perform the search.
-     * @returns {Promise<Array>} A promise that resolves to the search results.
-     */
-    performAutocompleteSearch(searchTerm, url) {
+    performAutocompleteSearch(searchTerm: string, url: string): Promise<SelectOption[]> {
         try {
             return this.dispatchData.autocompleteSearch(searchTerm, url);
-        } catch (error) {
+        } catch (error: any) {
             console.error(`Search failed: ${error.message}`);
-            return [];
+            return Promise.resolve([]);
         }
     }
 
-    /**
-     * Perform address search autocomplete.
-     * @param {string} searchText - The search text.
-     * @returns {Promise<Array>} A promise that resolves to the search results.
-     */
-    async addressSearchAutocomplete(searchText) {
+    async addressSearchAutocomplete(searchText: string): Promise<any[]> {
         try {
             const suggestions = await this.dispatchData.autocompleteAddressSearch(searchText);
-            return this._transformSuggestions(suggestions);
-        } catch (error) {
+            return this.transformSuggestions(suggestions);
+        } catch (error: any) {
             this.toastrService.showErrorToast(error.message);
             return [];
         }
     }
 
-    /**
-     * Transform suggestions to the required format.
-     * @param {Object} data - The suggestions data.
-     * @returns {Array} The transformed suggestions.
-     * @private
-     */
-    _transformSuggestions(data) {
-        return data.suggestions.map(obj => ({
+    private transformSuggestions(data: any): any[] {
+        return data.suggestions.map((obj: any) => ({
             id: obj.locationId,
             text: obj.label.split(", ").reverse().join(", ")
         }));
     }
 
-    /**
-     * Find a suburb by district.
-     * @param {string} district - The district to search for.
-     * @returns {Promise<Object|null>} A promise that resolves to the found suburb or null.
-     */
-    async findSuburbByDistrict(district) {
+    async findSuburbByDistrict(district: string): Promise<any | null> {
         try {
-            const ourSuburbs = await this.dispatchData.getSuburbList();
+            const ourSuburbsArray = await this.dispatchData.getSuburbList();
             const lowerCaseDistrict = district.toLowerCase();
-            return ourSuburbs.find(localSuburb =>
+            return ourSuburbsArray.find((localSuburb: any) =>
                 localSuburb.text.toLowerCase() === lowerCaseDistrict ||
                 (localSuburb.alias && localSuburb.alias.toLowerCase() === lowerCaseDistrict)
             );
-        } catch (error) {
+        } catch (error: any) {
             console.error(`Failed to find suburb: ${error.message}`);
             return null;
         }
     }
 
-    /**
-     * Handle address search item selection.
-     * @param {Object} item - The selected item.
-     * @param {boolean} isToAddress - Indicates if it's the 'to' address.
-     * @returns {Promise<void>}
-     */
-    async addressSearchItemSelected(item, isToAddress) {
+    async addressSearchItemSelected(item: any, isToAddress: boolean): Promise<void> {
         try {
-            const data = await this.dispatchData.getGeoCodeInformation(item);
+            const data: any = await this.dispatchData.getGeoCodeInformation(item);
             const returnedLocation = data.Response.View[0].Result[0].Location;
 
             console.log(`Suburb/City = ${returnedLocation.Address.District}`);
@@ -275,25 +244,18 @@ class CreateJobDialogController {
             // Coordinates
             addressDetails.latitude = returnedLocation.DisplayPosition.Latitude;
             addressDetails.longitude = returnedLocation.DisplayPosition.Longitude;
-
-            this.$scope.$apply();
-        } catch (error) {
+        } catch (error: any) {
             console.log("Error: ", error);
         }
     }
 
-    /**
-     * Submit the job form.
-     * @param {JobCreateViewModel} job - The job object to submit.
-     * @returns {Promise<void>}
-     */
-    async submit(job) {
-        if (!this._isFormValid()) return;
+    async submit(job: JobCreateViewModel): Promise<void> {
+        if (!this.isFormValid()) return;
 
         this.isLoading = true;
         try {
-            this._applyFormValuesToJob(job);
-            const response = await this._createJob(job);
+            this.applyFormValuesToJob(job);
+            const response = await this.createJob(job);
             const jobId = response.data;
 
             if (this.selectedCourier) {
@@ -301,38 +263,28 @@ class CreateJobDialogController {
             }
 
             this.$mdDialog.hide(jobId);
-        } catch (error) {
+        } catch (error: any) {
             console.error(`Job creation failed: ${error.message}`);
         } finally {
             this.isLoading = false;
         }
     }
 
-    /**
-     * Check if the form is valid.
-     * @returns {boolean} True if the form is valid, false otherwise.
-     * @private
-     */
-    _isFormValid() {
+    private isFormValid(): boolean {
         if (this.jobForm.$valid) return true;
         this.toastrService.showWarningToast("Please complete all the required fields.");
         return false;
     }
 
-    /**
-     * Apply form values to the job object.
-     * @param {JobCreateViewModel} job - The job object to update.
-     * @private
-     */
-    _applyFormValuesToJob(job) {
+    private applyFormValuesToJob(job: JobCreateViewModel): void {
         job.clientId = this.selectedClient.id;
-        job.date = this.jobDate.toISOString();
+        job.date = this.jobDate;
         job.speedId = this.selectedSpeed.id;
         job.vehicleId = this.selectedVehicle.id;
 
         // Ensure fullAddress is up-to-date for both pickup and delivery addresses
         ["pickupAddress", "deliveryAddress"].forEach(addressType => {
-            const address = job[addressType];
+            const address = job[addressType as keyof JobCreateViewModel] as AddressViewModel;
             address.fullAddress = [
                 address.addressLine1,
                 address.addressLine2,
@@ -346,13 +298,7 @@ class CreateJobDialogController {
         });
     }
 
-    /**
-     * Create a new job.
-     * @param {JobCreateViewModel} job - The job object to create.
-     * @returns {Promise<Object>} A promise that resolves to the response from the server.
-     * @private
-     */
-    async _createJob(job) {
+    private async createJob(job: JobCreateViewModel): Promise<any> {
         const url = "job/QuickCreateJob/";
         const callData = {
             job,
@@ -362,22 +308,13 @@ class CreateJobDialogController {
         return this.$http.post(url, callData, {headers: {'Content-Type': "application/json"}});
     }
 
-    /**
-     * Dispatch the job if a courier is selected.
-     * @param {Number} courierId - The ID of the selected courier.
-     * @param {Number} jobId - The ID of the created job.
-     * @returns {Promise<void>} A promise that resolves when the job is dispatched.
-     */
-    async dispatchJobIfCourierSelected(courierId, jobId) {
+    async dispatchJobIfCourierSelected(courierId: number, jobId: number): Promise<void> {
         return this.dispatchJobService.dispatchJobByJobId(courierId, jobId);
     }
 
-    /**
-     * Cancel the dialog.
-     */
-    cancel() {
+    cancel(): void {
         this.$mdDialog.cancel();
     }
 }
 
-angular.module("uDispatch").controller("CreateJobDialogController", CreateJobDialogController);
+app.controller("CreateJobDialogController", CreateJobDialogController);

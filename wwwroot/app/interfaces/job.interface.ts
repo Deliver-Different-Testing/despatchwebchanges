@@ -325,3 +325,56 @@ export interface ClientItemsViewModel {
     onlyVan: boolean;
     selected: boolean;
 }
+
+export interface SelectOption {
+    id: number | string;
+    text: string;
+}
+
+export interface JobCreateViewModel {
+    clientId: number;
+    deliverToContact: string;
+    podName: string;
+    pickUpAddress: AddressViewModel;
+    deliveryAddress: AddressViewModel;
+    date: Date;
+    fromContactName: string;
+    refA: string;
+    refB: string;
+    deliveryNotes: string;
+    pickupNotes: string;
+    jobNotes: string;
+    van: boolean;
+    truck: boolean;
+    pedal: boolean;
+    attention: boolean;
+    vanOk: boolean;
+    reprice: boolean;
+    void: boolean;
+    done: boolean;
+    charge: number;
+    fromLat: number;
+    fromLong: number;
+    toLat: number;
+    toLong: number;
+    speedId: number;
+    vehicleId: number;
+}
+
+export interface SuburbLookup {
+    id: number;
+    text: string;
+    alias: string;
+}
+
+export interface Lookup {
+    id: number;
+    text: string;
+}
+
+export interface InternalStatus {
+    id: number;
+    text: string;
+    defaultSchedule: string;
+    defaultMins: number | null;
+}
