@@ -7,9 +7,10 @@ import {FirstName, ContactID} from "../../../contants";
 import {JobNote, JobOptions, TabItem} from "./job-details.interfaces";
 import "./job-details.styles.less";
 import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
+import DispatchService from "../../../services/dispatch.service";
 
 class JobDetailController implements angular.IController {
-    static $inject = ["$scope", "$mdDialog", "toastrService", "DispatchData", "APP_CONFIG", "rateJobService"];
+    static $inject = ["$scope", "$mdDialog", "toastrService", "DispatchData", "APP_CONFIG", "rateJobService", "moment"];
 
     private readonly isUsCustomer: boolean;
     job?: Job;
@@ -30,7 +31,8 @@ class JobDetailController implements angular.IController {
         private toastrService: ToastrService,
         private dispatchData: any,
         APP_CONFIG: AppConfig,
-        private rateJobService: any) {
+        private rateJobService: any,
+        private moment: any) {
         this.isUsCustomer = APP_CONFIG.US_Customer;
         this.job = undefined;
         this.internalJob = undefined;
@@ -109,20 +111,15 @@ class JobDetailController implements angular.IController {
             return;
         }
 
-        const podDate = new Date(this.internalJob.completedTime);
-        const year = podDate.getFullYear();
-        const month = podDate.getMonth() + 1;
+        const completedTime = this.moment(this.internalJob?.completedTime);
+        const month = completedTime.month() + 1;
 
-        this.dispatchData.getJobDeliveryPhotosAndSignature(this.internalJob.id, year, month)
-            .then((photoData: any[]) => {
-                this.formattedPodPhotos = photoData.map((photo: any, index: number) => ({
-                    id: index,
-                    url: photo.url,
-                    timestamp: photo.timestamp,
-                    uploadedBy: photo.uploadedBy || 'Unknown'
-                }));
+        this.dispatchData.getJobDeliveryPhotosAndSignature(this.internalJob.id, completedTime.year(), month)
+            .then((photos: PodPhoto[]) => {
+                this.formattedPodPhotos = photos;
+                this.toastrService.showSuccessToast('Loaded POD photos');
             })
-            .catch((error: any) => {
+            .catch((error: Error) => {
                 this.toastrService.showErrorToast('Failed to load POD photos');
                 console.error('Error loading POD photos:', error);
             });
@@ -307,10 +304,6 @@ class JobDetailController implements angular.IController {
         const icon = this.internalJob?.assignedFlight ? 'flight_takeoff' : 'pin_drop';
         console.log(`[getJobAddressIcon] Icon selected: ${icon}`);
         return icon || 'pin_drop';
-    }
-
-    async showNotesInfo() {
-        this.toastrService.showWarningToast(`Notes are not available for this job`);
     }
 
     async showNotesDialog($event: MouseEvent, job: Job, title: string, fieldName: string) {
@@ -676,8 +669,9 @@ class JobDetailController implements angular.IController {
         await this.showAutocompleteDialog($event, job, url, placeholder, "CourierID", "Courier", null, false)
     }
 
-
     async contactClick($event: MouseEvent, job: Job) {
+        if (job.clientId === undefined) return;
+
         const pickContacts = await this.dispatchData.getContactList(job.clientId);
         await this.showSelectDialog($event, job, pickContacts, "ContactID", "Contact", job.contactName);
     }

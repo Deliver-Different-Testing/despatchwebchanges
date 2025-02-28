@@ -6,7 +6,7 @@ import "./select-dialog/select-dialog.controller";
 import "./add-notes-dialog/add-notes-dialog.controller";
 import "./create-job-dialog/create-job-dialog.controller";
 import "./inter-courier-charge-dialog/inter-courier-charge-dialog";
-import "./add-pallet-dialog/add-pallet-dialog.Controller";
+import "./add-pallet-dialog/add-pallet-dialog.controller";
 import "./add-event-dialog/add-event-dialog.controller";
 import "./truck-courier-status-dialog/truck-courier-status-dialog.controller";
 import "./edit-date-time-dialog/edit-date-time-dialog.controller";

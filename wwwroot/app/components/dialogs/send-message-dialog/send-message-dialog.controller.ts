@@ -1,0 +1,50 @@
+import app from "../../../app";
+import DispatchService from "../../../services/dispatch.service";
+import ToastrService from "../../../services/toastr.service";
+
+class SendMessageDialogController {
+    static $inject = [
+        "$mdDialog",
+        "DispatchData",
+        "toastrService",
+        "selectedCourierId",
+        "contactId",
+        "dispatcherName"
+    ];
+
+    isLoading: boolean;
+    message: string;
+
+    constructor(
+        private $mdDialog: angular.material.IDialogService,
+        private dispatchData: DispatchService,
+        private toastrService: ToastrService,
+        private selectedCourierId: number,
+        private contactId: number,
+        private dispatcherName: string
+    ) {
+        this.isLoading = false;
+        this.message = "";
+    }
+
+    async submit(message: string): Promise<void> {
+        try {
+            this.isLoading = true;
+
+            await this.dispatchData.sendSMS(this.selectedCourierId, this.contactId, this.dispatcherName, message);
+
+            this.toastrService.showSuccessToast("Message sent!");
+        } catch (error: any) {
+            this.toastrService.showErrorToast(error.message);
+        } finally {
+            this.isLoading = false;
+            this.$mdDialog.hide();
+        }
+    }
+
+    cancel(): void {
+        this.$mdDialog.cancel();
+    }
+}
+
+app.controller("SendMessageDialogController", SendMessageDialogController);

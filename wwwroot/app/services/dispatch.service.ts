@@ -2,11 +2,11 @@ import app from "../app";
 import angular from "angular";
 import {AppConfig} from "../interfaces/app-config.interface";
 import {
-    AddressViewModel, ClientItemsViewModel,
+    AddressViewModel, ClientItemsViewModel, InternalStatus,
     Job,
-    JobQueryParams, JobRateDetails,
+    JobQueryParams, JobRateDetails, Lookup,
     Pallet,
-    ParcelDimensions, PriceBreakdown,
+    ParcelDimensions, PriceBreakdown, SelectOption, SuburbLookup,
     Suggestion,
     Views
 } from "../interfaces/job.interface";
@@ -173,7 +173,7 @@ class DispatchService {
     }
 
     public async getJobDetail(jobId: number) {
-        const response = await this.$http.get(`/Job/Detail?jobId=${jobId}`);
+        const response = await this.$http.get<Job>(`/Job/Detail?jobId=${jobId}`);
         return response.data;
     }
 
@@ -263,23 +263,23 @@ class DispatchService {
         return response.data;
     }
 
-    public async getSuburbList() {
-        const response = await this.$http.get("job/SuburbList");
+    public async getSuburbList(): Promise<SuburbLookup[]> {
+        const response = await this.$http.get<SuburbLookup[]>("job/SuburbList");
         return response.data;
     }
 
-    public async getSpeedList() {
-        const response = await this.$http.get("job/SpeedList");
+    public async getSpeedList(): Promise<Suggestion[]> {
+        const response = await this.$http.get<Suggestion[]>("job/SpeedList");
         return response.data;
     }
 
     public async getContactList(clientId: number) {
-        const response = await this.$http.get(`job/ContactList?clientId=${clientId}`);
+        const response = await this.$http.get<Suggestion[]>(`job/ContactList?clientId=${clientId}`);
         return response.data;
     }
 
     public async getLeaveList() {
-        const response = await this.$http.get("job/LeaveList");
+        const response = await this.$http.get<Lookup[]>("job/LeaveList");
         return response.data;
     }
 
@@ -289,12 +289,12 @@ class DispatchService {
     }
 
     public async getInternalStatusList() {
-        const response = await this.$http.get("job/InternalStatusList");
+        const response = await this.$http.get<InternalStatus[]>("job/InternalStatusList");
         return response.data;
     }
 
     public async getStatusList() {
-        const response = await this.$http.get("job/StatusList");
+        const response = await this.$http.get<Suggestion[]>("job/StatusList");
         return response.data;
     }
 
@@ -546,7 +546,7 @@ class DispatchService {
     public async updateJobDetail(
         jobId: number,
         field: JobField,
-        value: string | Date | number,
+        value: string | Date | number | boolean,
         rate: number | string,
         despatcherName: string,
         staffId: number,
@@ -744,8 +744,8 @@ class DispatchService {
         return response.data;
     }
 
-    public async autocompleteSearch(searchTerm: string, url: string) {
-        const response = await this.$http.get(url, {
+    public async autocompleteSearch(searchTerm: string, url: string): Promise<SelectOption[]> {
+        const response = await this.$http.get<SelectOption[]>(url, {
             params: {
                 searchTerm: searchTerm
             }
@@ -758,8 +758,8 @@ class DispatchService {
         return response.data;
     }
 
-    public async getVehicleSizes() {
-        const response = await this.$http.get(`courier/GetVehicleSizes`);
+    public async getVehicleSizes(): Promise<Suggestion[]> {
+        const response = await this.$http.get<Suggestion[]>(`courier/GetVehicleSizes`);
         return response.data;
     }
 

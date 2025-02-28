@@ -1,5 +1,5 @@
 import ToastrService from "../../../services/toastr.service";
-import DispatchService from "../../../services/dispatchService";
+import DispatchService from "../../../services/dispatch.service";
 import {Job} from "../../../interfaces/job.interface";
 import app from "../../../app";
 
