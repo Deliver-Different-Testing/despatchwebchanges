@@ -1,132 +1,120 @@
 <!-- POD List Component -->
-<div class="job-list-container">
-    <!-- POD List Table -->
-    <div class="job-list-table" ng-if="!podListLoading && jobListPOD.length > 0">
-        <!-- Table Headers -->
-        <div class="table-headings sticky-header">
-            <table>
-                <thead class="thead-dark no-select">
-                <tr>
-                    <th ng-click="orderList('jobList', header.key)" ng-repeat="header in jobHeaders">
-                        <i class="material-symbols-outlined job-table-icon"
-                           ng-if="sort.jobList == header.key">arrow_drop_down</i>
-                        <i class="material-symbols-outlined job-table-icon"
-                           ng-if="sort.jobList == 'd-' + header.key">arrow_drop_up</i>
-                        {{header.label}}
-                    </th>
-                    <th></th>
-                    <th>E</th>
-                    <th>R</th>
-                </tr>
-                </thead>
-            </table>
-        </div>
+<div class="droppable-box nationwide-job-list">
+    <md-table-container>
+        <table md-dense md-progress="podListPromise" md-table ng-model="selectedPodJob">
+            <thead md-head md-on-reorder="onReorderPodList" md-order="jobPodFilters.order">
+            <tr md-row>
+                <th md-column md-order-by="time">Time</th>
+                <th md-column md-order-by="speed">Speed</th>
+                <th md-column md-order-by="jobNo">Job No</th>
+                <th md-column md-order-by="client">Client</th>
+                <th md-column md-order-by="from">From</th>
+                <th md-column md-order-by="to">To</th>
+                <th md-column md-order-by="courier">Dispatch</th>
+                <th md-column md-order-by="pod">POD</th>
+                <th md-column md-order-by="remain">Remain</th>
+                <th md-column md-order-by="status">Status</th>
+                <th md-column>Actions</th>
+            </tr>
+            </thead>
 
-        <!-- Job List -->
-        <table class="table table-responsive table-rows" data-group="jobsGroup" id="jobListPOD">
-            <tbody>
-            <tr class="clickable-row noselect"
-                data-allowDispatch="{{job.allowDispatch}}"
-                data-courier="{{job.courier}}"
-                data-index="{{$index}}"
+            <tbody md-body>
+            <tr md-row
+                md-dense
+                ng-class="jobClass(job)"
+                ng-click="selectJob(job)"
+                ng-repeat="job in jobListPOD | filter: box.searchBox"
                 data-jobid="{{job.id}}"
                 data-jobno="{{job.jobNo}}"
-                ng-class="jobClass(job)"
-                ng-mouseup="selectJob(job)"
-                ng-repeat="job in jobListPOD | filter: box.searchBox">
+                data-courier="{{job.courier}}"
+                data-allowDispatch="{{job.allowDispatch}}"
+                data-index="{{$index}}">
 
-                <td>{{job.booked | date: (isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm")}}</td>
-                <td ng-click="speedColumnClick($event)"
-                    context-menu="speedColumnClick($event)"
-                    ng-mousedown="$event.button === 2 && $event.preventDefault()">
-                    <i class="material-symbols-outlined job-table-icon"
-                       ng-if="job.fromAirportId || job.toAirportId">{{getFlightIcon(job.jobNo)}}</i>
+                <td md-cell>{{job.booked | date: (isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm")}}</td>
+                <td md-cell ng-click="speedColumnClick($event)" right-click>
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="job.fromAirportId || job.toAirportId">
+                        {{getFlightIcon(job.jobNo)}}
+                    </md-icon>
+                    <span ng-if="!job.fromAirportId && !job.toAirportId">{{job.speed}}</span>
                 </td>
-                <td context-menu="setEventsMenu($event)"
-                    ng-click="$event.stopPropagation()"
-                    ng-mousedown="$event.preventDefault(); $event.stopPropagation();">
-                    {{job.jobNo}}
-                </td>
-                <td ng-click="clientColumnClick($event)"
-                    context-menu="clientColumnClick($event)"
-                    ng-mousedown="$event.button === 2 && $event.preventDefault()">{{job.client}}
-                </td>
-                <td class="address-cell"
-                    ng-click="fromColumnClick($event)"
-                    context-menu="fromColumnClick($event)"
-                    ng-mousedown="$event.button === 2 && $event.preventDefault()">
+                <td context-menu="setEventsMenu($event)" md-cell>{{job.jobNo}}</td>
+                <td md-cell ng-click="clientColumnClick($event)" right-click>{{job.client}}</td>
+                <td md-cell ng-click="fromColumnClick($event)" right-click>
                     {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
+                    <md-tooltip md-direction="bottom">{{ job.pickupAddress.fullAddress }}</md-tooltip>
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
                 </td>
-                <td class="address-cell"
-                    ng-click="toColumnClick($event)"
-                    context-menu="toColumnClick($event)"
-                    ng-mousedown="$event.button === 2 && $event.preventDefault()">
-                    {{isUsCustomer ? job.deliveryAddress.addressLine5 : job.toAddress}}
+                <td md-cell ng-click="toColumnClick($event)" right-click>
+                    <span md-truncate>{{isUsCustomer ? job.deliveryAddress.addressLine5 : job.toAddress}}</span>
+                    <md-tooltip md-direction="bottom">{{ job.deliveryAddress.fullAddress }}</md-tooltip>
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
                 </td>
-                <td>
-                    <input class="dispatchField"
-                           ng-if="!job.assignedAgent.agentName && (!job.toAirportId || !job.fromAirportId)"
-                           ng-keydown="$event.keyCode === 13 && dispatchJobsFromNew(job.courier)"
-                           ng-model="job.courier"
-                           ng-readonly="job.courierData.courierID !== null"
-                           ng-style="getJobStyle(job.courierData.courierID !== null)"
-                           placeholder=""
-                           type="text"/>
+                <td md-cell>
+                    <span ng-if="!job.assignedAgent.agentName && (!job.toAirportId || !job.fromAirportId)"
+                          ng-click="editCourierPOD($event, job)"
+                          ng-style="getJobStyle(job.courierData.courierID !== null)"
+                          class="dispatch-field">
+                        {{job.courier || "Enter courier..."}}
+                    </span>
 
-                    <input class="dispatchField"
-                           ng-if="!job.assignedAgent.agentName && job.toAirportId && job.fromAirportId"
-                           ng-model="job.assignedFlight.flightNumber"
-                           ng-readonly="true"
-                           ng-style="getJobStyle(job.assignedFlight.flightNumber !== null)"
-                           placeholder=""
-                           type="text"/>
+                    <span ng-if="!job.assignedAgent.agentName && job.toAirportId && job.fromAirportId"
+                          ng-style="getJobStyle(job.assignedFlight.flightNumber !== null)"
+                          class="dispatch-field">
+                        {{job.assignedFlight.flightNumber || "Flight"}}
+                    </span>
 
-                    <input class="dispatchField"
-                           ng-if="job.assignedAgent.agentName"
-                           ng-model="job.assignedAgent.agentName"
-                           ng-readonly="true"
-                           ng-style="getJobStyle(job.assignedAgent.agentName !== null)"
-                           placeholder=""
-                           type="text"/>
+                    <span ng-if="job.assignedAgent.agentName"
+                          ng-style="getJobStyle(job.assignedAgent.agentName !== null)"
+                          class="dispatch-field">
+                        {{job.assignedAgent.agentName || "Agent"}}
+                    </span>
                 </td>
-                <td>{{job.pod}}</td>
-                <td><span class="remain-time">{{job.remain}}</span></td>
+                <td md-cell>{{job.pod}}</td>
+                <td md-cell>
+                    <span class="remain-time">{{job.remain}}</span>
+                </td>
 
-                <td>
+                <td md-cell>
                     <md-chip class="status {{job.statusName | lowercase | replace:' ':'-'}}">
                         {{job.status}}
                     </md-chip>
                 </td>
-
-                <td class="selectjob" ng-click="selectForDispatch(job); $event.stopPropagation();"
-                    title="placeholder selector"></td>
-                <td class="icon-cell" ng-click="createEvent($event, job);" title="Create Event">
-                    <i class="material-symbols-outlined job-table-icon">calendar_add_on</i>
-                </td>
-                <td class="icon-cell" ng-click="job.courier == null || restoreJob(job);" title="Restore">
-                    <i class="material-symbols-outlined job-table-icon" ng-if="job.courier !== null">undo</i>
+                <td class="actions" md-cell>
+                    <span class="action-icon" ng-click="createEvent($event, job); $event.stopPropagation();">
+                        <md-icon md-font-set="material-symbols-outlined">calendar_add_on</md-icon>
+                        <md-tooltip md-direction="bottom">Create Event</md-tooltip>
+                    </span>
+                    <span class="action-icon" ng-click="job.courier == null || restoreJob(job); $event.stopPropagation();">
+                        <md-icon md-font-set="material-symbols-outlined" ng-if="job.courier !== null">undo</md-icon>
+                        <md-tooltip md-direction="bottom" ng-if="job.courier !== null">Restore</md-tooltip>
+                    </span>
+                    <span class="action-icon selectjob" ng-click="selectForDispatch(job); $event.stopPropagation();">
+                        <md-icon md-font-set="material-symbols-outlined">check_box_outline_blank</md-icon>
+                        <md-tooltip md-direction="bottom">Select for dispatch</md-tooltip>
+                    </span>
                 </td>
             </tr>
             </tbody>
         </table>
-    </div>
+    </md-table-container>
+
+    <md-table-pagination
+            md-limit="jobPodFilters.limit"
+            md-limit-options="[5, 10, 25, 50]"
+            md-on-paginate="onPaginatePodList"
+            md-page="jobPodFilters.page"
+            md-page-select
+            md-total="{{totalPodCount}}">
+    </md-table-pagination>
 
     <!-- No Data Message -->
-    <div class="no-data" ng-if="!podListLoading && jobListPOD.length === 0">
+    <div class="no-data" ng-if="!podListLoading && (!jobListPOD || jobListPOD.length === 0)">
         <div class="content">
             <div class="icon">
                 <md-icon md-font-set="material-symbols-outlined">pending_actions</md-icon>
             </div>
-            <div class="text">No Awaiting POD Jobs Found</div>
-        </div>
-    </div>
-
-    <!-- Loading Indicator -->
-    <div class="loader-container" ng-if="podListLoading">
-        <div class="full-height" layout="row" layout-align="center center">
-            <div class="material-icon-loader">
-                <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
-                <md-icon class="loader-icon" md-font-set="material-symbols-outlined">pending_actions</md-icon>
+            <div class="text">
+                No Awaiting POD Jobs Found
             </div>
         </div>
     </div>

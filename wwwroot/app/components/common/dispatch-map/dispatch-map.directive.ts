@@ -29,11 +29,37 @@ class DispatchMapController implements angular.IController {
         this.$scope.flags = [];
         this.$scope.labels = [];
         this.$scope.googleMapsUrl = null;
-
-        this._initialize();
     }
 
-    private _createMarkerIcon(color: string, isHovered: boolean = false): google.maps.Symbol {
+    $onInit() {
+        this.configService.getGoogleMapsKey()
+            .then((apiKey: string) => {
+                this.$scope.googleMapsUrl = `https://maps.google.com/maps/api/js?key=${apiKey}&libraries=places`;
+                this.$scope.$apply();
+
+                return this.NgMap.getMap();
+            })
+            .then((map) => {
+                this.setupMarkerIcons();
+
+                this.mapInstance = map;
+                this.$scope.map = map;
+                this.$scope.tooltip = new this.$window.google.maps.InfoWindow({
+                    disableAutoPan: true
+                });
+
+                this.setupWatchers();
+
+                if (this.$scope.jobs || this.$scope.currentJob) {
+                    return this.updateDisplayedJobs();
+                }
+            })
+            .catch((error) => {
+                console.error("Error initializing map:", error);
+            });
+    }
+
+    private createMarkerIcon(color: string, isHovered: boolean = false): google.maps.Symbol {
         return {
             path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
             fillColor: color,
@@ -45,41 +71,15 @@ class DispatchMapController implements angular.IController {
         };
     }
 
-    private _setupMarkerIcons() {
-        this.PICKUP_ICON = this._createMarkerIcon("#4CAF50");
-        this.DELIVERY_ICON = this._createMarkerIcon("#F44336");
-        this.COURIER_ICON = this._createMarkerIcon("#2196F3");
-        this.PICKUP_ICON_HOVER = this._createMarkerIcon("#4CAF50", true);
-        this.DELIVERY_ICON_HOVER = this._createMarkerIcon("#F44336", true);
+    private setupMarkerIcons() {
+        this.PICKUP_ICON = this.createMarkerIcon("#4CAF50");
+        this.DELIVERY_ICON = this.createMarkerIcon("#F44336");
+        this.COURIER_ICON = this.createMarkerIcon("#2196F3");
+        this.PICKUP_ICON_HOVER = this.createMarkerIcon("#4CAF50", true);
+        this.DELIVERY_ICON_HOVER = this.createMarkerIcon("#F44336", true);
     }
 
-    private async _initialize() {
-        try {
-            const apiKey = await this.configService.getGoogleMapsKey();
-            this.$scope.googleMapsUrl = `https://maps.google.com/maps/api/js?key=${apiKey}&libraries=places`;
-
-            this.$scope.$apply();
-
-            const map = await this.NgMap.getMap();
-            this._setupMarkerIcons();
-
-            this.mapInstance = map;
-            this.$scope.map = map;
-            this.$scope.tooltip = new this.$window.google.maps.InfoWindow({
-                disableAutoPan: true
-            });
-
-            this._setupWatchers();
-
-            if (this.$scope.jobs || this.$scope.currentJob) {
-                await this.updateDisplayedJobs();
-            }
-        } catch (error) {
-            console.error("Error initializing map:", error);
-        }
-    }
-
-    private _setupWatchers() {
+    private setupWatchers() {
         this.$scope.$watch("mapCenter", (newCenter: google.maps.LatLng | google.maps.LatLngLiteral) => {
             if (newCenter && this.mapInstance) {
                 this.mapInstance.setCenter(newCenter);

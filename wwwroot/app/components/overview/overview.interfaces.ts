@@ -37,9 +37,9 @@ export interface OverviewStatsViewModel {
 export interface MapConfig {
     center: Coordinates;
     zoom: number;
-    job: OverviewJobLocation;
+    job: OverviewJobLocation | null;
     selectedJobIndex: number;
-    courierLocation: Coordinates;
+    courierLocation: Coordinates | null;
 }
 
 export interface OverviewChildJobLocation {
