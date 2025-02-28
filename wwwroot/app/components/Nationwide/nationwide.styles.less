@@ -1,0 +1,311 @@
+/*
+ * Nationwide Job List Styles
+ * Scoped specifically to the nationwide job list component
+ */
+
+.nationwide-job-list {
+  // Variables
+  @cell-padding-vertical: 4px;
+  @cell-padding-horizontal: 2px; // Reduced horizontal padding
+  @row-height: 30px; // Slightly reduced row height
+  @cell-font-size: 12px;
+  @header-font-size: 13px;
+  @autocomplete-width: 110px;
+  @to-address-width: 250px;
+  @icon-size: 18px;
+
+  // Mixins
+  .no-select() {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
+
+  .truncate() {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // Column width mixin
+  .column-width(@width) {
+    width: @width !important;
+    max-width: @width !important;
+    flex: 0 0 @width !important;
+  }
+
+  // Status class styles
+  .status-future {
+    background-color: rgba(220, 237, 255, 0.2);
+  }
+
+  .status-current {
+    background-color: rgba(255, 251, 153, 0.3);
+  }
+
+  .status-past {
+    background-color: rgba(255, 231, 231, 0.3);
+  }
+
+  md-table-container {
+    table.md-table {
+      // Column specific widths
+      th.md-column, td.md-cell {
+        // Time column
+        &:nth-child(1) {
+          .column-width(120px);
+        }
+
+        // Speed column
+        &:nth-child(2) {
+          .column-width(60px);
+        }
+
+        // Job No column
+        &:nth-child(3) {
+          .column-width(80px);
+        }
+
+        // Client column
+        &:nth-child(4) {
+          .column-width(70px);
+        }
+
+        // From column
+        &:nth-child(5) {
+          .column-width(150px);
+        }
+
+        // To column
+        &:nth-child(6) {
+          .column-width(@to-address-width);
+        }
+
+        // Dispatch column
+        &:nth-child(7) {
+          .column-width(@autocomplete-width);
+        }
+
+        // POD column
+        &:nth-child(8) {
+          .column-width(60px);
+        }
+
+        // Remain column
+        &:nth-child(9) {
+          .column-width(70px);
+        }
+
+        // Status column
+        &:nth-child(10) {
+          .column-width(80px);
+        }
+
+        // Actions column
+        &:nth-child(11) {
+          .column-width(100px);
+        }
+
+        &.actions {
+          .column-width(100px);
+          white-space: nowrap;
+
+          .action-icon {
+            cursor: pointer;
+            margin-right: 8px;
+            display: inline-block;
+
+            &:last-child {
+              margin-right: 0;
+            }
+          }
+        }
+      }
+
+      td.md-cell {
+        padding: @cell-padding-vertical @cell-padding-horizontal !important;
+        height: @row-height !important;
+        font-size: @cell-font-size;
+
+        [md-truncate] {
+          max-width: @to-address-width;
+          display: block;
+          .truncate();
+        }
+
+        md-icon {
+          font-size: @icon-size !important;
+          height: @icon-size;
+          width: @icon-size;
+          min-height: @icon-size;
+          min-width: @icon-size;
+        }
+
+        .dispatch-field {
+          display: block;
+          padding: 2px 4px !important;
+          border-radius: 2px;
+          font-size: @cell-font-size;
+          cursor: pointer;
+
+          &:hover {
+            background-color: rgba(0, 0, 0, 0.04);
+          }
+        }
+      }
+
+      th.md-column {
+        padding: @cell-padding-vertical @cell-padding-horizontal !important;
+        height: @row-height !important;
+        font-size: @header-font-size;
+      }
+
+      tr.md-row {
+        &.active-job, &.active {
+          background-color: rgba(158, 158, 158, 0.2);
+        }
+      }
+    }
+  }
+
+  .droppable-box {
+    width: 100%;
+    overflow: auto;
+  }
+
+  .clickable-row {
+    cursor: pointer;
+  }
+
+  .noselect {
+    .no-select();
+  }
+
+  md-chip.status {
+    height: 20px;
+    line-height: 20px;
+    min-height: 20px;
+    font-size: 11px;
+    padding: 0 8px;
+  }
+
+  .remain-time {
+    white-space: nowrap;
+  }
+
+  .no-data {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    text-align: center;
+
+    .content {
+      color: #666;
+    }
+
+    .icon {
+      font-size: 48px;
+      margin-bottom: 1rem;
+
+      md-icon {
+        font-size: 48px;
+        height: 48px;
+        width: 48px;
+      }
+    }
+  }
+
+  .table-footer-actions {
+    padding: 8px 16px;
+    margin-top: 8px;
+
+    .md-button {
+      margin: 0 8px;
+      min-width: 120px;
+    }
+  }
+
+  // Styles for the action buttons in empty state
+  .no-data .action-buttons {
+    margin-top: 16px;
+
+    .md-button {
+      margin: 0 8px;
+      min-width: 120px;
+    }
+  }
+
+  // Ensure proper spacing in the actions column for flight and agent tables
+  md-table-container table.md-table {
+    // Flight table specific styles
+    th.md-column[md-order-by="airline"],
+    td.md-cell:nth-child(1) {
+      .column-width(100px);
+    }
+
+    th.md-column[md-order-by="flightNumber"],
+    td.md-cell:nth-child(2) {
+      .column-width(80px);
+    }
+
+    // Date column
+    th.md-column[md-order-by="departureTime"]:nth-of-type(3),
+    td.md-cell:nth-child(3) {
+      .column-width(90px);
+    }
+
+    // Departure time column
+    th.md-column[md-order-by="departureTime"]:nth-of-type(4),
+    td.md-cell:nth-child(4) {
+      .column-width(60px);
+    }
+
+    // Arrival time column
+    th.md-column[md-order-by="arrivalTime"],
+    td.md-cell:nth-child(5) {
+      .column-width(60px);
+    }
+
+    // Duration column
+    th.md-column[md-order-by="duration"],
+    td.md-cell:nth-child(6) {
+      .column-width(80px);
+    }
+
+    // Stops column
+    th.md-column[md-order-by="stops"],
+    td.md-cell:nth-child(7) {
+      .column-width(60px);
+    }
+
+    // Rate column
+    th.md-column[md-order-by="amount"],
+    td.md-cell:nth-child(8) {
+      .column-width(70px);
+    }
+
+    // Aircraft column
+    th.md-column[md-order-by="aircraft"],
+    td.md-cell:nth-child(9) {
+      .column-width(80px);
+    }
+
+    // Agent table specific styles
+    th.md-column[md-order-by="agentName"],
+    td.md-cell:nth-child(1) {
+      .column-width(150px);
+    }
+
+    th.md-column[md-order-by="agentRate"],
+    td.md-cell:nth-child(2) {
+      .column-width(80px);
+    }
+
+    th.md-column[md-order-by="agentRanking"],
+    td.md-cell:nth-child(3) {
+      .column-width(80px);
+    }
+  }
+}

@@ -1,4 +1,4 @@
-<div class="box-content" ng-if="!isDeliveryJob()">
+<div class="box-content nationwide-job-list" ng-if="!isDeliveryJob()">
     <!-- State 1: No Current Job Selected -->
     <div class="no-data" ng-if="!currentJob">
         <div class="content">
@@ -71,92 +71,73 @@
             <div class="text">
                 {{flightMessage || 'No flights available for the specified criteria.'}}
             </div>
+            <div class="action-buttons" layout="row" layout-align="center center">
+                <md-button class="md-raised md-primary" ng-click="loadNextFlights()">
+                    Load More Flights
+                </md-button>
+                <md-button class="md-raised" ng-click="loadNextDayFlights()">
+                    Next Day
+                </md-button>
+            </div>
         </div>
     </div>
 
     <!-- State 7: Flight List -->
     <div ng-if="currentJob && !currentJob.assignedFlight && currentJob.toAirportId && currentJob.fromAirportId && !flightsLoading && !flightError && flightOptions.length > 0">
-        <div class="job-list-container">
-            <div class="table-headings sticky-header">
-                <table>
-                    <thead class="thead-dark no select">
-                    <tr>
-                        <th ng-click="orderList('flightList','airline')" scope="col">
-                            <i class="material-symbols-outlined"
-                               ng-if="sort.flightList == 'airline'">arrow_drop_down</i>
-                            <i class="material-symbols-outlined"
-                               ng-if="sort.flightList == 'd-airline'">arrow_drop_up</i>Airline
-                        </th>
-                        <th ng-click="orderList('flightList','flightNumber')" scope="col">
-                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'flightNumber'">arrow_drop_down</i>
-                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'd-flightNumber'">arrow_drop_up</i>Flight
-                            No
-                        </th>
-                        <th ng-click="orderList('flightList', 'departureTime')" scope="col">
-                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'departureTime'">arrow_drop_down</i>
-                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'd-departureTime'">arrow_drop_up</i>Date
-                        </th>
-                        <th ng-click="orderList('flightList', 'departureTime')" scope="col">
-                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'departureTime'">arrow_drop_down</i>
-                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'd-departureTime'">arrow_drop_up</i>D
-                        </th>
-                        <th ng-click="orderList('flightList','arrivalTime')" scope="col">
-                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'arrivalTime'">arrow_drop_down</i>
-                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'd-arrivalTime'">arrow_drop_up</i>A
-                        </th>
-                        <th ng-click="orderList('flightList','duration')" scope="col">
-                            <i class="material-symbols-outlined"
-                               ng-if="sort.flightList == 'duration'">arrow_drop_down</i>
-                            <i class="material-symbols-outlined"
-                               ng-if="sort.flightList == 'd-duration'">arrow_drop_up</i>Duration
-                        </th>
-                        <th ng-click="orderList('flightList','stops')" scope="col">
-                            <i class="material-symbols-outlined"
-                               ng-if="sort.flightList == 'duration'">arrow_drop_down</i>
-                            <i class="material-symbols-outlined"
-                               ng-if="sort.flightList == 'd-duration'">arrow_drop_up</i>Stops
-                        </th>
-                        <th ng-click="orderList('flightList','amount')" scope="col">
-                            <i class="material-symbols-outlined"
-                               ng-if="sort.flightList == 'amount'">arrow_drop_down</i>
-                            <i class="material-symbols-outlined"
-                               ng-if="sort.flightList == 'd-amount'">arrow_drop_up</i>Rate
-                        </th>
-                        <th ng-click="orderList('flightList','aircraft')" scope="col">
-                            <i class="material-symbols-outlined"
-                               ng-if="sort.flightList == 'aircraft'">arrow_drop_down</i>
-                            <i class="material-symbols-outlined"
-                               ng-if="sort.flightList == 'd-aircraft'">arrow_drop_up</i>Aircraft
-                        </th>
-                    </tr>
-                    </thead>
-                </table>
-            </div>
+        <md-table-container>
+            <table md-dense md-progress="flightListPromise" md-table ng-model="selectedFlight">
+                <thead md-head md-order="flightTableQuery.order">
+                <tr md-row>
+                    <th md-column md-order-by="airline">Airline</th>
+                    <th md-column md-order-by="flightNumber">Flight No</th>
+                    <th md-column md-order-by="departureTime">Date</th>
+                    <th md-column md-order-by="departureTime">D</th>
+                    <th md-column md-order-by="arrivalTime">A</th>
+                    <th md-column md-order-by="duration">Duration</th>
+                    <th md-column md-order-by="stops">Stops</th>
+                    <th md-column md-order-by="amount">Rate</th>
+                    <th md-column md-order-by="aircraft">Aircraft</th>
+                    <th md-column>Actions</th>
+                </tr>
+                </thead>
 
-            <table class="table table-responsive table-rows" data-group="flightsGroup" id="flightList">
-                <tbody>
-                <tr class="clickable-row noselect"
-                    ng-click="addFlightToJob($event, flight, currentJob)"
-                    ng-repeat="flight in flightOptions | filter: box.searchBox">
-                    <td>{{flight.airline}}</td>
-                    <td>{{flight.flightNumber}}</td>
-                    <td>{{flight.departureTime | date: "MM/dd/yyyy"}}</td>
-                    <td>{{flight.departureTime | date: "HH:mm"}}</td>
-                    <td>{{flight.arrivalTime | date: "HH:mm"}}</td>
-                    <td>{{flight.duration | date: "H:mm"}}</td>
-                    <td>{{flight.stops === 0 ? 'D' : flight.stops}}</td>
-                    <td>{{flight.amount}}</td>
-                    <td>{{flight.aircraft}}</td>
+                <tbody md-body>
+                <tr md-row
+                    md-dense
+                    ng-repeat="flight in flightOptions | filter: box.searchBox | orderBy: flightTableQuery.order">
+                    <td md-cell>{{flight.airline}}</td>
+                    <td md-cell>{{flight.flightNumber}}</td>
+                    <td md-cell>{{flight.departureTime | date: "MM/dd/yyyy"}}</td>
+                    <td md-cell>{{flight.departureTime | date: "HH:mm"}}</td>
+                    <td md-cell>{{flight.arrivalTime | date: "HH:mm"}}</td>
+                    <td md-cell>{{flight.duration | date: "H:mm"}}</td>
+                    <td md-cell>{{flight.stops === 0 ? 'D' : flight.stops}}</td>
+                    <td md-cell>{{flight.amount}}</td>
+                    <td md-cell>{{flight.aircraft}}</td>
+                    <td class="actions" md-cell>
+                        <span class="action-icon" ng-click="addFlightToJob($event, flight, currentJob)">
+                            <md-icon md-font-set="material-symbols-outlined">add</md-icon>
+                            <md-tooltip md-direction="left">Assign Flight</md-tooltip>
+                        </span>
+                    </td>
                 </tr>
                 </tbody>
             </table>
+        </md-table-container>
 
+        <!-- Flight Table Footer Actions -->
+        <div class="table-footer-actions" layout="row" layout-align="end center" layout-padding>
+            <md-button class="md-raised md-primary" ng-click="loadNextFlights()">
+                Load More Flights
+            </md-button>
+            <md-button class="md-raised" ng-click="loadNextDayFlights()">
+                Next Day
+            </md-button>
         </div>
     </div>
 </div>
 
-
-<div class="box-content" ng-if="isDeliveryJob()">
+<div class="box-content nationwide-job-list" ng-if="isDeliveryJob()">
     <!-- State 1: No Current Job Selected -->
     <div class="no-data" ng-if="!currentJob">
         <div class="content">
@@ -231,51 +212,37 @@
 
     <!-- State 7: Agent List -->
     <div ng-if="currentJob && !currentJob.assignedAgent && isDeliveryJob() && !agentsLoading && !agentError && agentOptions.length > 0">
-        <div class="job-list-container">
-            <div class="table-headings sticky-header">
-                <table>
-                    <thead class="thead-dark no select">
-                    <tr>
-                        <th ng-click="orderList('agentList','agentName')" scope="col">
-                            <i class="material-symbols-outlined"
-                               ng-if="sort.agentList == 'agentName'">arrow_drop_down</i>
-                            <i class="material-symbols-outlined"
-                               ng-if="sort.agentList == 'd-agentName'">arrow_drop_up</i>Agent Name
-                        </th>
-                        <th ng-click="orderList('agentList','agentRate')" scope="col">
-                            <i class="material-symbols-outlined"
-                               ng-if="sort.agentList == 'agentRate'">arrow_drop_down</i>
-                            <i class="material-symbols-outlined"
-                               ng-if="sort.agentList == 'd-agentRate'">arrow_drop_up</i>Rate
-                        </th>
-                        <th ng-click="orderList('agentList', 'agentRanking')" scope="col">
-                            <i class="material-symbols-outlined" ng-if="sort.agentList == 'agentRanking'">arrow_drop_down</i>
-                            <i class="material-symbols-outlined" ng-if="sort.agentList == 'd-agentRanking'">arrow_drop_up</i>Ranking
-                        </th>
-                        <th scope="col"></th>
-                        <th scope="col"></th>
-                    </tr>
-                    </thead>
-                </table>
-            </div>
+        <md-table-container>
+            <table md-dense md-progress="agentListPromise" md-table ng-model="selectedAgent">
+                <thead md-head md-order="agentTableQuery.order">
+                <tr md-row>
+                    <th md-column md-order-by="agentName">Agent Name</th>
+                    <th md-column md-order-by="agentRate">Rate</th>
+                    <th md-column md-order-by="agentRanking">Ranking</th>
+                    <th md-column>Actions</th>
+                </tr>
+                </thead>
 
-
-            <table class="table table-responsive table-rows" data-group="agentGroup" id="agentList">
-                <tbody>
-                <tr class="clickable-row draggable-row noselect"
-                    ng-repeat="agent in agentOptions | filter: box.searchBox">
-                    <td>{{agent.agentName}}</td>
-                    <td>{{agent.agentRate}}</td>
-                    <td>{{agent.agentRanking}}</td>
-                    <td ng-click="" style="width:20px;" title="Send Quote Request">
-                        <i class="material-symbols-outlined job-table-icon">request_quote</i>
-                    </td>
-                    <td ng-click="addAgentToJob($event, agent, currentJob)" style="width:20px;" title="Assign Job">
-                        <i class="material-symbols-outlined job-table-icon">add</i>
+                <tbody md-body>
+                <tr md-row
+                    md-dense
+                    ng-repeat="agent in agentOptions | filter: box.searchBox | orderBy: agentTableQuery.order">
+                    <td md-cell>{{agent.agentName}}</td>
+                    <td md-cell>{{agent.agentRate}}</td>
+                    <td md-cell>{{agent.agentRanking}}</td>
+                    <td class="actions" md-cell>
+                        <span class="action-icon" ng-click="sendQuoteRequest($event, agent, currentJob)">
+                            <md-icon md-font-set="material-symbols-outlined">request_quote</md-icon>
+                            <md-tooltip md-direction="left">Send Quote Request</md-tooltip>
+                        </span>
+                        <span class="action-icon" ng-click="addAgentToJob($event, agent, currentJob)">
+                            <md-icon md-font-set="material-symbols-outlined">add</md-icon>
+                            <md-tooltip md-direction="left">Assign Job</md-tooltip>
+                        </span>
                     </td>
                 </tr>
                 </tbody>
             </table>
-        </div>
+        </md-table-container>
     </div>
 </div>

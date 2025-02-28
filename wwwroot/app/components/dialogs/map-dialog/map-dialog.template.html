@@ -1,5 +1,5 @@
 <md-dialog aria-label="Map" class="map-dialog-component">
-<md-toolbar>
+    <md-toolbar>
         <div class="md-toolbar-tools">
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">map</md-icon>
             <h2>{{ctrl.title}}</h2>
@@ -34,7 +34,8 @@
                         config="ctrl.mapConfig"
                         credentials="ctrl.hereCredentials"
                         map-id="mapContainer"
-                        on-map-ready="">
+                        on-map-ready=""
+                        map-size="width: 800px; height:500px;">
                 </here-map-tracking>
 
                 <div class="job-timeline" layout="row" layout-align="center center" ng-if="!ctrl.loading">

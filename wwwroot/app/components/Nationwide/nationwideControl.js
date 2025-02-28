@@ -1,5 +1,6 @@
 import app from "../../app";
 import "./keyboardEvents";
+import './nationwide.styles.less';
 
 function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $timeout,
     greetingService, $mdDialog, $document, toastrService, DispatchData, moment,
@@ -101,32 +102,48 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
 
         $scope.selected = [];
 
-        $scope.jobHeaders = [{key: 'time', label: 'Time'}, {key: 'speed', label: 'Speed'}, {
-            key: 'jobno',
-            label: 'Job No'
-        }, {key: 'client', label: 'Client'}, {key: 'from', label: 'From'}, {key: 'to', label: 'To'}, {
-            key: 'courier',
-            label: 'Courier'
-        }, {key: 'pod', label: 'POD'}, {key: 'remain', label: 'Remain'}, {key: 'status', label: 'S'}];
-
         $scope.jobFilters = {
-            order: 'time', filter: '', status: 'all', asc: 'asc'
+            order: 'time',
+            filter: '',
+            status: 'all',
+            asc: 'asc',
+            page: 1,
+            limit: 10
         };
 
         $scope.jobDeliveryFilters = {
-            order: 'time', filter: '', status: 'all', asc: 'asc'
+            order: 'time',
+            filter: '',
+            status: 'all',
+            asc: 'asc',
+            page: 1,
+            limit: 10
         };
 
         $scope.jobPodFilters = {
-            order: 'time', filter: '', status: 'all', asc: 'asc'
+            order: 'time',
+            filter: '',
+            status: 'all',
+            asc: 'asc',
+            page: 1,
+            limit: 10
         };
 
         $scope.jobRepriceFilters = {
-            order: 'time', filter: '', status: 'all', asc: 'asc'
+            order: 'time',
+            filter: '',
+            status: 'all',
+            asc: 'asc',
+            page: 1,
+            limit: 10
         };
 
         $scope.flightTableQuery = {
-            order: 'departureTime', asc: 'asc'
+            order: 'departureTime'
+        };
+
+        $scope.agentTableQuery = {
+            order: 'agentName'
         };
 
         $scope.internalStatusOptions = [];
@@ -756,6 +773,87 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             console.error("Error setting internal status:", error);
         }
     };
+
+    /**
+     * Handles reordering of the job list
+     */
+    $scope.onReorderJobList = async () => {
+        // Reset to first page when order changes
+        $scope.jobFilters.page = 1;
+        await getJobList($scope.jobDataType.NEW);
+    };
+
+    /**
+     * Handles pagination of the job list
+     * @param {number} page - The page number
+     * @param {number} limit - The number of items per page
+     */
+    $scope.onPaginateJobList = async (page, limit) => {
+        $scope.jobFilters.page = page;
+        $scope.jobFilters.limit = limit;
+        await getJobList($scope.jobDataType.NEW);
+    };
+
+    /**
+     * Handles reordering of the POD job list
+     */
+    $scope.onReorderPodList = async () => {
+        // Reset to first page when order changes
+        $scope.jobPodFilters.page = 1;
+        await getJobList($scope.jobDataType.POD);
+    };
+
+    /**
+     * Handles pagination of the POD job list
+     * @param {number} page - The page number
+     * @param {number} limit - The number of items per page
+     */
+    $scope.onPaginatePodList = async (page, limit) => {
+        $scope.jobPodFilters.page = page;
+        $scope.jobPodFilters.limit = limit;
+        await getJobList($scope.jobDataType.POD);
+    };
+
+    /**
+     * Handles reordering of the Reprice job list
+     */
+    $scope.onReorderRepriceList = async () => {
+        // Reset to first page when order changes
+        $scope.jobRepriceFilters.page = 1;
+        await getJobList($scope.jobDataType.REPRICE);
+    };
+
+    /**
+     * Handles pagination of the Reprice job list
+     * @param {number} page - The page number
+     * @param {number} limit - The number of items per page
+     */
+    $scope.onPaginateRepriceList = async (page, limit) => {
+        $scope.jobRepriceFilters.page = page;
+        $scope.jobRepriceFilters.limit = limit;
+        await getJobList($scope.jobDataType.REPRICE);
+    };
+
+    /**
+     * Handles reordering of the Delivery job list
+     */
+    $scope.onReorderDeliveryList = async () => {
+        // Reset to first page when order changes
+        $scope.jobDeliveryFilters.page = 1;
+        await getJobList($scope.jobDataType.DELIVERY);
+    };
+
+    /**
+     * Handles pagination of the Delivery job list
+     * @param {number} page - The page number
+     * @param {number} limit - The number of items per page
+     */
+    $scope.onPaginateDeliveryList = async (page, limit) => {
+        $scope.jobDeliveryFilters.page = page;
+        $scope.jobDeliveryFilters.limit = limit;
+        await getJobList($scope.jobDataType.DELIVERY);
+    };
+
 
     /**
      * @param {Job} job
@@ -2048,6 +2146,38 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
     };
 
     /**
+     * Handles sending a quote request to an agent
+     * @param {Object} $event - The event object
+     * @param {Agent} agent - The agent to send the quote request to
+     * @param {Job} job - The job to request a quote for
+     */
+    $scope.sendQuoteRequest = async ($event, agent, job) => {
+        try {
+            // Show confirmation dialog
+            const confirm = $mdDialog.confirm()
+                .title('Send Quote Request')
+                .textContent(`Are you sure you want to send a quote request to ${agent.agentName} for job ${job.jobNo}?`)
+                .ariaLabel('confirm send quote request')
+                .targetEvent($event)
+                .ok('Send')
+                .cancel('Cancel');
+
+            await $mdDialog.show(confirm);
+
+            // Call API to send quote request
+            // Replace with actual implementation
+            // await NWData.sendQuoteRequest(job.id, agent.agentId);
+
+            toastrService.showSuccessToast(`Quote request sent to ${agent.agentName}`);
+        } catch (error) {
+            if (error !== undefined) {
+                console.error('Error sending quote request:', error);
+                toastrService.showErrorToast('Failed to send quote request');
+            }
+        }
+    };
+
+    /**
      * @async
      * @param {Job} job
      */
@@ -2077,7 +2207,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
 
             // Show agent table
             if ($scope.isDeliveryJob()) {
-                await _processAgents(job);
+                await $scope.processAgents(job);
             }
 
             _displayJobOnMap(job);
@@ -2217,19 +2347,28 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
      * Get and process agent options for table
      * @param {Job} job
      */
-    async function _processAgents(job) {
+    $scope.processAgents = async (job) => {
         console.log('Getting agents');
 
         $scope.agentsLoading = true;
+        $scope.agentListPromise = NWData.getAgentOptions(job.id);
 
-        const result = await NWData.getAgentOptions(job.id);
-        $scope.agentOptions = result.agents;
-        console.log("Agent options:", result.agents);
-        $scope.agentMessage = result.message;
-        $scope.agentError = result.error;
-
-        $scope.agentsLoading = false;
-    }
+        try {
+            const result = await $scope.agentListPromise;
+            $scope.agentOptions = result.agents;
+            console.log("Agent options:", result.agents);
+            $scope.agentMessage = result.message;
+            $scope.agentError = result.error;
+        } catch (error) {
+            console.error("Error fetching agents:", error);
+            $scope.agentError = "Failed to retrieve agents. Please try again.";
+        } finally {
+            $scope.agentsLoading = false;
+            if (!$scope.$$phase) {
+                $scope.$apply();
+            }
+        }
+    };
 
     function _processActiveTable() {
         $scope.selectedJobs = [];
@@ -2304,9 +2443,13 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
         $scope.jobsCurrentList = false;
     }
 
+    /**
+     * Updates flight loading to use the progress indicator with the table
+     */
     $scope.loadNextFlights = async () => {
         $scope.flightsLoading = true;
         $scope.flightError = null;
+        $scope.flightListPromise = NWData.getFlightOptions($scope.currentJob.id, $scope.currentSearchTime);
 
         try {
             if ($scope.flightOptions && $scope.flightOptions.length > 0) {
@@ -2315,7 +2458,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
                     .format('YYYY-MM-DDTHH:mm:ss');
             }
 
-            const result = await NWData.getFlightOptions($scope.currentJob.id, $scope.currentSearchTime);
+            const result = await $scope.flightListPromise;
 
             $scope.flightOptions = result.flights;
             console.log("Flight options:", result.flights);
@@ -2323,7 +2466,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             $scope.flightError = result.error;
         } catch (error) {
             console.error(error);
-            toastrService.showErrorToast("An unexpected error occured retrieving flights");
+            toastrService.showErrorToast("An unexpected error occurred retrieving flights");
         } finally {
             $scope.flightsLoading = false;
             $scope.$apply();
@@ -2776,6 +2919,11 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
         // Todo: Update courier location for new US based implementation
     };
 
+    $scope.totalJobCount = 0;
+    $scope.totalPodCount = 0;
+    $scope.totalRepriceCount = 0;
+    $scope.totalDeliveryCount = 0;
+
     /**
      * Gets job list data for specified data types
      * @param {JobDataType|JobDataType[]} dataTypes - Single data type or array of data types to fetch
@@ -2784,12 +2932,22 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
     async function getJobList(dataTypes = $scope.jobDataType.ALL) {
         const selectedClients = $scope.pickService.clients.map(a => a.id);
         const types = Array.isArray(dataTypes) ? dataTypes : [dataTypes];
-        const requestedTypes = types.includes($scope.jobDataType.ALL) ? Object.values($scope.jobDataType).filter(type => type !== $scope.jobDataType.ALL) : types;
+        const requestedTypes = types.includes($scope.jobDataType.ALL) ?
+            Object.values($scope.jobDataType).filter(type => type !== $scope.jobDataType.ALL) :
+            types;
 
         try {
             // Set loading states
             const loadingStates = {
-                [$scope.jobDataType.NEW]: () => $scope.jobListLoading = true,
+                [$scope.jobDataType.NEW]: () => {
+                    $scope.jobListLoading = true;
+                    $scope.jobListPromise = NWData.getNationwideJobsNew(
+                        $scope.jobFilters,
+                        selectedClients,
+                        $scope.isInternal,
+                        $scope.selectedViews
+                    );
+                },
                 [$scope.jobDataType.DELIVERY]: () => $scope.deliveryListLoading = true,
                 [$scope.jobDataType.POD]: () => $scope.podListLoading = true,
                 [$scope.jobDataType.REPRICE]: () => $scope.repriceListLoading = true
@@ -2799,27 +2957,78 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             // Define fetch functions for each type
             const fetchMap = {
                 [$scope.jobDataType.NEW]: {
-                    fetch: () => NWData.getNationwideJobsNew($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedViews),
-                    updateScope: (data) => {
-                        $scope.jobList = data;
+                    fetch: () => $scope.jobListPromise,
+                    updateScope: (result) => {
+                        if (result && result.items) {
+                            $scope.jobList = result.items;
+                            $scope.totalJobCount = result.total || result.items.length;
+                        } else {
+                            $scope.jobList = result || [];
+                            $scope.totalJobCount = (result || []).length;
+                        }
                         $scope.jobListLoading = false;
                     }
-                }, [$scope.jobDataType.POD]: {
-                    fetch: () => NWData.getNationwideJobsPOD($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedViews),
-                    updateScope: (data) => {
-                        $scope.jobListPOD = data;
+                },
+                [$scope.jobDataType.POD]: {
+                    fetch: () => {
+                        $scope.podListPromise = NWData.getNationwideJobsPOD(
+                            $scope.jobPodFilters,
+                            selectedClients,
+                            $scope.isInternal,
+                            $scope.selectedViews
+                        );
+                        return $scope.podListPromise;
+                    },
+                    updateScope: (result) => {
+                        if (result && result.items) {
+                            $scope.jobListPOD = result.items;
+                            $scope.totalPodCount = result.total || result.items.length;
+                        } else {
+                            $scope.jobListPOD = result || [];
+                            $scope.totalPodCount = (result || []).length;
+                        }
                         $scope.podListLoading = false;
                     }
-                }, [$scope.jobDataType.REPRICE]: {
-                    fetch: () => NWData.getNationwideJobsReprice($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedViews),
-                    updateScope: (data) => {
-                        $scope.jobListReprice = data;
+                },
+                [$scope.jobDataType.REPRICE]: {
+                    fetch: () => {
+                        $scope.repriceListPromise = NWData.getNationwideJobsReprice(
+                            $scope.jobRepriceFilters,
+                            selectedClients,
+                            $scope.isInternal,
+                            $scope.selectedViews
+                        );
+                        return $scope.repriceListPromise;
+                    },
+                    updateScope: (result) => {
+                        if (result && result.items) {
+                            $scope.jobListReprice = result.items;
+                            $scope.totalRepriceCount = result.total || result.items.length;
+                        } else {
+                            $scope.jobListReprice = result || [];
+                            $scope.totalRepriceCount = (result || []).length;
+                        }
                         $scope.repriceListLoading = false;
                     }
-                }, [$scope.jobDataType.DELIVERY]: {
-                    fetch: () => NWData.getNationwideJobsBookDelivery($scope.jobDeliveryFilters, selectedClients, $scope.isInternal, $scope.selectedViews),
-                    updateScope: (data) => {
-                        $scope.jobListDelivery = data;
+                },
+                [$scope.jobDataType.DELIVERY]: {
+                    fetch: () => {
+                        $scope.deliveryListPromise = NWData.getNationwideJobsBookDelivery(
+                            $scope.jobDeliveryFilters,
+                            selectedClients,
+                            $scope.isInternal,
+                            $scope.selectedViews
+                        );
+                        return $scope.deliveryListPromise;
+                    },
+                    updateScope: (result) => {
+                        if (result && result.items) {
+                            $scope.jobListDelivery = result.items;
+                            $scope.totalDeliveryCount = result.total || result.items.length;
+                        } else {
+                            $scope.jobListDelivery = result || [];
+                            $scope.totalDeliveryCount = (result || []).length;
+                        }
                         $scope.deliveryListLoading = false;
                     }
                 }
