@@ -14,8 +14,7 @@ class OverviewService implements angular.IServiceProvider {
     constructor(private $http: angular.IHttpService) {
     }
 
-    public async getAllJobs(params: OverviewQueryParams): Promise<PaginatedResponse<OverviewTableParentJob>> {
-        // Convert regions and speeds arrays to comma-separated strings if present
+    async getAllJobs(params: OverviewQueryParams): Promise<PaginatedResponse<OverviewTableParentJob>> {
         const regionIds = params.regions?.map(r => r.id).join(",");
         const speedIds = params.speeds?.map(s => s.id).join(",");
 
@@ -42,12 +41,12 @@ class OverviewService implements angular.IServiceProvider {
         };
     }
 
-    public async getAllRegions(): Promise<Suggestion[]> {
+    async getAllRegions(): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>("/overview/GetAllRegions");
         return response.data;
     }
 
-    public async getAllSpeeds(): Promise<Suggestion[]> {
+    async getAllSpeeds(): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>("/overview/GetAllSpeeds");
         return response.data;
     }
@@ -57,17 +56,17 @@ class OverviewService implements angular.IServiceProvider {
         return response.data;
     }
 
-    public async getParentJobMap(jobId: number): Promise<MapConfig> {
+    async getParentJobMap(jobId: number): Promise<MapConfig> {
         const response = await this.$http.get<MapConfig>(`/overview/GetParentJobMap?jobId=${jobId}`);
         return response.data;
     }
 
-    public async getMegaMapData(): Promise<MegaMapResponse[]> {
+    async getMegaMapData(): Promise<MegaMapResponse[]> {
         const response = await this.$http.get<MegaMapResponse[]>("/overview/GetJobsForMegaMap");
         return response.data;
     }
 
-   public async getOpenJobs(params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds'>): Promise<OpenJobResponse[]> {
+   async getOpenJobs(params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds'>): Promise<OpenJobResponse[]> {
         const regionIds = params.regions?.map(r => r.id).join(",");
         const speedIds = params.speeds?.map(s => s.id).join(",");
 
@@ -83,7 +82,7 @@ class OverviewService implements angular.IServiceProvider {
         return response.data;
     }
 
-    public async saveCollapseState(cardName: string, isCollapsed: boolean): Promise<Record<string, boolean> | null> {
+    async saveCollapseState(cardName: string, isCollapsed: boolean): Promise<Record<string, boolean> | null> {
         if (window.localStorage) {
             try {
                 const saved = localStorage.getItem("cardCollapseStates");
@@ -103,7 +102,7 @@ class OverviewService implements angular.IServiceProvider {
         return null;
     }
 
-    public loadCollapseState(cardName: string): boolean {
+    loadCollapseState(cardName: string): boolean {
         if (window.localStorage) {
             try {
                 const saved = localStorage.getItem("cardCollapseStates");

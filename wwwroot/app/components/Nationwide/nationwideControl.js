@@ -1073,20 +1073,6 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
         }
     }
 
-    /**
-     * @param {Job} job
-     * @returns {string}
-     */
-    $scope.getStatusClass = job => {
-        const n = new Date();
-        if (!job.done && Date.parse(job.followupTime) < n && (job.speedID === 6 || job.speedID === 7 || job.speedID === 21)) {
-            return "O";
-        } else if (!job.done && Date.parse(job.followupTime) < n && (job.speedID === 11 || job.speedID === 23)) {
-            return "B";
-        } else if (!job.done && Date.parse(job.followupTime) < n) {
-            return "G";
-        } else return "";
-    }
 
     ////////////////////////////////////////
     // LOAD DISPATCH JOBS SCREEN
@@ -1102,111 +1088,6 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             submitValue: "Dispatch"
         };
         $scope.gather.showForm();
-
-    };
-
-    /**
-     * @param {number} lat
-     * @param {number} lng
-     * @param {Object} flags
-     * @param {*} carMarker
-     * @param {string} jobNumber
-     */
-    $scope.dispatchDroppedMarkerToClosestCourier = async (lat, lng, flags, carMarker, jobNumber) => {
-        try {
-            if (flags.length === 0 && carMarker === null) {
-                $scope.showConfirm = async () => {
-                    const confirm = $mdDialog.confirm()
-                        .title('Dispatch Invalid')
-                        .textContent('Could not find courier for Dispatch')
-                        .ok('Close')
-                        .cancel('Cancel');
-
-                    try {
-                        await $mdDialog.show(confirm);
-                        const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-                        displayPickupPoints(unDispatchedData, true, null);
-                        await $scope.getAvailableCourierLocation();
-                    } catch (error) {
-                        if (error === undefined) {
-                            console.log('User canceled!');
-                        } else {
-                            console.error(error);
-                        }
-                    }
-                };
-                return;
-            }
-            console.log(jobNumber);
-
-            const toCompare = [];
-
-            angular.forEach(flags, (f, key) => {
-                toCompare.push([key, f.position.lat(), f.position.lng()]);
-            });
-
-            if (carMarker !== null) {
-                toCompare.push([9999, carMarker.position.lat(), carMarker.position.lng()]);
-            }
-
-            const closestIndex = closestLocation(lat, lng, toCompare);
-            const closestCourier = closestIndex[0] === 9999 ? carMarker : flags[closestIndex[0]];
-            const foundCourier = $scope.pickCouriers.find(c => c.courierID === closestCourier.courierId);
-
-            let dispTo = closestCourier.code;
-            if (closestIndex[0] !== 9999) {
-                if (foundCourier !== undefined) {
-                    if (foundCourier.code === undefined) {
-                        dispTo = foundCourier.label;
-                    } else {
-                        dispTo = dispTo + ' ' + foundCourier.code;
-                    }
-                }
-            }
-
-            let dialog = $mdDialog.confirm()
-                .title('Dispatch Job ' + jobNumber)
-                .textContent('Dispatch to <strong>' + dispTo + '</strong>?')
-                .ok('Yes')
-                .cancel('No');
-
-            try {
-                await $mdDialog.show(dialog);
-                let j = $scope.jobList.find(jo => jo.jobNo === jobNumber);
-                const jn = j.jobNo;
-
-                if (j.dgClass !== null && j.dgClass > 0 && !foundCourier.dangerousGoods) {
-                    await $mdDialog.show($mdDialog.alert()
-                        .textContent(`DG job ${jn} can not be despatched to courier ${dispTo} - doesn't have DGLicense.`)
-                        .ok('OK'));
-                    return;
-                }
-                if (j.dgClass !== null && j.dgClass > 0 && (j.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
-                    await $mdDialog.show($mdDialog.alert()
-                        .textContent(`Courier ${dispTo} doesn't have a DGLicense or license has expired.`)
-                        .ok('OK'));
-                    return;
-                }
-
-                let jobs = [];
-                jobs.push(j.id);
-                await NWData.allocateJobs(foundCourier.courierID, ContactID, jobs);
-                await $scope.getData();
-                angular.element("#box-map").find(".loading").show();
-                $scope.courier = {gpsCourier: foundCourier.id};
-                await $scope.searchCourier();
-            } catch {
-                let unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-                displayPickupPoints(unDispatchedData, true, null);
-                await $scope.getAvailableCourierLocation();
-            }
-        } catch (error) {
-            if (error === undefined) {
-                console.log('User canceled!');
-            } else {
-                console.error(error);
-            }
-        }
     };
 
     $scope.selectAllContent = $event => {
@@ -2212,8 +2093,6 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
 
             _displayJobOnMap(job);
 
-            _maintainJobHighlight(); // Ensure highlight persists after any DOM updates
-
             $scope.$apply();
             jdSvc.jobDetailLoading = false;
         } catch (error) {
@@ -2271,17 +2150,6 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
                 id: job.id, pickup: pickupCoords, delivery: deliveryCoords, childJobs: {}
             }, selectedJobIndex: 0
         };
-    }
-
-    /**
-     * Maintains the highlight state of the selected job
-     * @private
-     */
-    function _maintainJobHighlight() {
-        if ($scope.currentJob) {
-            angular.element('.job-list-table tr').removeClass('active-job');
-            angular.element(`[data-jobid="${$scope.currentJob.id}"]`).addClass('active-job');
-        }
     }
 
     /**
@@ -3305,7 +3173,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             return 'status-current';
         }
     };
-};
+}
 
 NationwideControl.$inject = [
     '$scope',
