@@ -1,13 +1,8 @@
-/*
- * Nationwide Job List Styles
- * Scoped specifically to the nationwide job list component
- */
-
 .nationwide-job-list {
   // Variables
   @cell-padding-vertical: 4px;
-  @cell-padding-horizontal: 2px; // Reduced horizontal padding
-  @row-height: 30px; // Slightly reduced row height
+  @cell-padding-horizontal: 2px;
+  @row-height: 30px;
   @cell-font-size: 12px;
   @header-font-size: 13px;
   @autocomplete-width: 110px;
@@ -37,15 +32,15 @@
 
   // Status class styles
   .status-future {
-    background-color: rgba(220, 237, 255, 0.2);
+    background: rgba(33, 150, 243, 0.12); // md-blue with reduced opacity
   }
 
   .status-current {
-    background-color: rgba(255, 251, 153, 0.3);
+    background: rgba(255, 235, 59, 0.15); // md-yellow with reduced opacity
   }
 
   .status-past {
-    background-color: rgba(255, 231, 231, 0.3);
+    background: rgba(244, 67, 54, 0.12); // md-red with reduced opacity
   }
 
   md-table-container {

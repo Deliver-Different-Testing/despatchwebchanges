@@ -26,83 +26,83 @@ class OpenJobsWidgetController implements angular.IController {
         this.formatTime = this.formatTime.bind(this);
         this.compareJobs = this.compareJobs.bind(this);
         this.toggleCard = this.toggleCard.bind(this);
+    }
 
+    $onInit() {
         // Subscribe to filter changes
         this.overviewFiltersService.onFilterChange(() => this.loadOpenJobs());
 
-        // Initial load
         this.loadOpenJobs();
         this.loadCardState();
 
-        // Refresh data every minute
         setInterval(this.loadOpenJobs, 60000);
     }
 
-    async loadCardState(): Promise<void> {
+    loadOpenJobs(): void {
+        const params: Pick<OverviewQueryParams, "startDate" | "endDate" | "regions" | "speeds"> = {
+            startDate: this.overviewFiltersService.dateRange?.start || undefined,
+            endDate: this.overviewFiltersService.dateRange?.end || undefined,
+            regions: this.overviewFiltersService.selectedRegions || undefined,
+            speeds: this.overviewFiltersService.selectedSpeeds || undefined
+        };
+
+        this.overviewService.getOpenJobs(params)
+            .then((jobs: OpenJobResponse[]) => {
+                // Group jobs by driver
+                const groupedJobs: Record<string, DriverViewModel> = {};
+
+                jobs.forEach(job => {
+                    if (!groupedJobs[job.driverName]) {
+                        groupedJobs[job.driverName] = {
+                            name: job.driverName,
+                            jobs: [],
+                            completedToday: job.completedToday,
+                            lastCompleted: job.lastCompleted ?
+                                this.formatTime(job.lastCompleted) : "N/A",
+                            expanded: false
+                        };
+                    }
+
+                    const viewJob: ViewJob = {
+                        jobId: job.jobId,
+                        reference: job.reference,
+                        status: job.status,
+                        pickup: {
+                            time: job.pickupTime,
+                            name: job.pickupName,
+                            address: job.pickupAddress
+                        },
+                        delivery: {
+                            time: job.deliveryTime,
+                            name: job.deliveryName,
+                            address: job.deliveryAddress
+                        },
+                        quantity: job.quantity,
+                        packageType: job.packageType,
+                        mileage: job.mileage
+                    };
+
+                    groupedJobs[job.driverName].jobs.push(viewJob);
+                });
+
+                // Convert to array and sort jobs within each driver group
+                this.drivers = Object.values(groupedJobs).map(driver => {
+                    driver.jobs.sort(this.compareJobs);
+                    return driver;
+                });
+            })
+            .catch(error => {
+                console.error("Error loading open jobs:", error);
+            });
+    }
+
+    loadCardState(): void {
         this.isCardCollapsed = this.overviewService.loadCollapseState("openJobs");
     }
 
     async toggleCard(): Promise<void> {
         this.isCardCollapsed = !this.isCardCollapsed;
         await this.overviewService.saveCollapseState("openJobs", this.isCardCollapsed);
-    }
-
-    async loadOpenJobs(): Promise<void> {
-        try {
-            const params: Pick<OverviewQueryParams, "startDate" | "endDate" | "regions" | "speeds"> = {
-                startDate: this.overviewFiltersService.dateRange?.start || undefined,
-                endDate: this.overviewFiltersService.dateRange?.end || undefined,
-                regions: this.overviewFiltersService.selectedRegions || undefined,
-                speeds: this.overviewFiltersService.selectedSpeeds || undefined
-            };
-
-            const jobs: OpenJobResponse[] = await this.overviewService.getOpenJobs(params);
-
-            // Group jobs by driver
-            const groupedJobs: Record<string, DriverViewModel> = {};
-
-            jobs.forEach(job => {
-                if (!groupedJobs[job.driverName]) {
-                    groupedJobs[job.driverName] = {
-                        name: job.driverName,
-                        jobs: [],
-                        completedToday: job.completedToday,
-                        lastCompleted: job.lastCompleted ?
-                            this.formatTime(job.lastCompleted) : "N/A",
-                        expanded: false
-                    };
-                }
-
-                const viewJob: ViewJob = {
-                    jobId: job.jobId,
-                    reference: job.reference,
-                    status: job.status,
-                    pickup: {
-                        time: job.pickupTime,
-                        name: job.pickupName,
-                        address: job.pickupAddress
-                    },
-                    delivery: {
-                        time: job.deliveryTime,
-                        name: job.deliveryName,
-                        address: job.deliveryAddress
-                    },
-                    quantity: job.quantity,
-                    packageType: job.packageType,
-                    mileage: job.mileage
-                };
-
-                groupedJobs[job.driverName].jobs.push(viewJob);
-            });
-
-            // Convert to array and sort jobs within each driver group
-            this.drivers = Object.values(groupedJobs).map(driver => {
-                driver.jobs.sort(this.compareJobs);
-                return driver;
-            });
-        } catch (error) {
-            console.error("Error loading open jobs:", error);
-        }
     }
 
     formatTime(timestamp: Date): string {

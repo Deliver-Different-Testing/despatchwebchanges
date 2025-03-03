@@ -21,9 +21,9 @@
             <tbody md-body>
             <tr md-row
                 md-dense
+                ng-repeat="job in jobListPOD | filter: box.searchBox"
                 ng-class="jobClass(job)"
                 ng-click="selectJob(job)"
-                ng-repeat="job in jobListPOD | filter: box.searchBox"
                 data-jobid="{{job.id}}"
                 data-jobno="{{job.jobNo}}"
                 data-courier="{{job.courier}}"
