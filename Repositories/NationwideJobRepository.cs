@@ -19,7 +19,8 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
     : BaseJobRepository(contextFactory), INationwideJobRepository
 {
     // Ooriginal method for backwards compatibility
-    public async Task<List<JobViewModel>> NationwideJobListAsync(string order, string orderDirection, bool isInternal, bool isUsTenant,
+    public async Task<List<JobViewModel>> NationwideJobListAsync(string order, string orderDirection, bool isInternal,
+        bool isUsTenant,
         string clientIds, NationwideWidget windowPane,
         List<int> selectedViewIds, DispatchStatus status = DispatchStatus.All)
     {
@@ -100,8 +101,11 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
     public async Task<List<string>> GetActiveAirlineCodesAsync()
     {
-        var airlineCodes = await Context.FlightCarriers.Where(fc => fc.IsActive == true).Select(fc => fc.CarrierCode)
-            .AsNoTracking().ToListAsync();
+        var airlineCodes = await Context.FlightCarriers
+            .Where(fc => fc.IsActive == true)
+            .Select(fc => fc.CarrierCode)
+            .AsNoTracking()
+            .ToListAsync();
 
         return airlineCodes;
     }
@@ -109,6 +113,8 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
     public async Task<List<AgentViewModel>> GetAgentsAsync(int jobId)
     {
         var job = await GetJobDetailsAsync(jobId);
+        if (job == null) return [];
+
         Log.Information(
             "Job details retrieved for {JobId}: AirportId={AirportId}, VehicleSizeId={VehicleSizeId}",
             jobId, job?.AirPortId, job?.VehicleSizeId);
@@ -181,7 +187,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .Where(j => j.UcjbId == jobId)
             .Select(j => new JobDetails
             {
-                AirPortId = j.FromAirportId,
+                AirPortId = j.FromAirportId ?? j.ToAirportId,
                 VehicleSizeId = j.UcjbSize,
                 ClientId = j.UcjbClientId,
                 FromZipCode = j.PickupAddressLine7,
@@ -281,34 +287,36 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .FirstOrDefault();
     }
 
-    public async Task<decimal> GetCarrierFlightRateByJobIdAsync(int jobId, string carrierName, bool extraStopOffs, DateTime? bookTime)
+    public async Task<decimal> GetCarrierFlightRateByJobIdAsync(int jobId, string carrierName, bool extraStopOffs,
+        DateTime? bookTime)
     {
         try
         {
             var job = await Context.TucJobs.Include(j => j.TucJobItems).FirstOrDefaultAsync(j => j.UcjbId == jobId);
             var returnValue = new OutputParameter<int>();
 
-                var results = await Context.Procedures.DD_stpGetCarrierFlightRateAsync(
-                    clientID: job.UcjbClientId,
-                    fromCity: job.PickupAddressLine4,
-                    fromState: job.PickupAddressLine5,
-                    toCity: job.DeliveryAddressLine4,
-                    toState: job.DeliveryAddressLine5,
-                    carrierName: carrierName,
-                    totalWeight: (decimal)job.UcjbWeight,
-                    quantity: job.UcjbQty,
-                    cubic: null,
-                    totalPallets: job.TucJobItems.Count,
-                    extraStopOffs: extraStopOffs ? 1 : 0,
-                    bookTime: bookTime,
-                    vehicleSizeID: job.UcjbSize,
-                    dangerousGoods: false,
-                    dryIceWeight: job.DryIceWeight,
-                    waitTime: null,
-                    returnValue: returnValue);
+            var results = await Context.Procedures.DD_stpGetCarrierFlightRateAsync(
+                clientID: job.UcjbClientId,
+                fromCity: job.PickupAddressLine4,
+                fromState: job.PickupAddressLine5,
+                toCity: job.DeliveryAddressLine4,
+                toState: job.DeliveryAddressLine5,
+                carrierName: carrierName,
+                totalWeight: (decimal)job.UcjbWeight,
+                quantity: job.UcjbQty,
+                cubic: null,
+                totalPallets: job.TucJobItems.Count,
+                extraStopOffs: extraStopOffs ? 1 : 0,
+                bookTime: bookTime,
+                vehicleSizeID: job.UcjbSize,
+                dangerousGoods: false,
+                dryIceWeight: job.DryIceWeight,
+                waitTime: null,
+                returnValue: returnValue);
 
             if (returnValue.Value != 0)
-                throw new NullReferenceException($"Failed to retrieve carrier rates. Return value: {returnValue.Value}");
+                throw new NullReferenceException(
+                    $"Failed to retrieve carrier rates. Return value: {returnValue.Value}");
 
             if (results != null && results.Count != 0)
             {
@@ -345,7 +353,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         public decimal? Cubic { get; set; }
         public int? TotalPallets { get; set; }
         public bool ExtraStopOffs { get; set; }
-        public int? WaitTime {get;set;}
+        public int? WaitTime { get; set; }
     }
 
     private class AgentInfo
