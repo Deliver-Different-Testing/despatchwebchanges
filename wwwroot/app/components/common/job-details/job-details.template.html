@@ -12,29 +12,30 @@
     <md-card class="job-detail-widget">
         <!-- Top Bar -->
         <div class="header-bar">
-            <div class="navigation-group">
-                <md-button class="md-icon-button nav-button"
-                           ng-disabled="!ctrl.job.relatedJobs.length"
-                           ng-click="ctrl.navigateTab('prev')">
-                    <md-icon md-font-set="material-symbols-outlined">chevron_left</md-icon>
-                </md-button>
-                <md-button class="md-icon-button nav-button"
-                           ng-disabled="!ctrl.job.relatedJobs.length"
-                           ng-click="ctrl.navigateTab('next')">
-                    <md-icon md-font-set="material-symbols-outlined">chevron_right</md-icon>
-                </md-button>
-            </div>
+            <div flex></div>
 
-            <div class="job-ids-container">
-                <md-tabs md-selected="ctrl.selectedTab"
-                         md-stretch-tabs="never"
-                         class="job-id-tabs"
-                         md-on-select="ctrl.onTabSelected($index)">
-                    <md-tab ng-repeat="tab in ctrl.allTabs track by tab.id">
-                        <md-tab-label>{{tab.text}}</md-tab-label>
-                    </md-tab>
-                </md-tabs>
-            </div>
+            <md-button ng-click="!ctrl.job.locked && ctrl.job.internalStatusId !=1
+                             && ctrl.job.internalStatusId !=4
+                             && ctrl.editFollowUpTime($event, ctrl.job)">
+                <md-icon style="margin-right: 5px;" md-font-set="material-symbols-outlined">schedule</md-icon>
+                <span>Follow Up</span>
+            </md-button>
+
+            <md-menu>
+                <md-button aria-label="internal stage"
+                           ng-click="$mdMenu.open($event)">
+                    <md-tooltip md-direction="bottom">Modify Status</md-tooltip>
+                    <md-icon style="margin-right: 5px;"  md-font-set="material-symbols-outlined">swap_horiz</md-icon>
+                    {{ctrl.selectedStatusText}}
+                </md-button>
+                <md-menu-content class="md-dense">
+                    <md-menu-item ng-repeat="status in ctrl.internalStatusList">
+                        <md-button ng-click="ctrl.setInternalStatus(status.id, ctrl.job)">
+                            {{status.text}}
+                        </md-button>
+                    </md-menu-item>
+                </md-menu-content>
+            </md-menu>
 
             <md-chip class="status {{ctrl.job.statusName | lowercase | replace:' ':'-'}}"
                      md-ink-ripple

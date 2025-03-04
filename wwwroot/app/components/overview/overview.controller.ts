@@ -22,6 +22,7 @@ class OverviewController implements angular.IController {
         "overviewFiltersService",
     ];
 
+    private readonly OverviewJobLimitDisplay: string = "overviewJobLimitDisplay";
     isLoading: boolean;
     greeting: string;
     statistics: { active: number; inactive: number; completed: number };
@@ -110,35 +111,13 @@ class OverviewController implements angular.IController {
         this.setupWatchers();
         this.loadSavedLimit();
         this.initialDataLoad();
-        this.bindMethods();
     }
 
-    private bindMethods(): void {
-        this.initializeData = this.initializeData.bind(this);
-        this.loadStats = this.loadStats.bind(this);
-        this.setTab = this.setTab.bind(this);
-        this.getStatusGroup = this.getStatusGroup.bind(this);
-        this.handleSearchChange = this.handleSearchChange.bind(this);
-        this.getRegions = this.getRegions.bind(this);
-        this.toggleRegion = this.toggleRegion.bind(this);
-        this.toggleAllRegions = this.toggleAllRegions.bind(this);
-        this.getSpeeds = this.getSpeeds.bind(this);
-        this.toggleSpeed = this.toggleSpeed.bind(this);
-        this.toggleAllSpeeds = this.toggleAllSpeeds.bind(this);
-        this.toggleSidenav = this.toggleSidenav.bind(this);
-        this.transformStatus = this.transformStatus.bind(this);
-        this.getProgressClass = this.getProgressClass.bind(this);
-        this.showDateRangeDialog = this.showDateRangeDialog.bind(this);
-        this.hasDateFilter = this.hasDateFilter.bind(this);
-        this.getDateRangeDisplay = this.getDateRangeDisplay.bind(this);
-        this.formatDate = this.formatDate.bind(this);
-        this.clearDateRange = this.clearDateRange.bind(this);
-        this.showMap = this.showMap.bind(this);
-        this.openJobDetail = this.openJobDetail.bind(this);
-        this.openMegaMap = this.openMegaMap.bind(this);
-        this.onReorder = this.onReorder.bind(this);
-        this.refreshData = this.refreshData.bind(this);
-        this.toggleOverviewCard = this.toggleOverviewCard.bind(this);
+    $onInit() {
+        this.loadOverviewCardState();
+        this.setupWatchers();
+        this.loadSavedLimit();
+        this.initialDataLoad();
     }
 
     private setupWatchers(): void {
@@ -168,7 +147,7 @@ class OverviewController implements angular.IController {
             (newValue: number, oldValue: number) => {
                 if (newValue !== oldValue) {
                     if (Modernizr.localstorage) {
-                        localStorage.setItem(`overviewJobLimitDisplay`, `${this.query.limit}`);
+                        localStorage.setItem(this.OverviewJobLimitDisplay, `${this.query.limit}`);
                     }
                 }
             }
@@ -176,7 +155,7 @@ class OverviewController implements angular.IController {
     }
 
     private loadSavedLimit(): void {
-        const savedLimit = localStorage.getItem(`overviewJobLimitDisplay`);
+        const savedLimit = localStorage.getItem(this.OverviewJobLimitDisplay);
         console.log(`Saved limit is: ${savedLimit}`);
         if (savedLimit) {
             this.query.limit = parseInt(savedLimit);
@@ -210,63 +189,6 @@ class OverviewController implements angular.IController {
             this.isOverviewCardCollapsed
         );
     }
-
-
-    private initializeData($scope: angular.IScope) {
-        // Watch for tab changes
-        $scope.$watch(
-            () => this.activeTab,
-            (newValue: number, oldValue: number) => {
-                if (newValue !== oldValue) {
-                    this.refreshData();
-                }
-            }
-        );
-
-        // Watch for search changes with debounce
-        $scope.$watch(
-            () => this.search,
-            (newValue: string, oldValue: string) => {
-                if (newValue !== oldValue) {
-                    this.handleSearchChange();
-                }
-            }
-        );
-
-        // Watch for changes to query limit
-        $scope.$watch(
-            () => this.query.limit,
-            (newValue: number, oldValue: number) => {
-                if (newValue !== oldValue) {
-                    if (Modernizr.localstorage) {
-                        localStorage.setItem(`overviewJobLimitDisplay`, `${this.query.limit}`);
-                    }
-                }
-            }
-        );
-
-        // Local settings
-        const savedLimit = localStorage.getItem(`overviewJobLimitDisplay`);
-        console.log(`Saved limit is: ${savedLimit}`);
-        if (savedLimit) {
-            this.query.limit = parseInt(savedLimit);
-        }
-
-        // Initial data load
-        Promise.all([
-            this.loadStats(),
-            this.getRegions(),
-            this.getSpeeds(),
-            this.refreshData(),
-        ])
-            .then(() => {
-                console.log("All data loaded successfully");
-            })
-            .catch((error) => {
-                console.error("Error loading data:", error);
-            });
-    }
-
 
     async loadStats() {
         try {

@@ -1,12 +1,12 @@
-import {Layout} from "../cs.types";
 import app from "../../../app";
+import {Box, Column, Layout} from "../../../interfaces/layout.interfaces";
 
 class CSLayoutService implements angular.IServiceProvider {
     static $inject = ['$window', '$mdDialog'];
 
     // Reused layout variables
-    private readonly LAYOUTS_KEY_PMAP_ZOOM_KEY_PREFIXREFIX = 'layoutsNW-';
-    private readonly  = 'mapZoomCS-';
+    private readonly LAYOUTS_KEY_PREFIX = 'layoutsNW-';
+    private MAP_ZOOM_KEY_PREFIX  = 'mapZoomCS-';
     private readonly DEFAULT_MAP_ZOOM = {display: true};
 
     // Column width options

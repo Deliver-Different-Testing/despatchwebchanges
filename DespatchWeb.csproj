@@ -232,7 +232,6 @@
     <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.styles.less" />
     <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.template.html" />
     <None Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
-    <None Include="wwwroot\app\components\overview\services\overview-filters.service.js" />
     <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.controller.js" />
     <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.template.html" />
     <None Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.controller.js" />
@@ -286,7 +285,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\common\pod-photo-viewer\pod-photo-viewer.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\side-nav\side-nav.directive.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\side-nav\side-nav.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\CS\cs.types.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\CS\services\cs-layout.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-event-dialog\add-event-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-notes-dialog\add-notes-dialog.controller.ts" />
@@ -307,6 +305,10 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\send-message-dialog\send-message-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\services\job-table.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\index.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwideControl.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\services\nationwide-layout.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\index.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\mega-map\mega-map.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\mega-map\mega-map.interfaces.ts" />
@@ -315,13 +317,18 @@
     <TypeScriptCompile Include="wwwroot\app\components\overview\overview.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\overview.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\services\overview-filters.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\prebooks\prebook.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\prebooks\prebooks.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\contants.ts" />
+    <TypeScriptCompile Include="wwwroot\app\filters.ts" />
     <TypeScriptCompile Include="wwwroot\app\index.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\app-config.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\courier.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\dfrnt-page-view-model.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\job-field.types.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\job-list-response.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\job.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\layout.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\open-job-options.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\paginated-response.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\state-info.interface.ts" />

@@ -146,15 +146,6 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             order: 'agentName'
         };
 
-        $scope.internalStatusOptions = [];
-        DispatchData.getInternalStatusList().then(data => {
-            $scope.internalStatusOptions = data;
-        }).catch(error => {
-            console.error('Error fetching internal status list:', error);
-            $scope.internalStatusOptions = [];
-        });
-
-
         $scope.truckCourierStatus = [];
         $scope.getJobStyle = assigned => {
             const normal = {
@@ -704,15 +695,6 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
     }
 
 
-    $scope.getSelectedStatusText = () => {
-        const defaultText = 'Stage';
-        if (!$scope.internalStatusOptions || !$scope.currentJob) {
-            return defaultText;
-        }
-
-        const selectedStatus = $scope.internalStatusOptions.find(status => status.id === $scope.currentJob.internalStatusId);
-        return selectedStatus ? selectedStatus.text : defaultText;
-    };
 
     /**
      * Maps internal status IDs to job data types
@@ -725,54 +707,74 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
         4: [$scope.jobDataType.REPRICE]
     };
 
-    /**
-     * Sets the internal status for a job and refreshes relevant data
-     * @param {number} internalStatusId - The new internal status ID
-     * @param {Job} job - The job being updated
-     */
-    $scope.setInternalStatus = async (internalStatusId, job) => {
+    $scope.handleStatusChange = async function(event) {
         try {
-            $mdMenu.hide();
-
-            // Get the current status before update
-            const previousStatusId = job.internalStatusId;
-
-            // Update Job
-            await NWData.updateJobDetail(job.id, "InternalStatusID", internalStatusId, job.charge, FirstName, ContactID, false);
+            console.log('Handle status change triggered!', {
+                jobId: event.jobId,
+                previousStatus: event.previousStatusId,
+                newStatus: event.newStatusId
+            });
 
             // Determine which lists need refreshing
-            const listsToRefresh = new Set([...STATUS_TO_LIST_MAP[previousStatusId] || [], ...STATUS_TO_LIST_MAP[internalStatusId] || []]);
+            const listsToRefresh = new Set([
+                ...(STATUS_TO_LIST_MAP[event.previousStatusId] || []),
+                ...(STATUS_TO_LIST_MAP[event.newStatusId] || [])
+            ]);
+            console.log('Lists to refresh:', Array.from(listsToRefresh));
 
             // Only refresh the affected lists
             await getJobList(Array.from(listsToRefresh));
+            console.log('Job lists refreshed successfully');
 
             // Get all potentially affected lists based on what we just refreshed
             const relevantLists = [];
             if (listsToRefresh.has($scope.jobDataType.NEW)) {
                 relevantLists.push(...($scope.jobList || []));
+                console.log('Added NEW jobs list:', $scope.jobList?.length || 0, 'items');
             }
             if (listsToRefresh.has($scope.jobDataType.POD)) {
                 relevantLists.push(...($scope.jobListPOD || []));
+                console.log('Added POD jobs list:', $scope.jobListPOD?.length || 0, 'items');
             }
             if (listsToRefresh.has($scope.jobDataType.DELIVERY)) {
                 relevantLists.push(...($scope.jobListDelivery || []));
+                console.log('Added DELIVERY jobs list:', $scope.jobListDelivery?.length || 0, 'items');
             }
             if (listsToRefresh.has($scope.jobDataType.REPRICE)) {
                 relevantLists.push(...($scope.jobListReprice || []));
+                console.log('Added REPRICE jobs list:', $scope.jobListReprice?.length || 0, 'items');
             }
+            console.log('Total relevant jobs collected:', relevantLists.length);
 
             // Find and reselect the updated job
-            const refreshedJob = relevantLists.find(j => j.id === job.id);
+            const refreshedJob = relevantLists.find(j => j.id === event.jobId);
+            console.log(refreshedJob
+                    ? 'Found updated job in refreshed lists'
+                    : 'Updated job not found in refreshed lists',
+                { jobId: event.jobId }
+            );
+
             if (refreshedJob) {
                 await $scope.selectJob(refreshedJob);
+                console.log('Job reselected successfully');
             }
 
             // Adjust table headings after data update
-            $timeout(() => sizeHeadings(), 200);
+            $timeout(() => {
+                console.log('Adjusting table headings');
+                $scope.sizeHeadings();
+            }, 200);
         } catch (error) {
-            console.error("Error setting internal status:", error);
+            console.error("Error in handleStatusChange:", {
+                error: error.message,
+                jobId: event?.jobId,
+                previousStatus: event?.previousStatusId,
+                newStatus: event?.newStatusId
+            });
+            throw error; // Re-throw to maintain original error handling
         }
     };
+
 
     /**
      * Handles reordering of the job list
@@ -1035,7 +1037,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
      * @param {string} message
      */
     $scope.sendSMS = async (courierId, message) => {
-        await NWData.sendSMS(courierId, ContactID, FirstName, message);
+        await DispatchData.sendSMS(courierId, ContactID, FirstName, message);
     }
 
     /**
@@ -1121,7 +1123,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
     /////////////////////////////////////
     $scope.lateCall = async (lateTime, lateType, j, calc) => {
         try {
-            const response = await NWData.lateCall(lateType, lateTime, j.minutes, j.pickupTime, j.alertLatePickup, j.deliveryTime, j.alertLateDelivery, j.jobNo, j.clientId, j.contactName, ContactID, j.time, j.id, j.jobType, j.speed, j.notify || j.speed, FirstName, calc);
+            const response = await DispatchData.lateCall(lateType, lateTime, j.minutes, j.pickupTime, j.alertLatePickup, j.deliveryTime, j.alertLateDelivery, j.jobNo, j.clientId, j.contactName, ContactID, j.time, j.id, j.jobType, j.speed, j.notify || j.speed, FirstName, calc);
 
             await $scope.getData();
 
@@ -1184,7 +1186,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
                 callData.jobs.push(angular.element(element).attr("data-jobid"));
             }
 
-            const response = await NWData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs);
+            const response = await DispatchData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs);
             await $scope.getData();
 
             angular.element("#box-map").find(".loading").show();
@@ -1255,7 +1257,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
                 callData.jobs.push(angular.element(element).attr("data-jobid"));
             }
 
-            const response = await NWData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs);
+            const response = await DispatchData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs);
             await $scope.getData();
 
             angular.element("#box-map").find(".loading").show();
@@ -1324,7 +1326,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
                 callData.jobs.push(angular.element(element).attr("data-jobid"));
             }
 
-            const response = await NWData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs);
+            const response = await DispatchData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs);
             await $scope.getData();
 
             angular.element("#box-map").find(".loading").show();
@@ -1381,7 +1383,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             });
 
             if (callData.jobs.length > 0) {
-                await NWData.reAllocateJobs(foundCourier.courierID, ContactID, callData.jobs);
+                await DispatchData.reAllocateJobs(foundCourier.courierID, ContactID, callData.jobs);
             }
 
             await $scope.getData();
@@ -1410,7 +1412,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             });
 
             if (callData.jobs.length > 0) {
-                await NWData.resendJobs(callData.jobs);
+                await DispatchData.resendJobs(callData.jobs);
             }
 
             await $scope.getData();
@@ -1447,7 +1449,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             angular.element("#currentWork tr.droppable-row").each(() => {
                 let j = $scope.jobsCurrentList.find(jo => jo.id === angular.element(this).data("jobid"));
                 const jn = j.jobNo;
-                NWData.addRestoreEvent(jn, j.clientId, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
+                DispatchData.addRestoreEvent(jn, j.clientId, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
                 if (callData.courierID === null) {
                     callData.courierID = j.courierData.courierID;
                     foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
@@ -1460,10 +1462,10 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             });
 
             if (callData.splitJobs.length > 0) {
-                await NWData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.jobs);
+                await DispatchData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.jobs);
             }
             if (callData.jobs.length > 0) {
-                await NWData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
+                await DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
             }
 
             await new Promise(resolve => $timeout(resolve, 1000));
@@ -1504,7 +1506,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             });
 
             if (callData.jobs.length > 0) {
-                await NWData.reAllocateJobs(callData.courierID, ContactID, callData.jobs);
+                await DispatchData.reAllocateJobs(callData.courierID, ContactID, callData.jobs);
             }
 
             await $scope.getData();
@@ -1546,7 +1548,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             });
 
             if (callData.jobs.length > 0) {
-                await NWData.resendAllJobs(callData.courierID);
+                await DispatchData.resendAllJobs(callData.courierID);
             }
 
             await $scope.getData();
@@ -1580,7 +1582,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
         });
 
         if (callData.jobs.length > 0) {
-            await NWData.reAllocateJobs(callData.courierID, ContactID, callData.jobs);
+            await DispatchData.reAllocateJobs(callData.courierID, ContactID, callData.jobs);
         }
 
         try {
@@ -1612,7 +1614,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
 
         try {
             if (callData.jobs.length > 0) {
-                await NWData.resendJobs(callData.jobs);
+                await DispatchData.resendJobs(callData.jobs);
             }
 
             await $scope.getData();
@@ -1636,7 +1638,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
         angular.element("#currentWork .active").each(function () {
             const j = $scope.jobsCurrentList.find(jo => jo.id === angular.element(this).data("jobid"));
             const jn = j.jobNo;
-            NWData.addRestoreEvent(jn, j.clientId, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
+            DispatchData.addRestoreEvent(jn, j.clientId, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
             if (callData.courierID === null) {
                 callData.courierID = j.courierData.courierID;
                 foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
@@ -1650,10 +1652,10 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
 
         try {
             if (callData.splitJobs.length > 0) {
-                await NWData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.jobs);
+                await DispatchData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.jobs);
             }
             if (callData.jobs.length > 0) {
-                await NWData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
+                await DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
             }
 
             await new Promise(resolve => $timeout(resolve, 1000));
@@ -1682,7 +1684,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
         }
 
         try {
-            await NWData.splitJob(firstJob.id, FirstName);
+            await DispatchData.splitJob(firstJob.id, FirstName);
             await $scope.getData();
 
             const refreshedJob = $scope.jobList.find(jo => jo.id === firstJob.id);
@@ -1766,7 +1768,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
      */
     $scope.getPotentialCouriers = (jobId) => {
         angular.element("#box-potentialCouriers .loading").show();
-        NWData.getPotentialCouriers(jobId).then(data => {
+        DispatchData.getPotentialCouriers(jobId).then(data => {
             $scope.potentialCouriers = data;
 
             //Set headings
@@ -1825,7 +1827,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
         });
 
         try {
-            const result = await NWData.truckCourierStatus(courier.courierID);
+            const result = await DispatchData.truckCourierStatus(courier.courierID);
             $scope.truckCourierStatus = result.data;
         } catch (error) {
             console.error("Error fetching truck courier status:", error);
@@ -1835,7 +1837,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
 
     $scope.refreshTruckCourierStatus = async () => {
         try {
-            const result = await NWData.truckCourierStatus($scope.currentCourier.courierID);
+            const result = await DispatchData.truckCourierStatus($scope.currentCourier.courierID);
             $scope.truckCourierStatus = result.data;
         } catch (error) {
             console.error("Error refreshing truck courier status:", error);
@@ -1854,7 +1856,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
         };
 
         try {
-            const data = await NWData.getJobsCurrent(courier.courierID, $scope.jobFilters.status === "done");
+            const data = await DispatchData.getJobsCurrent(courier.courierID, $scope.jobFilters.status === "done");
             angular.element("#box-currentWork").find(".loading").fadeOut();
 
             $scope.jobsCurrentList = data;
@@ -1878,7 +1880,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
         });
 
         try {
-            $scope.truckCourierStatus = await NWData.truckCourierStatus(courier.courierID);
+            $scope.truckCourierStatus = await DispatchData.truckCourierStatus(courier.courierID);
         } catch (error) {
             if (error === undefined) {
                 console.log('User canceled!');
@@ -1905,7 +1907,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
         const code = $scope.pickCouriers.find(x => x.courierID === courier.courierID).id;
 
         try {
-            const data = await NWData.getJobsCurrent(courier.courierID, $scope.jobFilters.status === "done");
+            const data = await DispatchData.getJobsCurrent(courier.courierID, $scope.jobFilters.status === "done");
             angular.element("#box-currentWork").find(".loading").fadeOut();
             if ($scope.currentJob !== null && $scope.currentJob.courier !== code) {
                 $scope.currentJob = null;
@@ -1914,7 +1916,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             if (data.length > 0) {
                 await displayRoutePoints(data, false);
             } else {
-                const posData = await NWData.getCourierPosition(code);
+                const posData = await DispatchData.getCourierPosition(code);
                 await displayCourierPositionOnly(posData.latitude, posData.longitude);
             }
             $scope.activateDrop();
@@ -1950,7 +1952,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             const foundCourier = $scope.pickCouriers.find(x => x.courierID === courierId);
             const code = foundCourier ? foundCourier.id : "";
 
-            const data = await NWData.getJobsCurrent(courierId, $scope.jobFilters.status === "done");
+            const data = await DispatchData.getJobsCurrent(courierId, $scope.jobFilters.status === "done");
 
             $boxCurrentWork.find(".loading").fadeOut();
 
@@ -1959,7 +1961,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             if (data.length > 0) {
                 displayRoutePoints(data, true);
             } else {
-                const posData = await NWData.getCourierPosition(code);
+                const posData = await DispatchData.getCourierPosition(code);
                 displayCourierPositionOnly(posData.latitude, posData.longitude);
             }
 
@@ -1991,7 +1993,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             jdSvc.jobDetailLoading = true;
 
 
-            $scope.currentJob = await NWData.getJobDetail(support.jobId);
+            $scope.currentJob = await DispatchData.getJobDetail(support.jobId);
             jdSvc.jobDetailLoading = false;
             $scope.currentSelection = " for Job " + support.jobNumber;
 
@@ -2075,7 +2077,6 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
 
             if (job) {
                 angular.element(`[data-jobid="${job.id}"]`).addClass('active-job');
-                $scope.getSelectedStatusText();
             }
 
             _processActiveTable();
@@ -2266,7 +2267,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
      */
     async function updateData(job, clear) {
         try {
-            const [activeCouriers, relatedJobs] = await Promise.all([NWData.getActiveCouriers(), job.rootParentID ? NWData.getRelatedJobs(job.rootParentID, job.clientId) : Promise.resolve([])]);
+            const [activeCouriers, relatedJobs] = await Promise.all([DispatchData.getActiveCouriers(), job.rootParentID ? DispatchData.getRelatedJobs(job.rootParentID, job.clientId) : Promise.resolve([])]);
 
             $scope.pickCouriers = activeCouriers;
 
@@ -2952,9 +2953,40 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
         }
     }
 
+    /**
+     * @param {Object} $event
+     * @param {Job} job
+     */
+    $scope.openFileAttachmentDialog = async ($event, job) => {
+        try {
+            await $mdDialog.show({
+                controller: "JobFileUploadController",
+                controllerAs: "ctrl",
+                parent: $document.body,
+                templateUrl:
+                    "app/components/dialogs/job-file-upload-dialog/job-file-upload-dialog.html",
+                clickOutsideToClose: false,
+                fullscreen: true,
+                locals: {
+                    jobId: job.id,
+                },
+                bindToController: true,
+            });
+
+            console.log("Job File Upload Dialog Closed!");
+        } catch (error) {
+            if (error === undefined) {
+                console.log("User canceled!");
+            } else {
+                throw error;
+            }
+        }
+    };
+
+
     $scope.closeSupport = async (support) => {
         try {
-            await NWData.closeSupport(support.eventId, ContactID);
+            await DispatchData.closeSupport(support.eventId, ContactID);
             await $scope.getSupports();
             $scope.currentSupport = null;
         } catch (error) {
@@ -2966,9 +2998,9 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
         console.log(support);
         try {
             if (support.lockedBy === Dispatcher) {
-                await NWData.unLockSupport(support.eventId, Dispatcher);
+                await DispatchData.unLockSupport(support.eventId, Dispatcher);
             } else {
-                await NWData.lockSupport(support.eventId, Dispatcher);
+                await DispatchData.lockSupport(support.eventId, Dispatcher);
             }
             await $scope.getSupports();
         } catch (error) {
@@ -2983,7 +3015,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
         angular.element("#box-supports").find(".loading").show();
 
         try {
-            $scope.supports = await NWData.getSupports($scope.supportChannel);
+            $scope.supports = await DispatchData.getSupports($scope.supportChannel);
 
             $scope.supportMenu = [{
                 text: "Complete", click: ($itemScope) => {
@@ -3012,7 +3044,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
 
     $scope.getClientContacts = async () => {
         try {
-            $scope.pickClients = await NWData.getClientContacts(ContactID);
+            $scope.pickClients = await DispatchData.getClientContacts(ContactID);
         } catch (error) {
             console.error("Error fetching client contacts:", error);
         }
@@ -3040,7 +3072,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
 
         try {
             // Fetch active couriers
-            $scope.pickCouriers = await NWData.getActiveCouriers();
+            $scope.pickCouriers = await DispatchData.getActiveCouriers();
 
             ///////////////////////////
             // JOB DETAIL

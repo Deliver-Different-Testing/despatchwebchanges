@@ -2,6 +2,44 @@
 @import "../../../../css/status.less";
 
 .open-jobs-component {
+  .view-toggle-switch {
+    margin: 0 8px;
+
+    .md-container {
+      margin-right: 0;
+    }
+
+    .md-label {
+      display: flex;
+      align-items: center;
+      margin-left: 8px;
+    }
+
+    .toggle-icon {
+      color: white !important;
+      margin-right: 0;
+      font-size: 20px;
+      height: 20px;
+      width: 20px;
+    }
+
+    &.md-checked .md-thumb {
+      background-color: #FFFFFF;
+    }
+
+    .md-thumb {
+      background-color: #FFFFFF;
+    }
+
+    &.md-checked .md-bar {
+      background-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .md-bar {
+      background-color: rgba(255, 255, 255, 0.3);
+    }
+  }
+
   .jobs-widget {
     margin: 16px;
   }
@@ -216,6 +254,83 @@
       &.error {
         color: @error-red;
       }
+    }
+  }
+
+  /* New table view styles */
+  .view-controls {
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+  }
+
+  .view-toggle-btn {
+    display: flex;
+    align-items: center;
+    min-width: 120px;
+    margin: 8px 16px;
+    height: 36px;
+    background-color: #f5f5f5;
+
+    md-icon {
+      margin-right: 4px;
+      color: @text-dark;
+    }
+  }
+
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .status-new {
+    background-color: #e3f2fd;
+    color: #1565c0;
+  }
+
+  .status-dispatched {
+    background-color: #ede7f6;
+    color: #5e35b1;
+  }
+
+  .status-accepted {
+    background-color: #fff8e1;
+    color: #f9a825;
+  }
+
+  .status-pickedup {
+    background-color: #fff3e0;
+    color: #ef6c00;
+  }
+
+  .status-delivered {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  }
+
+  .status-default {
+    background-color: #f5f5f5;
+    color: #616161;
+  }
+
+  .empty-state {
+    padding: 48px 0;
+    text-align: center;
+
+    .empty-icon {
+      font-size: 48px;
+      height: 48px;
+      width: 48px;
+      color: #bdbdbd;
+      margin-bottom: 16px;
+    }
+
+    .md-body-1 {
+      color: @text-muted;
     }
   }
 }

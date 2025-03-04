@@ -378,3 +378,17 @@ export interface InternalStatus {
     defaultSchedule: string;
     defaultMins: number | null;
 }
+
+export interface SupportViewModel {
+    timeStamp: Date | null;
+    courier: string;
+    staff: string;
+    jobNumber: string;
+    description: string;
+    notes: string;
+    remainTime: number | null;
+    eventType: number | null;
+    lockedBy: string;
+    jobId: number | null;
+    eventId: number | null;
+}

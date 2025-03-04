@@ -4,7 +4,22 @@
             <div class="md-toolbar-tools">
                 <span class="material-symbols-outlined">inventory_2</span>
                 <span class="md-headline-title" flex style="margin-left: 8px;">Open Jobs</span>
+
                 <span flex></span>
+
+                <md-switch
+                        class="view-toggle-switch md-primary"
+                        ng-model="ctrl.isTableView"
+                        ng-change="ctrl.toggleViewMode()"
+                        aria-label="Toggle view">
+                    <md-tooltip md-direction="bottom">
+                        {{ctrl.isTableView ? 'Card View' : 'Table View'}}
+                    </md-tooltip>
+                    <md-icon md-font-set="material-symbols-outlined" class="toggle-icon">
+                        {{ctrl.isTableView ? 'dashboard' : 'view_list'}}
+                    </md-icon>
+                </md-switch>
+
                 <md-button aria-label="collapse" class="md-icon-button" ng-click="ctrl.toggleCard()">
                     <md-icon md-font-set="material-symbols-outlined" style="color: white;">
                         {{ctrl.isCardCollapsed ? 'expand_less' : 'expand_more'}}
@@ -14,43 +29,11 @@
         </md-toolbar>
 
         <md-card-content class="md-padding" ng-if="!ctrl.isCardCollapsed">
-            <!-- Sort Button moved outside toolbar -->
-            <div class="sort-section" layout="row" layout-align="end center">
-                <md-menu>
-                    <md-button class="md-primary md-raised sort-button" ng-click="$mdMenu.open($event)">
-                        <span>Sort: {{ ctrl.getSortLabel() }}</span>
-                    </md-button>
-                    <md-menu-content>
-                        <md-menu-item>
-                            <md-button ng-click="ctrl.sortBy = 'jobId'; ctrl.onSortChange()">
-                                <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.sortBy === 'jobId'">check
-                                </md-icon>
-                                <span>Job ID</span>
-                            </md-button>
-                        </md-menu-item>
-                        <md-menu-item>
-                            <md-button ng-click="ctrl.sortBy = 'pickup'; ctrl.onSortChange()">
-                                <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.sortBy === 'pickup'">check
-                                </md-icon>
-                                <span>Pickup Time</span>
-                            </md-button>
-                        </md-menu-item>
-                        <md-menu-item>
-                            <md-button ng-click="ctrl.sortBy = 'delivery'; ctrl.onSortChange()">
-                                <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.sortBy === 'delivery'">
-                                    check
-                                </md-icon>
-                                <span>Delivery Time</span>
-                            </md-button>
-                        </md-menu-item>
-                    </md-menu-content>
-                </md-menu>
-            </div>
-
+            <!-- Empty state message -->
             <div class="empty-state"
                  layout="column"
                  layout-align="center center"
-                 ng-if="!ctrl.drivers.length">
+                 ng-if="(!ctrl.drivers.length && ctrl.viewMode === 'card') || (!ctrl.tableJobs.length && ctrl.viewMode === 'table')">
                 <md-icon class="empty-icon"
                          md-font-set="material-symbols-outlined">
                     inventory_2
@@ -60,7 +43,126 @@
                 </p>
             </div>
 
-            <div class="driver-sections" ng-if="ctrl.drivers.length">
+            <!-- TABLE VIEW MODE using md-data-table -->
+            <div ng-if="ctrl.isTableView && ctrl.tableJobs.length" class="table-view-container">
+                <md-table-container>
+                    <table md-table>
+                        <thead md-head md-order="ctrl.tableQuery.order" md-on-reorder="ctrl.onSortChange">
+                        <tr md-row>
+                            <th md-column md-order-by="jobId">
+                                <span>Order ID</span>
+                            </th>
+                            <th md-column md-order-by="reference">
+                                <span>Reference</span>
+                            </th>
+                            <th md-column md-order-by="driverName">
+                                <span>Driver</span>
+                            </th>
+                            <th md-column md-order-by="status">
+                                <span>Status</span>
+                            </th>
+                            <th md-column md-order-by="pickup">
+                                <span>Pickup</span>
+                            </th>
+                            <th md-column md-order-by="pickupAddress">
+                                <span>Pickup Location</span>
+                            </th>
+                            <th md-column md-order-by="delivery">
+                                <span>Delivery</span>
+                            </th>
+                            <th md-column md-order-by="deliveryAddress">
+                                <span>Delivery Location</span>
+                            </th>
+                            <th md-column>
+                                <span>Package</span>
+                            </th>
+                            <th md-column md-numeric md-order-by="mileage">
+                                <span>Mileage</span>
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody md-body>
+                        <tr md-row ng-repeat="job in ctrl.tableJobs | orderBy: ctrl.tableQuery.order | limitTo: ctrl.tableQuery.limit: (ctrl.tableQuery.page - 1) * ctrl.tableQuery.limit">
+                            <td md-cell>
+                                {{job.jobId}}
+                            </td>
+                            <td md-cell>{{job.reference}}</td>
+                            <td md-cell>{{job.driverName || 'Unassigned'}}</td>
+                            <td md-cell>
+                                <md-chip class="status-chip {{job.status | lowercase}}">
+                                    {{job.statusName}}
+                                </md-chip>
+                            </td>
+                            <td md-cell>
+                                    {{ctrl.formatRegionalTime(job.pickup.time)}}
+                            </td>
+                            <td md-cell>
+                                <div class="location-name">{{job.pickup.name}}</div>
+                                <div class="location-address">{{job.pickup.address}}</div>
+                            </td>
+                            <td md-cell>
+                                    {{ctrl.formatRegionalTime(job.delivery.time)}}
+                            </td>
+                            <td md-cell>
+                                <div class="location-name">{{job.delivery.name}}</div>
+                                <div class="location-address">{{job.delivery.address}}</div>
+                            </td>
+                            <td md-cell>
+                                    {{job.quantity}} {{job.packageType}}
+                            </td>
+                            <td md-cell md-numeric>
+                                {{job.mileage}}
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </md-table-container>
+
+                <md-table-pagination
+                        md-limit="ctrl.tableQuery.limit"
+                        md-limit-options="[5, 10, 15, 20]"
+                        md-page="ctrl.tableQuery.page"
+                        md-total="{{ctrl.tableJobs.length}}"
+                        md-on-paginate="ctrl.onPaginate"
+                        md-page-select>
+                </md-table-pagination>
+            </div>
+
+            <!-- CARD VIEW MODE (Original view) -->
+            <div class="driver-sections" ng-if="!ctrl.isTableView && ctrl.drivers.length">
+                <!-- Sort Button moved outside toolbar -->
+                <div class="sort-section" layout="row" layout-align="end center">
+                    <md-menu>
+                        <md-button class="md-primary md-raised sort-button" ng-click="$mdMenu.open($event)">
+                            <span>Sort: {{ ctrl.getSortLabel() }}</span>
+                        </md-button>
+                        <md-menu-content>
+                            <md-menu-item>
+                                <md-button ng-click="ctrl.sortBy = 'jobId'; ctrl.onSortChange()">
+                                    <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.sortBy === 'jobId'">check
+                                    </md-icon>
+                                    <span>Job ID</span>
+                                </md-button>
+                            </md-menu-item>
+                            <md-menu-item>
+                                <md-button ng-click="ctrl.sortBy = 'pickup'; ctrl.onSortChange()">
+                                    <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.sortBy === 'pickup'">check
+                                    </md-icon>
+                                    <span>Pickup Time</span>
+                                </md-button>
+                            </md-menu-item>
+                            <md-menu-item>
+                                <md-button ng-click="ctrl.sortBy = 'delivery'; ctrl.onSortChange()">
+                                    <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.sortBy === 'delivery'">
+                                        check
+                                    </md-icon>
+                                    <span>Delivery Time</span>
+                                </md-button>
+                            </md-menu-item>
+                        </md-menu-content>
+                    </md-menu>
+                </div>
+
                 <md-expansion-panel class="driver-panel" ng-repeat="driver in ctrl.drivers">
                     <md-expansion-panel-expanded>
                         <md-toolbar class="md-primary driver-header" ng-click="driver.expanded = !driver.expanded">
@@ -113,7 +215,7 @@
                                                     </div>
                                                 </div>
                                                 <md-chip
-                                                        class="status-chip {{job.statusName | lowercase | replace:' ':'-'}}">
+                                                        class="status-chip {{job.status | lowercase}}">
                                                     <md-icon class="status-icon"
                                                              md-font-set="material-symbols-outlined">
                                                         package_2
