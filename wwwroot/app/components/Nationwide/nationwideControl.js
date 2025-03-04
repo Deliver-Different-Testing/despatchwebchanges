@@ -8,6 +8,20 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
     dispatchJobService) {
     $scope.jdSvc = jdSvc;
 
+    $scope.$on("angular-resizable.resizeEnd", (event, args) => {
+        const mapContainer = angular.element(args.id ? '#' + args.id : '').find('.here-map');
+        if (mapContainer.length > 0) {
+            // Broadcast a more specific event for map containers
+            $scope.$emit("map-container-resized", {
+                id: args.id,
+                width: args.width,
+                height: args.height
+            });
+
+            console.log("Map container resized: ", args.id);
+        }
+    });
+
     const JOB_DATA_TYPE = {
         NEW: 'new', POD: 'pod', REPRICE: 'reprice', DELIVERY: 'delivery', ALL: 'all'
     };
@@ -707,7 +721,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
         4: [$scope.jobDataType.REPRICE]
     };
 
-    $scope.handleStatusChange = async function(event) {
+    $scope.handleStatusChange = async event => {
         try {
             console.log('Handle status change triggered!', {
                 jobId: event.jobId,

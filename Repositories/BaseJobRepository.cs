@@ -417,7 +417,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 : null,
             IsArchived = true
         };
-    private static readonly int[] sourceArray = new[] { 41, 42, 43, 51, 52 };
+    private static readonly int[] SourceArray = [41, 42, 43, 51, 52];
 
     // Create
     public async Task<T> Add<T>(T entity)
@@ -720,6 +720,9 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         string clientIds
     )
     {
+        // Remove parent jobs
+        query = query.Where(j => j.ParentId != null);
+
         // Apply status viewFilters
         query = status switch
         {
@@ -943,7 +946,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         // Handle Special Speeds (41,42,43,51,52) with Required Delivery Time
         if (
             job.UcjbSpeed != null
-            && sourceArray.Contains(job.UcjbSpeed.Value)
+            && SourceArray.Contains(job.UcjbSpeed.Value)
             && job.RequiredDeliveryTime.HasValue
         )
         {
