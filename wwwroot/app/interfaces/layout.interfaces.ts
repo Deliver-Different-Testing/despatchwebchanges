@@ -1,18 +1,17 @@
-
-export type Box = {
+export interface Box {
     name: string;
     height: string;
-};
+}
 
-export type Column = {
+export interface Column {
     id: string;
     width: string;
     boxes: Box[];
-};
+}
 
-export type Layout = {
+export interface Layout {
     name: string;
     layout: {
         columns: Column[];
     };
-};
+}

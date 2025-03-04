@@ -14,6 +14,10 @@ class OverviewService implements angular.IServiceProvider {
     constructor(private $http: angular.IHttpService) {
     }
 
+    $get(): any {
+        return this;
+    }
+
     async getAllJobs(params: OverviewQueryParams): Promise<PaginatedResponse<OverviewTableParentJob>> {
         const regionIds = params.regions?.map(r => r.id).join(",");
         const speedIds = params.speeds?.map(s => s.id).join(",");
@@ -116,10 +120,6 @@ class OverviewService implements angular.IServiceProvider {
         }
 
         return false;
-    }
-
-    $get(): any {
-        return this;
     }
 }
 

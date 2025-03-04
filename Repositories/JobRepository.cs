@@ -2354,7 +2354,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
     )
     {
         var clientItemsString =
-            clientItemIds is null || !clientItemIds.Any()
+            clientItemIds is null || clientItemIds.Count == 0
                 ? string.Empty
                 : string.Join(",", clientItemIds);
 
@@ -2588,7 +2588,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     job.Parent.UcjbWeight = weight;
 
                     // Update all other child jobs of the parent
-                    if (job.Parent.InverseParent.Any())
+                    if (job.Parent.InverseParent.Count != 0)
                     {
                         foreach (var siblingJob in job.Parent.InverseParent)
                             siblingJob.UcjbWeight = weight;
@@ -2648,18 +2648,20 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 job.InternalStatus = internalStatusId;
 
                 // Handle followup time
-                if (
-                    !new[]
+                if (!new[]
                     {
                         (int)InternalJobStatus.NewJobs,
                         (int)InternalJobStatus.Reprice
-                    }.Contains(internalStatusId)
-                )
-                    job.FollowupTime = DateTime.Now.AddMinutes(
-                        job.InternalStatusNavigation.DefaultMinutes ?? 0
-                    );
+                    }.Contains(internalStatusId))
+                {
+                    // Safely handle DefaultMinutes when InternalStatusNavigation is null
+                    var defaultMinutes = job.InternalStatusNavigation?.DefaultMinutes ?? 0;
+                    job.FollowupTime = DateTime.Now.AddMinutes(defaultMinutes);
+                }
                 else
+                {
                     job.FollowupTime = null;
+                }
 
                 job.UcjbStatus = internalStatusId switch
                 {
@@ -2669,7 +2671,11 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     4 when job.UcjbStatus != 6 => 6,
                     _ => job.UcjbStatus
                 };
-                updateNote = $"Changed Job Follow Up to {job.InternalStatusNavigation.TcisName}";
+
+                // Safely handle TcisName when InternalStatusNavigation is null
+                updateNote = job.InternalStatusNavigation != null
+                    ? $"Changed Job Follow Up to {job.InternalStatusNavigation.TcisName}"
+                    : $"Changed Job Follow Up to status {internalStatusId}";
                 break;
             case "Status":
                 job.UcjbStatus = int.Parse(value);
@@ -2792,6 +2798,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         if (field == "UndeliverableLocationID" && job.UndeliverableLocation?.Message != null)
             await AddNoteAsync(jobId, job.UndeliverableLocation.Message, userName);
 
+        Context.TucJobs.Update(job);
         await Context.SaveChangesAsync();
     }
 
@@ -3205,17 +3212,13 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 break;
         }
 
-        if (!string.IsNullOrEmpty(updateNote))
-        {
-            await AddNoteAsync(jobId, updateNote, userName);
-        }
+        if (!string.IsNullOrEmpty(updateNote)) await AddNoteAsync(jobId, updateNote, userName);
 
         // Add additional notes for undeliverable location
         if (field == "UndeliverableLocationID" && archive.UndeliverableLocation?.Message != null)
-        {
             await AddNoteAsync(jobId, archive.UndeliverableLocation.Message, userName);
-        }
 
+        Context.Update(archive.Job);
         await Context.SaveChangesAsync();
     }
 
@@ -3228,28 +3231,6 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             3 => "Email & Mobile",
             _ => string.Empty
         };
-    }
-
-    private async Task<List<byte[]>> GetPodPhotosAsync(
-        int jobId,
-        byte[] podPhoto,
-        byte[] deliverySignature
-    )
-    {
-        var photos = new List<byte[]>();
-        if (podPhoto != null)
-            photos.Add(podPhoto);
-        if (deliverySignature != null)
-            photos.Add(deliverySignature);
-
-        photos.AddRange(
-            await Context
-                .DeliveryPhotos.Where(d => d.JobId == jobId)
-                .Select(del => del.Photo)
-                .ToListAsync()
-        );
-
-        return photos;
     }
 
     private async Task<JobInfo> GetJobInfo(int jobId)

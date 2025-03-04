@@ -12,6 +12,7 @@ import {
 } from "../interfaces/job.interface";
 import {PaginatedResponse} from "../interfaces/paginated-response.interface";
 import {DateField, JobField} from "../interfaces/job-field.types";
+import DfrntPageViewModel from "../interfaces/dfrnt-page-view-model.interface";
 
 class DispatchService {
     static $inject = ["$http", "moment", "APP_CONFIG"];
@@ -24,8 +25,8 @@ class DispatchService {
         this.isUsCustomer = appConfig.US_Customer;
     }
 
-    public async getSelectedViews(userId: number, pageId: number): Promise<any> {
-        const response = await this.$http.get(`home/GetPageViews?userid=${userId}&pageid=${pageId}`);
+    public async getSelectedViews(userId: number, pageId: number): Promise<DfrntPageViewModel[]> {
+        const response = await this.$http.get<DfrntPageViewModel[]>(`home/GetPageViews?userid=${userId}&pageid=${pageId}`);
         return response.data;
     }
 
@@ -206,13 +207,11 @@ class DispatchService {
     }
 
     public async getDriverLocations(selectedViews: Views[]) {
-        // Make sure we only get the selected views
         const filteredViews = selectedViews.filter(view => view.selected);
         const despatchViewIds = this._prepareViewIdsForRequest(filteredViews);
 
         const params = new URLSearchParams();
 
-        // Append each despatchViewId as a separate query parameter
         despatchViewIds.forEach(id => {
             params.append("despatchViewIds", id.toString());
         });
@@ -548,12 +547,10 @@ class DispatchService {
         field: JobField,
         value: string | Date | number | boolean,
         rate: number | string,
-        despatcherName: string,
-        staffId: number,
         preBook: boolean
     ): Promise<any> {
         console.log("Starting updateJobDetail:", {
-            jobId, field, initialValue: value, rate, despatcherName, staffId, preBook
+            jobId, field, initialValue: value, rate, preBook
         });
 
         const originalValue = value;
@@ -595,25 +592,19 @@ class DispatchService {
             console.log("Formatted rate:", { originalRate: rate, formattedRate: processedRate });
         }
 
-        const method = preBook ? "job/UpdateJobBooking" : "job/UpdateJob";
+        const method: string = preBook ? "job/UpdateJobBooking" : "job/UpdateJob";
 
         // Create URL parameters with proper encoding
         const params = new URLSearchParams({
-            jobId: jobId.toString(),
+            jobId: String(jobId),
             field: processedField,
-            value: processedValue?.toString() ?? '',
-            rate: processedRate?.toString() ?? '',
-            despatcherName,
-            staffId: staffId.toString()
+            value: String(processedValue ?? ''),
+            rate: String(processedRate ?? ''),
+            despatcherName: String(FirstName),
+            staffId: String(ContactID)
         });
 
         const url = `${method}?${params.toString()}`;
-
-        console.log("Making API request:", {
-            method: "POST",
-            url,
-            parameters: { jobId, field: processedField, value: processedValue, rate: processedRate, despatcherName, staffId }
-        });
 
         try {
             const response = await this.$http.post(url, null);
@@ -625,12 +616,11 @@ class DispatchService {
         } catch (error) {
             console.error("API request failed:", {
                 error: error instanceof Error ? error.message : 'Unknown error',
-                parameters: { jobId, field: processedField, value: processedValue, rate: processedRate, despatcherName, staffId }
+                parameters: { jobId, field: processedField, value: processedValue, rate: processedRate }
             });
             throw error;
         }
     }
-
 
     public async updateBulkJobDetail(bulkJobId: number, field: string, value: string | number | Date, rate: number | string, despatcherName: string, staffId: number) {
         if (field === "Time" || field === "CompletedTime") {

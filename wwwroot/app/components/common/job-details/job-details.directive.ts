@@ -2,7 +2,7 @@ import app from "../../../app";
 import angular from "angular";
 import ToastrService from "../../../services/toastr.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
-import {Job} from "../../../interfaces/job.interface";
+import {InternalStatus, Job} from "../../../interfaces/job.interface";
 import {FirstName, ContactID} from "../../../contants";
 import {JobNote, JobOptions, TabItem} from "./job-details.interfaces";
 import "./job-details.styles.less";
@@ -10,7 +10,7 @@ import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
 import DispatchService from "../../../services/dispatch.service";
 
 class JobDetailController implements angular.IController {
-    static $inject = ["$scope", "$mdDialog", "toastrService", "DispatchData", "APP_CONFIG", "rateJobService", "moment"];
+    static $inject = ["$scope", "$mdDialog", "toastrService", "DispatchData", "APP_CONFIG", "rateJobService", "moment", "$mdMenu"];
 
     private readonly isUsCustomer: boolean;
     job?: Job;
@@ -24,6 +24,9 @@ class JobDetailController implements angular.IController {
     selectedPhotoIndex: number = 0;
     showLeftScroll: boolean = false;
     showRightScroll: boolean = false;
+    internalStatusList: InternalStatus[];
+    onStatusChange?: (params: { $event: any }) => void;
+    selectedStatusText?: string;
 
     constructor(
         private $scope: angular.IScope,
@@ -32,7 +35,8 @@ class JobDetailController implements angular.IController {
         private dispatchData: any,
         APP_CONFIG: AppConfig,
         private rateJobService: any,
-        private moment: any) {
+        private moment: any,
+        private $mdMenu: angular.material.IMenuService) {
         this.isUsCustomer = APP_CONFIG.US_Customer;
         this.job = undefined;
         this.internalJob = undefined;
@@ -61,6 +65,13 @@ class JobDetailController implements angular.IController {
             }
         };
 
+        this.internalStatusList = [];
+        this.dispatchData.getInternalStatusList()
+            .then((statusList: InternalStatus[]) => {
+                this.internalStatusList = statusList;
+                this.getSelectedStatusText();
+            });
+
         console.log('Job Details Controller loaded');
     }
 
@@ -74,6 +85,7 @@ class JobDetailController implements angular.IController {
             this.updateTabsArray();
             this.loadPodPhotos();
             this.setupPhotoKeyboardNavigation();
+            this.getSelectedStatusText();
         }
     }
 
@@ -298,6 +310,8 @@ class JobDetailController implements angular.IController {
 
         this.notes = notes;
         console.log('Final notes array:', this.notes);
+
+        this.getSelectedStatusText();
     }
 
     getJobAddressIcon() {
@@ -485,28 +499,16 @@ class JobDetailController implements angular.IController {
         await this.refreshJobDetails(job.id);
     }
 
-    async showMissingInfoDialog($event: MouseEvent, job: Job) {
-        let message = "";
-        if (!job.completedTime) {
-            message = "You must set completed time (POD Time) first";
-        } else if (!job.podName) {
-            message = "You must set POD Name first";
-        }
-
-        const confirm = this.$mdDialog.confirm()
-            .title(message)
-            .targetEvent($event)
-            .ok("OK");
-
-        await this.$mdDialog.show(confirm);
-    }
-
     async editLogTime($event: MouseEvent, job: Job) {
         await this.showEditTimeDialog($event, job, "Log Time", "Time", job.time);
     }
 
     async editCompletedTime($event: MouseEvent, job: Job) {
         await this.showEditTimeDialog($event, job, "POD Time", "CompletedTime", job.completedTime);
+    }
+
+    async editFollowUpTime($event: MouseEvent, job: Job) {
+        await this.showEditTimeDialog($event, job, "Follow Up Time", "FollowupTime", job.followupTime);
     }
 
     async updateAddress($event: MouseEvent, job: Job, field: string) {
@@ -768,7 +770,7 @@ class JobDetailController implements angular.IController {
                     console.error("Failed to convert rate to a number:", rate);
                 }
 
-                await this.dispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, numericRate, FirstName, ContactID, job.preBook);
+                await this.dispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, numericRate, job.preBook);
             } else {
                 // Ensure rate is decimal
                 const numericRate = parseFloat(job.charge.replace(/[^\d.-]/g, ""));
@@ -779,7 +781,7 @@ class JobDetailController implements angular.IController {
                 if (job.bulkJob) {
                     await this.dispatchData.updateBulkJobDetail(job.id, callData.field, callData.value, numericRate, FirstName, ContactID);
                 } else {
-                    await this.dispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, numericRate, FirstName, ContactID, job.preBook);
+                    await this.dispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, numericRate, job.preBook);
                 }
             }
         } catch (error) {
@@ -818,11 +820,14 @@ class JobDetailController implements angular.IController {
     }
 
     async toggleJobProperty(job: Job, property: string, useCharge: boolean = true) {
+        console.log(`Toggle job property: ${property}`);
         const newValue = job ? !(property in job && job[property as keyof typeof job]) : false;
+        console.log(`New value: ${newValue}`);
         const capitalizedProperty = property.charAt(0).toUpperCase() + property.slice(1);
+        console.log(`Capitalized property: ${capitalizedProperty}`);
 
         const updateJob = async (rate: number) => {
-            await this.dispatchData.updateJobDetail(job.id, capitalizedProperty, newValue, rate, FirstName, ContactID, job.preBook);
+            await this.dispatchData.updateJobDetail(job.id, capitalizedProperty, newValue, rate, job.preBook);
         };
 
         try {
@@ -839,9 +844,9 @@ class JobDetailController implements angular.IController {
 
                 if (newValue) {
                     const repriceStatusId = 4;
-                    await this.dispatchData.updateJobDetail(job.id, "InternalStatusID", repriceStatusId, job.charge, FirstName, ContactID, job.preBook);
+                    await this.dispatchData.updateJobDetail(job.id, "InternalStatusID", repriceStatusId, job.charge, job.preBook);
                 } else if (previousStatus) {
-                    await this.dispatchData.updateJobDetail(job.id, "InternalStatusID", previousStatus, job.charge, FirstName, ContactID, job.preBook);
+                    await this.dispatchData.updateJobDetail(job.id, "InternalStatusID", previousStatus, job.charge, job.preBook);
                 }
             }  // Special handling for "van"
             else if (property === "van") {
@@ -879,22 +884,12 @@ class JobDetailController implements angular.IController {
     }
 
     async toggleProperty(job: Job, property: string) {
-        const propertiesUsingDefaultCharge = ["pedal", "truck", "direct", "attention", "return", "oneOff", "Active", "Void", "van", "vanOK", "done", "reprice"];
+        const propertiesUsingDefaultCharge = ["pedal", "truck", "direct", "attention", "return", "oneOff", "active", "void", "van", "vanOK", "done", "reprice"];
         const useCharge = propertiesUsingDefaultCharge.includes(property);
         await this.toggleJobProperty(job, property, useCharge);
     }
 
     async markJobAsDone($event: MouseEvent, job: Job) {
-        if (!job.completedTime || !job.podName) {
-            try {
-                await this.showMissingInfoDialog($event, job);
-                return;
-            } catch (error) {
-                this.handleError(error);
-                return;
-            }
-        }
-
         try {
             await this.dispatchData.updatePODDetail(job.jobNo, 6, job.podName, job.completedTime);
 
@@ -1026,12 +1021,65 @@ class JobDetailController implements angular.IController {
             this.handleError(error);
         }
     }
+
+    private getSelectedStatusText() {
+        console.log('getSelectedStatusText() called');
+        const defaultText = 'Stage';
+        console.log('Current internalJob:', this.internalJob);
+
+        console.log('Current internalStatusList:', this.internalStatusList);
+
+        const selectedStatus = this.internalStatusList?.find(status =>
+            status.id === this.internalJob?.internalStatusId
+        );
+        console.log('Found selectedStatus:', selectedStatus);
+
+        this.selectedStatusText = selectedStatus ? selectedStatus.text : defaultText;
+        console.log('Set selectedStatusText to:', this.selectedStatusText);
+    }
+
+    async setInternalStatus(internalStatusId: number, job: Job) {
+        this.$mdMenu.hide();
+
+        // Get the current status before update
+        const previousStatusId = job.internalStatusId;
+
+        try {
+            // Update Job
+            await this.dispatchData.updateJobDetail(
+                job.id,
+                "InternalStatusID",
+                internalStatusId,
+                job.charge,
+                false
+            );
+
+            // Notify parent component about the status change
+            if (this.onStatusChange) {
+                this.onStatusChange({
+                    $event: {
+                        previousStatusId,
+                        newStatusId: internalStatusId,
+                        jobId: job.id
+                    }
+                });
+            }
+
+            // Refresh label to show new status
+            this.getSelectedStatusText();
+        } catch (error) {
+            console.error("Error updating internal status:", error);
+        }
+    }
 }
 
 class JobDetailDirective implements angular.IDirective {
     restrict: 'E';
     templateUrl: string;
-    scope: { job: string };
+    scope: {
+        job: string;
+        onStatusChange: string;
+    };
     controller: any;
     controllerAs: string;
     bindToController: boolean;
@@ -1040,7 +1088,8 @@ class JobDetailDirective implements angular.IDirective {
         this.restrict = 'E';
         this.templateUrl = "app/components/common/job-details/job-details.template.html";
         this.scope = {
-            job: "="
+            job: "=",
+            onStatusChange: "&"
         };
         this.controller = JobDetailController;
         this.controllerAs = "ctrl";

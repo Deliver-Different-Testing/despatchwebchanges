@@ -152,4 +152,5 @@ export interface ViewJob {
     quantity: number;
     packageType: string;
     mileage: number;
+    driverName: string;
 }

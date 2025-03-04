@@ -18,6 +18,10 @@ class OverviewFiltersService implements angular.IServiceProvider {
         this.filterChangeCallbacks = [];
     }
 
+    $get(): any {
+        return this;
+    }
+    
     onFilterChange(callback: () => void): void {
         this.filterChangeCallbacks.push(callback);
     }
@@ -29,10 +33,6 @@ class OverviewFiltersService implements angular.IServiceProvider {
     }): void {
         Object.assign(this, filters);
         this.filterChangeCallbacks.forEach(callback => callback());
-    }
-
-    $get(): any {
-        return this;
     }
 }
 
