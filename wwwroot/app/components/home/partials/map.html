@@ -8,3 +8,68 @@
         on-marker-click="handleMarkerClick(job)"
         show-available-couriers="allCouriers.display">
 </dispatch-map>
+
+<style>
+    .box-content {
+        position: relative;
+        overflow: hidden !important; /* Prevent scroll bars */
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    dispatch-map {
+        display: block;
+        flex: 1;
+        height: 100% !important;
+        min-height: 0; /* Important for Firefox */
+        position: relative;
+    }
+
+    .full-height-map {
+        height: 100% !important;
+    }
+
+    .dispatch-map-component {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 100% !important;
+        width: 100%;
+    }
+
+    .dispatch-map-container {
+        height: 100% !important;
+    }
+
+    .box-content.related-content {
+        max-height: none !important; /* Override any max-height that might cause scrolling */
+    }
+
+    /* Fix for the Google Map container */
+    .map-wrapper,
+    ng-map,
+    .gm-style {
+        height: 100% !important;
+        width: 100% !important;
+    }
+
+    /* Ensure Angular Material elements don't cause excessive height */
+    md-toolbar.md-accent {
+        min-height: 40px; /* Adjust as needed to reduce toolbar height */
+    }
+
+    /* Handle resize in progress */
+    .box.resizable-dragging .box-content {
+        pointer-events: none; /* Prevents map interaction during resize */
+    }
+
+    /* Add transition for smoother resizing */
+    .dispatch-map-component,
+    .dispatch-map-container,
+    .map-wrapper {
+        transition: height 0.1s ease;
+    }
+</style>

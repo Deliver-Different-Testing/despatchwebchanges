@@ -67,10 +67,9 @@ angular.module('hereMapTracking.components', [])
             credentials: '=',
             config: '=',
             onMapReady: '&',
-            mapSize: '@',
         },
-        template: '<div class="here-map" id="{{mapId}}" style="{{mapSize}}"></div>',
-        controller: ['$scope', 'HereMapService', ($scope, HereMapService) => {
+        template: '<div class="here-map" id="{{mapId}}"></div>',
+        controller: ['$scope', 'HereMapService', '$rootScope', ($scope, HereMapService, $rootScope) => {
             let platform;
             let mapInstance;
             let fromMarker;
@@ -95,6 +94,21 @@ angular.module('hereMapTracking.components', [])
                             platform: platform
                         });
                     }
+
+                    window.setTimeout(() => {
+                        HereMapService.resizeMapPreserveView(mapInstance.map);
+                    }, 100); // Small delay to ensure DOM has settled
+
+                    // Listen for resize events from angular-resizable
+                    $rootScope.$on("angular-resizable.resizeEnd", (event, args) => {
+                        // Check if the resized element contains or is related to our map
+                        if (args.id) {
+                            // You may want to check specific IDs or simply resize anyway
+                            console.log("Map container resized, resizing map", args);
+                            // Resize while preserving view
+                            HereMapService.resizeMapPreserveView(mapInstance.map);
+                        }
+                    });
                 }
             }
 

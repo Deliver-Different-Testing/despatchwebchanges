@@ -68,6 +68,32 @@ angular.module("hereMapTracking.services")
                 apikey: credentials.apiKey
             });
 
+            service.resizeMap = (map) => {
+                if (map && map.getViewPort()) {
+                    // Force the map to recalculate its size based on container
+                    window.setTimeout(() => {
+                        map.getViewPort().resize();
+                    }, 100); // Small delay to ensure DOM has settled
+                }
+            };
+
+            service.resizeMapPreserveView = (map) => {
+                if (map && map.getViewPort()) {
+                    // Store current center and zoom
+                    const center = map.getCenter();
+                    const zoom = map.getZoom();
+
+                    // Force the map to recalculate its size based on container
+                    window.setTimeout(() => {
+                        map.getViewPort().resize();
+
+                        // Reset center and zoom
+                        map.setCenter(center);
+                        map.setZoom(zoom);
+                    }, 100); // Small delay to ensure DOM has settled
+                }
+            };
+
             // Initialize map instance
             service.createMap = (elementId, platform, config) => {
                 const defaultConfig = {
