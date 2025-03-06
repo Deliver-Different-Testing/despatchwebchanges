@@ -1,0 +1,80 @@
+<md-dialog aria-label="Events Table" class="event-dialog">
+    <form ng-cloak>
+        <md-toolbar>
+            <div class="md-toolbar-tools">
+                <h2>Event Groups Table</h2>
+                <span flex></span>
+                <md-button class="md-icon-button" ng-click="ctrl.cancel()">
+                    <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+                </md-button>
+            </div>
+        </md-toolbar>
+
+        <md-dialog-content>
+            <div class="md-dialog-content">
+                <md-table-container>
+                    <table md-table>
+                        <thead md-head>
+                        <tr md-row>
+                            <th md-column>Event Type</th>
+                            <th md-column>Group</th>
+                            <th md-column>Sequence</th>
+                            <th md-column>Due Time (mins)</th>
+                            <th md-column>Assign To</th>
+                            <th md-column>Active</th>
+                        </tr>
+                        </thead>
+                        <tbody md-body>
+                        <tr md-row ng-repeat="event in ctrl.events">
+                            <td md-cell>{{event.eventType}}</td>
+                            <td md-cell>{{event.group}}</td>
+                            <td md-cell>{{event.sequence}}</td>
+                            <td md-cell>
+                                <md-input-container class="md-block">
+                                    <input type="number" ng-model="event.dueTime" min="0"/>
+                                </md-input-container>
+                            </td>
+                            <td md-cell>
+                                <md-autocomplete
+                                        ng-disabled="true"
+                                        md-selected-item="ctrl.selectedUser"
+                                        md-search-text="ctrl.searchText"
+                                        md-items="user in ctrl.querySearch(ctrl.searchText, $index)"
+                                        md-item-text="user.name"
+                                        md-floating-label="Assign To"
+                                        md-min-length="0"
+                                        md-selected-item-change="ctrl.selectedUserChange(user, $index)">
+                                    <md-item-template>
+                                        <span md-highlight-text="ctrl.searchText">{{user.name}}</span>
+                                    </md-item-template>
+                                </md-autocomplete>
+                            </td>
+                            <td md-cell>
+                                <md-checkbox ng-model="event.active" aria-label="Active"></md-checkbox>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </md-table-container>
+
+                <div ng-if="!ctrl.events || ctrl.events.length === 0" class="md-padding" layout="column" layout-align="center center">
+                    <md-icon md-font-set="material-symbols-outlined" style="font-size: 30px; color: #9E9E9E;">event_busy</md-icon>
+                    <h4 style="padding-top: 5px;">No event job types found</h4>
+                    <p>Please add event job types in the Admin Manager</p>
+                    <md-button class="md-primary md-raised" ng-click="ctrl.goToAdminManager()" ng-disable="true">
+                        <md-icon md-font-set="material-symbols-outlined">admin_panel_settings</md-icon>
+                        Open Admin Manager
+                    </md-button>
+                </div>
+
+            </div>
+        </md-dialog-content>
+
+        <md-dialog-actions layout="row">
+            <span flex></span>
+            <md-button class="md-primary md-raised" ng-click="ctrl.save()" ng-disabled="!ctrl.events || ctrl.events.length === 0">
+                Save
+            </md-button>
+        </md-dialog-actions>
+    </form>
+</md-dialog>

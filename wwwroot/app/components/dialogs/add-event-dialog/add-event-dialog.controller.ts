@@ -1,13 +1,14 @@
 import ToastrService from "../../../services/toastr.service";
 import {DfrntEvent, Job} from "../../../interfaces/job.interface";
 import app from "../../../app";
+import DispatchService from "../../../services/dispatch.service";
 
 interface AddEventDialogControllerScope extends angular.IScope {
     eventForm: any;
 }
 
 class AddEventDialogController implements angular.IController {
-    static $inject = ["$scope", "$mdDialog", "NWData", "toastrService", "job", "dispatcherName", "contactId"];
+    static $inject = ["$scope", "$mdDialog", "DispatchData", "toastrService", 'NWData', "job", "dispatcherName", "contactId"];
 
     public isLoading: boolean;
     public eventTypes: Array<any>;
@@ -26,8 +27,9 @@ class AddEventDialogController implements angular.IController {
     constructor(
         $scope: AddEventDialogControllerScope,
         private $mdDialog: angular.material.IDialogService,
-        private NWData: any,
+        private DispatchData: DispatchService,
         private toastrService: ToastrService,
+        private NWData: any,
         private job: Job,
         private dispatcherName: string,
         private contactId: string
@@ -54,7 +56,7 @@ class AddEventDialogController implements angular.IController {
     }
 
     $onInit(): void {
-        this.NWData.getEventTypes().then((data: Array<any>) => {
+        this.DispatchData.getEventTypes().then((data: Suggestion[]) => {
             this.eventTypes = data;
 
             // Find the event that matches "Other" and set it to this.selectedEvent

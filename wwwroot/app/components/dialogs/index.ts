@@ -15,5 +15,8 @@ import "./job-file-upload-dialog/job-file-upload.controller";
 import "./edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.controller";
 import "./edit-parcel-dimensions-dialog/parcel-visualization.directive";
 import "./feature-in-development-dialog/feature-in-development-dialog.controller";
+import "./feature-in-development-dialog/feature-in-development-dialog.service";
 import "./date-range-dialog/date-range-dialog.controller";
 import "./map-dialog/map-dialog.controller";
+import "./event-group-dialog/event-group-dialog.controller";
+import "./event-group-dialog/event-group-dialog.service";

@@ -17,16 +17,16 @@ public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory)
     public async Task<List<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters)
     {
         var now = DateTime.Now;
-        var today = DateTime.Today; // Get just the date portion of today
+        var today = DateTime.Today;
         var query = Context.TucEvents.AsQueryable();
 
         query = query.Where(e =>
-            e.UcevDate != null
-            && (
-                e.UcevDate.Value.Date == today
-                || // Due today
-                e.UcevDate.Value < now
-            ) // Due in the past
+                e.UcevDate != null
+                && (
+                    e.UcevDate.Value.Date == today
+                    || // Due today
+                    e.UcevDate.Value < now
+                ) // Due in the past
         );
 
         // Apply additional filters
@@ -113,6 +113,40 @@ public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory)
         );
 
         await Context.SaveChangesAsync();
+    }
+
+    public async Task<List<Suggestion>> GetEventGroupsAsync()
+    {
+        var eventGroups = await Context.TucEventTypeGroups
+            .Select(x => new Suggestion
+            {
+                Id = x.Id,
+                Text = x.Name,
+            })
+            .AsNoTracking()
+            .ToListAsync();
+
+        return eventGroups;
+    }
+
+    public async Task<List<EventGroupViewModel>> GetEventTypeGroupsAsync(int eventGroupId)
+    {
+        var eventGroups = await Context
+            .TucEventTypeEventTypeGroups
+            .Where(x => x.EventTypeGroupId == eventGroupId)
+            .Select(x => new EventGroupViewModel
+            {
+                Active = x.IsActive,
+                DueTime = x.DueTime ?? 0,
+                EventType = x.EventType.UcetName,
+                Sequence = x.Sequence,
+                Group = x.EventTypeGroup.Name,
+                AssignTo = x.EventTypeGroup.CreatedBy,
+            })
+            .AsNoTracking()
+            .ToListAsync();
+
+        return eventGroups;
     }
 
     private static IQueryable<TucEvent> ApplyFilters(

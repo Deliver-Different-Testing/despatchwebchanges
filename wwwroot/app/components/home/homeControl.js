@@ -24,7 +24,8 @@ function HomeControl(
   AppPages,
   $rootScope,
   $stateParams,
-  NgMap
+  NgMap,
+  eventGroupDialogService
 ) {
     // Initialize variables and scope properties
     let initialViewSet = false; // Flag to track if the view has been set
@@ -3328,54 +3329,101 @@ function HomeControl(
       return false;
     };
 
-    /**
-     * @param {Object} $event
-     */
-    $scope.setEventsMenu = ($event) => [
-      {
-        text: "Void Job",
-        click: () =>
-          $scope
-            .voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id)
-            .then(() => {
-              console.log("Void Job completed successfully");
-            })
-            .catch((error) => {
-              console.log("Error in Void Job:", error);
-            }),
-      },
-      {
-        text: "Add Event - Other",
-        click: () => {
-          $scope.otherEventForm($event, $scope.currentJob);
-        },
-      },
-      {
-        text: "Split Job",
-        click: () =>
-          $scope
-            .splitJob($event, $scope.currentJob)
-            .then(() => {
-              console.log("Split Job completed successfully");
-            })
-            .catch((error) => {
-              console.log("Error in Split Job:", error);
-            }),
-        enabled: ($itemScope) => $itemScope.job.allowSplit,
-      },
-      {
-        text: "Set First Job",
-        click: () =>
-          $scope
-            .setFirstJob($scope.currentJob)
-            .then(() => {
-              console.log("Set First Job completed successfully");
-            })
-            .catch((error) => {
-              console.log("Error in Set First Job:", error);
-            }),
-      },
-    ];
+
+     // New right click job menu
+     $scope.menuVisible = false;
+     $scope.menuPosition = { top: 0, left: 0 };
+     $scope.eventGroups = [];
+
+     // Get event groups for the menu
+     DispatchData.getEventGroups().then(groups => {
+       $scope.eventGroups = groups;
+     })
+
+ // Show custom context menu
+ $scope.showJobContextMenu = ($event, job) => {
+   $event.preventDefault();
+
+   // Store the current job
+   $scope.currentJob = job;
+
+   // Set position
+   $scope.menuPosition.left = $event.clientX + 'px';
+   $scope.menuPosition.top = $event.clientY + 'px';
+
+   // Show menu
+   $scope.menuVisible = true;
+
+   // Hide on document click
+   $timeout(() => {
+    document.addEventListener('click', hideMenu, true);
+  }, 0);
+ };
+
+// Hide context menu
+function hideMenu(event) {
+  // Remove the event listener first to prevent multiple triggers
+  document.removeEventListener('click', hideMenu, true);
+
+  // Apply changes in Angular's context
+  $scope.$apply(() => {
+    $scope.menuVisible = false;
+  });
+}
+
+// Menu action handlers
+$scope.voidJobAction = () => {
+  // Your existing void job logic
+  $scope.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id)
+    .then(() => {
+      console.log("Void Job completed successfully");
+    })
+    .catch((error) => {
+      console.log("Error in Void Job:", error);
+    });
+
+  hideMenu();
+};
+
+$scope.addEventOtherAction = ($event) => {
+  $scope.otherEventForm($event, $scope.currentJob);
+  hideMenu();
+};
+
+$scope.selectEventGroup = async (eventGroupId) => {
+  await eventGroupDialogService.openEventGroupDialog(eventGroupId);
+
+  // Implement your event groups logic
+  console.log("Event Groups for job:", $scope.currentJob);
+  hideMenu();
+};
+
+$scope.splitJobAction = ($event) => {
+  $scope.splitJob($event, $scope.currentJob)
+    .then(() => {
+      console.log("Split Job completed successfully");
+    })
+    .catch((error) => {
+      console.log("Error in Split Job:", error);
+    });
+
+  hideMenu();
+};
+
+$scope.setFirstJobAction = () => {
+  $scope.setFirstJob($scope.currentJob)
+    .then(() => {
+      console.log("Set First Job completed successfully");
+    })
+    .catch((error) => {
+      console.log("Error in Set First Job:", error);
+    });
+
+  hideMenu();
+};
+
+
+
 
     $scope.setJobsMenu = () => {
       const activeElements = angular.element(".activeTable .active");
@@ -4211,7 +4259,8 @@ HomeControl.$inject = [
   'AppPages',
   '$rootScope',
   '$stateParams',
-  'NgMap'
+  'NgMap',
+  'eventGroupDialogService'
 ];
 
 app.controller('HomeControl', HomeControl);

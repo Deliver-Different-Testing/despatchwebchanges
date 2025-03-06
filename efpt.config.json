@@ -183,6 +183,14 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[TucEventType_EventTypeGroups]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TucEventTypeGroups]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucJob]",
          "ObjectType": 0
       },

@@ -78,4 +78,20 @@ app
     .filter("replace", () => (input: string, search: string, replacement: string): string => {
         if (!input) return input;
         return input.replace(new RegExp(search, "g"), replacement);
-    });
+    })
+    .directive('ngRightClick', ['$parse', ($parse: angular.IParseService): angular.IDirective => ({
+            restrict: 'A',
+            link: function (scope: angular.IScope, element: angular.IAugmentedJQuery, attrs: angular.IAttributes): void {
+                const fn = $parse(attrs.ngRightClick);
+
+                element.on('contextmenu', (event: JQueryEventObject): boolean => {
+                        event.preventDefault();
+
+                        scope.$apply((): void => {
+                            fn(scope, { $event: event });
+                        });
+
+                        return false;
+                    });
+            }
+        })]);

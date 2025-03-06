@@ -77,4 +77,34 @@ public class TaskController(ITaskRepository taskRepository) : Controller
             return StatusCode(500);
         }
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetEventGroups()
+    {
+        try
+        {
+            var eventTypeGroups = await taskRepository.GetEventGroupsAsync();
+            return Json(eventTypeGroups);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error updating event type groups: {Error}", ex.Message);
+            return StatusCode(500);
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetEventTypeGroups([FromQuery] int eventGroupId)
+    {
+        try
+        {
+            var eventTypeGroups = await taskRepository.GetEventTypeGroupsAsync(eventGroupId);
+            return Json(eventTypeGroups);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error updating event type groups: {Error}", ex.Message);
+            return StatusCode(500);
+        }
+    }
 }
