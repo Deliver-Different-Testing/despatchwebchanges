@@ -48,7 +48,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                         Courier = j.UcjbCourier.Code,
                         CourierId = j.UcjbCourierId,
                         CourierMobile = j.UcjbCourier.UccrMobile,
-                        CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
+                        CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname,
                     }
                     : null,
             AssignedCourier =
@@ -56,7 +56,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     ? new Suggestion
                     {
                         Id = j.UcjbCourier.UccrId,
-                        Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
+                        Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname,
                     }
                     : null,
 
@@ -72,7 +72,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 AddressLine7 = j.PickupAddressLine7,
                 AddressLine8 = j.PickupAddressLine8,
                 Latitude = j.PickUpLatitude,
-                Longitude = j.PickUpLongitude
+                Longitude = j.PickUpLongitude,
             },
             DeliveryAddress = new AddressViewModel
             {
@@ -85,7 +85,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 AddressLine7 = j.DeliveryAddressLine7,
                 AddressLine8 = j.DeliveryAddressLine8,
                 Latitude = j.DeliveryLatitude,
-                Longitude = j.DeliveryLongitude
+                Longitude = j.DeliveryLongitude,
             },
 
             // Airport information
@@ -99,7 +99,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     ExpectedArrival = nj.UcnwEta,
                     ExpectedDeparture = nj.UcnwEtd,
                     FlightNumber = nj.UcnwFlightNo,
-                    Notes = nj.UcnwNotes
+                    Notes = nj.UcnwNotes,
                 })
                 .FirstOrDefault(),
 
@@ -111,7 +111,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                         AgentId = j.Agent.UcagId,
                         AgentName = j.Agent.UcagName,
                         AgentRanking =
-                            j.Agent.Ranking != null ? j.Agent.Ranking.AgentRankingName : null
+                            j.Agent.Ranking != null ? j.Agent.Ranking.AgentRankingName : null,
                     }
                     : null,
 
@@ -180,7 +180,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     ItemName = p.Notes,
                     Height = p.Height,
                     Depth = p.Depth,
-                    Length = p.Length
+                    Length = p.Length,
                 })
                 .ToList(),
 
@@ -227,7 +227,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     ? new Suggestion
                     {
                         Id = j.UcjbSizeNavigation.VehicleSizeId,
-                        Text = j.UcjbSizeNavigation.VehicleName
+                        Text = j.UcjbSizeNavigation.VehicleName,
                     }
                     : null,
 
@@ -245,7 +245,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     Pu = i.Pu,
                     Do = i.Do,
                     DgClass = i.Dgclass,
-                    Notes = i.Notes
+                    Notes = i.Notes,
                 })
                 .ToList(),
 
@@ -254,14 +254,14 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 .Parent.InverseParent.Select(p => new Suggestion
                 {
                     Id = p.UcjbId,
-                    Text = p.UcjbNumber
+                    Text = p.UcjbNumber,
                 })
                 .ToList(),
 
-            IsArchived = false
+            IsArchived = false,
         };
 
-    protected static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping =
+    private static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping =
         j => new JobViewModel
         {
             ClientId = j.UcjbClientId,
@@ -270,9 +270,14 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             Time = j.UcjbTime,
             RootParentId = j.RootParentId,
             Date = j.UcjbDate.HasValue ? j.UcjbDate.Value.ToString("MM/dd/yyyy") : null,
-            Booked = j.UcjbDate.HasValue && j.UcjbTime.HasValue
-                ? DateTime.Parse(j.UcjbDate.Value.ToString("yyyy-MM-dd") + " " + j.UcjbTime.Value.ToString("HH:mm:ss"))
-                : DateTime.MinValue,
+            Booked =
+                j.UcjbDate.HasValue && j.UcjbTime.HasValue
+                    ? DateTime.Parse(
+                        j.UcjbDate.Value.ToString("yyyy-MM-dd")
+                            + " "
+                            + j.UcjbTime.Value.ToString("HH:mm:ss")
+                    )
+                    : DateTime.MinValue,
             DispatchTime = j.UcjbDispTime,
             CreatedDate = j.UcjbDate,
             ScheduleName = j.ScheduleName,
@@ -284,16 +289,10 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
             Courier = null,
             CourierData = j.UcjbCourierId.HasValue
-                ? new CourierData
-                {
-                    CourierId = j.UcjbCourierId
-                }
+                ? new CourierData { CourierId = j.UcjbCourierId }
                 : null,
             AssignedCourier = j.UcjbCourierId.HasValue
-                ? new Suggestion
-                {
-                    Id = j.UcjbCourierId.Value
-                }
+                ? new Suggestion { Id = j.UcjbCourierId.Value }
                 : null,
 
             // Address information - directly available in archive
@@ -308,7 +307,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 AddressLine7 = j.PickupAddressLine7,
                 AddressLine8 = j.PickupAddressLine8,
                 Latitude = j.PickUpLatitude,
-                Longitude = j.PickUpLongitude
+                Longitude = j.PickUpLongitude,
             },
             DeliveryAddress = new AddressViewModel
             {
@@ -321,7 +320,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 AddressLine7 = j.DeliveryAddressLine7,
                 AddressLine8 = j.DeliveryAddressLine8,
                 Latitude = j.DeliveryLatitude,
-                Longitude = j.DeliveryLongitude
+                Longitude = j.DeliveryLongitude,
             },
 
             ToAirportId = j.ToAirportId,
@@ -329,13 +328,10 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
             AssignedFlight = null,
 
-            AssignedAgent = j.Agent != null
-                ? new AgentViewModel
-                {
-                    AgentId = j.Agent.UcagId,
-                    AgentName = j.Agent.UcagName
-                }
-                : null,
+            AssignedAgent =
+                j.Agent != null
+                    ? new AgentViewModel { AgentId = j.Agent.UcagId, AgentName = j.Agent.UcagName }
+                    : null,
 
             // Notes
             ClientNotes = j.ClientNotes,
@@ -408,14 +404,15 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             Reprice = j.InternalStatus == (int)InternalJobStatus.Reprice,
 
             // Size - has navigation in archive
-            Size = j.UcjbSizeNavigation != null
-                ? new Suggestion
-                {
-                    Id = j.UcjbSizeNavigation.VehicleSizeId,
-                    Text = j.UcjbSizeNavigation.VehicleName
-                }
-                : null,
-            IsArchived = true
+            Size =
+                j.UcjbSizeNavigation != null
+                    ? new Suggestion
+                    {
+                        Id = j.UcjbSizeNavigation.VehicleSizeId,
+                        Text = j.UcjbSizeNavigation.VehicleName,
+                    }
+                    : null,
+            IsArchived = true,
         };
     private static readonly int[] SourceArray = [41, 42, 43, 51, 52];
 
@@ -457,7 +454,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     Items = new List<JobViewModel>(),
                     Total = 0,
                     Page = pageNumber,
-                    Pages = 0
+                    Pages = 0,
                 };
             }
 
@@ -479,14 +476,10 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                         query,
                         isInternal,
                         status,
-                        windowPane.Value,
+                        windowPane ?? NationwideWidget.JobList,
                         clientIds
                     );
-                    query = ApplyNationwideSpecificOrdering(
-                        query,
-                        order,
-                        orderDirection
-                    );
+                    query = ApplyNationwideSpecificOrdering(query, order, orderDirection);
                     break;
                 default:
                     return new PaginatedResponse<JobViewModel>
@@ -494,7 +487,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                         Items = new List<JobViewModel>(),
                         Total = 0,
                         Page = pageNumber,
-                        Pages = 0
+                        Pages = 0,
                     };
             }
 
@@ -513,7 +506,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 Items = jobs,
                 Total = total,
                 Page = pageNumber,
-                Pages = pages
+                Pages = pages,
             };
         }
         catch (Exception e)
@@ -538,12 +531,13 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 .ToListAsync();
         }
 
-        var viewFilters = selectedViewIds.Count != 0
-            ? await Context
-                .TblDespatchViews.Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
-                .Select(dv => dv.WhereCondition)
-                .ToListAsync()
-            : [];
+        var viewFilters =
+            selectedViewIds.Count != 0
+                ? await Context
+                    .TblDespatchViews.Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
+                    .Select(dv => dv.WhereCondition)
+                    .ToListAsync()
+                : [];
 
         var combinedFilters = string.Join(" OR ", viewFilters.Select(filter => $"({filter})"));
         return await Context
@@ -580,10 +574,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         {
             DispatchStatus.New => query.Where(j =>
                 j.UcjbStatusNavigation != null
-                && (
-                    j.UcjbCourierId == null
-                    || j.UcjbStatus == (int)JobStatus.New
-                )
+                && (j.UcjbCourierId == null || j.UcjbStatus == (int)JobStatus.New)
             ),
 
             DispatchStatus.Nda => query.Where(j =>
@@ -605,7 +596,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
             DispatchStatus.All => query,
 
-            _ => query
+            _ => query,
         };
 
         // Always exclude status 9
@@ -619,21 +610,16 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         bool isUsTenant
     )
     {
-        if (string.IsNullOrEmpty(order)) return query;
+        if (string.IsNullOrEmpty(order))
+            return query;
 
-        var isAscending =
-            orderDirection?.Equals("asc", StringComparison.OrdinalIgnoreCase)
-            == true;
+        var isAscending = orderDirection?.Equals("asc", StringComparison.OrdinalIgnoreCase) == true;
 
         return order.ToLowerInvariant() switch
         {
             "remain" => isAscending
-                ? query
-                    .OrderBy(j => j.UcjbDispTime)
-                    .ThenBy(j => j.UcjbTime)
-                : query
-                    .OrderByDescending(j => j.UcjbDispTime)
-                    .ThenByDescending(j => j.UcjbTime),
+                ? query.OrderBy(j => j.UcjbDispTime).ThenBy(j => j.UcjbTime)
+                : query.OrderByDescending(j => j.UcjbDispTime).ThenByDescending(j => j.UcjbTime),
 
             "to" => isAscending
                 ? query
@@ -642,9 +628,13 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     .ThenBy(j => isUsTenant ? j.PickupAddressLine5 : j.UcjbFromNavigation.UcsuName)
                     .ThenBy(j => j.UcjbCourier.Code)
                 : query
-                    .OrderByDescending(j => isUsTenant ? j.DeliveryAddressLine5 : j.UcjbToNavigation.UcsuName)
+                    .OrderByDescending(j =>
+                        isUsTenant ? j.DeliveryAddressLine5 : j.UcjbToNavigation.UcsuName
+                    )
                     .ThenByDescending(j => j.UcjbTime)
-                    .ThenByDescending(j => isUsTenant ? j.PickupAddressLine5 : j.UcjbFromNavigation.UcsuName)
+                    .ThenByDescending(j =>
+                        isUsTenant ? j.PickupAddressLine5 : j.UcjbFromNavigation.UcsuName
+                    )
                     .ThenByDescending(j => j.UcjbCourier.Code),
 
             "from" => isAscending
@@ -654,11 +644,14 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     .ThenBy(j => isUsTenant ? j.DeliveryAddressLine5 : j.UcjbToNavigation.UcsuName)
                     .ThenBy(j => j.UcjbCourier.Code)
                 : query
-                    .OrderByDescending(j => isUsTenant ? j.DeliveryAddressLine5 : j.UcjbToNavigation.UcsuName)
+                    .OrderByDescending(j =>
+                        isUsTenant ? j.DeliveryAddressLine5 : j.UcjbToNavigation.UcsuName
+                    )
                     .ThenByDescending(j => j.UcjbTime)
-                    .ThenByDescending(j => isUsTenant ? j.DeliveryAddressLine5 : j.UcjbToNavigation.UcsuName)
+                    .ThenByDescending(j =>
+                        isUsTenant ? j.DeliveryAddressLine5 : j.UcjbToNavigation.UcsuName
+                    )
                     .ThenByDescending(j => j.UcjbCourier.Code),
-
 
             "client" => isAscending
                 ? query
@@ -708,7 +701,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 ? query.OrderBy(j => j.UcjbCourier.UccrName)
                 : query.OrderByDescending(j => j.UcjbCourier.UccrName),
 
-            _ => throw new ArgumentOutOfRangeException()
+            _ => throw new ArgumentOutOfRangeException(),
         };
     }
 
@@ -736,15 +729,15 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             {
                 NationwideWidget.JobList => query.Where(j => !j.UcjbJobDone),
 
-                NationwideWidget.Pod or NationwideWidget.ActionRequired => query.Where(
-                    j => !j.UcjbJobDone && j.FollowupTime < DateTime.Now
+                NationwideWidget.Pod or NationwideWidget.ActionRequired => query.Where(j =>
+                    !j.UcjbJobDone && j.FollowupTime < DateTime.Now
                 ),
 
                 NationwideWidget.Reprice => query.Where(j =>
                     j.Reprice == true || j.InternalStatus == (int)InternalJobStatus.Reprice
                 ),
 
-                _ => query
+                _ => query,
             },
 
             DispatchStatus.Done => windowPane == NationwideWidget.Reprice
@@ -753,7 +746,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 )
                 : query.Where(j => j.UcjbJobDone),
 
-            _ => query
+            _ => query,
         };
 
         // Apply window pane viewFilters
@@ -776,7 +769,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 j.InternalStatus == (int)InternalJobStatus.Reprice || j.Reprice == true
             ),
 
-            _ => query
+            _ => query,
         };
 
         // Only get child jobs
@@ -789,10 +782,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         if (isInternal || string.IsNullOrEmpty(clientIds))
             return query;
 
-        var clientIdList = clientIds
-            .Split(',')
-            .Select(id => int.Parse(id.Trim()))
-            .ToList();
+        var clientIdList = clientIds.Split(',').Select(id => int.Parse(id.Trim())).ToList();
         query = query.Where(j => clientIdList.Contains((int)j.UcjbClientId));
 
         return query;
@@ -807,16 +797,12 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         if (string.IsNullOrEmpty(order))
             return query;
 
-        var isAscending =
-            orderDirection?.Equals("asc", StringComparison.OrdinalIgnoreCase)
-            == true;
+        var isAscending = orderDirection?.Equals("asc", StringComparison.OrdinalIgnoreCase) == true;
 
         return order.ToLowerInvariant() switch
         {
             "courier" => isAscending
-                ? query
-                    .OrderBy(j => j.UcjbCourier.Code)
-                    .ThenBy(j => j.UcjbTime)
+                ? query.OrderBy(j => j.UcjbCourier.Code).ThenBy(j => j.UcjbTime)
                 : query
                     .OrderByDescending(j => j.UcjbCourier.Code)
                     .ThenByDescending(j => j.UcjbTime),
@@ -896,17 +882,13 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 : query.OrderByDescending(j => j.UcjbLateDel),
 
             "time" => isAscending
-                ? query
-                    .OrderBy(j => j.UcjbTime)
-                    .ThenBy(j => j.UcjbCourier.Code)
+                ? query.OrderBy(j => j.UcjbTime).ThenBy(j => j.UcjbCourier.Code)
                 : query
                     .OrderByDescending(j => j.UcjbTime)
                     .ThenByDescending(j => j.UcjbCourier.Code),
 
             "pod" => isAscending
-                ? query
-                    .OrderBy(j => j.UcjbPodname)
-                    .ThenBy(j => j.UcjbCourier.Code)
+                ? query.OrderBy(j => j.UcjbPodname).ThenBy(j => j.UcjbCourier.Code)
                 : query
                     .OrderByDescending(j => j.UcjbPodname)
                     .ThenByDescending(j => j.UcjbCourier.Code),
@@ -921,7 +903,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     .OrderByDescending(j => j.FollowupTime)
                     .ThenByDescending(j => j.UcjbDispTime)
                     .ThenByDescending(j => j.UcjbTime)
-                    .ThenByDescending(j => j.UcjbCourier.Code)
+                    .ThenByDescending(j => j.UcjbCourier.Code),
         };
     }
 
@@ -936,10 +918,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         // Handle Economy Delivery (Speed = 36)
         if (job.UcjbSpeed == 36)
         {
-            var economyDeliveryDateTime = CombineDateAndTime(
-                job.UcjbDate,
-                job.DeliverByTime
-            );
+            var economyDeliveryDateTime = CombineDateAndTime(job.UcjbDate, job.DeliverByTime);
             return (int)(economyDeliveryDateTime - now).TotalMinutes;
         }
 
@@ -994,8 +973,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
             // Archived job
             return await Context
-                .TucJobArchives
-                .Where(j => j.UcjbId == jobId)
+                .TucJobArchives.Where(j => j.UcjbId == jobId)
                 .Select(JobArchiveMapping)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
@@ -1132,17 +1110,17 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     && JobStatusGroups.Completed.Contains(j.UcjbStatus.Value)
                     && !j.UcjbVoid
                 ),
-                Inactive = g.Count(j => j.UcjbVoid)
+                Inactive = g.Count(j => j.UcjbVoid),
             })
             .FirstOrDefaultAsync();
 
         return stats
-               ?? new OverviewStatsViewModel
-               {
-                   Active = 0,
-                   Inactive = 0,
-                   Completed = 0
-               };
+            ?? new OverviewStatsViewModel
+            {
+                Active = 0,
+                Inactive = 0,
+                Completed = 0,
+            };
     }
 
     public async Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(
@@ -1179,7 +1157,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
             JobStatusGroup.Inactive => query.Where(j => j.UcjbVoid),
 
-            _ => query
+            _ => query,
         };
 
         // Apply region filter if provided
@@ -1260,18 +1238,18 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                         : null,
                 Completion = j.InverseParent.Any()
                     ? (int)
-                    Math.Round(
-                        (double)
-                        j.InverseParent.Count(c =>
-                            c.UcjbJobDone
-                            || (
-                                c.UcjbStatus.HasValue
-                                && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value)
-                            )
+                        Math.Round(
+                            (double)
+                                j.InverseParent.Count(c =>
+                                    c.UcjbJobDone
+                                    || (
+                                        c.UcjbStatus.HasValue
+                                        && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value)
+                                    )
+                                )
+                                / j.InverseParent.Count
+                                * 100
                         )
-                        / j.InverseParent.Count
-                        * 100
-                    )
                     : 0,
                 ChildJobs = j
                     .InverseParent.Select(c => new ChildDeliveryJob
@@ -1290,9 +1268,9 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                                 ? c.UcjbCourier.UccrName + " " + c.UcjbCourier.UccrSurname
                                 : null,
                         Completion =
-                            c.UcjbJobDone || c.UcjbStatus == (int)JobStatus.Completed ? 100 : 0
+                            c.UcjbJobDone || c.UcjbStatus == (int)JobStatus.Completed ? 100 : 0,
                     })
-                    .ToList()
+                    .ToList(),
             })
             .AsNoTracking()
             .ToListAsync();
@@ -1302,7 +1280,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             Items = jobs,
             Total = total,
             Page = page,
-            Pages = pages
+            Pages = pages,
         };
     }
 
@@ -1362,11 +1340,9 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
             "region" => isAscending
                 ? query.OrderBy(j => j.TblBulkJobs.FirstOrDefault().Region.Name)
-                : query.OrderByDescending(j =>
-                    j.TblBulkJobs.FirstOrDefault().Region.Name
-                ),
+                : query.OrderByDescending(j => j.TblBulkJobs.FirstOrDefault().Region.Name),
 
-            _ => query.OrderBy(j => j.UcjbNumber) // Default sort
+            _ => query.OrderBy(j => j.UcjbNumber), // Default sort
         };
 
         return query;
@@ -1387,12 +1363,12 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     Pickup = new Coordinates
                     {
                         Lat = j.PickUpLatitude ?? 0,
-                        Lng = j.PickUpLongitude ?? 0
+                        Lng = j.PickUpLongitude ?? 0,
                     },
                     Delivery = new Coordinates
                     {
                         Lat = j.DeliveryLatitude ?? 0,
-                        Lng = j.DeliveryLongitude ?? 0
+                        Lng = j.DeliveryLongitude ?? 0,
                     },
                     ChildJobs = j
                         .InverseParent.Select(c => new OverviewChildJobLocation
@@ -1401,19 +1377,19 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                             Pickup = new Coordinates
                             {
                                 Lat = c.PickUpLatitude ?? 0,
-                                Lng = c.PickUpLongitude ?? 0
+                                Lng = c.PickUpLongitude ?? 0,
                             },
                             Delivery = new Coordinates
                             {
                                 Lat = c.DeliveryLatitude ?? 0,
-                                Lng = c.DeliveryLongitude ?? 0
+                                Lng = c.DeliveryLongitude ?? 0,
                             },
                             Flight =
                                 j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
-                                || IsFlightJobNumber(j.UcjbNumber)
+                                || IsFlightJobNumber(j.UcjbNumber),
                         })
-                        .ToList()
-                }
+                        .ToList(),
+                },
             })
             .AsNoTracking()
             .FirstOrDefaultAsync();
@@ -1550,9 +1526,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             .FirstOrDefaultAsync(x => x.GroupingId == groupingId);
 
         if (grouping == null)
-            throw new KeyNotFoundException(
-                $"Job type grouping with ID {groupingId} not found"
-            );
+            throw new KeyNotFoundException($"Job type grouping with ID {groupingId} not found");
 
         return grouping;
     }
@@ -1580,13 +1554,13 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     Distance = (decimal)
                         Math.Sqrt(
                             Math.Pow(110.574 * ((double)latitude - (double)a.Latitude), 2)
-                            + Math.Pow(
-                                110.574
-                                * ((double)a.Longitude - (double)longitude)
-                                * Math.Cos(latRad),
-                                2
-                            )
-                        )
+                                + Math.Pow(
+                                    110.574
+                                        * ((double)a.Longitude - (double)longitude)
+                                        * Math.Cos(latRad),
+                                    2
+                                )
+                        ),
                 })
                 .OrderBy(a => a.Distance)
                 .Take(3)
@@ -1597,10 +1571,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         }
         catch (Exception ex)
         {
-            throw new ApplicationException(
-                "Error while fetching closest airports",
-                ex
-            );
+            throw new ApplicationException("Error while fetching closest airports", ex);
         }
     }
 
@@ -1619,14 +1590,15 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 JobNumber = j.UcjbNumber,
                 JobStatus = j.UcjbStatus != null ? j.UcjbStatusNavigation.UcjsName : "New",
                 EstimatedDelivery =
-                (
-                    j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
-                    || IsFlightJobNumber(j.UcjbNumber)
-                ) && j.TucJobNationwides.Count != 0
-                    ? j.TucJobNationwides.FirstOrDefault().UcnwEta.Value
-                    : j
-                        .UcjbDate.Date.Add(j.UcjbTime.Value.TimeOfDay)
-                        .AddMinutes(j.UcjbSpeedNavigation.Minutes ?? 180),
+                    (
+                        j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
+                        || IsFlightJobNumber(j.UcjbNumber)
+                    )
+                    && j.TucJobNationwides.Count != 0
+                        ? j.TucJobNationwides.FirstOrDefault().UcnwEta.Value
+                        : j
+                            .UcjbDate.Date.Add(j.UcjbTime.Value.TimeOfDay)
+                            .AddMinutes(j.UcjbSpeedNavigation.Minutes ?? 180),
                 IsFlightJob =
                     j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
                     || IsFlightJobNumber(j.UcjbNumber),
@@ -1641,7 +1613,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     AddressLine5 = j.PickupAddressLine5,
                     AddressLine6 = j.PickupAddressLine6,
                     AddressLine7 = j.PickupAddressLine7,
-                    AddressLine8 = j.PickupAddressLine8
+                    AddressLine8 = j.PickupAddressLine8,
                 },
                 DeliveryLocation = new AddressViewModel
                 {
@@ -1654,7 +1626,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     AddressLine5 = j.DeliveryAddressLine5,
                     AddressLine6 = j.DeliveryAddressLine6,
                     AddressLine7 = j.DeliveryAddressLine7,
-                    AddressLine8 = j.DeliveryAddressLine8
+                    AddressLine8 = j.DeliveryAddressLine8,
                 },
                 CourierLocation = j.UcjbCourierId.HasValue
                     ? new CourierLocation
@@ -1666,9 +1638,9 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                             ? new Coordinates
                             {
                                 Lat = (decimal)j.UcjbCourier.CourierGps.Latitude,
-                                Lng = (decimal)j.UcjbCourier.CourierGps.Longitude
+                                Lng = (decimal)j.UcjbCourier.CourierGps.Longitude,
                             }
-                            : null
+                            : null,
                     }
                     : null,
                 FlightInfo =
@@ -1679,10 +1651,10 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                             {
                                 FlightNumber = n.UcnwFlightNo,
                                 ExpectedArrival = n.UcnwEta,
-                                ExpectedDeparture = n.UcnwEtd
+                                ExpectedDeparture = n.UcnwEtd,
                             })
                             .FirstOrDefault()
-                        : null
+                        : null,
             })
             .AsNoTracking()
             .ToListAsync();
@@ -1698,29 +1670,34 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         try
         {
             // Map and split parcels into new and existing items
-            var mappedParcels = parcels.Select(p => new TucJobItem
-            {
-                ItemId = p.ItemId ?? 0,
-                JobId = jobId,
-                Height = p.Height ?? 0,
-                Length = p.Length ?? 0,
-                Depth = p.Depth ?? 0,
-                Notes = p.ItemName
-            }).ToList();
+            var mappedParcels = parcels
+                .Select(p => new TucJobItem
+                {
+                    ItemId = p.ItemId ?? 0,
+                    JobId = jobId,
+                    Height = p.Height ?? 0,
+                    Length = p.Length ?? 0,
+                    Depth = p.Depth ?? 0,
+                    Notes = p.ItemName,
+                })
+                .ToList();
 
             var newParcels = mappedParcels.Where(p => p.ItemId == 0).ToList();
             var existingParcels = mappedParcels.Where(p => p.ItemId != 0).ToList();
 
             // Handle new items
-            if (newParcels.Count != 0) await Context.TucJobItems.AddRangeAsync(newParcels);
+            if (newParcels.Count != 0)
+                await Context.TucJobItems.AddRangeAsync(newParcels);
 
             // Handle existing items
             foreach (var parcel in existingParcels)
             {
-                var existingItem = await Context.TucJobItems
-                    .FirstOrDefaultAsync(i => i.ItemId == parcel.ItemId);
+                var existingItem = await Context.TucJobItems.FirstOrDefaultAsync(i =>
+                    i.ItemId == parcel.ItemId
+                );
 
-                if (existingItem == null) continue;
+                if (existingItem == null)
+                    continue;
                 existingItem.Height = parcel.Height;
                 existingItem.Length = parcel.Length;
                 existingItem.Depth = parcel.Depth;
@@ -1732,10 +1709,21 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         }
         catch (Exception e)
         {
-            throw new ApplicationException(
-                "Error while updating packages for job",
-                e
-            );
+            throw new ApplicationException("Error while updating packages for job", e);
+        }
+    }
+
+    public async Task<List<T>> GetAllAsync<T>()
+        where T : class
+    {
+        try
+        {
+            return await Context.Set<T>().ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, $"Error retrieving all {typeof(T).Name} records");
+            throw;
         }
     }
 }

@@ -11,4 +11,6 @@ export interface SideNavScope extends angular.IScope {
     userName: string;
     companyName: string;
     isUsCustomer: boolean;
+    currentYear: number;
+    currentDate: string;
 }

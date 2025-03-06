@@ -11,12 +11,29 @@ public interface ICourierRepository
 {
     Task<List<TruckCourierStatusViewModel>> TruckCourierStatusAsync(string courierId);
 
-    Task AddEventAsync(string jobNo, int clientId, string contact, int staffId, int? courierId, int jobId, int jobType,
-        string despatcherName, string notes, int eventType, float? lateTime = null, DateTime? etaTime = null,
-        bool close = false);
+    Task AddEventAsync(
+        string jobNo,
+        int clientId,
+        string contact,
+        int staffId,
+        int? courierId,
+        int jobId,
+        int jobType,
+        string despatcherName,
+        string notes,
+        int eventType,
+        float? lateTime = null,
+        DateTime? etaTime = null,
+        bool close = false
+    );
 
-    List<AvailableCourierPosition> GetAvailableCouriers(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat,
-        bool isUsTenant);
+    List<AvailableCourierPosition> GetAvailableCouriers(
+        decimal minLng,
+        decimal minLat,
+        decimal maxLng,
+        decimal maxLat,
+        bool isUsTenant
+    );
     Task<List<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId);
 
     Task<List<ActiveCouriersViewModel>> ActiveCouriersAsync();
@@ -30,8 +47,11 @@ public interface ICourierRepository
     CourierLocation Location(string code);
     Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds, bool isUsTenant);
 
-    Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(int clearListAreaId,
-        Country country, bool includeCouriers = false);
+    Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(
+        int clearListAreaId,
+        Country country,
+        bool includeCouriers = false
+    );
 
     Task<List<Suggestion>> GetVehicleSizesAsync();
 

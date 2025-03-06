@@ -4,6 +4,9 @@ import OverviewFiltersService from "../services/overview-filters.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import {DriverViewModel, OpenJobResponse, OverviewQueryParams, ViewJob} from "../overview.interfaces";
 
+// Html
+import template from "./open-jobs.template.html";
+
 class OpenJobsWidgetController implements angular.IController {
     static $inject = ["$scope", "overviewService", "moment", "APP_CONFIG", "overviewFiltersService"];
 
@@ -255,7 +258,7 @@ class OpenJobsWidgetController implements angular.IController {
 }
 
 app.component("openJobsWidget", {
-    templateUrl: "app/components/overview/open-jobs/open-jobs.template.html",
+    template: template,
     controller: OpenJobsWidgetController,
     controllerAs: "ctrl"
 });

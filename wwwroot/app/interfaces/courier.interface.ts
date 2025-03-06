@@ -16,11 +16,10 @@ export interface Courier {
 }
 
 export interface ActiveCourier {
-    id: string;            // 'code' is serialized as 'id'
-    courierId: number;
+    id: string;
     name: string;
     dangerousGoods: number;
-    dgLicenseExpiry: string | null; // dates are typically serialized as strings
+    dgLicenseExpiry: string | null;
     label: string;
     text: string;
 }

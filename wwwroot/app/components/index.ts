@@ -21,3 +21,7 @@ import "./prebooks/prebook.controller";
 
 // Overview
 import "./overview/index";
+
+// Task Dashboard
+import "./task-dashboard/tasks-dashboard.service";
+import "./task-dashboard/task-dashboard.controller";

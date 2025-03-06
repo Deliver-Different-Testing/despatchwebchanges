@@ -1,8 +1,11 @@
 import app from "../../../app";
-import "./side-nav.styles.less";
 import angular from "angular";
 import {SideNavScope} from "./side-nav.interfaces";
 import {AppConfig} from "../../../interfaces/app-config.interface";
+
+// Html and style
+import template from "./side-nav.template.html";
+import "./side-nav.styles.less";
 
 class MaterialSidenavController implements angular.IController {
     static $inject = ["$scope", "$state"];
@@ -24,7 +27,7 @@ class MaterialSidenavController implements angular.IController {
 class SideNavDirective implements angular.IDirective {
     static $inject = ["$mdSidenav", "$timeout", "APP_CONFIG"];
     restrict: 'E';
-    templateUrl: string;
+    template: string;
     scope: boolean;
     controller: typeof MaterialSidenavController;
     controllerAs: string;
@@ -33,7 +36,7 @@ class SideNavDirective implements angular.IDirective {
                 private $timeout: angular.ITimeoutService,
                 private APP_CONFIG: AppConfig) {
         this.restrict = "E";
-        this.templateUrl = "app/components/common/side-nav/side-nav.template.html";
+        this.template = template;
         this.scope = true;
         this.controller = MaterialSidenavController;
         this.controllerAs = "$ctrl";
@@ -95,7 +98,19 @@ class SideNavDirective implements angular.IDirective {
         $scope.userName = FirstName;
         $scope.companyName = "DFRNT";
         $scope.isUsCustomer = this.APP_CONFIG.US_Customer;
+        $scope.currentYear = new Date().getFullYear();
 
+        // Format the date
+        const today = new Date();
+        const options: Intl.DateTimeFormatOptions = { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        };
+        const locale = this.APP_CONFIG.US_Customer ? 'en-US' : 'en-NZ';
+        $scope.currentDate = today.toLocaleDateString(locale, options);
+        
         $scope.$on("$destroy", () => {
             if (timeoutId) {
                 this.$timeout.cancel(timeoutId);

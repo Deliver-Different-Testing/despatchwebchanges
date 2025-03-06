@@ -1,3 +1,9 @@
+<!-- Loading Indicator -->
+<dfrnt-loader
+        is-loading="supportsLoading"
+        icon-name="'support'">
+</dfrnt-loader>
+
 <!-- Supports List Component -->
 <div class="job-list-container" ng-if="!supportsLoading && supports.length > 0">
     <!-- Table Headers -->
@@ -47,14 +53,5 @@
         <div class="text">
             No Supports Available
         </div>
-    </div>
-</div>
-
-<!-- Loading Indicator -->
-<div class="loading" ng-if="supportsLoading">
-    <div class="text">
-        <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
-        <md-icon class="loader-icon" md-font-set="material-symbols-outlined">support</md-icon>
-        <span class="sr-only">Loading...</span>
     </div>
 </div>

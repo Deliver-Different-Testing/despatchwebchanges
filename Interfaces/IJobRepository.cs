@@ -407,4 +407,5 @@ public interface IJobRepository
 
     Task<List<MegaMapResponse>> GetJobsForMegaMapAsync();
     Task UpdatePackagesForJobAsync(int jobId, List<ParcelDimensions> parcels);
+    Task<List<T>> GetAllAsync<T>() where T : class;
 }

@@ -28,6 +28,39 @@ async function cleanDistFolder(distPath: string): Promise<void> {
     }
 }
 
+// HTML tracking plugin
+const htmlTrackingPlugin = {
+    name: 'html-tracking',
+    setup(build: esbuild.PluginBuild) {
+        const htmlFiles = new Set<string>();
+
+        build.onResolve({ filter: /\.html$/ }, args => {
+            if (args.path.startsWith('.') || args.path.startsWith('/')) {
+                const resolvedPath = path.resolve(args.resolveDir, args.path);
+                htmlFiles.add(resolvedPath);
+            } else {
+                htmlFiles.add(args.path);
+            }
+            return null;
+        });
+
+        build.onEnd(() => {
+            console.log("\n📄 HTML Templates included in bundle:");
+            if (htmlFiles.size === 0) {
+                console.log("  No HTML templates found in bundle");
+            } else {
+                const sortedHtmlFiles = Array.from(htmlFiles).sort();
+                sortedHtmlFiles.forEach(file => {
+                    // Convert absolute paths to project-relative paths
+                    const relativePath = path.relative(rootDir, file);
+                    console.log(`  ${relativePath}`);
+                });
+                console.log(`  Total: ${htmlFiles.size} HTML templates`);
+            }
+        });
+    }
+};
+
 // Error reporting plugin
 const errorReportingPlugin = {
     name: 'error-reporting',
@@ -84,6 +117,7 @@ async function build(): Promise<void> {
                     math: 'always'
                 }),
                 es5Plugin(),
+                htmlTrackingPlugin,
                 errorReportingPlugin,
                 liveReloadPlugin
             ],
@@ -225,8 +259,55 @@ async function build(): Promise<void> {
             console.log("Generated manifest:", manifest);
 
             if (result.metafile) {
+                // Print bundle analysis
                 const analysis = await esbuild.analyzeMetafile(result.metafile);
                 console.log("\n📊 Bundle analysis:", analysis);
+
+                // Additional detailed reporting
+                console.log("\n📦 Bundle composition:");
+                const metafile = result.metafile;
+
+                // Count and display file types
+                const fileTypes: Record<string, number> = {};
+                let totalJsSize = 0;
+                let totalCssSize = 0;
+                let totalHtmlSize = 0;
+
+                Object.entries(metafile.inputs).forEach(([file, info]) => {
+                    const ext = path.extname(file).toLowerCase();
+                    fileTypes[ext] = (fileTypes[ext] || 0) + 1;
+
+                    if (ext === '.js' || ext === '.ts' || ext === '.tsx') {
+                        totalJsSize += info.bytes;
+                    } else if (ext === '.css' || ext === '.less') {
+                        totalCssSize += info.bytes;
+                    } else if (ext === '.html') {
+                        totalHtmlSize += info.bytes;
+                    }
+                });
+
+                console.log("  File types in bundle:");
+                Object.entries(fileTypes)
+                    .sort((a, b) => b[1] - a[1])
+                    .forEach(([ext, count]) => {
+                        console.log(`    ${ext}: ${count} files`);
+                    });
+
+                console.log("\n  Bundle size breakdown:");
+                console.log(`    JavaScript: ${(totalJsSize / 1024).toFixed(2)} KB`);
+                console.log(`    CSS: ${(totalCssSize / 1024).toFixed(2)} KB`);
+                console.log(`    HTML templates: ${(totalHtmlSize / 1024).toFixed(2)} KB`);
+
+                // List top 10 largest files
+                const files = Object.entries(metafile.inputs)
+                    .map(([file, info]) => ({ file, size: info.bytes }))
+                    .sort((a, b) => b.size - a.size)
+                    .slice(0, 10);
+
+                console.log("\n  Top 10 largest files:");
+                files.forEach(({ file, size }, index) => {
+                    console.log(`    ${index + 1}. ${file} (${(size / 1024).toFixed(2)} KB)`);
+                });
             }
         }
     } catch (error) {

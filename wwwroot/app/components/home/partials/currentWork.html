@@ -1,13 +1,9 @@
 <div class="job-list-container">
     <!-- Loading Indicator -->
-    <div class="loader-container" ng-if="currentListLoading">
-        <div class="full-height" layout="row" layout-align="center center">
-            <div class="material-icon-loader">
-                <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
-                <md-icon class="loader-icon" md-font-set="material-symbols-outlined">local_shipping</md-icon>
-            </div>
-        </div>
-    </div>
+    <dfrnt-loader
+            is-loading="currentListLoading"
+            icon-name="'local_shipping'">
+    </dfrnt-loader>
 
     <!-- Current Job List Table -->
     <div class="job-list-table" ng-if="!currentListLoading && jobsCurrentList && jobsCurrentList.length > 0">

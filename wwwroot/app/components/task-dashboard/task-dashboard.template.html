@@ -1,0 +1,364 @@
+<div class="scrollable-container">
+    <div>
+        <md-toolbar class="md-hue-2">
+            <div class="md-toolbar-tools">
+                <img alt="DFRNT" class="toolbar-logo" src="images/dfrnt_logo.png">
+                <md-divider class="vertical-divider"></md-divider>
+                <h2 class="md-title">Task Dashboard</h2>
+
+                <span flex></span>
+
+                <span style="font-size: medium;">{{ctrl.greeting}}</span>
+
+                <md-button aria-label="Menu" class="md-icon-button" ng-mouseover="ctrl.toggleSidenav()">
+                    <md-icon md-font-set="material-symbols-outlined">menu</md-icon>
+                </md-button>
+            </div>
+        </md-toolbar>
+
+        <material-sidenav></material-sidenav>
+    </div>
+
+    <div class="dfrnt-task-dashboard">
+        <div class="container">
+            <!-- Header with view toggles and status counts -->
+            <md-card class="dashboard-header-card">
+                <md-card-content>
+                    <div layout="row" layout-align="space-between center">
+                        <div layout="row" layout-align="start center" layout-wrap>
+                            <div layout="row" layout-align="start center" class="view-toggle-container">
+                                <span class="toggle-label">List</span>
+                                <md-switch
+                                        ng-model="ctrl.calendarViewMode"
+                                        ng-change="ctrl.toggleViewMode()"
+                                        aria-label="Toggle view mode"
+                                        class="view-toggle-switch md-primary">
+                                </md-switch>
+                                <span class="toggle-label">Calendar</span>
+                            </div>
+                            <md-button class="status-pill all" 
+                            ng-class="{'active': ctrl.statusFilter === 'all'}"
+                            ng-click="ctrl.setStatusFilter('all')" 
+                            aria-label="All tasks">
+                     All: {{ctrl.tasks.length}}
+                 </md-button>
+                 <md-button class="status-pill overdue" 
+                            ng-class="{'active': ctrl.statusFilter === 'overdue'}"
+                            ng-click="ctrl.setStatusFilter('overdue')" 
+                            aria-label="Overdue tasks">
+                     Overdue: {{ctrl.getStatusCounts().overdue}}
+                 </md-button>
+                 <md-button class="status-pill todo" 
+                            ng-class="{'active': ctrl.statusFilter === 'todo'}"
+                            ng-click="ctrl.setStatusFilter('todo')" 
+                            aria-label="Todo tasks">
+                     Todo: {{ctrl.getStatusCounts().todo}}
+                 </md-button>
+                 <md-button class="status-pill done" 
+                            ng-class="{'active': ctrl.statusFilter === 'done'}"
+                            ng-click="ctrl.setStatusFilter('done')" 
+                            aria-label="Done tasks">
+                     Done: {{ctrl.getStatusCounts().done}}
+                 </md-button>
+                        </div>
+                        <div>
+                            <span class="today-date">{{ctrl.today | date:'EEEE, MMMM d, yyyy'}}</span>
+                        </div>
+                    </div>
+                </md-card-content>
+            </md-card>
+
+            <!-- Filters section -->
+            <md-card class="filters-container">
+                <md-toolbar class="md-accent">
+                    <div class="md-toolbar-tools">
+                        <span class="material-symbols-outlined">tune</span>
+                        <span class="md-headline-title" flex
+                              style="margin-left: 8px;">Filters</span>
+                    </div>
+                </md-toolbar>
+
+                <md-card-content>
+                    <!-- Search -->
+                    <md-input-container class="md-block">
+                        <label>Search tasks or job IDs</label>
+                        <md-icon md-font-set="material-symbols-outlined">search</md-icon>
+                        <input ng-model="ctrl.searchQuery" ng-change="ctrl.onFilterChange()">
+                    </md-input-container>
+
+                    <div layout="row" layout-wrap>                    
+                        <!-- Courier Filter -->
+                        <div flex="50" flex-xs="100" class="filter-group">
+                            <md-input-container class="md-block">
+                                <label>Courier</label>
+                                <md-select ng-model="ctrl.courierFilter" ng-change="ctrl.onFilterChange()">
+                                    <md-option value="all">All Couriers</md-option>
+                                    <md-option ng-repeat="courier in ctrl.courierList" value="{{courier.id}}">
+                                        {{courier.name}}
+                                    </md-option>
+                                </md-select>
+                            </md-input-container>
+                        </div>
+
+                        <!-- Event Type filter -->
+                        <div flex="50" flex-xs="100" class="filter-group">
+                            <md-input-container class="md-block">
+                                <label>Event Type</label>
+                                <md-select ng-model="ctrl.eventTypeFilter" ng-change="ctrl.onFilterChange()">
+                                    <md-option value="all">All Event Types</md-option>
+                                    <md-option ng-repeat="eventType in ctrl.eventTypesList" value="{{eventType}}">
+                                        {{eventType.text}}
+                                    </md-option>
+                                </md-select>
+                            </md-input-container>
+                        </div>
+                    </div>
+                </md-card-content>
+            </md-card>
+
+            <!-- Task List View -->
+            <md-card ng-if="ctrl.viewMode === 'list'" class="task-list-card">
+                <md-toolbar class="md-accent">
+                    <div class="md-toolbar-tools">
+                        <span class="material-symbols-outlined">task_alt</span>
+                        <span class="md-headline-title" flex
+                              style="margin-left: 8px;">Tasks ({{ctrl.filteredTasks.length}})</span>
+                    </div>
+                </md-toolbar>
+                <md-card-content>
+                    <!-- Loading Indicator -->
+                    <dfrnt-loader
+                            is-loading="ctrl.tasksLoading"
+                            icon-name="'task_alt'">
+                    </dfrnt-loader>
+
+                    <!-- Empty state -->
+                    <div ng-if="ctrl.filteredTasks.length === 0 && !ctrl.tasksLoading" class="empty-list-state" layout="row"
+                         layout-align="center center" style="padding: 24px;">
+                        <md-icon md-font-set="material-symbols-outlined">info</md-icon>
+                        <span style="margin-left: 8px;">No tasks match your filters</span>
+                    </div>
+
+                    <!-- Task items -->
+                    <md-list ng-if="!ctrl.tasksLoading">
+                        <md-list-item class="task-item" ng-repeat="task in ctrl.filteredTasks"
+                                      ng-class="{'completed': task.closed}">
+                            <div class="priority-indicator" ng-class="task.priority"></div>
+
+                            <md-checkbox class="md-primary"
+                                         ng-model="task.closed"
+                                         ng-change="ctrl.handleTaskCompletion(task)"
+                                         aria-label="Mark as completed">
+                            </md-checkbox>
+
+                            <div class="md-list-item-text task-content" flex>
+                                <h3 ng-class="{'completed-text': task.closed}">
+                                    {{task.title}}
+                                    <span ng-if="task.closed" class="status-indicator done">DONE</span>
+                                    <span ng-if="ctrl.isTaskOverdue(task) && !task.closed"
+                                          class="status-indicator overdue">OVERDUE</span>
+                                    <span ng-if="!ctrl.isTaskOverdue(task) && !task.closed"
+                                          class="status-indicator todo">TODO</span>
+                                </h3>
+
+                                <p ng-class="{'completed-text': task.closed}">
+                                    {{task.description}}
+                                </p>
+
+                                <div class="task-meta" layout="row" layout-wrap>
+                                    <div class="meta-item assignee" layout="row" layout-align="start center">
+                                        <md-icon md-font-set="material-symbols-outlined">person</md-icon>
+                                        <span>{{task.assignee}}</span>
+                                    </div>
+
+                                    <div class="meta-item job-type" layout="row" layout-align="start center">
+                                        <md-icon md-font-set="material-symbols-outlined">label</md-icon>
+                                        <span>{{task.jobType.charAt(0).toUpperCase() + task.jobType.slice(1)}}</span>
+                                    </div>
+
+                                    <md-chip class="job-id-chip">{{task.jobId}}</md-chip>
+                                </div>
+                            </div>
+
+                            <!-- Full-width chip date/time display -->
+                            <div class="task-date-compact" layout="column" layout-align="center end">
+                                <md-icon ng-if="ctrl.isTaskOverdue(task)"
+                                         md-font-set="material-symbols-outlined"
+                                         class="warning-icon">
+                                    warning
+                                </md-icon>
+
+                                <!-- Date chip -->
+                                <div class="date-chip" ng-class="{'overdue-chip': ctrl.isTaskOverdue(task)}">
+                                    <md-button class="chip-button" ng-click="ctrl.openDateTimeDialog($event, task, true, false)">
+                                        <md-icon md-font-set="material-symbols-outlined">calendar_today</md-icon>
+                                        <span>{{task.dueDate | date:'MMM d, yyyy'}}</span>
+                                    </md-button>
+                                </div>
+
+                                <!-- Time chip -->
+                                <div class="time-chip" ng-class="{'overdue-chip': ctrl.isTaskOverdue(task)}">
+                                    <md-button class="chip-button" ng-click="ctrl.openDateTimeDialog($event, task, false, true)">
+                                        <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
+                                        <span>{{task.dueDate | date:'h:mm a'}}</span>
+                                    </md-button>
+                                </div>
+                            </div>
+
+                            <md-divider ng-if="!$last"></md-divider>
+                        </md-list-item>
+                    </md-list>
+                </md-card-content>
+            </md-card>
+
+            <!-- Calendar View Section -->
+            <div ng-if="ctrl.viewMode === 'calendar'" class="calendar-view">
+                <div layout="row" layout-align="space-between stretch">
+                    <!-- Calendar Header -->
+                    <div flex="12.5" class="calendar-header md-whiteframe-1dp">
+                        Overdue
+                    </div>
+
+                    <div ng-repeat="date in ctrl.weekDates" flex="12.5" class="calendar-header md-whiteframe-1dp"
+                         ng-class="{'today': date.toDateString() === ctrl.today.toDateString()}">
+                        {{date | date:'EEE'}} <br>
+                        {{date | date:'MMM d'}}
+                    </div>
+                </div>
+
+                <div layout="row" layout-align="space-between stretch">
+                    <!-- Loading Indicator for Calendar View -->
+                    <div ng-if="ctrl.tasksLoading" class="calendar-loader" layout="row" layout-align="center center" style="width: 100%; padding: 24px;">
+                        <dfrnt-loader
+                                is-loading="ctrl.tasksLoading"
+                                icon-name="'calendar_today'">
+                        </dfrnt-loader>
+                    </div>
+
+                    <!-- Calendar Content (only show when not loading) -->
+                    <div ng-if="!ctrl.tasksLoading" layout="row" style="width: 100%;">
+                        <!-- Overdue Column -->
+                        <div flex="12.5" class="calendar-column md-whiteframe-2dp">
+                            <div class="calendar-content">
+                                <div ng-if="ctrl.getOverdueTasks().length === 0" class="empty-column" layout="row"
+                                     layout-align="center center">
+                                    <md-icon md-font-set="material-symbols-outlined">info</md-icon>
+                                    <span style="margin-left: 8px;">No overdue tasks</span>
+                                </div>
+
+                                <md-card ng-repeat="task in ctrl.getOverdueTasks()" class="calendar-task-card"
+                                         ng-class="task.priority">
+                                    <md-card-content>
+                                        <div layout="row" layout-align="start center">
+                                            <div class="task-icon" ng-class="task.priority">
+                                                <md-icon md-font-set="material-symbols-outlined"
+                                                         ng-if="task.icon === 'phone'">phone
+                                                </md-icon>
+                                                <md-icon md-font-set="material-symbols-outlined"
+                                                         ng-if="task.icon === 'creditCard'">credit_card
+                                                </md-icon>
+                                                <md-icon md-font-set="material-symbols-outlined"
+                                                         ng-if="task.icon === 'refresh'">refresh
+                                                </md-icon>
+                                                <md-icon md-font-set="material-symbols-outlined"
+                                                         ng-if="task.icon === 'message'">message
+                                                </md-icon>
+                                                <md-icon md-font-set="material-symbols-outlined"
+                                                         ng-if="task.icon === 'file'">description
+                                                </md-icon>
+                                                <md-icon md-font-set="material-symbols-outlined" ng-if="!task.icon">
+                                                    schedule
+                                                </md-icon>
+                                            </div>
+
+                                            <div class="task-info" flex>
+                                                <div class="task-title"
+                                                     ng-class="{'completed': task.closed}">
+                                                    {{task.title}}
+                                                </div>
+                                                <div class="task-id">{{task.jobId}}</div>
+                                                <div class="task-time" ng-class="{'overdue': ctrl.isTaskOverdue(task)}">
+                                                    {{ctrl.formatTime(task.dueDate)}}
+                                                </div>
+                                            </div>
+
+                                            <md-checkbox class="md-primary"
+                                                         ng-model="task.closed"
+                                                         ng-change="ctrl.handleTaskCompletion(task)"
+                                                         aria-label="Mark as completed">
+                                            </md-checkbox>
+                                        </div>
+
+                                        <div class="task-description">
+                                            {{task.description | limitTo: 60}}{{task.description.length > 60 ? '...' : ''}}
+                                        </div>
+                                    </md-card-content>
+                                </md-card>
+                            </div>
+                        </div>
+
+                        <!-- Day Columns -->
+                        <div ng-repeat="date in ctrl.weekDates" flex="12.5" class="calendar-column md-whiteframe-2dp">
+                            <div class="calendar-content">
+                                <div ng-if="ctrl.getTasksByDate(date).length === 0" class="empty-column" layout="row"
+                                     layout-align="center center">
+                                    <md-icon md-font-set="material-symbols-outlined">info</md-icon>
+                                    <span style="margin-left: 8px;">No tasks</span>
+                                </div>
+
+                                <md-card ng-repeat="task in ctrl.getTasksByDate(date)" class="calendar-task-card"
+                                         ng-class="task.priority">
+                                    <md-card-content>
+                                        <div layout="row" layout-align="start center">
+                                            <div class="task-icon" ng-class="task.priority">
+                                                <md-icon md-font-set="material-symbols-outlined"
+                                                         ng-if="task.icon === 'phone'">phone
+                                                </md-icon>
+                                                <md-icon md-font-set="material-symbols-outlined"
+                                                         ng-if="task.icon === 'creditCard'">credit_card
+                                                </md-icon>
+                                                <md-icon md-font-set="material-symbols-outlined"
+                                                         ng-if="task.icon === 'refresh'">refresh
+                                                </md-icon>
+                                                <md-icon md-font-set="material-symbols-outlined"
+                                                         ng-if="task.icon === 'message'">message
+                                                </md-icon>
+                                                <md-icon md-font-set="material-symbols-outlined"
+                                                         ng-if="task.icon === 'file'">description
+                                                </md-icon>
+                                                <md-icon md-font-set="material-symbols-outlined" ng-if="!task.icon">
+                                                    schedule
+                                                </md-icon>
+                                            </div>
+
+                                            <div class="task-info" flex>
+                                                <div class="task-title"
+                                                     ng-class="{'completed': task.closed}">
+                                                    {{task.title}}
+                                                </div>
+                                                <div class="task-id">{{task.jobId}}</div>
+                                                <div class="task-time" ng-class="{'overdue': ctrl.isTaskOverdue(task)}">
+                                                    {{ctrl.formatTime(task.dueDate)}}
+                                                </div>
+                                            </div>
+
+                                            <md-checkbox class="md-primary"
+                                                         ng-model="task.closed"
+                                                         ng-change="ctrl.handleTaskCompletion(task)"
+                                                         aria-label="Mark as completed">
+                                            </md-checkbox>
+                                        </div>
+
+                                        <div class="task-description">
+                                            {{task.description | limitTo: 60}}{{task.description.length > 60 ? '...' : ''}}
+                                        </div>
+                                    </md-card-content>
+                                </md-card>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

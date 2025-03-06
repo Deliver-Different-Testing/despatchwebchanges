@@ -17,14 +17,18 @@
   .md-sidenav-right {
     background-color: @surface-color;
     width: 280px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    /* Ensure sidenav takes full height */
 
     &.elevation-1 {
       box-shadow: @elevation-1;
     }
 
     md-toolbar {
-      background-color: @surface-variant !important;
-      color: @on-surface-color !important;
+      background-color: @surface-variant  !important;
+      color: @on-surface-color  !important;
     }
   }
 
@@ -75,10 +79,21 @@
         color: @outline-color;
         font-size: 14px;
       }
+
+      .date-display {
+        display: block;
+        margin-top: 4px;
+        font-size: 12px;
+        color: @primary-color;
+      }
     }
   }
 
   .nav-content {
+    flex: 1 1 auto; // This will allow content to grow but also push the footer to the bottom
+    overflow-y: auto;
+    min-height: 0; // Required for flex child to properly scroll
+
     md-list-item.side-nav-section-header {
       background-color: @surface-variant;
       min-height: 48px;
@@ -101,7 +116,9 @@
 
       &:hover {
         .nav-item-content {
-          md-icon, p {
+
+          md-icon,
+          p {
             color: @primary-color;
           }
         }
@@ -111,7 +128,9 @@
         background-color: @primary-color-light;
 
         .nav-item-content {
-          md-icon, p {
+
+          md-icon,
+          p {
             color: @primary-color;
             font-weight: 500;
           }
@@ -155,9 +174,31 @@
     }
   }
 
+  // New footer styles
+  .nav-footer {
+    min-height: 48px;
+    padding: 12px 16px;
+    background-color: @surface-variant;
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+    flex-shrink: 0; // Prevent footer from shrinking
+    margin-top: auto; // Push to the bottom if content doesn't fill space
+
+    .copyright-text {
+      text-align: center;
+
+      p {
+        margin: 0;
+        font-size: 12px;
+        color: @outline-color;
+      }
+    }
+  }
+
   // State transitions
   .md-sidenav-right {
-    &.ng-enter, &.ng-leave {
+
+    &.ng-enter,
+    &.ng-leave {
       transition: transform 0.2s ease;
     }
 

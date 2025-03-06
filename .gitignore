@@ -345,3 +345,4 @@ healthchecksdb
 /Properties/launchSettings.json
 /wwwroot/dist/**
 /wwwroot/dist/homeControl.js
+/.vscode
