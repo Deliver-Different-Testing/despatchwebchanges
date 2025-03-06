@@ -8,9 +8,7 @@ using Serilog;
 
 namespace DespatchWeb.Controllers;
 
-public class OverviewController(
-    IJobRepository jobRepository,
-    ICourierRepository courierRepository)
+public class OverviewController(IJobRepository jobRepository, ICourierRepository courierRepository)
     : Controller
 {
     [HttpGet]
@@ -43,8 +41,12 @@ public class OverviewController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error getting jobs for status group {StatusGroup}: {Error}",
-                parameters.StatusGroup, ex.Message);
+            Log.Error(
+                ex,
+                "Error getting jobs for status group {StatusGroup}: {Error}",
+                parameters.StatusGroup,
+                ex.Message
+            );
             return StatusCode(500);
         }
     }
@@ -134,14 +136,18 @@ public class OverviewController(
                 parameters.StartDate,
                 parameters.EndDate,
                 parameters.Regions,
-                parameters.Speeds);
+                parameters.Speeds
+            );
             Log.Information("Successfully retrieved {JobCount} open jobs", jobs.Count);
             return Json(jobs);
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Error retrieving open jobs");
-            return StatusCode(500, new { message = "An unexpected error occurred while retrieving open jobs" });
+            return StatusCode(
+                500,
+                new { message = "An unexpected error occurred while retrieving open jobs" }
+            );
         }
     }
 
@@ -152,7 +158,10 @@ public class OverviewController(
         {
             Log.Information("Getting driver stats for courier ID: {CourierId}", courierId);
             var driverStats = await jobRepository.GetDriverStatsAsync(courierId);
-            Log.Information("Successfully retrieved driver stats for courier ID: {CourierId}", courierId);
+            Log.Information(
+                "Successfully retrieved driver stats for courier ID: {CourierId}",
+                courierId
+            );
             return Json(driverStats);
         }
         catch (Exception ex)

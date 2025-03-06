@@ -14,6 +14,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -2385,6 +2386,18 @@ public class JobController(
                 new { message = ex.Message }
             );
         }
+    }
+
+    public async Task<IActionResult> GetJobTypes()
+    {
+        var types = await jobRepository.GetAllAsync<TucJobType>();
+        var formattedList = types.Select(t => new Suggestion
+        {
+            Id = t.UcjtId,
+            Text = t.UcjtName
+        }).ToList();
+
+        return Json(formattedList);
     }
 
     #region Single use Api models

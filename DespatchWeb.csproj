@@ -238,7 +238,6 @@
     <None Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.html" />
     <None Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.controller.js" />
     <None Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.html" />
-    <None Include="wwwroot\app\components\overview\overview.less" />
     <None Include="wwwroot\css\udispatch.less" />
     <None Include="wwwroot\lib\material-time-picker\md-time-picker.css" />
     <None Include="wwwroot\lib\material-time-picker\md-time-picker.js" />
@@ -277,6 +276,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.10" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="wwwroot\app\components\common\dfrnt-loader\dfrnt-loader.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\dispatch-map\dispatch-map.directive.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\dispatch-map\dispatch-map.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.directive.ts" />
@@ -319,6 +319,9 @@
     <TypeScriptCompile Include="wwwroot\app\components\overview\services\overview-filters.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\prebooks\prebook.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\prebooks\prebooks.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\task-dashboard.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\task-dashboard.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\tasks-dashboard.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\contants.ts" />
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
     <TypeScriptCompile Include="wwwroot\app\index.ts" />
@@ -341,5 +344,6 @@
     <TypeScriptCompile Include="wwwroot\app\services\index.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\open-job-dispatch.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\toastr.service.ts" />
+    <TypeScriptCompile Include="wwwroot\types\html.d.ts" />
   </ItemGroup>
 </Project>

@@ -10,5 +10,4 @@ public interface IClientRepository
     Task<List<ClientContactViewModel>> ClientContactsAsync(int contactId);
     Task<DispatcherViewModel> ValidateDispatcherLoginAsync(string name);
     Task<List<ClientActiveViewModel>> ActiveClientsAsync(string searchTerm);
-
 }

@@ -10,6 +10,9 @@
                     <span class="md-title">{{userName}}</span>
                     <span class="md-caption">{{companyName}}</span>
                 </div>
+                <div class="date-container">
+                    <span class="date-display">{{currentDate}}</span>
+                </div>
             </div>
         </div>
 
@@ -53,6 +56,17 @@
                 </md-list-item>
 
                 <md-list-item class="nav-item"
+                              md-selected="isActive('taskDashboard')"
+                              ng-class="{'active': isActive('taskDashboard')}"
+                              ui-sref="taskDashboard">
+                    <div class="nav-item-content">
+                        <md-icon md-font-set="material-symbols-outlined">pinboard</md-icon>
+                        <p>Task Dashboard</p>
+                    </div>
+                    <div class="nav-indicator"></div>
+                </md-list-item>
+
+                <md-list-item class="nav-item"
                               md-selected="isActive('cs')"
                               ng-class="{'active': isActive('cs')}"
                               ui-sref="cs">
@@ -75,5 +89,12 @@
                 </md-list-item>
             </md-list>
         </md-content>
+
+         <!-- Footer with copyright -->
+         <div class="nav-footer">
+            <div class="copyright-text">
+                <p>&copy; {{currentYear}} Deliver Different. All rights reserved.</p>
+            </div>
+        </div>
     </md-sidenav>
 </div>

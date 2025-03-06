@@ -1,10 +1,13 @@
 import app from "../../../app";
-import "./dispatch-map.styles.less";
 import ConfigService from "../../../services/config.service";
 import {Job} from "../../../interfaces/job.interface";
 import {Courier} from "../../../interfaces/courier.interface";
 import angular from "angular";
 import {DispatchMapControllerScope} from "./dispatch-map.interfaces";
+
+// Html and Style
+import template from "./dispatch-map.template.html";
+import "./dispatch-map.styles.less";
 
 class DispatchMapController implements angular.IController {
     static $inject = ["$scope", "NgMap", "$timeout", "configService", "$window"];
@@ -290,13 +293,13 @@ class DispatchMapController implements angular.IController {
 
 class DispatchMapDirective implements angular.IDirective {
     restrict: string;
-    templateUrl: string;
+    template: string;
     scope: any;
     controller: typeof DispatchMapController;
 
     constructor() {
         this.restrict = "E";
-        this.templateUrl = "app/components/common/dispatch-map/dispatch-map.template.html";
+        this.template = template;
         this.scope = {
             jobs: '<',
             currentJob: '<',

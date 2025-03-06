@@ -75,10 +75,6 @@ class NationwideService implements angular.IServiceProvider {
         return await this.getNationwideJobs("nationwideJobListReprice", queryParams, selectedClients, internal, selectedAreas);
     }
 
-    async getEventTypes(): Promise<Suggestion[]> {
-        const response = await this.$http.get<Suggestion[]>("job/EventTypeList");
-        return response.data;
-    }
 
     async getFlightOptions(jobId: number, departureDate: string | Date): Promise<{
         flights: FlightViewModel[];

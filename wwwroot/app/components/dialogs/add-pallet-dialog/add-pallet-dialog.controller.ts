@@ -103,8 +103,6 @@ class PalletDialogController {
                         "rate",
                         Number(rate.replace(/[^0-9.-]+/g, "")),
                         Number(rate.replace(/[^0-9.-]+/g, "")),
-                        this.dispatcherName,
-                        this.contactId,
                         this.job.preBook
                     );
                 }

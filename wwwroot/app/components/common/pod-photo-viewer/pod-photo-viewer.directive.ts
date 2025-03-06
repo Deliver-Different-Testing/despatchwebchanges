@@ -1,6 +1,9 @@
 import app from "../../../app";
 import angular from "angular";
 import {PodPhoto} from "./pod-photo-viewer.interfaces";
+
+// Html and style
+import template from "./pod-photo-viewer.template.html";
 import "./pod-photo-viewer.styles.less";
 
 class PODPhotoViewerController implements angular.IController {
@@ -39,7 +42,7 @@ class PODPhotoViewerController implements angular.IController {
 
 class PODPhotoViewerDirective implements angular.IDirective {
     restrict: 'E';
-    templateUrl: string;
+    template: string;
     scope: {
         photos: '<',
         isOpen: '<',
@@ -52,7 +55,7 @@ class PODPhotoViewerDirective implements angular.IDirective {
 
     constructor() {
         this.restrict = 'E';
-        this.templateUrl = "app/components/common/pod-photo-viewer/pod-photo-viewer.template.html";
+        this.template = template;
         this.scope = {
             photos: '<',
             isOpen: '<',

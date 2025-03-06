@@ -5,9 +5,12 @@ import {AppConfig} from "../../../interfaces/app-config.interface";
 import {InternalStatus, Job} from "../../../interfaces/job.interface";
 import {FirstName, ContactID} from "../../../contants";
 import {JobNote, JobOptions, TabItem} from "./job-details.interfaces";
-import "./job-details.styles.less";
 import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
 import DispatchService from "../../../services/dispatch.service";
+
+// Html and Style
+import template from "./job-details.template.html";
+import "./job-details.styles.less";
 
 class JobDetailController implements angular.IController {
     static $inject = ["$scope", "$mdDialog", "toastrService", "DispatchData", "APP_CONFIG", "rateJobService", "moment", "$mdMenu"];
@@ -32,7 +35,7 @@ class JobDetailController implements angular.IController {
         private $scope: angular.IScope,
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
-        private dispatchData: any,
+        private dispatchData: DispatchService,
         APP_CONFIG: AppConfig,
         private rateJobService: any,
         private moment: any,
@@ -891,6 +894,8 @@ class JobDetailController implements angular.IController {
 
     async markJobAsDone($event: MouseEvent, job: Job) {
         try {
+            if(job.completedTime == undefined) return;
+
             await this.dispatchData.updatePODDetail(job.jobNo, 6, job.podName, job.completedTime);
 
             this.toastrService.showSuccessToast(`Job ${job.jobNo} marked as done successfully`);
@@ -1075,7 +1080,7 @@ class JobDetailController implements angular.IController {
 
 class JobDetailDirective implements angular.IDirective {
     restrict: 'E';
-    templateUrl: string;
+    template: string;
     scope: {
         job: string;
         onStatusChange: string;
@@ -1086,7 +1091,7 @@ class JobDetailDirective implements angular.IDirective {
 
     constructor() {
         this.restrict = 'E';
-        this.templateUrl = "app/components/common/job-details/job-details.template.html";
+        this.template = template;
         this.scope = {
             job: "=",
             onStatusChange: "&"

@@ -13,6 +13,7 @@ import {
 import {PaginatedResponse} from "../interfaces/paginated-response.interface";
 import {DateField, JobField} from "../interfaces/job-field.types";
 import DfrntPageViewModel from "../interfaces/dfrnt-page-view-model.interface";
+import {ActiveCourier} from "../interfaces/courier.interface";
 
 class DispatchService {
     static $inject = ["$http", "moment", "APP_CONFIG"];
@@ -62,6 +63,11 @@ class DispatchService {
             }
         });
 
+        return response.data;
+    }
+
+    async getEventTypes(): Promise<Suggestion[]> {
+        const response = await this.$http.get<Suggestion[]>("job/EventTypeList");
         return response.data;
     }
 
@@ -228,12 +234,12 @@ class DispatchService {
     }
 
     public async getActiveCouriers() {
-        const response = await this.$http.get("courier/active");
+        const response = await this.$http.get<ActiveCourier[]>("courier/active");
         return response.data;
     }
 
     public async getAllCouriers() {
-        const response = await this.$http.get("courier/AllActive");
+        const response = await this.$http.get<ActiveCourier[]>("courier/AllActive");
         return response.data;
     }
 
@@ -764,6 +770,11 @@ class DispatchService {
             console.error('Error updating packages:', error);
             throw error;
         }
+    }
+
+    async getAllJobTypes() {
+        const response = await this.$http.get<Suggestion[]>(`job/GetJobTypes`);
+        return response.data;
     }
 
     public async getPriceBreakdown(jobId: number): Promise<PriceBreakdown[]> {

@@ -3066,7 +3066,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
 
     $scope.getEventTypes = async () => {
         try {
-            $scope.pickEventTypes = await NWData.getEventTypes();
+            $scope.pickEventTypes = await DispatchData.getEventTypes();
         } catch (error) {
             console.error("Error fetching event types:", error);
         }

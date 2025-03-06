@@ -141,8 +141,6 @@ class EditDateTimeDialogController {
                 callData.field,
                 callData.value,
                 this.job.charge,
-                FirstName,
-                ContactID,
                 this.job.preBook
             );
         }
@@ -155,7 +153,7 @@ class EditDateTimeDialogController {
 
     private formatDateTime(dateTime: Date): string | null {
         // Ensure valid date
-        if (!(dateTime instanceof Date) || isNaN(dateTime.getTime())) {
+        if (!isNaN(dateTime.getTime())) {
             console.warn("Invalid date provided to _formatDateTime");
             return null;
         }

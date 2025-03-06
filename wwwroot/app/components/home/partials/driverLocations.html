@@ -1,12 +1,8 @@
 <!-- Loading Indicator -->
-<div class="loader-container" ng-if="driverLocationsLoading">
-    <div class="full-height" layout="row" layout-align="center center">
-        <div class="material-icon-loader">
-            <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
-            <md-icon class="loader-icon" md-font-set="material-symbols-outlined">person_pin_circle</md-icon>
-        </div>
-    </div>
-</div>
+<dfrnt-loader
+        is-loading="driverLocationsLoading"
+        icon-name="'person_pin_circle'">
+</dfrnt-loader>
 
 <div id="driverLocations" ng-if="!driverLocationsLoading && driverLocations && driverLocations.areas.length > 0">
     <div class="container-fluid">
