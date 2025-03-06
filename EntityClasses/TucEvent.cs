@@ -51,6 +51,22 @@ public partial class TucEvent
 
     public int? SpeedId { get; set; }
 
+    public bool UcevIsScheduled { get; set; }
+
+    public int? UcevTimeOffset { get; set; }
+
+    public DateTime? UcevScheduledTime { get; set; }
+
+    public int? UcevTemplateDetailId { get; set; }
+
+    public string UcevPayload { get; set; }
+
+    public bool UcevNotificationSent { get; set; }
+
+    public DateTime? UcevNotificationSentAt { get; set; }
+
+    public DateTime? UcevDueTime { get; set; }
+
     public virtual TucJobType Speed { get; set; }
 
     public virtual TucClient UcevClient { get; set; }

@@ -113,6 +113,10 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TucEventType> TucEventTypes { get; set; }
 
+    public virtual DbSet<TucEventTypeEventTypeGroup> TucEventTypeEventTypeGroups { get; set; }
+
+    public virtual DbSet<TucEventTypeGroup> TucEventTypeGroups { get; set; }
+
     public virtual DbSet<TucJob> TucJobs { get; set; }
 
     public virtual DbSet<TucJobArchive> TucJobArchives { get; set; }
@@ -3196,9 +3200,17 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UccrId).HasColumnName("uccrID");
             entity.Property(e => e.AccountProfileId).HasColumnName("AccountProfileID");
             entity.Property(e => e.Active).HasDefaultValue(true);
+            entity.Property(e => e.AddressLine1).HasMaxLength(255);
+            entity.Property(e => e.AddressLine2).HasMaxLength(255);
+            entity.Property(e => e.AddressLine3).HasMaxLength(255);
+            entity.Property(e => e.AddressLine4).HasMaxLength(255);
+            entity.Property(e => e.AddressLine5).HasMaxLength(255);
             entity.Property(e => e.AddressLine6).HasMaxLength(255);
+            entity.Property(e => e.AddressLine7).HasMaxLength(255);
+            entity.Property(e => e.AddressLine8).HasMaxLength(255);
             entity.Property(e => e.AfterHoursWeb).HasDefaultValue(false);
             entity.Property(e => e.AutoDespatch).HasDefaultValue(true);
+            entity.Property(e => e.BankRoutingNumber).HasMaxLength(9);
             entity.Property(e => e.BaseVehicle).HasDefaultValue(false);
             entity.Property(e => e.Blurb).HasMaxLength(1000);
             entity.Property(e => e.CarSavingsAmount).HasColumnType("money");
@@ -3457,9 +3469,13 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(15)
                 .IsUnicode(false)
                 .HasColumnName("ucevDespatcher");
+            entity.Property(e => e.UcevDueTime)
+                .HasColumnType("datetime")
+                .HasColumnName("ucevDueTime");
             entity.Property(e => e.UcevEtatime)
                 .HasColumnType("datetime")
                 .HasColumnName("ucevETATime");
+            entity.Property(e => e.UcevIsScheduled).HasColumnName("ucevIsScheduled");
             entity.Property(e => e.UcevJobId).HasColumnName("ucevJobID");
             entity.Property(e => e.UcevJobNumber)
                 .HasMaxLength(50)
@@ -3471,16 +3487,26 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(1000)
                 .IsUnicode(false)
                 .HasColumnName("ucevNotes");
+            entity.Property(e => e.UcevNotificationSent).HasColumnName("ucevNotificationSent");
+            entity.Property(e => e.UcevNotificationSentAt)
+                .HasColumnType("datetime")
+                .HasColumnName("ucevNotificationSentAt");
             entity.Property(e => e.UcevOriginator).HasColumnName("ucevOriginator");
             entity.Property(e => e.UcevPageCourier).HasColumnName("ucevPageCourier");
+            entity.Property(e => e.UcevPayload).HasColumnName("ucevPayload");
             entity.Property(e => e.UcevResponseTime)
                 .HasColumnType("datetime")
                 .HasColumnName("ucevResponseTime");
+            entity.Property(e => e.UcevScheduledTime)
+                .HasColumnType("datetime")
+                .HasColumnName("ucevScheduledTime");
             entity.Property(e => e.UcevStaffIdin).HasColumnName("ucevStaffIDIn");
             entity.Property(e => e.UcevStaffIdout).HasColumnName("ucevStaffIDOut");
+            entity.Property(e => e.UcevTemplateDetailId).HasColumnName("ucevTemplateDetailID");
             entity.Property(e => e.UcevTime)
                 .HasColumnType("datetime")
                 .HasColumnName("ucevTime");
+            entity.Property(e => e.UcevTimeOffset).HasColumnName("ucevTimeOffset");
             entity.Property(e => e.UcevType).HasColumnName("ucevType");
 
             entity.HasOne(d => d.Speed).WithMany(p => p.TucEvents)
@@ -3518,6 +3544,49 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasColumnName("ucetName");
+        });
+
+        modelBuilder.Entity<TucEventTypeEventTypeGroup>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__TucEvent__3214EC07566A90D1");
+
+            entity.ToTable("TucEventType_EventTypeGroups");
+
+            entity.HasIndex(e => e.EventTypeGroupId, "IX_TucEventType_EventTypeGroups_EventTypeGroupId");
+
+            entity.HasIndex(e => e.EventTypeId, "IX_TucEventType_EventTypeGroups_EventTypeId");
+
+            entity.HasIndex(e => new { e.EventTypeId, e.EventTypeGroupId }, "UQ_TucEventType_EventTypeGroups").IsUnique();
+
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.Sequence).HasDefaultValue(1);
+
+            entity.HasOne(d => d.EventTypeGroup).WithMany(p => p.TucEventTypeEventTypeGroups)
+                .HasForeignKey(d => d.EventTypeGroupId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_TucEventType_EventTypeGroups_TucEventTypeGroups");
+
+            entity.HasOne(d => d.EventType).WithMany(p => p.TucEventTypeEventTypeGroups)
+                .HasForeignKey(d => d.EventTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_TucEventType_EventTypeGroups_TucEventType");
+        });
+
+        modelBuilder.Entity<TucEventTypeGroup>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__TucEvent__3214EC07D5CBF0B4");
+
+            entity.Property(e => e.Created)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(50);
+            entity.Property(e => e.Description).HasMaxLength(255);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.LastModified).HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy).HasMaxLength(50);
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(50);
         });
 
         modelBuilder.Entity<TucJob>(entity =>
@@ -5239,6 +5308,9 @@ public partial class DespatchContext : DbContext
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.CubicCapacity).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.FuelPercentage)
+                .HasDefaultValue(1m)
+                .HasColumnType("decimal(18, 4)");
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");

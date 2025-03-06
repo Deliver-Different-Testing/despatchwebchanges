@@ -29,6 +29,8 @@ public partial class VehicleSize
 
     public int? VehicleTypeId { get; set; }
 
+    public decimal FuelPercentage { get; set; }
+
     public virtual ICollection<AgentVehicle> AgentVehicles { get; set; } = new List<AgentVehicle>();
 
     public virtual ICollection<TucJobArchive> TucJobArchives { get; set; } = new List<TucJobArchive>();

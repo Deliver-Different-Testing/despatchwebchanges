@@ -221,5 +221,7 @@ namespace DespatchWeb.EntityClasses
         public string OpenforceApiKey { get; set; }
         [StringLength(50)]
         public string OpenforceClientGuid { get; set; }
+        [StringLength(100)]
+        public string ReceivableAccount { get; set; }
     }
 }

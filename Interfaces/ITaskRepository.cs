@@ -12,4 +12,6 @@ public interface ITaskRepository
     Task SetEventAsClosed(int eventId, bool closed);
     Task UpdateEventDate(int eventId, DateTime date);
     Task UpdateEventTime(int eventId, DateTime time);
+    Task<List<Suggestion>> GetEventGroupsAsync();
+    Task<List<EventGroupViewModel>> GetEventTypeGroupsAsync(int eventGroupId);
 }
