@@ -85,7 +85,6 @@ class JobDetailController implements angular.IController {
         if (this.job) {
             this.internalJob = this.job;
             this.initializeJobData();
-            this.updateTabsArray();
             this.loadPodPhotos();
             this.setupPhotoKeyboardNavigation();
             this.getSelectedStatusText();
@@ -102,7 +101,6 @@ class JobDetailController implements angular.IController {
 
             if (this.internalJob) {
                 this.initializeJobData();
-                this.updateTabsArray();
 
                 // Only load photos if this isn't the first change or if there's a completed time
                 if (!changes['job'].isFirstChange() ||
@@ -138,37 +136,6 @@ class JobDetailController implements angular.IController {
                 this.toastrService.showErrorToast('Failed to load POD photos');
                 console.error('Error loading POD photos:', error);
             });
-    }
-
-    private updateTabsArray(): void {
-        if (!this.internalJob) {
-            console.log('updateTabsArray: No job available yet');
-            return;
-        }
-
-        console.log('Updating tabs array with job:', this.internalJob.id, 'Job No:', this.internalJob.jobNo);
-
-        // Start with the main job
-        this.allTabs = [{
-            id: this.internalJob.id,
-            text: this.internalJob.jobNo,
-            isMainJob: true
-        }];
-
-        // Add related jobs if they exist
-        if (this.internalJob.relatedJobs && this.internalJob.relatedJobs.length) {
-            console.log(`Adding ${this.internalJob.relatedJobs.length} related jobs to tabs`);
-
-            this.allTabs = this.allTabs.concat(
-                this.internalJob.relatedJobs.map(job => ({
-                    id: job.id,
-                    text: job.text,
-                    isMainJob: false
-                }))
-            );
-        }
-
-        console.log('Updated tabs array:', this.allTabs);
     }
 
     async navigateTab(direction: 'prev' | 'next'): Promise<void> {
