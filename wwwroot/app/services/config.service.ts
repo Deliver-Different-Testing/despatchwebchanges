@@ -1,5 +1,6 @@
 import app from "../app";
 import angular from "angular";
+import ApiConfig from "../interfaces/apiConfig.interface";
 
 class ConfigService {
     static $inject = ["$http"];
@@ -8,12 +9,12 @@ class ConfigService {
     }
 
     async getHereMapsKey(): Promise<string> {
-        const response = await this.$http.get<{ apiKey: string }>("/config/GetHereMapsKey");
+        const response = await this.$http.get<ApiConfig>("/config/GetHereMapsKey");
         return response.data.apiKey;
     }
 
     async getGoogleMapsKey(): Promise<string> {
-        const response = await this.$http.get<{ apiKey: string }>("/config/GetGoogleMapsKey");
+        const response = await this.$http.get<ApiConfig>("/config/GetGoogleMapsKey");
         return response.data.apiKey;
     }
 }

@@ -22,6 +22,7 @@ import "../lib/here-map-tracking/here-map-tracking.component.js";
 // Dispatch Web app
 import "./app";
 import "./filters";
+import "./directives";
 import "./materialTheme";
 import "./routes";
 

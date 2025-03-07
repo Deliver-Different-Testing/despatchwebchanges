@@ -1,5 +1,10 @@
 import app from "../app";
 
+/**
+ * @deprecated This class is obsolete and should not be used in new code.
+ * Use the new directive job-details in components/job-details instead.
+ * This will be kept for the time being for compatibility and reference
+ */
 class JobDetailService {
     static $inject = ["DispatchData", "$mdDialog", "toastrService", "rateJobService", "$document", "moment", "APP_CONFIG", "$rootScope"];
 

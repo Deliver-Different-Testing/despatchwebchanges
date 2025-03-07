@@ -10,12 +10,12 @@ export class EventGroupDialogService {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private DispatchData: DispatchService
+        private DispatchData: DispatchService,
     ) {
         console.log('EventGroupDialogService: Service instantiated');
     }
 
-    async openEventGroupDialog(eventGroupId: number) {
+    async openEventGroupDialog(eventGroupId: number, jobId: number) {
         console.log(`EventGroupDialogService: Opening dialog for event group ID: ${eventGroupId}`);
 
         try {
@@ -35,6 +35,7 @@ export class EventGroupDialogService {
                 clickOutsideToClose: false,
                 escapeToClose: true,
                 locals: {
+                    jobId,
                     eventTypeGroups,
                     users
                 },
@@ -42,8 +43,13 @@ export class EventGroupDialogService {
             });
             console.log('EventGroupDialogService: Dialog closed');
         } catch (error) {
+            if(error === undefined) {
+                return;
+            }
+
+            // Error occured
             console.error('EventGroupDialogService: Error in openEventGroupDialog', error);
-            throw error; // Re-throw to allow caller to handle
+            throw error;
         }
     }
 }

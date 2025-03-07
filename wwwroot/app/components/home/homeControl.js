@@ -3390,8 +3390,8 @@ $scope.addEventOtherAction = ($event) => {
   hideMenu();
 };
 
-$scope.selectEventGroup = async (eventGroupId) => {
-  await eventGroupDialogService.openEventGroupDialog(eventGroupId);
+$scope.selectEventGroup = async (eventGroupId, jobId) => {
+  await eventGroupDialogService.openEventGroupDialog(eventGroupId, jobId);
 
   // Implement your event groups logic
   console.log("Event Groups for job:", $scope.currentJob);

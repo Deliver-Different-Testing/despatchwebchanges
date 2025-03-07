@@ -25,13 +25,13 @@
                         </tr>
                         </thead>
                         <tbody md-body>
-                        <tr md-row ng-repeat="event in ctrl.events">
-                            <td md-cell>{{event.eventType}}</td>
-                            <td md-cell>{{event.group}}</td>
-                            <td md-cell>{{event.sequence}}</td>
+                        <tr md-row ng-repeat="item in ctrl.events">
+                            <td md-cell>{{item.eventType.text}}</td>
+                            <td md-cell>{{item.group}}</td>
+                            <td md-cell>{{item.sequence}}</td>
                             <td md-cell>
                                 <md-input-container class="md-block">
-                                    <input type="number" ng-model="event.dueTime" min="0"/>
+                                    <input type="number" ng-model="item.dueTime" min="0"/>
                                 </md-input-container>
                             </td>
                             <td md-cell>
@@ -50,7 +50,7 @@
                                 </md-autocomplete>
                             </td>
                             <td md-cell>
-                                <md-checkbox ng-model="event.active" aria-label="Active"></md-checkbox>
+                                <md-checkbox ng-model="item.active" aria-label="Active"></md-checkbox>
                             </td>
                         </tr>
                         </tbody>
@@ -72,7 +72,7 @@
 
         <md-dialog-actions layout="row">
             <span flex></span>
-            <md-button class="md-primary md-raised" ng-click="ctrl.save()" ng-disabled="!ctrl.events || ctrl.events.length === 0">
+            <md-button class="md-primary md-raised" ng-click="ctrl.save(ctrl.jobId, ctrl.events)" ng-disabled="!ctrl.events || ctrl.events.length === 0">
                 Save
             </md-button>
         </md-dialog-actions>
