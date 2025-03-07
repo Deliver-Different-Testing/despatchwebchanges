@@ -1,11 +1,11 @@
 <!-- Job List Component -->
 <div class="droppable-box">
     <!-- Context Menu with Hover Submenu for Event Groups -->
-    <div style="position: fixed; z-index: 100;" ng-style="{'top': menuPosition.top, 'left': menuPosition.left, 'display': menuVisible ? 'block' : 'none'}">
+    <div style="position: fixed; z-index: 100;" ng-style="{'top': menuPosition.top, 'left': menuPosition.left, 'display': menuVisible ? 'block' : 'none'}" class="md-dense">
         <div ng-click="$event.stopPropagation()">
             <md-menu-bar>
                 <md-menu>
-                    <md-content>
+                    <md-content md-dense>
                         <md-list>
                             <md-list-item ng-click="voidJobAction()">
                                 <md-icon md-font-set="material-symbols-outlined">cancel</md-icon>
@@ -31,7 +31,7 @@
 
                                 <md-menu-content width="4" ng-mouseleave="$mdMenu.close()">
                                     <md-menu-item ng-repeat="group in eventGroups">
-                                        <md-button ng-click="selectEventGroup(group.id, $event)">
+                                        <md-button ng-click="selectEventGroup(group.id, currentJob.id)">
                                             {{group.text}}
                                         </md-button>
                                     </md-menu-item>

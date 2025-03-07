@@ -2,7 +2,7 @@ import app from "../../../app";
 import angular from "angular";
 import ToastrService from "../../../services/toastr.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
-import {InternalStatus, Job} from "../../../interfaces/job.interface";
+import {InternalStatus, Job, PriceBreakdown} from "../../../interfaces/job.interface";
 import {FirstName, ContactID} from "../../../contants";
 import {JobNote, JobOptions, TabItem} from "./job-details.interfaces";
 import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
@@ -35,7 +35,7 @@ class JobDetailController implements angular.IController {
         private $scope: angular.IScope,
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
-        private dispatchData: DispatchService,
+        private DispatchData: DispatchService,
         APP_CONFIG: AppConfig,
         private rateJobService: any,
         private moment: any,
@@ -69,7 +69,7 @@ class JobDetailController implements angular.IController {
         };
 
         this.internalStatusList = [];
-        this.dispatchData.getInternalStatusList()
+        this.DispatchData.getInternalStatusList()
             .then((statusList: InternalStatus[]) => {
                 this.internalStatusList = statusList;
                 this.getSelectedStatusText();
@@ -129,7 +129,7 @@ class JobDetailController implements angular.IController {
         const completedTime = this.moment(this.internalJob?.completedTime);
         const month = completedTime.month() + 1;
 
-        this.dispatchData.getJobDeliveryPhotosAndSignature(this.internalJob.id, completedTime.year(), month)
+        this.DispatchData.getJobDeliveryPhotosAndSignature(this.internalJob.id, completedTime.year(), month)
             .then((photos: PodPhoto[]) => {
                 this.formattedPodPhotos = photos;
                 this.toastrService.showSuccessToast('Loaded POD photos');
@@ -245,7 +245,7 @@ class JobDetailController implements angular.IController {
             const currentIndex = this.selectedTab;
 
             // Load new job details
-            const updatedJob = await this.dispatchData.getJobDetail(jobId);
+            const updatedJob = await this.DispatchData.getJobDetail(jobId);
             console.log('Loaded job details:', updatedJob);
 
             // If this is loading a related job, we need to preserve the original related jobs array
@@ -463,7 +463,7 @@ class JobDetailController implements angular.IController {
 
     async showAddressDialog($event: MouseEvent, job: Job, isDeliveryAddress: boolean) {
         const addressToUpdate = isDeliveryAddress ? job.deliveryAddress : job.pickupAddress;
-        const pickSuburbs = await this.dispatchData.getSuburbList();
+        const pickSuburbs = await this.DispatchData.getSuburbList();
 
         return this.$mdDialog.show({
             controller: "EditAddressDialogController",
@@ -568,9 +568,9 @@ class JobDetailController implements angular.IController {
         console.log(`Job Rate: ${rate}`);
 
         if (isDeliveryAddress) {
-            await this.dispatchData.updateDeliveryAddress(job.id, rate, FirstName, job.preBook, addressResult.addressData);
+            await this.DispatchData.updateDeliveryAddress(job.id, rate, FirstName, job.preBook, addressResult.addressData);
         } else {
-            await this.dispatchData.updatePickupAddress(job.id, rate, FirstName, job.preBook, addressResult.addressData);
+            await this.DispatchData.updatePickupAddress(job.id, rate, FirstName, job.preBook, addressResult.addressData);
         }
     }
 
@@ -677,13 +677,13 @@ class JobDetailController implements angular.IController {
     async contactClick($event: MouseEvent, job: Job) {
         if (job.clientId === undefined) return;
 
-        const pickContacts = await this.dispatchData.getContactList(job.clientId);
+        const pickContacts = await this.DispatchData.getContactList(job.clientId);
         await this.showSelectDialog($event, job, pickContacts, "ContactID", "Contact", job.contactName);
     }
 
 
     async speedClick($event: MouseEvent, job: Job) {
-        const pickSpeeds = await this.dispatchData.getSpeedList();
+        const pickSpeeds = await this.DispatchData.getSpeedList();
         await this.showSelectDialog($event, job, pickSpeeds, "SpeedID", "Speed", job.speedName);
     }
 
@@ -717,7 +717,7 @@ class JobDetailController implements angular.IController {
 
 
     async sizeClick($event: MouseEvent, job: Job) {
-        const pickVehicleSizes = await this.dispatchData.getVehicleSizes();
+        const pickVehicleSizes = await this.DispatchData.getVehicleSizes();
         await this.showSelectDialog($event, job, pickVehicleSizes, "Size", "Size", job.size.text);
     }
 
@@ -735,7 +735,7 @@ class JobDetailController implements angular.IController {
 
 
     async leaveClick($event: MouseEvent, job: Job) {
-        const pickLeaveList = await this.dispatchData.getLeaveList();
+        const pickLeaveList = await this.DispatchData.getLeaveList();
         await this.showSelectDialog($event, job, pickLeaveList, "DeliverToLeaveID", "Leave Parcel", job.sigNotRequired || "Signature Required");
     }
 
@@ -753,7 +753,7 @@ class JobDetailController implements angular.IController {
 
 
     async statusClick($event: MouseEvent, job: Job) {
-        const statusList = await this.dispatchData.getStatusList();
+        const statusList = await this.DispatchData.getStatusList();
         await this.showSelectDialog($event, job, statusList, "Status", "Status", job.statusName);
     }
 
@@ -773,7 +773,7 @@ class JobDetailController implements angular.IController {
                     console.error("Failed to convert rate to a number:", rate);
                 }
 
-                await this.dispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, numericRate, job.preBook);
+                await this.DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, numericRate, job.preBook);
             } else {
                 // Ensure rate is decimal
                 const numericRate = parseFloat(job.charge.replace(/[^\d.-]/g, ""));
@@ -782,9 +782,9 @@ class JobDetailController implements angular.IController {
                 }
 
                 if (job.bulkJob) {
-                    await this.dispatchData.updateBulkJobDetail(job.id, callData.field, callData.value, numericRate, FirstName, ContactID);
+                    await this.DispatchData.updateBulkJobDetail(job.id, callData.field, callData.value, numericRate, FirstName, ContactID);
                 } else {
-                    await this.dispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, numericRate, job.preBook);
+                    await this.DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, numericRate, job.preBook);
                 }
             }
         } catch (error) {
@@ -830,7 +830,7 @@ class JobDetailController implements angular.IController {
         console.log(`Capitalized property: ${capitalizedProperty}`);
 
         const updateJob = async (rate: number) => {
-            await this.dispatchData.updateJobDetail(job.id, capitalizedProperty, newValue, rate, job.preBook);
+            await this.DispatchData.updateJobDetail(job.id, capitalizedProperty, newValue, rate, job.preBook);
         };
 
         try {
@@ -847,9 +847,9 @@ class JobDetailController implements angular.IController {
 
                 if (newValue) {
                     const repriceStatusId = 4;
-                    await this.dispatchData.updateJobDetail(job.id, "InternalStatusID", repriceStatusId, job.charge, job.preBook);
+                    await this.DispatchData.updateJobDetail(job.id, "InternalStatusID", repriceStatusId, job.charge, job.preBook);
                 } else if (previousStatus) {
-                    await this.dispatchData.updateJobDetail(job.id, "InternalStatusID", previousStatus, job.charge, job.preBook);
+                    await this.DispatchData.updateJobDetail(job.id, "InternalStatusID", previousStatus, job.charge, job.preBook);
                 }
             }  // Special handling for "van"
             else if (property === "van") {
@@ -896,7 +896,7 @@ class JobDetailController implements angular.IController {
         try {
             if(job.completedTime == undefined) return;
 
-            await this.dispatchData.updatePODDetail(job.jobNo, 6, job.podName, job.completedTime);
+            await this.DispatchData.updatePODDetail(job.jobNo, 6, job.podName, job.completedTime);
 
             this.toastrService.showSuccessToast(`Job ${job.jobNo} marked as done successfully`);
             await this.refreshJobDetails(job.id);
@@ -1014,7 +1014,7 @@ class JobDetailController implements angular.IController {
 
             const email = await this.$mdDialog.show(confirm);
 
-            await this.dispatchData.sendPOD(this.internalJob.id, email);
+            await this.DispatchData.sendPOD(this.internalJob.id, email);
 
             await this.$mdDialog.show(this.$mdDialog.alert()
                 .clickOutsideToClose(true)
@@ -1051,7 +1051,7 @@ class JobDetailController implements angular.IController {
 
         try {
             // Update Job
-            await this.dispatchData.updateJobDetail(
+            await this.DispatchData.updateJobDetail(
                 job.id,
                 "InternalStatusID",
                 internalStatusId,
@@ -1075,6 +1075,47 @@ class JobDetailController implements angular.IController {
         } catch (error) {
             console.error("Error updating internal status:", error);
         }
+    }
+
+    async showPricingBreakdown($event: MouseEvent, job: Job) {
+        try {
+            console.log("Fetching price breakdown data for job:", job.id);
+            const data = await this.DispatchData.getPriceBreakdown(job.id);
+            console.log("Received price breakdown data:", data);
+
+            console.log("Formatting price breakdown");
+            const formattedBreakdown = this.formatPriceBreakDown(data);
+            console.log("Formatted breakdown:", formattedBreakdown);
+
+            console.log("Showing dialog with formatted breakdown");
+            const dialog = this.$mdDialog.alert()
+                .parent(document.body)
+                .clickOutsideToClose(true)
+                .title("Charge Information")
+                .targetEvent($event)
+                .htmlContent(formattedBreakdown)
+                .ariaLabel("price breakdown")
+                .ok("OK");
+
+            await this.$mdDialog.show(dialog);
+            console.log("Dialog closed successfully");
+        } catch (error) {
+            console.error("Error in displayPriceBreakdown:", error);
+            this.toastrService.showErrorToast("An error occurred while fetching the price breakdown. Please try again.");
+        }
+    }
+
+    private formatPriceBreakDown(data: PriceBreakdown[]) {
+        let breakdownString = "";
+        let total = 0;
+
+        data.forEach(item => {
+            breakdownString += `${item.name}: $${item.amount.toFixed(2)}<br>`;
+            total += item.amount;
+        });
+
+        breakdownString += `<br>Total: $${total.toFixed(2)}`;
+        return breakdownString;
     }
 }
 

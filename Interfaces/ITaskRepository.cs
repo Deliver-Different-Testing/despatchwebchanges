@@ -14,4 +14,8 @@ public interface ITaskRepository
     Task UpdateEventTime(int eventId, DateTime time);
     Task<List<Suggestion>> GetEventGroupsAsync();
     Task<List<EventGroupViewModel>> GetEventTypeGroupsAsync(int eventGroupId);
+
+    Task CreateEventsForJobAsync(
+        int jobId,
+        List<EventGroupViewModel> eventGroupViewModels);
 }

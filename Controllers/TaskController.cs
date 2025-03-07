@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
@@ -104,6 +106,23 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         catch (Exception ex)
         {
             Log.Error(ex, "Error updating event type groups: {Error}", ex.Message);
+            return StatusCode(500);
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AddTasks([FromBody] AddTasksRequest request)
+    {
+        try
+        {
+            if (request.EventGroupViewModels is { Count: 0 }) return BadRequest("No events provided");
+
+            await taskRepository.CreateEventsForJobAsync(request.JobId, request.EventGroupViewModels);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error adding events for job: {Error}", ex.Message);
             return StatusCode(500);
         }
     }

@@ -2,46 +2,64 @@ import app from "../../../app";
 import "./event-group-dialog.styles.less";
 import {Suggestion} from "../../../interfaces/job.interface";
 import FeatureInDevelopmentDialogService from "../feature-in-development-dialog/feature-in-development-dialog.service";
+import ToastrService from "../../../services/toastr.service";
 
 export interface EventGroupViewModel {
-    eventType: string;
+    eventTypeGroupTypeGroupId: number;
+    eventType: Suggestion;
     group: string;
+    date: Date;
     sequence: number;
     dueTime: number;
-    assignTo: string;
+    assignTo: Suggestion;
+    notes: string;
     active: boolean;
 }
 
 export class EventGroupDialogController implements angular.IController {
-    events: EventGroupViewModel[] = [];
-    users: Suggestion[] = [];
     filteredUsers: Suggestion[] = [];
     searchText: string = '';
     selectedUser?: Suggestion;
 
     static $inject = [
         '$mdDialog',
-        'featureInDevelopmentDialogService',
+        '$http',
+        'toastrService',
+        'jobId',
         'eventTypeGroups',
         'users'
     ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private featureInDevelopmentDialogService: FeatureInDevelopmentDialogService,
-        eventTypeGroups: EventGroupViewModel[],
-        users: Suggestion[],
+        private $http: angular.IHttpService,
+        private toastrService: ToastrService,
+        public jobId: number,
+        public events: EventGroupViewModel[],
+        public users: Suggestion[],
     ) {
-        this.events = eventTypeGroups || [];
-        this.users = users || [];
     }
 
     cancel(): void {
         this.$mdDialog.cancel();
     }
 
-   async save() {
-        await this.featureInDevelopmentDialogService.openFeatureInDevelopmentDialog();
+    async save(jobId: number, events: EventGroupViewModel[]) {
+        try {
+            await this.addTasksToJob(jobId, events);
+            const taskCount = this.events.length;
+            this.toastrService.showSuccessToast(`${taskCount} task${taskCount !== 1 ? 's' : ''} added successfully`);
+        } catch (error) {
+            console.error('EventGroupDialogController: Error in save', error);
+            this.toastrService.showErrorToast();
+        }
+    }
+
+    private async addTasksToJob(jobId: number, eventGroupViewModels: EventGroupViewModel[]) {
+        await this.$http.post('task/AddTasks', {
+            jobId,
+            eventGroupViewModels
+        });
     }
 
     querySearch(text: string, index: number): Suggestion[] {
@@ -57,7 +75,7 @@ export class EventGroupDialogController implements angular.IController {
 
     selectedUserChange(user: Suggestion, index: number): void {
         if (user && user.text) {
-            this.events[index].assignTo = user.text;
+            this.events[index].assignTo.text = user.text;
         }
     }
 }
