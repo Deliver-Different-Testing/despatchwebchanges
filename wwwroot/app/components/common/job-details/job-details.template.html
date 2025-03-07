@@ -54,20 +54,12 @@
                 <!-- Left Column -->
                 <div flex="33" flex-xs="100" class="timing-column">
                     <md-list class="timing-list">
-                        <md-list-item md-ink-ripple
-                                      ng-click="!this.job.locked && ctrl.editCompletedTime($event, ctrl.job)">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="POD time">inventory_2</md-icon>
-                            <div class="timing-detail">
-                                <span class="timing-label">POD Time:</span>
-                                <span class="timing-value">{{ctrl.job.completedTime ? (ctrl.job.completedTime | date:'shortTime') : 'Not available'}}</span>
-                            </div>
-                        </md-list-item>
 
                         <md-list-item md-ink-ripple ng-click="ctrl.showPricingBreakdown($event, ctrl.job)">
                             <md-icon md-font-set="material-symbols-outlined" aria-label="Pricing">payments</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Pricing:</span>
-                                <span class="timing-value">{{ ctrl.job.amount | currency }}</span>
+                                <span class="timing-value">{{ ctrl.job.charge }}</span>
                             </div>
                         </md-list-item>
 
