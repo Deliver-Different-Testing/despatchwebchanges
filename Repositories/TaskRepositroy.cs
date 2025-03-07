@@ -6,77 +6,107 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories;
 
-public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory)
+public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory, IHttpContextAccessor contextAccessor)
     : BaseRepository(contextFactory),
         ITaskRepository
 {
+    private DateTime CombineDateAndTime(DateTime? date, DateTime? time)
+    {
+        if (date == null)
+            return DateTime.MinValue;
+
+        if (time == null)
+            return date.Value;
+
+        return new DateTime(
+            date.Value.Year,
+            date.Value.Month, 
+            date.Value.Day,
+            time.Value.Hour,
+            time.Value.Minute,
+            time.Value.Second
+        );
+    }
+    private async Task<string> GetEventTypeName(double? eventTypeId)
+    {
+        if (eventTypeId == null)
+            return "Default";
+
+        var eventType = await Context.TucEventTypes
+            .Where(jt => jt.UcetId == eventTypeId)
+            .Select(jt => jt.UcetName)
+            .FirstOrDefaultAsync();
+
+        return eventType ?? "Default";
+    }
+    
     public async Task<List<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters)
     {
-        var now = DateTime.Now;
-        var today = DateTime.Today;
+        var tenantTimeZone = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
+        var tenantTimeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTimeZone ?? string.Empty);
+        var utcDateTime = DateTime.UtcNow;
+        var tenantTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tenantTimeZoneInfo);
+        var today = tenantTime.Date;
         var query = Context.TucEvents.AsQueryable();
 
+
         query = query.Where(e =>
-                e.UcevDate != null
-                && (
-                    e.UcevDate.Value.Date == today
-                    || // Due today
-                    e.UcevDate.Value < now
-                ) // Due in the past
+            e.UcevDate != null
+            && (
+                e.UcevDate.Value.Date == today
+                || e.UcevDate.Value < tenantTime
+            )
         );
 
-        // Apply additional filters
+
         if (filters != null)
             query = ApplyFilters(query, filters);
 
-        // Project to view model
-        var tasksQuery = query.Select(e => new TaskViewModel
+
+        var simpleQuery = query.Select(e => new
         {
-            Id = e.UcevId,
-            Assignee = e.UcevDespatcher,
-            Description = e.UcevNotes,
-            JobId = e.UcevJobId ?? 0,
-            Closed = e.UcevClosed,
-            DueDate =
-                e.UcevDate != null && e.UcevTime != null
-                    ? new DateTime(
-                        e.UcevDate.Value.Year,
-                        e.UcevDate.Value.Month,
-                        e.UcevDate.Value.Day,
-                        e.UcevTime.Value.Hour,
-                        e.UcevTime.Value.Minute,
-                        e.UcevTime.Value.Second
-                    )
-                    : e.UcevDate ?? DateTime.MinValue,
-            Title = e.UcevDescription,
-            EventType =
-                Context
-                    .TucEventTypes.Where(jt => jt.UcetId == e.UcevType)
-                    .Select(jt => jt.UcetName)
-                    .FirstOrDefault() ?? "Default",
+            e.UcevId,
+            e.UcevDespatcher,
+            e.UcevNotes,
+            e.UcevJobId,
+            e.UcevClosed,
+            e.UcevDate,
+            e.UcevTime,
+            e.UcevDescription,
+            e.UcevType
         });
 
-        var tasks = await tasksQuery
-            .OrderByDescending(e => e.DueDate)
-            .AsNoTracking()
-            .ToListAsync();
 
-        var filteredTasks = new List<TaskViewModel>();
-        foreach (var task in tasks)
+        var results = await simpleQuery.AsNoTracking().ToListAsync();
+
+
+        var tasks = new List<TaskViewModel>();
+
+        
+        foreach (var e in results)
         {
-            var isOverdue = IsOverdue(task.DueDate);
-            task.IsOverdue = isOverdue;
-
-            if (isOverdue || task.DueDate.Date == today)
-                filteredTasks.Add(task);
+            var eventTypeName = await GetEventTypeName(e.UcevType);
+    
+            var task = new TaskViewModel
+            {
+                Id = e.UcevId,
+                Assignee = e.UcevDespatcher,
+                Description = e.UcevNotes,
+                JobId = e.UcevJobId ?? 0,
+                Closed = e.UcevClosed,
+                DueDate = CombineDateAndTime(e.UcevDate, e.UcevTime),
+                Title = e.UcevDescription,
+                EventType = eventTypeName
+            };
+    
+            tasks.Add(task);
         }
-
-        // Only return tasks that should be kept
-        return filteredTasks;
+        return tasks;
     }
 
     public async Task SetEventAsClosed(int eventId, bool closed)
