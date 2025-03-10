@@ -165,7 +165,7 @@ async function build(): Promise<void> {
             // Development build configuration
             const devConfig: esbuild.BuildOptions = {
                 ...commonConfig,
-                outfile: path.join(distPath, 'bundle.js'),  // Single output file for development
+                outfile: path.join(distPath, 'bundle.js'),
                 splitting: false
             };
 

@@ -26,7 +26,7 @@ public class DfrntViewsRepository(IDbContextFactory<DespatchContext> contextFact
                     Id = dv.View.DespatchViewId,
                     Name = dv.View.Name,
                     CenterLatitude = dv.View.CenterLatitude ?? 0,
-                    CenterLongitude = dv.View.CenterLongitude ?? 0,
+                    CenterLongitude = dv.View.CenterLongitude ?? 0
                 })
                 .AsNoTracking()
                 .ToListAsync();

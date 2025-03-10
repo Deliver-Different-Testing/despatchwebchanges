@@ -1,7 +1,8 @@
 <!-- Job List Component -->
 <div class="droppable-box">
     <!-- Context Menu with Hover Submenu for Event Groups -->
-    <div style="position: fixed; z-index: 100;" ng-style="{'top': menuPosition.top, 'left': menuPosition.left, 'display': menuVisible ? 'block' : 'none'}" class="md-dense">
+    <div class="material-menu md-dense" style="position: fixed; z-index: 100;"
+         ng-style="{'top': menuPosition.top, 'left': menuPosition.left, 'display': menuVisible ? 'block' : 'none'}">
         <div ng-click="$event.stopPropagation()">
             <md-menu-bar>
                 <md-menu>

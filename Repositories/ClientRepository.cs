@@ -28,7 +28,7 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
                         FullName = $"{contact.UcctFirstname} {contact.UcctSurname}",
                         Email = contact.UcctEmail,
                         Internal = client.Internal,
-                        StaffID = contact.StaffId,
+                        StaffID = contact.StaffId
                     }
             )
             .FirstOrDefaultAsync();
@@ -55,7 +55,7 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
             .Select(joined => new ClientContactViewModel
             {
                 ID = joined.c.ClientId,
-                Text = joined.c.Client.UcclName,
+                Text = joined.c.Client.UcclName
             })
             .Distinct()
             .ToListAsync();
@@ -69,7 +69,7 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
             {
                 FirstName = d.FirstName,
                 LastName = d.LastName,
-                StaffID = d.StaffID,
+                StaffID = d.StaffID
             })
             .FirstOrDefault();
     }

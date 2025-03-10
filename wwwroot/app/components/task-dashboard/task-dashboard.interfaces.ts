@@ -2,7 +2,7 @@ export interface Task {
     id: number;
     title: string;
     description: string;
-    dueDate: Date;
+    dueDate: string;
     closed: boolean;
     priority: string;
     assignee: string;
@@ -16,4 +16,9 @@ export interface TaskTableFiltersRequest {
     courierId?: number;
     eventTypeId?: number;
     searchText?: string;
+    date?: string;
+}
+
+export interface ExtendedTask extends Task {
+    dueTimeStr?: string;
 }

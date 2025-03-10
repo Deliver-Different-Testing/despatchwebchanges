@@ -36,33 +36,46 @@
                                 </md-switch>
                                 <span class="toggle-label">Calendar</span>
                             </div>
-                            <md-button class="status-pill all" 
-                            ng-class="{'active': ctrl.statusFilter === 'all'}"
-                            ng-click="ctrl.setStatusFilter('all')" 
-                            aria-label="All tasks">
-                     All: {{ctrl.tasks.length}}
-                 </md-button>
-                 <md-button class="status-pill overdue" 
-                            ng-class="{'active': ctrl.statusFilter === 'overdue'}"
-                            ng-click="ctrl.setStatusFilter('overdue')" 
-                            aria-label="Overdue tasks">
-                     Overdue: {{ctrl.getStatusCounts().overdue}}
-                 </md-button>
-                 <md-button class="status-pill todo" 
-                            ng-class="{'active': ctrl.statusFilter === 'todo'}"
-                            ng-click="ctrl.setStatusFilter('todo')" 
-                            aria-label="Todo tasks">
-                     Todo: {{ctrl.getStatusCounts().todo}}
-                 </md-button>
-                 <md-button class="status-pill done" 
-                            ng-class="{'active': ctrl.statusFilter === 'done'}"
-                            ng-click="ctrl.setStatusFilter('done')" 
-                            aria-label="Done tasks">
-                     Done: {{ctrl.getStatusCounts().done}}
-                 </md-button>
+                            <md-button class="status-pill all"
+                                       ng-class="{'active': ctrl.statusFilter === 'all'}"
+                                       ng-click="ctrl.setStatusFilter('all')"
+                                       aria-label="All tasks">
+                                All: {{ctrl.tasks.length}}
+                            </md-button>
+                            <md-button class="status-pill overdue"
+                                       ng-class="{'active': ctrl.statusFilter === 'overdue'}"
+                                       ng-click="ctrl.setStatusFilter('overdue')"
+                                       aria-label="Overdue tasks">
+                                Overdue: {{ctrl.getStatusCounts().overdue}}
+                            </md-button>
+                            <md-button class="status-pill todo"
+                                       ng-class="{'active': ctrl.statusFilter === 'todo'}"
+                                       ng-click="ctrl.setStatusFilter('todo')"
+                                       aria-label="Todo tasks">
+                                Todo: {{ctrl.getStatusCounts().todo}}
+                            </md-button>
+                            <md-button class="status-pill done"
+                                       ng-class="{'active': ctrl.statusFilter === 'done'}"
+                                       ng-click="ctrl.setStatusFilter('done')"
+                                       aria-label="Done tasks">
+                                Done: {{ctrl.getStatusCounts().done}}
+                            </md-button>
                         </div>
-                        <div>
-                            <span class="today-date">{{ctrl.today | date:'EEEE, MMMM d, yyyy'}}</span>
+                        <div layout="row" layout-align="center center" class="date-navigation">
+                            <md-button class="md-icon-button" ng-click="ctrl.changeDate(-1)" aria-label="Previous day">
+                                <md-icon md-font-set="material-symbols-outlined">chevron_left</md-icon>
+                            </md-button>
+
+                            <div layout="column" layout-align="center center">
+                                <span class="selected-date">{{ctrl.selectedDate | date:'EEEE, MMMM d, yyyy'}}</span>
+                                <md-button class="md-small today-button" ng-click="ctrl.goToToday()" aria-label="Go to today">
+                                    Today
+                                </md-button>
+                            </div>
+
+                            <md-button class="md-icon-button" ng-click="ctrl.changeDate(1)" aria-label="Next day">
+                                <md-icon md-font-set="material-symbols-outlined">chevron_right</md-icon>
+                            </md-button>
                         </div>
                     </div>
                 </md-card-content>
@@ -86,7 +99,7 @@
                         <input ng-model="ctrl.searchQuery" ng-change="ctrl.onFilterChange()">
                     </md-input-container>
 
-                    <div layout="row" layout-wrap>                    
+                    <div layout="row" layout-wrap>
                         <!-- Courier Filter -->
                         <div flex="50" flex-xs="100" class="filter-group">
                             <md-input-container class="md-block">
@@ -133,7 +146,8 @@
                     </dfrnt-loader>
 
                     <!-- Empty state -->
-                    <div ng-if="ctrl.filteredTasks.length === 0 && !ctrl.tasksLoading" class="empty-list-state" layout="row"
+                    <div ng-if="ctrl.filteredTasks.length === 0 && !ctrl.tasksLoading" class="empty-list-state"
+                         layout="row"
                          layout-align="center center" style="padding: 24px;">
                         <md-icon md-font-set="material-symbols-outlined">info</md-icon>
                         <span style="margin-left: 8px;">No tasks match your filters</span>
@@ -190,7 +204,8 @@
 
                                 <!-- Date chip -->
                                 <div class="date-chip" ng-class="{'overdue-chip': ctrl.isTaskOverdue(task)}">
-                                    <md-button class="chip-button" ng-click="ctrl.openDateTimeDialog($event, task, true, false)">
+                                    <md-button class="chip-button"
+                                               ng-click="ctrl.openDateTimeDialog($event, task, true, false)">
                                         <md-icon md-font-set="material-symbols-outlined">calendar_today</md-icon>
                                         <span>{{task.dueDate | date:'MMM d, yyyy'}}</span>
                                     </md-button>
@@ -198,7 +213,8 @@
 
                                 <!-- Time chip -->
                                 <div class="time-chip" ng-class="{'overdue-chip': ctrl.isTaskOverdue(task)}">
-                                    <md-button class="chip-button" ng-click="ctrl.openDateTimeDialog($event, task, false, true)">
+                                    <md-button class="chip-button"
+                                               ng-click="ctrl.openDateTimeDialog($event, task, false, true)">
                                         <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
                                         <span>{{task.dueDate | date:'h:mm a'}}</span>
                                     </md-button>
@@ -228,7 +244,8 @@
 
                 <div layout="row" layout-align="space-between stretch">
                     <!-- Loading Indicator for Calendar View -->
-                    <div ng-if="ctrl.tasksLoading" class="calendar-loader" layout="row" layout-align="center center" style="width: 100%; padding: 24px;">
+                    <div ng-if="ctrl.tasksLoading" class="calendar-loader" layout="row" layout-align="center center"
+                         style="width: 100%; padding: 24px;">
                         <dfrnt-loader
                                 is-loading="ctrl.tasksLoading"
                                 icon-name="'calendar_today'">

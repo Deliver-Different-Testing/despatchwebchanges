@@ -12,15 +12,6 @@
     <md-card class="job-detail-widget">
         <!-- Top Bar -->
         <div class="header-bar">
-            <div flex></div>
-
-            <md-button ng-click="!ctrl.job.locked && ctrl.job.internalStatusId !=1
-                             && ctrl.job.internalStatusId !=4
-                             && ctrl.editFollowUpTime($event, ctrl.job)">
-                <md-icon style="margin-right: 5px;" md-font-set="material-symbols-outlined">schedule</md-icon>
-                <span>Follow Up</span>
-            </md-button>
-
             <md-menu>
                 <md-button aria-label="internal stage"
                            ng-click="$mdMenu.open($event)">
@@ -29,13 +20,22 @@
                     {{ctrl.selectedStatusText}}
                 </md-button>
                 <md-menu-content class="md-dense">
-                    <md-menu-item ng-repeat="status in ctrl.internalStatusList">
-                        <md-button ng-click="ctrl.setInternalStatus(status.id, ctrl.job)">
-                            {{status.text}}
+                    <md-menu-item ng-repeat="internalStatus in ctrl.internalStatusList">
+                        <md-button ng-click="ctrl.setInternalStatus(internalStatus.id, ctrl.job)">
+                            {{internalStatus.text}}
                         </md-button>
                     </md-menu-item>
                 </md-menu-content>
             </md-menu>
+
+            <div flex></div>
+
+            <md-button ng-click="!ctrl.job.locked && ctrl.job.internalStatusId !=1
+                             && ctrl.job.internalStatusId !=4
+                             && ctrl.editFollowUpTime($event, ctrl.job)">
+                <md-icon style="margin-right: 5px;" md-font-set="material-symbols-outlined">schedule</md-icon>
+                <span>Follow Up</span>
+            </md-button>
 
             <md-chip class="status {{ctrl.job.statusName | lowercase | replace:' ':'-'}}"
                      md-ink-ripple
@@ -54,12 +54,11 @@
                 <!-- Left Column -->
                 <div flex="33" flex-xs="100" class="timing-column">
                     <md-list class="timing-list">
-
                         <md-list-item md-ink-ripple ng-click="ctrl.showPricingBreakdown($event, ctrl.job)">
                             <md-icon md-font-set="material-symbols-outlined" aria-label="Pricing">payments</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Pricing:</span>
-                                <span class="timing-value">{{ ctrl.job.charge }}</span>
+                                <span class="timing-value">{{ ctrl.job.amount ? (ctrl.job.amount | currency) : 'Not available' }}</span>
                             </div>
                         </md-list-item>
 

@@ -1,32 +1,40 @@
-import {Task, TaskTableFiltersRequest} from "./task-dashboard.interfaces";
+import {ExtendedTask, Task, TaskTableFiltersRequest} from "./task-dashboard.interfaces";
 import "./task-dashboard.styles.less";
 import app from "../../app";
 import GreetingService from "../../services/greeting.service";
 import TasksDashboardService from "./tasks-dashboard.service";
 import DispatchService from "../../services/dispatch.service";
-import {ActiveCourier} from "../../interfaces/courier.interface";
-import {Suggestion} from "../../interfaces/job.interface";
-import editDateTimeDialogTemplate from "../dialogs/edit-date-time-dialog/edit-date-time-dialog.html";
-
-interface ExtendedTask extends Task {
-    dueTimeStr?: string;
-}
+import { ActiveCourier } from "../../interfaces/courier.interface";
+import { Suggestion } from "../../interfaces/job.interface";
+import {StatusFilter} from "./enums/status-filter";
+import {ViewMode} from "./enums/view-mode";
 
 class TaskDashboardController implements angular.IController {
-    static $inject = ["greetingService", "$mdSidenav", "$filter", "$mdDialog", "tasksDashboardsService", "DispatchData"];
+    static $inject = [
+        "greetingService",
+        "$mdSidenav",
+        "$filter",
+        "$mdDialog",
+        "tasksDashboardsService",
+        "DispatchData",
+        "$timeout"
+    ];
 
+    // Properties
     greeting: string;
     tasksLoading: boolean = true;
+    isFirstLoad: boolean = true;
+    selectedDate: Date = new Date();
 
     // View state
-    viewMode: string = 'list';
+    viewMode: string = ViewMode.List;
     calendarViewMode: boolean = false;
 
-    // Default filter states
+    // Filter states
     searchQuery: string = '';
-    courierFilter: string = 'all';
-    eventTypeFilter: string = 'all';
-    statusFilter: string = 'all';
+    courierFilter: string = StatusFilter.All;
+    eventTypeFilter: string = StatusFilter.All;
+    statusFilter: string = StatusFilter.All;
 
     // Calendar data
     weekDates: Date[] = [];
@@ -35,10 +43,9 @@ class TaskDashboardController implements angular.IController {
     // Tasks data
     tasks: ExtendedTask[] = [];
     filteredTasks: ExtendedTask[] = [];
-
-    // Time options for the dropdown
     timeOptions: string[] = [];
 
+    // Lists
     courierList?: ActiveCourier[];
     eventTypesList?: Suggestion[];
 
@@ -48,49 +55,47 @@ class TaskDashboardController implements angular.IController {
         private $filter: angular.IFilterService,
         private $mdDialog: angular.material.IDialogService,
         private tasksDashboardsService: TasksDashboardService,
-        private DispatchService: DispatchService
+        private dispatchService: DispatchService,
+        private $timeout: angular.ITimeoutService
     ) {
         this.greeting = greetingService.greetUser(FirstName);
+        this.initialize();
+    }
+
+    private async initialize(): Promise<void> {
         this.generateTimeOptions();
-        console.log('$onInit: Initializing component');
-        this.loadLists();
-        
+        this.selectedDate = new Date();
         this.initializeDates();
-        this.calendarViewMode = this.viewMode === 'calendar';
-        console.log('$onInit: Initialized with viewMode:', this.viewMode, 'calendarViewMode:', this.calendarViewMode);
+        this.calendarViewMode = this.viewMode === ViewMode.Calendar;
 
-        this.getTasks();
-    }
-       
-    
-    loadLists() {
-        console.log('loadLists: Starting to load courier and job type lists');
-        this.DispatchService.getAllCouriers()
-            .then(couriers => {
-                console.log('loadLists: Received couriers data, count:', couriers.length);
-                this.courierList = couriers;
-                return this.DispatchService.getEventTypes();
-            })
-            .then(eventTypes => {
-                console.log('loadLists: Received job types data, count:', eventTypes.length);
-                this.eventTypesList = eventTypes;
-                console.log('loadLists: Successfully loaded all lists');
-            })
-            .catch(error => {
-                console.error('Error loading lists:', error);
-            });
+        try {
+            await this.loadListsSequentially();
+            await this.getTasks();
+        } catch (error) {
+            console.error('Initialization error:', error);
+        }
     }
 
+    private async loadListsSequentially(): Promise<void> {
+        try {
+            this.courierList = await this.dispatchService.getAllCouriers();
+            this.eventTypesList = await this.dispatchService.getEventTypes();
+        } catch (error) {
+            console.error('Error loading lists:', error);
+            throw error;
+        }
+    }
+
+    // UI Controls
     toggleSidenav(): void {
         this.$mdSidenav("right").toggle();
     }
 
     toggleViewMode(): void {
-        this.viewMode = this.calendarViewMode ? 'calendar' : 'list';
+        this.viewMode = this.calendarViewMode ? ViewMode.Calendar : ViewMode.List;
     }
 
-    // Generate time options in 30 minute intervals
-    generateTimeOptions(): void {
+    private generateTimeOptions(): void {
         this.timeOptions = [];
         for (let hour = 0; hour < 24; hour++) {
             const formattedHour = hour < 10 ? `0${hour}` : `${hour}`;
@@ -99,30 +104,123 @@ class TaskDashboardController implements angular.IController {
         }
     }
 
-    // Initialize dates for calendar view
-    initializeDates(): void {
-        const dayOfWeek = this.today.getDay();
+    private initializeDates(): void {
+        const dayOfWeek = this.selectedDate.getDay();
+        const startDate = new Date(this.selectedDate);
+        startDate.setDate(this.selectedDate.getDate() - dayOfWeek);
 
-        // Generate dates for the current week (Sunday to Saturday)
-        const startDate = new Date(this.today);
-        startDate.setDate(this.today.getDate() - dayOfWeek); // Start from Sunday
-
-        this.weekDates = Array.from({length: 7}, (_, i) => {
+        this.weekDates = Array.from({ length: 7 }, (_, i) => {
             const date = new Date(startDate);
             date.setDate(startDate.getDate() + i);
             return date;
         });
     }
 
-    async openDateTimeDialog($event: MouseEvent, task: ExtendedTask, showDate: boolean = true, showTime: boolean = true): Promise<void> {
+    private async getTasks(): Promise<void> {
+        if (this.isFirstLoad) {
+            this.tasksLoading = true;
+        }
+
+        const filters = this.buildTaskFilters();
+
+        try {
+            const tasks = await this.tasksDashboardsService.getAllTasks(filters);
+            this.tasks = tasks as ExtendedTask[];
+            this.initializeTaskTimeStrings();
+            this.applyFilters();
+
+            this.$timeout(() => {
+                this.tasksLoading = false;
+                this.isFirstLoad = false;
+            });
+        } catch (error) {
+            console.error('Error loading tasks:', error);
+            this.tasksLoading = false;
+            this.isFirstLoad = false;
+            throw error;
+        }
+    }
+
+    private buildTaskFilters(): TaskTableFiltersRequest {
+        const filters: TaskTableFiltersRequest = {};
+
+        if (this.courierFilter && this.courierFilter !== StatusFilter.All) {
+            filters.courierId = parseInt(this.courierFilter, 10);
+        }
+
+        if (this.eventTypeFilter && this.eventTypeFilter !== StatusFilter.All) {
+            filters.eventTypeId = parseInt(this.eventTypeFilter, 10);
+        }
+
+        if (this.searchQuery) {
+            filters.searchText = this.searchQuery;
+        }
+
+        filters.date = this.selectedDate.toISOString().split('T')[0];
+
+        return filters;
+    }
+
+    private initializeTaskTimeStrings(): void {
+        this.tasks.forEach(task => {
+            try {
+                const dueDate = new Date(task.dueDate);
+
+                if (isNaN(dueDate.getTime())) {
+                    console.warn(`Invalid date for task "${task.title}":`, task.dueDate);
+                    task.dueTimeStr = "00:00";
+                    return;
+                }
+
+                const hours = dueDate.getHours();
+                const minutes = dueDate.getMinutes();
+                const roundedMinutes = minutes < 30 ? 0 : 30;
+                const formattedHours = hours < 10 ? `0${hours}` : `${hours}`;
+
+                task.dueTimeStr = `${formattedHours}:${roundedMinutes === 0 ? '00' : roundedMinutes}`;
+                task.dueDate = dueDate.toISOString();
+            } catch (error) {
+                console.error(`Error processing dueDate for task:`, task, error);
+                task.dueTimeStr = "00:00";
+            }
+        });
+    }
+
+    async onFilterChange(): Promise<void> {
+        await this.getTasks();
+    }
+
+    setStatusFilter(status: string): void {
+        this.statusFilter = status;
+        this.applyFilters();
+    }
+
+    private applyFilters(): void {
+        if (this.statusFilter === StatusFilter.All || this.isFirstLoad) {
+            this.filteredTasks = this.tasks;
+        } else if (this.statusFilter === StatusFilter.Overdue) {
+            this.filteredTasks = this.tasks.filter(task => this.isTaskOverdue(task));
+        } else if (this.statusFilter === StatusFilter.Todo) {
+            this.filteredTasks = this.tasks.filter(task => !task.closed && !this.isTaskOverdue(task));
+        } else if (this.statusFilter === StatusFilter.Done) {
+            this.filteredTasks = this.tasks.filter(task => task.closed);
+        }
+    }
+
+    async openDateTimeDialog(
+        $event: MouseEvent,
+        task: ExtendedTask,
+        showDate: boolean = true,
+        showTime: boolean = true
+    ): Promise<void> {
         $event.preventDefault();
         $event.stopPropagation();
-    
+
         try {
             const result = await this.$mdDialog.show({
                 controller: 'EditDateTimeDialogController',
                 controllerAs: 'ctrl',
-                template: editDateTimeDialogTemplate,
+                template: require("../dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
                 parent: document.body,
                 targetEvent: $event,
                 clickOutsideToClose: true,
@@ -132,43 +230,13 @@ class TaskDashboardController implements angular.IController {
                     fieldName: 'dueDate',
                     dateTime: task.dueDate,
                     id: 'task-date-time-dialog',
-                    showDate: showDate,
-                    showTime: showTime
+                    showDate,
+                    showTime
                 }
             });
-    
+
             if (result) {
-                // Update the task with the new date/time
-                if (showDate && !showTime) {
-                    this.updateTaskDate(task, result);
-                } else if (!showDate && showTime) {
-                    this.updateTaskTime(task, this.formatTimeForUpdate(result));
-                } else {
-                    // Both date and time were updated - need to make a combined update
-                    const newDateTime = new Date(result);
-                    
-                    // First update the date
-                    this.tasksDashboardsService.updateTaskDate(task.id, newDateTime)
-                        .then(() => {
-                            // Then update the time
-                            return this.tasksDashboardsService.updateTaskTime(task.id, newDateTime);
-                        })
-                        .then(() => {
-                            console.log(`Successfully updated date and time for task "${task.title}"`);
-                            
-                            // Update local object after successful API calls
-                            task.dueDate = newDateTime;
-                            const hours = newDateTime.getHours();
-                            const minutes = newDateTime.getMinutes();
-                            task.dueTimeStr = `${hours < 10 ? '0' + hours : hours}:${minutes < 10 ? '0' + minutes : minutes}`;
-                            
-                            // Reload tasks to reflect changes
-                            this.getTasks();
-                        })
-                        .catch(error => {
-                            console.error(`Error updating task date and time:`, error);
-                        });
-                }
+                await this.handleDateTimeUpdate(task, result, showDate, showTime);
             }
         } catch (error) {
             console.error('Error in openDateTimeDialog:', error);
@@ -176,132 +244,106 @@ class TaskDashboardController implements angular.IController {
         }
     }
 
-    // Format time from Date object to string (HH:MM)
+    private async handleDateTimeUpdate(
+        task: ExtendedTask,
+        result: Date,
+        showDate: boolean,
+        showTime: boolean
+    ): Promise<void> {
+        if (showDate && !showTime) {
+            await this.updateTaskDate(task, result);
+        } else if (!showDate && showTime) {
+            await this.updateTaskTime(task, this.formatTimeForUpdate(result));
+        } else {
+            const newDateTime = new Date(result);
+
+            try {
+                await this.tasksDashboardsService.updateTaskDate(task.id, newDateTime);
+                await this.tasksDashboardsService.updateTaskTime(task.id, newDateTime);
+
+                task.dueDate = newDateTime.toISOString();
+                task.dueTimeStr = this.formatTimeForUpdate(newDateTime);
+
+                await this.getTasks();
+            } catch (error) {
+                console.error(`Error updating task date and time:`, error);
+            }
+        }
+    }
+
+    async openDateDialog($event: MouseEvent, task: ExtendedTask): Promise<void> {
+        await this.openDateTimeDialog($event, task, true, false);
+    }
+
+    async openTimeDialog($event: MouseEvent, task: ExtendedTask): Promise<void> {
+        await this.openDateTimeDialog($event, task, false, true);
+    }
+
+    async handleTaskCompletion(task: Task): Promise<void> {
+        try {
+            await this.tasksDashboardsService.markTaskAsClosed(task.id, task.closed);
+            await this.getTasks();
+        } catch (error) {
+            console.error(`Error updating task status:`, error);
+            task.closed = !task.closed;
+        }
+    }
+
+    async updateTaskDate(task: ExtendedTask, dateObj: Date): Promise<void> {
+        if (!dateObj) return;
+
+        const newDate = new Date(task.dueDate);
+        newDate.setFullYear(dateObj.getFullYear());
+        newDate.setMonth(dateObj.getMonth());
+        newDate.setDate(dateObj.getDate());
+
+        try {
+            await this.tasksDashboardsService.updateTaskDate(task.id, newDate);
+            task.dueDate = newDate.toISOString();
+            await this.getTasks();
+        } catch (error) {
+            console.error(`Error updating task date:`, error);
+        }
+    }
+
+    async updateTaskTime(task: ExtendedTask, timeString: string): Promise<void> {
+        if (!timeString) return;
+
+        const [hours, minutes] = timeString.split(':');
+        const newDate = new Date(task.dueDate);
+        newDate.setHours(parseInt(hours, 10));
+        newDate.setMinutes(parseInt(minutes, 10));
+
+        try {
+            await this.tasksDashboardsService.updateTaskTime(task.id, newDate);
+            task.dueDate = newDate.toISOString();
+            task.dueTimeStr = timeString;
+            await this.getTasks();
+        } catch (error) {
+            console.error(`Error updating task time:`, error);
+        }
+    }
+
     private formatTimeForUpdate(dateObj: Date): string {
         const hours = dateObj.getHours();
         const minutes = dateObj.getMinutes();
         return `${hours < 10 ? '0' + hours : hours}:${minutes < 10 ? '0' + minutes : minutes}`;
     }
 
-    // Convenience methods for specific dialog types
-    async openDateDialog($event: MouseEvent, task: ExtendedTask) {
-        await this.openDateTimeDialog($event, task, true, false);
-    }
-
-    async openTimeDialog($event: MouseEvent, task: ExtendedTask) {
-        await this.openDateTimeDialog($event, task, false, true);
-    }
-
-    // Initialize time strings for tasks
-    initializeTaskTimeStrings(): void {
-        this.tasks.forEach(task => {
-            // Extract time as a string for the time picker (HH:MM format)
-            const hours = task.dueDate.getHours();
-            const minutes = task.dueDate.getMinutes();
-            // Round to nearest 30 min (0 or 30)
-            const roundedMinutes = minutes < 30 ? 0 : 30;
-            const formattedHours = hours < 10 ? `0${hours}` : `${hours}`;
-            task.dueTimeStr = `${formattedHours}:${roundedMinutes === 0 ? '00' : roundedMinutes}`;
-        });
-    }
-
-    onFilterChange(): void {
-        this.getTasks();
-    }
-
-    // Toggle status filter
-    setStatusFilter(status: string): void {
-        this.statusFilter = status;
-        this.applyFilters();
-    }
-
-    // Apply status filters after tasks are loaded
-    applyFilters(): void {
-        console.log('applyFilters: Applying status filter:', this.statusFilter);
-        
-        // Apply status filter to the loaded tasks
-        if (this.statusFilter === 'all') {
-            this.filteredTasks = this.tasks;
-        } else if (this.statusFilter === 'overdue') {
-            this.filteredTasks = this.tasks.filter(task => this.isTaskOverdue(task));
-        } else if (this.statusFilter === 'todo') {
-            this.filteredTasks = this.tasks.filter(task => !task.closed && !this.isTaskOverdue(task));
-        } else if (this.statusFilter === 'done') {
-            this.filteredTasks = this.tasks.filter(task => task.closed);
-        }
-        
-        console.log('applyFilters: Filtered tasks count:', this.filteredTasks.length);
-    }
-
-    getTasks(): void {
-        console.log('getTasks: Starting task retrieval');
-        this.tasksLoading = true;
-        
-        // Create filters request object
-        const filters: TaskTableFiltersRequest = {};
-        console.log('getTasks: Initializing empty filter object');
-    
-
-        // Add courier filter
-        if (this.courierFilter && this.courierFilter !== 'all') {
-            filters.courierId = parseInt(this.courierFilter, 10);
-            console.log('getTasks: Applied courier filter, courierId:', filters.courierId);
-        }
-    
-        // Add event type filter
-        if (this.eventTypeFilter && this.eventTypeFilter !== 'all') {
-            filters.eventTypeId = parseInt(this.eventTypeFilter, 10);
-            console.log('getTasks: Applied job type filter, eventTypeId:', filters.eventTypeId);
-        }
-
-        // Add search query
-        if (this.searchQuery) {
-            filters.searchText = this.searchQuery;
-            console.log('getTasks: Applied search filter:', filters.searchText);
-        }
-    
-        console.log('getTasks: Sending request with filters:', filters);
-    
-        // Call the service with filters
-        this.tasksDashboardsService.getAllTasks(filters)
-            .then((tasks: Task[]) => {
-                console.log('getTasks: Received tasks, count:', tasks.length);
-                this.tasks = tasks as ExtendedTask[];
-                console.log('getTasks: Converting to ExtendedTask objects');
-                this.initializeTaskTimeStrings();
-                console.log('getTasks: Task time strings initialized');
-                
-                // Apply status filter after loading tasks
-                this.applyFilters();
-                
-                this.tasksLoading = false;
-                console.log('getTasks: Task loading complete');
-            })
-            .catch((error) => {
-                console.error('getTasks: Error loading tasks:', error);
-                this.tasksLoading = false;
-                console.log('getTasks: Task loading failed');
-            });
-    }
-
-    // Check if task is overdue
     isTaskOverdue(task: Task): boolean {
         if (task.closed) return false;
-        return new Date(task.dueDate) < new Date();
+        return new Date(task.dueDate) < this.selectedDate;
     }
 
-    // Format date for display
     formatDate(date: Date): string {
         return this.$filter('date')(date, 'EEEE (d/MM/yy)');
     }
 
-    // Format time for display
     formatTime(dateString: string): string {
         const date = new Date(dateString);
         return this.$filter('date')(date, 'h:mm a').toLowerCase();
     }
 
-    // Get tasks for a specific date (for calendar view)
     getTasksByDate(date: Date): ExtendedTask[] {
         const dateStr = date.toISOString().split('T')[0];
         return this.filteredTasks.filter(task => {
@@ -310,93 +352,41 @@ class TaskDashboardController implements angular.IController {
         });
     }
 
-    // Get overdue tasks
     getOverdueTasks(): ExtendedTask[] {
         return this.filteredTasks.filter(task => {
             if (task.closed) return false;
 
             const taskDate = new Date(task.dueDate);
-            const todayStart = new Date(this.today);
-            todayStart.setHours(0, 0, 0, 0);
+            const selectedDateStart = new Date(this.selectedDate);
+            selectedDateStart.setHours(0, 0, 0, 0);
 
-            return taskDate < todayStart;
+            return taskDate < selectedDateStart;
         });
     }
 
-    handleTaskCompletion(task: Task): void {
-        console.log(`Task "${task.title}" is now ${task.closed ? 'closed' : 'open'}`);
-        
-        // Call the service to update the task status in the backend
-        this.tasksDashboardsService.markTaskAsClosed(task.id, task.closed)
-            .then(() => {
-                console.log(`Successfully updated task "${task.title}" status in the backend`);
-                // Reload tasks to reflect status change
-                this.getTasks();
-            })
-            .catch(error => {
-                console.error(`Error updating task status:`, error);
-                // Revert the checkbox state in case of failure
-                task.closed = !task.closed;
-            });
-    }
-
-    updateTaskDate(task: ExtendedTask, dateObj: Date): void {
-        if (!dateObj) return;
-    
-        const newDate = new Date(task.dueDate);
-        // Only update date components, preserve time
-        newDate.setFullYear(dateObj.getFullYear());
-        newDate.setMonth(dateObj.getMonth());
-        newDate.setDate(dateObj.getDate());
-        
-        // Call the service to update the date in the backend
-        this.tasksDashboardsService.updateTaskDate(task.id, newDate)
-            .then(() => {
-                console.log(`Successfully updated date for task "${task.title}"`);
-                
-                // Update local object after successful API call
-                task.dueDate = newDate;
-                
-                // Reload tasks to reflect changes
-                this.getTasks();
-            })
-            .catch(error => {
-                console.error(`Error updating task date:`, error);
-            });
-    }
-
-   updateTaskTime(task: ExtendedTask, timeString: string): void {
-    if (!timeString) return;
-
-    const [hours, minutes] = timeString.split(':');
-    const newDate = new Date(task.dueDate);
-    newDate.setHours(parseInt(hours, 10));
-    newDate.setMinutes(parseInt(minutes, 10));
-    
-    // Call the service to update the time in the backend
-    this.tasksDashboardsService.updateTaskTime(task.id, newDate)
-        .then(() => {
-            console.log(`Successfully updated time for task "${task.title}"`);
-            
-            // Update local object after successful API call
-            task.dueDate = newDate;
-            task.dueTimeStr = timeString;
-            
-            // Reload tasks to reflect changes
-            this.getTasks();
-        })
-        .catch(error => {
-            console.error(`Error updating task time:`, error);
-        });
-}
-
-    // Get status counts for display in header
     getStatusCounts() {
         return {
             overdue: this.tasks.filter(task => this.isTaskOverdue(task)).length,
             todo: this.tasks.filter(task => !task.closed && !this.isTaskOverdue(task)).length,
             done: this.tasks.filter(task => task.closed).length
         };
+    }
+
+    async changeDate(days: number) {
+        const newDate = new Date(this.selectedDate);
+        newDate.setDate(newDate.getDate() + days);
+        this.selectedDate = newDate;
+        await this.refreshDashboard();
+    }
+
+    async goToToday() {
+        this.selectedDate = new Date();
+        await this.refreshDashboard();
+    }
+
+    async refreshDashboard(): Promise<void> {
+        this.initializeDates();
+        await this.getTasks();
     }
 }
 

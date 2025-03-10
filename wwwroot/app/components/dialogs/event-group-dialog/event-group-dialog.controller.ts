@@ -1,23 +1,10 @@
 import app from "../../../app";
 import "./event-group-dialog.styles.less";
 import {Suggestion} from "../../../interfaces/job.interface";
-import FeatureInDevelopmentDialogService from "../feature-in-development-dialog/feature-in-development-dialog.service";
 import ToastrService from "../../../services/toastr.service";
-
-export interface EventGroupViewModel {
-    eventTypeGroupTypeGroupId: number;
-    eventType: Suggestion;
-    group: string;
-    date: Date;
-    sequence: number;
-    dueTime: number;
-    assignTo: Suggestion;
-    notes: string;
-    active: boolean;
-}
+import {EventGroupViewModel} from "../../../interfaces/event-group-view-model.interface";
 
 export class EventGroupDialogController implements angular.IController {
-    filteredUsers: Suggestion[] = [];
     searchText: string = '';
     selectedUser?: Suggestion;
 
@@ -40,14 +27,12 @@ export class EventGroupDialogController implements angular.IController {
     ) {
     }
 
-    cancel(): void {
-        this.$mdDialog.cancel();
-    }
-
     async save(jobId: number, events: EventGroupViewModel[]) {
         try {
-            await this.addTasksToJob(jobId, events);
-            const taskCount = this.events.length;
+            const activeEvents = events.filter(event => event.active);
+
+            await this.addTasksToJob(jobId, activeEvents);
+            const taskCount = activeEvents.length;
             this.toastrService.showSuccessToast(`${taskCount} task${taskCount !== 1 ? 's' : ''} added successfully`);
         } catch (error) {
             console.error('EventGroupDialogController: Error in save', error);
@@ -63,20 +48,27 @@ export class EventGroupDialogController implements angular.IController {
     }
 
     querySearch(text: string, index: number): Suggestion[] {
-        return text ? this.users.filter(this.createFilterFor(text)) : this.users;
-    }
+        if (!text) return this.users;
 
-    private createFilterFor(query: string): (user: Suggestion) => boolean {
-        const lowercaseQuery = query.toLowerCase();
-        return (user: Suggestion) => {
-            return user.text.toLowerCase().indexOf(lowercaseQuery) === 0;
-        };
+        const lowercaseQuery = text.toLowerCase();
+        return this.users.filter(user =>
+            user.text.toLowerCase().includes(lowercaseQuery)
+        );
     }
 
     selectedUserChange(user: Suggestion, index: number): void {
         if (user && user.text) {
+            if (!this.events[index].assignTo) {
+                this.events[index].assignTo = { text: '', id: 0 };
+            }
+
             this.events[index].assignTo.text = user.text;
+            this.events[index].assignTo.id = user.id;
         }
+    }
+
+    cancel(): void {
+        this.$mdDialog.cancel();
     }
 }
 

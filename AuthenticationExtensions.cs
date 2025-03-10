@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Serilog;
-using System.Collections.Generic;
+﻿using Serilog;
 using System.IO;
 using System.Security.Cryptography;
 using System;

@@ -15,58 +15,30 @@ public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory, I
     : BaseRepository(contextFactory),
         ITaskRepository
 {
-    private DateTime CombineDateAndTime(DateTime? date, DateTime? time)
-    {
-        if (date == null)
-            return DateTime.MinValue;
-
-        if (time == null)
-            return date.Value;
-
-        return new DateTime(
-            date.Value.Year,
-            date.Value.Month, 
-            date.Value.Day,
-            time.Value.Hour,
-            time.Value.Minute,
-            time.Value.Second
-        );
-    }
-    private async Task<string> GetEventTypeName(double? eventTypeId)
-    {
-        if (eventTypeId == null)
-            return "Default";
-
-        var eventType = await Context.TucEventTypes
-            .Where(jt => jt.UcetId == eventTypeId)
-            .Select(jt => jt.UcetName)
-            .FirstOrDefaultAsync();
-
-        return eventType ?? "Default";
-    }
-    
     public async Task<List<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters)
     {
         var tenantTimeZone = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
         var tenantTimeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTimeZone ?? string.Empty);
         var utcDateTime = DateTime.UtcNow;
         var tenantTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tenantTimeZoneInfo);
-        var today = tenantTime.Date;
+
+        var selectedDate = tenantTime.Date;
+        if (filters is { Date: not null }) selectedDate = filters.Date.Value;
+
         var query = Context.TucEvents.AsQueryable();
 
-
         query = query.Where(e =>
-            e.UcevDate != null
-            && (
-                e.UcevDate.Value.Date == today
-                || e.UcevDate.Value < tenantTime
-            )
+                e.UcevDate != null
+                && (
+                    e.UcevDate.Value.Date == selectedDate
+                    ||
+                    e.UcevDate.Value < tenantTime
+                )
         );
 
-
+        // Apply additional filters
         if (filters != null)
             query = ApplyFilters(query, filters);
-
 
         var simpleQuery = query.Select(e => new
         {
@@ -81,17 +53,13 @@ public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory, I
             e.UcevType
         });
 
-
         var results = await simpleQuery.AsNoTracking().ToListAsync();
 
-
         var tasks = new List<TaskViewModel>();
-
-        
         foreach (var e in results)
         {
             var eventTypeName = await GetEventTypeName(e.UcevType);
-    
+
             var task = new TaskViewModel
             {
                 Id = e.UcevId,
@@ -103,10 +71,12 @@ public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory, I
                 Title = e.UcevDescription,
                 EventType = eventTypeName
             };
-    
+
             tasks.Add(task);
         }
-        return tasks;
+
+        // Order by newest first
+        return tasks.OrderByDescending(e => e.DueDate).ToList();
     }
 
     public async Task SetEventAsClosed(int eventId, bool closed)
@@ -177,7 +147,7 @@ public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory, I
                 Group = x.EventTypeGroup.Name,
                 AssignTo = new Suggestion
                 {
-                    Text = x.EventTypeGroup.CreatedBy,
+                    Text = x.EventTypeGroup.CreatedBy
                 }
             })
             .OrderBy(x => x.Sequence)
@@ -191,45 +161,51 @@ public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory, I
         int jobId,
         List<EventGroupViewModel> eventGroupViewModels)
     {
-        const int batchSize = 100;
-
         var job = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
-        if(job == null) throw new KeyNotFoundException($"Job with ID {jobId} not found.");
+        ArgumentNullException.ThrowIfNull(job, nameof(job));
 
-        await Parallel.ForEachAsync(
-            eventGroupViewModels.Chunk(batchSize),
-            new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
-            async (batch, ct) =>
-            {
-                foreach (var eventGroup in batch)
-                {
-                    // Call the stored procedure for each agent
-                    await Context.Procedures.DES_qdfEvent_InsertAsync(
-                        job.UcjbNumber,
-                        job.UcjbClientId,
-                        job.UcjbContact,
-                        DateTime.Now,
-                        DateTime.Now,
-                        eventGroup.EventType.Id,
-                        null,
-                        null,
-                        eventGroup.AssignTo.Id,
-                        null,
-                        null,
-                        eventGroup.Notes,
-                        false,
-                        eventGroup.Active,
-                        eventGroup.AssignTo.Id,
-                        eventGroup.EventType.Text,
-                        job.UcjbCourierId,
-                        job.UcjbId,
-                        eventGroup.AssignTo.Text,
-                        job.UcjbSpeed,
-                        cancellationToken: ct
-                    );
-                }
-            }
-        );
+        foreach (var eventGroup in eventGroupViewModels)
+        {
+            // Call the stored procedure for each agent
+            await Context.Procedures.DES_qdfEvent_InsertAsync(
+                jobNo: job.UcjbNumber,
+                clientID: job.UcjbClientId,
+                contact: job.UcjbContact,
+                date: DateTime.Now,
+                time: DateTime.Now,
+                type: eventGroup.EventType.Id,
+                lateTime: null,
+                eTATime: null,
+                staffIDIn: eventGroup.AssignTo.Id,
+                staffIDOut: null,
+                responseTime: null,
+                notes: eventGroup.Notes,
+                pageCourier: false,
+                closed: false,
+                originator: eventGroup.AssignTo.Id,
+                description: eventGroup.EventType.Text,
+                courierID: job.UcjbCourierId,
+                jobID: job.UcjbId,
+                despatcher: eventGroup.AssignTo.Text,
+                jobType: job.UcjbSpeed
+            );
+        }
+    }
+
+    public async Task<List<Suggestion>> GetActiveStaffAsync()
+    {
+        var staff = await Context.TucStaffs
+            .Where(s => s.UcstActive)
+            .Select(s => new Suggestion
+        {
+            Id = s.UcstId,
+            Text = s.UcstFirstName + " " + s.UcstLastName
+        })
+            .OrderBy(s => s.Text)
+            .AsNoTracking()
+            .ToListAsync();
+
+        return staff;
     }
 
     private static IQueryable<TucEvent> ApplyFilters(
@@ -243,25 +219,58 @@ public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory, I
 
         // Filter by EventTypeId if provided
         if (filters.EventTypeId.HasValue)
-            query = query.Where(e => e.UcevType == filters.EventTypeId.Value);
+            query = query.Where(e => Equals(e.UcevType, filters.EventTypeId.Value));
 
         // Filter by SearchText if provided
         if (string.IsNullOrWhiteSpace(filters.SearchText)) return query;
 
         var searchText = filters.SearchText.ToLower();
         query = query.Where(e =>
-            (e.UcevDescription != null && e.UcevDescription.ToLower().Contains(searchText))
+            (e.UcevDescription != null && e.UcevDescription.Contains(searchText, StringComparison.OrdinalIgnoreCase))
             || (
                 e.UcevNotes != null
                 && e.UcevNotes.Contains(searchText, StringComparison.CurrentCultureIgnoreCase)
             )
-            || (e.UcevDespatcher != null && e.UcevDespatcher.ToLower().Contains(searchText))
+            || (e.UcevDespatcher != null && e.UcevDespatcher.Contains(searchText, StringComparison.OrdinalIgnoreCase))
         );
 
         return query;
     }
 
-    private static bool IsOverdue(DateTime eventDate, int extraMinutes = 0) => eventDate.AddMinutes(extraMinutes) < DateTime.Now;
+    private static bool IsOverdue(DateTime dueDate, DateTime referenceDate) =>
+        dueDate.Date < referenceDate.Date ||
+        (dueDate.Date == referenceDate.Date && dueDate.TimeOfDay < DateTime.Now.TimeOfDay);
 
     private static async Task<TucEvent> GetEventByIdAsync(DespatchContext context, int eventId) => await context.TucEvents.FirstOrDefaultAsync(e => e.UcevId == eventId);
+
+    private static DateTime CombineDateAndTime(DateTime? date, DateTime? time)
+    {
+        if (date == null)
+            return DateTime.MinValue;
+
+        if (time == null)
+            return date.Value;
+
+        return new DateTime(
+            date.Value.Year,
+            date.Value.Month,
+            date.Value.Day,
+            time.Value.Hour,
+            time.Value.Minute,
+            time.Value.Second
+        );
+    }
+
+    private async Task<string> GetEventTypeName(double? eventTypeId)
+    {
+        if (eventTypeId == null)
+            return "Default";
+
+        var eventType = await Context.TucEventTypes
+            .Where(jt => Equals(jt.UcetId, eventTypeId))
+            .Select(jt => jt.UcetName)
+            .FirstOrDefaultAsync();
+
+        return eventType ?? "Default";
+    }
 }
