@@ -30,7 +30,7 @@ public static class JobStatusGroups
     public static readonly List<int> Completed = new()
     {
         (int)JobStatus.Completed,
-        (int)JobStatus.Undeliverable,
+        (int)JobStatus.Undeliverable
     };
 
     // Helper method to check if status is active

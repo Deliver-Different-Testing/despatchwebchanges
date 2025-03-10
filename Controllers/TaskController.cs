@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Interfaces;
-using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
@@ -28,8 +26,8 @@ public class TaskController(ITaskRepository taskRepository) : Controller
 
     [HttpPost]
     public async Task<IActionResult> MarkTaskAsClosed(
-        [FromQuery] int eventId,
-        [FromQuery] bool closed
+        int eventId,
+        bool closed
     )
     {
         try
@@ -46,8 +44,8 @@ public class TaskController(ITaskRepository taskRepository) : Controller
 
     [HttpPost]
     public async Task<IActionResult> UpdateTaskDate(
-        [FromQuery] int eventId,
-        [FromQuery] DateTime date
+        int eventId,
+        DateTime date
     )
     {
         try
@@ -64,8 +62,8 @@ public class TaskController(ITaskRepository taskRepository) : Controller
 
     [HttpPost]
     public async Task<IActionResult> UpdateTaskTime(
-        [FromQuery] int eventId,
-        [FromQuery] DateTime time
+        int eventId,
+        DateTime time
     )
     {
         try
@@ -96,7 +94,7 @@ public class TaskController(ITaskRepository taskRepository) : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetEventTypeGroups([FromQuery] int eventGroupId)
+    public async Task<IActionResult> GetEventTypeGroups(int eventGroupId)
     {
         try
         {
@@ -123,6 +121,21 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         catch (Exception ex)
         {
             Log.Error(ex, "Error adding events for job: {Error}", ex.Message);
+            return StatusCode(500);
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetStaff()
+    {
+        try
+        {
+            var staff = await taskRepository.GetActiveStaffAsync();
+            return Json(staff);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error getting the list of assignable staff: {Error}", ex.Message);
             return StatusCode(500);
         }
     }

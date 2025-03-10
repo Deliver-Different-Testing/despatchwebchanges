@@ -14,7 +14,7 @@ import {PaginatedResponse} from "../interfaces/paginated-response.interface";
 import {DateField, JobField} from "../interfaces/job-field.types";
 import DfrntPageViewModel from "../interfaces/dfrnt-page-view-model.interface";
 import {ActiveCourier} from "../interfaces/courier.interface";
-import { EventGroupViewModel } from "../components/dialogs/event-group-dialog/event-group-dialog.controller";
+import {EventGroupViewModel} from "../interfaces/event-group-view-model.interface";
 
 class DispatchService {
     static $inject = ["$http", "moment", "APP_CONFIG"];
@@ -79,6 +79,11 @@ class DispatchService {
 
     async getEventTypeGroups(eventGroupId: number) {
         const response = await this.$http.get<EventGroupViewModel[]>("task/GetEventTypeGroups?eventGroupId=" + eventGroupId);
+        return response.data;
+    }
+
+    async getActiveStaff() {
+        const response = await this.$http.get<Suggestion[]>('task/GetStaff');
         return response.data;
     }
 

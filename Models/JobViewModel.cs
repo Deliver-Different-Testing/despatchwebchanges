@@ -288,7 +288,7 @@ public class AddressViewModel
                 AddressLine5,
                 AddressLine6,
                 AddressLine7,
-                AddressLine8,
+                AddressLine8
             }.Where(line => !string.IsNullOrWhiteSpace(line))
         );
 }

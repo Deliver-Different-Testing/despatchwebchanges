@@ -270,7 +270,7 @@ public class JobController(
                     {
                         BucketName = bucketName,
                         Prefix = $"{folder}/{monthPrefix}{pattern}",
-                        MaxKeys = 1000,
+                        MaxKeys = 1000
                     };
 
                     var response = await s3Client.ListObjectsV2Async(request);
@@ -317,7 +317,7 @@ public class JobController(
             foreach (var getObjectRequest in s3List.Select(s3Object => new GetObjectRequest
                      {
                          BucketName = bucketName,
-                         Key = s3Object.Key,
+                         Key = s3Object.Key
                      }))
             {
                 using var response = await s3Client.GetObjectAsync(getObjectRequest);
@@ -466,7 +466,7 @@ public class JobController(
                 BucketName = Environment.GetEnvironmentVariable("S3Bucket"),
                 Key = key,
                 ContentType = "text/csv",
-                InputStream = ms,
+                InputStream = ms
             };
             await s3Client.PutObjectAsync(putRequest);
         }
@@ -523,7 +523,7 @@ public class JobController(
                     .Replace("downloads", "uploads"),
                 Key = key,
                 ContentType = file.ContentType,
-                InputStream = ms,
+                InputStream = ms
             };
             putRequest.Metadata.Add("FileName", file.FileName);
             await s3Client.PutObjectAsync(putRequest);
@@ -559,7 +559,7 @@ public class JobController(
                     new ExcelDataSetConfiguration
                     {
                         ConfigureDataTable = (_) =>
-                            new ExcelDataTableConfiguration { UseHeaderRow = true },
+                            new ExcelDataTableConfiguration { UseHeaderRow = true }
                     }
                 )
                 .Tables[0]; //Only ready from the first sheet
@@ -598,7 +598,7 @@ public class JobController(
                 WriteIndented = true,
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
                 NumberHandling = JsonNumberHandling.AllowReadingFromString,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
             };
 
             sResult = JsonSerializer.Serialize(rows, options);
@@ -613,7 +613,7 @@ public class JobController(
             PropertyNameCaseInsensitive = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             NumberHandling = JsonNumberHandling.AllowReadingFromString,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
 
         var result = JsonSerializer.Deserialize<List<JobManualPriceModel>>(
@@ -731,7 +731,7 @@ public class JobController(
             {
                 1 => await DeterminePickupLateStatus(request),
                 2 => await DetermineDeliveryLateStatus(request),
-                _ => throw new ArgumentException("Invalid LateType"),
+                _ => throw new ArgumentException("Invalid LateType")
             };
         }
         else
@@ -1118,7 +1118,7 @@ public class JobController(
             CustomerRefCode = clientId.ToString(),
             Subject = $"Dispatch:{despatcherName} {eventName}",
             ActivityType = eventName,
-            Description = $"Job Number: {jobNumber} - {notes}",
+            Description = $"Job Number: {jobNumber} - {notes}"
         };
 
         var content = new StringContent(
@@ -1474,7 +1474,7 @@ public class JobController(
                     PickupLat = pickUpLat,
                     PickupLong = pickUpLong,
                     DeliveryLat = deliveryLat,
-                    DeliveryLong = deliveryLong,
+                    DeliveryLong = deliveryLong
                 }
             );
 
@@ -2051,7 +2051,7 @@ public class JobController(
         {
             BucketName = bucketName,
             Prefix = pattern,
-            MaxKeys = 1000, // Adjust if needed, but 1000 is the maximum allowed
+            MaxKeys = 1000 // Adjust if needed, but 1000 is the maximum allowed
         };
 
         var result = new List<S3Object>();
@@ -2110,7 +2110,7 @@ public class JobController(
                 var getObjectRequest = new GetObjectRequest
                 {
                     BucketName = bucketName,
-                    Key = s3Object.Key,
+                    Key = s3Object.Key
                 };
                 using var response = await s3Client.GetObjectAsync(getObjectRequest);
                 await using var responseStream = response.ResponseStream;
@@ -2123,7 +2123,7 @@ public class JobController(
                     S3Key = s3Object.Key,
                     FileName = fileName,
                     LastModified = s3Object.LastModified,
-                    Size = s3Object.Size,
+                    Size = s3Object.Size
                 };
                 s3Files.Add(s3FileInfo);
             }
@@ -2175,7 +2175,7 @@ public class JobController(
                     BucketName = Environment.GetEnvironmentVariable("S3BucketMars"),
                     Key = key,
                     ContentType = request.File.ContentType,
-                    InputStream = ms,
+                    InputStream = ms
                 };
                 putRequest.Metadata.Add("FileName", request.File.FileName);
                 await s3Client.PutObjectAsync(putRequest);
@@ -2253,7 +2253,7 @@ public class JobController(
             var deleteObjectRequest = new DeleteObjectRequest
             {
                 BucketName = bucketName,
-                Key = key,
+                Key = key
             };
             await s3Client.DeleteObjectAsync(deleteObjectRequest);
         }

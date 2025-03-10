@@ -12,10 +12,18 @@ class TasksDashboardService implements angular.IServiceProvider {
     }
 
     async getAllTasks(filters: TaskTableFiltersRequest): Promise<Task[]> {
+        const cleanFilters: Record<string, any> = {};
+
+        // Only add defined filters
+        if (filters.courierId !== undefined) cleanFilters.courierId = filters.courierId;
+        if (filters.eventTypeId !== undefined) cleanFilters.eventTypeId = filters.eventTypeId;
+        if (filters.searchText) cleanFilters.searchText = filters.searchText;
+        if (filters.date) cleanFilters.date = filters.date;
+
         const response = await this.$http<Task[]>({
             method: 'GET',
             url: '/Task/GetAllTasks',
-            params: filters,
+            params: cleanFilters,
             headers: {
                 'Content-Type': 'application/json'
             }
@@ -31,7 +39,7 @@ class TasksDashboardService implements angular.IServiceProvider {
     async updateTaskDate(eventId: number, date: Date) {
         await this.$http.post("Task/UpdateTaskDate" + "?eventId=" + eventId + "&date=" + date, null);
     }
-    
+
     async updateTaskTime(eventId: number, time: Date) {
         await this.$http.post("Task/UpdateTaskTime" + "?eventId=" + eventId + "&time=" + time, null);
     }

@@ -55,7 +55,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
                         c.MaxPayload
                         * c.TucJobUcjbCouriers.Where(d => !d.UcjbJobDone && !d.UcjbVoid)
                             .SelectMany(d => d.TucJobItems)
-                            .Sum(i => i.Items * i.Weight),
+                            .Sum(i => i.Items * i.Weight)
                 })
                 .OrderBy(c => c.CourierCode)
                 .AsNoTracking()
@@ -128,7 +128,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
             UcevCourierId = courierId,
             UcevJobId = jobId,
             UcevDespatcher = despatcherName,
-            UcevJobType = jobType,
+            UcevJobType = jobType
         };
 
         // If automatic, set defaults to following
@@ -211,7 +211,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
                 .Select(c => new Suggestion
                 {
                     Id = c.UccrId,
-                    Text = c.UccrName + " " + c.UccrSurname,
+                    Text = c.UccrName + " " + c.UccrSurname
                 })
                 .AsNoTracking()
                 .ToListAsync();
@@ -338,7 +338,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
         {
             Country.Nz => await GetClearListEnvelopeNzAsync(clearListAreaId, includeCouriers),
             Country.Us => await GetClearListEnvelopeUsAsync(clearListAreaId, includeCouriers),
-            _ => throw new ArgumentOutOfRangeException(nameof(country), country, null),
+            _ => throw new ArgumentOutOfRangeException(nameof(country), country, null)
         };
     }
 
@@ -370,7 +370,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
                 {
                     cl.ClearListAreaId,
                     cl.Name,
-                    cl.Order,
+                    cl.Order
                 })
                 .ToListAsync();
 
@@ -504,7 +504,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
             .Select(zipPolygon => new EnvelopeCoordinate
             {
                 Longitude = (decimal)zipPolygon.Longitude,
-                Latitude = (decimal)zipPolygon.Latitude,
+                Latitude = (decimal)zipPolygon.Latitude
             });
     }
 
@@ -534,7 +534,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
             .Select(x => new EnvelopeCoordinate
             {
                 Longitude = (decimal)x.Courier.CourierGps.Longitude,
-                Latitude = (decimal)x.Courier.CourierGps.Latitude,
+                Latitude = (decimal)x.Courier.CourierGps.Latitude
             });
     }
 
@@ -554,7 +554,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
                             .Select(clazp => new EnvelopeCoordinate
                             {
                                 Longitude = (decimal)jt.DeliveryLongitude,
-                                Latitude = (decimal)jt.DeliveryLatitude,
+                                Latitude = (decimal)jt.DeliveryLatitude
                             })
                     )
             );
@@ -569,7 +569,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
                     clap.Polygon.TblPolygonGps.Select(pgps => new EnvelopeCoordinate
                     {
                         Longitude = pgps.Longitude,
-                        Latitude = pgps.Latitude,
+                        Latitude = pgps.Latitude
                     })
                 )
             );
@@ -593,7 +593,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
                                 .Select(dclap => new EnvelopeCoordinate
                                 {
                                     Longitude = (decimal)c.CourierGps.Longitude,
-                                    Latitude = (decimal)c.CourierGps.Latitude,
+                                    Latitude = (decimal)c.CourierGps.Latitude
                                 })
                         )
                     )
@@ -612,7 +612,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
                         .Select(clap => new EnvelopeCoordinate
                         {
                             Longitude = (decimal)jt.DeliveryLongitude,
-                            Latitude = (decimal)jt.DeliveryLatitude,
+                            Latitude = (decimal)jt.DeliveryLatitude
                         })
                 )
             );
@@ -629,7 +629,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
                 MinimumLongitude = g.Min(x => x.Longitude),
                 MinimumLatitude = g.Min(x => x.Latitude),
                 MaximumLongitude = g.Max(x => x.Longitude),
-                MaximumLatitude = g.Max(x => x.Latitude),
+                MaximumLatitude = g.Max(x => x.Latitude)
             })
             .FirstOrDefaultAsync();
 
@@ -659,7 +659,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
             PercentHeight = percentHeight,
             Top = BuildClearListSection(clearListData, activeCouriers, 1),
             Middle = BuildClearListSection(clearListData, activeCouriers, 3),
-            Bottom = BuildClearListSection(clearListData, activeCouriers, 5),
+            Bottom = BuildClearListSection(clearListData, activeCouriers, 5)
         };
 
         return acl;
@@ -680,7 +680,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
             {
                 CourierNumber = x.Hash,
                 CourierData = BuildCourierData(x, activeCouriers),
-                Destinations = BuildDestinations(x.Deliver),
+                Destinations = BuildDestinations(x.Deliver)
             })
             .ToList();
     }
@@ -702,7 +702,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
             Del = x?.Deliver ?? "Unknown",
             Lrm = "Unknown",
             Eta2Lrm = "Unknown",
-            CourierId = x?.CourierID,
+            CourierId = x?.CourierID
         };
     }
 
