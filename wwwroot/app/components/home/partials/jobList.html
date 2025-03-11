@@ -1,63 +1,11 @@
 <!-- Job List Component -->
 <div class="droppable-box">
     <!-- Context Menu with Hover Submenu for Event Groups -->
-    <div class="material-menu md-dense" style="position: fixed; z-index: 100;"
-         ng-style="{'top': menuPosition.top, 'left': menuPosition.left, 'display': menuVisible ? 'block' : 'none'}">
-        <div ng-click="$event.stopPropagation()">
-            <md-menu-bar>
-                <md-menu>
-                    <md-content md-dense>
-                        <md-list>
-                            <md-list-item ng-click="voidJobAction()">
-                                <md-icon md-font-set="material-symbols-outlined">cancel</md-icon>
-                                <p>Void Job</p>
-                            </md-list-item>
-
-                            <md-divider></md-divider>
-
-                            <md-list-item ng-click="addEventOtherAction($event)">
-                                <md-icon md-font-set="material-symbols-outlined">add</md-icon>
-                                <p>Add Event - Other</p>
-                            </md-list-item>
-
-                            <md-divider></md-divider>
-
-                            <!-- Event Groups Menu with Hover -->
-                            <md-menu md-position-mode="target-right target" md-offset="0 -33">
-                                <md-list-item ng-mouseenter="$mdMenu.open()" ng-click="$mdMenu.open()">
-                                    <md-icon md-font-set="material-symbols-outlined">event</md-icon>
-                                    <p>Event Groups</p>
-                                    <md-icon md-font-set="material-symbols-outlined" class="md-secondary">arrow_right</md-icon>
-                                </md-list-item>
-
-                                <md-menu-content width="4" ng-mouseleave="$mdMenu.close()">
-                                    <md-menu-item ng-repeat="group in eventGroups">
-                                        <md-button ng-click="selectEventGroup(group.id, currentJob.id)">
-                                            {{group.text}}
-                                        </md-button>
-                                    </md-menu-item>
-                                </md-menu-content>
-                            </md-menu>
-
-                            <md-divider></md-divider>
-
-                            <md-list-item ng-if="currentJob.allowSplit" ng-click="splitJobAction($event)">
-                                <md-icon md-font-set="material-symbols-outlined">call_split</md-icon>
-                                <p>Split Job</p>
-                            </md-list-item>
-
-                            <md-divider ng-if="currentJob.allowSplit"></md-divider>
-
-                            <md-list-item ng-click="setFirstJobAction()">
-                                <md-icon md-font-set="material-symbols-outlined">first_page</md-icon>
-                                <p>Set First Job</p>
-                            </md-list-item>
-                        </md-list>
-                    </md-content>
-                </md-menu>
-            </md-menu-bar>
-        </div>
-    </div>
+    <context-menu
+            on-refresh="refreshData(true)"
+            on-split-job="handleSplitJob(job)"
+            on-refresh-courier-jobs="refreshCourierJobs(courierId)">
+    </context-menu>
 
     <md-table-container>
         <table md-dense md-progress="jobListPromise" md-table ng-model="selectedJob">
@@ -89,9 +37,6 @@
 
                 <td md-cell>{{job.time | date: "HH:mm"}}</td>
                 <td md-cell>{{job.speed}}</td>
-                <td md-cell>
-                    {{job.notify}}
-                </td>
                 <td md-cell ng-if="job.courierData.courierID !== null">{{job.notify}}</td>
                 <td md-cell>
                     <div class="attention-cell" title="{{attention(job)}}">{{attention(job)}}</div>

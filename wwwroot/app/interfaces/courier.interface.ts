@@ -15,8 +15,9 @@ export interface Courier {
     text: string;         // The text for use in select/autocomplete. This looks to be a duplicate of label
 }
 
-export interface ActiveCourier {
-    id: string;
+export interface ActiveCourierViewModel {
+    courierId: number;
+    id: string; // This is the courier code
     name: string;
     dangerousGoods: number;
     dgLicenseExpiry: string | null;

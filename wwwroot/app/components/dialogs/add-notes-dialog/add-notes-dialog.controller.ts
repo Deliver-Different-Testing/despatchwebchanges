@@ -83,7 +83,7 @@ class AddNotesDialogController implements angular.IController {
         if (bulkJob) {
             await this.DispatchData.updateBulkJobDetail(jobID, field, value, charge, firstName, contactID);
         } else {
-            await this.DispatchData.updateJobDetail(jobID, field, value, charge, firstName, contactID, preBook);
+            await this.DispatchData.updateJobDetail(jobID, field, value, charge, preBook);
         }
     }
 

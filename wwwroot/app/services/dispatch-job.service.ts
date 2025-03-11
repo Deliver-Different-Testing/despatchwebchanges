@@ -1,14 +1,14 @@
 import app from "../app";
 import angular from "angular";
 import {Job, JobQueryParams} from "../interfaces/job.interface";
-import {ActiveCourier} from "../interfaces/courier.interface";
+import {ActiveCourierViewModel} from "../interfaces/courier.interface";
 import {JobListResponse} from "../interfaces/job-list-response.interface";
 
 class DispatchJobService {
     static $inject = ["$mdDialog", "DispatchData", "moment"];
 
-    private pickCouriers: ActiveCourier[];
-    private pickAllCouriers: ActiveCourier[];
+    private pickCouriers: ActiveCourierViewModel[];
+    private pickAllCouriers: ActiveCourierViewModel[];
 
     constructor(private $mdDialog: angular.material.IDialogService,
                 private dispatchData: any,
@@ -270,14 +270,14 @@ class DispatchJobService {
         }
     }
 
-    private async findCourierByNumber(courierNumber: number): Promise<ActiveCourier | null> {
+    private async findCourierByNumber(courierNumber: number): Promise<ActiveCourierViewModel | null> {
         if (!courierNumber || courierNumber <= 0) {
             throw new Error('Invalid courier number');
         }
 
         await this.fetchCouriersData();
 
-        const findCourierById = (couriers: ActiveCourier[], id: number): ActiveCourier | null =>
+        const findCourierById = (couriers: ActiveCourierViewModel[], id: number): ActiveCourierViewModel | null =>
             couriers.find(c => c.courierId === id) || null;
 
         // First try to find among active couriers
@@ -305,7 +305,7 @@ class DispatchJobService {
         );
     }
 
-    private async dispatchJobsContinue(courier: ActiveCourier, jobs: Job[]): Promise<void> {
+    private async dispatchJobsContinue(courier: ActiveCourierViewModel, jobs: Job[]): Promise<void> {
         // First validate all jobs
         const validationResults = await Promise.all(
             jobs.map(job => this.validateJob(job, courier))
@@ -340,7 +340,7 @@ class DispatchJobService {
         return job.dgClass !== undefined && job.dgClass > 0;
     }
 
-    private async validateJob(job: Job, courier: ActiveCourier): Promise<{ isValid: boolean; message: string; }> {
+    private async validateJob(job: Job, courier: ActiveCourierViewModel): Promise<{ isValid: boolean; message: string; }> {
         console.log("Validating job:", {
             jobNo: job?.jobNo,
             courierId: courier?.id,
@@ -371,7 +371,7 @@ class DispatchJobService {
         return {isValid: true, message: ""};
     }
 
-    private async processValidJobs(courier: ActiveCourier, jobs: Job[]): Promise<void> {
+    private async processValidJobs(courier: ActiveCourierViewModel, jobs: Job[]): Promise<void> {
         console.log("Processing valid jobs:", {
             courierId: courier?.courierId,
             jobCount: jobs?.length
@@ -459,13 +459,13 @@ class DispatchJobService {
         );
     }
 
-    private async findCourierById(courierId: number | undefined): Promise<ActiveCourier | undefined> {
+    private async findCourierById(courierId: number | undefined): Promise<ActiveCourierViewModel | undefined> {
         await this.fetchCouriersData();
         return this.pickCouriers.find(c => c.courierId === courierId) ||
             this.pickAllCouriers.find(c => c.courierId === courierId);
     }
 
-    private async restoreJobByCourierAndType(job: Job, courier: ActiveCourier): Promise<void> {
+    private async restoreJobByCourierAndType(job: Job, courier: ActiveCourierViewModel): Promise<void> {
         const restoreMethod = job.displaySplitJobDetail
             ? this.dispatchData.restoreSplitJobs
             : this.dispatchData.restoreJobs;

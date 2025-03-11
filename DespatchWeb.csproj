@@ -278,6 +278,8 @@
     <TypeScriptCompile Include="wwwroot\app\components\common\dfrnt-loader\dfrnt-loader.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\dispatch-map\dispatch-map.directive.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\dispatch-map\dispatch-map.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\job-context-menu\job-context-menu.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\job-context-menu\job-context-menu.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.directive.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\pod-photo-viewer\pod-photo-viewer.directive.ts" />

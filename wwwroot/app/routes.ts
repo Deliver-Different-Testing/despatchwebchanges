@@ -1,15 +1,6 @@
 import app from "./app";
 import angular from "angular";
 
-// HTML Templates
-import homeViewTemplate from "./components/home/homeView.html";
-import nationwideViewTemplate from "./components/Nationwide/nationwide.template.html";
-import csViewTemplate from "./components/CS/csView.html";
-import prebookViewTemplate from "./components/prebooks/prebookView.html";
-import overviewViewTemplate from "./components/overview/overview.template.html";
-import megaMapViewTemplate from "./components/overview/mega-map/mega-map.template.html";
-import taskDashboardViewTemplate from "./components/task-dashboard/task-dashboard.template.html";
-
 class RouterConfig {
     constructor(private $urlRouterProvider: angular.ui.IUrlRouterProvider,
                 private $stateProvider: angular.ui.IStateProvider) {
@@ -33,7 +24,7 @@ class RouterConfig {
     private configureHomeState(): this {
         this.$stateProvider.state("home", {
             url: "/?jobId",
-            template: homeViewTemplate,
+            template: require("./components/home/homeView.html"),
             controller: "HomeControl",
             params: {
                 jobId: {
@@ -48,7 +39,7 @@ class RouterConfig {
     private configureNationwideState(): this {
         this.$stateProvider.state("nw", {
             url: "/Nationwide",
-            template: nationwideViewTemplate,
+            template: require("./components/Nationwide/nationwide.template.html"),
             controller: "NationwideControl",
             reloadOnSearch: false
         });
@@ -58,7 +49,7 @@ class RouterConfig {
     private configureCSState(): this {
         this.$stateProvider.state("cs", {
             url: "/CS",
-            template: csViewTemplate,
+            template: require("./components/CS/csView.html"),
             controller: "CSControl",
             reloadOnSearch: false
         });
@@ -68,7 +59,7 @@ class RouterConfig {
     private configurePrebooksState(): this {
         this.$stateProvider.state("prebooks", {
             url: "/prebooks",
-            template: prebookViewTemplate,
+            template: require("./components/prebooks/prebookView.html"),
             controller: "PBControl",
             reloadOnSearch: false
         });
@@ -78,7 +69,7 @@ class RouterConfig {
     private configureOverviewState(): this {
         this.$stateProvider.state("overview", {
             url: "/overview",
-            template: overviewViewTemplate,
+            template: require("./components/overview/overview.template.html"),
             controller: "deliveryOverview",
             controllerAs: "ctrl",
             reloadOnSearch: false
@@ -89,7 +80,7 @@ class RouterConfig {
     private configureMegaMapState(): this {
         this.$stateProvider.state("megaMap", {
             url: "/megaMap",
-            template: megaMapViewTemplate,
+            template: require("./components/overview/mega-map/mega-map.template.html"),
             controller: "megaMapController",
             controllerAs: "ctrl",
             reloadOnSearch: false
@@ -100,7 +91,7 @@ class RouterConfig {
     private configureTaskDashboardState(): this {
         this.$stateProvider.state("taskDashboard", {
             url: "/taskDashboard",
-            template: taskDashboardViewTemplate,
+            template: require("./components/task-dashboard/task-dashboard.template.html"),
             controller: "taskDashboardController",
             controllerAs: "ctrl",
             reloadOnSearch: false

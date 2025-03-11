@@ -32,6 +32,7 @@ import "./components/common/dispatch-map/dispatch-map.directive";
 import "./components/common/job-details/job-details.directive";
 import "./components/common/pod-photo-viewer/pod-photo-viewer.directive";
 import "./components/common/dfrnt-loader/dfrnt-loader.controller";
+import "./components/common/job-context-menu/job-context-menu.controller";
 
 // Service imports
 import "./services";

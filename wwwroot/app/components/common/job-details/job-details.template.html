@@ -58,7 +58,7 @@
                             <md-icon md-font-set="material-symbols-outlined" aria-label="Pricing">payments</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Pricing:</span>
-                                <span class="timing-value">{{ ctrl.job.amount ? (ctrl.job.amount | currency) : 'Not available' }}</span>
+                                <span class="timing-value">{{ ctrl.job.charge ? ctrl.job.charge : 'Not available' }}</span>
                             </div>
                         </md-list-item>
 
@@ -140,7 +140,7 @@
                         </md-list-item>
 
                         <md-list-item>
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="POD name">downhill_skiing</md-icon>
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="POD name">sentiment_satisfied</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">POD Name:</span>
                                 <span class="timing-value">{{ctrl.job.podName || 'N/A'}}</span>
@@ -330,41 +330,85 @@
                     </section>
                 </div>
 
-                <!-- Notes Section -->
+                <!-- Notes Section with sticky note design -->
                 <div class="notes-section md-whiteframe-1dp">
                     <div class="section-header">
-                        <div class="md-dense"
-                             style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px;">
-                            <div style="display: flex; align-items: center;">
-                                <md-icon md-font-set="material-symbols-outlined" style="margin-right: 8px;">info
-                                </md-icon>
-                                <span>Notes / Consignment Notes / AWB</span>
-                            </div>
+                        <div style="display: flex; align-items: center;">
+                            <md-icon md-font-set="material-symbols-outlined">info</md-icon>
+                            <span>Notes / Consignment Notes / AWB</span>
+                        </div>
 
-                            <div style="display: flex; gap: 8px;">
-                                <md-button class="md-fab md-raised md-mini md-primary" aria-label="add note"
-                                           ng-click="ctrl.showNotesDialog($event, ctrl.job, 'Notes','Note')">
-                                    <md-icon md-font-set="material-symbols-outlined">note_add</md-icon>
-                                    <md-tooltip md-direction="bottom">Edit Note</md-tooltip>
-                                </md-button>
+                        <div flex></div>
 
-                                <md-button class="md-fab md-raised md-mini md-primary" aria-label="add con note"
-                                           ng-click="ctrl.showNotesDialog($event, ctrl.job, 'Consignment Note / AWB','ConNote')">
-                                    <md-icon md-font-set="material-symbols-outlined">inventory</md-icon>
-                                    <md-tooltip md-direction="bottom">Edit Consignment / AWB</md-tooltip>
-                                </md-button>
-                            </div>
+                        <div>
+                            <md-button class="md-fab md-raised md-mini md-primary" aria-label="add note"
+                                       ng-click="ctrl.showNotesDialog($event, ctrl.job, 'Notes','Note')">
+                                <md-icon md-font-set="material-symbols-outlined">note_add</md-icon>
+                                <md-tooltip md-direction="bottom">Edit Note</md-tooltip>
+                            </md-button>
+
+                            <md-button class="md-fab md-raised md-mini md-primary" aria-label="add con note"
+                                       ng-click="ctrl.showNotesDialog($event, ctrl.job, 'Consignment Note / AWB','ConNote')">
+                                <md-icon md-font-set="material-symbols-outlined">inventory</md-icon>
+                                <md-tooltip md-direction="bottom">Edit Consignment / AWB</md-tooltip>
+                            </md-button>
                         </div>
                     </div>
 
                     <md-divider></md-divider>
 
-                    <div class="notes-list">
-                        <div class="note-item pickup" ng-repeat="note in ctrl.notes">
-                            <div class="note-time">
+                    <div class="sticky-notes-container">
+                        <div ng-repeat="note in ctrl.notes"
+                             class="sticky-note {{note.type}}"
+                             ng-style="{'transform': 'rotate(' + (-1 + $index % 3) + 'deg)'}">
+                            <div class="note-header">
                                 <md-icon md-font-set="material-symbols-outlined">{{note.icon}}</md-icon>
+                                <div class="note-type">
+                                    <span ng-if="note.type === 'internal'">Internal Note</span>
+                                    <span ng-if="note.type === 'consignment'">Consignment Note</span>
+                                    <span ng-if="note.type === 'client'">Client Note</span>
+                                    <span ng-if="!note.type || (note.type !== 'internal' && note.type !== 'consignment' && note.type !== 'client')">Note</span>
+                                </div>
                             </div>
-                            <div class="note-text">{{note.text}}</div>
+                            <div class="note-content">{{note.text}}</div>
+                        </div>
+
+                        <!-- Fallback to display raw notes data if the notes array is empty -->
+                        <div ng-if="ctrl.notes.length === 0 && ctrl.job.internalNotes"
+                             class="sticky-note internal"
+                             style="transform: rotate(-1deg);">
+                            <div class="note-header">
+                                <md-icon md-font-set="material-symbols-outlined">note_stack</md-icon>
+                                <div class="note-type">Internal Note</div>
+                            </div>
+                            <div class="note-content">{{ctrl.job.internalNotes}}</div>
+                        </div>
+
+                        <div ng-if="ctrl.notes.length === 0 && ctrl.job.clientNotes"
+                             class="sticky-note client"
+                             style="transform: rotate(1deg);">
+                            <div class="note-header">
+                                <md-icon md-font-set="material-symbols-outlined">business</md-icon>
+                                <div class="note-type">Client Note</div>
+                            </div>
+                            <div class="note-content">{{ctrl.job.clientNotes}}</div>
+                        </div>
+
+                        <div ng-if="ctrl.notes.length === 0 && ctrl.job.conNote"
+                             class="sticky-note consignment"
+                             style="transform: rotate(-0.5deg);">
+                            <div class="note-header">
+                                <md-icon md-font-set="material-symbols-outlined">inventory_2</md-icon>
+                                <div class="note-type">Consignment Note</div>
+                            </div>
+                            <div class="note-content">{{ctrl.job.conNote}}</div>
+                        </div>
+
+                        <!-- Message when truly no notes -->
+                        <div ng-if="ctrl.notes.length === 0 && !ctrl.job.internalNotes && !ctrl.job.clientNotes && !ctrl.job.conNote"
+                             class="no-notes-message">
+                            <md-icon md-font-set="material-symbols-outlined">sticky_note_2</md-icon>
+                            <p>No notes available for this job.</p>
                         </div>
                     </div>
                 </div>
@@ -757,7 +801,7 @@
                                     </md-checkbox>
                                 </div>
                                 <div flex="20">
-                                    <md-checkbox ng-click="ctrl.markJobAsDone($event, ctrl.job)"
+                                    <md-checkbox ng-click="ctrl.markJobAsDone(ctrl.job)"
                                                  ng-model="ctrl.job.done" class="compact">Done
                                     </md-checkbox>
                                 </div>

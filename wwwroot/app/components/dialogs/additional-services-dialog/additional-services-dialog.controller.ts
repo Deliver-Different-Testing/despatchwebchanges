@@ -10,12 +10,12 @@ class AdditionalServicesDialogController implements angular.IController {
     private readonly clientId: number;
     private readonly speedId: number;
     private readonly quantity: number;
-    private isLoading: boolean;
-    private isTotalCostCalculating: boolean;
-    private selected: any[];
-    private additionalServices: any[];
-    private totalServicesCount: number;
-    private totalCost: number = 0;
+    isLoading: boolean;
+    isTotalCostCalculating: boolean;
+    selected: any[];
+    additionalServices: any[];
+    totalServicesCount: number;
+    totalCost: number = 0;
 
     constructor(private $mdDialog: angular.material.IDialogService,
                 private DispatchData: DispatchService,

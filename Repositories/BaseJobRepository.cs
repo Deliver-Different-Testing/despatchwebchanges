@@ -274,8 +274,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 j.UcjbDate.HasValue && j.UcjbTime.HasValue
                     ? DateTime.Parse(
                         j.UcjbDate.Value.ToString("yyyy-MM-dd")
-                            + " "
-                            + j.UcjbTime.Value.ToString("HH:mm:ss")
+                        + " "
+                        + j.UcjbTime.Value.ToString("HH:mm:ss")
                     )
                     : DateTime.MinValue,
             DispatchTime = j.UcjbDispTime,
@@ -414,6 +414,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     : null,
             IsArchived = true
         };
+
     private static readonly int[] SourceArray = [41, 42, 43, 51, 52];
 
     // Create
@@ -524,7 +525,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
     private async Task<List<int>> GetFilteredJobIds(List<int> selectedViewIds)
     {
-        if (selectedViewIds?.Any() != true)
+        if (selectedViewIds == null || selectedViewIds.Count == 0)
         {
             return await Context
                 .DeswebQryDespatchJobViewFilters.Select(x => x.UcjbId)
@@ -673,9 +674,37 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     .ThenByDescending(j => j.UcjbTime)
                     .ThenByDescending(j => j.UcjbCourier.Code),
 
-            "status" => isAscending
-                ? query.OrderBy(j => j.UcjbStatusNavigation.UcjsName)
-                : query.OrderByDescending(j => j.UcjbStatusNavigation.UcjsName),
+          "status" => isAscending
+    ? query.OrderBy(j => j.UcjbStatus == (int)JobStatus.New ? 1 :
+                     j.UcjbStatus == (int)JobStatus.Preassigned ? 2 :
+                     j.UcjbStatus == (int)JobStatus.Dispatched ? 3 :
+                     j.UcjbStatus == (int)JobStatus.Accepted ? 4 :
+                     j.UcjbStatus == (int)JobStatus.PickedUp ? 5 :
+                     j.UcjbStatus == (int)JobStatus.InTransit ? 6 :
+                     j.UcjbStatus == (int)JobStatus.OutForDelivery ? 7 :
+                     j.UcjbStatus == (int)JobStatus.Rejected ? 8 :
+                     j.UcjbStatus == (int)JobStatus.LatePickup ? 9 :
+                     j.UcjbStatus == (int)JobStatus.LateDelivery ? 10 :
+                     j.UcjbStatus == (int)JobStatus.Warning ? 11 :
+                     j.UcjbStatus == (int)JobStatus.Undeliverable ? 12 :
+                     j.UcjbStatus == (int)JobStatus.Completed ? 13 :
+                     j.UcjbStatus == (int)JobStatus.AwaitingPod ? 14 :
+                     j.UcjbStatus == (int)JobStatus.AssumingCompleted ? 15 : 99)
+    : query.OrderByDescending(j => j.UcjbStatus == (int)JobStatus.New ? 1 :
+                             j.UcjbStatus == (int)JobStatus.Preassigned ? 2 :
+                             j.UcjbStatus == (int)JobStatus.Dispatched ? 3 :
+                             j.UcjbStatus == (int)JobStatus.Accepted ? 4 :
+                             j.UcjbStatus == (int)JobStatus.PickedUp ? 5 :
+                             j.UcjbStatus == (int)JobStatus.InTransit ? 6 :
+                             j.UcjbStatus == (int)JobStatus.OutForDelivery ? 7 :
+                             j.UcjbStatus == (int)JobStatus.Rejected ? 8 :
+                             j.UcjbStatus == (int)JobStatus.LatePickup ? 9 :
+                             j.UcjbStatus == (int)JobStatus.LateDelivery ? 10 :
+                             j.UcjbStatus == (int)JobStatus.Warning ? 11 :
+                             j.UcjbStatus == (int)JobStatus.Undeliverable ? 12 :
+                             j.UcjbStatus == (int)JobStatus.Completed ? 13 :
+                             j.UcjbStatus == (int)JobStatus.AwaitingPod ? 14 :
+                             j.UcjbStatus == (int)JobStatus.AssumingCompleted ? 15 : 99),
 
             "speed" => isAscending
                 ? query.OrderBy(j => j.UcjbSpeedNavigation.ShortName)
@@ -862,8 +891,36 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     .ThenByDescending(j => j.UcjbCourier.Code),
 
             "status" => isAscending
-                ? query.OrderBy(j => j.UcjbStatus)
-                : query.OrderByDescending(j => j.UcjbStatus),
+                ? query.OrderBy(j => j.UcjbStatus == (int)JobStatus.New ? 1 :
+                    j.UcjbStatus == (int)JobStatus.Preassigned ? 2 :
+                    j.UcjbStatus == (int)JobStatus.Dispatched ? 3 :
+                    j.UcjbStatus == (int)JobStatus.Accepted ? 4 :
+                    j.UcjbStatus == (int)JobStatus.PickedUp ? 5 :
+                    j.UcjbStatus == (int)JobStatus.InTransit ? 6 :
+                    j.UcjbStatus == (int)JobStatus.OutForDelivery ? 7 :
+                    j.UcjbStatus == (int)JobStatus.Rejected ? 8 :
+                    j.UcjbStatus == (int)JobStatus.LatePickup ? 9 :
+                    j.UcjbStatus == (int)JobStatus.LateDelivery ? 10 :
+                    j.UcjbStatus == (int)JobStatus.Warning ? 11 :
+                    j.UcjbStatus == (int)JobStatus.Undeliverable ? 12 :
+                    j.UcjbStatus == (int)JobStatus.Completed ? 13 :
+                    j.UcjbStatus == (int)JobStatus.AwaitingPod ? 14 :
+                    j.UcjbStatus == (int)JobStatus.AssumingCompleted ? 15 : 99)
+                : query.OrderByDescending(j => j.UcjbStatus == (int)JobStatus.New ? 1 :
+                    j.UcjbStatus == (int)JobStatus.Preassigned ? 2 :
+                    j.UcjbStatus == (int)JobStatus.Dispatched ? 3 :
+                    j.UcjbStatus == (int)JobStatus.Accepted ? 4 :
+                    j.UcjbStatus == (int)JobStatus.PickedUp ? 5 :
+                    j.UcjbStatus == (int)JobStatus.InTransit ? 6 :
+                    j.UcjbStatus == (int)JobStatus.OutForDelivery ? 7 :
+                    j.UcjbStatus == (int)JobStatus.Rejected ? 8 :
+                    j.UcjbStatus == (int)JobStatus.LatePickup ? 9 :
+                    j.UcjbStatus == (int)JobStatus.LateDelivery ? 10 :
+                    j.UcjbStatus == (int)JobStatus.Warning ? 11 :
+                    j.UcjbStatus == (int)JobStatus.Undeliverable ? 12 :
+                    j.UcjbStatus == (int)JobStatus.Completed ? 13 :
+                    j.UcjbStatus == (int)JobStatus.AwaitingPod ? 14 :
+                    j.UcjbStatus == (int)JobStatus.AssumingCompleted ? 15 : 99),
 
             "speed" => isAscending
                 ? query.OrderBy(j => j.UcjbSpeedNavigation.ShortName)
@@ -1115,12 +1172,12 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             .FirstOrDefaultAsync();
 
         return stats
-            ?? new OverviewStatsViewModel
-            {
-                Active = 0,
-                Inactive = 0,
-                Completed = 0
-            };
+               ?? new OverviewStatsViewModel
+               {
+                   Active = 0,
+                   Inactive = 0,
+                   Completed = 0
+               };
     }
 
     public async Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(
@@ -1238,18 +1295,18 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                         : null,
                 Completion = j.InverseParent.Any()
                     ? (int)
-                        Math.Round(
-                            (double)
-                                j.InverseParent.Count(c =>
-                                    c.UcjbJobDone
-                                    || (
-                                        c.UcjbStatus.HasValue
-                                        && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value)
-                                    )
-                                )
-                                / j.InverseParent.Count
-                                * 100
+                    Math.Round(
+                        (double)
+                        j.InverseParent.Count(c =>
+                            c.UcjbJobDone
+                            || (
+                                c.UcjbStatus.HasValue
+                                && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value)
+                            )
                         )
+                        / j.InverseParent.Count
+                        * 100
+                    )
                     : 0,
                 ChildJobs = j
                     .InverseParent.Select(c => new ChildDeliveryJob
@@ -1554,12 +1611,12 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     Distance = (decimal)
                         Math.Sqrt(
                             Math.Pow(110.574 * ((double)latitude - (double)a.Latitude), 2)
-                                + Math.Pow(
-                                    110.574
-                                        * ((double)a.Longitude - (double)longitude)
-                                        * Math.Cos(latRad),
-                                    2
-                                )
+                            + Math.Pow(
+                                110.574
+                                * ((double)a.Longitude - (double)longitude)
+                                * Math.Cos(latRad),
+                                2
+                            )
                         )
                 })
                 .OrderBy(a => a.Distance)
