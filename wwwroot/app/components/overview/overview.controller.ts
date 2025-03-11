@@ -346,8 +346,7 @@ class OverviewController implements angular.IController {
                 controller: "DateRangeDialogController",
                 controllerAs: "ctrl",
                 targetEvent: $event,
-                templateUrl:
-                    "app/components/dialogs/date-range-dialog/date-range-dialog.html",
+                template: require("../dialogs/date-range-dialog/date-range-dialog.html"),
                 parent: document.body,
                 clickOutsideToClose: true,
                 fullscreen: false,
@@ -412,7 +411,7 @@ class OverviewController implements angular.IController {
         await this.$mdDialog.show({
             controller: "MapDialogController",
             controllerAs: "ctrl",
-            templateUrl: "app/components/dialogs/map-dialog/map-dialog.template.html",
+            template: require("../dialogs/map-dialog/map-dialog.template.html"),
             parent: document.body,
             clickOutsideToClose: true,
             fullscreen: true,

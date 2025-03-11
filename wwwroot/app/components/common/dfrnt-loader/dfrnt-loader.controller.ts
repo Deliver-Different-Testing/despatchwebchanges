@@ -7,12 +7,10 @@ export class DfrntLoaderController implements angular.IController {
     iconName?: string;
 
     $onInit(): void {
-        // Initialize component
         if (this.isLoading === undefined) {
             this.isLoading = false;
         }
 
-        // Set default icon if not provided
         if (this.iconName === undefined) {
             this.iconName = 'person_pin_circle';
         }

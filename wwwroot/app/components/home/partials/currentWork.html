@@ -1,64 +1,63 @@
-<div class="job-list-container scrollable-container">
-    <!-- Loading Indicator -->
-    <dfrnt-loader
-            is-loading="currentListLoading"
-            icon-name="'local_shipping'">
-    </dfrnt-loader>
+<!-- Current Work Component -->
+<div class="droppable-box nationwide-job-list">
+    <!-- Context Menu with Hover Submenu for Event Groups -->
+    <context-menu
+            on-refresh="refreshData(true)"
+            on-split-job="handleSplitJob(job)"
+            on-refresh-courier-jobs="refreshCourierJobs(courierId)">
+    </context-menu>
 
-    <!-- Current Job List Table -->
-    <div class="job-list-table" ng-if="!currentListLoading && jobsCurrentList && jobsCurrentList.length > 0">
-        <!-- Table Headers -->
-        <div class="table-headings sticky-header">
-            <table>
-                <thead class="thead-dark no-select">
-                <tr>
-                    <th ng-click="orderList('jobList', header.key)" ng-repeat="header in currentListHeaders">
-                        <i class="material-symbols-outlined job-table-icon"
-                           ng-if="sort.jobList == header.key">arrow_drop_down</i>
-                        <i class="material-symbols-outlined job-table-icon"
-                           ng-if="sort.jobList == 'd-' + header.key">arrow_drop_up</i>
-                        {{header.label}}
-                    </th>
-                    <th></th>
-                </tr>
-                </thead>
-            </table>
-        </div>
+    <md-table-container>
+        <table md-dense md-progress="currentListLoading" md-table>
+            <thead md-head>
+            <tr md-row>
+                <th md-column>T</th>
+                <th md-column>Speed</th>
+                <th md-column>N</th>
+                <th md-column>V</th>
+                <th md-column>Job</th>
+                <th md-column>Client</th>
+                <th md-column>From</th>
+                <th md-column>To</th>
+                <th md-column></th>
+                <th md-column>Remain</th>
+                <th md-column>S</th>
+                <th md-column>LP</th>
+                <th md-column>LD</th>
+                <th md-column></th>
+            </tr>
+            </thead>
 
-        <!-- Current Jobs List-->
-        <table class="table table-striped table-responsive table-rows" data-group="currentWork" id="currentWork">
-            <tbody>
-            <tr class="clickable-row noselect md-truncate"
-                data-courier="{{job.courier}}"
-                data-jobNo="{{job.jobNo}}"
+            <tbody md-body>
+            <tr md-row
+                ng-repeat="job in jobsCurrentList | filter: box.searchBox"
+                ng-click="selectJob(job)"
+                ng-right-click="showJobContextMenu($event, job)"
                 data-jobid="{{job.id}}"
-                ng-mouseup="selectJob(job)"
-                ng-repeat="job in jobsCurrentList | filter: box.searchBox">
+                data-jobno="{{job.jobNo}}"
+                data-courier="{{job.courier}}"
+                class="clickable-row noselect md-truncate droppable-row">
 
-                <td>{{job.time | date: "HH:mm"}}</td>
-                <td action="speedColumnClick($event, job)" right-click>{{job.speed}}</td>
-                <td action="notifyColumnClick($event, job)" ng-if="job.courierData.courierID === null" right-click>
+                <td md-cell>{{job.time | date: "HH:mm"}}</td>
+                <td md-cell>{{job.speed}}</td>
+                <td md-cell ng-if="job.courierData.courierID === null">
                     {{job.notify}}
                 </td>
-                <td ng-if="job.courierData.courierID !== null">{{job.notify}}</td>
-                <td class="vehicle-cell" title="{{job.vehicle.label}}">
+                <td md-cell class="vehicle-cell" md-truncate title="{{job.vehicle.label}}">
                     {{job.vehicle.label}}
                 </td>
-                <td context-menu="setEventsMenu">{{job.jobNo}}</td>
-                <td action="clientColumnClick(event)" right-click>{{job.client}}</td>
-                <td action="fromColumnClick($event, job)" right-click>
+                <td md-cell>{{job.jobNo}}</td>
+                <td md-cell>{{job.client}}</td>
+                <td md-cell  md-truncate>
                     {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
-                    <i class="material-symbols-outlined job-table-icon" ng-if="!job.pickUpLongitude">exclamation</i>
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
                 </td>
-                <td colspan="2" context-menu="setCurrentWorkMenu">
-                    <div action="toColumnClick($event, job)" right-click>
-                        {{isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}
-                        <i class="material-symbols-outlined colum-table-icon"
-                           ng-if="!job.deliveryLongitude">exclamation</i>
-                    </div>
+                <td md-cell md-truncate>
+                    {{isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
                 </td>
-                <td>
-                    <input class="dispatchField"
+                <td md-cell>
+                    <input class="lateCallField"
                            id="input_{{job.id}}"
                            ng-click="handleDispatchFieldClick($event, job)"
                            ng-keydown="handleDispatchKeydown($event, job)"
@@ -69,26 +68,48 @@
                            type="text"/>
                 </td>
 
-                <td context-menu="setCurrentWorkMenu"><span
-                        ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
-                <td class="status" ng-class="job.status">{{job.status}}</td>
-                <td><input class="lateCallField" ng-focus="selectAllContent($event)"
+                <td md-cell md-truncate><span ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
+                <td md-cell>
+                    <md-chip class="status {{job.status | lowercase}}">
+                        {{job.status}}
+                    </md-chip>
+                </td>
+                <td md-cell>
+                    <input class="lateCallField"
+                           ng-focus="selectAllContent($event)"
                            ng-keydown="$event.keyCode === 13 && latePickup(job.lp, job, this)"
-                           ng-model="job.lp" ng-mouseup="$event.preventDefault();"
-                           placeholder="LP" type="text"/></td>
-                <td><input class="lateCallField" ng-focus="selectAllContent($event)"
+                           ng-model="job.lp"
+                           ng-mouseup="$event.preventDefault();"
+                           placeholder="LP"
+                           type="text"/>
+                </td>
+                <td md-cell>
+                    <input class="lateCallField"
+                           ng-focus="selectAllContent($event)"
                            ng-keydown="$event.keyCode === 13 && lateDelivery(job.ld, job, this)"
-                           ng-model="job.ld" ng-mouseup="$event.preventDefault();"
-                           placeholder="LD" type="text"/></td>
-                <td class="selectjob" ng-click="selectForDispatch(job); $event.stopPropagation();"
-                    title="placeholder selector"></td>
+                           ng-model="job.ld"
+                           ng-mouseup="$event.preventDefault();"
+                           placeholder="LD"
+                           type="text"/>
+                </td>
+                <td md-cell class="selectjob" ng-click="$event.stopPropagation();">
+                    <md-button
+                            class="md-icon-button"
+                            aria-label="Select for dispatch"
+                            ng-click="selectForDispatch(job); $event.stopPropagation();">
+                        <md-icon md-font-set="material-symbols-outlined" ng-class="{'selected-icon': isJobSelected(job.id)}">
+                            {{ isJobSelected(job.id) ? 'check_box' : 'check_box_outline_blank' }}
+                        </md-icon>
+                        <md-tooltip md-direction="bottom">Select for dispatch</md-tooltip>
+                    </md-button>
+                </td>
             </tr>
             </tbody>
         </table>
-    </div>
+    </md-table-container>
 
-    <!-- List empty indicator-->
-    <div class="no-data" ng-if="jobsCurrentList && jobsCurrentList.length === 0">
+    <!-- No Data Message -->
+    <div class="no-data" ng-if="!currentListLoading && (!jobsCurrentList || jobsCurrentList.length === 0)">
         <div class="content">
             <div class="icon">
                 <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>

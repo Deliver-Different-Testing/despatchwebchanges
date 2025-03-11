@@ -1,57 +1,58 @@
-<!-- Loading Indicator -->
-<dfrnt-loader
-        is-loading="supportsLoading"
-        icon-name="'support'">
-</dfrnt-loader>
-
 <!-- Supports List Component -->
-<div class="job-list-container" ng-if="!supportsLoading && supports.length > 0">
-    <!-- Table Headers -->
-    <div class="table-headings sticky-header">
-        <table>
-            <thead class="thead-dark no select">
-            <tr>
-                <th ng-click="orderList('supports', header.key)" ng-repeat="header in supportListHeaders">
-                    <i class="material-symbols-outlined job-table-icon"
-                       ng-if="sort.jobList == header.key">arrow_drop_down</i>
-                    <i class="material-symbols-outlined job-table-icon"
-                       ng-if="sort.jobList == 'd-' + header.key">arrow_drop_up</i>
-                    {{header.label}}
-                </th>
+<div class="droppable-box nationwide-job-list">
+    <md-table-container>
+        <table md-dense md-progress="supportsLoading" md-table>
+            <thead md-head>
+            <tr md-row>
+                <th md-column>Time</th>
+                <th md-column>#</th>
+                <th md-column>Staff</th>
+                <th md-column>Job #</th>
+                <th md-column>Event</th>
+                <th md-column>Notes</th>
+                <th md-column>Remain</th>
+                <th md-column>Locked by</th>
             </tr>
             </thead>
+
+            <tbody md-body>
+            <tr md-row
+                ng-repeat="support in supports | filter: box.searchBox"
+                ng-click="selectSupportJobDetail(support)"
+                ng-class="getSupportColorClass(support)"
+                data-id="{{support.eventId}}">
+
+                <td md-cell>{{support.timeStamp | date: "HH:mm"}}</td>
+                <td md-cell>{{support.courier}}</td>
+                <td md-cell>{{support.staff}}</td>
+                <td md-cell>{{support.jobNumber}}</td>
+                <td md-cell>{{support.description}}</td>
+                <td md-cell>{{support.notes}}</td>
+                <td md-cell>{{support.remainTime}}</td>
+                <td md-cell>
+                    <md-button class="md-icon-button" ng-click="lockSupport(support); $event.stopPropagation();">
+                        <md-icon md-font-set="material-symbols-outlined">
+                            {{support.lockedBy === Dispatcher ? 'lock' : 'lock_open'}}
+                        </md-icon>
+                        <md-tooltip md-direction="left">
+                            {{support.lockedBy === Dispatcher ? 'Unlock' : 'Lock'}}
+                        </md-tooltip>
+                    </md-button>
+                </td>
+            </tr>
+            </tbody>
         </table>
-    </div>
+    </md-table-container>
 
-    <table class="table table-striped table-rows table-responsive md-truncate" data-group="supports" id="supports">
-        <tbody>
-        <tr class="clickable-row"
-            context-menu="supportMenu"
-            data-id="{{support.eventId}}"
-            ng-class="getSupportColorClass(support)"
-            ng-click="selectSupportJobDetail(support)"
-            ng-repeat="support in supports | filter: box.searchBox">
-            <td>{{support.timeStamp | date: "HH:mm"}}</td>
-            <td width="30">{{support.courier}}</td>
-            <td width="60">{{support.staff}}</td>
-            <td>{{support.jobNumber}}</td>
-            <td>{{support.description}}</td>
-            <td>{{support.notes}}</td>
-            <td>{{support.remainTime}}</td>
-            <td ng-click="lockSupport(support)" style="cursor:pointer;" width="60">{{support.lockedBy}}</td>
-        </tr>
-        </tbody>
-    </table>
-</div>
-
-<!-- No Data Message -->
-<div class="no-data" ng-if="!supportsLoading && (!supports || supports.length === 0)">
-    <div class="content">
-        <div class="icon">
-            <md-icon md-font-set="material-symbols-outlined">support</md-icon>
-        </div>
-        <div class="text">
-            No Supports Available
+    <!-- No Data Message -->
+    <div class="no-data" ng-if="!supportsLoading && (!supports || supports.length === 0)">
+        <div class="content">
+            <div class="icon">
+                <md-icon md-font-set="material-symbols-outlined">support</md-icon>
+            </div>
+            <div class="text">
+                No Supports Available
+            </div>
         </div>
     </div>
 </div>

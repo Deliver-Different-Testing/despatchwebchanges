@@ -8,22 +8,22 @@ class ToastrService {
                 private $document: angular.IDocumentService) {
     }
 
-    showErrorToast(errorMessage: string = "An unexpected error occurred. Please try again or contact support"): void {
+    showErrorToast(errorMessage: string = "An unexpected error occurred. Please try again or contact support") {
         console.error("Error:", errorMessage);
         this.showToast(errorMessage, "error");
     }
 
-    showSuccessToast(successMessage: string): void {
+    showSuccessToast(successMessage: string) {
         console.log("Success:", successMessage);
         this.showToast(successMessage, "success");
     }
 
-    showWarningToast(warningMessage: string): void {
+    showWarningToast(warningMessage: string) {
         console.warn("Warning:", warningMessage);
         this.showToast(warningMessage, "warning");
     }
 
-    private showToast(message: string, type: 'success' | 'error' | 'warning' | 'info'): angular.IPromise<any> {
+    private showToast(message: string, type: 'success' | 'error' | 'warning' | 'info') {
         const preset = this.$mdToast.simple()
             .textContent(message)
             .position("top right")

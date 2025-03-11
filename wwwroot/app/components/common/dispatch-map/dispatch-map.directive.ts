@@ -4,9 +4,6 @@ import {Job} from "../../../interfaces/job.interface";
 import {Courier} from "../../../interfaces/courier.interface";
 import angular from "angular";
 import {DispatchMapControllerScope} from "./dispatch-map.interfaces";
-
-// Html and Style
-import template from "./dispatch-map.template.html";
 import "./dispatch-map.styles.less";
 
 class DispatchMapController implements angular.IController {
@@ -299,7 +296,7 @@ class DispatchMapDirective implements angular.IDirective {
 
     constructor() {
         this.restrict = "E";
-        this.template = template;
+        this.template = require("./dispatch-map.template.html");
         this.scope = {
             jobs: '<',
             currentJob: '<',

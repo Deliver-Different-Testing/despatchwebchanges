@@ -1,0 +1,49 @@
+@import "../../../../css/variables.less";
+
+.material-menu {
+  position: fixed;
+  z-index: 100;
+  display: block;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px -1px rgba(0,0,0,0.2),
+  0 4px 5px 0 rgba(0,0,0,0.14),
+  0 1px 10px 0 rgba(0,0,0,0.12);
+  border-left: 4px solid @primary-color;
+  background-color: white;
+
+  md-menu-bar {
+    padding: 0;
+  }
+
+  md-list-item {
+    min-height: 36px;
+
+    md-icon {
+      margin-right: 8px;
+      font-size: 18px;
+    }
+
+    p {
+      font-size: 13px;
+      margin: 0;
+      font-weight: 500;
+    }
+  }
+
+  md-divider {
+    margin: 1px 0;
+  }
+
+  md-menu-content {
+    padding: 4px 0;
+  }
+
+  .md-secondary {
+    margin-right: 0;
+  }
+
+  md-content {
+    padding: 0;
+  }
+}

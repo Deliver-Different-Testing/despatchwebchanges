@@ -13,7 +13,7 @@ import {
 import {PaginatedResponse} from "../interfaces/paginated-response.interface";
 import {DateField, JobField} from "../interfaces/job-field.types";
 import DfrntPageViewModel from "../interfaces/dfrnt-page-view-model.interface";
-import {ActiveCourier} from "../interfaces/courier.interface";
+import {ActiveCourierViewModel} from "../interfaces/courier.interface";
 import {EventGroupViewModel} from "../interfaces/event-group-view-model.interface";
 
 class DispatchService {
@@ -250,12 +250,12 @@ class DispatchService {
     }
 
     public async getActiveCouriers() {
-        const response = await this.$http.get<ActiveCourier[]>("courier/active");
+        const response = await this.$http.get<ActiveCourierViewModel[]>("courier/active");
         return response.data;
     }
 
     public async getAllCouriers() {
-        const response = await this.$http.get<ActiveCourier[]>("courier/AllActive");
+        const response = await this.$http.get<ActiveCourierViewModel[]>("courier/AllActive");
         return response.data;
     }
 

@@ -130,7 +130,7 @@ class AddEventDialogController implements angular.IController {
       );
 
       if (eventId === "6") {
-        this.NWData.voidJob(this.job.id);
+        await this.NWData.voidJob(this.job.id);
       }
     } catch (error: any) {
       this.toastrService.showErrorToast(error.message);

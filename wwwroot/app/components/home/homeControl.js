@@ -9,7 +9,6 @@ function HomeControl(
   JobDetailService,
   $mdDialog,
   $scope,
-  $state,
   $window,
   $timeout,
   toastrService,
@@ -22,13 +21,10 @@ function HomeControl(
   JobTableService,
   $mdSidenav,
   AppPages,
-  $rootScope,
   $stateParams,
   NgMap,
-  eventGroupDialogService
 ) {
-    // Initialize variables and scope properties
-    let initialViewSet = false; // Flag to track if the view has been set
+    let initialViewSet = false;
 
     function initializeVariables() {
       $scope.isInternal = ClientInternal === "True";
@@ -1266,9 +1262,24 @@ function HomeControl(
      * @param {Object} job - Job object
      */
     $scope.handleDispatchFieldClick = (event, job) => {
+      // Prevent the job row click event
+      event.stopPropagation();
+
       // Select the job
       $scope.selectForDispatch(job);
     };
+
+  /**
+   * Handle keyboard events in the dispatch field
+   * @param {Event} event - The keydown event
+   * @param {Object} job - The job object
+   */
+  $scope.handleDispatchKeydown = (event, job) => {
+    if (event.keyCode === 13) { // Enter key
+      const courierId = event.target.value;
+      dispatchJobs(courierId);
+    }
+  };
 
     /**
      * @param {Job} job
@@ -1818,7 +1829,7 @@ function HomeControl(
 
         // If we have a current courier, update their job list
         if ($scope.currentCourier) {
-          await getCurrentJobs($scope.currentCourier.courierId);
+          await $scope.getCurrentJobs($scope.currentCourier.courierId);
         }
 
         // Inform the user
@@ -2036,7 +2047,7 @@ function HomeControl(
         }
 
         $timeout(() => {
-          getCurrentJobs(foundCourier.courierId);
+          $scope.getCurrentJobs(foundCourier.courierId);
           $scope.getData();
         }, 1000);
       } catch (error) {
@@ -2355,7 +2366,7 @@ function HomeControl(
             .cancel("No")
         );
         await DispatchData.setFirstJob(job.id, $scope.currentCourier.courierId);
-        await getCurrentJobs($scope.currentCourier.courierId);
+        await $scope.getCurrentJobs($scope.currentCourier.courierId);
         toastrService.showSuccessToast("Job set as first job successfully");
       } catch (error) {
         console.log("Action cancelled or error occurred:", error);
@@ -2563,9 +2574,8 @@ function HomeControl(
     $scope.updateCourierData = async (courierId, courierName) => {
       $scope.currentWorkSelection = ` for Courier ${courierName}`;
       $scope.currentCourier = { courierId: courierId, courier: courierName };
-      $scope.currentSelection = ` for Courier ${courierName}`;
 
-      await getCurrentJobs(courierId);
+      await $scope.getCurrentJobs(courierId);
       try {
         const result = await DispatchData.truckCourierStatus(courierId);
         $scope.truckCourierStatus = result.data;
@@ -2639,7 +2649,7 @@ function HomeControl(
           $scope.currentSelection = ` for Courier ${$scope.currentCourier.courier}`;
 
           // Get current jobs for the courier
-          await getCurrentJobs(foundCourier.courierId);
+          await $scope.getCurrentJobs(foundCourier.courierId);
 
           // Update truck courier status if available
           try {
@@ -2685,26 +2695,26 @@ function HomeControl(
       }
     };
 
-    $scope.selectMapCourier = async (courier) => {
-      helperFunctions.showLoading("#box-jobDetail");
-      helperFunctions.showLoading("#box-map");
-      helperFunctions.showLoading("#box-currentWork");
+  $scope.selectMapCourier = async (courier) => {
+    helperFunctions.showLoading("#box-jobDetail");
+    helperFunctions.showLoading("#box-map");
+    helperFunctions.showLoading("#box-currentWork");
 
-      try {
-        const foundCourier = helperFunctions.findCourier(courier.courierId);
-        $scope.currentCourier = {
-          courierId: foundCourier.courierId,
-          courier: foundCourier.label,
-        };
+    try {
+      const foundCourier = helperFunctions.findCourier(courier.courierId);
+      $scope.currentCourier = {
+        courierId: foundCourier.courierId,
+        courier: foundCourier.label,
+      };
 
-        await fetchAndDisplayCurrentJobs(courier.courierId);
-        await updateUIAfterCourierSelection(courier, foundCourier);
-      } catch (error) {
-        console.error("An error occurred:", error);
-      } finally {
-        hideLoadingElements();
-      }
-    };
+      await fetchAndDisplayCurrentJobs(courier.courierId);
+      await updateUIAfterCourierSelection(courier, foundCourier);
+    } catch (error) {
+      console.error("An error occurred:", error);
+    } finally {
+      hideLoadingElements();
+    }
+  };
 
     async function fetchAndDisplayCurrentJobs(jobs) {
       if (!Array.isArray(jobs)) {
@@ -2731,7 +2741,6 @@ function HomeControl(
 
     async function updateUIAfterCourierSelection(courier, foundCourier) {
       $scope.currentWorkSelection = ` for Courier ${courier.label}`;
-      $scope.currentSelection = ` for Courier ${courier.label}`;
 
       $scope.truckCourierStatus = await DispatchData.truckCourierStatus(
         courier.courierId
@@ -2823,48 +2832,49 @@ function HomeControl(
 
       $scope.currentWorkSelection = ` for Courier ${courier.courier}`;
       $scope.currentCourier = courier;
-      $scope.currentSelection = ` for Courier ${courier.courier}`;
     }
 
     /**
      * @param {number} courierId
      */
-    async function getCurrentJobs(courierId) {
-      if (!courierId) {
-        console.warn("No courier ID provided");
-        return;
-      }
+  /**
+   * Gets current jobs for a courier
+   * @param {number} courierId - The ID of the courier
+   */
+  $scope.getCurrentJobs = async courierId => {
+    if (!courierId) {
+      console.warn("No courier ID provided");
+      return;
+    }
 
-      try {
-        await $timeout(() => {
-          $scope.currentListLoading = true;
-        });
+    try {
+      $scope.currentListLoading = true;
 
-        const result = await dispatchJobService.getCurrentJobsForCourier(
+      // Load jobs for the courier
+      const data = await DispatchData.getJobsCurrent(
           courierId,
-          $scope.jobFilters?.status === "done"
-        );
+          $scope.jobFilters && $scope.jobFilters.status === "done"
+      );
 
-        await $timeout(() => {
-          if (result.courier) {
-            $scope.jobsCurrentList = result.jobs;
-          }
-        });
+      $scope.jobsCurrentList = data;
 
-        await $scope.activateDrop();
+      // Set up droppable functionality for job rows
+      await $scope.activateDrop();
 
-        // Handle headings updates
-        $timeout(() => sizeHeadings(), 1000);
-        $timeout(() => sizeHeadings(), 2000);
-      } catch (error) {
-        console.error("Error getting current jobs:", error);
-        toastrService.showErrorToast("Error loading courier jobs");
-      } finally {
-        await $timeout(() => {
-          $scope.currentListLoading = false;
-        });
+      // Adjust table headings after data load
+      $timeout(() => {
+        sizeHeadings();
+      }, 1000);
+    } catch (error) {
+      console.error("Error getting current jobs:", error);
+      $scope.jobsCurrentList = [];
+    } finally {
+      $scope.currentListLoading = false;
+      if (!$scope.$$phase) {
+        $scope.$apply();
       }
     }
+  };
 
     /**
      * @param {Job} job
@@ -2881,8 +2891,8 @@ function HomeControl(
       if (job.rootParentId) {
         try {
           job.relatedJobs = await DispatchData.getRelatedJobs(
-            job.rootParentId,
-            job.clientId
+              job.rootParentId,
+              job.clientId
           );
         } catch (error) {
           console.error("Error getting related jobs:", error);
@@ -2890,32 +2900,37 @@ function HomeControl(
       }
     };
 
-    $scope.selectSupportJobDetail = async (support) => {
-      console.log(`select Job ${support.jobId}`);
+  $scope.selectSupportJobDetail = async (support) => {
+    console.log(`select Job ${support.jobId}`);
 
-      $scope.currentSupport = support;
-      helperFunctions.showLoading("#box-jobDetail");
+    // Set the current support before any other operations
+    $scope.currentSupport = support;
 
-      try {
-        const data = await DispatchData.getJobDetail(support.jobId);
-        await $scope.selectJob(data);
-        $scope.currentJob = data;
+    try {
+      const jobData = await DispatchData.getJobDetail(support.jobId);
+      await $scope.selectJob(jobData);
 
-        helperFunctions.hideLoading("#box-jobDetail");
-        $scope.currentSelection = ` for Job ${support.jobNumber}`;
-        let jobs = [$scope.currentJob];
+      $scope.currentSelection = ` for Job ${support.jobNumber}`;
 
-        if ($scope.currentJob.rootParentId) {
+      if ($scope.currentJob && $scope.currentJob.rootParentId) {
+        try {
           $scope.currentJob.relatedJobs = await DispatchData.getRelatedJobs(
-            $scope.currentJob.rootParentId,
-            $scope.currentJob.clientId
+              $scope.currentJob.rootParentId,
+              $scope.currentJob.clientId
           );
+/*
+          if (!$scope.$$phase) {
+            $scope.$apply();
+          }*/
+        } catch (error) {
+          console.error("Error getting related jobs:", error);
         }
-      } catch (error) {
-        console.error("Error selecting support job detail:", error);
-        helperFunctions.hideLoading("#box-jobDetail");
       }
-    };
+    } catch (error) {
+      console.error("Error selecting support job detail:", error);
+      toastrService.showErrorToast("Error loading job details");
+    }
+  };
 
     /**
      * @param {Job} job
@@ -2959,13 +2974,16 @@ function HomeControl(
         if (job.rootParentId) {
           try {
             $scope.currentJob.relatedJobs = await DispatchData.getRelatedJobs(
-              $scope.currentJob.rootParentId,
-              $scope.currentJob.clientId
+                $scope.currentJob.rootParentId,
+                $scope.currentJob.clientId
             );
           } catch (error) {
             console.error("Error getting related jobs:", error);
           }
         }
+
+        // Set the currentSelection to job-specific information
+        $scope.currentSelection = ` for Job ${job.jobNo}`;
 
         try {
           if (!job.courier && !job.assignedCourier) {
@@ -2980,42 +2998,42 @@ function HomeControl(
               // Display route points for the single job
               const jobs = [job];
               if (
-                isValidCoordinates(
-                  job.pickupAddress.latitude,
-                  job.pickupAddress.longitude
-                ) &&
-                isValidCoordinates(
-                  job.deliveryAddress.latitude,
-                  job.deliveryAddress.longitude
-                )
+                  isValidCoordinates(
+                      job.pickupAddress.latitude,
+                      job.pickupAddress.longitude
+                  ) &&
+                  isValidCoordinates(
+                      job.deliveryAddress.latitude,
+                      job.deliveryAddress.longitude
+                  )
               ) {
                 // Create bounds that include pickup and delivery points
                 const bounds = new $window.google.maps.LatLngBounds();
                 bounds.extend(
-                  new $window.google.maps.LatLng(
-                    job.pickupAddress.latitude,
-                    job.pickupAddress.longitude
-                  )
+                    new $window.google.maps.LatLng(
+                        job.pickupAddress.latitude,
+                        job.pickupAddress.longitude
+                    )
                 );
                 bounds.extend(
-                  new $window.google.maps.LatLng(
-                    job.deliveryAddress.latitude,
-                    job.deliveryAddress.longitude
-                  )
+                    new $window.google.maps.LatLng(
+                        job.deliveryAddress.latitude,
+                        job.deliveryAddress.longitude
+                    )
                 );
 
                 // If courier position is available, include it
                 if (
-                  isValidCoordinates(
-                    job.courierData.latitude,
-                    job.courierData.longitude
-                  )
+                    isValidCoordinates(
+                        job.courierData.latitude,
+                        job.courierData.longitude
+                    )
                 ) {
                   bounds.extend(
-                    new $window.google.maps.LatLng(
-                      job.courierData.latitude,
-                      job.courierData.longitude
-                    )
+                      new $window.google.maps.LatLng(
+                          job.courierData.latitude,
+                          job.courierData.longitude
+                      )
                   );
                 }
               } else {
@@ -3103,30 +3121,6 @@ function HomeControl(
         }
       }, 100);
     }
-
-    $scope.setCurrentWorkMenu = () => [
-      {
-        text: "Restore",
-        click: () =>
-          $scope.restoreJobsFromCurrentWindow().catch((error) => {
-            console.log("Error in restoring jobs:", error);
-          }),
-      },
-      {
-        text: "Redispatch",
-        click: () =>
-          $scope.reAllocateJobsFromCurrentWindow().catch((error) => {
-            console.log("Error in redispatching jobs:", error);
-          }),
-      },
-      {
-        text: "Resend",
-        click: () =>
-          $scope.resendJobsFromCurrentWindow().catch((error) => {
-            console.log("Error in resending jobs:", error);
-          }),
-      },
-    ];
 
     $scope.fromColumnClick = (evt, job) => {
       switch (evt.which) {
@@ -3329,101 +3323,19 @@ function HomeControl(
       return false;
     };
 
-
-     // New right click job menu
-     $scope.menuVisible = false;
-     $scope.menuPosition = { top: 0, left: 0 };
-     $scope.eventGroups = [];
-
-     // Get event groups for the menu
-     DispatchData.getEventGroups().then(groups => {
-       $scope.eventGroups = groups;
-     })
-
- // Show custom context menu
- $scope.showJobContextMenu = ($event, job) => {
-   $event.preventDefault();
-
-   // Store the current job
-   $scope.currentJob = job;
-
-   // Set position
-   $scope.menuPosition.left = $event.clientX + 'px';
-   $scope.menuPosition.top = $event.clientY + 'px';
-
-   // Show menu
-   $scope.menuVisible = true;
-
-   // Hide on document click
-   $timeout(() => {
-    document.addEventListener('click', hideMenu, true);
-  }, 0);
- };
-
-// Hide context menu
-function hideMenu(event) {
-  // Remove the event listener first to prevent multiple triggers
-  document.removeEventListener('click', hideMenu, true);
-
-  // Apply changes in Angular's context
-  $scope.$apply(() => {
-    $scope.menuVisible = false;
-  });
-}
-
-// Menu action handlers
-$scope.voidJobAction = () => {
-  // Your existing void job logic
-  $scope.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id)
-    .then(() => {
-      console.log("Void Job completed successfully");
-    })
-    .catch((error) => {
-      console.log("Error in Void Job:", error);
+  $scope.showJobContextMenu = ($event, job) => {
+    // First select the job
+    $scope.selectJob(job).then(r => {
+      // Find and trigger the context menu controller
+      const contextMenuElement = angular.element('context-menu');
+      const contextMenuCtrl = contextMenuElement.controller('contextMenu');
+      if (contextMenuCtrl) {
+        contextMenuCtrl.showJobContextMenu($event, job);
+      } else {
+        console.error('Context menu controller not found');
+      }
     });
-
-  hideMenu();
-};
-
-$scope.addEventOtherAction = ($event) => {
-  $scope.otherEventForm($event, $scope.currentJob);
-  hideMenu();
-};
-
-$scope.selectEventGroup = async (eventGroupId, jobId) => {
-  await eventGroupDialogService.openEventGroupDialog(eventGroupId, jobId);
-
-  // Implement your event groups logic
-  console.log("Event Groups for job:", $scope.currentJob);
-  hideMenu();
-};
-
-$scope.splitJobAction = ($event) => {
-  $scope.splitJob($event, $scope.currentJob)
-    .then(() => {
-      console.log("Split Job completed successfully");
-    })
-    .catch((error) => {
-      console.log("Error in Split Job:", error);
-    });
-
-  hideMenu();
-};
-
-$scope.setFirstJobAction = () => {
-  $scope.setFirstJob($scope.currentJob)
-    .then(() => {
-      console.log("Set First Job completed successfully");
-    })
-    .catch((error) => {
-      console.log("Error in Set First Job:", error);
-    });
-
-  hideMenu();
-};
-
-
-
+  };
 
     $scope.setJobsMenu = () => {
       const activeElements = angular.element(".activeTable .active");
@@ -3506,6 +3418,7 @@ $scope.setFirstJobAction = () => {
       $scope.truckMode = mode;
       await $scope.getData();
     };
+
 
     /**
      * @param {string} channel
@@ -3672,33 +3585,6 @@ $scope.setFirstJobAction = () => {
         if (first) {
           $scope.supportChannel.split(",").forEach(SetSelectedChannels);
         }
-
-        $scope.supportMenu = [
-          {
-            text: "Complete",
-            click: ($itemScope) => {
-              $scope.closeSupport($itemScope.support);
-            },
-          },
-          {
-            text: "Toggle Lock",
-            click: ($itemScope) => {
-              $scope.lockSupport($itemScope.support);
-            },
-          },
-          {
-            text: "Void Job",
-            click: ($itemScope) => {
-              $scope.voidJobForm(
-                $itemScope.support.jobNumber,
-                $itemScope.support.jobId
-              );
-            },
-            enabled: ($itemScope) => {
-              return $itemScope.support.jobId;
-            },
-          },
-        ];
 
         $timeout(() => {
           $document.ready(() => {
@@ -3980,8 +3866,7 @@ $scope.setFirstJobAction = () => {
           controller: "CreateJobDialogController",
           controllerAs: "ctrl",
           parent: $document.body,
-          templateUrl:
-            "app/components/dialogs/create-job-dialog/create-job-dialog.html",
+          template: require("../dialogs/create-job-dialog/create-job-dialog.html"),
           clickOutsideToClose: false,
           fullscreen: true,
           locals: {
@@ -4025,8 +3910,7 @@ $scope.setFirstJobAction = () => {
           controller: "InterCourierChargeDialog",
           controllerAs: "ctrl",
           parent: $document.body,
-          templateUrl:
-            "app/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.html",
+          template: require("../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.html"),
           clickOutsideToClose: false,
           fullscreen: true,
           locals: {
@@ -4057,8 +3941,7 @@ $scope.setFirstJobAction = () => {
         await $mdDialog.show({
           controller: "AddEventDialogController",
           controllerAs: "ctrl",
-          templateUrl:
-            "app/components/dialogs/add-event-dialog/add-event-dialog.html",
+          template: require("../dialogs/add-event-dialog/add-event-dialog.html"),
           parent: $document.body,
           clickOutsideToClose: true,
           fullscreen: true,
@@ -4111,8 +3994,7 @@ $scope.setFirstJobAction = () => {
           controller: "JobFileUploadController",
           controllerAs: "ctrl",
           parent: $document.body,
-          templateUrl:
-            "app/components/dialogs/job-file-upload-dialog/job-file-upload-dialog.html",
+          template: require("../dialogs/job-file-upload-dialog/job-file-upload-dialog.html"),
           clickOutsideToClose: false,
           fullscreen: true,
           locals: {
@@ -4158,8 +4040,7 @@ $scope.setFirstJobAction = () => {
         await $mdDialog.show({
           controller: "AdditionalServicesDialogController",
           controllerAs: "ctrl",
-          templateUrl:
-            "app/components/dialogs/additional-services-dialog/additional-services-dialog.html",
+          template: require("../dialogs/additional-services-dialog/additional-services-dialog.html"),
           parent: $document.body,
           clickOutsideToClose: false,
           fullscreen: true,
@@ -4235,8 +4116,10 @@ $scope.setFirstJobAction = () => {
       });
     }
 
-    init();
-};
+  $scope.isJobSelected = jobId => $scope.dispatchState.selectedJobs.has(jobId);
+
+  init();
+}
 
 HomeControl.$inject = [
   '$document',
@@ -4244,7 +4127,6 @@ HomeControl.$inject = [
   'JobDetailService',
   '$mdDialog',
   '$scope',
-  '$state',
   '$window',
   '$timeout',
   'toastrService',
@@ -4257,14 +4139,11 @@ HomeControl.$inject = [
   'JobTableService',
   '$mdSidenav',
   'AppPages',
-  '$rootScope',
   '$stateParams',
   'NgMap',
-  'eventGroupDialogService'
 ];
 
 app.controller('HomeControl', HomeControl);
-export default HomeControl;
 
 /**
  * Converts degrees to radians.

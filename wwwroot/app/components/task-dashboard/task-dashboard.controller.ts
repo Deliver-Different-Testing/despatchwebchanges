@@ -4,7 +4,7 @@ import app from "../../app";
 import GreetingService from "../../services/greeting.service";
 import TasksDashboardService from "./tasks-dashboard.service";
 import DispatchService from "../../services/dispatch.service";
-import { ActiveCourier } from "../../interfaces/courier.interface";
+import { ActiveCourierViewModel } from "../../interfaces/courier.interface";
 import { Suggestion } from "../../interfaces/job.interface";
 import {StatusFilter} from "./enums/status-filter";
 import {ViewMode} from "./enums/view-mode";
@@ -46,7 +46,7 @@ class TaskDashboardController implements angular.IController {
     timeOptions: string[] = [];
 
     // Lists
-    courierList?: ActiveCourier[];
+    courierList?: ActiveCourierViewModel[];
     eventTypesList?: Suggestion[];
 
     constructor(
