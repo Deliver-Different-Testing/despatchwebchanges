@@ -169,8 +169,12 @@ namespace DespatchWeb.Controllers
         {
             try
             {
-                await courierRepository.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType,
-                    despatcherName, "Follow up dangerous goods license with courier", 69);
+                await courierRepository.AddEventAsync(
+                    jobId,
+                    staffId,
+                    despatcherName,
+                    "Follow up dangerous goods license with courier",
+                    (int)EventType.DangerousGoods);
                 return Json("OK");
             }
             catch (Exception ex)

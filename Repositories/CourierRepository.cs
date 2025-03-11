@@ -69,13 +69,8 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
     }
 
     public async Task AddEventAsync(
-        string jobNo,
-        int clientId,
-        string contact,
-        int staffId,
-        int? courierId,
         int jobId,
-        int jobType,
+        int staffId,
         string despatcherName,
         string notes,
         int eventType,
@@ -84,65 +79,31 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
         bool close = false
     )
     {
-        var isAutomatic = await Context
-            .TucJobs.Include(j => j.UcjbClient)
-            .Where(j => j.UcjbId == jobId && j.UcjbDate.Date == DateTime.Now)
-            .Select(j =>
-                eventType == 1
-                    ?
-                    // LATE PICKUP
-                    j
-                        .UcjbClient.TucClientContacts.SelectMany(cc => cc.TblClientContactJobTypes)
-                        .Where(ccjt => ccjt.JobTypeId == j.UcjbSpeed)
-                        .Any(ccjt => new[] { "Web", "Email", "Text" }.Contains(ccjt.PickupType))
-                    : eventType == 2
-                        && j.UcjbClient.TucClientContacts.SelectMany(cc =>
-                                cc.TblClientContactJobTypes
-                            )
-                            .Where(ccjt => ccjt.JobTypeId == j.UcjbSpeed)
-                            .Any(ccjt =>
-                                new[] { "Web", "Email", "Text" }.Contains(ccjt.DeliveryType)
-                            )
-            )
-            .FirstOrDefaultAsync();
+       var job = await Context.TucJobs.FindAsync(jobId);
+       ArgumentNullException.ThrowIfNull(job, "Job not found");
 
-        // Create event
-        var newEvent = new TucEvent
-        {
-            UcevJobNumber = jobNo,
-            UcevClientId = clientId,
-            UcevContact = contact,
-            UcevDate = DateTime.Today,
-            UcevTime = DateTime.Now,
-            UcevType = eventType,
-            UcevLateTime = lateTime,
-            UcevEtatime = etaTime,
-            UcevStaffIdin = staffId,
-            UcevStaffIdout = null,
-            UcevResponseTime = null,
-            UcevNotes = notes,
-            UcevPageCourier = false,
-            UcevClosed = close,
-            UcevOriginator = staffId,
-            UcevDescription = string.Empty,
-            UcevCourierId = courierId,
-            UcevJobId = jobId,
-            UcevDespatcher = despatcherName,
-            UcevJobType = jobType
-        };
-
-        // If automatic, set defaults to following
-        if (isAutomatic)
-        {
-            newEvent.UcevClosed = true;
-            newEvent.UcevStaffIdout = 33; // Internet user
-            newEvent.UcevResponseTime = DateTime.Now;
-            newEvent.UcevContact = "Automatic Response";
-            newEvent.UcevDespatcher = "Internet";
-        }
-
-        await Context.TucEvents.AddAsync(newEvent);
-        await Context.SaveChangesAsync();
+        await Context.Procedures.DES_qdfEvent_InsertAsync(
+            jobNo: job.UcjbNumber,
+            clientID: job.UcjbClientId,
+            contact: job.UcjbContact,
+            date: DateTime.Today,
+            time: DateTime.Now,
+            type: eventType,
+            lateTime: lateTime,
+            eTATime: etaTime,
+            staffIDIn: staffId,
+            staffIDOut: null,
+            responseTime: null,
+            notes: notes,
+            pageCourier: false,
+            closed: close,
+            originator: staffId,
+            description: notes,
+            courierID: job.UcjbCourierId,
+            jobID: jobId,
+            despatcher: despatcherName,
+            jobType: job.UcjbSpeed
+        );
     }
 
     public List<AvailableCourierPosition> GetAvailableCouriers(

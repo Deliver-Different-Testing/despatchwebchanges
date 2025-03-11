@@ -15,6 +15,7 @@ import {DateField, JobField} from "../interfaces/job-field.types";
 import DfrntPageViewModel from "../interfaces/dfrnt-page-view-model.interface";
 import {ActiveCourierViewModel} from "../interfaces/courier.interface";
 import {EventGroupViewModel} from "../interfaces/event-group-view-model.interface";
+import {ContactID} from "../contants";
 
 class DispatchService {
     static $inject = ["$http", "moment", "APP_CONFIG"];
@@ -87,26 +88,12 @@ class DispatchService {
         return response.data;
     }
 
-    public async addRestoreEvent(
-        jobNo: string,
-        clientId: number,
-        contact: string,
-        staffId: number,
-        courierId: number,
-        jobId: number,
-        jobType: string,
-        despatcherName: string
-    ): Promise<any> {
+    public async addRestoreEvent(jobId: number): Promise<any> {
         const response = await this.$http.post("job/AddRestoreEvent", null, {
             params: {
-                jobNo,
-                clientId,
-                contact,
-                staffId,
-                courierId,
                 jobId,
-                jobType,
-                despatcherName
+                ContactID,
+                FirstName
             }
         });
 

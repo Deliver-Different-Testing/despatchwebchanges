@@ -24,6 +24,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualBasic;
 using Serilog;
+using EventType = DespatchWeb.Enums.EventType;
 
 namespace DespatchWeb.Controllers;
 
@@ -781,14 +782,9 @@ public class JobController(
     private async Task CreateLateEvent(LateCallRequest request, int late)
     {
         await courierRepo.AddEventAsync(
-            request.JobNo,
-            request.ClientId,
-            request.Contact,
-            int.Parse(request.StaffId),
-            null,
             request.JobId,
-            request.JobType,
-            null,
+            int.Parse(request.StaffId),
+            request.Contact,
             "Late Call from Despatch",
             request.LateType,
             request.LateTime,
@@ -971,37 +967,28 @@ public class JobController(
 
     [HttpPost]
     public async Task<IActionResult> AddRestoreEvent(
-        string jobNo,
-        int clientId,
-        string contact,
-        int staffId,
-        int courierId,
         int jobId,
-        int jobType,
+        int staffId,
         string despatcherName
     )
     {
         try
         {
             await courierRepo.AddEventAsync(
-                jobNo,
-                clientId,
-                contact,
-                staffId,
-                courierId,
                 jobId,
-                jobType,
+                staffId,
                 despatcherName,
-                "Job Restored",
+                $"Restored by {despatcherName} at {DateTime.Now.ToShortDateString()} {DateTime.Now.ToShortTimeString()}",
+                (int)EventType.RestoreJob,
                 33
             );
 
             return Json("OK");
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Log.Error(e, e.Message);
-            throw;
+            Log.Error(ex, "Error adding restore eventS");
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -1018,16 +1005,11 @@ public class JobController(
     )
     {
         await courierRepo.AddEventAsync(
-            jobNo,
-            clientId,
-            contact,
-            staffId,
-            courierId,
             jobId,
-            jobType,
-            null,
+            staffId,
+            despatcherName,
             "Changed Price or Suburb",
-            35
+            (int)EventType.ChangePrice
         );
 
         return Json("OK");
@@ -1047,16 +1029,11 @@ public class JobController(
     )
     {
         await courierRepo.AddEventAsync(
-            jobNo,
-            clientId,
-            contact,
-            staffId,
-            courierId,
             jobId,
-            jobType,
-            null,
+            staffId,
+            despatcherName,
             notes,
-            66
+            (int)EventType.Other
         );
 
         return Json("OK");
@@ -1077,13 +1054,8 @@ public class JobController(
     )
     {
         await courierRepo.AddEventAsync(
-            jobNo,
-            clientId,
-            contact,
-            staffId,
-            courierId,
             jobId,
-            jobType,
+            staffId,
             despatcherName,
             notes,
             eventType
@@ -1768,7 +1740,7 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddNote(int jobId, string note, string despatcher)
+    public async Task<IActionResult> AddNoteAsync(int jobId, string note, string despatcher)
     {
         note = FormatNote(note);
         await jobRepository.AddNoteAsync(jobId, note, despatcher);
@@ -1843,7 +1815,7 @@ public class JobController(
         if (notesList != null)
         {
             foreach (var note in notesList)
-                await AddNote(jobId, note, despatcherName);
+                await AddNoteAsync(jobId, note, despatcherName);
         }
     }
 
@@ -1875,21 +1847,18 @@ public class JobController(
             "]",
             jobData
         );
+
         await courierRepo.AddEventAsync(
-            jobData.Number,
-            jobData.ClientID ?? 0,
-            jobData.Recipient,
-            staffId,
-            null,
             jobId,
-            jobData.JobTypeID ?? 0,
+            staffId,
             despatcher,
             "Direct job changed to ASAP",
-            42,
+            (int)EventType.DirectAsap,
             null,
             null,
             jobData.CloseEvent
         );
+
         if (jobData.NotifyViaEmail)
         {
             SendEmail(
@@ -1908,11 +1877,11 @@ public class JobController(
             $" to be called and advised that job changed from a Direct {currentSpeed} to ASAP {result.Name ?? currentSpeed}";
         if (jobData.NotifyViaEmail)
         {
-            await AddNote(jobId, msg, despatcher);
+            await AddNoteAsync(jobId, msg, despatcher);
         }
         else
         {
-            await AddNote(jobId, jobData.Contact + msgPhone, despatcher);
+            await AddNoteAsync(jobId, jobData.Contact + msgPhone, despatcher);
         }
 
         return Json("OK");
