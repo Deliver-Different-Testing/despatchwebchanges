@@ -15,29 +15,11 @@ class DispatchJobService {
                 private moment: any) {
         console.log("Initializing DispatchJobService");
 
-
         this.pickCouriers = [];
         this.pickAllCouriers = [];
-
-        // Bind all methods to the instance
-        this.fetchCouriersData = this.fetchCouriersData.bind(this);
-        this.getJobListWithCourierData = this.getJobListWithCourierData.bind(this);
-        this.getCurrentJobsForCourier = this.getCurrentJobsForCourier.bind(this);
-        this.dispatchJobByJobId = this.dispatchJobByJobId.bind(this);
-        this.dispatchJobs = this.dispatchJobs.bind(this);
-        this.dispatchJob = this.dispatchJob.bind(this);
-        this.dispatchJobsFromPotentialCouriers = this.dispatchJobsFromPotentialCouriers.bind(this);
-        this.findCourierByNumber = this.findCourierByNumber.bind(this);
-        this.showOfflineCourierDialog = this.showOfflineCourierDialog.bind(this);
-        this.dispatchJobsContinue = this.dispatchJobsContinue.bind(this);
-        this.requiresFollowupEvent = this.requiresFollowupEvent.bind(this);
-        this.validateJob = this.validateJob.bind(this);
-        this.processValidJobs = this.processValidJobs.bind(this);
-        this.restoreJob = this.restoreJob.bind(this);
-        this._showAlertMessage = this._showAlertMessage.bind(this);
     }
 
-    public async fetchCouriersData(): Promise<void> {
+    async fetchCouriersData(): Promise<void> {
         console.log("Fetching couriers data...");
         try {
             const [activeCouriers, allCouriers] = await Promise.all([
@@ -58,7 +40,7 @@ class DispatchJobService {
         }
     }
 
-    public async getJobListWithCourierData(
+    async getJobListWithCourierData(
         queryParams: JobQueryParams,
         selectedClients: Array<any>,
         isInternal: boolean,
@@ -103,7 +85,7 @@ class DispatchJobService {
         }
     }
 
-    public async getCurrentJobsForCourier(courierId: number, isDone: boolean = false): Promise<{
+    async getCurrentJobsForCourier(courierId: number, isDone: boolean = false): Promise<{
         jobs: Array<any>,
         courier: object | null,
         position?: object | null
@@ -150,7 +132,7 @@ class DispatchJobService {
         }
     }
 
-    public async dispatchJobByJobId(courierId: number, jobId: number): Promise<void> {
+    async dispatchJobByJobId(courierId: number, jobId: number): Promise<void> {
         console.log("Dispatching job by ID:", {courierId, jobId});
         try {
             await this.fetchCouriersData();
@@ -162,7 +144,7 @@ class DispatchJobService {
 
             if (!foundCourier) {
                 console.warn(`Could not find courier with ID ${courierId}`);
-                await this._showAlertMessage(`Could not find courier with ID ${courierId}`);
+                await this.showAlertMessage(`Could not find courier with ID ${courierId}`);
                 return;
             }
 
@@ -173,7 +155,7 @@ class DispatchJobService {
         }
     }
 
-    public async dispatchJobsBycourierId(courierId: number, jobs: Job[]): Promise<any> {
+    async dispatchJobsBycourierId(courierId: number, jobs: Job[]): Promise<any> {
         console.log("Dispatching multiple jobs by courier ID:", {courierId, jobCount: jobs.length});
         try {
             await this.fetchCouriersData();
@@ -191,7 +173,7 @@ class DispatchJobService {
         }
     }
 
-    public async dispatchJobs(courierNumber: number, jobs: Job[]): Promise<any> {
+    async dispatchJobs(courierNumber: number, jobs: Job[]): Promise<any> {
         await this.fetchCouriersData();
         const foundCourier = await this.findCourierByNumber(courierNumber);
 
@@ -200,7 +182,7 @@ class DispatchJobService {
         }
     }
 
-    public async dispatchJob(courierNumber: number, job: Job): Promise<any> {
+    async dispatchJob(courierNumber: number, job: Job): Promise<any> {
         await this.fetchCouriersData();
         const foundCourier = await this.findCourierByNumber(courierNumber);
 
@@ -209,13 +191,13 @@ class DispatchJobService {
         }
     }
 
-    public async dispatchJobsFromPotentialCouriers(courierId: number, jobList: Job[], contactId: number, firstName: string) {
+    async dispatchJobsFromPotentialCouriers(courierId: number, jobList: Job[], contactId: number, firstName: string) {
         await this.fetchCouriersData();
 
         // Find courier in active couriers list
         const foundCourier = this.pickCouriers.find(c => c?.courierId === courierId);
         if (!foundCourier || !foundCourier.courierId) {
-            await this._showAlertMessage(`Could not find active courier with ID ${courierId}`);
+            await this.showAlertMessage(`Could not find active courier with ID ${courierId}`);
             return;
         }
 
@@ -248,7 +230,7 @@ class DispatchJobService {
         }
 
         if (validJobs.length === 0) {
-            await this._showAlertMessage("No valid jobs to dispatch");
+            await this.showAlertMessage("No valid jobs to dispatch");
             return;
         }
 
@@ -265,7 +247,7 @@ class DispatchJobService {
                 gpsCourier: foundCourier.id
             };
         } catch (error: any) {
-            await this._showAlertMessage(`Failed to dispatch jobs: ${error.message}`);
+            await this.showAlertMessage(`Failed to dispatch jobs: ${error.message}`);
             throw error;
         }
     }
@@ -286,7 +268,6 @@ class DispatchJobService {
             return activeCourier;
         }
 
-        // If not found among active couriers, ask for confirmation to search offline couriers
         const confirmed = await this.showOfflineCourierDialog();
         if (confirmed) {
             return findCourierById(this.pickAllCouriers, courierNumber);
@@ -325,7 +306,7 @@ class DispatchJobService {
 
         // If there are any error messages, show them
         if (errorMessages.length > 0) {
-            await this._showAlertMessage(errorMessages.join("\n"));
+            await this.showAlertMessage(errorMessages.join("\n"));
             // If all jobs are invalid, return early
             if (validJobs.length === 0) {
                 return;
@@ -399,12 +380,12 @@ class DispatchJobService {
 
         } catch (error: any) {
             console.error("Error processing valid jobs:", error);
-            await this._showAlertMessage(`Failed to dispatch jobs: ${error.message}`);
+            await this.showAlertMessage(`Failed to dispatch jobs: ${error.message}`);
             throw error;
         }
     }
 
-    public async restoreJob(job: Job): Promise<{ gpsCourier: string; }> {
+    async restoreJob(job: Job): Promise<{ gpsCourier: string; }> {
         this.logJobInfo(job);
 
         const courierId = job?.courierData?.courierId;
@@ -413,7 +394,7 @@ class DispatchJobService {
         }
 
         try {
-            await this.addRestoreEventForJob(job);
+            await this.dispatchData.addRestoreEvent(job.id);
             const foundCourier = await this.findCourierById(courierId);
 
             if (foundCourier) {
@@ -427,7 +408,7 @@ class DispatchJobService {
             return {gpsCourier: ""};
         } catch (error) {
             console.error("Error restoring job:", error);
-            await this._showAlertMessage(`Failed to restore job}`);
+            await this.showAlertMessage(`Failed to restore job`);
             return {gpsCourier: ""};
         }
     }
@@ -442,21 +423,8 @@ class DispatchJobService {
 
     private async handleError(message: string): Promise<never> {
         console.warn(message);
-        await this._showAlertMessage(message);
+        await this.showAlertMessage(message);
         throw new Error(message);
-    }
-
-    private async addRestoreEventForJob(job: Job): Promise<void> {
-        await this.dispatchData.addRestoreEvent(
-            job.jobNo,
-            job.clientId,
-            job.contactName,
-            ContactID,
-            job.courierData.courierId,
-            job.id,
-            job.speedId,
-            FirstName
-        );
     }
 
     private async findCourierById(courierId: number | undefined): Promise<ActiveCourierViewModel | undefined> {
@@ -473,7 +441,7 @@ class DispatchJobService {
         await restoreMethod(courier.courierId, ContactID, [job.id]);
     }
 
-    private async _showAlertMessage(textContent: string) {
+    private async showAlertMessage(textContent: string) {
         const alert = this.$mdDialog.alert()
             .parent(document.body)
             .clickOutsideToClose(true)

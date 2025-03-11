@@ -12,13 +12,8 @@ public interface ICourierRepository
     Task<List<TruckCourierStatusViewModel>> TruckCourierStatusAsync(string courierId);
 
     Task AddEventAsync(
-        string jobNo,
-        int clientId,
-        string contact,
-        int staffId,
-        int? courierId,
         int jobId,
-        int jobType,
+        int staffId,
         string despatcherName,
         string notes,
         int eventType,
