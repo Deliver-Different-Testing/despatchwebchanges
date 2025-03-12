@@ -6,7 +6,7 @@ import {JobNote, JobOptions, TabItem} from "./job-details.interfaces";
 import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
 import DispatchService from "../../../services/dispatch.service";
 import "./job-details.styles.less";
-import {base64Image1} from "./test-base64-images";
+import {base64Image1, base64Image2, base64Image3} from "./test-base64-images";
 import app from "../../../app";
 
 class JobDetailController implements angular.IController {
@@ -217,21 +217,23 @@ class JobDetailController implements angular.IController {
     private _testPodPhotoViewer() {
         // Create a small sample base64 image (1x1 pixel JPEG)
         const sampleBase64 = base64Image1;
+        const sample2 = base64Image2;
+        const sample3 = base64Image3;
         const now = new Date();
 
         const mockPhotos: PodPhoto[] = [
             {
-                url: 'data:image/jpeg;base64,' + sampleBase64,
+                url: 'data:image/jpeg;base64,' + sample2,
                 timestamp: now.toISOString(), // Convert to string format
                 uploadedBy: 'Test User 1'
             },
             {
-                url: '/9j' + sampleBase64.substring(3),
+                url: '/9j' + base64Image3.substring(3),
                 timestamp: new Date(now.getTime() - 3600000).toISOString(), // 1 hour ago
                 uploadedBy: 'Test User 2'
             },
             {
-                url: sampleBase64,
+                url: sample2,
                 timestamp: new Date(now.getTime() - 7200000).toISOString(), // 2 hours ago
                 uploadedBy: 'Test User 3'
             },
@@ -280,32 +282,42 @@ class JobDetailController implements angular.IController {
             console.log(`Getting POD photos for date: ${year}-${month}`);
 
             this.DispatchData.getJobDeliveryPhotosAndSignature(this.internalJob.id, year, month)
-                .then((photos: PodPhoto[]) => {
-                    if (!photos || photos.length === 0) {
+                .then((photosData: any) => {
+                    if (!photosData || photosData.length === 0) {
                         console.log('No POD photos returned from server');
                         this.formattedPodPhotos = [];
                     } else {
-                        this.formattedPodPhotos = photos.map(photo => {
-                            // Process photo URLs
-                            if (photo.url && (photo.url.startsWith('data:image') ||
-                                photo.url.startsWith('/9j') ||
-                                photo.url.match(/^[A-Za-z0-9+/=]+$/))) {
-                                if (!photo.url.startsWith('data:image')) {
-                                    photo.url = 'data:image/jpeg;base64,' + photo.url;
-                                }
-                            } else if (photo.url) {
-                                console.warn('Photo has invalid URL format:', photo.url);
+                        console.log('Raw photos data:', photosData);
+
+                        // Convert each base64 string to a PodPhoto object
+                        this.formattedPodPhotos = photosData.map((photoData: string, index: number) => {
+                            const timestamp = this.internalJob?.completedTime
+                                ? this.moment(this.internalJob.completedTime).toISOString()
+                                : new Date().toISOString();
+
+                            const photo: PodPhoto = {
+                                url: '',
+                                timestamp: timestamp,
+                                uploadedBy: 'System'
+                            };
+
+                            // Process the URL based on the actual format
+                            if (photoData.startsWith('data:image')) {
+                                photo.url = photoData;
+                            } else if (photoData.startsWith('/9j') || photoData.match(/^[A-Za-z0-9+/=]+$/)) {
+                                photo.url = 'data:image/jpeg;base64,' + photoData;
                             } else {
-                                console.warn('Photo is missing URL', photo);
+                                console.warn(`Photo ${index} has invalid URL format:`, photoData);
                             }
+
                             return photo;
-                        });
+                        }).filter((photo: PodPhoto) => photo.url);
                     }
 
                     this.selectedPhotoIndex = 0;
-                    this._photosLoaded = true; // Mark photos as loaded on success
+                    this._photosLoaded = true;
 
-                    console.log(`Loaded ${this.formattedPodPhotos.length} POD photos`);
+                    console.log(`Processed ${this.formattedPodPhotos.length} POD photos`);
 
                     this._setupPhotoKeyboardNavigation();
 
@@ -317,11 +329,9 @@ class JobDetailController implements angular.IController {
                     this.toastrService.showErrorToast('Failed to load POD photos');
                     console.error('Error loading POD photos:', error);
 
-                    // Set empty array on error
                     this.formattedPodPhotos = [];
-                    this._photosLoaded = true; // Still mark as loaded on error
+                    this._photosLoaded = true;
 
-                    // Update the view
                     if (this.$scope && this.$scope.$applyAsync) {
                         this.$scope.$applyAsync();
                     }
@@ -331,7 +341,6 @@ class JobDetailController implements angular.IController {
             this.formattedPodPhotos = [];
             this._photosLoaded = true;
 
-            // Update the view
             if (this.$scope && this.$scope.$applyAsync) {
                 this.$scope.$applyAsync();
             }

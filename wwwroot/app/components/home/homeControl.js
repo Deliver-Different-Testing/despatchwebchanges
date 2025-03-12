@@ -60,6 +60,20 @@ function HomeControl(
             : {lat: -36.8485, lng: 174.7633}; // Auckland, NZ
         $scope.courierPositions = [];
         $scope.mapZoom = 4;
+        $scope.autoZoomEnabled = true;
+
+        if (Modernizr.localstorage) {
+            const savedMapZoom = localStorage.getItem("mapZoom-" + ContactID);
+            if (savedMapZoom) {
+                try {
+                    const parsedMapZoom = JSON.parse(savedMapZoom);
+                    $scope.autoZoomEnabled = parsedMapZoom.display;
+                } catch (e) {
+                    console.error("Error parsing saved map zoom:", e);
+                    $scope.autoZoomEnabled = true;
+                }
+            }
+        }
 
         $scope.filters = [
             {value: 1, label: "New", icon: "fiber_new", active: false},
@@ -974,6 +988,11 @@ function HomeControl(
                 "mapZoom-" + ContactID,
                 JSON.stringify({display: $scope.autoZoomEnabled})
             );
+        }
+
+        // If map is available, trigger a re-render with current auto zoom setting
+        if ($scope.map && $scope.autoZoomEnabled) {
+            $scope.getAvailableCourierLocation();
         }
     };
 

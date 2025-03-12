@@ -9,6 +9,7 @@ export interface DispatchMapControllerScope extends angular.IScope {
     onMarkerClick: (args: {job: any}) => void;
     showAvailableCouriers: boolean;
     showJobLines: boolean;
+    autoZoomEnabled: boolean;
     map: google.maps.Map;
     tooltip: google.maps.InfoWindow;
     markers: google.maps.Marker[];
