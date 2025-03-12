@@ -6,7 +6,8 @@
         map-center="mapCenter"
         map-zoom="mapZoom"
         on-marker-click="handleMarkerClick(job)"
-        show-available-couriers="allCouriers.display">
+        show-available-couriers="allCouriers.display"
+        auto-zoom-enabled="autoZoomEnabled">
 </dispatch-map>
 
 <style>
@@ -21,7 +22,7 @@
         display: block;
         flex: 1;
         height: 100% !important;
-        min-height: 0; /* Important for Firefox */
+        min-height: 0;
         position: relative;
     }
 

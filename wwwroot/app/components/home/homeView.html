@@ -286,25 +286,26 @@
                                         </md-menu>
                                     </div>
 
+                                    <!-- Map Controls -->
                                     <div class="row-overflow" layout="row" ng-if="box.name === 'map'">
                                         <div class="switch-container">
                                             <md-switch class="md-primary material-toolbar-switch"
-                                                ng-if="box.name === 'driverLocations'" ng-model="areaListCity">
+                                                       ng-if="box.name === 'driverLocations'" ng-model="areaListCity">
                                                 City
                                             </md-switch>
                                             <md-switch class="md-primary material-toolbar-switch"
-                                                ng-change="getAvailableCourierLocation()" ng-if="box.name === 'map'"
-                                                ng-model="allCouriers.display">
+                                                       ng-change="getAvailableCourierLocation()" ng-if="box.name === 'map'"
+                                                       ng-model="allCouriers.display">
                                                 All
                                             </md-switch>
                                             <md-switch class="md-primary material-toolbar-switch"
-                                                ng-change="storeMapZoomDisplay()" ng-model="mapZoom.display"
-                                                ng-show="box.name === 'map'">
+                                                       ng-change="storeMapZoomDisplay()" ng-model="autoZoomEnabled"
+                                                       ng-show="box.name === 'map'">
                                                 Auto Zoom
                                             </md-switch>
                                             <md-switch class="md-primary material-toolbar-switch"
-                                                ng-change="getAvailableCourierLocation()" ng-if="box.name === 'map'"
-                                                ng-model="allCouriers.includeUA">
+                                                       ng-change="getAvailableCourierLocation()" ng-if="box.name === 'map'"
+                                                       ng-model="allCouriers.includeUA">
                                                 Include UA
                                             </md-switch>
                                         </div>

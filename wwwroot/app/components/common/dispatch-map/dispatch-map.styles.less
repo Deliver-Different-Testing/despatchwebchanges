@@ -1,3 +1,5 @@
+@import '../../../../css/variables.less';
+
 .dispatch-map-component {
   [ui-view],
   .ui-viewer,
@@ -50,6 +52,16 @@
       z-index: 1001;
     }
   }
+
+  :global(.courier-label) {
+    background-color: rgba(255, 255, 255, 0.8);
+    border: 1px solid @primary-color;
+    border-radius: 4px;
+    padding: 2px 4px;
+    font-weight: bold !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
 
   // Responsive adjustments
   @media screen and (max-width: 768px) {
