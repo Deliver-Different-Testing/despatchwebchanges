@@ -3,15 +3,9 @@ import {Job, Suggestion} from "../../../interfaces/job.interface";
 import {ContactID, FirstName} from "../../../contants";
 import DispatchService from "../../../services/dispatch.service";
 import ToastrService from "../../../services/toastr.service";
-import {MenuState} from "./job-context-menu.interfaces";
+import {IContextMenuScope, MenuState} from "./job-context-menu.interfaces";
 import {EventGroupDialogService} from "../../dialogs/event-group-dialog/event-group-dialog.service";
 import "./job-context-menu.styles.less";
-
-export interface IContextMenuScope extends angular.IScope {
-    onRefresh: (params?: any) => any;
-    onSplitJob: (params: { job: Job }) => any;
-    onRefreshCourierJobs: (params: { courierId: number }) => any;
-}
 
 class ContextMenuController implements angular.IController {
     static $inject = [
@@ -42,8 +36,35 @@ class ContextMenuController implements angular.IController {
         private eventGroupDialogService: EventGroupDialogService,
         private $timeout: angular.ITimeoutService
     ) {
+        this.bindFunctions();
         this.initEventGroups();
         this.setupDocumentClickHandler();
+    }
+
+    private bindFunctions() {
+        // Lifecycle hooks
+        this.$onInit = this.$onInit.bind(this);
+        this.$onDestroy = this.$onDestroy.bind(this);
+
+        // Setup and initialization
+        this.setupDocumentClickHandler = this.setupDocumentClickHandler.bind(this);
+        this.initEventGroups = this.initEventGroups.bind(this);
+
+        // Menu functions
+        this.showJobContextMenu = this.showJobContextMenu.bind(this);
+        this.hideMenu = this.hideMenu.bind(this);
+
+        // Action functions
+        this.voidJobAction = this.voidJobAction.bind(this);
+        this.addEventOtherAction = this.addEventOtherAction.bind(this);
+        this.selectEventGroup = this.selectEventGroup.bind(this);
+        this.splitJobAction = this.splitJobAction.bind(this);
+        this.setFirstJobAction = this.setFirstJobAction.bind(this);
+
+        // Callback functions
+        this.onRefresh = this.onRefresh.bind(this);
+        this.onSplitJob = this.onSplitJob.bind(this);
+        this.onRefreshCourierJobs = this.onRefreshCourierJobs.bind(this);
     }
 
     // Lifecycle hooks

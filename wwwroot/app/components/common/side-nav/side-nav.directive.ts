@@ -9,11 +9,16 @@ class MaterialSidenavController implements angular.IController {
 
     constructor(private $scope: SideNavScope,
                 private $state: angular.ui.IStateService) {
+        this.bindFunctions();
         this.$scope.isActive = this.isActive.bind(this);
         this.$scope.navState = {
             isOpen: false,
             isAnimating: false
         };
+    }
+
+    private bindFunctions() {
+        this.isActive = this.isActive.bind(this);
     }
 
     public isActive(stateName: string): boolean {
@@ -32,14 +37,19 @@ class SideNavDirective implements angular.IDirective {
     constructor(private $mdSidenav: angular.material.ISidenavService,
                 private $timeout: angular.ITimeoutService,
                 private APP_CONFIG: AppConfig) {
+        this.bindFunctions();
+
         this.restrict = "E";
         this.template = require("./side-nav.template.html");
         this.scope = true;
         this.controller = MaterialSidenavController;
         this.controllerAs = "$ctrl";
+    }
 
+    private bindFunctions() {
         this.link = this.link.bind(this);
     }
+
 
     static factory(): any {
         const directive = ($mdSidenav: angular.material.ISidenavService,

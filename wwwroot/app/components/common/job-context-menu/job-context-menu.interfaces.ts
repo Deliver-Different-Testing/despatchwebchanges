@@ -9,3 +9,9 @@ export interface MenuState {
     currentJob: Job | null;
     eventGroups: Suggestion[];
 }
+
+export interface IContextMenuScope extends angular.IScope {
+    onRefresh: (params?: any) => any;
+    onSplitJob: (params: { job: Job }) => any;
+    onRefreshCourierJobs: (params: { courierId: number }) => any;
+}
