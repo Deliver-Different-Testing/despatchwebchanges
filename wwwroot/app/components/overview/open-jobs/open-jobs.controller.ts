@@ -254,8 +254,9 @@ class OpenJobsWidgetController implements angular.IController {
     }
 }
 
-app.component("openJobsWidget", {
+ const openJobsComponent: angular.IComponentOptions = {
     template: require("./open-jobs.template.html"),
     controller: OpenJobsWidgetController,
     controllerAs: "ctrl"
-});
+}
+app.component("openJobsWidget", openJobsComponent)
