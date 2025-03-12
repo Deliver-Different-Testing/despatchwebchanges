@@ -3,32 +3,47 @@ const app = angular.module("uDispatch", ["ui.router", "ct.ui.router.extras",
     "ui.bootstrap.contextMenu", "cfp.hotkeys", "ui.timepicker", "pickadate", "ngMap",
     "ngMapAutocomplete", "angularjs-dropdown-multiselect", "heremaps", "ngAnimate",
     "ngMessages", "ngSanitize", "ngMaterial", "angularPromiseButtons", "ng-mfb",
-    "md.time.picker", "angularMoment", "md.data.table", "ngFileUpload", "hereMapTracking.services", "hereMapTracking.components"])
+    "md.time.picker", "angularMoment", "md.data.table", "ngFileUpload", "hereMapTracking.services", "hereMapTracking.components"]);
+
+// Constants
+app
     .constant("APP_CONFIG", {
-        US_Customer: serverConfig.isUSCustomer
+        US_Customer: (serverConfig as any).isUSCustomer
     })
     .constant("AppPages", {
         Dispatch: 1,
         Domestic: 2,
         JobSearch: 3,
         Prebooks: 4
-    })
-    .directive("rightClick", ["$document", $document => {
-        $document.oncontextmenu = event => {
-            if (event.target.hasAttribute("right-click")) {
+    });
+
+// Directives
+app
+    .directive("rightClick", ["$document", ($document: angular.IDocumentService) => {
+        $document.on('contextmenu', (event: JQueryEventObject) => {
+            const target = event.target as HTMLElement;
+            if (target.hasAttribute("right-click")) {
+                event.preventDefault();
                 event.stopPropagation();
                 return false;
             }
-        };
-        return (scope, el, attrs) => {
-            el.bind("contextmenu", e => {
-                scope.$apply(scope.$eval(attrs.action, {
-                    'event': e
-                }));
+        });
+
+        return (scope: angular.IScope, el: JQLite, attrs: any) => {
+            el.bind("contextmenu", (e: JQueryEventObject) => {
+                e.preventDefault();
+                scope.$apply(() => {
+                    scope.$eval(attrs.rightClick, {
+                        'event': e
+                    });
+                });
             });
-        }
-    }])
-    .config(["HereMapsConfigProvider", HereMapsConfigProvider => {
+        };
+    }]);
+
+// Configs
+app
+    .config(["HereMapsConfigProvider", (HereMapsConfigProvider: any) => {
         HereMapsConfigProvider.setOptions({
             'app_id': "bBPfh2x8Cauun3ygLMAx",
             'app_code': "yjfwTdkin_R2rGXYTrwWVg",
@@ -41,22 +56,22 @@ const app = angular.module("uDispatch", ["ui.router", "ct.ui.router.extras",
             }
         });
     }])
-    .config(["$qProvider", $qProvider => {
+    .config(["$qProvider", ($qProvider: angular.IQProvider) => {
         $qProvider.errorOnUnhandledRejections(false);
     }])
-    .config(["$mdDateLocaleProvider", "moment", "APP_CONFIG", ($mdDateLocaleProvider, moment, APP_CONFIG) => {
+    .config(["$mdDateLocaleProvider", "moment", "APP_CONFIG", ($mdDateLocaleProvider: any, moment: any, APP_CONFIG: any) => {
         if (!APP_CONFIG.US_Customer) {
             // Set locale to New Zealand English
             moment.locale("en-nz");
 
-            $mdDateLocaleProvider.formatDate = date => moment(date).format("DD/MM/YYYY");
+            $mdDateLocaleProvider.formatDate = (date: Date) => moment(date).format("DD/MM/YYYY");
 
-            $mdDateLocaleProvider.parseDate = (dateString) => {
+            $mdDateLocaleProvider.parseDate = (dateString: string) => {
                 const m = moment(dateString, "DD/MM/YYYY", true);
                 return m.isValid() ? m.toDate() : null;
             };
 
-            $mdDateLocaleProvider.isDateComplete = dateString => moment(dateString, "DD/MM/YYYY", true).isValid();
+            $mdDateLocaleProvider.isDateComplete = (dateString: string) => moment(dateString, "DD/MM/YYYY", true).isValid();
 
             // First day of the week is Monday (1) in New Zealand
             $mdDateLocaleProvider.firstDayOfWeek = 1;
@@ -71,10 +86,10 @@ const app = angular.module("uDispatch", ["ui.router", "ct.ui.router.extras",
             $mdDateLocaleProvider.shortDays = moment.weekdaysShort(true);
 
             // Month header formatter
-            $mdDateLocaleProvider.monthHeaderFormatter = (date) => moment(date).format("MMMM YYYY");
+            $mdDateLocaleProvider.monthHeaderFormatter = (date: Date) => moment(date).format("MMMM YYYY");
 
             // Week number formatter
-            $mdDateLocaleProvider.weekNumberFormatter = (weekNumber) => `Week ${weekNumber}`;
+            $mdDateLocaleProvider.weekNumberFormatter = (weekNumber: number) => `Week ${weekNumber}`;
 
             $mdDateLocaleProvider.msgCalendar = "Calendar";
             $mdDateLocaleProvider.msgOpenCalendar = "Open calendar";
@@ -84,7 +99,7 @@ const app = angular.module("uDispatch", ["ui.router", "ct.ui.router.extras",
             $mdDateLocaleProvider.inputDateFormat = "dd/MM/yyyy";
 
             // Long date format (e.g., "14 July 2023")
-            $mdDateLocaleProvider.longDateFormat = date => moment(date).format("D MMMM YYYY");
+            $mdDateLocaleProvider.longDateFormat = (date: Date) => moment(date).format("D MMMM YYYY");
 
             // Short time format
             $mdDateLocaleProvider.timeFormat = "h:mm a";

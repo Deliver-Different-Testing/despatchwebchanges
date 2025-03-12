@@ -29,6 +29,25 @@ class DispatchMapController implements angular.IController {
         this.$scope.flags = [];
         this.$scope.labels = [];
         this.$scope.googleMapsUrl = null;
+
+        this.bindFunctions()
+    }
+
+    private bindFunctions() {
+        this.$onInit = this.$onInit.bind(this);
+        this.createMarkerIcon = this.createMarkerIcon.bind(this);
+        this.setupMarkerIcons = this.setupMarkerIcons.bind(this);
+        this.setupWatchers = this.setupWatchers.bind(this);
+        this.updateDisplayedJobs = this.updateDisplayedJobs.bind(this);
+        this.updateCourierMarkers = this.updateCourierMarkers.bind(this);
+        this.addPickupMarker = this.addPickupMarker.bind(this);
+        this.addDeliveryMarker = this.addDeliveryMarker.bind(this);
+        this.setupMarkerListeners = this.setupMarkerListeners.bind(this);
+        this.addCourierMarker = this.addCourierMarker.bind(this);
+        this.clearJobMarkers = this.clearJobMarkers.bind(this);
+        this.clearCourierMarkers = this.clearCourierMarkers.bind(this);
+        this.fitMapToMarkers = this.fitMapToMarkers.bind(this);
+        this.isValidCoordinates = this.isValidCoordinates.bind(this);
     }
 
     $onInit() {
@@ -119,13 +138,13 @@ class DispatchMapController implements angular.IController {
             this.clearJobMarkers();
 
             if (this.$scope.currentJob) {
-                if (this._isValidCoordinates(
+                if (this.isValidCoordinates(
                     this.$scope.currentJob.pickupAddress?.latitude,
                     this.$scope.currentJob.pickupAddress?.longitude
                 )) {
                     this.addPickupMarker(this.$scope.currentJob);
                 }
-                if (this._isValidCoordinates(
+                if (this.isValidCoordinates(
                     this.$scope.currentJob.deliveryAddress?.latitude,
                     this.$scope.currentJob.deliveryAddress?.longitude
                 )) {
@@ -133,13 +152,13 @@ class DispatchMapController implements angular.IController {
                 }
             } else if (this.$scope.jobs?.length) {
                 this.$scope.jobs.forEach((job: any) => {
-                    if (this._isValidCoordinates(
+                    if (this.isValidCoordinates(
                         job.pickupAddress?.latitude,
                         job.pickupAddress?.longitude
                     )) {
                         this.addPickupMarker(job);
                     }
-                    if (this._isValidCoordinates(
+                    if (this.isValidCoordinates(
                         job.deliveryAddress?.latitude,
                         job.deliveryAddress?.longitude
                     )) {
@@ -161,7 +180,7 @@ class DispatchMapController implements angular.IController {
         this.clearCourierMarkers();
 
         couriers.forEach((courier: any) => {
-            if (this._isValidCoordinates(courier.latitude, courier.longitude)) {
+            if (this.isValidCoordinates(courier.latitude, courier.longitude)) {
                 this.addCourierMarker(courier);
             }
         });
@@ -278,7 +297,7 @@ class DispatchMapController implements angular.IController {
         }
     }
 
-    private _isValidCoordinates(lat?: number, lng?: number): boolean {
+    private isValidCoordinates(lat?: number, lng?: number): boolean {
         return Boolean(
             lat && lng && !isNaN(lat) && !isNaN(lng) &&
             lat !== 0 && lng !== 0 &&
