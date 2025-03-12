@@ -1,4 +1,3 @@
-import angular from "angular";
 import ToastrService from "../../../services/toastr.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import {InternalStatus, Job, PriceBreakdown} from "../../../interfaces/job.interface";
@@ -130,11 +129,11 @@ class JobDetailController implements angular.IController {
     $postLink() {
         console.log('$postLink called - DOM is ready');
 
-        this.setupPhotoKeyboardNavigation();
-
         if (this.formattedPodPhotos.length === 0 && !this.internalJob?.completedTime) {
             if (process.env.NODE_ENV !== 'production') {
-                this.testPodPhotoViewer();
+                this._testPodPhotoViewer();
+            } else {
+                this._loadPodPhotos();
             }
         }
     }
@@ -142,9 +141,9 @@ class JobDetailController implements angular.IController {
     $onDestroy() {
         console.log('$onDestroy called - cleaning up resources');
 
-        const photoSection = document.querySelector('.pod-photo-section');
+        const photoSection = angular.element('.pod-photo-section');
         if (photoSection) {
-            photoSection.removeEventListener('keydown', this._handleKeydown);
+            photoSection.off('keydown', this._handleKeydown);
         }
 
         if (this.$scope) {
@@ -155,7 +154,7 @@ class JobDetailController implements angular.IController {
     private _bindFunctions() {
         this.$onChanges = this.$onChanges.bind(this);
         this.$onDestroy = this.$onDestroy.bind(this);
-        this.testPodPhotoViewer = this.testPodPhotoViewer.bind(this);
+        this._testPodPhotoViewer = this._testPodPhotoViewer.bind(this);
         this._loadPodPhotos = this._loadPodPhotos.bind(this);
         this._initializeJobData = this._initializeJobData.bind(this);
         this.getJobAddressIcon = this.getJobAddressIcon.bind(this);
@@ -205,7 +204,7 @@ class JobDetailController implements angular.IController {
         this.nextPhoto = this.nextPhoto.bind(this);
         this.prevPhoto = this.prevPhoto.bind(this);
         this._handleKeydown = this._handleKeydown.bind(this);
-        this.setupPhotoKeyboardNavigation = this.setupPhotoKeyboardNavigation.bind(this);
+        this._setupPhotoKeyboardNavigation = this._setupPhotoKeyboardNavigation.bind(this);
         this.openPodViewer = this.openPodViewer.bind(this);
         this.closePodViewer = this.closePodViewer.bind(this);
         this.sendPOD = this.sendPOD.bind(this);
@@ -215,7 +214,7 @@ class JobDetailController implements angular.IController {
         this._formatPriceBreakDown = this._formatPriceBreakDown.bind(this);
     }
 
-    testPodPhotoViewer() {
+    private _testPodPhotoViewer() {
         // Create a small sample base64 image (1x1 pixel JPEG)
         const sampleBase64 = base64Image1;
         const now = new Date();
@@ -255,7 +254,7 @@ class JobDetailController implements angular.IController {
         });
 
         this.selectedPhotoIndex = 0;
-        this.setupPhotoKeyboardNavigation();
+        this._setupPhotoKeyboardNavigation();
         console.log('Test POD Photos loaded:', this.formattedPodPhotos);
         this.toastrService.showSuccessToast('Test POD photos loaded successfully');
 
@@ -267,32 +266,76 @@ class JobDetailController implements angular.IController {
     private _loadPodPhotos() {
         if (!this.internalJob?.completedTime) {
             console.log('No POD time available for job');
+            this._photosLoaded = true;
             return;
         }
 
-        const completedTime = this.moment(this.internalJob?.completedTime);
-        const month = completedTime.month() + 1;
+        console.log(`Loading POD photos for job: ${this.internalJob.id}`);
 
-        this.DispatchData.getJobDeliveryPhotosAndSignature(this.internalJob.id, completedTime.year(), month)
-            .then((photos: PodPhoto[]) => {
-                this.formattedPodPhotos = photos.map(photo => {
-                    if (photo.url && (photo.url.startsWith('data:image') ||
-                        photo.url.startsWith('/9j') ||
-                        photo.url.match(/^[A-Za-z0-9+/=]+$/))) {
-                        if (!photo.url.startsWith('data:image')) {
-                            photo.url = 'data:image/jpeg;base64,' + photo.url;
-                        }
+        try {
+            const completedTime = this.moment(this.internalJob?.completedTime);
+            const month = completedTime.month() + 1;
+            const year = completedTime.year();
+
+            console.log(`Getting POD photos for date: ${year}-${month}`);
+
+            this.DispatchData.getJobDeliveryPhotosAndSignature(this.internalJob.id, year, month)
+                .then((photos: PodPhoto[]) => {
+                    if (!photos || photos.length === 0) {
+                        console.log('No POD photos returned from server');
+                        this.formattedPodPhotos = [];
+                    } else {
+                        this.formattedPodPhotos = photos.map(photo => {
+                            // Process photo URLs
+                            if (photo.url && (photo.url.startsWith('data:image') ||
+                                photo.url.startsWith('/9j') ||
+                                photo.url.match(/^[A-Za-z0-9+/=]+$/))) {
+                                if (!photo.url.startsWith('data:image')) {
+                                    photo.url = 'data:image/jpeg;base64,' + photo.url;
+                                }
+                            } else if (photo.url) {
+                                console.warn('Photo has invalid URL format:', photo.url);
+                            } else {
+                                console.warn('Photo is missing URL', photo);
+                            }
+                            return photo;
+                        });
                     }
-                    return photo;
-                });
 
-                this.toastrService.showSuccessToast('Loaded POD photos');
-                console.log('Loaded POD photos:', this.formattedPodPhotos);
-            })
-            .catch((error: Error) => {
-                this.toastrService.showErrorToast('Failed to load POD photos');
-                console.error('Error loading POD photos:', error);
-            });
+                    this.selectedPhotoIndex = 0;
+                    this._photosLoaded = true; // Mark photos as loaded on success
+
+                    console.log(`Loaded ${this.formattedPodPhotos.length} POD photos`);
+
+                    this._setupPhotoKeyboardNavigation();
+
+                    if (this.$scope && this.$scope.$applyAsync) {
+                        this.$scope.$applyAsync();
+                    }
+                })
+                .catch((error: Error) => {
+                    this.toastrService.showErrorToast('Failed to load POD photos');
+                    console.error('Error loading POD photos:', error);
+
+                    // Set empty array on error
+                    this.formattedPodPhotos = [];
+                    this._photosLoaded = true; // Still mark as loaded on error
+
+                    // Update the view
+                    if (this.$scope && this.$scope.$applyAsync) {
+                        this.$scope.$applyAsync();
+                    }
+                });
+        } catch (error) {
+            this._handleError(error);
+            this.formattedPodPhotos = [];
+            this._photosLoaded = true;
+
+            // Update the view
+            if (this.$scope && this.$scope.$applyAsync) {
+                this.$scope.$applyAsync();
+            }
+        }
     }
 
     private _initializeJobData() {
@@ -1050,12 +1093,15 @@ class JobDetailController implements angular.IController {
         }
     };
 
-    setupPhotoKeyboardNavigation() {
-        const photoSection = document.querySelector('.pod-photo-section');
-        if (!photoSection) return;
+   private _setupPhotoKeyboardNavigation() {
+       const photoSection = angular.element('.pod-photo-section');
 
-        photoSection.addEventListener('keydown', this._handleKeydown);
-        photoSection.setAttribute('tabindex', '0');
+       if (photoSection.length) {
+           photoSection.off('keydown', this._handleKeydown);
+
+           photoSection.on('keydown', this._handleKeydown);
+           photoSection.attr('tabindex', '0');
+       }
     }
 
     openPodViewer(index: number) {

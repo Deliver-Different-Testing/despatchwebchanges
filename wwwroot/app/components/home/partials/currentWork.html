@@ -48,7 +48,7 @@
                 </td>
                 <td md-cell>{{job.jobNo}}</td>
                 <td md-cell>{{job.client}}</td>
-                <td md-cell  md-truncate>
+                <td md-cell md-truncate>
                     {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
                 </td>
@@ -57,18 +57,32 @@
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
                 </td>
                 <td md-cell>
-                    <input class="lateCallField"
-                           id="input_{{job.id}}"
-                           ng-click="handleDispatchFieldClick($event, job)"
-                           ng-keydown="handleDispatchKeydown($event, job)"
-                           ng-model="job.courier"
-                           ng-readonly="job.courier !== null"
-                           ng-style="getJobStyle(job.courierData.courierID !== null)"
-                           placeholder=""
-                           type="text"/>
+                    <md-autocomplete
+                            md-item-text="item.text"
+                            md-items="item in courierSearch(dispatchCourierSearchTest)"
+                            md-min-length="2"
+                            md-search-text="dispatchCourierSearchTest"
+                            md-select-on-focus
+                            md-selected-item="job.assignedCourier"
+                            md-autoselect
+                            md-clear-button="false"
+                            md-input-name="dispatchCourierSearch"
+                            ng-click="handleDispatchFieldClick($event, job)"
+                            ng-disabled="job.assignedCourier"
+                            md-selected-item-change="handleDispatchSelection(item, job)"
+                            placeholder="Search Courier...">
+                        <md-item-template>
+                            <span md-highlight-flags="^i"
+                                  md-highlight-text="dispatchCourierSearchTest">{{item.text}}</span>
+                        </md-item-template>
+                        <md-not-found>
+                            No couriers matching "{{dispatchCourierSearchTest}}" were found.
+                        </md-not-found>
+                    </md-autocomplete>
                 </td>
 
-                <td md-cell md-truncate><span ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
+                <td md-cell md-truncate><span
+                        ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
                 <td md-cell>
                     <md-chip class="status {{job.status | lowercase}}">
                         {{job.status}}
@@ -97,7 +111,8 @@
                             class="md-icon-button"
                             aria-label="Select for dispatch"
                             ng-click="selectForDispatch(job); $event.stopPropagation();">
-                        <md-icon md-font-set="material-symbols-outlined" ng-class="{'selected-icon': isJobSelected(job.id)}">
+                        <md-icon md-font-set="material-symbols-outlined"
+                                 ng-class="{'selected-icon': isJobSelected(job.id)}">
                             {{ isJobSelected(job.id) ? 'check_box' : 'check_box_outline_blank' }}
                         </md-icon>
                         <md-tooltip md-direction="bottom">Select for dispatch</md-tooltip>
