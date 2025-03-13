@@ -880,7 +880,7 @@
             <md-grid-tile ng-repeat="photo in ctrl.formattedPodPhotos track by $index"
                           ng-click="ctrl.setSelectedPhoto($index)"
                           ng-class="{'active-thumbnail': $index === ctrl.selectedPhotoIndex}">
-                <img ng-src="{{photo.url}}" alt="Photo {{$index + 1}}">
+                <img ng-src="{{'data:image/png;base64,' +photo.url}}" alt="Photo {{$index + 1}}">
                 <md-grid-tile-footer>
                     <h3>{{photo.timestamp | date:'shortTime'}}</h3>
                 </md-grid-tile-footer>
