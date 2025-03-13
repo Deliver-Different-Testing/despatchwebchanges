@@ -25,7 +25,7 @@ public class TruckCourierStatusViewModel
 
     [JsonPropertyName("availablePallets")] public double? AvailablePallets { get; set; }
 
-    [System.Text.Json.Serialization.JsonIgnore]
+    [JsonIgnore]
     public bool IsAtCapacity =>
         CurrentPallets >= MaxPallets ||
         CurrentWeight >= MaxPayLoad;

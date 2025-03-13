@@ -208,7 +208,9 @@ class DispatchMapController implements angular.IController {
             }
 
             await this.$timeout(() => {
-                this._fitMapToMarkers();
+                if (this.$scope.autoZoomEnabled) {
+                    this._fitMapToMarkers();
+                }
             }, 100);
         } finally {
             this.isUpdating = false;
@@ -347,7 +349,7 @@ class DispatchMapController implements angular.IController {
     }
 
     private _fitMapToMarkers() {
-        if (this.$scope.markers.length === 0) return;
+        if (this.$scope.markers.length === 0 || !this.$scope.autoZoomEnabled) return;
 
         const bounds = new this.$window.google.maps.LatLngBounds();
         this.$scope.markers.forEach((marker: google.maps.Marker) => bounds.extend(marker.getPosition() as google.maps.LatLng));
