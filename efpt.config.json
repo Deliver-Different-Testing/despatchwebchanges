@@ -340,6 +340,10 @@
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[DES_stpJob_AutoDespatchChildJobs]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DES_stpJob_ColsolidateMarsInformation]",
          "ObjectType": 1
       },
@@ -353,6 +357,10 @@
       },
       {
          "Name": "[dbo].[DES_stpJob_SplitJob]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DES_stpJob_SplitJobRestore]",
          "ObjectType": 1
       },
       {
@@ -389,6 +397,10 @@
       },
       {
          "Name": "[dbo].[DESWEB_stpJob_AddNotes]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_stpJob_AutoDespatchSelectedJobs]",
          "ObjectType": 1
       },
       {
@@ -469,6 +481,22 @@
       },
       {
          "Name": "[dbo].[sp_RateJob2]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[uspCompleteEvent]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[uspReDespatchJob]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[uspReDespatchJobByCourierID]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[uspRestoreJob]",
          "ObjectType": 1
       },
       {

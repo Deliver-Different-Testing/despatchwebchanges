@@ -3,28 +3,27 @@ using System.Threading;
 using DespatchWeb.EntityClasses;
 using Microsoft.EntityFrameworkCore;
 
-namespace DespatchWeb
+namespace DespatchWeb;
+
+public class DbContextWrapper(IDbContextFactory<DespatchContext> contextFactory) : IDisposable
 {
-    public class DbContextWrapper(IDbContextFactory<DespatchContext> contextFactory) : IDisposable
+    private readonly AsyncLocal<DespatchContext> _context = new AsyncLocal<DespatchContext>();
+
+    public DespatchContext GetContext()
     {
-        private readonly AsyncLocal<DespatchContext> _context = new AsyncLocal<DespatchContext>();
-
-        public DespatchContext GetContext()
+        if (_context.Value == null)
         {
-            if (_context.Value == null)
-            {
-                _context.Value = contextFactory.CreateDbContext();
-            }
-            return _context.Value;
+            _context.Value = contextFactory.CreateDbContext();
         }
+        return _context.Value;
+    }
 
-        public void Dispose()
+    public void Dispose()
+    {
+        if (_context.Value != null)
         {
-            if (_context.Value != null)
-            {
-                _context.Value.Dispose();
-                _context.Value = null;
-            }
+            _context.Value.Dispose();
+            _context.Value = null;
         }
     }
 }

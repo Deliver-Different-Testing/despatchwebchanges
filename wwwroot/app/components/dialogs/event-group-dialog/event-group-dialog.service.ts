@@ -1,5 +1,5 @@
 import app from "../../../app";
-import DispatchService from "../../../services/dispatch.service";
+import DispatchCoreService from "../../../services/dispatch-core.service";
 
 export class EventGroupDialogService {
     static $inject = [
@@ -8,7 +8,7 @@ export class EventGroupDialogService {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private DispatchData: DispatchService,
+        private DispatchData: DispatchCoreService,
     ) {
         console.log('EventGroupDialogService: Service instantiated');
     }

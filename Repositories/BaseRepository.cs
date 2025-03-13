@@ -2,18 +2,17 @@
 using DespatchWeb.EntityClasses;
 using Microsoft.EntityFrameworkCore;
 
-namespace DespatchWeb.Repositories
+namespace DespatchWeb.Repositories;
+
+public class BaseRepository(IDbContextFactory<DespatchContext> contextFactory):IDisposable
 {
-    public class BaseRepository(IDbContextFactory<DespatchContext> contextFactory):IDisposable
+    private DespatchContext? _context;
+    protected DespatchContext Context
     {
-        private DespatchContext? _context;
-        protected DespatchContext Context
-        {
-            get { return _context ??= contextFactory.CreateDbContext(); }
-        }
-        public void Dispose()
-        {
-            _context?.Dispose();
-        }
+        get { return _context ??= contextFactory.CreateDbContext(); }
+    }
+    public void Dispose()
+    {
+        _context?.Dispose();
     }
 }

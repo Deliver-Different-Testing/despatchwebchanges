@@ -1,4 +1,4 @@
-import DispatchService from "../../../services/dispatch.service";
+import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import {Job, PalletInfo} from "../../../interfaces/job.interface";
 import app from "../../../app";
@@ -19,7 +19,7 @@ class PalletDialogController {
     constructor(
         $scope: PalletDialogControllerScope,
         private $mdDialog: angular.material.IDialogService,
-        private dispatchData: DispatchService,
+        private dispatchData: DispatchCoreService,
         private toastrService: ToastrService,
         private rateJobService: any,
         private job: Job,

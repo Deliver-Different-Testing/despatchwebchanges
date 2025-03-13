@@ -1,7 +1,7 @@
 import app from "../../../app";
 import {Job, Suggestion} from "../../../interfaces/job.interface";
 import {ContactID, FirstName} from "../../../contants";
-import DispatchService from "../../../services/dispatch.service";
+import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import {IContextMenuScope, MenuState} from "./job-context-menu.interfaces";
 import {EventGroupDialogService} from "../../dialogs/event-group-dialog/event-group-dialog.service";
@@ -32,7 +32,7 @@ class ContextMenuController implements angular.IController {
         private $mdDialog: angular.material.IDialogService,
         public $mdMenu: angular.material.IMenuService,
         private toastrService: ToastrService,
-        private DispatchData: DispatchService,
+        private DispatchData: DispatchCoreService,
         private eventGroupDialogService: EventGroupDialogService,
         private $timeout: angular.ITimeoutService
     ) {

@@ -348,7 +348,7 @@
     <TypeScriptCompile Include="wwwroot\app\materialTheme.ts" />
     <TypeScriptCompile Include="wwwroot\app\routes.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\config.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\services\dispatch-job.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\services\dispatch-executor.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\getUsStates.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\greeting.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\index.ts" />

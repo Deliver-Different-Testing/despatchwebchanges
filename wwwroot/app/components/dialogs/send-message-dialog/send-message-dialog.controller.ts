@@ -1,5 +1,5 @@
 import app from "../../../app";
-import DispatchService from "../../../services/dispatch.service";
+import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 
 class SendMessageDialogController {
@@ -17,7 +17,7 @@ class SendMessageDialogController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private dispatchData: DispatchService,
+        private dispatchData: DispatchCoreService,
         private toastrService: ToastrService,
         private selectedCourierId: number,
         private contactId: number,

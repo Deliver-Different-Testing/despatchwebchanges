@@ -22,9 +22,11 @@ namespace DespatchWeb.EntityClasses
         Task<List<DES_qdfCourier_ClearListsResult>> DES_qdfUS_Courier_ClearListsAsync(int? clearListAreaID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_qryCourierCombo_ActiveResult>> DES_qryCourierCombo_ActiveAsync(OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_qryTruckCourierStatusResult>> DES_qryTruckCourierStatusAsync(string courierID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<int> DES_stpJob_AutoDespatchChildJobsAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_stpJob_ColsolidateMarsInformationResult>> DES_stpJob_ColsolidateMarsInformationAsync(int? jobID, bool? consolidate, string userName, int? despatchChangesID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> DES_stpJob_DisplayInDespatchAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_stpJob_SplitJobResult>> DES_stpJob_SplitJobAsync(int? jobID, bool? preBookJob, string userName, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<int> DES_stpJob_SplitJobRestoreAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> DES_stpJobBooking_AddNotesAsync(int? jobID, string notes, string username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_stpJobBooking_InsertJobAndChildrenResult>> DES_stpJobBooking_InsertJobAndChildrenAsync(int? jobBookingID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_stpSettingsResult>> DES_stpSettingsAsync(OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
@@ -34,6 +36,7 @@ namespace DespatchWeb.EntityClasses
         Task<List<DESWEB_qryPotentialCouriersResult>> DESWEB_qryPotentialCouriersAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> DESWEB_stpBulkJob_AddNotesAsync(int? bulkJobID, string notes, string username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> DESWEB_stpJob_AddNotesAsync(int? jobID, string notes, string username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<int> DESWEB_stpJob_AutoDespatchSelectedJobsAsync(string jobIDs, int? courierID, int? dispID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> DESWEB_stpJobItems_DeleteAsync(int? jobID, int? itemID, bool? prebook, string username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> DESWEB_stpJobItems_InsertAsync(int? jobID, int? items, double? weight, double? length, double? height, double? depth, bool? pU, bool? dO, int? dGClass, string notes, bool? prebook, string username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> DESWEB_stpJobItems_UpdateAsync(int? jobID, int? itemID, int? items, double? weight, double? length, double? height, double? depth, bool? pU, bool? dO, int? dGClass, string notes, bool? prebook, string username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
@@ -54,6 +57,10 @@ namespace DespatchWeb.EntityClasses
         Task<int> NET_stpJob_Insert_JobNumberAsync(int? staffID, int? jobTypeID, OutputParameter<string> jobNumber, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<qry_tucJobItemsResult>> qry_tucJobItemsAsync(int? jobID, int? truckWeightLimit, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> sp_RateJob2Async(int? intClientID, int? intFromID, int? intToID, int? intSpeed, bool? bolPedal, bool? bolVan, bool? bolReturn, int? intWeight, int? size, bool? includeFuelSurcharge, string ourRef, string clientRefA, string clientRefB, int? quantity, DateTime? booked, OutputParameter<decimal?> curAmount, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<int> uspCompleteEventAsync(int? intEventID, int? intStaffID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<int> uspReDespatchJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<int> uspReDespatchJobByCourierIDAsync(int? courierID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<int> uspRestoreJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<UTL_stpJob_tblBulkJob_ReleaseByJobNumberResult>> UTL_stpJob_tblBulkJob_ReleaseByJobNumberAsync(string jobNumber, DateTime? dateTime, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> UTL_stpPPD_ExclusiveAmountAsync(int? clientID, decimal? amount, OutputParameter<decimal?> pPD, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
     }

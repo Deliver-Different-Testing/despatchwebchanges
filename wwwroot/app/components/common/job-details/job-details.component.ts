@@ -4,7 +4,7 @@ import {InternalStatus, Job, PriceBreakdown} from "../../../interfaces/job.inter
 import {ContactID, FirstName} from "../../../contants";
 import {JobNote, JobOptions, TabItem} from "./job-details.interfaces";
 import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
-import DispatchService from "../../../services/dispatch.service";
+import DispatchCoreService from "../../../services/dispatch-core.service";
 import "./job-details.styles.less";
 import {base64Image1, base64Image2, base64Image3} from "./test-base64-images";
 import app from "../../../app";
@@ -34,7 +34,7 @@ class JobDetailController implements angular.IController {
         private $scope: angular.IScope,
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
-        private DispatchData: DispatchService,
+        private DispatchData: DispatchCoreService,
         APP_CONFIG: AppConfig,
         private rateJobService: any,
         private moment: any,
@@ -216,7 +216,7 @@ class JobDetailController implements angular.IController {
 
     private _testPodPhotoViewer() {
         // Create a small sample base64 image (1x1 pixel JPEG)
-        const sampleBase64 = base64Image1;
+        const sample1 = base64Image1;
         const sample2 = base64Image2;
         const sample3 = base64Image3;
         const now = new Date();
@@ -228,12 +228,12 @@ class JobDetailController implements angular.IController {
                 uploadedBy: 'Test User 1'
             },
             {
-                url: '/9j' + base64Image3.substring(3),
+                url: '/9j' + sample2.substring(3),
                 timestamp: new Date(now.getTime() - 3600000).toISOString(), // 1 hour ago
                 uploadedBy: 'Test User 2'
             },
             {
-                url: sample2,
+                url: sample3,
                 timestamp: new Date(now.getTime() - 7200000).toISOString(), // 2 hours ago
                 uploadedBy: 'Test User 3'
             },

@@ -38,8 +38,8 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     jb.UcbkDate != null && jb.UcbkTime != null
                         ? DateTime.Parse(
                             jb.UcbkDate.Value.ToString("yyyy-MM-dd")
-                                + " "
-                                + jb.UcbkTime.Value.ToString("HH:mm:ss")
+                            + " "
+                            + jb.UcbkTime.Value.ToString("HH:mm:ss")
                         )
                         : DateTime.MinValue,
                 Direct = jb.Direct,
@@ -107,10 +107,10 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     Courier =
                         jb.Courier != null
                             ? jb.Courier.Code
-                                + " "
-                                + jb.Courier.UccrName
-                                + " "
-                                + jb.Courier.UccrSurname
+                              + " "
+                              + jb.Courier.UccrName
+                              + " "
+                              + jb.Courier.UccrSurname
                             : null,
                     CourierId = jb.Courier != null ? jb.Courier.UccrId : null
                 },
@@ -300,24 +300,24 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     wild == ""
                     || EF.Functions.Like(
                         x.FromAddress
-                            + " "
-                            + x.Contact
-                            + " "
-                            + x.FromSuburb
-                            + " "
-                            + x.ToAddress
-                            + " "
-                            + x.DeliverToContact
-                            + " "
-                            + x.ToSuburb
-                            + " "
-                            + (x.ClientRefa ?? "")
-                            + " "
-                            + (x.ClientRefb ?? "")
-                            + " "
-                            + (x.OurRef ?? "")
-                            + " "
-                            + x.JobNumber.ToLower(),
+                        + " "
+                        + x.Contact
+                        + " "
+                        + x.FromSuburb
+                        + " "
+                        + x.ToAddress
+                        + " "
+                        + x.DeliverToContact
+                        + " "
+                        + x.ToSuburb
+                        + " "
+                        + (x.ClientRefa ?? "")
+                        + " "
+                        + (x.ClientRefb ?? "")
+                        + " "
+                        + (x.OurRef ?? "")
+                        + " "
+                        + x.JobNumber.ToLower(),
                         wildParam
                     )
                 )
@@ -398,8 +398,8 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 SpeedId = v.SpeedId,
                 Booked = DateTime.Parse(
                     v.BookedDate.Value.ToString("yyyy-MM-dd")
-                        + " "
-                        + v.Time.Value.ToString("HH:mm:ss")
+                    + " "
+                    + v.Time.Value.ToString("HH:mm:ss")
                 )
             })
             .ToList();
@@ -449,24 +449,24 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     || EF.Functions.Like(nationwide.UcnwFlightNo, wildParam)
                     || EF.Functions.Like(
                         j.FromAddress
-                            + " "
-                            + j.PickupFromContact
-                            + " "
-                            + fs.UcsuName
-                            + " "
-                            + j.ToAddress
-                            + " "
-                            + j.DeliverToContact
-                            + " "
-                            + ts.UcsuName
-                            + " "
-                            + (j.ClientReferenceA ?? "")
-                            + " "
-                            + (j.ClientReferenceB ?? "")
-                            + " "
-                            + (j.OurRef ?? "")
-                            + " "
-                            + j.Number.ToLower(),
+                        + " "
+                        + j.PickupFromContact
+                        + " "
+                        + fs.UcsuName
+                        + " "
+                        + j.ToAddress
+                        + " "
+                        + j.DeliverToContact
+                        + " "
+                        + ts.UcsuName
+                        + " "
+                        + (j.ClientReferenceA ?? "")
+                        + " "
+                        + (j.ClientReferenceB ?? "")
+                        + " "
+                        + (j.OurRef ?? "")
+                        + " "
+                        + j.Number.ToLower(),
                         wildParam
                     )
                 )
@@ -706,24 +706,24 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     || EF.Functions.Like(nationwide.UcnwConNote, wildParam)
                     || EF.Functions.Like(
                         x.FromAddress
-                            + " "
-                            + x.PickupFromContact
-                            + " "
-                            + yo.UcsuName
-                            + " "
-                            + x.ToAddress
-                            + " "
-                            + x.DeliverToContact
-                            + " "
-                            + zo.UcsuName
-                            + " "
-                            + (x.ClientReferenceA ?? "")
-                            + " "
-                            + (x.ClientReferenceB ?? "")
-                            + " "
-                            + (x.OurRef ?? "")
-                            + " "
-                            + x.Number.ToLower(),
+                        + " "
+                        + x.PickupFromContact
+                        + " "
+                        + yo.UcsuName
+                        + " "
+                        + x.ToAddress
+                        + " "
+                        + x.DeliverToContact
+                        + " "
+                        + zo.UcsuName
+                        + " "
+                        + (x.ClientReferenceA ?? "")
+                        + " "
+                        + (x.ClientReferenceB ?? "")
+                        + " "
+                        + (x.OurRef ?? "")
+                        + " "
+                        + x.Number.ToLower(),
                         wildParam
                     )
                 )
@@ -833,24 +833,24 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     wild == ""
                     || EF.Functions.Like(
                         x.UcbkFromAddr
-                            + " "
-                            + x.PickupFromContact
-                            + " "
-                            + yo.UcsuName
-                            + " "
-                            + x.UcbkToAddr
-                            + " "
-                            + x.DeliverToContact
-                            + " "
-                            + zo.UcsuName
-                            + " "
-                            + (x.UcbkClientRefa ?? "")
-                            + " "
-                            + (x.UcbkClientRefa ?? "")
-                            + " "
-                            + (x.UcbkOurRef ?? "")
-                            + " "
-                            + x.UcbkJobNumber.ToLower(),
+                        + " "
+                        + x.PickupFromContact
+                        + " "
+                        + yo.UcsuName
+                        + " "
+                        + x.UcbkToAddr
+                        + " "
+                        + x.DeliverToContact
+                        + " "
+                        + zo.UcsuName
+                        + " "
+                        + (x.UcbkClientRefa ?? "")
+                        + " "
+                        + (x.UcbkClientRefa ?? "")
+                        + " "
+                        + (x.UcbkOurRef ?? "")
+                        + " "
+                        + x.UcbkJobNumber.ToLower(),
                         wildParam
                     )
                 )
@@ -925,8 +925,8 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 Id = j.UcbkId,
                 Booked = DateTime.Parse(
                     j.UcbkNextDue.Value.ToString("yyyy-MM-dd")
-                        + " "
-                        + j.UcbkTime.Value.ToString("HH:mm:ss")
+                    + " "
+                    + j.UcbkTime.Value.ToString("HH:mm:ss")
                 ),
                 Client = j.UcbkClientCode,
                 FromAddress = j.UcbkFromAddr,
@@ -1114,29 +1114,15 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
     public async Task CloseSupportEvent(int supportId, int staffId)
     {
-        await Context
-            .LoadStoredProc("uspCompleteEvent")
-            .WithSqlParam("@intEventID", supportId)
-            .WithSqlParam("@intStaffID", staffId)
-            .ExecuteStoredNonQueryAsync();
+        await Context.Procedures.uspCompleteEventAsync(supportId, staffId);
     }
 
-    public async Task DispatchSelectedJobs(int courierId, int dispId, string jobIds)
+    public async Task DispatchSelectedJobs(int courierId, int dispId, List<int> jobIds)
     {
-        await Context
-            .LoadStoredProc("DESWEB_stpJob_AutoDespatchSelectedJobs")
-            .WithSqlParam("@JobIDs", jobIds)
-            .WithSqlParam("@CourierID", courierId)
-            .WithSqlParam("@DispID", dispId)
-            .ExecuteStoredNonQueryAsync();
+        var jobIdsString = string.Join(",", jobIds);
+        await Context.Procedures.DESWEB_stpJob_AutoDespatchSelectedJobsAsync(jobIdsString, courierId, dispId);
 
-        foreach (var jid in jobIds.Split(",").ToList().Where(x => !string.IsNullOrWhiteSpace(x)))
-        {
-            await Context
-                .LoadStoredProc("DES_stpJob_AutoDespatchChildJobs")
-                .WithSqlParam("@JobID", int.Parse(jid))
-                .ExecuteStoredNonQueryAsync();
-        }
+        foreach (var jobId in jobIds) await Context.Procedures.DES_stpJob_AutoDespatchChildJobsAsync(jobId);
     }
 
     public async Task SwapPod(string job1, string job2)
@@ -1148,16 +1134,9 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .ExecuteStoredNonQueryAsync();
     }
 
-    public async Task ReDispatchSelectedJobs(int courierId, int dispId, string jobIds)
+    public async Task ReDispatchSelectedJobs(int courierId, int dispId, List<int> jobIds)
     {
-        foreach (var jid in jobIds.Split(",").ToList().Where(x => !string.IsNullOrWhiteSpace(x)))
-        {
-            await Context
-                .LoadStoredProc("uspRestoreJob")
-                .WithSqlParam("@intJobID", int.Parse(jid))
-                .ExecuteStoredNonQueryAsync();
-        }
-
+        foreach (var jobId in jobIds) await Context.Procedures.uspRestoreJobAsync(jobId);
         await DispatchSelectedJobs(courierId, dispId, jobIds);
     }
 
@@ -1180,10 +1159,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .WithSqlParam("@Scan", scan);
         var scans = new List<BulkScanDetail>();
 
-        await cmd.ExecuteStoredProcAsync(h =>
-        {
-            scans = h.ReadToList<BulkScanDetail>().ToList();
-        });
+        await cmd.ExecuteStoredProcAsync(h => { scans = h.ReadToList<BulkScanDetail>().ToList(); });
         return scans;
     }
 
@@ -1371,26 +1347,20 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .ExecuteStoredNonQueryAsync();
     }
 
-    public async Task RestoreSplitJobs(string jobIds)
+    public async Task RestoreSplitJobs(List<int> jobIds)
     {
-        foreach (var jid in jobIds.Split(",").ToList().Where(x => !string.IsNullOrWhiteSpace(x)))
-        {
-            await Context
-                .LoadStoredProc("DES_stpJob_SplitJobRestore")
-                .WithSqlParam("@JobID", int.Parse(jid))
-                .ExecuteStoredNonQueryAsync();
-        }
+        if (jobIds == null || jobIds.Count == 0)
+            return;
+
+        foreach (var jobId in jobIds) await Context.Procedures.DES_stpJob_SplitJobRestoreAsync(jobId);
     }
 
-    public async Task RestoreJobs(string jobIds)
+    public async Task RestoreJobs(List<int> jobIds)
     {
-        foreach (var jid in jobIds.Split(",").ToList().Where(x => !string.IsNullOrWhiteSpace(x)))
-        {
-            await Context
-                .LoadStoredProc("uspRestoreJob")
-                .WithSqlParam("@intJobID", int.Parse(jid))
-                .ExecuteStoredNonQueryAsync();
-        }
+        if (jobIds == null || jobIds.Count == 0)
+            return;
+
+        foreach (var jobId in jobIds) await Context.Procedures.uspRestoreJobAsync(jobId);
     }
 
     public async Task MessageCourier(int courierId, int dispId, string despatcher, string message)
@@ -1758,10 +1728,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         await Context
             .LoadStoredProc("DESWEB_stpJob_DirectToASAP")
             .WithSqlParam("@JobID", jobId)
-            .ExecuteStoredProcAsync(handle =>
-            {
-                result = handle.ReadToList<DirectToASAPViewModel>().ToList();
-            });
+            .ExecuteStoredProcAsync(handle => { result = handle.ReadToList<DirectToASAPViewModel>().ToList(); });
         return result.FirstOrDefault();
     }
 
@@ -1871,18 +1838,18 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
     {
         var result = await Context.Procedures.qry_tucJobItemsAsync(jobId, truckWeightLimit);
         return result
-                .Select(item => new TruckItemsSummary
-                {
-                    intQuantity = item.intQuantity,
-                    intWeight = item.intWeight,
-                    TotalWeight = item.totalWeight,
-                    intPU = item.intPU,
-                    intDO = item.intDO,
-                    intOverSizeItems = item.intOversizeItems,
-                    intOverWeightItems = item.intOverWeightItems,
-                    DGClass = item.DGClass
-                })
-                .FirstOrDefault() ?? new TruckItemsSummary();
+            .Select(item => new TruckItemsSummary
+            {
+                intQuantity = item.intQuantity,
+                intWeight = item.intWeight,
+                TotalWeight = item.totalWeight,
+                intPU = item.intPU,
+                intDO = item.intDO,
+                intOverSizeItems = item.intOversizeItems,
+                intOverWeightItems = item.intOverWeightItems,
+                DGClass = item.DGClass
+            })
+            .FirstOrDefault() ?? new TruckItemsSummary();
     }
 
     public async Task UpdateDeliveryAddressNzAsync(UpdateAddressRequestNz request)

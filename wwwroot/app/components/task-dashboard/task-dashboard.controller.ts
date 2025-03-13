@@ -3,7 +3,7 @@ import "./task-dashboard.styles.less";
 import app from "../../app";
 import GreetingService from "../../services/greeting.service";
 import TasksDashboardService from "./tasks-dashboard.service";
-import DispatchService from "../../services/dispatch.service";
+import DispatchCoreService from "../../services/dispatch-core.service";
 import { ActiveCourierViewModel } from "../../interfaces/courier.interface";
 import { Suggestion } from "../../interfaces/job.interface";
 import {StatusFilter} from "./enums/status-filter";
@@ -55,7 +55,7 @@ class TaskDashboardController implements angular.IController {
         private $filter: angular.IFilterService,
         private $mdDialog: angular.material.IDialogService,
         private tasksDashboardsService: TasksDashboardService,
-        private dispatchService: DispatchService,
+        private dispatchService: DispatchCoreService,
         private $timeout: angular.ITimeoutService
     ) {
         this.greeting = greetingService.greetUser(FirstName);

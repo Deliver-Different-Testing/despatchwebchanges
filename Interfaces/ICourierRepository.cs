@@ -9,6 +9,8 @@ namespace DespatchWeb.Interfaces;
 
 public interface ICourierRepository
 {
+    Task<ActiveCouriersViewModel> GetCourierByIdAsync(int courierId);
+
     Task<List<TruckCourierStatusViewModel>> TruckCourierStatusAsync(string courierId);
 
     Task AddEventAsync(
