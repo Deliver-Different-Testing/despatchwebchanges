@@ -128,7 +128,7 @@ class JobDetailController implements angular.IController {
     $postLink() {
         console.log('$postLink called - DOM is ready');
 
-        if (this.formattedPodPhotos.length === 0 && !this.internalJob?.completedTime) {
+        if (this.internalJob?.completedTime) {
                 this._loadPodPhotos();
         }
     }
@@ -225,7 +225,7 @@ class JobDetailController implements angular.IController {
             console.log(`Getting POD photos for date: ${year}-${month}`);
 
             this.DispatchData.getJobDeliveryPhotosAndSignature(this.internalJob.id, year, month)
-                .then((photosData: number[][]) => {
+                .then((photosData: any) => {
                     if (!photosData || photosData.length === 0) {
                         console.log('No POD photos returned from server');
                         this.formattedPodPhotos = [];
@@ -233,24 +233,20 @@ class JobDetailController implements angular.IController {
                         console.log('Raw photos data received, count:', photosData.length);
 
                         this.formattedPodPhotos = photosData
-                            .filter(photoData => photoData && photoData.length > 0) // Filter out empty arrays
-                            .map((photoData: number[], index: number) => {
+                            .filter((photoData: any) => photoData && typeof photoData === 'string')
+                            .map((photoData: string, index: number) => {
                                 const timestamp = this.internalJob?.completedTime
                                     ? this.moment(this.internalJob.completedTime).toISOString()
                                     : new Date().toISOString();
 
                                 try {
-                                    // Convert the byte array to a base64 string
-                                    const uint8Array = new Uint8Array(photoData);
-                                    let binaryString = '';
-                                    for (let i = 0; i < uint8Array.length; i++) {
-                                        binaryString += String.fromCharCode(uint8Array[i]);
+                                    let base64Data = photoData;
+                                    if (base64Data.startsWith('/')) {
+                                        base64Data = base64Data.substring(1);
                                     }
-                                    const base64String = btoa(binaryString);
 
-                                    // Return the formatted photo object
                                     return {
-                                        url: 'data:image/jpeg;base64,' + base64String,
+                                        url: 'data:image/jpeg;base64,' + base64Data,
                                         timestamp: timestamp,
                                         uploadedBy: 'System'
                                     };
@@ -259,7 +255,7 @@ class JobDetailController implements angular.IController {
                                     return null;
                                 }
                             })
-                            .filter(photo => photo !== null) as PodPhoto[]; // Filter out any failed conversions
+                            .filter((photo: PodPhoto | null) => photo !== null) as PodPhoto[];
                     }
 
                     console.log(`Successfully processed ${this.formattedPodPhotos.length} POD photos`);
