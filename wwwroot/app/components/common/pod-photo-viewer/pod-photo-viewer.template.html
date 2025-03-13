@@ -9,7 +9,7 @@
 
         <div class="photo-container">
             <img
-                    ng-src="{{ctrl.photos[ctrl.currentIndex].url}}"
+                    ng-src="{{'data:image/png;base64,' +ctrl.photos[ctrl.currentIndex].url}}"
                     alt="POD {{ctrl.currentIndex + 1}}"
                     class="pod-image"
             />
