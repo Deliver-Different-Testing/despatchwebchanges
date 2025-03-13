@@ -109,7 +109,7 @@ async function build(): Promise<void> {
             legalComments: isDev ? "inline" : "none",
             format: "iife",
             mainFields: ["browser", "module", "main"],
-            logLevel: isDev ? 'info' : 'error',
+            logLevel: isDev ? 'info' : 'info', // Turn on logging in production
             drop: isDev ? [] : ['console', 'debugger'],
             plugins: [
                 esbuildPluginTsc(),

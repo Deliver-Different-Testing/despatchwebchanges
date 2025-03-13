@@ -804,7 +804,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getJobDeliveryPhotosAndSignature(jobId: number, year: number, month: number) {
-        const response = await this.$http.get<number[][]>(`/Job/GetJobDeliveryPhotosAndSignature?jobId=${jobId}&year=${year}&month=${month}`);
+        const response = await this.$http.get<string[]>(`/Job/GetJobDeliveryPhotosAndSignature?jobId=${jobId}&year=${year}&month=${month}`);
         return response.data;
     }
 
