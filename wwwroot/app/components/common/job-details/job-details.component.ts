@@ -26,8 +26,8 @@ class JobDetailController implements angular.IController {
     internalStatusList: InternalStatus[];
     onStatusChange?: (params: { $event: any }) => void;
     selectedStatusText?: string;
-    private _photosLoaded: boolean = false;
-    private _previousJobId?: number;
+    private photosLoaded: boolean = false;
+    private previousJobId?: number;
 
     constructor(
         private $scope: angular.IScope,
@@ -39,11 +39,8 @@ class JobDetailController implements angular.IController {
         private moment: any,
         private $mdMenu: angular.material.IMenuService,
         private $timeout: angular.ITimeoutService) {
-        this._bindFunctions();
 
         this.isUsCustomer = APP_CONFIG.US_Customer;
-        this.job = undefined;
-        this.internalJob = undefined;
         this.notes = [];
         this.selectedTab = 0;
         this.allTabs = [];
@@ -70,6 +67,18 @@ class JobDetailController implements angular.IController {
         };
 
         this.internalStatusList = [];
+        $scope.$watch(() => this.job, (newValue, oldValue) => {
+            if (newValue && newValue !== oldValue) {
+                this.internalJob = newValue;
+                this.previousJobId = newValue.id;
+                this._initializeJobData();
+
+                if (newValue.completedTime) {
+                    this._loadPodPhotos();
+                }
+            }
+        });
+
     }
 
     $onInit() {
@@ -87,8 +96,12 @@ class JobDetailController implements angular.IController {
         // Initial job data setup if job is already available
         if (this.job) {
             this.internalJob = this.job;
-            this._previousJobId = this.job.id;
+            this.previousJobId = this.job.id;
             this._initializeJobData();
+
+            if(this.job.completedTime) {
+                this._loadPodPhotos();
+            }
         }
     }
 
@@ -100,36 +113,28 @@ class JobDetailController implements angular.IController {
             this.internalJob = changes['job'].currentValue;
 
             if (this.internalJob) {
-                const jobIdChanged = !this._previousJobId || this._previousJobId !== this.internalJob.id;
-                this._previousJobId = this.internalJob.id;
+                const jobIdChanged = !this.previousJobId || this.previousJobId !== this.internalJob.id;
+                this.previousJobId = this.internalJob.id;
 
                 this._initializeJobData();
 
                 if (jobIdChanged) {
-                    this._photosLoaded = false;
+                    this.photosLoaded = false;
                 }
             }
         }
     }
 
     $doCheck() {
-        if (this.internalJob && !this._photosLoaded) {
+        if (this.internalJob && !this.photosLoaded) {
             if (this.internalJob.completedTime) {
                 this.$timeout(() => {
-                    if (!this._photosLoaded) {
+                    if (!this.photosLoaded) {
                         this._loadPodPhotos();
-                        this._photosLoaded = true;
+                        this.photosLoaded = true;
                     }
                 }, 0);
             }
-        }
-    }
-
-    $postLink() {
-        console.log('$postLink called - DOM is ready');
-
-        if (this.internalJob?.done) {
-                this._loadPodPhotos();
         }
     }
 
@@ -146,72 +151,10 @@ class JobDetailController implements angular.IController {
         }
     }
 
-    private _bindFunctions() {
-        this.$onChanges = this.$onChanges.bind(this);
-        this.$onDestroy = this.$onDestroy.bind(this);
-        this._loadPodPhotos = this._loadPodPhotos.bind(this);
-        this._initializeJobData = this._initializeJobData.bind(this);
-        this.getJobAddressIcon = this.getJobAddressIcon.bind(this);
-        this.showNotesDialog = this.showNotesDialog.bind(this);
-        this.showAutocompleteDialog = this.showAutocompleteDialog.bind(this);
-        this.showEditTimeDialog = this.showEditTimeDialog.bind(this);
-        this.showSelectDialog = this.showSelectDialog.bind(this);
-        this.showEditDialog = this.showEditDialog.bind(this);
-        this.showAddressDialog = this.showAddressDialog.bind(this);
-        this.showJobDimensionsDialog = this.showJobDimensionsDialog.bind(this);
-        this.editLogTime = this.editLogTime.bind(this);
-        this.editCompletedTime = this.editCompletedTime.bind(this);
-        this.editFollowUpTime = this.editFollowUpTime.bind(this);
-        this.updateAddress = this.updateAddress.bind(this);
-        this._processAddressUpdate = this._processAddressUpdate.bind(this);
-        this._updateJobAddressNz = this._updateJobAddressNz.bind(this);
-        this._updateJobAddressUs = this._updateJobAddressUs.bind(this);
-        this._updateJobRateAndAddress = this._updateJobRateAndAddress.bind(this);
-        this.editJobContact = this.editJobContact.bind(this);
-        this.editJobContactPhone = this.editJobContactPhone.bind(this);
-        this.editRef = this.editRef.bind(this);
-        this.editOurRef = this.editOurRef.bind(this);
-        this.editJobWeight = this.editJobWeight.bind(this);
-        this.editTrackingMobile = this.editTrackingMobile.bind(this);
-        this.editTrackingEmail = this.editTrackingEmail.bind(this);
-        this.clientClick = this.clientClick.bind(this);
-        this.courierClick = this.courierClick.bind(this);
-        this.contactClick = this.contactClick.bind(this);
-        this.speedClick = this.speedClick.bind(this);
-        this.jobTypeClick = this.jobTypeClick.bind(this);
-        this.sizeClick = this.sizeClick.bind(this);
-        this.dgClassClick = this.dgClassClick.bind(this);
-        this.leaveClick = this.leaveClick.bind(this);
-        this.trackingMethodClick = this.trackingMethodClick.bind(this);
-        this.statusClick = this.statusClick.bind(this);
-        this.updateField = this.updateField.bind(this);
-        this.getJobTypeDescription = this.getJobTypeDescription.bind(this);
-        this.hasDGDocs = this.hasDGDocs.bind(this);
-        this.toggleJobProperty = this.toggleJobProperty.bind(this);
-        this.toggleProperty = this.toggleProperty.bind(this);
-        this.markJobAsDone = this.markJobAsDone.bind(this);
-        this._refreshJobDetails = this._refreshJobDetails.bind(this);
-        this._handleError = this._handleError.bind(this);
-        this._extractNumericRate = this._extractNumericRate.bind(this);
-        this.getTrackingMethod = this.getTrackingMethod.bind(this);
-        this.setSelectedPhoto = this.setSelectedPhoto.bind(this);
-        this.nextPhoto = this.nextPhoto.bind(this);
-        this.prevPhoto = this.prevPhoto.bind(this);
-        this._handleKeydown = this._handleKeydown.bind(this);
-        this._setupPhotoKeyboardNavigation = this._setupPhotoKeyboardNavigation.bind(this);
-        this.openPodViewer = this.openPodViewer.bind(this);
-        this.closePodViewer = this.closePodViewer.bind(this);
-        this.sendPOD = this.sendPOD.bind(this);
-        this._getSelectedStatusText = this._getSelectedStatusText.bind(this);
-        this.setInternalStatus = this.setInternalStatus.bind(this);
-        this.showPricingBreakdown = this.showPricingBreakdown.bind(this);
-        this._formatPriceBreakDown = this._formatPriceBreakDown.bind(this);
-    }
-
     private _loadPodPhotos() {
-        if (!this.internalJob?.done) {
+        if (!this.internalJob?.completedTime) {
             console.log('No POD time available for job');
-            this._photosLoaded = true;
+            this.photosLoaded = true;
             return;
         }
 
@@ -234,10 +177,6 @@ class JobDetailController implements angular.IController {
 
                         this.formattedPodPhotos = photosData
                             .map((photoData: string, index: number) => {
-                                const timestamp = this.internalJob?.completedTime
-                                    ? this.moment(this.internalJob.completedTime).toISOString()
-                                    : new Date().toISOString();
-
                                 try {
                                     return {
                                         url: photoData,
@@ -254,7 +193,7 @@ class JobDetailController implements angular.IController {
                     console.log(`Successfully processed ${this.formattedPodPhotos.length} POD photos`);
 
                     this.selectedPhotoIndex = 0;
-                    this._photosLoaded = true;
+                    this.photosLoaded = true;
 
                     this._setupPhotoKeyboardNavigation();
 
@@ -267,7 +206,7 @@ class JobDetailController implements angular.IController {
                     console.error('Error loading POD photos:', error);
 
                     this.formattedPodPhotos = [];
-                    this._photosLoaded = true;
+                    this.photosLoaded = true;
 
                     if (this.$scope && this.$scope.$applyAsync) {
                         this.$scope.$applyAsync();
@@ -276,7 +215,7 @@ class JobDetailController implements angular.IController {
         } catch (error) {
             this._handleError(error);
             this.formattedPodPhotos = [];
-            this._photosLoaded = true;
+            this.photosLoaded = true;
 
             if (this.$scope && this.$scope.$applyAsync) {
                 this.$scope.$applyAsync();

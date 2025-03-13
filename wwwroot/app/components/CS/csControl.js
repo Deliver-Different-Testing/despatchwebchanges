@@ -909,14 +909,6 @@ function CSControl($scope, jdSvc, uCSData, $state, $filter, $mdDialog, greetingS
             $scope.scanPromise = uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo);
             $scope.scanList = await $scope.scanPromise;
 
-            if ($scope.currentJob.completedTime) {
-                const cmpltd = moment($scope.currentJob.completedTime);
-                const month = cmpltd.month() + 1;
-                $scope.currentJob.podPhotos = await uCSData.getJobDeliveryPhotosAndSignature(jobId, cmpltd.year(), month);
-            }
-
-
-
             if (!$scope.$$phase) {
                 $scope.$apply();
             }
