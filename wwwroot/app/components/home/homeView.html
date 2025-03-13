@@ -95,7 +95,7 @@
 
             <div class="column" id="co-{{column.id}}" ng-repeat="(colKey,column) in layout.columns"
                 r-directions="['right']" r-flex="true" resizable style="flex-basis: {{column.width}}">
-                <div class="column-sortable" ng-model="column.boxes" ui-sortable="sortableOptions">
+                <div class="column-sortable" ng-model="column.boxes">
                     <div class="box" id="box-{{box.name}}" ng-repeat="(boxName,box) in column.boxes"
                         r-directions="['bottom']" r-flex="true" resizable style="flex-basis: {{box.height}}">
 

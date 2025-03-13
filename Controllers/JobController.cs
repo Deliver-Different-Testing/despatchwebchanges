@@ -1098,7 +1098,7 @@ public class JobController(
         httpClient.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue(
                 "Basic",
-                Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($"{un}:{pw}"))
+                Convert.ToBase64String(Encoding.ASCII.GetBytes($"{un}:{pw}"))
             );
 
         var body = new ExsalerateActivity
@@ -1111,14 +1111,14 @@ public class JobController(
         };
 
         var content = new StringContent(
-            System.Text.Json.JsonSerializer.Serialize(body),
-            System.Text.Encoding.UTF8,
+            JsonSerializer.Serialize(body),
+            Encoding.UTF8,
             "application/json"
         );
 
         var response = await httpClient.PostAsync("activity", content);
 
-        if (response.StatusCode != System.Net.HttpStatusCode.OK)
+        if (response.StatusCode != HttpStatusCode.OK)
         {
             var responseContent = await response.Content.ReadAsStringAsync();
             var e = new ApplicationException(
@@ -2200,7 +2200,7 @@ public class JobController(
             var request = new GetObjectRequest { BucketName = bucketName, Key = key };
 
             using var response = await s3Client.GetObjectAsync(request);
-            if (response.HttpStatusCode == System.Net.HttpStatusCode.OK)
+            if (response.HttpStatusCode == HttpStatusCode.OK)
             {
                 var originalFileName = response.Metadata["FileName"];
                 var contentType = response.Headers.ContentType;
@@ -2224,7 +2224,7 @@ public class JobController(
         }
         catch (AmazonS3Exception ex)
         {
-            return ex.StatusCode == System.Net.HttpStatusCode.NotFound
+            return ex.StatusCode == HttpStatusCode.NotFound
                 ? NotFound($"File {key} not found in bucket")
                 : StatusCode(500, $"Error downloading file: {ex.Message}");
         }

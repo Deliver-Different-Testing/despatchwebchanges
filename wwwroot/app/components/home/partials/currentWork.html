@@ -83,11 +83,13 @@
 
                 <td md-cell md-truncate><span
                         ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
+
                 <td md-cell>
-                    <md-chip class="status {{job.status | lowercase}}">
+                    <md-chip class="status {{job.statusName | lowercase | replace:' ':'-'}}">
                         {{job.status}}
                     </md-chip>
                 </td>
+
                 <td md-cell>
                     <input class="lateCallField"
                            ng-focus="selectAllContent($event)"

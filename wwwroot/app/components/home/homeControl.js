@@ -98,7 +98,6 @@ function HomeControl(
             filter.active = filter.value === $scope.selectedFilter;
         });
 
-        $scope.pickAllCouriers = [];
         $scope.selected = [];
         $scope.jobList = [];
         $scope.supports = [];
@@ -122,8 +121,6 @@ function HomeControl(
                 return normal;
             }
         };
-
-        $scope.normalStyle = "{'font-weight:normal'}";
 
         $scope.boxes = {
             jobsList: {
@@ -763,6 +760,11 @@ function HomeControl(
 
         if (!$scope.selectedViews || $scope.selectedViews.length === 0) return;
 
+        if (!$scope.autoZoomEnabled) {
+            initialViewSet = true;
+            return;
+        }
+
         if ($scope.selectedViews.length === 1) {
             // For single view, use its coordinates
             const view = $scope.selectedViews[0];
@@ -978,10 +980,6 @@ function HomeControl(
     $scope.supportChannel =
         JSON.parse(localStorage.getItem("support-channel-" + ContactID)) || "All";
 
-    $scope.groupJobsSelection = "";
-    $scope.currentWorkSelection = "";
-    $scope.potentialCouriersSelection = "";
-
     $scope.storeMapZoomDisplay = () => {
         if (Modernizr.localstorage) {
             localStorage.setItem(
@@ -1049,48 +1047,9 @@ function HomeControl(
 
         // Join all components with spaces and trim
         return components.join(" ").trim();
-    };
-
-    $scope.sortableOptions = {
-        connectWith: ".column-sortable",
-        items: ".box",
-        placeholder: "placeholder",
-        scroll: true,
-        scrollSensitivity: 100,
-        scrollSpeed: 20,
-        handle: ".box-handle",
-        activate(e, ui) {
-            const box = angular.element("#" + ui.item.context.id);
-            const parent = box.parent();
-            const boxes = parent
-                .children()
-                .filter((_, child) => angular.element(child).hasClass("box"));
-
-            angular.forEach(boxes, (boxElement) => {
-                let box = angular.element(boxElement);
-                box.attr("data-height", box.prop("offsetHeight") + "px");
-            });
-        },
-        update(e, ui) {
-            $timeout(() => {
-                const box = angular.element("#" + ui.item.context.id);
-                const parent = box.parent();
-                const boxes = parent
-                    .children()
-                    .filter((_, child) => angular.element(child).hasClass("box"));
-
-                angular.forEach(boxes, (boxElement) => {
-                    let box = angular.element(boxElement);
-                    box.css({"flex-basis": box.attr("data-height")});
-                });
-
-                angular.element(boxes[boxes.length - 1]).css({"flex-basis": "0"});
-            }, 0);
-        },
-    };
+    }
 
     $scope.showInput = {};
-    $scope.inputWidth = {};
 
     /**
      * @param {string} boxName
@@ -1104,20 +1063,6 @@ function HomeControl(
         } else {
             $scope.inputWidth[boxID] = 200;
             $scope.showInput[boxID] = true;
-        }
-    };
-
-    $scope.openChat = () => {
-        if (angular.element(".chat").hasClass("open")) {
-            angular.element(".chat input").fadeOut(() => {
-                angular.element(".chat").removeClass("open");
-                angular.element(".chat").animate({width: "31px"}, 500);
-            });
-        } else {
-            angular.element(".chat").animate({width: "250px"}, 500, () => {
-                angular.element(".chat").addClass("open");
-                angular.element(".chat").find("input").fadeIn();
-            });
         }
     };
 
@@ -1519,152 +1464,6 @@ function HomeControl(
         }
     };
 
-    /**
-     * @param {number} lat
-     * @param {number} lng
-     * @param {Object} flags
-     * @param {string} carMarker
-     * @param {number} jobNumber
-     */
-    $scope.dispatchDroppedMarkerToClosestCourier = async (
-        lat,
-        lng,
-        flags,
-        carMarker,
-        jobNumber
-    ) => {
-        try {
-            if (flags.length === 0 && carMarker === null) {
-                await showNoAvailableCourierDialog();
-                return handleNoAvailableCourier();
-            }
-
-            const closestCourier = findClosestCourier(lat, lng, flags, carMarker);
-            const foundCourier = $scope.pickCouriers.find(
-                (c) => c.courierId === closestCourier.courierId
-            );
-
-            await confirmDispatch(jobNumber, closestCourier, foundCourier);
-            await handleDangerousGoodsCheck(foundCourier);
-            await dispatchJob(foundCourier, jobNumber);
-        } catch (error) {
-            console.error("Dispatch cancelled or error occurred", error);
-            handleDispatchError();
-        }
-    };
-
-    async function showNoAvailableCourierDialog() {
-        await $mdDialog.show(
-            $mdDialog
-                .confirm()
-                .title("Dispatch Invalid")
-                .textContent("Could not find courier for Dispatch")
-                .ok("Close")
-                .cancel()
-        );
-    }
-
-    function handleNoAvailableCourier() {
-        return $scope.getAvailableCourierLocation();
-    }
-
-    /**
-     * @param {number} lat
-     * @param {number} lng
-     * @param {Object} flags
-     * @param {*} carMarker
-     */
-    function findClosestCourier(lat, lng, flags, carMarker) {
-        const toCompare = flags.map((f, key) => [
-            key,
-            f.position.lat(),
-            f.position.lng(),
-        ]);
-        if (carMarker !== null) {
-            toCompare.push([
-                9999,
-                carMarker.position.lat(),
-                carMarker.position.lng(),
-            ]);
-        }
-
-        const closestIndex = closestLocation(lat, lng, toCompare);
-        return closestIndex[0] === 9999 ? carMarker : flags[closestIndex[0]];
-    }
-
-    /**
-     * @param {number} jobNumber
-     * @param {*} closestCourier
-     * @param {*} foundCourier
-     */
-    async function confirmDispatch(jobNumber, closestCourier, foundCourier) {
-        let dispatchToCourierCode = closestCourier.code;
-        if (foundCourier !== undefined) {
-            dispatchToCourierCode =
-                foundCourier.code === undefined
-                    ? foundCourier.label
-                    : `${dispatchToCourierCode} ${foundCourier.code}`;
-        }
-
-        await $mdDialog.show(
-            $mdDialog
-                .confirm()
-                .title(`Dispatch Job ${jobNumber}`)
-                .textContent(`Dispatch to ${dispatchToCourierCode}?`)
-                .ok("Yes")
-                .cancel("No")
-        );
-    }
-
-    async function handleDangerousGoodsCheck(foundCourier) {
-        const job = $scope.jobList.find((jo) => jo.jobNo === jobNumber);
-        if (job.dgClass !== null && job.dgClass > 0) {
-            if (!foundCourier.dangerousGoods) {
-                throw new Error(
-                    `DG job ${job.jobNo} can not be despatched to courier ${foundCourier.code} - doesn't have DGLicense.`
-                );
-            }
-
-            if (
-                job.dGLicenseExpiry === null ||
-                moment(foundCourier.dgLicenseExpiry) < moment().add(1, "days")
-            ) {
-                throw new Error(
-                    `Courier ${foundCourier.code} doesn't have a DGLicense or license has expired.`
-                );
-            }
-
-            await DispatchData.addFollowupEvent(
-                job.jobNo,
-                job.clientId,
-                job.contactName,
-                ContactID,
-                foundCourier.courierId,
-                job.id,
-                job.jobType,
-                FirstName
-            );
-        }
-    }
-
-    /**
-     * @param {*} foundCourier
-     * @param {number} jobNumber
-     */
-    async function dispatchJob(foundCourier, jobNumber) {
-        const job = $scope.jobList.find((jo) => jo.jobNo === jobNumber);
-        const jobs = [job.id];
-        await DispatchData.allocateJobs(foundCourier.courierId, ContactID, jobs);
-        await $scope.getData();
-
-        $scope.courier = {gpsCourier: foundCourier.id};
-        await $scope.searchCourier();
-    }
-
-    function handleDispatchError() {
-        return $scope.getAvailableCourierLocation();
-    }
-
     $scope.selectAllContent = ($event) => {
         $event.target.select();
     };
@@ -1838,7 +1637,7 @@ function HomeControl(
             }
 
             // Perform dispatch operation
-            await dispatchJobService.dispatchJobsBycourierId(
+            await dispatchJobService.dispatchJobsByCourierId(
                 courierId,
                 jobsToDispatch
             );
@@ -2150,81 +1949,6 @@ function HomeControl(
         }
     };
 
-    $scope.reAllocateJobsFromCurrentWindow = async () => {
-        const callData = {
-            call: "redespatchJobs",
-            jobs: [],
-            splitJobs: [],
-            jobNos: [],
-            courierId: $scope.currentCourier.courierId,
-        };
-
-        let foundCourier = null;
-
-        angular.element("#currentWork .active").each(function () {
-            callData.jobs.push(angular.element(this).attr("data-jobid"));
-            foundCourier =
-                $scope.pickCouriers.find((c) => c.courierId === callData.courierId) ||
-                $scope.pickAllCouriers.find(
-                    (c) => c.courierId === callData.courierId
-                );
-        });
-
-        try {
-            if (callData.jobs.length > 0) {
-                await DispatchData.reAllocateJobs(
-                    callData.courierId,
-                    ContactID,
-                    callData.jobs
-                );
-            }
-
-            await $scope.getData();
-            angular.element("#box-map .loading").css("display", "");
-            $scope.courier = {gpsCourier: foundCourier.id};
-            await $scope.searchCourier();
-        } catch (error) {
-            console.log("Error in reAllocateJobsFromCurrentWindow:", error);
-        }
-    };
-
-    $scope.resendJobsFromCurrentWindow = async () => {
-        const callData = {
-            call: "resendJobs",
-            jobs: [],
-            splitJobs: [],
-            jobNos: [],
-            courierId: $scope.currentCourier.courierId,
-        };
-
-        let foundCourier;
-
-        const activeElements = angular.element("#currentWork .active");
-        activeElements.each(function () {
-            callData.jobs.push(angular.element(this).attr("data-jobid"));
-        });
-
-        foundCourier =
-            $scope.pickCouriers.find((c) => c.courierId === callData.courierId) ||
-            $scope.pickAllCouriers.find((c) => c.courierId === callData.courierId);
-
-        try {
-            if (callData.jobs.length > 0) {
-                const result = await DispatchData.resendJobs(callData.jobs);
-                console.log("Jobs resent successfully:", result);
-            } else {
-                console.log("No jobs to resend");
-            }
-
-            await $scope.getData();
-            angular.element("#box-map .loading").css("display", "");
-            $scope.courier = {gpsCourier: foundCourier.id};
-            await $scope.searchCourier();
-        } catch (error) {
-            console.log("Error in resendJobsFromCurrentWindow:", error);
-        }
-    };
-
     $scope.restoreJobsFromCurrentWindow = async () => {
         const callData = {
             call: "restoreJobs",
@@ -2271,7 +1995,7 @@ function HomeControl(
             console.log("Restore event added successfully");
         } catch (error) {
             console.log("Error adding restore event:", error);
-            throw error; // Propagate the error
+            throw error;
         }
     }
 
@@ -2561,14 +2285,6 @@ function HomeControl(
         }
     };
 
-    $scope.displayLoadingIndicators = () => {
-        //loadingService.showLoader();
-    };
-
-    $scope.hideLoadingIndicators = () => {
-        //loadingService.closeLoader();
-    };
-
     $scope.selectedCourierChange = async (courier) => {
         if (courier === undefined) {
             $scope.currentCourier = null;
@@ -2579,21 +2295,17 @@ function HomeControl(
 
     $scope.searchCourier = async ($event) => {
         try {
-            $scope.displayLoadingIndicators();
             const foundCourier = $scope.pickAllCouriers.find(
                 (c) => c.id === $scope.courier.gpsCourier
             );
             console.log(foundCourier);
             if (foundCourier === undefined) {
-                $scope.hideLoadingIndicators();
                 await showAlert("Attention", "Courier not found.");
                 return;
             }
             await $scope.updateCourierData(foundCourier.id, foundCourier.name);
         } catch (error) {
             console.error("Error searching courier:", error);
-        } finally {
-            $scope.hideLoadingIndicators();
         }
     };
 
@@ -3052,37 +2764,39 @@ function HomeControl(
         $scope.currentSelection = ` for Job ${job.jobNo}`;
 
         // Verify we have valid coordinates before displaying
-        if (
-            isValidCoordinates(
-                job.pickupAddress.latitude,
-                job.pickupAddress.longitude
-            )
-        ) {
-            // Set bounds for pickup point
-            const bounds = new $window.google.maps.LatLngBounds();
-            bounds.extend(
-                new $window.google.maps.LatLng(
+        if ($scope.autoZoomEnabled && $scope.map) {
+            if (
+                isValidCoordinates(
                     job.pickupAddress.latitude,
                     job.pickupAddress.longitude
                 )
-            );
-
-            // If delivery coordinates are valid, include them too
-            if (
-                isValidCoordinates(
-                    job.deliveryLatitude,
-                    job.deliveryAddress.longitude
-                )
             ) {
+                // Set bounds for pickup point
+                const bounds = new $window.google.maps.LatLngBounds();
                 bounds.extend(
                     new $window.google.maps.LatLng(
-                        job.deliveryAddress.latitude,
-                        job.deliveryAddress.longitude
+                        job.pickupAddress.latitude,
+                        job.pickupAddress.longitude
                     )
                 );
+
+                // If delivery coordinates are valid, include them too
+                if (
+                    isValidCoordinates(
+                        job.deliveryLatitude,
+                        job.deliveryAddress.longitude
+                    )
+                ) {
+                    bounds.extend(
+                        new $window.google.maps.LatLng(
+                            job.deliveryAddress.latitude,
+                            job.deliveryAddress.longitude
+                        )
+                    );
+                }
+            } else {
+                console.warn("Invalid pickup coordinates for job:", job);
             }
-        } else {
-            console.warn("Invalid pickup coordinates for job:", job);
         }
     }
 
@@ -3636,21 +3350,6 @@ function HomeControl(
 
     async function fetchDriverLocations() {
         $scope.driverLocationsLoading = true;
-
-        /**
-         * @param {number} clearListId
-         */
-        $scope.getClearListEnvelope = async (clearListId) => {
-            try {
-                const data = await DispatchData.getDriverDestinationEnvelope(
-                    clearListId
-                );
-                await $scope.getAvailableCourierLocation();
-                return data;
-            } catch (error) {
-                console.error("Error getting clear list envelope:", error);
-            }
-        };
 
         $scope.getDriverLocationsData = async () => {
             try {
