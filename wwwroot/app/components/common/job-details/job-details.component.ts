@@ -128,7 +128,7 @@ class JobDetailController implements angular.IController {
     $postLink() {
         console.log('$postLink called - DOM is ready');
 
-        if (this.internalJob?.completedTime) {
+        if (this.internalJob?.done) {
                 this._loadPodPhotos();
         }
     }
@@ -209,7 +209,7 @@ class JobDetailController implements angular.IController {
     }
 
     private _loadPodPhotos() {
-        if (!this.internalJob?.completedTime) {
+        if (!this.internalJob?.done) {
             console.log('No POD time available for job');
             this._photosLoaded = true;
             return;
@@ -233,29 +233,22 @@ class JobDetailController implements angular.IController {
                         console.log('Raw photos data received, count:', photosData.length);
 
                         this.formattedPodPhotos = photosData
-                            .filter((photoData: any) => photoData && typeof photoData === 'string')
                             .map((photoData: string, index: number) => {
                                 const timestamp = this.internalJob?.completedTime
                                     ? this.moment(this.internalJob.completedTime).toISOString()
                                     : new Date().toISOString();
 
                                 try {
-                                    let base64Data = photoData;
-                                    if (base64Data.startsWith('/')) {
-                                        base64Data = base64Data.substring(1);
-                                    }
-
                                     return {
-                                        url: 'data:image/jpeg;base64,' + base64Data,
-                                        timestamp: timestamp,
-                                        uploadedBy: 'System'
+                                        url: photoData,
+                                        timestamp: this.internalJob?.completedTime,
+                                        uploadedBy: this.internalJob?.courierData.courier,
                                     };
                                 } catch (e) {
                                     console.error(`Error processing photo ${index}:`, e);
                                     return null;
                                 }
-                            })
-                            .filter((photo: PodPhoto | null) => photo !== null) as PodPhoto[];
+                            });
                     }
 
                     console.log(`Successfully processed ${this.formattedPodPhotos.length} POD photos`);

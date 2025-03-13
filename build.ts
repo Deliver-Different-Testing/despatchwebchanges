@@ -110,7 +110,7 @@ async function build(): Promise<void> {
             format: "iife",
             mainFields: ["browser", "module", "main"],
             logLevel: isDev ? 'info' : 'info', // Turn on logging in production
-            drop: isDev ? [] : ['console', 'debugger'],
+            drop: isDev ? [] : ['debugger'], // Removed 'console' to keep console logging in production
             plugins: [
                 esbuildPluginTsc(),
                 lessLoader({
