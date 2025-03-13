@@ -852,7 +852,7 @@
 
     <!-- Main selected photo view -->
     <div class="pod-main-photo" ng-click="ctrl.openPodViewer(ctrl.selectedPhotoIndex)">
-        <img ng-src="{{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].url}}"
+        <img ng-src="{{'data:image/png;base64,' +ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].url}}"
              alt="POD Photo {{ctrl.selectedPhotoIndex + 1}}">
 
         <div class="pod-photo-info">
