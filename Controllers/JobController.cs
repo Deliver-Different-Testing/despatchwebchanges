@@ -49,7 +49,7 @@ public class JobController(
     {
         Log.Information(
             "Index endpoint called with params: {@QueryParams}, IsInternal: {IsInternal}, "
-            + "ClientId: {ClientId}, ClientIds: {ClientIds}, DespatchViewIds: {@DespatchViewIds}",
+                + "ClientId: {ClientId}, ClientIds: {ClientIds}, DespatchViewIds: {@DespatchViewIds}",
             queryParams,
             isInternal,
             cid,
@@ -74,7 +74,8 @@ public class JobController(
                 isUsTenant,
                 clientIds,
                 despatchViewIds,
-                status);
+                status
+            );
 
             Log.Information(
                 "Successfully retrieved {Count} jobs out of {Total} total records",
@@ -223,7 +224,7 @@ public class JobController(
     public async Task<IActionResult> CloseSupport(int supportId, int staffId)
     {
         await jobRepository.CloseSupportEvent(supportId, staffId);
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
@@ -271,7 +272,7 @@ public class JobController(
                     {
                         BucketName = bucketName,
                         Prefix = $"{folder}/{monthPrefix}{pattern}",
-                        MaxKeys = 1000
+                        MaxKeys = 1000,
                     };
 
                     var response = await s3Client.ListObjectsV2Async(request);
@@ -315,11 +316,13 @@ public class JobController(
             Log.Debug($"Get S3 Object List for {key}");
             var s3List = await SearchDeliveryFilesByPatternAsync(bucketName, key, year, month);
             Log.Debug($"Found {s3List.Count} objects for {key}");
-            foreach (var getObjectRequest in s3List.Select(s3Object => new GetObjectRequest
-                     {
-                         BucketName = bucketName,
-                         Key = s3Object.Key
-                     }))
+            foreach (
+                var getObjectRequest in s3List.Select(s3Object => new GetObjectRequest
+                {
+                    BucketName = bucketName,
+                    Key = s3Object.Key,
+                })
+            )
             {
                 using var response = await s3Client.GetObjectAsync(getObjectRequest);
                 await using var responseStream = response.ResponseStream;
@@ -467,7 +470,7 @@ public class JobController(
                 BucketName = Environment.GetEnvironmentVariable("S3Bucket"),
                 Key = key,
                 ContentType = "text/csv",
-                InputStream = ms
+                InputStream = ms,
             };
             await s3Client.PutObjectAsync(putRequest);
         }
@@ -524,7 +527,7 @@ public class JobController(
                     .Replace("downloads", "uploads"),
                 Key = key,
                 ContentType = file.ContentType,
-                InputStream = ms
+                InputStream = ms,
             };
             putRequest.Metadata.Add("FileName", file.FileName);
             await s3Client.PutObjectAsync(putRequest);
@@ -560,7 +563,7 @@ public class JobController(
                     new ExcelDataSetConfiguration
                     {
                         ConfigureDataTable = (_) =>
-                            new ExcelDataTableConfiguration { UseHeaderRow = true }
+                            new ExcelDataTableConfiguration { UseHeaderRow = true },
                     }
                 )
                 .Tables[0]; //Only ready from the first sheet
@@ -599,7 +602,7 @@ public class JobController(
                 WriteIndented = true,
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
                 NumberHandling = JsonNumberHandling.AllowReadingFromString,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             };
 
             sResult = JsonSerializer.Serialize(rows, options);
@@ -614,7 +617,7 @@ public class JobController(
             PropertyNameCaseInsensitive = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             NumberHandling = JsonNumberHandling.AllowReadingFromString,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         };
 
         var result = JsonSerializer.Deserialize<List<JobManualPriceModel>>(
@@ -650,7 +653,7 @@ public class JobController(
     public async Task<IActionResult> SwapPod(string job1, string job2)
     {
         await jobRepository.SwapPod(job1, job2);
-        return Json("OK");
+        return Ok();
     }
 
     public async Task<IActionResult> BulkSearch(
@@ -715,7 +718,7 @@ public class JobController(
 
         await UpdateJobStatus(request);
 
-        return Json("OK");
+        return Ok();
     }
 
     private async Task<(bool createEvent, int jobStatus, int late)> DetermineLateStatus(
@@ -732,7 +735,7 @@ public class JobController(
             {
                 1 => await DeterminePickupLateStatus(request),
                 2 => await DetermineDeliveryLateStatus(request),
-                _ => throw new ArgumentException("Invalid LateType")
+                _ => throw new ArgumentException("Invalid LateType"),
             };
         }
         else
@@ -819,80 +822,104 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> Allocate(int courierId, int dispId, string jobIds)
+    public async Task<IActionResult> Allocate(int courierId, int dispId, List<int> jobIds)
     {
         await jobRepository.DispatchSelectedJobs(courierId, dispId, jobIds);
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
-    public async Task<IActionResult> ReAllocate(int courierId, int dispId, string jobIds)
+    public async Task<IActionResult> ReAllocate(int courierId, int dispId, List<int> jobIds)
     {
         await jobRepository.ReDispatchSelectedJobs(courierId, dispId, jobIds);
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
     public async Task<IActionResult> ReSendSelected(string jobIds)
     {
         await jobRepository.ReSendSelectedJobs(jobIds);
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
     public async Task<IActionResult> ReAssignSelected(string jobIds)
     {
         await jobRepository.ReAssignSelectedJobs(jobIds);
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
     public async Task<IActionResult> Transfer(int jobId, int courierId, int dispId)
     {
         await jobRepository.TransferJob(jobId, courierId, dispId);
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
     public async Task<IActionResult> SetFirstJob(int jobId, int courierId)
     {
         await jobRepository.SetFirstJob(jobId, courierId);
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
     public async Task<IActionResult> Void(int jobId)
     {
         await jobRepository.VoidJob(jobId);
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
     public async Task<IActionResult> ReSendAll(int courierId)
     {
         await jobRepository.ReSendAllJobs(courierId);
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
-    public async Task<IActionResult> RestoreSplitJobs(int courierId, int dispId, string jobIds)
+    public async Task<IActionResult> RestoreSplitJobs([FromQuery] List<int> jobIds)
     {
-        await jobRepository.RestoreSplitJobs(jobIds);
-        return Json("OK");
+        try
+        {
+            await jobRepository.RestoreSplitJobs(jobIds);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(
+                ex,
+                "Error restoring the following split jobs {JobId}. Error: {ErrorMessage}",
+                jobIds.ToString(),
+                ex.Message
+            );
+            return StatusCode(
+                500,
+                new { message = "An unexpected error occurred restoring the jobs" }
+            );
+        }
     }
 
     [HttpPost]
-    public async Task<IActionResult> RestoreJobs(int courierId, int dispId, string jobIds)
+    public async Task<IActionResult> RestoreJobs([FromQuery] List<int> jobIds)
     {
         try
         {
             await jobRepository.RestoreJobs(jobIds);
-            return Json("OK");
+            return Ok();
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Console.WriteLine(e);
-            throw;
+            Log.Error(
+                ex,
+                "Error restoring the following jobs {JobId}. Error: {ErrorMessage}",
+                jobIds.ToString(),
+                ex.Message
+            );
+            return StatusCode(
+                500,
+                new { message = "An unexpected error occurred restoring the jobs" }
+            );
         }
     }
 
@@ -900,7 +927,7 @@ public class JobController(
     public async Task<IActionResult> SplitJob(int jobId, string despatcherName)
     {
         await jobRepository.SplitJob(jobId, despatcherName);
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
@@ -919,19 +946,19 @@ public class JobController(
     )
     {
         await jobRepository.UpdatePodDetails(jobNumber, jobStatus, podName, podTime);
-        return Json("OK");
+        return Ok();
     }
 
     public async Task<IActionResult> ReRateSplitJob(int jobId)
     {
         await jobRepository.ReRateSplitJob(jobId);
-        return Json("OK");
+        return Ok();
     }
 
     public async Task<IActionResult> FinishSplitJobProcess(int jobId, string despatcherName)
     {
         await jobRepository.FinishSplitJobProcess(jobId, despatcherName);
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
@@ -943,7 +970,7 @@ public class JobController(
     )
     {
         await jobRepository.MessageCourier(courierId, dispId, despatcherName, message);
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
@@ -962,15 +989,11 @@ public class JobController(
             deliveryLat,
             deliveryLng
         );
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddRestoreEvent(
-        int jobId,
-        int staffId,
-        string despatcherName
-    )
+    public async Task<IActionResult> AddRestoreEvent(int jobId, int staffId, string despatcherName)
     {
         try
         {
@@ -983,7 +1006,7 @@ public class JobController(
                 33
             );
 
-            return Json("OK");
+            return Ok();
         }
         catch (Exception ex)
         {
@@ -1012,7 +1035,7 @@ public class JobController(
             (int)EventType.ChangePrice
         );
 
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
@@ -1036,7 +1059,7 @@ public class JobController(
             (int)EventType.Other
         );
 
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
@@ -1053,15 +1076,9 @@ public class JobController(
         int eventType
     )
     {
-        await courierRepo.AddEventAsync(
-            jobId,
-            staffId,
-            despatcherName,
-            notes,
-            eventType
-        );
+        await courierRepo.AddEventAsync(jobId, staffId, despatcherName, notes, eventType);
 
-        return Json("OK");
+        return Ok();
     }
 
     public async Task<IActionResult> ExsalerateActivity(
@@ -1090,7 +1107,7 @@ public class JobController(
             CustomerRefCode = clientId.ToString(),
             Subject = $"Dispatch:{despatcherName} {eventName}",
             ActivityType = eventName,
-            Description = $"Job Number: {jobNumber} - {notes}"
+            Description = $"Job Number: {jobNumber} - {notes}",
         };
 
         var content = new StringContent(
@@ -1110,7 +1127,7 @@ public class JobController(
             throw e;
         }
 
-        return Json("OK");
+        return Ok();
     }
 
     [HttpGet]
@@ -1446,7 +1463,7 @@ public class JobController(
                     PickupLat = pickUpLat,
                     PickupLong = pickUpLong,
                     DeliveryLat = deliveryLat,
-                    DeliveryLong = deliveryLong
+                    DeliveryLong = deliveryLong,
                 }
             );
 
@@ -1505,7 +1522,7 @@ public class JobController(
                 return BadRequest("Request Address Data Not Provided");
 
             await jobRepository.UpdateDeliveryAddressNzAsync(request);
-            return Json("OK");
+            return Ok();
         }
         catch (Exception e)
         {
@@ -1524,7 +1541,7 @@ public class JobController(
                 return BadRequest("Request Address Data Not Provided");
 
             await jobRepository.UpdateDeliveryAddressUsAsync(request);
-            return Json("OK");
+            return Ok();
         }
         catch (Exception e)
         {
@@ -1552,7 +1569,7 @@ public class JobController(
             deliveryLng,
             despatcherName
         );
-        return Json("OK");
+        return Ok();
     }
 
     public async Task<IActionResult> UpdateBookingDeliveryAddress(
@@ -1576,7 +1593,7 @@ public class JobController(
             rate,
             despatcherName
         );
-        return Json("OK");
+        return Ok();
     }
 
     public async Task<IActionResult> UpdatePickupAddressNz(
@@ -1589,7 +1606,7 @@ public class JobController(
                 return BadRequest("Request Address Data Not Provided");
 
             await jobRepository.UpdatePickupAddressNzAsync(request);
-            return Json("OK");
+            return Ok();
         }
         catch (Exception e)
         {
@@ -1608,7 +1625,7 @@ public class JobController(
                 return BadRequest("Request Address Data Not Provided");
 
             await jobRepository.UpdatePickupAddressUsAsync(request);
-            return Json("OK");
+            return Ok();
         }
         catch (Exception e)
         {
@@ -1620,7 +1637,7 @@ public class JobController(
     public async Task<IActionResult> UpdateJobType(int jobId, int jobType, string despatcherName)
     {
         await jobRepository.UpdateJobTypeAsync(jobId, jobType, despatcherName);
-        return Json("OK");
+        return Ok();
     }
 
     public async Task<IActionResult> UpdateBulkPickupAddress(
@@ -1642,7 +1659,7 @@ public class JobController(
             pickupLng,
             despatcherName
         );
-        return Json("OK");
+        return Ok();
     }
 
     public async Task<IActionResult> UpdateBookingPickupAddress(
@@ -1666,7 +1683,7 @@ public class JobController(
             rate,
             despatcherName
         );
-        return Json("OK");
+        return Ok();
     }
 
     public async Task<IActionResult> UpdateJob(
@@ -1710,13 +1727,13 @@ public class JobController(
             despatcherName,
             staffId
         );
-        return Json("OK");
+        return Ok();
     }
 
     public async Task<IActionResult> ReleaseBulkJob(string jobNumber, DateTime bookDate)
     {
         await jobRepository.ReleaseBulkJobAsync(jobNumber, bookDate);
-        return Json("OK");
+        return Ok();
     }
 
     public async Task<IActionResult> UpdateJobBooking(
@@ -1736,7 +1753,7 @@ public class JobController(
             despatcherName,
             staffId
         );
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
@@ -1744,7 +1761,7 @@ public class JobController(
     {
         note = FormatNote(note);
         await jobRepository.AddNoteAsync(jobId, note, despatcher);
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
@@ -1752,7 +1769,7 @@ public class JobController(
     {
         note = FormatNote(note);
         await jobRepository.AddBulkJobNoteAsync(bulkJobId, note, despatcher);
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
@@ -1760,7 +1777,7 @@ public class JobController(
     {
         note = FormatNote(note);
         await jobRepository.AddJobBookingNoteAsync(jobId, note, despatcher);
-        return Json("OK");
+        return Ok();
     }
 
     private static string FormatNote(string note) => $"\n{note}";
@@ -1806,7 +1823,7 @@ public class JobController(
         [
             FormatNote($"Job Notes: {job.JobNotes}"),
             FormatNote($"Pickup Notes: {job.PickupNotes}"),
-            FormatNote($"Delivery Notes: {job.DeliveryNotes}")
+            FormatNote($"Delivery Notes: {job.DeliveryNotes}"),
         ];
     }
 
@@ -1828,7 +1845,7 @@ public class JobController(
             throw new ArgumentNullException(nameof(viewModel), "ViewModel is null");
 
         await jobRepository.AddInterCourierChargeAsync(viewModel);
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
@@ -1884,7 +1901,7 @@ public class JobController(
             await AddNoteAsync(jobId, jobData.Contact + msgPhone, despatcher);
         }
 
-        return Json("OK");
+        return Ok();
     }
 
     [HttpGet]
@@ -1913,7 +1930,7 @@ public class JobController(
                 itemsModel.ServiceIds,
                 itemsModel.TotalCost
             );
-        return Json("OK");
+        return Ok();
     }
 
     private static string FormatDelimMessage<T>(
@@ -1972,7 +1989,7 @@ public class JobController(
             att
         );
 
-        return Json("OK");
+        return Ok();
     }
 
     private static void SendEmail(
@@ -2020,7 +2037,7 @@ public class JobController(
         {
             BucketName = bucketName,
             Prefix = pattern,
-            MaxKeys = 1000 // Adjust if needed, but 1000 is the maximum allowed
+            MaxKeys = 1000, // Adjust if needed, but 1000 is the maximum allowed
         };
 
         var result = new List<S3Object>();
@@ -2079,7 +2096,7 @@ public class JobController(
                 var getObjectRequest = new GetObjectRequest
                 {
                     BucketName = bucketName,
-                    Key = s3Object.Key
+                    Key = s3Object.Key,
                 };
                 using var response = await s3Client.GetObjectAsync(getObjectRequest);
                 await using var responseStream = response.ResponseStream;
@@ -2092,7 +2109,7 @@ public class JobController(
                     S3Key = s3Object.Key,
                     FileName = fileName,
                     LastModified = s3Object.LastModified,
-                    Size = s3Object.Size
+                    Size = s3Object.Size,
                 };
                 s3Files.Add(s3FileInfo);
             }
@@ -2144,7 +2161,7 @@ public class JobController(
                     BucketName = Environment.GetEnvironmentVariable("S3BucketMars"),
                     Key = key,
                     ContentType = request.File.ContentType,
-                    InputStream = ms
+                    InputStream = ms,
                 };
                 putRequest.Metadata.Add("FileName", request.File.FileName);
                 await s3Client.PutObjectAsync(putRequest);
@@ -2222,7 +2239,7 @@ public class JobController(
             var deleteObjectRequest = new DeleteObjectRequest
             {
                 BucketName = bucketName,
-                Key = key
+                Key = key,
             };
             await s3Client.DeleteObjectAsync(deleteObjectRequest);
         }
@@ -2241,7 +2258,7 @@ public class JobController(
             );
         }
 
-        return Json("OK");
+        return Ok();
     }
 
     [HttpPost]
@@ -2350,21 +2367,16 @@ public class JobController(
                 request.JobId,
                 ex.Message
             );
-            return StatusCode(
-                500,
-                new { message = ex.Message }
-            );
+            return StatusCode(500, new { message = ex.Message });
         }
     }
 
     public async Task<IActionResult> GetJobTypes()
     {
         var types = await jobRepository.GetAllAsync<TucJobType>();
-        var formattedList = types.Select(t => new Suggestion
-        {
-            Id = t.UcjtId,
-            Text = t.UcjtName
-        }).ToList();
+        var formattedList = types
+            .Select(t => new Suggestion { Id = t.UcjtId, Text = t.UcjtName })
+            .ToList();
 
         return Json(formattedList);
     }

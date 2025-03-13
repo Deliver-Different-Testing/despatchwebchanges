@@ -1,4 +1,4 @@
-import DispatchService from "../../../services/dispatch.service";
+import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import {Job} from "../../../interfaces/job.interface";
 import app from "../../../app";
@@ -13,7 +13,7 @@ class SelectDialogController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private DispatchData: DispatchService,
+        private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
         private rateJobService: any,
         public id: number,

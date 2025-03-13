@@ -1889,7 +1889,7 @@ function HomeControl(
         );
     }
 
-    $scope.reAllocateJobs = async () => {
+    $scope.reAllocateJobs = async (job) => {
         const callData = {
             call: "redespatchJobs",
             jobs: [],
@@ -1898,24 +1898,9 @@ function HomeControl(
             courierId: null,
         };
 
-        let foundCourier = null;
 
-        const activeElements = angular.element("#jobList .active");
-        for (const element of activeElements) {
-            const currentElement = angular.element(element);
-            const jobId = currentElement.attr("data-jobid");
-            const job = $scope.jobList.find((jo) => jo.id === jobId);
-            if (job) {
-                foundCourier =
-                    $scope.pickCouriers.find(
-                        (c) => c.courierId === job.courierData.courierId
-                    ) ||
-                    $scope.pickAllCouriers.find(
-                        (c) => c.courierId === job.courierData.courierId
-                    );
-                callData.jobs.push(jobId);
-            }
-        }
+        callData.jobs.push(job.id);
+        const foundCourier = await DispatchData.getCourierById(job.courierData.courierId);
 
         if (callData.jobs.length > 0) {
             await DispatchData.reAllocateJobs(
@@ -1927,8 +1912,6 @@ function HomeControl(
         }
 
         await $scope.getData();
-        angular.element("#box-map .loading").css("display", "");
-
         $scope.courier = {gpsCourier: foundCourier.id};
         await $scope.searchCourier();
     };
@@ -2096,15 +2079,9 @@ function HomeControl(
 
             let foundCourier = null;
 
-            angular.element("#currentWork tr.droppable-row").each(function () {
-                callData.jobs.push(angular.element(this).attr("data-jobid"));
-                foundCourier =
-                    $scope.pickCouriers.find(
-                        (c) => c.courierId === callData.courierId
-                    ) ||
-                    $scope.pickAllCouriers.find(
-                        (c) => c.courierId === callData.courierId
-                    );
+            $scope.jobsCurrentList.each(async (job) => {
+                callData.jobs.push(job.id);
+                foundCourier = await DispatchData.getCourierById(callData.courierId);
             });
 
             if (callData.jobs.length > 0) {
@@ -2116,7 +2093,6 @@ function HomeControl(
             }
 
             await $scope.getData();
-            angular.element("#box-map .loading").css("display", "");
             $scope.courier = {gpsCourier: foundCourier.id};
             await $scope.searchCourier();
         } catch {

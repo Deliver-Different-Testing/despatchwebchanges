@@ -21,6 +21,24 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
 {
     private readonly DbContextWrapper _dbContextWrapper = new DbContextWrapper(contextFactory);
 
+    public async Task<ActiveCouriersViewModel> GetCourierByIdAsync(int courierId)
+    {
+        var courier = await Context.TucCouriers
+            .Where(c => c.UccrId == courierId)
+            .Select(c => new ActiveCouriersViewModel
+            {
+                Code = c.Code,
+                Name = c.UccrName,
+                CourierId = c.UccrId,
+                DangerousGoods = c.UccrDangerousGoods,
+                DGLicenseExpiry = c.DglicenseExpiry
+            })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        return courier;
+    }
+
     public async Task<List<TruckCourierStatusViewModel>> TruckCourierStatusAsync(string courierId)
     {
         try

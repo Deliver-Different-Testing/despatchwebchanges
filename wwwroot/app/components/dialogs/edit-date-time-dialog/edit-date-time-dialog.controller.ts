@@ -1,6 +1,6 @@
 import "./edit-date-time-dialog.less";
 import ToastrService from "../../../services/toastr.service";
-import DispatchService from "../../../services/dispatch.service";
+import DispatchCoreService from "../../../services/dispatch-core.service";
 import {Job} from "../../../interfaces/job.interface";
 import app from "../../../app";
 
@@ -30,7 +30,7 @@ class EditDateTimeDialogController {
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
-        private DispatchData: DispatchService,
+        private DispatchData: DispatchCoreService,
         private moment: any,
         private job: Job,
         private readonly title: string,

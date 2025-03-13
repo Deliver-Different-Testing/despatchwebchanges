@@ -1,5 +1,4 @@
 import app from "../app";
-import angular from "angular";
 import {AppConfig} from "../interfaces/app-config.interface";
 import {
     AddressViewModel, ClientItemsViewModel, InternalStatus,
@@ -7,7 +6,7 @@ import {
     JobQueryParams, JobRateDetails, Lookup,
     Pallet,
     ParcelDimensions, PriceBreakdown, SelectOption, SuburbLookup,
-    Suggestion,
+    Suggestion, SupportViewModel,
     Views
 } from "../interfaces/job.interface";
 import {PaginatedResponse} from "../interfaces/paginated-response.interface";
@@ -17,7 +16,7 @@ import {ActiveCourierViewModel} from "../interfaces/courier.interface";
 import {EventGroupViewModel} from "../interfaces/event-group-view-model.interface";
 import {ContactID} from "../contants";
 
-class DispatchService {
+class DispatchCoreService implements angular.IServiceProvider {
     static $inject = ["$http", "moment", "APP_CONFIG"];
 
     private readonly isUsCustomer: boolean;
@@ -28,25 +27,29 @@ class DispatchService {
         this.isUsCustomer = appConfig.US_Customer;
     }
 
-    public async getSelectedViews(userId: number, pageId: number): Promise<DfrntPageViewModel[]> {
+    $get(): any {
+        return this;
+    }
+
+    async getSelectedViews(userId: number, pageId: number): Promise<DfrntPageViewModel[]> {
         const response = await this.$http.get<DfrntPageViewModel[]>(`home/GetPageViews?userid=${userId}&pageid=${pageId}`);
         return response.data;
     }
 
-    public async addNote(jobId: number, note: string, despatcherName: string, preBook: boolean): Promise<void> {
+    async addNote(jobId: number, note: string, despatcherName: string, preBook: boolean) {
         const method = preBook ? "job/AddJobBookingNote" : "job/UpdateNote";
         await this.$http.post(method + "?jobId=" + jobId + "&note=" + note, null);
     }
 
-    public async addConNote(jobId: number, conNote: string): Promise<void> {
+    async addConNote(jobId: number, conNote: string) {
         await this.$http.post(`job/UpdateConnote?jobId= ${jobId}&conNote=${conNote}`, null);
     }
 
-    public async addBulkJobNote(bulkJobId: number, note: string, despatcherName: string, preBook: boolean): Promise<void> {
+    async addBulkJobNote(bulkJobId: number, note: string, despatcherName: string, preBook: boolean) {
         await this.$http.post(`job/AddBulkJobNote?BulkJobId=${bulkJobId}&note=${note}&despatcher=${despatcherName}`, null);
     }
 
-    public async addPallet(pallet: Pallet, preBook: boolean, despatcherName: string): Promise<any> {
+    async addPallet(pallet: Pallet, preBook: boolean, despatcherName: string) {
         const response = await this.$http.post("job/AddPallet", pallet, {
             params: {
                 preBook,
@@ -57,7 +60,7 @@ class DispatchService {
         return response.data;
     }
 
-    public async editPallet(pallet: Pallet, preBook: boolean, despatcherName: string): Promise<any> {
+    async editPallet(pallet: Pallet, preBook: boolean, despatcherName: string) {
         const response = await this.$http.post("job/EditPallet", pallet, {
             params: {
                 preBook,
@@ -88,7 +91,7 @@ class DispatchService {
         return response.data;
     }
 
-    public async addRestoreEvent(jobId: number): Promise<any> {
+    async addRestoreEvent(jobId: number) {
         const response = await this.$http.post("job/AddRestoreEvent", null, {
             params: {
                 jobId,
@@ -100,7 +103,19 @@ class DispatchService {
         return response.data;
     }
 
-    public async allocateJobs(courierId: number, dispatcherId: number, jobIds: number[]): Promise<void> {
+    async addFollowupEvent(jobId: number) {
+        const response = await this.$http.post("job/AddFollowupEvent", null, {
+            params: {
+                jobId,
+                ContactID,
+                FirstName
+            }
+        });
+
+        return response.data;
+    }
+
+    async allocateJobs(courierId: number, dispatcherId: number, jobIds: number[]) {
         await this.$http.post("job/Allocate", null, {
             params: {
                 courierId,
@@ -110,7 +125,7 @@ class DispatchService {
         });
     }
 
-    public async reAllocateJobs(courierId: number, dispatcherId: number, jobIds: number[]): Promise<void> {
+    async reAllocateJobs(courierId: number, dispatcherId: number, jobIds: number[]) {
         await this.$http.post("job/ReAllocate", null, {
             params: {
                 courierId,
@@ -120,7 +135,7 @@ class DispatchService {
         });
     }
 
-    public async setFirstJob(jobId: number, courierId: number): Promise<void> {
+    async setFirstJob(jobId: number, courierId: number) {
         await this.$http.post("job/SetFirstJob", null, {
             params: {
                 jobId,
@@ -129,93 +144,91 @@ class DispatchService {
         });
     }
 
-    public async truckCourierStatus(courierId: number): Promise<void> {
+    async truckCourierStatus(courierId: number) {
         await this.$http.get(`courier/TruckCourierStatus?courierId=${courierId}`);
     }
 
-    public async validateSwapPOD(jobNumber: string): Promise<any> {
+    async validateSwapPOD(jobNumber: string) {
         const response = await this.$http.post(`Job/ValidateSwapPOD?job=${jobNumber}`, null);
         return response.data;
     }
 
-    public async swapPOD(jobNumber1: string, jobNumber2: string): Promise<any> {
+    async swapPOD(jobNumber1: string, jobNumber2: string) {
         const response = await this.$http.post(`Job/SwapPOD?job1=${jobNumber1}&job2=${jobNumber2}`, null);
         return response.data;
     }
 
-    public async voidJob(jobId: number): Promise<void> {
+    async voidJob(jobId: number) {
         await this.$http.post(`job/Void?jobId=${jobId}`, null);
     }
 
-    public async restoreJobs(courierId: number, dispatcherId: number, jobIds: number[]): Promise<any> {
-        const response = await this.$http.post(`job/RestoreJobs?courierId=${courierId}&dispId=${dispatcherId}&jobIds=${jobIds}`, null);
-        return response.data;
+    async restoreJobs(jobIds: number[]) {
+        await this.$http.post(`job/RestoreJobs?jobIds=${jobIds}`, null);
     }
 
-    public async restoreSplitJobs(courierId: number, dispatcherId: number, jobIds: number[]) {
-        const response = await this.$http.post(`job/RestoreSplitJobs?courierId=${courierId}&dispId=${dispatcherId}&jobIds=${jobIds}`, null);
-        return response.data;
+    async restoreSplitJobs(jobIds: number[]) {
+       await this.$http.post(`job/RestoreSplitJobs?jobIds=${jobIds}`, null);
     }
 
-    public async resendJobs(jobIds: number[]) {
+    async resendJobs(jobIds: number[]) {
         const response = await this.$http.post(`job/ResendSelected?jobIds=${jobIds}`, null);
         return response.data;
     }
 
-    public async resendAllJobs(courierId: number) {
+    async resendAllJobs(courierId: number) {
         const response = await this.$http.post(`job/ResendAll?courierId=${courierId}`, null);
         return response.data;
     }
 
-    public async reAssignJobs(jobIds: number[]) {
+    async reAssignJobs(jobIds: number[]) {
         const response = await this.$http.post(`job/ReAssignSelected?jobIds=${jobIds}`, null);
         return response.data;
     }
 
-    public async sendPOD(jobId: number, email: string) {
+    async sendPOD(jobId: number, email: string) {
         const response = await this.$http.get(`job/SendPOD?jobId=${jobId}&toEmail=${email}`);
         return response.data;
     }
 
-    public async hasClientItemsAvailable(clientId: number, speedId: number) {
+    async hasClientItemsAvailable(clientId: number, speedId: number) {
         const response = await this.$http.get(`job/HasClientItemsAvailable?clientId=${clientId}&speedId=${speedId}`);
         return response.data;
     }
 
-    public async getJobDetail(jobId: number) {
+    async getJobDetail(jobId: number) {
         const response = await this.$http.get<Job>(`/Job/Detail?jobId=${jobId}`);
         return response.data;
     }
 
-    public async getRelatedJobs(parentId: number, clientId: number) {
+    async getRelatedJobs(parentId: number, clientId: number) {
         const response = await this.$http.get(`/Job/Related?parentId=${parentId}&clientId=${clientId}`);
         return response.data;
     }
 
-    public async getJobsCurrent(courierId: number, done: boolean) {
-        const response = await this.$http.get(`job/current?courierId=${courierId}&done=${done}`);
+    async getJobsCurrent(courierId: number, done: boolean) {
+        const response = await this.$http.get<Job[]>(`job/current?courierId=${courierId}&done=${done}`);
         return response.data;
     }
 
 
-    public async getSupports(channel: string) {
-        const response = await this.$http.get(`job/supports?channel=${channel}`);
+    async getSupports(channel: string) {
+        const response = await this.$http.get<SupportViewModel[]>(`job/supports?channel=${channel}`);
         return response.data;
     }
 
-    public async closeSupport(supportId: number, staffId: number) {
+    async closeSupport(supportId: number, staffId: number) {
         await this.$http.post(`job/CloseSupport?supportId=${supportId}&staffId=${staffId}`, null);
     }
 
-    public async lockSupport(supportId: number, dispatcherName: string) {
+    async lockSupport(supportId: number, dispatcherName: string) {
         await this.$http.post(`job/LockSupport?id=${supportId}&dispatcher=${dispatcherName}`, null);
     }
 
-    public async unLockSupport(supportId: number, dispatcherName: string) {
+    async unLockSupport(supportId: number, dispatcherName: string) {
         await this.$http.post(`job/UnLockSupport?id=${supportId}&dispatcher=${dispatcherName}`, null);
     }
 
-    public async getDriverLocations(selectedViews: Views[]) {
+    async getDriverLocations(selectedViews: Views[]) {
         const filteredViews = selectedViews.filter(view => view.selected);
         const despatchViewIds = this._prepareViewIdsForRequest(filteredViews);
 
@@ -229,84 +242,89 @@ class DispatchService {
         return response.data;
     }
 
-    public async getDriverDestinationEnvelope(clearListId: number) {
+    async getDriverDestinationEnvelope(clearListId: number) {
         const countryId = this.isUsCustomer ? 2 : 1;
 
         const response = await this.$http.get(`courier/ClearListEnvelope?clearListId=${clearListId}&countryId=${countryId}`);
         return response.data;
     }
 
-    public async getActiveCouriers() {
+    async getActiveCouriers() {
         const response = await this.$http.get<ActiveCourierViewModel[]>("courier/active");
         return response.data;
     }
 
-    public async getAllCouriers() {
+    async getAllCouriers() {
         const response = await this.$http.get<ActiveCourierViewModel[]>("courier/AllActive");
         return response.data;
     }
 
-    public async getActiveClients() {
+    async getActiveClients() {
         const response = await this.$http.get("home/ActiveClients");
         return response.data;
     }
 
-    public async getClientContacts(contactId: number) {
+    async getClientContacts(contactId: number) {
         const response = await this.$http.get(`home/ClientContacts?contactId=${contactId}`);
         return response.data;
     }
 
-    public async getPotentialCouriers(jobId: number) {
+    async getPotentialCouriers(jobId: number) {
         const response = await this.$http.get(`courier/PotentialCouriers?jobId=${jobId}`);
         return response.data;
     }
 
-    public async getCourierPosition(code: string) {
+    async getCourierPosition(code: string) {
         const response = await this.$http.get(`courier/location?code=${code}`);
         return response.data;
     }
 
-    public async getAvailableCourierLocation(minLng: number, minLat: number, maxLng: number, maxLat: number) {
+    async getCourierById(courierId: number) {
+        const response = await this.$http.get<ActiveCourierViewModel>(`courier/GetCourier?courierId=${courierId}`);
+        return response.data;
+    }
+
+    async getAvailableCourierLocation(minLng: number, minLat: number, maxLng: number, maxLat: number) {
         const response = await this.$http.get(`courier/AvailableCourierLocation?minLng=${minLng}&minLat=${minLat}&maxLng=${maxLng}&maxLat=${maxLat}&isUsTenant=${this.isUsCustomer}`);
         return response.data;
     }
 
-    public async getSuburbList(): Promise<SuburbLookup[]> {
+    async getSuburbList(): Promise<SuburbLookup[]> {
         const response = await this.$http.get<SuburbLookup[]>("job/SuburbList");
         return response.data;
     }
 
-    public async getSpeedList(): Promise<Suggestion[]> {
+    async getSpeedList(): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>("job/SpeedList");
         return response.data;
     }
 
-    public async getContactList(clientId: number) {
+    async getContactList(clientId: number) {
         const response = await this.$http.get<Suggestion[]>(`job/ContactList?clientId=${clientId}`);
         return response.data;
     }
 
-    public async getLeaveList() {
+    async getLeaveList() {
         const response = await this.$http.get<Lookup[]>("job/LeaveList");
         return response.data;
     }
 
-    public async getUndeliverableList() {
+    async getUndeliverableList() {
         const response = await this.$http.get("job/UndeliverableList");
         return response.data;
     }
 
-    public async getInternalStatusList() {
+    async getInternalStatusList() {
         const response = await this.$http.get<InternalStatus[]>("job/InternalStatusList");
         return response.data;
     }
 
-    public async getStatusList() {
+    async getStatusList() {
         const response = await this.$http.get<Suggestion[]>("job/StatusList");
         return response.data;
     }
 
-    public async lateCall(lateType: number, lateTime: number, minutes: number, pickupTime: number, alertLatePickup: number,
+    async lateCall(lateType: number, lateTime: number, minutes: number, pickupTime: number, alertLatePickup: number,
                           deliveryTime: number, alertLateDelivery: number, jobNo: string, clientId: number, contact: string, staffId: number,
                           jobTime: Date, jobId: number, jobType: number, bookedSpeed: string, notifiedSpeed: string,
                           despatcherName: string, calculationRequired: boolean) {
@@ -342,28 +360,28 @@ class DispatchService {
     }
 
 
-    public async rateTruckJob(clientId: number, fromId: number, toId: number, weight: number, size: number, speed: number, qty: number, bookedDate: Date, pickUp: number, dropOff: number, privateRes: boolean, oversizeItems: number, overWeightItems: number, dGClass: number, truckStartTime: Date, truckHours: number) {
+    async rateTruckJob(clientId: number, fromId: number, toId: number, weight: number, size: number, speed: number, qty: number, bookedDate: Date, pickUp: number, dropOff: number, privateRes: boolean, oversizeItems: number, overWeightItems: number, dGClass: number, truckStartTime: Date, truckHours: number) {
         const response = await this.$http.get(`job/RateTruckJob?clientId=${clientId}&fromId=${fromId}&toId=${toId}&weight=${weight}&size=${size}&speed=${speed}&qty=${qty}&bookedDate=${bookedDate
         }&pickup=${pickUp}&dropOff=${dropOff}&privateRes=${privateRes}&oversizeItems=${oversizeItems}&overWeightItems=${overWeightItems}&dgClass=${dGClass}&truckStartTime=${truckStartTime
         }&truckHours=${truckHours}`);
         return response.data;
     }
 
-    public async truckJobAmountBreakdown(clientId: number, fromId: number, toId: number, weight: number, size: number, speed: number, qty: number, bookedDate: Date, pickUp: number, dropOff: number, privateRes: boolean, oversizeItems: number, overWeightItems: number, dGClass: number, truckStartTime: Date, truckHours: number, gstRate: number) {
+    async truckJobAmountBreakdown(clientId: number, fromId: number, toId: number, weight: number, size: number, speed: number, qty: number, bookedDate: Date, pickUp: number, dropOff: number, privateRes: boolean, oversizeItems: number, overWeightItems: number, dGClass: number, truckStartTime: Date, truckHours: number, gstRate: number) {
         const response = await this.$http.get(`job/TruckJobAmountBreakdown?clientId=${clientId}&fromId=${fromId}&toId=${toId}&weight=${weight}&size=${size}&speed=${speed}&qty=${qty}&bookedDate=${
             bookedDate}&pickup=${pickUp}&dropOff=${dropOff}&privateRes=${privateRes}&oversizeItems=${oversizeItems}&overWeightItems=${overWeightItems}&dgClass=${dGClass}&truckStartTime=${truckStartTime
         }&truckHours=${truckHours}&gstRate=${gstRate}`);
         return response.data;
     }
 
-    public async rateJob(clientId: number, fromId: number, toId: number, speed: number, pedal: boolean, van: boolean, returnJob: boolean, weight: number, size: number, includeFuelSurcharge: boolean, direct: boolean, acceptedJobTypeId: number, ourRef: string, refA: string, refB: string, quantity: number, booked: Date) {
+    async rateJob(clientId: number, fromId: number, toId: number, speed: number, pedal: boolean, van: boolean, returnJob: boolean, weight: number, size: number, includeFuelSurcharge: boolean, direct: boolean, acceptedJobTypeId: number, ourRef: string, refA: string, refB: string, quantity: number, booked: Date) {
         const response = await this.$http.get(`job/RateJob?clientId=${clientId}&fromId=${fromId}&toId=${toId}&speed=${speed}&pedal=${pedal}&van=${van}&returnJob=${returnJob}&weight=${weight}&size=${size
         }&includeFuelSurcharge=${includeFuelSurcharge}&direct=${direct}&acceptedJobTypeId=${acceptedJobTypeId}&ourRef=${ourRef}&refA=${refA}&refB=${refB}&quantity=${quantity
         }&booked=${booked}`);
         return response.data;
     }
 
-    public async rateJobUS(jobDetails: JobRateDetails): Promise<any> {
+    async rateJobUS(jobDetails: JobRateDetails) {
         const generateQueryString = (params: JobRateDetails): string => {
             return Object.entries(params)
                 .map(([key, value]) => {
@@ -388,26 +406,26 @@ class DispatchService {
     }
 
 
-    public async jobAmountBreakdown(clientId: number, fromId: number, toId: number, speed: number, pedal: boolean, van: boolean, returnJob: boolean, weight: number, size: number, includeFuelSurcharge: boolean, direct: boolean, acceptedJobTypeId: number, ourRef: string, refA: string, refB: string, quantity: number, booked: Date, gstRate: number, amount: number) {
+    async jobAmountBreakdown(clientId: number, fromId: number, toId: number, speed: number, pedal: boolean, van: boolean, returnJob: boolean, weight: number, size: number, includeFuelSurcharge: boolean, direct: boolean, acceptedJobTypeId: number, ourRef: string, refA: string, refB: string, quantity: number, booked: Date, gstRate: number, amount: number) {
         const response = await this.$http.get(`job/JobAmountBreakdown?clientId=${clientId}&fromId=${fromId}&toId=${toId}&speed=${speed}&pedal=${pedal}&van=${van}&returnJob=${returnJob}&weight=${weight
         }&size=${size}&includeFuelSurcharge=${includeFuelSurcharge}&direct=${direct}&acceptedJobTypeId=${acceptedJobTypeId}&ourRef=${ourRef}&refA=${refA}&refB=${refB}&quantity=${
             quantity}&booked=${booked}&gstRate=${gstRate}&amount=${amount}`);
         return response.data;
     }
 
-    public async ppdExclusiveAmount(clientId: number, amount: number): Promise<number> {
+    async ppdExclusiveAmount(clientId: number, amount: number): Promise<number> {
         const response = await this.$http.get<number>(`job/PPDExclusiveAmount?clientId=${clientId}&amount=${amount}`);
         return response.data;
     }
 
-    public async getServices(clientId: number, speedId: number, jobId: number): Promise<PaginatedResponse<ClientItemsViewModel>> {
+    async getServices(clientId: number, speedId: number, jobId: number): Promise<PaginatedResponse<ClientItemsViewModel>> {
         const url = "job/GetAllClientItems";
         const response = await this.$http.get<PaginatedResponse<ClientItemsViewModel>>(url + "?clientId=" + clientId + "&speedId=" + speedId + "&jobId=" + jobId);
 
         return response.data;
     }
 
-    public async addServicesToJob(jobId: number, serviceIds: number[], totalCost: number) {
+    async addServicesToJob(jobId: number, serviceIds: number[], totalCost: number) {
         const url = "job/AddClientItemsToJob"
 
         await this.$http({
@@ -415,28 +433,28 @@ class DispatchService {
         });
     }
 
-    public async splitJob(jobId: number, despatcherName: string) {
+    async splitJob(jobId: number, despatcherName: string) {
         await this.$http.post(`job/splitJob?jobId=${jobId}&despatcherName=${despatcherName}`, null);
     }
 
-    public async finishSplitJobProcess(jobId: number, despatcherName: string) {
+    async finishSplitJobProcess(jobId: number, despatcherName: string) {
         await this.$http.post(`job/finishSplitJobProcess?jobId=${jobId}&despatcherName=${despatcherName}`, null);
     }
 
-    public async updatePODDetail(jobNumber: string, jobStatus: number, podName: string, podTime: Date) {
+    async updatePODDetail(jobNumber: string, jobStatus: number, podName: string, podTime: Date) {
         await this.$http.post(`job/UpdatePODDetails?jobNumber=${jobNumber}&jobStatus=${jobStatus}&podName=${podName}&podTime=${podTime}`, null);
     }
 
-    public async sendSMS(courierId: number, staffId: number, despatcherName: string, message: string) {
+    async sendSMS(courierId: number, staffId: number, despatcherName: string, message: string) {
         const response = await this.$http.post(`job/SendSMS?courierId=${courierId}&dispId=${staffId}&despatcherName=${despatcherName}&message=${message}`, null);
         return response.data;
     }
 
-    public async reRateSplitJob(jobId: number) {
+    async reRateSplitJob(jobId: number) {
         await this.$http.post(`job/ReRateSplitJob?jobId=${jobId}`, null);
     }
 
-    public async updateDeliveryAddress(jobId: number, rate: number, despatcherName: string, prebook: boolean, addressData: AddressViewModel) {
+    async updateDeliveryAddress(jobId: number, rate: number, despatcherName: string, prebook: boolean, addressData: AddressViewModel) {
         try {
             let endpoint = prebook ? "job/UpdateBookingDeliveryAddress" : "job/UpdateDeliveryAddress";
             console.log(`Using endpoint: ${endpoint}`);
@@ -482,12 +500,12 @@ class DispatchService {
         }
     }
 
-    public async updateBulkDeliveryAddress(bulkJobId: number, toSuburb: number, toPostCode: string | number, address: string, lat: number, lng: number, despatcherName: string) {
+    async updateBulkDeliveryAddress(bulkJobId: number, toSuburb: number, toPostCode: string | number, address: string, lat: number, lng: number, despatcherName: string) {
         await this.$http.post(`job/UpdateBulkDeliveryAddress?bulkJobId=${bulkJobId}&toSuburb=${toSuburb}&toPostCode=${toPostCode}&address=${address}&deliveryLat=${lat}&deliveryLng=${
             lng}&despatcherName=${despatcherName}`, null);
     }
 
-    public async updatePickupAddress(jobId: number, rate: number, despatcherName: string, prebook: boolean, addressData: AddressViewModel) {
+    async updatePickupAddress(jobId: number, rate: number, despatcherName: string, prebook: boolean, addressData: AddressViewModel) {
         try {
             let endpoint = prebook ? "job/UpdateBookingPickupAddress" : "job/UpdatePickupAddress";
             console.log(`Using endpoint: ${endpoint}`);
@@ -533,31 +551,31 @@ class DispatchService {
         }
     }
 
-    public async updateBulkPickupAddress(bulkJobId: number, fromSuburb: number, fromPostCode: number, address: string, lat: number, lng: number, despatcherName: string) {
+    async updateBulkPickupAddress(bulkJobId: number, fromSuburb: number, fromPostCode: number, address: string, lat: number, lng: number, despatcherName: string) {
         await this.$http.post(`job/UpdateBulkPickupAddress?bulkJobId=${bulkJobId}&fromSuburb=${fromSuburb}&fromPostCode=${fromPostCode}&address=${address}&pickupLat=${lat}&pickupLng=${lng
         }&despatcherName=${despatcherName}`, null);
     }
 
-    public async updateJobType(jobId: number, jobType: number, despatcherName: string) {
+    async updateJobType(jobId: number, jobType: number, despatcherName: string) {
         await this.$http.post(`job/UpdateJobType?jobId=${jobId}&jobType=${jobType}&despatcherName=${despatcherName}`, null);
     }
 
-    public async updateSplitJobAddress(jobId: number, toSuburbId: number, address: string, lat: number, lng: number) {
+    async updateSplitJobAddress(jobId: number, toSuburbId: number, address: string, lat: number, lng: number) {
         await this.$http.post(`job/UpdateSplitJobAddress?jobId=${jobId}&toSuburbId=${toSuburbId}&address=${address}&deliveryLat=${lat}&deliveryLng=${lng}`, null);
     }
 
-    public async releaseBulkJob(jobNumber: string, bookDate: Date) {
+    async releaseBulkJob(jobNumber: string, bookDate: Date) {
         const formattedBookDate = this.moment(bookDate).format("YYYY-MM-DD");
         await this.$http.post(`job/ReleaseBulkJob?jobNumber=${jobNumber}&bookDate=${formattedBookDate}`, null);
     }
 
-    public async updateJobDetail(
+    async updateJobDetail(
         jobId: number,
         field: JobField,
         value: string | Date | number | boolean,
         rate: number | string,
         preBook: boolean
-    ): Promise<any> {
+    ) {
         console.log("Starting updateJobDetail:", {
             jobId, field, initialValue: value, rate, preBook
         });
@@ -631,7 +649,7 @@ class DispatchService {
         }
     }
 
-    public async updateBulkJobDetail(bulkJobId: number, field: string, value: string | number | Date, rate: number | string, despatcherName: string, staffId: number) {
+    async updateBulkJobDetail(bulkJobId: number, field: string, value: string | number | Date, rate: number | string, despatcherName: string, staffId: number) {
         if (field === "Time" || field === "CompletedTime") {
             value = this.moment().format("YYYY-MM-DD") + " " + this.moment(value).format("HH:mm:ss");
         }
@@ -674,7 +692,7 @@ class DispatchService {
         };
     }
 
-    public async getClearListJobs(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: Suggestion[], selectedClearList: ClearListEnvelope) {
+    async getClearListJobs(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: Suggestion[], selectedClearList: ClearListEnvelope) {
         const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
 
         const defaultParams = {
@@ -710,7 +728,7 @@ class DispatchService {
         return response.data;
     }
 
-    public async autocompleteAddressSearch(text: string) {
+    async autocompleteAddressSearch(text: string) {
         const response = await this.$http({
             url: "https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json", method: "GET", params: {
                 query: text,
@@ -722,7 +740,7 @@ class DispatchService {
         return response.data;
     }
 
-    public async getGeoCodeInformation(item: Suggestion) {
+    async getGeoCodeInformation(item: Suggestion) {
         const response = await this.$http.get("https://geocoder.cit.api.here.com/6.2/geocode.json", {
             params: {
                 app_id: "bBPfh2x8Cauun3ygLMAx", app_code: "yjfwTdkin_R2rGXYTrwWVg", locationId: item.id
@@ -731,7 +749,7 @@ class DispatchService {
         return response.data;
     }
 
-    public async retrieveAddresses(lat: number, long: number) {
+    async retrieveAddresses(lat: number, long: number) {
         const response = await this.$http.get("https://reverse.geocoder.api.here.com/6.2/reversegeocode.json", {
             params: {
                 app_id: "bBPfh2x8Cauun3ygLMAx",
@@ -743,7 +761,7 @@ class DispatchService {
         return response.data;
     }
 
-    public async autocompleteSearch(searchTerm: string, url: string): Promise<SelectOption[]> {
+    async autocompleteSearch(searchTerm: string, url: string): Promise<SelectOption[]> {
         const response = await this.$http.get<SelectOption[]>(url, {
             params: {
                 searchTerm: searchTerm
@@ -752,17 +770,17 @@ class DispatchService {
         return response.data;
     }
 
-    public async isFilesAttachedToJob(jobId: number) {
+    async isFilesAttachedToJob(jobId: number) {
         const response = await this.$http.get(`job/IsFilesAttachedToJob/${jobId}`);
         return response.data;
     }
 
-    public async getVehicleSizes(): Promise<Suggestion[]> {
+    async getVehicleSizes(): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>(`courier/GetVehicleSizes`);
         return response.data;
     }
 
-    public async updatePackages(jobId: number, parcels: ParcelDimensions[]): Promise<any> {
+    async updatePackages(jobId: number, parcels: ParcelDimensions[]) {
         try {
             const response = await this.$http.post('job/UpdateJobPackages', {
                 jobId: jobId,
@@ -780,12 +798,12 @@ class DispatchService {
         return response.data;
     }
 
-    public async getPriceBreakdown(jobId: number): Promise<PriceBreakdown[]> {
+    async getPriceBreakdown(jobId: number): Promise<PriceBreakdown[]> {
         const response = await this.$http.get<PriceBreakdown[]>(`job/GetPricingBreakdown?jobId=${jobId}`);
         return response.data;
     }
 
-    async getJobDeliveryPhotosAndSignature(jobId: number, year: number, month: number): Promise<any> {
+    async getJobDeliveryPhotosAndSignature(jobId: number, year: number, month: number) {
         const response = await this.$http.get<number[][]>(`/Job/GetJobDeliveryPhotosAndSignature?jobId=${jobId}&year=${year}&month=${month}`);
         return response.data;
     }
@@ -797,5 +815,5 @@ class DispatchService {
     }
 }
 
-app.service("DispatchData", DispatchService);
-export default DispatchService;
+app.service("DispatchData", DispatchCoreService);
+export default DispatchCoreService;

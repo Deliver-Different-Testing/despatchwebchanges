@@ -1,7 +1,7 @@
 import ToastrService from "../../../services/toastr.service";
 import { DfrntEvent, Job } from "../../../interfaces/job.interface";
 import app from "../../../app";
-import DispatchService from "../../../services/dispatch.service";
+import DispatchCoreService from "../../../services/dispatch-core.service";
 
 interface AddEventDialogControllerScope extends angular.IScope {
   eventForm: any;
@@ -36,7 +36,7 @@ class AddEventDialogController implements angular.IController {
   constructor(
     $scope: AddEventDialogControllerScope,
     private $mdDialog: angular.material.IDialogService,
-    private DispatchData: DispatchService,
+    private DispatchData: DispatchCoreService,
     private toastrService: ToastrService,
     private NWData: any,
     private job: Job,

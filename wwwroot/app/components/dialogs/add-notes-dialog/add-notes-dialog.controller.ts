@@ -1,5 +1,5 @@
 import ToastrService from "../../../services/toastr.service";
-import DispatchService from "../../../services/dispatch.service";
+import DispatchCoreService from "../../../services/dispatch-core.service";
 import {Job} from "../../../interfaces/job.interface";
 import app from "../../../app";
 
@@ -12,7 +12,7 @@ class AddNotesDialogController implements angular.IController {
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
-        private DispatchData: DispatchService,
+        private DispatchData: DispatchCoreService,
         private fieldName: string,
         private job: Job
     ) {

@@ -5,35 +5,34 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
-namespace DespatchWeb
+namespace DespatchWeb;
+
+public class SqlServerHealthCheck(ILogger<SqlServerHealthCheck> logger): IHealthCheck
 {
-    public class SqlServerHealthCheck(ILogger<SqlServerHealthCheck> logger): IHealthCheck
+    private readonly string _healthCheckConnectionString = 
+        Environment.GetEnvironmentVariable("SQLHealthCheckConnection")
+        ?? throw new InvalidOperationException("SQLHealthCheckConnection environment variable is not set.");
+
+
+    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
-        private readonly string _healthCheckConnectionString = 
-            Environment.GetEnvironmentVariable("SQLHealthCheckConnection")
-            ?? throw new InvalidOperationException("SQLHealthCheckConnection environment variable is not set.");
-
-
-        public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+        try
         {
-            try
-            {
-                await using var connection = new SqlConnection(_healthCheckConnectionString);
-                await connection.OpenAsync(cancellationToken);
+            await using var connection = new SqlConnection(_healthCheckConnectionString);
+            await connection.OpenAsync(cancellationToken);
 
-                // Perform a simple query to check database responsiveness
-                await using var command = connection.CreateCommand();
-                command.CommandText = "SELECT @@version";
-                var version = await command.ExecuteScalarAsync(cancellationToken) as string;
+            // Perform a simple query to check database responsiveness
+            await using var command = connection.CreateCommand();
+            command.CommandText = "SELECT @@version";
+            var version = await command.ExecuteScalarAsync(cancellationToken) as string;
 
-                logger.LogInformation("SQL Server health check succeeded");
-                return HealthCheckResult.Healthy($"Successfully connected to SQL Server. Version: {version}");
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "SQL Server health check failed");
-                return HealthCheckResult.Unhealthy(ex.Message);
-            }
+            logger.LogInformation("SQL Server health check succeeded");
+            return HealthCheckResult.Healthy($"Successfully connected to SQL Server. Version: {version}");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "SQL Server health check failed");
+            return HealthCheckResult.Unhealthy(ex.Message);
         }
     }
 }

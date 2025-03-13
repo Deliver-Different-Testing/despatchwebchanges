@@ -1,4 +1,4 @@
-import DispatchService from "../../../services/dispatch.service";
+import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import app from "../../../app";
 import {SelectOption} from "../../../interfaces/job.interface";
@@ -27,7 +27,7 @@ class AutoCompleteDialogController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private dispatchData: DispatchService,
+        private dispatchData: DispatchCoreService,
         private toastrService: ToastrService,
         private rateJobService: any,
         id: string,

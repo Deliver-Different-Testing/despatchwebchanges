@@ -69,27 +69,23 @@ public interface IJobRepository
         string clientIds,
         List<int> selectedViewIds,
         DispatchStatus status,
-        ClearListEnvelopeViewModel clearListEnvelope = null);
+        ClearListEnvelopeViewModel clearListEnvelope = null
+    );
 
     Task<List<SupportViewModel>> SupportEvents(string channel);
     Task<TucEvent> GetSupportEventAsync(int eventId);
     Task<int> UpdateSupportEventAsync(TucEvent supportEvent);
     Task CloseSupportEvent(int supportId, int staffId);
-    Task DispatchSelectedJobs(int courierId, int dispId, string jobIds);
+    Task DispatchSelectedJobs(int courierId, int dispId, List<int> jobIds);
     Task SwapPod(string job1, string job2);
-    Task ReDispatchSelectedJobs(int courierId, int dispId, string jobIds);
+    Task ReDispatchSelectedJobs(int courierId, int dispId, List<int> jobIds);
     Task ReSendSelectedJobs(string jobIds);
     Task<List<BulkScanDetail>> ScanList(DateTime? runDate, string scan);
     Task ReAssignSelectedJobs(string jobIds);
     Task SetFirstJob(int jobId, int courierId);
     Task TransferJob(int jobId, int courierId, int dispId);
 
-    Task UpdatePodDetails(
-        string jobNumber,
-        int jobStatus,
-        string podName,
-        DateTime podTime
-    );
+    Task UpdatePodDetails(string jobNumber, int jobStatus, string podName, DateTime podTime);
 
     Task ReSendAllJobs(int courierId);
     Task<int> MaxAutoLatePickupAlert();
@@ -126,8 +122,8 @@ public interface IJobRepository
         bool calculationRequired
     );
 
-    Task RestoreSplitJobs(string jobIds);
-    Task RestoreJobs(string jobIds);
+    Task RestoreSplitJobs(List<int> jobIds);
+    Task RestoreJobs(List<int> jobIds);
     Task MessageCourier(int courierId, int dispId, string despatcher, string message);
     Task VoidJob(int jobId);
     Task SplitJob(int jobId, string user);
@@ -314,11 +310,7 @@ public interface IJobRepository
         int jobId
     );
 
-    Task AddClientsItemToJobAsync(
-        int jobId,
-        List<int> clientItemIds,
-        decimal totalCost
-    );
+    Task AddClientsItemToJobAsync(int jobId, List<int> clientItemIds, decimal totalCost);
 
     Task<IList<OpenJobResponse>> GetOpenJobsAsync(
         DateTime? startDate = null,
@@ -400,12 +392,10 @@ public interface IJobRepository
     Task<TucJobType> GetJobTypeById(int speedId);
     Task<TucJobTypeGrouping> GetJobTypeGrouping(int groupingId);
 
-    Task<List<AddressWithAgent>> GetClosestAirports(
-        decimal latitude,
-        decimal longitude
-    );
+    Task<List<AddressWithAgent>> GetClosestAirports(decimal latitude, decimal longitude);
 
     Task<List<MegaMapResponse>> GetJobsForMegaMapAsync();
     Task UpdatePackagesForJobAsync(int jobId, List<ParcelDimensions> parcels);
-    Task<List<T>> GetAllAsync<T>() where T : class;
+    Task<List<T>> GetAllAsync<T>()
+        where T : class;
 }

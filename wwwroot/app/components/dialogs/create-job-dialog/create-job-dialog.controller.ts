@@ -1,6 +1,6 @@
-import DispatchService from "../../../services/dispatch.service";
+import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
-import DispatchJobService from "../../../services/dispatch-job.service";
+import DispatchExecutorService from "../../../services/dispatch-executor.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import UsStatesService from "../../../services/getUsStates.service";
 import {AddressViewModel, JobCreateViewModel, SelectOption, Suggestion} from "../../../interfaces/job.interface";
@@ -57,10 +57,10 @@ class CreateJobDialogController {
     constructor(
         $scope:CreateJobDialogControllerScope,
         private $mdDialog: angular.material.IDialogService,
-        private dispatchData: DispatchService,
+        private dispatchData: DispatchCoreService,
         private toastrService: ToastrService,
         private $http: angular.IHttpService,
-        dispatchJobService: DispatchJobService,
+        dispatchJobService: DispatchExecutorService,
         staffId: number,
         despatcherName: string,
         APP_CONFIG: AppConfig,
