@@ -26,6 +26,7 @@ class RouterConfig {
             url: "/?jobId",
             template: require("./components/home/homeView.html"),
             controller: "HomeControl",
+            controllerAs: "ctrl",
             params: {
                 jobId: {
                     value: null,

@@ -3,22 +3,22 @@
 
     <!-- Loading Indicator -->
     <dfrnt-loader
-            is-loading="potentialCouriersLoading"
+            is-loading="ctrl.potentialCouriersLoading"
             icon-name="'groups'">
     </dfrnt-loader>
 
     <!-- Pot Couriers Table -->
-    <div class="job-list-table" ng-if="!potentialCouriersLoading && potentialCouriers.length > 0">
+    <div class="job-list-table" ng-if="!ctrl.potentialCouriersLoading && ctrl.potentialCouriers.length > 0">
         <!-- Table Headers -->
         <div class="table-headings sticky-header">
             <table>
                 <thead class="thead-dark no select">
                 <tr>
-                    <th ng-click="orderList('jobList', header.key)" ng-repeat="header in potentialCouriersHeaders">
+                    <th ng-click="ctrl.orderList('jobList', header.key)" ng-repeat="header in ctrl.potentialCouriersHeaders">
                         <i class="material-symbols-outlined job-table-icon"
-                           ng-if="sort.jobList == header.key">arrow_drop_down</i>
+                           ng-if="ctrl.sort.jobList == header.key">arrow_drop_down</i>
                         <i class="material-symbols-outlined job-table-icon"
-                           ng-if="sort.jobList == 'd-' + header.key">arrow_drop_up</i>
+                           ng-if="ctrl.sort.jobList == 'd-' + header.key">arrow_drop_up</i>
                         {{header.label}}
                     </th>
                 </tr>
@@ -29,8 +29,8 @@
         <table class="table table-striped table-responsive table-rows md-truncate" data-group="couriers"
                id="potentialCouriers">
             <tbody>
-            <tr $index by class="clickable-row droppable-row" context-menu="courierMenu" data-courier="{{courier.courier}}"
-                ng-click="selectPotentialCourier(courier)" ng-repeat="courier in potentialCouriers"
+            <tr $index by class="clickable-row droppable-row" context-menu="ctrl.courierMenu" data-courier="{{courier.courier}}"
+                ng-click="ctrl.selectPotentialCourier(courier)" ng-repeat="courier in ctrl.potentialCouriers"
                 track>
                 <td>{{courier.code}}&nbsp;{{courier.firstName}}</td>
                 <td>{{courier.ruleNumber}}</td>
@@ -41,7 +41,7 @@
     </div>
 
     <!-- No Data Message -->
-    <div class="no-data" ng-if="!potentialCouriersLoading && (!potentialCouriers || potentialCouriers.length === 0)">
+    <div class="no-data" ng-if="!ctrl.potentialCouriersLoading && (!ctrl.potentialCouriers || ctrl.potentialCouriers.length === 0)">
         <div class="content">
             <div class="icon">
                 <md-icon md-font-set="material-symbols-outlined">groups</md-icon>

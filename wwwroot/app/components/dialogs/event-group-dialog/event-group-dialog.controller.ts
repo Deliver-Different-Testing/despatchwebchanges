@@ -1,7 +1,7 @@
 import app from "../../../app";
 import "./event-group-dialog.styles.less";
 import {Suggestion} from "../../../interfaces/job.interface";
-import ToastrService from "../../../services/toastr.service";
+import ToastrService from "../../../services/ToastrService";
 import {EventGroupViewModel} from "../../../interfaces/event-group-view-model.interface";
 
 export class EventGroupDialogController implements angular.IController {

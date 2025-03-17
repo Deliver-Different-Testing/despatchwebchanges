@@ -218,6 +218,7 @@
     <_ContentIncludedByDefault Remove="wwwroot\app\components\common\gpsForm\gpsFormController.js" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\Nationwide\tpls\map.tpl" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\common\dispatch-map\services\marker.factory.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\home\services\job-table.service.ts" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
@@ -293,6 +294,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\parcel-visualization.directive.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.controller.ts" />
@@ -300,6 +302,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\index.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\send-message-dialog\send-message-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\auto-complete-dialog\auto-complete-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.controller.ts" />
@@ -308,7 +311,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\index.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\send-message-dialog\send-message-dialog.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\home\services\job-table.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\home\home.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\index.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.service.ts" />
@@ -332,11 +335,13 @@
     <TypeScriptCompile Include="wwwroot\app\contants.ts" />
     <TypeScriptCompile Include="wwwroot\app\directives.ts" />
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
+    <TypeScriptCompile Include="wwwroot\app\bindAllMethods.ts" />
     <TypeScriptCompile Include="wwwroot\app\index.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\app-config.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\apiConfig.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\courier.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\dfrnt-page-view-model.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\dialog-result.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\event-group-view-model.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\job-field.types.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\job-list-response.interface.ts" />
@@ -353,7 +358,6 @@
     <TypeScriptCompile Include="wwwroot\app\services\greeting.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\index.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\open-job-dispatch.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\services\toastr.service.ts" />
     <TypeScriptCompile Include="wwwroot\types\html.d.ts" />
   </ItemGroup>
   <ItemGroup>

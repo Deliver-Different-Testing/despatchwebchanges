@@ -1,4 +1,4 @@
-export interface Job {
+export interface IJob {
     id: number;
     rootParentId?: number;
     time?: Date;
@@ -199,6 +199,7 @@ export interface AddressViewModel {
     toSuburbId?: number;
     cbd?: boolean;
     address?: string;
+    our_suburb?: string;
 }
 
 
@@ -224,6 +225,7 @@ export interface AreaClearList {
     middle: ClearListSection[];
     bottom: ClearListSection[];
     totalRemaining: number;
+    isActive: boolean;
 }
 
 export interface ClearListSection {
@@ -243,6 +245,8 @@ export interface CourierData {
     courierName: string;
     courierMobile: string;
     courierNumber: string;
+    latitude?: number;
+    longitude?: number;
 }
 
 export interface Destination {

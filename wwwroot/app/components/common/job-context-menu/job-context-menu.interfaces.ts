@@ -1,4 +1,4 @@
-import {Job, Suggestion} from "../../../interfaces/job.interface";
+import {IJob, Suggestion} from "../../../interfaces/job.interface";
 
 export interface MenuState {
     visible: boolean;
@@ -6,12 +6,12 @@ export interface MenuState {
         top: string | number;
         left: string | number;
     };
-    currentJob: Job | null;
+    currentJob: IJob | null;
     eventGroups: Suggestion[];
 }
 
 export interface IContextMenuScope extends angular.IScope {
     onRefresh: (params?: any) => any;
-    onSplitJob: (params: { job: Job }) => any;
+    onSplitJob: (params: { job: IJob }) => any;
     onRefreshCourierJobs: (params: { courierId: number }) => any;
 }

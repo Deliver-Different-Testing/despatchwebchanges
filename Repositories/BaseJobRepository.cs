@@ -258,7 +258,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 })
                 .ToList(),
 
-            IsArchived = false
+            IsArchived = false,
+            PreBook = false
         };
 
     private static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping =
@@ -412,7 +413,144 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                         Text = j.UcjbSizeNavigation.VehicleName
                     }
                     : null,
-            IsArchived = true
+            IsArchived = true,
+            PreBook = false
+        };
+
+    private static readonly Expression<Func<TucJobBooking, JobViewModel>> JobPrebookMapping =
+        j => new JobViewModel
+        {
+            ClientId = j.UcbkClientId,
+            Id = j.UcbkId,
+            JobNo = j.UcbkJobNumber,
+            Time = j.UcbkTime,
+            RootParentId = j.RootParentId,
+            Date = j.UcbkDate.HasValue ? j.UcbkDate.Value.ToString("MM/dd/yyyy") : null,
+            Booked =
+                j.UcbkDate.HasValue && j.UcbkTime.HasValue
+                    ? DateTime.Parse(
+                        j.UcbkDate.Value.ToString("yyyy-MM-dd")
+                        + " "
+                        + j.UcbkTime.Value.ToString("HH:mm:ss")
+                    )
+                    : DateTime.MinValue,
+            CreatedDate = j.UcbkDate,
+            ScheduleName = j.ScheduleName,
+
+            PickupTime = null,
+            DeliveryTime = null,
+
+            Courier = null,
+            CourierData = j.CourierId.HasValue
+                ? new CourierData { CourierId = j.CourierId }
+                : null,
+            AssignedCourier = j.CourierId.HasValue
+                ? new Suggestion { Id = j.CourierId.Value }
+                : null,
+
+            // Address information - directly available in archive
+            PickupAddress = new AddressViewModel
+            {
+                AddressLine1 = j.PickupAddressLine1,
+                AddressLine2 = j.PickupAddressLine2,
+                AddressLine3 = j.PickupAddressLine3,
+                AddressLine4 = j.PickupAddressLine4,
+                AddressLine5 = j.PickupAddressLine5,
+                AddressLine6 = j.PickupAddressLine6,
+                AddressLine7 = j.PickupAddressLine7,
+                AddressLine8 = j.PickupAddressLine8,
+                Latitude = j.PickUpLatitude,
+                Longitude = j.PickUpLongitude
+            },
+            DeliveryAddress = new AddressViewModel
+            {
+                AddressLine1 = j.DeliveryAddressLine1,
+                AddressLine2 = j.DeliveryAddressLine2,
+                AddressLine3 = j.DeliveryAddressLine3,
+                AddressLine4 = j.DeliveryAddressLine4,
+                AddressLine5 = j.DeliveryAddressLine5,
+                AddressLine6 = j.DeliveryAddressLine6,
+                AddressLine7 = j.DeliveryAddressLine7,
+                AddressLine8 = j.DeliveryAddressLine8,
+                Latitude = j.DeliveryLatitude,
+                Longitude = j.DeliveryLongitude
+            },
+
+            ToAirportId = j.ToAirportId,
+            FromAirportId = j.FromAirportId,
+
+            AssignedFlight = null,
+
+            // Notes
+            ClientNotes = j.ClientNotes,
+            InternalNotes = j.InternalNotes,
+            ConNote = j.Gssconnote,
+
+            FromSuburbId = (int)j.UcbkFrom,
+            ToSuburbId = (int)j.UcbkTo,
+
+            // Tracking info
+            TrackingMethod = j.TrackingMethod,
+            TrackingMobile = j.TrackingMobile,
+            TrackingEmail = j.TrackingEmail,
+
+            // Delivery details
+            PrivateRes = (j.DeliverToPrivateBusiness ?? 0) == 1,
+            Return = j.UcbkReturn,
+            SaturdayDelivery = j.SaturdayDelivery,
+            DeliverToLeaveId = j.DeliverToLeaveId,
+            DeliverToContact = j.DeliverToContact,
+
+            // Location data
+            PickUpLatitude = j.PickUpLatitude,
+            PickUpLongitude = j.PickUpLongitude,
+            DeliveryLatitude = j.DeliveryLatitude,
+            DeliveryLongitude = j.DeliveryLongitude,
+
+            // Client information
+            Client = j.UcbkClientCode,
+            ToContactPhone = j.DeliverToPhone,
+
+            // Job characteristics
+            Weight = j.UcbkWeight,
+            ToAddress = j.UcbkToAddr,
+            JobType = (int)(j.UcbkType ?? 0),
+            Direct = j.Direct,
+            Van = j.UcbkVan,
+            VanOk = j.VanOk,
+            Truck = j.Truck,
+            DgClass = j.Dgclass,
+            DgDocumentation = j.Dgdocument,
+
+            // Job status and details
+            Done = j.UcbkDone,
+            Items = j.Quantity,
+
+            PickupFrom = (short)j.UcbkPickUpFrom,
+            FromContactName = j.PickupFromContact,
+
+            // Speed and job type information
+            SpeedId = j.UcbkSpeed,
+            NotifiedJobTypeId = j.NotifiedJobTypeId,
+            AcceptedJobTypeId = j.AcceptedJobTypeId,
+
+            // References and amounts
+            RefA = j.UcbkClientRefa,
+            RefB = j.UcbkClientRefb,
+            Charge = j.UcbkAmount.HasValue ? $"{j.UcbkAmount:C}" : null,
+            OurRef = j.UcbkOurRef,
+
+            // Size - has navigation in archive
+            Size =
+                j.UcbkSizeNavigation != null
+                    ? new Suggestion
+                    {
+                        Id = j.UcbkSizeNavigation.VehicleSizeId,
+                        Text = j.UcbkSizeNavigation.VehicleName
+                    }
+                    : null,
+            IsArchived = true,
+            PreBook = true
         };
 
     private static readonly int[] SourceArray = [41, 42, 43, 51, 52];
@@ -674,37 +812,37 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     .ThenByDescending(j => j.UcjbTime)
                     .ThenByDescending(j => j.UcjbCourier.Code),
 
-          "status" => isAscending
-    ? query.OrderBy(j => j.UcjbStatus == (int)JobStatus.New ? 1 :
-                     j.UcjbStatus == (int)JobStatus.Preassigned ? 2 :
-                     j.UcjbStatus == (int)JobStatus.Dispatched ? 3 :
-                     j.UcjbStatus == (int)JobStatus.Accepted ? 4 :
-                     j.UcjbStatus == (int)JobStatus.PickedUp ? 5 :
-                     j.UcjbStatus == (int)JobStatus.InTransit ? 6 :
-                     j.UcjbStatus == (int)JobStatus.OutForDelivery ? 7 :
-                     j.UcjbStatus == (int)JobStatus.Rejected ? 8 :
-                     j.UcjbStatus == (int)JobStatus.LatePickup ? 9 :
-                     j.UcjbStatus == (int)JobStatus.LateDelivery ? 10 :
-                     j.UcjbStatus == (int)JobStatus.Warning ? 11 :
-                     j.UcjbStatus == (int)JobStatus.Undeliverable ? 12 :
-                     j.UcjbStatus == (int)JobStatus.Completed ? 13 :
-                     j.UcjbStatus == (int)JobStatus.AwaitingPod ? 14 :
-                     j.UcjbStatus == (int)JobStatus.AssumingCompleted ? 15 : 99)
-    : query.OrderByDescending(j => j.UcjbStatus == (int)JobStatus.New ? 1 :
-                             j.UcjbStatus == (int)JobStatus.Preassigned ? 2 :
-                             j.UcjbStatus == (int)JobStatus.Dispatched ? 3 :
-                             j.UcjbStatus == (int)JobStatus.Accepted ? 4 :
-                             j.UcjbStatus == (int)JobStatus.PickedUp ? 5 :
-                             j.UcjbStatus == (int)JobStatus.InTransit ? 6 :
-                             j.UcjbStatus == (int)JobStatus.OutForDelivery ? 7 :
-                             j.UcjbStatus == (int)JobStatus.Rejected ? 8 :
-                             j.UcjbStatus == (int)JobStatus.LatePickup ? 9 :
-                             j.UcjbStatus == (int)JobStatus.LateDelivery ? 10 :
-                             j.UcjbStatus == (int)JobStatus.Warning ? 11 :
-                             j.UcjbStatus == (int)JobStatus.Undeliverable ? 12 :
-                             j.UcjbStatus == (int)JobStatus.Completed ? 13 :
-                             j.UcjbStatus == (int)JobStatus.AwaitingPod ? 14 :
-                             j.UcjbStatus == (int)JobStatus.AssumingCompleted ? 15 : 99),
+            "status" => isAscending
+                ? query.OrderBy(j => j.UcjbStatus == (int)JobStatus.New ? 1 :
+                    j.UcjbStatus == (int)JobStatus.Preassigned ? 2 :
+                    j.UcjbStatus == (int)JobStatus.Dispatched ? 3 :
+                    j.UcjbStatus == (int)JobStatus.Accepted ? 4 :
+                    j.UcjbStatus == (int)JobStatus.PickedUp ? 5 :
+                    j.UcjbStatus == (int)JobStatus.InTransit ? 6 :
+                    j.UcjbStatus == (int)JobStatus.OutForDelivery ? 7 :
+                    j.UcjbStatus == (int)JobStatus.Rejected ? 8 :
+                    j.UcjbStatus == (int)JobStatus.LatePickup ? 9 :
+                    j.UcjbStatus == (int)JobStatus.LateDelivery ? 10 :
+                    j.UcjbStatus == (int)JobStatus.Warning ? 11 :
+                    j.UcjbStatus == (int)JobStatus.Undeliverable ? 12 :
+                    j.UcjbStatus == (int)JobStatus.Completed ? 13 :
+                    j.UcjbStatus == (int)JobStatus.AwaitingPod ? 14 :
+                    j.UcjbStatus == (int)JobStatus.AssumingCompleted ? 15 : 99)
+                : query.OrderByDescending(j => j.UcjbStatus == (int)JobStatus.New ? 1 :
+                    j.UcjbStatus == (int)JobStatus.Preassigned ? 2 :
+                    j.UcjbStatus == (int)JobStatus.Dispatched ? 3 :
+                    j.UcjbStatus == (int)JobStatus.Accepted ? 4 :
+                    j.UcjbStatus == (int)JobStatus.PickedUp ? 5 :
+                    j.UcjbStatus == (int)JobStatus.InTransit ? 6 :
+                    j.UcjbStatus == (int)JobStatus.OutForDelivery ? 7 :
+                    j.UcjbStatus == (int)JobStatus.Rejected ? 8 :
+                    j.UcjbStatus == (int)JobStatus.LatePickup ? 9 :
+                    j.UcjbStatus == (int)JobStatus.LateDelivery ? 10 :
+                    j.UcjbStatus == (int)JobStatus.Warning ? 11 :
+                    j.UcjbStatus == (int)JobStatus.Undeliverable ? 12 :
+                    j.UcjbStatus == (int)JobStatus.Completed ? 13 :
+                    j.UcjbStatus == (int)JobStatus.AwaitingPod ? 14 :
+                    j.UcjbStatus == (int)JobStatus.AssumingCompleted ? 15 : 99),
 
             "speed" => isAscending
                 ? query.OrderBy(j => j.UcjbSpeedNavigation.ShortName)
@@ -1028,10 +1166,20 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     .FirstOrDefaultAsync();
             }
 
-            // Archived job
+            var isArchivedJob = Context.TucJobArchives.Any(j => j.UcjbId == jobId);
+            if (isArchivedJob)
+            {
+                   return await Context
+                                .TucJobArchives.Where(j => j.UcjbId == jobId)
+                                .Select(JobArchiveMapping)
+                                .AsNoTracking()
+                                .FirstOrDefaultAsync();
+            }
+
+            // Will be prebook
             return await Context
-                .TucJobArchives.Where(j => j.UcjbId == jobId)
-                .Select(JobArchiveMapping)
+                .TucJobBookings.Where(j => j.UcbkId == jobId)
+                .Select(JobPrebookMapping)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
         }

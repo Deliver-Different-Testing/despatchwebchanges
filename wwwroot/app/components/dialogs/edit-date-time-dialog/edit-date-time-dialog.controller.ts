@@ -1,25 +1,20 @@
 import "./edit-date-time-dialog.less";
-import ToastrService from "../../../services/toastr.service";
-import DispatchCoreService from "../../../services/dispatch-core.service";
-import {Job} from "../../../interfaces/job.interface";
+import ToastrService from "../../../services/ToastrService";
 import app from "../../../app";
+import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interfaces";
 
 class EditDateTimeDialogController {
     static $inject = [
         "$mdDialog",
         "toastrService",
-        "DispatchData",
         "moment",
-        "job",
         "title",
         "fieldName",
         "dateTime",
-        "id",
         "showDate",
         "showTime",
     ];
 
-    id: string;
     showDate: boolean;
     showTime: boolean;
     date?: Date;
@@ -30,21 +25,17 @@ class EditDateTimeDialogController {
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
-        private DispatchData: DispatchCoreService,
         private moment: any,
-        private job: Job,
-        private readonly title: string,
-        private readonly fieldName: string,
+        public readonly title: string,
+        public readonly fieldName: string,
         dateTime: Date,
-        id: string,
         showDate: boolean,
         showTime: boolean
     ) {
-        this.id = id;
         this.showDate = showDate;
         this.showTime = showTime;
 
-        this.initializeDateTime(dateTime);
+        this._initializeDateTime(dateTime);
 
         this.isLoading = false;
         this.message = {
@@ -53,7 +44,7 @@ class EditDateTimeDialogController {
         };
     }
 
-    private initializeDateTime(dateTime: Date): void {
+    private _initializeDateTime(dateTime: Date): void {
         let parsedDate: Date;
 
         if (dateTime === null || dateTime === undefined || isNaN(new Date(dateTime).getTime())) {
@@ -87,11 +78,20 @@ class EditDateTimeDialogController {
     async submit(): Promise<void> {
         try {
             this.isLoading = true;
-            const newDateTime = this.combineDateTime();
+            const newDateTime = this._combineDateTime();
             if (newDateTime === null) return;
 
-            await this._updateJobDetail(newDateTime);
-            this.showMessageAndCloseDialog();
+            const formattedDateTime = this._formatDateTime(newDateTime);
+            if (formattedDateTime === null) return;
+
+            // Create result object
+            const result: IDialogDateTimeResult = {
+                fieldName: this.fieldName,
+                value: formattedDateTime,
+                formattedDateTime: formattedDateTime
+            };
+
+            this.$mdDialog.hide(result);
         } catch (error: any) {
             this.toastrService.showErrorToast(error.message);
         } finally {
@@ -99,7 +99,7 @@ class EditDateTimeDialogController {
         }
     }
 
-    private combineDateTime(): Date | null {
+    private _combineDateTime(): Date | null {
         if (this.showDate && this.showTime) {
             const combinedDate = new Date(this.date as Date);
             combinedDate.setHours((this.time as Date).getHours(), (this.time as Date).getMinutes());
@@ -112,49 +112,10 @@ class EditDateTimeDialogController {
         return null;
     }
 
-    private async _updateJobDetail(newDateTime: Date): Promise<void> {
-        const formattedDateTime = this.formatDateTime(newDateTime);
-        if (formattedDateTime === null) return;
-
-        console.log(`Formated DateTime: ${formattedDateTime}`);
-
-        const callData = {
-            call: "updateDetailField",
-            field: this.fieldName,
-            value: formattedDateTime,
-            jobID: this.job.id,
-        };
-        console.log(`CallData: ${callData}`);
-
-        if (this.job.bulkJob) {
-            await this.DispatchData.updateBulkJobDetail(
-                this.job.id,
-                callData.field,
-                callData.value,
-                this.job.charge,
-                FirstName,
-                ContactID
-            );
-        } else {
-            await this.DispatchData.updateJobDetail(
-                this.job.id,
-                callData.field,
-                callData.value,
-                this.job.charge,
-                this.job.preBook
-            );
-        }
-    }
-
-    private showMessageAndCloseDialog(): void {
-        this.toastrService.showSuccessToast(`Updated ${this.title}`);
-        this.$mdDialog.hide();
-    }
-
-    private formatDateTime(dateTime: Date): string | null {
+    private _formatDateTime(dateTime: Date): string | null {
         // Ensure valid date
-        if (!isNaN(dateTime.getTime())) {
-            console.warn("Invalid date provided to _formatDateTime");
+        if (isNaN(dateTime.getTime())) {
+            console.warn("Invalid date provided to formatDateTime");
             return null;
         }
 

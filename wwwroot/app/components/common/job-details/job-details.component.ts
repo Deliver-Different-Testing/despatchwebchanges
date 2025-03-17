@@ -1,19 +1,35 @@
-import ToastrService from "../../../services/toastr.service";
+import ToastrService from "../../../services/ToastrService";
 import {AppConfig} from "../../../interfaces/app-config.interface";
-import {InternalStatus, Job, PriceBreakdown} from "../../../interfaces/job.interface";
+import {InternalStatus, IJob, PriceBreakdown} from "../../../interfaces/job.interface";
 import {ContactID, FirstName} from "../../../contants";
 import {JobNote, JobOptions, TabItem} from "./job-details.interfaces";
 import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import "./job-details.styles.less";
 import app from "../../../app";
+import {SelectDialogService} from "../../dialogs/select-dialog/select-dialog.service";
+import {EditDateTimeDialogService} from "../../dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
+import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interfaces";
+import {bindAllMethods} from "../../../bindAllMethods";
 
 class JobDetailController implements angular.IController {
-    static $inject = ["$scope", "$mdDialog", "toastrService", "DispatchData", "APP_CONFIG", "rateJobService", "moment", "$mdMenu", "$timeout"];
+    static $inject = [
+        "$scope",
+        "$mdDialog",
+        "toastrService",
+        "DispatchData",
+        "APP_CONFIG",
+        "rateJobService",
+        "moment",
+        "$mdMenu",
+        "$timeout",
+        "selectDialogService",
+        "editDateTimeDialogService"
+    ];
 
     private readonly isUsCustomer: boolean;
-    job?: Job;
-    internalJob?: Job;
+    job?: IJob;
+    internalJob?: IJob;
     notes: JobNote[];
     selectedTab: number;
     allTabs: TabItem[];
@@ -38,12 +54,16 @@ class JobDetailController implements angular.IController {
         private rateJobService: any,
         private moment: any,
         private $mdMenu: angular.material.IMenuService,
-        private $timeout: angular.ITimeoutService) {
-
+        private $timeout: angular.ITimeoutService,
+        private selectDialogService: SelectDialogService,
+        private editDateTimeDialogService: EditDateTimeDialogService
+    ) {
         this.isUsCustomer = APP_CONFIG.US_Customer;
         this.notes = [];
         this.selectedTab = 0;
         this.allTabs = [];
+
+        bindAllMethods(this);
 
         this.options = {
             detail: {
@@ -99,7 +119,7 @@ class JobDetailController implements angular.IController {
             this.previousJobId = this.job.id;
             this._initializeJobData();
 
-            if(this.job.completedTime) {
+            if (this.job.completedTime) {
                 this._loadPodPhotos();
             }
         }
@@ -178,11 +198,18 @@ class JobDetailController implements angular.IController {
                         this.formattedPodPhotos = photosData
                             .map((photoData: string, index: number) => {
                                 try {
-                                    return {
+                                    const podPhoto: PodPhoto = {
                                         url: photoData,
-                                        timestamp: this.internalJob?.completedTime,
-                                        uploadedBy: this.internalJob?.courierData.courier,
+                                        timestamp: this.internalJob?.completedTime ?
+                                            new Date(this.internalJob.completedTime).toLocaleString() : undefined,
+                                        uploadedBy: this.internalJob?.courierData.courierName ?? 'Unknown',
+                                        coordinates: {
+                                            lat: this.internalJob?.deliveryAddress?.latitude ?? 0,
+                                            lng: this.internalJob?.deliveryAddress?.longitude ?? 0
+                                        }
                                     };
+
+                                    return podPhoto;
                                 } catch (e) {
                                     console.error(`Error processing photo ${index}:`, e);
                                     return null;
@@ -344,7 +371,7 @@ class JobDetailController implements angular.IController {
         return icon || 'pin_drop';
     }
 
-    async showNotesDialog($event: MouseEvent, job: Job, title: string, fieldName: string) {
+    async showNotesDialog($event: MouseEvent, job: IJob, title: string, fieldName: string) {
         try {
             await this.$mdDialog.show({
                 controller: "AddNotesDialogController",
@@ -367,7 +394,7 @@ class JobDetailController implements angular.IController {
         }
     }
 
-    async showAutocompleteDialog($event: MouseEvent, job: Job, url: string, placeholder: string,
+    async showAutocompleteDialog($event: MouseEvent, job: IJob, url: string, placeholder: string,
                                  fieldName: string, title: string, existingItem: any, showRerateOption: boolean) {
         const options = {
             placeholder, minimumInputLength: 3, searchUrl: url
@@ -395,60 +422,83 @@ class JobDetailController implements angular.IController {
         }
     }
 
-    async showEditTimeDialog($event: MouseEvent, job: Job,
-                             title: string, fieldName: string, time?: Date) {
+    async showEditTimeDialog($event: MouseEvent, job: IJob,
+                             title: string, fieldName: string, dateTime?: Date) {
         try {
-            await this.$mdDialog.show({
-                controller: "EditDateTimeDialogController",
-                controllerAs: "ctrl",
-                parent: document.body,
-                targetEvent: $event,
-                template: require("../../dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
-                clickOutsideToClose: false,
-                fullscreen: true,
-                locals: {
-                    job, title, fieldName, dateTime: time, id: "editForm", showDate: false, showTime: true
-                },
-                bindToController: true
-            });
-
-            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully`);
-            await this._refreshJobDetails(job.id);
+            const result = await this.editDateTimeDialogService.showEditTimeDialog($event, title, fieldName, dateTime);
+            await this._processDateTimeUpdateResult(job, result)
         } catch (error) {
             this._handleError(error);
         }
     }
 
-    async showSelectDialog($event: MouseEvent, job: Job, data: Array<any>,
+    async showEditDateDialog($event: MouseEvent, job: IJob,
+                             title: string, fieldName: string, dateTime?: Date) {
+        try {
+            const result = await this.editDateTimeDialogService.showEditTimeDialog($event, title, fieldName, dateTime);
+            await this._processDateTimeUpdateResult(job, result)
+        } catch (error) {
+            this._handleError(error);
+        }
+    }
+
+    private async _processDateTimeUpdateResult(job: IJob, result: IDialogDateTimeResult) {
+        if (result) {
+            if (job.bulkJob) {
+                await this.DispatchData.updateBulkJobDetail(
+                    job.id,
+                    result.fieldName,
+                    result.formattedDateTime,
+                    job.charge,
+                    FirstName,
+                    ContactID
+                );
+            } else {
+                await this.DispatchData.updateJobDetail(
+                    job.id,
+                    result.fieldName,
+                    result.formattedDateTime,
+                    job.charge,
+                    job.preBook
+                );
+            }
+
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully`);
+            await this._refreshJobDetails(job.id);
+        }
+    }
+
+    async showSelectDialog($event: MouseEvent, job: IJob, data: Array<any>,
                            fieldName: string, title: string, initialValue: string | null | number = null,
                            showCheckbox: boolean = false, checkboxLabel: string = "") {
-        const options = {
-            minimumInputLength: 1, items: data, placeholder: title
-        };
-
         try {
-            await this.$mdDialog.show({
-                controller: "SelectDialogController",
-                controllerAs: "ctrl",
-                parent: document.body,
-                targetEvent: $event,
-                template: require("../../dialogs/select-dialog/select-dialog.html"),
-                clickOutsideToClose: true,
-                fullscreen: false,
-                locals: {
-                    id: 'editField', fieldName, title, job, options, initialValue, showCheckbox, checkboxLabel
-                },
-                bindToController: true
-            });
+            const result = await this.selectDialogService.showSelectDialog($event, data,
+                fieldName, title, initialValue, showCheckbox, checkboxLabel);
 
-            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully`);
-            await this._refreshJobDetails(job.id);
+            if (result) {
+                if (fieldName === "DGClass") {
+                    await this.DispatchData.updateJobDetail(job.id, fieldName, result.value, job.charge, job.preBook);
+
+                    if (job.dgDocumentation !== result.checkboxValue) {
+                        await this.DispatchData.updateJobDetail(job.id, "DGDocumentation", result?.checkboxValue ?? false, job.charge, job.preBook);
+                    }
+                } else {
+                    if (job.bulkJob) {
+                        await this.DispatchData.updateBulkJobDetail(job.id, fieldName, result.value, job.charge, FirstName, ContactID);
+                    } else {
+                        await this.DispatchData.updateJobDetail(job.id, fieldName, result.value, job.charge, job.preBook);
+                    }
+                }
+
+                this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully`);
+                await this._refreshJobDetails(job.id);
+            }
         } catch (error) {
             this._handleError(error);
         }
     }
 
-    async showEditDialog($event: MouseEvent, job: Job, title: string,
+    async showEditDialog($event: MouseEvent, job: IJob, title: string,
                          placeholder: string, ariaLabel: string, initialValue: string | number | undefined, field: string) {
         const formatedValue = initialValue ? initialValue.toString() : "";
 
@@ -477,7 +527,7 @@ class JobDetailController implements angular.IController {
         }
     }
 
-    async showAddressDialog($event: MouseEvent, job: Job, isDeliveryAddress: boolean) {
+    async showAddressDialog($event: MouseEvent, job: IJob, isDeliveryAddress: boolean) {
         const addressToUpdate = isDeliveryAddress ? job.deliveryAddress : job.pickupAddress;
         const pickSuburbs = await this.DispatchData.getSuburbList();
 
@@ -499,7 +549,7 @@ class JobDetailController implements angular.IController {
         });
     }
 
-    async showJobDimensionsDialog($event: MouseEvent, job: Job) {
+    async showJobDimensionsDialog($event: MouseEvent, job: IJob) {
         await this.$mdDialog.show({
             controller: "EditParcelDimensionsDialogController",
             controllerAs: "ctrl",
@@ -517,19 +567,28 @@ class JobDetailController implements angular.IController {
         await this._refreshJobDetails(job.id);
     }
 
-    async editLogTime($event: MouseEvent, job: Job) {
+    async editLogTime($event: MouseEvent, job: IJob) {
         await this.showEditTimeDialog($event, job, "Log Time", "Time", job.time);
     }
 
-    async editCompletedTime($event: MouseEvent, job: Job) {
+    async editCompletedTime($event: MouseEvent, job: IJob) {
         await this.showEditTimeDialog($event, job, "POD Time", "CompletedTime", job.completedTime);
     }
 
-    async editFollowUpTime($event: MouseEvent, job: Job) {
+    async editFollowUpTime($event: MouseEvent, job: IJob) {
         await this.showEditTimeDialog($event, job, "Follow Up Time", "FollowupTime", job.followupTime);
     }
 
-    async updateAddress($event: MouseEvent, job: Job, field: string) {
+    async editDueDate($event: MouseEvent, job: IJob) {
+        if (!job.preBook) {
+            this.toastrService.showWarningToast("Due Date can only be edited on pre-booked jobs. Change not applied");
+            return;
+        }
+
+        await this.showEditDateDialog($event, job, "Due Date", "DueDate", job.firstDue);
+    }
+
+    async updateAddress($event: MouseEvent, job: IJob, field: string) {
         const isDeliveryAddress = field === "toAddress";
 
         try {
@@ -540,7 +599,7 @@ class JobDetailController implements angular.IController {
         }
     }
 
-    private async _processAddressUpdate(job: Job, addressResult: any, isDeliveryAddress: boolean) {
+    private async _processAddressUpdate(job: IJob, addressResult: any, isDeliveryAddress: boolean) {
         console.log(`isDeliveryAddress: ${isDeliveryAddress}`);
 
         // Update job by address format
@@ -556,7 +615,7 @@ class JobDetailController implements angular.IController {
         }
     }
 
-    private _updateJobAddressNz(job: Job, result: any, isDeliveryAddress: boolean) {
+    private _updateJobAddressNz(job: IJob, result: any, isDeliveryAddress: boolean) {
         const addressField = isDeliveryAddress ? "toAddress" : "from";
         const suburbIdField = isDeliveryAddress ? "toSuburbId" : "fromSuburbId";
         const suburbField = isDeliveryAddress ? "toSuburbName" : "fromSuburbName";
@@ -568,7 +627,7 @@ class JobDetailController implements angular.IController {
         return job;
     }
 
-    private _updateJobAddressUs(job: Job, addressResult: any, isDeliveryAddress: boolean) {
+    private _updateJobAddressUs(job: IJob, addressResult: any, isDeliveryAddress: boolean) {
         const addressField = isDeliveryAddress ? "deliveryAddress" : "pickupAddress";
         console.log(`Address Field: ${addressField}`);
 
@@ -576,7 +635,7 @@ class JobDetailController implements angular.IController {
         return job;
     }
 
-    private async _updateJobRateAndAddress(job: Job, addressResult: any, isDeliveryAddress: boolean) {
+    private async _updateJobRateAndAddress(job: IJob, addressResult: any, isDeliveryAddress: boolean) {
         job.charge = await this.rateJobService.rateJob(job);
         const rate = Number(job.charge.replace(/[^0-9.-]+/g, ""));
 
@@ -589,7 +648,7 @@ class JobDetailController implements angular.IController {
         }
     }
 
-    async editJobContact($event: MouseEvent, job: Job, contactType: 'from' | 'to') {
+    async editJobContact($event: MouseEvent, job: IJob, contactType: 'from' | 'to') {
         const contactMapping = {
             from: {
                 title: "Edit From Contact Name",
@@ -615,7 +674,7 @@ class JobDetailController implements angular.IController {
         await this.showEditDialog($event, job, contactDetails.title, contactDetails.placeholder, contactDetails.fieldLabel, contactDetails.contactValue, contactDetails.contactProperty);
     }
 
-    async editJobContactPhone($event: MouseEvent, job: Job, contactType: 'from' | 'to') {
+    async editJobContactPhone($event: MouseEvent, job: IJob, contactType: 'from' | 'to') {
         const phoneMapping = {
             from: {
                 title: "Edit From Contact Phone",
@@ -641,7 +700,7 @@ class JobDetailController implements angular.IController {
         await this.showEditDialog($event, job, phoneDetails.title, phoneDetails.placeholder, phoneDetails.fieldLabel, phoneDetails.phoneValue, phoneDetails.phoneProperty);
     }
 
-    async editRef($event: MouseEvent, job: Job, isRefA: boolean) {
+    async editRef($event: MouseEvent, job: IJob, isRefA: boolean) {
         if (isRefA) {
             await this.showEditDialog($event, job, "Edit RefA", "RefA...", "refa", job.refA, "RefA");
         } else {
@@ -649,24 +708,24 @@ class JobDetailController implements angular.IController {
         }
     }
 
-    async editOurRef($event: MouseEvent, job: Job) {
+    async editOurRef($event: MouseEvent, job: IJob) {
         await this.showEditDialog($event, job, "Edit Our Reference", "Our Reference...", "our reference", job.ourRef, "OurRef");
     }
 
-    async editJobWeight($event: MouseEvent, job: Job) {
+    async editJobWeight($event: MouseEvent, job: IJob) {
         await this.showEditDialog($event, job, "Edit Weight", "Job Weight...", "job weight", job.weight, "Weight");
     }
 
-    async editTrackingMobile($event: MouseEvent, job: Job) {
+    async editTrackingMobile($event: MouseEvent, job: IJob) {
         await this.showEditDialog($event, job, "Edit Tracking Mobile", "Tracking Mobile...", "tracking mobile", job.trackingMobile, "TrackingMobile");
     }
 
-    async editTrackingEmail($event: MouseEvent, job: Job) {
+    async editTrackingEmail($event: MouseEvent, job: IJob) {
         await this.showEditDialog($event, job, "Edit Tracking Email", "Tracking Email...", "tracking email", job.trackingEmail, "TrackingEmail");
     }
 
 
-    async clientClick($event: MouseEvent, job: Job) {
+    async clientClick($event: MouseEvent, job: IJob) {
         const url = "/home/ActiveClients";
         const placeholder = "Start typing to enter new client...";
 
@@ -677,27 +736,27 @@ class JobDetailController implements angular.IController {
         await this.showAutocompleteDialog($event, job, url, placeholder, "clientId", "Client", existingItem, true)
     }
 
-    async courierClick($event: MouseEvent, job: Job) {
+    async courierClick($event: MouseEvent, job: IJob) {
         const url = "/courier/AllActiveSearch";
         const placeholder = "Start typing to search courier...";
 
         await this.showAutocompleteDialog($event, job, url, placeholder, "CourierID", "Courier", null, false)
     }
 
-    async contactClick($event: MouseEvent, job: Job) {
+    async contactClick($event: MouseEvent, job: IJob) {
         if (job.clientId === undefined) return;
 
         const pickContacts = await this.DispatchData.getContactList(job.clientId);
         await this.showSelectDialog($event, job, pickContacts, "ContactID", "Contact", job.contactName);
     }
 
-    async speedClick($event: MouseEvent, job: Job) {
+    async speedClick($event: MouseEvent, job: IJob) {
         const pickSpeeds = await this.DispatchData.getSpeedList();
         await this.showSelectDialog($event, job, pickSpeeds, "SpeedID", "Speed", job.speedName);
     }
 
 
-    async jobTypeClick($event: MouseEvent, job: Job) {
+    async jobTypeClick($event: MouseEvent, job: IJob) {
         console.log('jobTypeClick initiated', {
             eventType: $event.type, jobId: job.id, currentJobType: job.jobType
         });
@@ -724,13 +783,13 @@ class JobDetailController implements angular.IController {
         }
     }
 
-    async sizeClick($event: MouseEvent, job: Job) {
+    async sizeClick($event: MouseEvent, job: IJob) {
         const pickVehicleSizes = await this.DispatchData.getVehicleSizes();
         await this.showSelectDialog($event, job, pickVehicleSizes, "Size", "Size", job.size.text);
     }
 
 
-    async dgClassClick($event: MouseEvent, job: Job) {
+    async dgClassClick($event: MouseEvent, job: IJob) {
         let dgClassOptions = [];
         for (let i = 1; i <= 9; i++) {
             dgClassOptions.push({id: i, text: i.toString()});
@@ -742,13 +801,13 @@ class JobDetailController implements angular.IController {
     }
 
 
-    async leaveClick($event: MouseEvent, job: Job) {
+    async leaveClick($event: MouseEvent, job: IJob) {
         const pickLeaveList = await this.DispatchData.getLeaveList();
         await this.showSelectDialog($event, job, pickLeaveList, "DeliverToLeaveID", "Leave Parcel", job.sigNotRequired || "Signature Required");
     }
 
 
-    async trackingMethodClick($event: MouseEvent, job: Job) {
+    async trackingMethodClick($event: MouseEvent, job: IJob) {
         const trackingArray = this.options.detail.tracking.map(item => {
             return {
                 id: item.id, text: item.label
@@ -759,12 +818,12 @@ class JobDetailController implements angular.IController {
         await this.showSelectDialog($event, job, trackingArray, "TrackingMethod", "Tracking Method", trackingMethod);
     }
 
-    async statusClick($event: MouseEvent, job: Job) {
+    async statusClick($event: MouseEvent, job: IJob) {
         const statusList = await this.DispatchData.getStatusList();
         await this.showSelectDialog($event, job, statusList, "Status", "Status", job.statusName);
     }
 
-    async updateField(reRate: boolean, job: Job, callData: {
+    async updateField(reRate: boolean, job: IJob, callData: {
         call?: string;
         field: string;
         value: any;
@@ -821,7 +880,7 @@ class JobDetailController implements angular.IController {
         return description;
     }
 
-    hasDGDocs(job: Job) {
+    hasDGDocs(job: IJob) {
         if (job.dgClass) {
             return ((job.dgClass || 0) === 1) || ((job.dgDocumentation || false)) ? "Yes" : "No";
         } else {
@@ -829,7 +888,7 @@ class JobDetailController implements angular.IController {
         }
     }
 
-    async toggleJobProperty(job: Job, property: string, useCharge: boolean = true) {
+    async toggleJobProperty(job: IJob, property: string, useCharge: boolean = true) {
         console.log(`Toggle job property: ${property}`);
         const newValue = job ? !(property in job && job[property as keyof typeof job]) : false;
         console.log(`New value: ${newValue}`);
@@ -893,13 +952,13 @@ class JobDetailController implements angular.IController {
         }
     }
 
-    async toggleProperty(job: Job, property: string) {
+    async toggleProperty(job: IJob, property: string) {
         const propertiesUsingDefaultCharge = ["pedal", "truck", "direct", "attention", "return", "oneOff", "active", "void", "van", "vanOK", "done", "reprice"];
         const useCharge = propertiesUsingDefaultCharge.includes(property);
         await this.toggleJobProperty(job, property, useCharge);
     }
 
-    async markJobAsDone(job: Job) {
+    async markJobAsDone(job: IJob) {
         try {
             if (job.completedTime == undefined) return;
 
@@ -978,15 +1037,15 @@ class JobDetailController implements angular.IController {
         }
     };
 
-   private _setupPhotoKeyboardNavigation() {
-       const photoSection = angular.element('.pod-photo-section');
+    private _setupPhotoKeyboardNavigation() {
+        const photoSection = angular.element('.pod-photo-section');
 
-       if (photoSection.length) {
-           photoSection.off('keydown', this._handleKeydown);
+        if (photoSection.length) {
+            photoSection.off('keydown', this._handleKeydown);
 
-           photoSection.on('keydown', this._handleKeydown);
-           photoSection.attr('tabindex', '0');
-       }
+            photoSection.on('keydown', this._handleKeydown);
+            photoSection.attr('tabindex', '0');
+        }
     }
 
     openPodViewer(index: number) {
@@ -1053,7 +1112,7 @@ class JobDetailController implements angular.IController {
         console.log('Set selectedStatusText to:', this.selectedStatusText);
     }
 
-    async setInternalStatus(internalStatusId: number, job: Job) {
+    async setInternalStatus(internalStatusId: number, job: IJob) {
         this.$mdMenu.hide();
         const previousStatusId = job.internalStatusId;
 
@@ -1083,7 +1142,7 @@ class JobDetailController implements angular.IController {
         }
     }
 
-    async showPricingBreakdown($event: MouseEvent, job: Job) {
+    async showPricingBreakdown($event: MouseEvent, job: IJob) {
         try {
             console.log("Fetching price breakdown data for job:", job.id);
             const data = await this.DispatchData.getPriceBreakdown(job.id);

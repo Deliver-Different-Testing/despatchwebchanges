@@ -1,10 +1,10 @@
-import DispatchCoreService from "../../../services/dispatch-core.service";
-import ToastrService from "../../../services/toastr.service";
-import {Job} from "../../../interfaces/job.interface";
+import ToastrService from "../../../services/ToastrService";
+import {Suggestion} from "../../../interfaces/job.interface";
 import app from "../../../app";
+import {ISelectDialogResult} from "./ISelectDialogResult";
 
 class SelectDialogController {
-    static $inject = ["$mdDialog", "DispatchData", "toastrService", "rateJobService", "id", "fieldName", "title", "job", "options", "initialValue", "showCheckbox", "checkboxLabel"];
+    static $inject = ["$mdDialog", "toastrService", "id", "fieldName", "title", "options", "initialValue", "showCheckbox", "checkboxLabel"];
 
     isLoading: boolean;
     selectedOption: any;
@@ -13,15 +13,12 @@ class SelectDialogController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
-        private rateJobService: any,
         public id: number,
         public fieldName: string,
         public title: string,
-        public job: Job,
         public options: any,
-        public initialValue: string | null,
+        public initialValue: string | number | null,
         public showCheckbox: boolean,
         public checkboxLabel: string
     ) {
@@ -40,47 +37,27 @@ class SelectDialogController {
         }
     }
 
-    private findInitialValue(options: any, initialValue: string): any | null {
+    private findInitialValue(options: any, initialValue: string | number): any | null {
         return options.items.find((option: any) =>
             option.text === initialValue || option.id === initialValue
         ) ?? null;
     }
 
-    async submit(selectedOption: any): Promise<void> {
+    async submit(selectedOption: Suggestion): Promise<void> {
         try {
             this.isLoading = true;
 
-            if (this.fieldName === "DGClass") {
-                await this.updateDgClass(selectedOption);
-                this.job.dgClass = selectedOption.id;
-            } else {
-                await this.updateJobDetails(selectedOption);
-            }
+            const result: ISelectDialogResult = {
+                fieldName: this.fieldName,
+                value: selectedOption.id,
+                checkboxValue: this.showCheckbox ? this.checkboxValue : undefined
+            };
 
-            this.$mdDialog.hide();
+            this.$mdDialog.hide(result);
         } catch (error: any) {
             this.toastrService.showErrorToast(error.message);
         } finally {
             this.isLoading = false;
-        }
-    }
-
-    private async updateJobDetails(selectedOption: any): Promise<void> {
-        this.job.charge = await this.rateJobService.rateJob(this.job);
-
-        if (this.job.bulkJob) {
-            await this.DispatchData.updateBulkJobDetail(this.job.id, this.fieldName, selectedOption.id, this.job.charge, FirstName, ContactID);
-        } else {
-            await this.DispatchData.updateJobDetail(this.job.id, this.fieldName, selectedOption.id, this.job.charge, this.job.preBook);
-        }
-    }
-
-    private async updateDgClass(selectedOption: any): Promise<void> {
-        await this.DispatchData.updateJobDetail(this.job.id, this.fieldName, selectedOption.id, this.job.charge, this.job.preBook);
-
-        if (this.job.dgDocumentation !== this.checkboxValue) {
-            this.job.dgDocumentation = this.checkboxValue;
-            await this.DispatchData.updateJobDetail(this.job.id, "DGDocumentation", this.job.dgDocumentation, this.job.charge, this.job.preBook);
         }
     }
 

@@ -1,6 +1,6 @@
 import app from "../../app";
 import {PrebookListViewModel} from "./prebooks.interfaces";
-import {Job} from "../../interfaces/job.interface";
+import {IJob} from "../../interfaces/job.interface";
 
 class PrebookService {
     static $inject = ["$http"];
@@ -26,8 +26,8 @@ class PrebookService {
         return response.data;
     }
 
-    async getJobDetail(preBookJobId: number): Promise<Job> {
-        const response = await this.$http.get<Job>(`/Job/PreBookDetail?preBookJobId=${preBookJobId}`);
+    async getJobDetail(preBookJobId: number): Promise<IJob> {
+        const response = await this.$http.get<IJob>(`/Job/PreBookDetail?preBookJobId=${preBookJobId}`);
         return response.data;
     }
 }

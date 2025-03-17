@@ -68,7 +68,8 @@
 
                             <div layout="column" layout-align="center center">
                                 <span class="selected-date">{{ctrl.selectedDate | date:'EEEE, MMMM d, yyyy'}}</span>
-                                <md-button class="md-small today-button" ng-click="ctrl.goToToday()" aria-label="Go to today">
+                                <md-button class="md-small today-button" ng-click="ctrl.goToToday()"
+                                           aria-label="Go to today">
                                     Today
                                 </md-button>
                             </div>
@@ -180,9 +181,10 @@
                                 </p>
 
                                 <div class="task-meta" layout="row" layout-wrap>
-                                    <div class="meta-item assignee" layout="row" layout-align="start center">
+                                    <div class="meta-item assignee" layout="row" layout-align="start center"
+                                        md-ink-ripple ng-click="ctrl.reassignTask($event, task)">
                                         <md-icon md-font-set="material-symbols-outlined">person</md-icon>
-                                        <span>{{task.assignee}}</span>
+                                        <span>{{task.assignee.text}}</span>
                                     </div>
 
                                     <div class="meta-item job-type" layout="row" layout-align="start center">

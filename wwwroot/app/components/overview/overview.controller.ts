@@ -1,10 +1,11 @@
 import app from "../../app";
 import OverviewService from "./overview.service";
-import ToastrService from "../../services/toastr.service";
+import ToastrService from "../../services/ToastrService";
 import GreetingService from "../../services/greeting.service";
 import OpenJobDispatchService from "../../services/open-job-dispatch.service";
 import OverviewFiltersService from "./services/overview-filters.service";
 import {OverviewTableChildJob, OverviewTableParentJob, Region, Speed} from "./overview.interfaces";
+import {bindAllMethods} from "../../bindAllMethods";
 
 class OverviewController implements angular.IController {
     static $inject = [
@@ -68,6 +69,7 @@ class OverviewController implements angular.IController {
         private openJobDispatchService: OpenJobDispatchService,
        private overviewFiltersService: OverviewFiltersService
     ) {
+        bindAllMethods(this);
 
         // Initialize properties
         this.isLoading = false;

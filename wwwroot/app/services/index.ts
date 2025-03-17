@@ -2,7 +2,7 @@
 import "./config.service";
 import "./dispatch-core.service";
 import "./job-detail.service";
-import "./toastr.service";
+import "./ToastrService";
 import "./greeting.service";
 import "./rate-job.service";
 import "./dispatch-executor.service";

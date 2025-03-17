@@ -2,8 +2,7 @@
 import "./dialogs/index";
 
 // Home
-import "./home/services/job-table.service";
-import "./home/homeControl";
+import "./home/home.controller";
 
 // Nationwide/Domestic
 import "./Nationwide/services/nationwide-layout.service";

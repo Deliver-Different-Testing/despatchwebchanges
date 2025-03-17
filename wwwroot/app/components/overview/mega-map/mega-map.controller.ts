@@ -1,11 +1,12 @@
 import app from "../../../app";
-import ToastrService from "../../../services/toastr.service";
+import ToastrService from "../../../services/ToastrService";
 import OverviewService from "../overview.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import ConfigService from "../../../services/config.service";
 import {Coordinates, MegaMapResponse} from "../overview.interfaces";
 import {MapPoint} from "./mega-map.interfaces";
 import {AssignedFlight} from "../../../interfaces/job.interface";
+import {bindAllMethods} from "../../../bindAllMethods";
 
 class MegaMapController implements angular.IController {
     static $inject = [
@@ -56,33 +57,8 @@ class MegaMapController implements angular.IController {
         this.isLoading = false;
         this.googleMapsUrl = null;
 
-        // Bind all methods
-        this.bindMethods();
-
-        // Initialize map and start refresh interval
+        bindAllMethods(this);
         this.initializeMap();
-    }
-
-    bindMethods(): void {
-        this.initializeMap = this.initializeMap.bind(this);
-        this.refreshData = this.refreshData.bind(this);
-        this.getDeliveryPointForJob = this.getDeliveryPointForJob.bind(this);
-        this.centerOnDriver = this.centerOnDriver.bind(this);
-        this.transformMapData = this.transformMapData.bind(this);
-        this.calculateFlightRoutes = this.calculateFlightRoutes.bind(this);
-        this.checkVisiblePoints = this.checkVisiblePoints.bind(this);
-        this.getRoutePath = this.getRoutePath.bind(this);
-        this.calculateRoadRoute = this.calculateRoadRoute.bind(this);
-        this.formatRoutePath = this.formatRoutePath.bind(this);
-        this.calculateFlightPosition = this.calculateFlightPosition.bind(this);
-        this.calculateRotationAngle = this.calculateRotationAngle.bind(this);
-        this.getInfoWindowContent = this.getInfoWindowContent.bind(this);
-        this.formatDateTime = this.formatDateTime.bind(this);
-        this.showPointInfo = this.showPointInfo.bind(this);
-        this.closeJobInfo = this.closeJobInfo.bind(this);
-        this.isPickupPoint = this.isPickupPoint.bind(this);
-        this.createClusterIcon = this.createClusterIcon.bind(this);
-        this.onZoomChanged = this.onZoomChanged.bind(this);
     }
 
     /**

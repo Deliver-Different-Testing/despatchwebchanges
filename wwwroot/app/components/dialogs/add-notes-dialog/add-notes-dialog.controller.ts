@@ -1,6 +1,6 @@
-import ToastrService from "../../../services/toastr.service";
+import ToastrService from "../../../services/ToastrService";
 import DispatchCoreService from "../../../services/dispatch-core.service";
-import {Job} from "../../../interfaces/job.interface";
+import {IJob} from "../../../interfaces/job.interface";
 import app from "../../../app";
 
 class AddNotesDialogController implements angular.IController {
@@ -14,7 +14,7 @@ class AddNotesDialogController implements angular.IController {
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
         private fieldName: string,
-        private job: Job
+        private job: IJob
     ) {
         this.isLoading = false;
     }
@@ -91,7 +91,7 @@ class AddNotesDialogController implements angular.IController {
         this.$mdDialog.cancel();
     }
 
-    private isValidJobField(fieldName: string): fieldName is keyof Job {
+    private isValidJobField(fieldName: string): fieldName is keyof IJob {
         return fieldName in this.job;
     }
 }

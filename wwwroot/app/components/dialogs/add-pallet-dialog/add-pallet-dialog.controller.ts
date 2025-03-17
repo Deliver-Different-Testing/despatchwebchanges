@@ -1,6 +1,6 @@
 import DispatchCoreService from "../../../services/dispatch-core.service";
-import ToastrService from "../../../services/toastr.service";
-import {Job, PalletInfo} from "../../../interfaces/job.interface";
+import ToastrService from "../../../services/ToastrService";
+import {IJob, PalletInfo} from "../../../interfaces/job.interface";
 import app from "../../../app";
 
 interface PalletDialogControllerScope extends angular.IScope {
@@ -22,7 +22,7 @@ class PalletDialogController {
         private dispatchData: DispatchCoreService,
         private toastrService: ToastrService,
         private rateJobService: any,
-        private job: Job,
+        private job: IJob,
         private dispatcherName: string,
         private contactId: number,
         existingPallet?: PalletInfo

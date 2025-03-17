@@ -1,5 +1,5 @@
 import DispatchCoreService from "../../../services/dispatch-core.service";
-import ToastrService from "../../../services/toastr.service";
+import ToastrService from "../../../services/ToastrService";
 import app from "../../../app";
 import {SelectOption} from "../../../interfaces/job.interface";
 
@@ -74,8 +74,6 @@ class AutoCompleteDialogController {
                     callData.field,
                     callData.value,
                     Number(rate.replace(/[^0-9.-]+/g, "")),
-                    FirstName,
-                    ContactID,
                     this.job.preBook
                 );
             } else {
@@ -93,8 +91,6 @@ class AutoCompleteDialogController {
                         callData.field,
                         callData.value,
                         this.job.charge,
-                        FirstName,
-                        ContactID,
                         this.job.preBook
                     );
             }

@@ -1,4 +1,4 @@
-import ToastrService from "../../../services/toastr.service";
+import ToastrService from "../../../services/ToastrService";
 import app from "../../../app";
 
 class JobFileUploadController implements angular.IController {

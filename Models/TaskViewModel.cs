@@ -16,7 +16,7 @@ public class TaskViewModel
 
     public string Priority { get; set; }
 
-    public string Assignee { get; set; }
+    public Suggestion Assignee { get; set; }
 
     public string EventType { get; set; }
 

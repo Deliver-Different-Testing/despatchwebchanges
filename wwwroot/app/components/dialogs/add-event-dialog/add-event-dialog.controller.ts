@@ -1,5 +1,5 @@
-import ToastrService from "../../../services/toastr.service";
-import { DfrntEvent, Job } from "../../../interfaces/job.interface";
+import ToastrService from "../../../services/ToastrService";
+import { DfrntEvent, IJob } from "../../../interfaces/job.interface";
 import app from "../../../app";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 
@@ -39,7 +39,7 @@ class AddEventDialogController implements angular.IController {
     private DispatchData: DispatchCoreService,
     private toastrService: ToastrService,
     private NWData: any,
-    private job: Job,
+    private job: IJob,
     private dispatcherName: string,
     private contactId: string
   ) {
