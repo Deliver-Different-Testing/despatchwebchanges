@@ -1,5 +1,5 @@
 import app from "../../../app";
-import {Box, Column, Layout} from "../../../interfaces/layout.interfaces";
+import {IBox, IColumn, ILayout} from "../../../interfaces/layout.interfaces";
 
 class CSLayoutService implements angular.IServiceProvider {
     static $inject = ['$window', '$mdDialog'];
@@ -22,43 +22,43 @@ class CSLayoutService implements angular.IServiceProvider {
     readonly BOX_HEIGHT_XSMALL: string = "30%";
 
     // Define individual boxes
-    private searchBox: Box = {name: "pickDate", height: this.BOX_HEIGHT_XLARGE};
-    private jobListBox: Box = {name: "jobList", height: this.BOX_HEIGHT_SMALL};
-    private bulkJobListBox: Box = {name: "bulkJobList", height: this.BOX_HEIGHT_MEDIUM};
-    private pbListBox: Box = {name: "pbList", height: this.BOX_HEIGHT_MEDIUM};
-    private mapBox: Box = {name: "map", height: this.BOX_HEIGHT_XSMALL};
-    private jobDetailBox: Box = {name: "jobDetail", height: this.BOX_HEIGHT_SMALL};
-    private scanListBox: Box = {name: "scanList", height: this.BOX_HEIGHT_XSMALL};
+    private searchBox: IBox = {name: "pickDate", height: this.BOX_HEIGHT_XLARGE};
+    private jobListBox: IBox = {name: "jobList", height: this.BOX_HEIGHT_SMALL};
+    private bulkJobListBox: IBox = {name: "bulkJobList", height: this.BOX_HEIGHT_MEDIUM};
+    private pbListBox: IBox = {name: "pbList", height: this.BOX_HEIGHT_MEDIUM};
+    private mapBox: IBox = {name: "map", height: this.BOX_HEIGHT_XSMALL};
+    private jobDetailBox: IBox = {name: "jobDetail", height: this.BOX_HEIGHT_SMALL};
+    private scanListBox: IBox = {name: "scanList", height: this.BOX_HEIGHT_XSMALL};
 
     // Define columns
-    private column1: Column = {
+    private column1: IColumn = {
         id: "col1",
         width: this.COL_WIDTH_SMALL,
         boxes: [this.searchBox],
     };
 
-    private column2: Column = {
+    private column2: IColumn = {
         id: "col2",
         width: this.COL_WIDTH_LARGE,
         boxes: [this.jobListBox, this.bulkJobListBox, this.pbListBox],
     };
 
-    private column3: Column = {
+    private column3: IColumn = {
         id: "col3",
         width: this.COL_WIDTH_MEDIUM,
         boxes: [this.jobDetailBox, this.scanListBox, this.mapBox],
     };
 
     // Construct the layout
-    private defaultLayout: Layout[] = [{
+    private defaultLayout: ILayout[] = [{
         name: "Default",
         layout: {
             columns: [this.column1, this.column2, this.column3],
         },
     }];
 
-    private currentLayouts: Layout[] | null = null;
-    private layoutsObject: Layout[] | null = null;
+    private currentLayouts: ILayout[] | null = null;
+    private layoutsObject: ILayout[] | null = null;
     private mapZoom: { display: boolean } = {display: true};
     private currentLayoutName: string = "default";
 
@@ -94,7 +94,7 @@ class CSLayoutService implements angular.IServiceProvider {
         }
 
         try {
-            this.currentLayouts = JSON.parse(storedLayouts) as Layout[];
+            this.currentLayouts = JSON.parse(storedLayouts) as ILayout[];
             if (!Array.isArray(this.currentLayouts) || this.currentLayouts.length === 0) {
                 throw Error('Invalid stored layouts');
             }
@@ -131,12 +131,12 @@ class CSLayoutService implements angular.IServiceProvider {
         }
     }
 
-    getDefaultLayout(): Layout[] {
+    getDefaultLayout(): ILayout[] {
         return angular.copy(this.defaultLayout);
     }
 
-    public getLayouts(): Layout[] {
-        if (this.currentLayouts === null) return new Array<Layout>();
+    public getLayouts(): ILayout[] {
+        if (this.currentLayouts === null) return new Array<ILayout>();
         return angular.copy(this.currentLayouts);
     }
 
@@ -207,7 +207,7 @@ class CSLayoutService implements angular.IServiceProvider {
                 this.layoutsObject = this.layoutsObject!.concat({
                     name: layoutName,
                     layout: {
-                        columns: (angular.copy(currentLayout) as { columns: Column[] }).columns
+                        columns: (angular.copy(currentLayout) as { columns: IColumn[] }).columns
                     },
                 });
 

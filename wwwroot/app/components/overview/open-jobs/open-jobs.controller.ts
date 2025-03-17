@@ -3,6 +3,7 @@ import OverviewService from "../overview.service";
 import OverviewFiltersService from "../services/overview-filters.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import {DriverViewModel, OpenJobResponse, OverviewQueryParams, ViewJob} from "../overview.interfaces";
+import {bindAllMethods} from "../../../bindAllMethods";
 
 class OpenJobsWidgetController implements angular.IController {
     static $inject = ["$scope", "overviewService", "moment", "APP_CONFIG", "overviewFiltersService"];
@@ -31,6 +32,8 @@ class OpenJobsWidgetController implements angular.IController {
         this.isUsCustomer = APP_CONFIG.US_Customer;
         this.sortBy = "jobId";
 
+        bindAllMethods(this);
+
         $scope.$watch(
             () => this.tableQuery.limit,
             (newValue: number, oldValue: number) => {
@@ -45,16 +48,16 @@ class OpenJobsWidgetController implements angular.IController {
 
     $onInit() {
         // Subscribe to filter changes
-        this.overviewFiltersService.onFilterChange(() => this.loadOpenJobs());
+        this.overviewFiltersService.onFilterChange(() => this._loadOpenJobs());
 
-        this.loadSavedLimit();
-        this.loadOpenJobs();
+        this._loadSavedLimit();
+        this._loadOpenJobs();
         this.loadCardState();
 
-        setInterval(this.loadOpenJobs, 60000);
+        setInterval(this._loadOpenJobs, 60000);
     }
 
-    private loadSavedLimit(): void {
+    private _loadSavedLimit(){
         const savedLimit = localStorage.getItem(this.limitName);
         console.log(`Saved limit is: ${savedLimit}`);
         if (savedLimit) {
@@ -62,7 +65,7 @@ class OpenJobsWidgetController implements angular.IController {
         }
     }
 
-    private loadOpenJobs(): void {
+    private _loadOpenJobs(){
         const params: Pick<OverviewQueryParams, "startDate" | "endDate" | "regions" | "speeds"> = {
             startDate: this.overviewFiltersService.dateRange?.start || undefined,
             endDate: this.overviewFiltersService.dateRange?.end || undefined,
@@ -83,7 +86,7 @@ class OpenJobsWidgetController implements angular.IController {
                             jobs: [],
                             completedToday: job.completedToday,
                             lastCompleted: job.lastCompleted ?
-                                this.formatTime(job.lastCompleted) : "N/A",
+                                this._formatTime(job.lastCompleted) : "N/A",
                             expanded: false
                         };
                     }
@@ -126,18 +129,18 @@ class OpenJobsWidgetController implements angular.IController {
             });
     }
 
-    loadCardState(): void {
+    loadCardState(){
         this.isCardCollapsed = this.overviewService.loadCollapseState("openJobs");
     }
 
-    loadViewModeState(): void {
+    loadViewModeState(){
         const savedViewMode = localStorage.getItem('openJobsViewMode');
         if (savedViewMode === 'table') {
             this.isTableView = true;
         }
     }
 
-    toggleViewMode(): void {
+    toggleViewMode(){
         localStorage.setItem('openJobsViewMode', this.isTableView ? 'table' : 'card');
     }
 
@@ -146,7 +149,7 @@ class OpenJobsWidgetController implements angular.IController {
         await this.overviewService.saveCollapseState("openJobs", this.isCardCollapsed);
     }
 
-    private formatTime(timestamp: Date): string {
+    private _formatTime(timestamp: Date): string {
         return this.moment(timestamp).format("HH:mm");
     }
 
@@ -248,7 +251,7 @@ class OpenJobsWidgetController implements angular.IController {
         return statusClasses[status] || 'status-default';
     }
 
-    onPaginate(page: number, limit: number): void {
+    onPaginate(page: number, limit: number){
         this.tableQuery.page = page;
         this.tableQuery.limit = limit;
     }

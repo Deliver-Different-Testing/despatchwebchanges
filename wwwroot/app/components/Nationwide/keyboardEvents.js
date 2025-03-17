@@ -168,4 +168,4 @@ const initialize = () => {
 };
 
 // Initialize when the document is ready
-angular.element(document).ready(initialize);
+angular.element(document).on("ready", initialize);

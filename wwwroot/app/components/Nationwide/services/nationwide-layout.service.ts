@@ -1,5 +1,5 @@
 import app from "../../../app";
-import {Column, Layout} from "../../../interfaces/layout.interfaces";
+import {IColumn, ILayout} from "../../../interfaces/layout.interfaces";
 
 class NationwideLayoutService implements angular.IServiceProvider {
     static $inject = ["$window", "$mdDialog", "$rootScope"];
@@ -24,26 +24,26 @@ class NationwideLayoutService implements angular.IServiceProvider {
     flightAgentDataTableBox: Box = {name: "flightAgentDataTable", height: this.BOX_HEIGHT_XSMALL};
 
     // Define columns
-    column1: Column = {
+    column1: IColumn = {
         id: "col1",
         width: this.COL_WIDTH_LARGE,
         boxes: [this.jobsListBox, this.flightAgentDataTableBox]
     };
 
-    column2: Column = {
+    column2: IColumn = {
         id: "col2",
         width: this.COL_WIDTH_LARGE,
         boxes: [this.jobDetailBox, this.mapTableBox]
     };
 
-    column3: Column = {
+    column3: IColumn = {
         id: "col3",
         width: this.COL_WIDTH_MEDIUM,
         boxes: [this.jobsListPODBox, this.jobsListDeliveryBox, this.jobsListRepriceBox]
     };
 
     // Construct the layout
-    defaultLayout: Layout[] = [
+    defaultLayout: ILayout[] = [
         {
             name: "Default",
             layout: {
@@ -52,7 +52,7 @@ class NationwideLayoutService implements angular.IServiceProvider {
         }
     ];
 
-    currentLayouts: Layout[] | null = null;
+    currentLayouts: ILayout[] | null = null;
     mapZoom: { display: boolean } = {display: true};
     currentLayoutName: string = "Default";
     currentLayoutIndex: number = 0;
@@ -69,11 +69,11 @@ class NationwideLayoutService implements angular.IServiceProvider {
         return this;
     }
 
-    getLayouts(): Layout[] | null {
+    getLayouts(): ILayout[] | null {
         return angular.copy(this.currentLayouts);
     }
 
-    getDefaultLayout(): Layout[] {
+    getDefaultLayout(): ILayout[] {
         return angular.copy(this.defaultLayout);
     }
 
@@ -108,7 +108,7 @@ class NationwideLayoutService implements angular.IServiceProvider {
     private _initializeLayouts(): void {
         if (this.$window.Modernizr && this.$window.Modernizr.localstorage) {
             try {
-                const storedLayouts: Layout[] = JSON.parse(
+                const storedLayouts: ILayout[] = JSON.parse(
                     this.$window.localStorage.getItem(
                         `layoutsNW-${this.$window.ContactID}`
                     ) ?? '[]'

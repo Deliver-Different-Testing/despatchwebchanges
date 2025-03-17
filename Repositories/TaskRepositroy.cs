@@ -40,30 +40,43 @@ public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory, I
         if (filters != null)
             query = ApplyFilters(query, filters);
 
-        var simpleQuery = query.Select(e => new
-        {
-            e.UcevId,
-            e.UcevDespatcher,
-            e.UcevNotes,
-            e.UcevJobId,
-            e.UcevClosed,
-            e.UcevDate,
-            e.UcevTime,
-            e.UcevDescription,
-            e.UcevType
-        });
+        var simpleQuery = query
+            .Join(
+                Context.TucStaffs,
+                events => events.UcevStaffIdin,
+                staff => staff.UcstId,
+                (events, staff) => new
+                {
+                    events.UcevId,
+                    events.UcevDespatcher,
+                    events.UcevNotes,
+                    events.UcevJobId,
+                    events.UcevClosed,
+                    events.UcevDate,
+                    events.UcevTime,
+                    events.UcevDescription,
+                    events.UcevType,
+                    // Staff information
+                    StaffId = staff.UcstId,
+                    StaffName = staff.UcstFirstName + " " + staff.UcstLastName
+                }
+            );
 
-        var results = await simpleQuery.AsNoTracking().ToListAsync();
+        var results = await simpleQuery.ToListAsync();
 
         var tasks = new List<TaskViewModel>();
         foreach (var e in results)
         {
-            var eventTypeName = await GetEventTypeName(e.UcevType);
+            var eventTypeName = await GetEventTypeNameAsync(e.UcevType);
 
             var task = new TaskViewModel
             {
                 Id = e.UcevId,
-                Assignee = e.UcevDespatcher,
+                Assignee = new Suggestion
+                {
+                    Id = e.StaffId,
+                    Text = e.StaffName
+                },
                 Description = e.UcevNotes,
                 JobId = e.UcevJobId ?? 0,
                 Closed = e.UcevClosed,
@@ -79,19 +92,19 @@ public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory, I
         return tasks.OrderByDescending(e => e.DueDate).ToList();
     }
 
-    public async Task SetEventAsClosed(int eventId, bool closed)
+    public async Task SetEventAsClosedAsync(int eventId, bool closed)
     {
         var eventToUpdate =
-            await GetEventByIdAsync(Context, eventId)
+            await GetEventByIdAsync(eventId)
             ?? throw new KeyNotFoundException($"Event with ID {eventId} not found.");
         eventToUpdate.UcevClosed = closed;
         await Context.SaveChangesAsync();
     }
 
-    public async Task UpdateEventDate(int eventId, DateTime date)
+    public async Task UpdateEventDateAsync(int eventId, DateTime date)
     {
         var eventToUpdate =
-            await GetEventByIdAsync(Context, eventId)
+            await GetEventByIdAsync(eventId)
             ?? throw new KeyNotFoundException($"Event with ID {eventId} not found.");
         eventToUpdate.UcevDate = date.Date;
         await Context.SaveChangesAsync();
@@ -100,7 +113,7 @@ public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory, I
     public async Task UpdateEventTime(int eventId, DateTime time)
     {
         var eventToUpdate =
-            await GetEventByIdAsync(Context, eventId)
+            await GetEventByIdAsync(eventId)
             ?? throw new KeyNotFoundException($"Event with ID {eventId} not found.");
         var existingDate = eventToUpdate.UcevTime?.Date ?? DateTime.Today;
 
@@ -115,6 +128,17 @@ public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory, I
             time.Millisecond
         );
 
+        await Context.SaveChangesAsync();
+    }
+
+    public async Task ReassignEventToUser(int eventId, int staffId)
+    {
+        var eventToUpdate =
+            await GetEventByIdAsync(eventId)
+            ?? throw new KeyNotFoundException($"Event with ID {eventId} not found.");
+
+        // Update only the time component
+        eventToUpdate.UcevStaffIdin = staffId;
         await Context.SaveChangesAsync();
     }
 
@@ -237,11 +261,7 @@ public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory, I
         return query;
     }
 
-    private static bool IsOverdue(DateTime dueDate, DateTime referenceDate) =>
-        dueDate.Date < referenceDate.Date ||
-        (dueDate.Date == referenceDate.Date && dueDate.TimeOfDay < DateTime.Now.TimeOfDay);
-
-    private static async Task<TucEvent> GetEventByIdAsync(DespatchContext context, int eventId) => await context.TucEvents.FirstOrDefaultAsync(e => e.UcevId == eventId);
+    private async Task<TucEvent> GetEventByIdAsync(int eventId) => await Context.TucEvents.FirstOrDefaultAsync(e => e.UcevId == eventId);
 
     private static DateTime CombineDateAndTime(DateTime? date, DateTime? time)
     {
@@ -261,7 +281,7 @@ public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory, I
         );
     }
 
-    private async Task<string> GetEventTypeName(double? eventTypeId)
+    private async Task<string> GetEventTypeNameAsync(double? eventTypeId)
     {
         if (eventTypeId == null)
             return "Default";

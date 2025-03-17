@@ -1,6 +1,6 @@
 import DispatchCoreService from "../../../services/dispatch-core.service";
-import ToastrService from "../../../services/toastr.service";
-import {Job} from "../../../interfaces/job.interface";
+import ToastrService from "../../../services/ToastrService";
+import {IJob} from "../../../interfaces/job.interface";
 import app from "../../../app";
 
 class AdditionalServicesDialogController implements angular.IController {
@@ -20,7 +20,7 @@ class AdditionalServicesDialogController implements angular.IController {
     constructor(private $mdDialog: angular.material.IDialogService,
                 private DispatchData: DispatchCoreService,
                 private toastrService: ToastrService,
-                private job: Job) {
+                private job: IJob) {
         this.jobId = this.job.id ?? 0;
         this.clientId = this.job.clientId ?? 0;
         this.speedId = this.job.speedId ?? 0;

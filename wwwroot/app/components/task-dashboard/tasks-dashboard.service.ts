@@ -36,12 +36,16 @@ class TasksDashboardService implements angular.IServiceProvider {
         await this.$http.post("Task/MarkTaskAsClosed" + "?eventId=" + eventId + "&closed=" + closed, null);
     }
 
-    async updateTaskDate(eventId: number, date: Date) {
+    async updateTaskDate(eventId: number, date: string) {
         await this.$http.post("Task/UpdateTaskDate" + "?eventId=" + eventId + "&date=" + date, null);
     }
 
-    async updateTaskTime(eventId: number, time: Date) {
+    async updateTaskTime(eventId: number, time: string) {
         await this.$http.post("Task/UpdateTaskTime" + "?eventId=" + eventId + "&time=" + time, null);
+    }
+
+    async reassignTask(eventId: number, staffId: number) {
+        await this.$http.post("Task/ReassignTask" + "?eventId=" + eventId + "&staffId=" + staffId, null);
     }
 }
 

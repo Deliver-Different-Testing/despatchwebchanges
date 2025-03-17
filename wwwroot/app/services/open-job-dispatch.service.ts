@@ -1,6 +1,6 @@
 import app from "../app";
 import angular from "angular";
-import ToastrService from "./toastr.service";
+import ToastrService from "./ToastrService";
 import OpenJobOptions from "../interfaces/open-job-options.interface";
 
 class OpenJobDispatchService {

@@ -158,13 +158,13 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .FirstOrDefaultAsync();
     }
 
-    public async Task<List<Size>> RelatedJobs(int parentId, int clientId)
+    public async Task<List<Suggestion>> RelatedJobs(int parentId, int clientId)
     {
         return await Context
             .TucJobs.Where(j => j.ParentId == parentId && j.UcjbClientId == clientId)
             .OrderBy(j => j.UcjbDate)
             .ThenBy(j => j.UcjbTime)
-            .Select(j => new Size { Id = j.UcjbId, Label = j.UcjbNumber })
+            .Select(j => new Suggestion { Id = j.UcjbId, Text = j.UcjbNumber })
             .AsNoTracking()
             .ToListAsync();
     }

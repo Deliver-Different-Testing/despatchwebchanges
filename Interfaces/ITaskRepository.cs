@@ -9,9 +9,10 @@ namespace DespatchWeb.Interfaces;
 public interface ITaskRepository
 {
     Task<List<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters);
-    Task SetEventAsClosed(int eventId, bool closed);
-    Task UpdateEventDate(int eventId, DateTime date);
+    Task SetEventAsClosedAsync(int eventId, bool closed);
+    Task UpdateEventDateAsync(int eventId, DateTime date);
     Task UpdateEventTime(int eventId, DateTime time);
+    Task ReassignEventToUser(int eventId, int staffId);
     Task<List<Suggestion>> GetEventGroupsAsync();
     Task<List<EventGroupViewModel>> GetEventTypeGroupsAsync(int eventGroupId);
 

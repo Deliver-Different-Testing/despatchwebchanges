@@ -2,19 +2,24 @@ import app from "../app";
 import {AppConfig} from "../interfaces/app-config.interface";
 import {
     AddressViewModel, ClientItemsViewModel, InternalStatus,
-    Job,
+    IJob,
     JobQueryParams, JobRateDetails, Lookup,
     Pallet,
     ParcelDimensions, PriceBreakdown, SelectOption, SuburbLookup,
     Suggestion, SupportViewModel,
-    Views
+    Views, ClearListViewModel,
 } from "../interfaces/job.interface";
 import {PaginatedResponse} from "../interfaces/paginated-response.interface";
 import {DateField, JobField} from "../interfaces/job-field.types";
-import DfrntPageViewModel from "../interfaces/dfrnt-page-view-model.interface";
-import {ActiveCourierViewModel} from "../interfaces/courier.interface";
+import {
+    ActiveCourierViewModel,
+    AvailableCourierPosition,
+    TruckCourierStatusViewModel
+} from "../interfaces/courier.interface";
 import {EventGroupViewModel} from "../interfaces/event-group-view-model.interface";
 import {ContactID} from "../contants";
+import {ClearListEnvelopeViewModel, DfrntPageViewModel} from "../interfaces/dfrnt-page-view-model.interface";
+import {bindAllMethods} from "../bindAllMethods";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = ["$http", "moment", "APP_CONFIG"];
@@ -25,13 +30,14 @@ class DispatchCoreService implements angular.IServiceProvider {
                 private moment: any,
                 appConfig: AppConfig) {
         this.isUsCustomer = appConfig.US_Customer;
+        bindAllMethods(this);
     }
 
     $get(): any {
         return this;
     }
 
-    async getSelectedViews(userId: number, pageId: number): Promise<DfrntPageViewModel[]> {
+    async getSelectedViews(userId: number, pageId: number) {
         const response = await this.$http.get<DfrntPageViewModel[]>(`home/GetPageViews?userid=${userId}&pageid=${pageId}`);
         return response.data;
     }
@@ -145,7 +151,8 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async truckCourierStatus(courierId: number) {
-        await this.$http.get(`courier/TruckCourierStatus?courierId=${courierId}`);
+        const response = await this.$http.get<TruckCourierStatusViewModel>(`courier/TruckCourierStatus?courierId=${courierId}`);
+        return response.data;
     }
 
     async validateSwapPOD(jobNumber: string) {
@@ -196,17 +203,17 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getJobDetail(jobId: number) {
-        const response = await this.$http.get<Job>(`/Job/Detail?jobId=${jobId}`);
+        const response = await this.$http.get<IJob>(`/Job/Detail?jobId=${jobId}`);
         return response.data;
     }
 
     async getRelatedJobs(parentId: number, clientId: number) {
-        const response = await this.$http.get(`/Job/Related?parentId=${parentId}&clientId=${clientId}`);
+        const response = await this.$http.get<Suggestion[]>(`/Job/Related?parentId=${parentId}&clientId=${clientId}`);
         return response.data;
     }
 
     async getJobsCurrent(courierId: number, done: boolean) {
-        const response = await this.$http.get<Job[]>(`job/current?courierId=${courierId}&done=${done}`);
+        const response = await this.$http.get<IJob[]>(`job/current?courierId=${courierId}&done=${done}`);
         return response.data;
     }
 
@@ -228,7 +235,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         await this.$http.post(`job/UnLockSupport?id=${supportId}&dispatcher=${dispatcherName}`, null);
     }
 
-    async getDriverLocations(selectedViews: Views[]) {
+    async getDriverLocations(selectedViews: DfrntPageViewModel[]) {
         const filteredViews = selectedViews.filter(view => view.selected);
         const despatchViewIds = this._prepareViewIdsForRequest(filteredViews);
 
@@ -238,14 +245,14 @@ class DispatchCoreService implements angular.IServiceProvider {
             params.append("despatchViewIds", id.toString());
         });
 
-        const response = await this.$http.get(`courier?${params.toString()}&isUsTenant=${this.isUsCustomer}`);
+        const response = await this.$http.get<ClearListViewModel>(`courier?${params.toString()}&isUsTenant=${this.isUsCustomer}`);
         return response.data;
     }
 
     async getDriverDestinationEnvelope(clearListId: number) {
         const countryId = this.isUsCustomer ? 2 : 1;
 
-        const response = await this.$http.get(`courier/ClearListEnvelope?clearListId=${clearListId}&countryId=${countryId}`);
+        const response = await this.$http.get<ClearListEnvelopeViewModel>(`courier/ClearListEnvelope?clearListId=${clearListId}&countryId=${countryId}`);
         return response.data;
     }
 
@@ -285,7 +292,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getAvailableCourierLocation(minLng: number, minLat: number, maxLng: number, maxLat: number) {
-        const response = await this.$http.get(`courier/AvailableCourierLocation?minLng=${minLng}&minLat=${minLat}&maxLng=${maxLng}&maxLat=${maxLat}&isUsTenant=${this.isUsCustomer}`);
+        const response = await this.$http.get<AvailableCourierPosition[]>(`courier/AvailableCourierLocation?minLng=${minLng}&minLat=${minLat}&maxLng=${maxLng}&maxLat=${maxLat}&isUsTenant=${this.isUsCustomer}`);
         return response.data;
     }
 
@@ -601,7 +608,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
 
         // Format date fields
-        const dateFields: DateField[] = ["Date", "StopDate", "RestartDate", "InActiveDate", "FirstDue", "LastDone", "NextDue"];
+        const dateFields: DateField[] = ["Date", "StopDate", "RestartDate", "InActiveDate", "FirstDue", "LastDone", "NextDue", "DueDate"];
         if (dateFields.includes(field as DateField)) {
             processedValue = this.moment(value).format("YYYY-MM-DD");
             console.log("Formatted date field:", { field, originalValue, formattedValue: processedValue });
@@ -683,7 +690,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             });
         }
 
-        const response = await this.$http.get<PaginatedResponse<Job>>(`job?${params.toString()}`);
+        const response = await this.$http.get<PaginatedResponse<IJob>>(`job?${params.toString()}`);
         return {
             items: response.data.items,
             total: response.data.total,
@@ -692,7 +699,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         };
     }
 
-    async getClearListJobs(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: Suggestion[], selectedClearList: ClearListEnvelope) {
+    async getClearListJobs(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[], selectedClearList: ClearListEnvelope) {
         const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
 
         const defaultParams = {
@@ -771,7 +778,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async isFilesAttachedToJob(jobId: number) {
-        const response = await this.$http.get(`job/IsFilesAttachedToJob/${jobId}`);
+        const response = await this.$http.get<boolean>(`job/IsFilesAttachedToJob/${jobId}`);
         return response.data;
     }
 
@@ -808,7 +815,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    private _prepareViewIdsForRequest(selectedAreas: Views[]): number[] {
+    private _prepareViewIdsForRequest(selectedAreas: DfrntPageViewModel[] | Suggestion[]): number[] {
         return selectedAreas.map(area => {
             return typeof area === "object" && area.id ? area.id : 0;
         });

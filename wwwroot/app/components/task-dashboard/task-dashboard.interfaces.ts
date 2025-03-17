@@ -1,3 +1,5 @@
+import {Suggestion} from "../../interfaces/job.interface";
+
 export interface Task {
     id: number;
     title: string;
@@ -5,7 +7,7 @@ export interface Task {
     dueDate: string;
     closed: boolean;
     priority: string;
-    assignee: string;
+    assignee: Suggestion;
     eventType: string;
     jobId: number;
     icon: string;

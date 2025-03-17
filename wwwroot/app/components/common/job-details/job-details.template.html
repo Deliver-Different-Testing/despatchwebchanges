@@ -1,10 +1,11 @@
 <div class="job-detail-page" ng-if="ctrl.job">
 
-    <md-card class="warning-section md-whiteframe-1dp" ng-if="ctrl.job.isArchived">
+    <md-card class="warning-section md-whiteframe-1dp" ng-if="ctrl.job.isArchived || ctrl.job.prebook">
         <md-card-content>
             <div layout="row" layout-align="start center">
                 <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
-                <span class="warning-text">Job archived. Some fields can't be edited</span>
+                <span class="warning-text" ng-if="ctrl.job.isArchived">Job archived. Some fields can't be edited</span>
+                <span class="warning-text" ng-if="ctrl.job.prebook">Pre-booked job. Some fields may require confirmation</span>
             </div>
         </md-card-content>
     </md-card>
@@ -58,7 +59,7 @@
                             <md-icon md-font-set="material-symbols-outlined" aria-label="Pricing">payments</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Pricing:</span>
-                                <span class="timing-value">{{ ctrl.job.charge ? ctrl.job.charge : 'Not available' }}</span>
+                                <span class="timing-value">{{ ctrl.job.charge ? ctrl.job.charge : 'N/A' }}</span>
                             </div>
                         </md-list-item>
 
@@ -67,7 +68,7 @@
                             </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Created:</span>
-                                <span class="timing-value">{{ctrl.job.createdDate ? (ctrl.job.createdDate | date:'MM/dd/yyyy') : 'Not available'}}</span>
+                                <span class="timing-value">{{ctrl.job.createdDate ? (ctrl.job.createdDate | date:'MM/dd/yyyy') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
 
@@ -75,7 +76,7 @@
                             <md-icon md-font-set="material-symbols-outlined" aria-label="Log time">schedule</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Log Time:</span>
-                                <span class="timing-value">{{ctrl.job.time ? (ctrl.job.time | date:'shortTime') : 'Not available'}}</span>
+                                <span class="timing-value">{{ctrl.job.time ? (ctrl.job.time | date:'shortTime') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
                     </md-list>
@@ -87,19 +88,11 @@
                 <div flex="33" flex-xs="100" class="timing-column">
                     <md-list class="timing-list">
                         <md-list-item>
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="Due date">event</md-icon>
-                            <div class="timing-detail">
-                                <span class="timing-label">Due Date:</span>
-                                <span class="timing-value">{{ctrl.job.bookedDate ? (ctrl.job.bookedDate | date:'MM/dd/yyyy') : 'Not available'}}</span>
-                            </div>
-                        </md-list-item>
-
-                        <md-list-item>
                             <md-icon md-font-set="material-symbols-outlined" aria-label="Pickup time">access_time
                             </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">PU Time:</span>
-                                <span class="timing-value">{{ctrl.job.puTime ? (ctrl.job.puTime | date:'shortTime') : 'Not available'}}</span>
+                                <span class="timing-value">{{ctrl.job.puTime ? (ctrl.job.puTime | date:'shortTime') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
 
@@ -109,7 +102,15 @@
                             </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Dispatch:</span>
-                                <span class="timing-value">{{ctrl.job.dispatchTime ? (ctrl.job.dispatchTime | date:'shortTime') : 'Not available'}}</span>
+                                <span class="timing-value">{{ctrl.job.dispatchTime ? (ctrl.job.dispatchTime | date:'shortTime') : 'N/A'}}</span>
+                            </div>
+                        </md-list-item>
+
+                        <md-list-item>
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="POD name">sentiment_satisfied</md-icon>
+                            <div class="timing-detail">
+                                <span class="timing-label">POD Name:</span>
+                                <span class="timing-value">{{ctrl.job.podName || 'N/A'}}</span>
                             </div>
                         </md-list-item>
                     </md-list>
@@ -125,7 +126,7 @@
                             <md-icon md-font-set="material-symbols-outlined" aria-label="POD time">inventory_2</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">POD Time:</span>
-                                <span class="timing-value">{{ctrl.job.completedTime ? (ctrl.job.completedTime | date:'shortTime') : 'Not available'}}</span>
+                                <span class="timing-value">{{ctrl.job.completedTime ? (ctrl.job.completedTime | date:'shortTime') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
 
@@ -135,15 +136,16 @@
                             </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Follow Up:</span>
-                                <span class="timing-value">{{ctrl.job.followupTime ? (ctrl.job.followupTime | date:'shortTime') : 'Not available'}}</span>
+                                <span class="timing-value">{{ctrl.job.followupTime ? (ctrl.job.followupTime | date:'shortTime') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
 
-                        <md-list-item>
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="POD name">sentiment_satisfied</md-icon>
+                        <md-list-item ng-if="ctrl.job.prebook"
+                                md-ink-ripple ng-click="!this.job.locked && ctrl.editDueDate($event, ctrl.job)">
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="Next due">event</md-icon>
                             <div class="timing-detail">
-                                <span class="timing-label">POD Name:</span>
-                                <span class="timing-value">{{ctrl.job.podName || 'N/A'}}</span>
+                                <span class="timing-label">Due Date:</span>
+                                <span class="timing-value">{{ctrl.job.firstDue ? (ctrl.job.firstDue | date:'MM/dd/yyyy') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
                     </md-list>
@@ -187,12 +189,12 @@
                                 <md-list-item md-ink-ripple
                                               ng-click="!ctrl.job.locked && ctrl.editJobContact($event, ctrl.job, 'from')">
                                     <md-icon md-font-set="material-symbols-outlined">person</md-icon>
-                                    <p>Contact: {{ctrl.job.fromContactName || 'Not available'}}</p>
+                                    <p>Contact: {{ctrl.job.fromContactName || 'N/A'}}</p>
                                 </md-list-item>
                                 <md-list-item md-ink-ripple
                                               ng-click="!ctrl.job.locked && ctrl.editJobContactPhone($event, ctrl.job, 'from')">
                                     <md-icon md-font-set="material-symbols-outlined">phone</md-icon>
-                                    <p>Phone: {{ctrl.job.fromContactNumber || 'Not available'}}</p>
+                                    <p>Phone: {{ctrl.job.fromContactNumber || 'N/A'}}</p>
                                 </md-list-item>
                             </md-list>
                         </md-card-content>
@@ -231,12 +233,12 @@
                                 <md-list-item md-ink-ripple
                                               ng-click="!ctrl.job.locked && ctrl.editJobContact($event, ctrl.job, 'to')">
                                     <md-icon md-font-set="material-symbols-outlined">person</md-icon>
-                                    <p>Contact: {{ctrl.job.deliverToContact || 'Not available'}}</p>
+                                    <p>Contact: {{ctrl.job.deliverToContact || 'N/A'}}</p>
                                 </md-list-item>
                                 <md-list-item md-ink-ripple
                                               ng-click="!ctrl.job.locked && ctrl.editJobContactPhone($event, ctrl.job, 'to')">
                                     <md-icon md-font-set="material-symbols-outlined">phone</md-icon>
-                                    <p>Phone: {{ctrl.job.toContactPhone || 'Not available'}}</p>
+                                    <p>Phone: {{ctrl.job.toContactPhone || 'N/A'}}</p>
                                 </md-list-item>
                             </md-list>
                         </md-card-content>
@@ -264,7 +266,7 @@
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Flight Number:</span>
-                                    <span class="value">{{ctrl.job.assignedFlight.flightNumber || 'Not available'}}</span>
+                                    <span class="value">{{ctrl.job.assignedFlight.flightNumber || 'N/A'}}</span>
                                 </div>
                             </md-list-item>
 
@@ -273,7 +275,7 @@
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Departure:</span>
-                                    <span class="value">{{ctrl.job.assignedFlight.expectedDeparture || 'Not available'}}</span>
+                                    <span class="value">{{ctrl.job.assignedFlight.expectedDeparture || 'N/A'}}</span>
                                 </div>
                             </md-list-item>
 
@@ -282,7 +284,7 @@
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Arrival:</span>
-                                    <span class="value">{{ctrl.job.assignedFlight.expectedArrival || 'Not available'}}</span>
+                                    <span class="value">{{ctrl.job.assignedFlight.expectedArrival || 'N/A'}}</span>
                                 </div>
                             </md-list-item>
                         </md-list>
@@ -305,7 +307,7 @@
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Agent Name:</span>
-                                    <span class="value">{{ctrl.job.assignedAgent.agentName || 'Not available'}}</span>
+                                    <span class="value">{{ctrl.job.assignedAgent.agentName || 'N/A'}}</span>
                                 </div>
                             </md-list-item>
 
@@ -314,7 +316,7 @@
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Agent Rate:</span>
-                                    <span class="value">{{ctrl.job.assignedAgent.agentRate || 'Not available'}}</span>
+                                    <span class="value">{{ctrl.job.assignedAgent.agentRate || 'N/A'}}</span>
                                 </div>
                             </md-list-item>
 
@@ -323,7 +325,7 @@
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Agent Ranking:</span>
-                                    <span class="value">{{ctrl.job.assignedAgent.agentRanking || 'Not available'}}</span>
+                                    <span class="value">{{ctrl.job.assignedAgent.agentRanking || 'N/A'}}</span>
                                 </div>
                             </md-list-item>
                         </md-list>
@@ -486,7 +488,7 @@
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Leave Parcel:</span>
-                                    <span class="value">{{ctrl.job.deliverToLeaveId || 'Not available'}}</span>
+                                    <span class="value">{{ctrl.job.deliverToLeaveId || 'N/A'}}</span>
                                 </div>
                             </md-list-item>
                         </md-list>
@@ -514,7 +516,7 @@
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Dispatcher Name:</span>
-                                    <span class="value">{{ctrl.job.dispatcherName || 'Not available'}}</span>
+                                    <span class="value">{{ctrl.job.dispatcherName || 'N/A'}}</span>
                                 </div>
                             </md-list-item>
 
@@ -524,7 +526,7 @@
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Courier Name:</span>
-                                    <span class="value">{{ctrl.job.courierData.courierName || 'Not available'}}</span>
+                                    <span class="value">{{ctrl.job.courierData.courierName || 'N/A'}}</span>
                                 </div>
                             </md-list-item>
 
@@ -533,7 +535,7 @@
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Courier Mobile:</span>
-                                    <span class="value">{{ctrl.job.courierData.courierMobile || 'Not available'}}</span>
+                                    <span class="value">{{ctrl.job.courierData.courierMobile || 'N/A'}}</span>
                                 </div>
                             </md-list-item>
 
@@ -542,7 +544,7 @@
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Schedule Name:</span>
-                                    <span class="value">{{ctrl.job.scheduleName || 'Not available'}}</span>
+                                    <span class="value">{{ctrl.job.scheduleName || 'N/A'}}</span>
                                 </div>
                             </md-list-item>
 
@@ -571,7 +573,7 @@
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Client Name:</span>
-                                    <span class="value">{{ctrl.job.clientName || 'Not available'}}</span>
+                                    <span class="value">{{ctrl.job.clientName || 'N/A'}}</span>
                                 </div>
                             </md-list-item>
 
@@ -580,7 +582,7 @@
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Account #:</span>
-                                    <span class="value">{{ctrl.job.client || 'Not available'}}</span>
+                                    <span class="value">{{ctrl.job.client || 'N/A'}}</span>
                                 </div>
                             </md-list-item>
                         </md-list>
@@ -603,7 +605,7 @@
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Logged-in Contact:</span>
-                                    <span class="value">{{ctrl.job.loggedInContactName || 'Not available'}}</span>
+                                    <span class="value">{{ctrl.job.loggedInContactName || 'N/A'}}</span>
                                 </div>
                             </md-list-item>
 
@@ -613,7 +615,7 @@
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Client Name:</span>
-                                    <span class="value">{{ctrl.job.clientName || 'Not available'}}</span>
+                                    <span class="value">{{ctrl.job.clientName || 'N/A'}}</span>
                                 </div>
                             </md-list-item>
 
@@ -623,7 +625,7 @@
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Phone:</span>
-                                    <span class="value">{{ctrl.job.fromContactNumber || 'Not available'}}</span>
+                                    <span class="value">{{ctrl.job.fromContactNumber || 'N/A'}}</span>
                                 </div>
                             </md-list-item>
                         </md-list>
@@ -648,7 +650,7 @@
                                 <md-icon md-font-set="material-symbols-outlined" aria-label="Speed">speed</md-icon>
                                 <div class="info-detail">
                                     <span class="label">Speed:</span>
-                                    <span class="value">{{ctrl.job.speedName || 'Not available'}}</span>
+                                    <span class="value">{{ctrl.job.speedName || 'N/A'}}</span>
                                 </div>
                             </md-list-item>
 
@@ -737,7 +739,7 @@
                             </md-icon>
                             <div class="info-detail">
                                 <span class="label">Tracking Mobile:</span>
-                                <span class="value">{{ctrl.job.trackingMobile || 'Not available'}}</span>
+                                <span class="value">{{ctrl.job.trackingMobile || 'N/A'}}</span>
                             </div>
                         </md-list-item>
 
@@ -747,7 +749,7 @@
                             </md-icon>
                             <div class="info-detail">
                                 <span class="label">Tracking Email:</span>
-                                <span class="value">{{ctrl.job.trackingEmail || 'Not available'}}</span>
+                                <span class="value">{{ctrl.job.trackingEmail || 'N/A'}}</span>
                             </div>
                         </md-list-item>
                     </md-list>
@@ -857,7 +859,11 @@
 
         <div class="pod-photo-info">
             <p class="timestamp">{{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].timestamp | date:'medium'}}</p>
-            <p class="uploader">Uploaded by {{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].uploadedBy}}</p>
+            <p class="uploader">Delivered by {{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].uploadedBy}}</p>
+            <p class="coordinates" ng-if="ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].coordinates">
+                Location: {{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].coordinates.lat}},
+                {{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].coordinates.lng}}
+            </p>
         </div>
 
         <!-- Navigation arrows -->

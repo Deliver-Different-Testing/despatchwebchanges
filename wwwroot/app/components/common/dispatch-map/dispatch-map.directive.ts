@@ -1,6 +1,6 @@
 import app from "../../../app";
 import ConfigService from "../../../services/config.service";
-import {Job} from "../../../interfaces/job.interface";
+import {IJob} from "../../../interfaces/job.interface";
 import {Courier} from "../../../interfaces/courier.interface";
 import angular from "angular";
 import {DispatchMapControllerScope} from "./dispatch-map.interfaces";
@@ -228,7 +228,7 @@ class DispatchMapController implements angular.IController {
         });
     }
 
-    private _addPickupMarker(job: Job) {
+    private _addPickupMarker(job: IJob) {
         if (!job.pickupAddress) return;
 
         const position = new this.$window.google.maps.LatLng(
@@ -248,7 +248,7 @@ class DispatchMapController implements angular.IController {
         this.$scope.markers.push(marker);
     }
 
-    private _addDeliveryMarker(job: Job) {
+    private _addDeliveryMarker(job: IJob) {
         if (!job.deliveryAddress) return;
 
         const position = new this.$window.google.maps.LatLng(

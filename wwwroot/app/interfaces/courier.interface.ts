@@ -24,3 +24,29 @@ export interface ActiveCourierViewModel {
     label: string;
     text: string;
 }
+
+export interface TruckCourierStatusViewModel {
+    id: number;
+    courierCode: string;
+    firstName: string;
+    maxPallets: number | null;
+    maxPayLoad: number | null;
+    currentPallets: number;
+    currentWeight: number;
+    availablePalletCapacity: number | null;
+    availablePallets: number | null;
+    lastUpdated: Date;
+}
+
+export interface AvailableCourierPosition {
+    courierId: number;
+    channelId: number;
+    vehicleType: string;
+    code: string;
+    fleetCode: string;
+    clearListAreaIDs: string;
+    longitude: number | null;
+    latitude: number | null;
+    totalJobs: number;
+    overDueJobs: number;
+}

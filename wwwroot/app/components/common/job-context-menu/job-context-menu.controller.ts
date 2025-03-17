@@ -1,8 +1,8 @@
 import app from "../../../app";
-import {Job, Suggestion} from "../../../interfaces/job.interface";
+import {IJob, Suggestion} from "../../../interfaces/job.interface";
 import {ContactID, FirstName} from "../../../contants";
 import DispatchCoreService from "../../../services/dispatch-core.service";
-import ToastrService from "../../../services/toastr.service";
+import ToastrService from "../../../services/ToastrService";
 import {IContextMenuScope, MenuState} from "./job-context-menu.interfaces";
 import {EventGroupDialogService} from "../../dialogs/event-group-dialog/event-group-dialog.service";
 import "./job-context-menu.styles.less";
@@ -36,35 +36,8 @@ class ContextMenuController implements angular.IController {
         private eventGroupDialogService: EventGroupDialogService,
         private $timeout: angular.ITimeoutService
     ) {
-        this.bindFunctions();
         this.initEventGroups();
         this.setupDocumentClickHandler();
-    }
-
-    private bindFunctions() {
-        // Lifecycle hooks
-        this.$onInit = this.$onInit.bind(this);
-        this.$onDestroy = this.$onDestroy.bind(this);
-
-        // Setup and initialization
-        this.setupDocumentClickHandler = this.setupDocumentClickHandler.bind(this);
-        this.initEventGroups = this.initEventGroups.bind(this);
-
-        // Menu functions
-        this.showJobContextMenu = this.showJobContextMenu.bind(this);
-        this.hideMenu = this.hideMenu.bind(this);
-
-        // Action functions
-        this.voidJobAction = this.voidJobAction.bind(this);
-        this.addEventOtherAction = this.addEventOtherAction.bind(this);
-        this.selectEventGroup = this.selectEventGroup.bind(this);
-        this.splitJobAction = this.splitJobAction.bind(this);
-        this.setFirstJobAction = this.setFirstJobAction.bind(this);
-
-        // Callback functions
-        this.onRefresh = this.onRefresh.bind(this);
-        this.onSplitJob = this.onSplitJob.bind(this);
-        this.onRefreshCourierJobs = this.onRefreshCourierJobs.bind(this);
     }
 
     // Lifecycle hooks
@@ -93,7 +66,7 @@ class ContextMenuController implements angular.IController {
     }
 
     // Show the context menu at the given position
-    showJobContextMenu($event: MouseEvent, job: Job) {
+    showJobContextMenu($event: MouseEvent, job: IJob) {
         $event.preventDefault();
         $event.stopPropagation();
 
@@ -285,7 +258,7 @@ class ContextMenuController implements angular.IController {
         }
     }
 
-    private onSplitJob(params: { job: Job | null }) {
+    private onSplitJob(params: { job: IJob | null }) {
         if (this.$scope.onSplitJob && params.job) {
             this.$scope.onSplitJob({job: params.job});
         }

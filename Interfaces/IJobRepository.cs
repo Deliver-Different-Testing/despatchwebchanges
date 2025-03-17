@@ -12,7 +12,7 @@ namespace DespatchWeb.Interfaces;
 public interface IJobRepository
 {
     Task<JobViewModel> PreBookDetailAsync(int prebookId);
-    Task<List<Size>> RelatedJobs(int parentId, int clientId);
+    Task<List<Suggestion>> RelatedJobs(int parentId, int clientId);
     Task<JobViewModel> BulkJobDetail(int bulkJobId);
 
     Task<Tuple<int, List<JobViewModel>>> BulkSearchAsync(

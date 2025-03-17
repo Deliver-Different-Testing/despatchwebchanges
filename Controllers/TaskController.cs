@@ -32,7 +32,7 @@ public class TaskController(ITaskRepository taskRepository) : Controller
     {
         try
         {
-            await taskRepository.SetEventAsClosed(eventId, closed);
+            await taskRepository.SetEventAsClosedAsync(eventId, closed);
             return Ok();
         }
         catch (Exception ex)
@@ -50,7 +50,7 @@ public class TaskController(ITaskRepository taskRepository) : Controller
     {
         try
         {
-            await taskRepository.UpdateEventDate(eventId, date);
+            await taskRepository.UpdateEventDateAsync(eventId, date);
             return Ok();
         }
         catch (Exception ex)
@@ -132,6 +132,21 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         {
             var staff = await taskRepository.GetActiveStaffAsync();
             return Json(staff);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error getting the list of assignable staff: {Error}", ex.Message);
+            return StatusCode(500);
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ReassignTask(int eventId, int staffId)
+    {
+        try
+        {
+            await taskRepository.ReassignEventToUser(eventId, staffId);
+            return Ok();
         }
         catch (Exception ex)
         {

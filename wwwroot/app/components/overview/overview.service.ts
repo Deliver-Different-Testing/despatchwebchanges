@@ -1,6 +1,6 @@
 import app from "../../app";
 import {PaginatedResponse} from "../../interfaces/paginated-response.interface";
-import {Job, Suggestion} from "../../interfaces/job.interface";
+import {IJob, Suggestion} from "../../interfaces/job.interface";
 import {
     MapConfig,
     MegaMapResponse, OpenJobResponse,

@@ -1,17 +1,17 @@
-export interface Box {
+export interface IBox {
     name: string;
     height: string;
 }
 
-export interface Column {
+export interface IColumn {
     id: string;
     width: string;
-    boxes: Box[];
+    boxes: IBox[];
 }
 
-export interface Layout {
+export interface ILayout {
     name: string;
     layout: {
-        columns: Column[];
+        columns: IColumn[];
     };
 }
