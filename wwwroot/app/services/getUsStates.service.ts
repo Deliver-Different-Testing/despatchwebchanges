@@ -72,5 +72,4 @@ class UsStatesService {
     }
 }
 
-app.service("UsStatesService", UsStatesService);
 export default UsStatesService;

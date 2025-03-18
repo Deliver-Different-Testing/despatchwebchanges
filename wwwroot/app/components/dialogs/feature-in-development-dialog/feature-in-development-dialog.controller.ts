@@ -1,7 +1,7 @@
 import "./feature-in-development-dialog.styles.less";
 import app from "../../../app";
 
-class FeatureInDevelopmentDialogController {
+export class FeatureInDevelopmentDialogController {
     static $inject = ["$mdDialog"];
 
     constructor(private $mdDialog: angular.material.IDialogService) {
@@ -12,5 +12,4 @@ class FeatureInDevelopmentDialogController {
         this.$mdDialog.hide();
     }
 }
-
-app.controller("FeatureInDevelopmentDialogController", FeatureInDevelopmentDialogController);
+export default FeatureInDevelopmentDialogController;

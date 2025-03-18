@@ -44,5 +44,3 @@ export class EventGroupDialogService {
         }
     }
 }
-
-app.service('eventGroupDialogService', EventGroupDialogService);

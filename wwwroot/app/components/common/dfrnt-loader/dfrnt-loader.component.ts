@@ -1,7 +1,6 @@
-import app from "../../../app";
 import "./dfrnt-loader.styles.less";
 
-export class DfrntLoaderController implements angular.IController {
+class DfrntLoaderController implements angular.IController {
     isLoading?: boolean;
     iconName?: string;
 
@@ -16,7 +15,7 @@ export class DfrntLoaderController implements angular.IController {
     }
 }
 
-const DfrntLoaderComponent: angular.IComponentOptions = {
+export const DfrntLoaderComponent: angular.IComponentOptions = {
     template: require("./dfrnt-loader.template.html"),
     bindings: {
         isLoading: '<',
@@ -25,5 +24,3 @@ const DfrntLoaderComponent: angular.IComponentOptions = {
     controller: DfrntLoaderController,
     controllerAs: 'ctrl'
 };
-
-app.component('dfrntLoader', DfrntLoaderComponent);

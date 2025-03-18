@@ -142,6 +142,7 @@ export interface IJob {
     isActive: boolean;
     isArchived: boolean;
     clientColor?: string;
+    searchText?: string;
 }
 
 export interface Vehicle {
@@ -278,8 +279,6 @@ export interface JobQueryParams {
     status?: string;
     order?: string;
     orderDirection?: string;
-    page?: number;
-    limit?: number;
 }
 
 export interface PriceBreakdown {

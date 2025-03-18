@@ -77,12 +77,6 @@ public class JobController(
                 status
             );
 
-            Log.Information(
-                "Successfully retrieved {Count} jobs out of {Total} total records",
-                result.Items.Count(),
-                result.Total
-            );
-
             return Json(result);
         }
         catch (UnauthorizedAccessException ex)
@@ -96,6 +90,55 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error processing job list request");
+            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAllJobCoordinates(
+        [FromQuery] DispatchStatus status,
+        bool isInternal,
+        string clientIds,
+        [FromQuery] List<int> despatchViewIds)
+    {
+        try
+        {
+            Log.Information(
+                "GetAllJobCoordinates endpoint called with Status: {Status}, IsInternal: {IsInternal}, "
+                    + "ClientIds: {ClientIds}, DespatchViewIds: {@DespatchViewIds}",
+                status,
+                isInternal,
+                clientIds,
+                despatchViewIds
+            );
+
+            var isUsTenant = countryService.IsUsTenant();
+
+            if (!isInternal) await clientAccessValidator.ValidateClientAccess(0, clientIds);
+
+            var result = await jobRepository.GetJobCoordinatesAsync(
+                status,
+                isInternal,
+                isUsTenant,
+                clientIds,
+                despatchViewIds
+            );
+
+            Log.Information(
+                "Successfully retrieved {Count} job coordinates",
+                result.Count
+            );
+
+            return Json(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Log.Warning(ex, "Unauthorized access attempt");
+            return StatusCode(StatusCodes.Status401Unauthorized, "Unauthorized access");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error processing job coordinates request");
             return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
         }
     }

@@ -568,7 +568,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         where T : class => await Context.Set<T>().FindAsync(id);
 
     // This function replaces the sql view "DESWEB_qryDespatch"
-    protected async Task<PaginatedResponse<JobViewModel>> DespatchQry(
+    protected async Task<List<JobViewModel>> DespatchQry(
         AppPage page,
         DispatchStatus status,
         string order,
@@ -578,24 +578,13 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         string clientIds,
         List<int> selectedViewIds,
         NationwideWidget? windowPane = null,
-        ClearListEnvelopeViewModel clearListEnvelope = null,
-        int pageNumber = 1,
-        int pageSize = 10
+        ClearListEnvelopeViewModel clearListEnvelope = null
     )
     {
         try
         {
             var query = await BuildBaseQuery(selectedViewIds);
-            if (query == null)
-            {
-                return new PaginatedResponse<JobViewModel>
-                {
-                    Items = new List<JobViewModel>(),
-                    Total = 0,
-                    Page = pageNumber,
-                    Pages = 0
-                };
-            }
+            if (query == null) return [];
 
             query = ApplyGeographicFilters(query, clearListEnvelope);
 
@@ -621,32 +610,21 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     query = ApplyNationwideSpecificOrdering(query, order, orderDirection);
                     break;
                 default:
-                    return new PaginatedResponse<JobViewModel>
-                    {
-                        Items = new List<JobViewModel>(),
-                        Total = 0,
-                        Page = pageNumber,
-                        Pages = 0
-                    };
+                    return [];
             }
 
             var total = await query.CountAsync();
-            var pages = (int)Math.Ceiling(total / (double)pageSize);
-
-            query = query.Skip((pageNumber - 1) * pageSize).Take(pageSize);
+            Log.Information($"Total jobs: {total}");
 
             var sql = query.ToQueryString();
             Log.Information($"Generated SQL: {sql}");
 
-            var jobs = await query.Select(JobMapping).AsNoTracking().ToListAsync();
+            var jobs = await query
+                .Select(JobMapping)
+                .AsNoTracking()
+                .ToListAsync();
 
-            return new PaginatedResponse<JobViewModel>
-            {
-                Items = jobs,
-                Total = total,
-                Page = pageNumber,
-                Pages = pages
-            };
+            return jobs;
         }
         catch (Exception e)
         {
@@ -1169,14 +1147,14 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             var isArchivedJob = Context.TucJobArchives.Any(j => j.UcjbId == jobId);
             if (isArchivedJob)
             {
-                   return await Context
-                                .TucJobArchives.Where(j => j.UcjbId == jobId)
-                                .Select(JobArchiveMapping)
-                                .AsNoTracking()
-                                .FirstOrDefaultAsync();
+                return await Context
+                    .TucJobArchives.Where(j => j.UcjbId == jobId)
+                    .Select(JobArchiveMapping)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync();
             }
 
-            // Will be prebook
+            // Will be pre-book
             return await Context
                 .TucJobBookings.Where(j => j.UcbkId == jobId)
                 .Select(JobPrebookMapping)
@@ -1928,6 +1906,79 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         catch (Exception ex)
         {
             Log.Error(ex, $"Error retrieving all {typeof(T).Name} records");
+            throw;
+        }
+    }
+
+    public async Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(
+        DispatchStatus status,
+        bool isInternal,
+        bool isUsTenant,
+        string clientIds,
+        List<int> selectedViewIds)
+    {
+        try
+        {
+            var query = await BuildBaseQuery(selectedViewIds);
+            if (query == null) return [];
+
+            // Apply status filters just like in ApplyDashboardSpecificFilters
+            query = status switch
+            {
+                DispatchStatus.New => query.Where(j =>
+                    j.UcjbStatusNavigation != null
+                    && (j.UcjbCourierId == null || j.UcjbStatus == (int)JobStatus.New)
+                ),
+
+                DispatchStatus.Nda => query.Where(j =>
+                    j.UcjbCourierId == null
+                    || j.UcjbStatus == (int)JobStatus.New
+                    || j.UcjbStatus == (int)JobStatus.Dispatched
+                    || j.UcjbStatus == (int)JobStatus.AwaitingPod
+                    || j.UcjbStatus == (int)JobStatus.LatePickup
+                    || j.UcjbStatus == (int)JobStatus.Accepted
+                ),
+
+                DispatchStatus.Active => query.Where(j =>
+                    !j.UcjbJobDone || j.UcjbStatus != (int)JobStatus.Completed
+                ),
+
+                DispatchStatus.Done => query.Where(j =>
+                    j.UcjbJobDone || j.UcjbStatus == (int)JobStatus.Completed
+                ),
+
+                DispatchStatus.All => query,
+
+                _ => query
+            };
+
+            query = query.Where(j => j.UcjbStatus != 9);
+
+            var jobCoordinates = await query
+                .Select(j => new JobCoordinateModel
+                {
+                    Id = j.UcjbId,
+                    JobNo = j.UcjbNumber,
+                    PickupLatitude = j.PickUpLatitude,
+                    PickupLongitude = j.PickUpLongitude,
+                    DeliveryLatitude = j.DeliveryLatitude,
+                    DeliveryLongitude = j.DeliveryLongitude,
+                    StatusId = j.UcjbStatus,
+                    StatusName = j.UcjbStatusNavigation.UcjsName,
+                    ClientId = j.UcjbClientId ?? 0,
+                    ClientName = j.UcjbClient.UcclName,
+                    Speed = j.UcjbSpeedNavigation.ShortName,
+                    FromAddress = j.UcjbFromAddr,
+                    ToAddress = j.UcjbToAddr
+                })
+                .AsNoTracking()
+                .ToListAsync();
+
+            return jobCoordinates;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error occurred getting job coordinates. Please see exception.");
             throw;
         }
     }

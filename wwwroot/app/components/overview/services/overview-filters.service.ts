@@ -21,7 +21,7 @@ class OverviewFiltersService implements angular.IServiceProvider {
     $get(): any {
         return this;
     }
-    
+
     onFilterChange(callback: () => void): void {
         this.filterChangeCallbacks.push(callback);
     }
@@ -36,5 +36,4 @@ class OverviewFiltersService implements angular.IServiceProvider {
     }
 }
 
-app.service("overviewFiltersService", OverviewFiltersService);
 export default OverviewFiltersService;

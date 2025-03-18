@@ -18,6 +18,3 @@ export class FeatureInDevelopmentDialogService {
         });
     }
 }
-
-app.service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService);
-export default FeatureInDevelopmentDialogService;

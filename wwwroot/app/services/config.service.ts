@@ -19,5 +19,4 @@ class ConfigService {
     }
 }
 
-app.service("configService", ConfigService);
 export default ConfigService;

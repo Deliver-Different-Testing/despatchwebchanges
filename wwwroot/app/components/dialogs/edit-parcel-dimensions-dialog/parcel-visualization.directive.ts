@@ -1,7 +1,7 @@
 import app from "../../../app";
 import template from "./parcel-visualization.template.html";
 
-class ParcelVisualizationController implements angular.IController {
+export class ParcelVisualizationController implements angular.IController {
     baseSize: number;
     maxDimension: number;
     scale?: number;
@@ -52,5 +52,3 @@ export class ParcelVisualizationDirective implements angular.IDirective {
         return () => new ParcelVisualizationDirective();
     }
 }
-
-app.directive("parcelVisualization", ParcelVisualizationDirective.factory());

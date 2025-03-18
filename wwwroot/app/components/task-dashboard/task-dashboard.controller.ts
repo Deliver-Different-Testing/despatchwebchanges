@@ -14,7 +14,7 @@ import {IDialogDateTimeResult, ISelectDialogResult} from "../../interfaces/dialo
 import {EditDateTimeDialogService} from "../dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
 import {bindAllMethods} from "../../bindAllMethods";
 
-class TaskDashboardController implements angular.IController {
+export class TaskDashboardController implements angular.IController {
     static $inject = [
         "greetingService",
         "$mdSidenav",
@@ -353,5 +353,3 @@ class TaskDashboardController implements angular.IController {
         }
     }
 }
-
-app.controller("taskDashboardController", TaskDashboardController);

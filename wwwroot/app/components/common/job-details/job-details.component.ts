@@ -1184,7 +1184,7 @@ class JobDetailController implements angular.IController {
     }
 }
 
-const JobDetailComponent: angular.IComponentOptions = {
+export const JobDetailComponent: angular.IComponentOptions = {
     template: require("./job-details.template.html"),
     bindings: {
         job: "=",
@@ -1193,5 +1193,3 @@ const JobDetailComponent: angular.IComponentOptions = {
     controller: JobDetailController,
     controllerAs: "ctrl"
 }
-
-app.component("jobDetailWidget", JobDetailComponent);

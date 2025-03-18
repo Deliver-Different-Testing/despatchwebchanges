@@ -1,9 +1,9 @@
 import ToastrService from "../../../services/ToastrService";
 import {Suggestion} from "../../../interfaces/job.interface";
 import app from "../../../app";
-import {ISelectDialogResult} from "./ISelectDialogResult";
+import {ISelectDialogResult} from "../../../interfaces/dialog-result.interfaces";
 
-class SelectDialogController {
+export class SelectDialogController {
     static $inject = ["$mdDialog", "toastrService", "id", "fieldName", "title", "options", "initialValue", "showCheckbox", "checkboxLabel"];
 
     isLoading: boolean;
@@ -65,5 +65,3 @@ class SelectDialogController {
         this.$mdDialog.cancel();
     }
 }
-
-app.controller("SelectDialogController", SelectDialogController);

@@ -33,5 +33,4 @@ class OpenJobDispatchService {
     }
 }
 
-app.service("openJobDispatchService", OpenJobDispatchService);
 export default OpenJobDispatchService;

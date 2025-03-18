@@ -32,5 +32,4 @@ class PrebookService {
     }
 }
 
-app.service("uPBData", PrebookService);
 export default PrebookService;

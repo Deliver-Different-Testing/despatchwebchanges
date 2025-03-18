@@ -26,14 +26,6 @@ import "./directives";
 import "./materialTheme";
 import "./routes";
 
-// Common components
-import "./components/common/side-nav/side-nav.directive";
-import "./components/common/dispatch-map/dispatch-map.directive";
-import "./components/common/job-details/job-details.component";
-import "./components/common/pod-photo-viewer/pod-photo-viewer.component";
-import "./components/common/dfrnt-loader/dfrnt-loader.component";
-import "./components/common/job-context-menu/job-context-menu.controller";
-
 // Service imports
 import "./services";
 import "./components";

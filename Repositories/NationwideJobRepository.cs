@@ -18,18 +18,6 @@ namespace DespatchWeb.Repositories;
 public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextFactory)
     : BaseJobRepository(contextFactory), INationwideJobRepository
 {
-    // Ooriginal method for backwards compatibility
-    public async Task<List<JobViewModel>> NationwideJobListAsync(string order, string orderDirection, bool isInternal,
-        bool isUsTenant,
-        string clientIds, NationwideWidget windowPane,
-        List<int> selectedViewIds, DispatchStatus status = DispatchStatus.All)
-    {
-        var result = await NationwideJobListAsync(order, orderDirection, isInternal, isUsTenant, clientIds, windowPane,
-            selectedViewIds, status, 1, int.MaxValue); // Get all results in one page
-
-        return result.Items.ToList();
-    }
-
     public async Task AddJobNationwideAsync(int jobId, ScheduledFlight flight, string webhookAlertId)
     {
         try
@@ -150,21 +138,13 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         }
     }
 
-// New paginated version
-    public async Task<PaginatedResponse<JobViewModel>> NationwideJobListAsync(string order, string orderDirection,
+    public async Task<List<JobViewModel>> NationwideJobListAsync(string order, string orderDirection,
         bool isInternal, bool isUsTenant,
         string clientIds, NationwideWidget windowPane,
-        List<int> selectedViewIds, DispatchStatus status = DispatchStatus.All,
-        int pageNumber = 1, int pageSize = 10)
+        List<int> selectedViewIds, DispatchStatus status = DispatchStatus.All)
     {
         if (isInternal == false && string.IsNullOrEmpty(clientIds))
-            return new PaginatedResponse<JobViewModel>
-            {
-                Items = new List<JobViewModel>(),
-                Total = 0,
-                Page = pageNumber,
-                Pages = 0
-            };
+            return [];
 
         return await DespatchQry(
             AppPage.Domestic,
@@ -175,10 +155,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             isUsTenant,
             clientIds,
             selectedViewIds,
-            windowPane,
-            null,
-            pageNumber,
-            pageSize);
+            windowPane);
     }
 
     private async Task<JobDetails> GetJobDetailsAsync(int jobId)

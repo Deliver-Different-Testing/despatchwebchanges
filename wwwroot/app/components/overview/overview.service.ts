@@ -1,6 +1,5 @@
-import app from "../../app";
 import {PaginatedResponse} from "../../interfaces/paginated-response.interface";
-import {IJob, Suggestion} from "../../interfaces/job.interface";
+import {Suggestion} from "../../interfaces/job.interface";
 import {
     MapConfig,
     MegaMapResponse, OpenJobResponse,
@@ -123,5 +122,4 @@ class OverviewService implements angular.IServiceProvider {
     }
 }
 
-app.service("overviewService", OverviewService);
 export default OverviewService;

@@ -3,7 +3,7 @@ import ToastrService from "../../../services/ToastrService";
 import app from "../../../app";
 import {SelectOption} from "../../../interfaces/job.interface";
 
-class AutoCompleteDialogController {
+export class AutoCompleteDialogController {
     static $inject = [
         "$mdDialog",
         "DispatchData",
@@ -126,5 +126,3 @@ class AutoCompleteDialogController {
         this.$mdDialog.cancel();
     }
 }
-
-app.controller("AutoCompleteDialogController", AutoCompleteDialogController);

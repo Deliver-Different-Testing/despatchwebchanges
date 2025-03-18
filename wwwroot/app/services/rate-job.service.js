@@ -29,4 +29,4 @@ class RateJobService {
     }
 }
 
-app.service("rateJobService", RateJobService);
+export default RateJobService;

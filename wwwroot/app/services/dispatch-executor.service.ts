@@ -67,17 +67,14 @@ class DispatchExecutorService implements angular.IServiceProvider {
             );
 
             // Get unDispatched jobs (safely handle null courierData)
-            const unDispatchedJobs = result.items.filter((job: any) =>
+            const unDispatchedJobs = result.filter((job: any) =>
                 !job?.courierData?.courierId
             );
 
-            console.log(`Retrieved ${result.items.length} jobs, ${unDispatchedJobs.length} unDispatched`);
+            console.log(`Retrieved ${result.length} jobs, ${unDispatchedJobs.length} unDispatched`);
 
             return {
-                items: result.items,
-                total: result.total,
-                page: result.page,
-                limit: result.limit,
+                items: result,
                 undispatchedJobs: unDispatchedJobs,
                 activeCouriers: this.pickCouriers,
                 allCouriers: this.pickAllCouriers
@@ -503,5 +500,4 @@ class DispatchExecutorService implements angular.IServiceProvider {
     }
 }
 
-app.service("dispatchJobService", DispatchExecutorService);
 export default DispatchExecutorService;

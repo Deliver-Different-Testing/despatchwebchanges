@@ -214,4 +214,123 @@
             margin-bottom: 1rem;
         }
     }
+
+    // Additional variables for table footer
+    @background-color: #f5f5f5;
+    @border-color: rgba(0, 0, 0, 0.12);
+
+    // Table footer styles
+    .md-table-footer {
+        background-color: @background-color;
+        border-top: 1px solid @border-color;
+        height: 48px;
+        font-size: 13px;
+
+        &-container {
+            padding: 0 8px;
+        }
+
+        &-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 100%;
+        }
+    }
+
+    // Footer label styles
+    .footer-label {
+        display: flex;
+        align-items: center;
+
+        .muted-icon {
+            color: @text-muted;
+        }
+    }
+
+    .footer-title {
+        font-weight: 500;
+        font-size: 14px;
+        margin-left: 8px;
+    }
+
+    // Status summary section
+    .status-summary {
+        display: flex;
+        gap: 12px;
+    }
+
+    // Status chip common styles - more compact
+    .status-chip {
+        display: flex;
+        align-items: center;
+        padding: 2px 10px;
+        border-radius: 16px;
+        font-weight: 500;
+        height: 24px;
+        white-space: nowrap; // Prevent text wrapping
+
+        md-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+            margin-right: 4px;
+        }
+
+        span {
+            margin-right: 2px;
+        }
+
+        .status-label {
+            margin-left: 4px;
+            font-weight: normal;
+        }
+
+        // Total count chip
+        &.total {
+            background-color: #E0E0E0; // Light gray background
+            color: @text-dark;
+
+            md-icon {
+                color: @text-dark;
+            }
+        }
+
+        // Status-specific colors using provided variables
+        &.pending {
+            background-color: @status-blue;
+            color: @status-new-text;
+
+            md-icon {
+                color: @status-new-text;
+            }
+        }
+
+        &.in-transit {
+            background-color: @status-green-dark;
+            color: darken(@status-green-dark, 50%);
+
+            md-icon {
+                color: darken(@status-green-dark, 50%);
+            }
+        }
+
+        &.completed {
+            background-color: @status-gray;
+            color: darken(@status-gray, 40%);
+
+            md-icon {
+                color: darken(@status-gray, 40%);
+            }
+        }
+
+        &.problem {
+            background-color: @status-red-light;
+            color: @status-undeliverable-text;
+
+            md-icon {
+                color: @status-undeliverable-text;
+            }
+        }
+    }
 }

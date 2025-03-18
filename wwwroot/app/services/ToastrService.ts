@@ -39,5 +39,4 @@ class ToastrService {
     }
 }
 
-app.service("toastrService", ToastrService);
 export default ToastrService;

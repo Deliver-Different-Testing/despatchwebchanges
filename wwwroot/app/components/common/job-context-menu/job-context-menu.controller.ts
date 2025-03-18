@@ -1,4 +1,3 @@
-import app from "../../../app";
 import {IJob, Suggestion} from "../../../interfaces/job.interface";
 import {ContactID, FirstName} from "../../../contants";
 import DispatchCoreService from "../../../services/dispatch-core.service";
@@ -6,6 +5,7 @@ import ToastrService from "../../../services/ToastrService";
 import {IContextMenuScope, MenuState} from "./job-context-menu.interfaces";
 import {EventGroupDialogService} from "../../dialogs/event-group-dialog/event-group-dialog.service";
 import "./job-context-menu.styles.less";
+import {bindAllMethods} from "../../../bindAllMethods";
 
 class ContextMenuController implements angular.IController {
     static $inject = [
@@ -36,6 +36,8 @@ class ContextMenuController implements angular.IController {
         private eventGroupDialogService: EventGroupDialogService,
         private $timeout: angular.ITimeoutService
     ) {
+        bindAllMethods(this);
+
         this.initEventGroups();
         this.setupDocumentClickHandler();
     }
@@ -271,7 +273,7 @@ class ContextMenuController implements angular.IController {
     }
 }
 
-class ContextMenuDirective implements angular.IDirective {
+export class ContextMenuDirective implements angular.IDirective {
     restrict: 'E';
     template: string;
     scope: any;
@@ -296,6 +298,3 @@ class ContextMenuDirective implements angular.IDirective {
         return () => new ContextMenuDirective();
     }
 }
-
-// Register directives
-app.directive("contextMenu", ContextMenuDirective.factory());

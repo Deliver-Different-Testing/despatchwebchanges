@@ -49,5 +49,4 @@ class TasksDashboardService implements angular.IServiceProvider {
     }
 }
 
-app.service("tasksDashboardsService", TasksDashboardService);
 export default TasksDashboardService;

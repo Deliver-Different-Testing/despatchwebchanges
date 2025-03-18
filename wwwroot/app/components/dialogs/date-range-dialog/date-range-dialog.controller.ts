@@ -1,7 +1,7 @@
 import "./date-range-dialog.styles.less";
 import app from "../../../app";
 
-class DateRangeDialogController {
+export class DateRangeDialogController {
     static $inject = ["$mdDialog", "dateRange"];
 
     private readonly startDate: Date;
@@ -35,5 +35,3 @@ class DateRangeDialogController {
         return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
     }
 }
-
-app.controller("DateRangeDialogController", DateRangeDialogController);

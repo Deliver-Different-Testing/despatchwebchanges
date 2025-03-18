@@ -1,4 +1,3 @@
-import app from "../../../app";
 import angular from "angular";
 import {PodPhoto} from "./pod-photo-viewer.interfaces";
 import "./pod-photo-viewer.styles.less";
@@ -49,7 +48,7 @@ class PODPhotoViewerController implements angular.IController {
     }
 }
 
-const PodPhotoViewerComponent: angular.IComponentOptions = {
+export const PodPhotoViewerComponent: angular.IComponentOptions = {
     template: require("./pod-photo-viewer.template.html"),
     bindings: {
         photos: '<',
@@ -60,5 +59,3 @@ const PodPhotoViewerComponent: angular.IComponentOptions = {
     controller: PODPhotoViewerController,
     controllerAs: "ctrl"
 }
-
-app.component("podPhotoViewer", PodPhotoViewerComponent);

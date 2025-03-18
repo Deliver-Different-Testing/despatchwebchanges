@@ -979,7 +979,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .ToListAsync();
     }
 
-    public async Task<PaginatedResponse<JobViewModel>> JobListAsync(
+    public async Task<List<JobViewModel>> JobListAsync(
         JobQueryParams queryParams,
         bool isInternal,
         bool isUsTenant,
@@ -989,13 +989,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         ClearListEnvelopeViewModel clearListEnvelope = null)
     {
         if (isInternal == false && string.IsNullOrEmpty(clientIds))
-            return new PaginatedResponse<JobViewModel>
-            {
-                Items = new List<JobViewModel>(),
-                Total = 0,
-                Page = queryParams.Page,
-                Pages = 0
-            };
+            return [];
 
         return await DespatchQry(
             AppPage.Dispatch,
@@ -1007,9 +1001,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             clientIds,
             selectedViewIds,
             null,
-            clearListEnvelope,
-            queryParams.Page,
-            queryParams.Limit
+            clearListEnvelope
         );
     }
 
@@ -1027,53 +1019,54 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         }
         else
         {
-            foreach (var ch in channelItems)
-            {
-                switch (ch)
+            if (channelItems != null)
+                foreach (var ch in channelItems)
                 {
-                    case "Main":
-                        const string main =
-                            "(RemoteJob = 0 AND (RegionFromID = 2 OR RegionFromID = 3 Or RegionFromID = 10) AND (RegionToID = 1 OR RegionToID = 4 OR RegionToID = 10 OR (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39,53,54))) or ((RegionFromID = 2 OR RegionFromID = 3) AND (RegionToID = 2 OR RegionToID = 3) And ucjbVan=1) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) or (RemoteJob = 0 AND (RegionFromID = 4 OR RegionFromID = 10 OR (RegionFromID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39,53,54))) AND   (RegionToID < 5 OR RegionToID = 10 OR (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39))) AND  NOT (RegionFromID = 10 AND (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39))) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) ";
-                        if (string.IsNullOrEmpty(whereToUse))
-                        {
-                            whereToUse = main;
-                        }
-                        else
-                        {
-                            whereToUse += " OR " + main;
-                        }
+                    switch (ch)
+                    {
+                        case "Main":
+                            const string main =
+                                "(RemoteJob = 0 AND (RegionFromID = 2 OR RegionFromID = 3 Or RegionFromID = 10) AND (RegionToID = 1 OR RegionToID = 4 OR RegionToID = 10 OR (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39,53,54))) or ((RegionFromID = 2 OR RegionFromID = 3) AND (RegionToID = 2 OR RegionToID = 3) And ucjbVan=1) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) or (RemoteJob = 0 AND (RegionFromID = 4 OR RegionFromID = 10 OR (RegionFromID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39,53,54))) AND   (RegionToID < 5 OR RegionToID = 10 OR (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39))) AND  NOT (RegionFromID = 10 AND (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39))) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) ";
+                            if (string.IsNullOrEmpty(whereToUse))
+                            {
+                                whereToUse = main;
+                            }
+                            else
+                            {
+                                whereToUse += " OR " + main;
+                            }
 
-                        break;
-                    case "City":
-                        const string city =
-                            "((RemoteJob = 0 AND (RegionFromID = 2 OR RegionFromID = 3 Or RegionFromID = 10) AND (RegionToID = 2 OR RegionToID = 3 Or RegionToID = 10)) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) or (RemoteJob = 0 AND RegionFromID = 3  AND RegionToID = 3  AND ucjbSize in(0,1) AND (Truck = 0 OR Truck is NULL))";
-                        if (string.IsNullOrEmpty(whereToUse))
-                        {
-                            whereToUse = city;
-                        }
-                        else
-                        {
-                            whereToUse += " OR " + city;
-                        }
+                            break;
+                        case "City":
+                            const string city =
+                                "((RemoteJob = 0 AND (RegionFromID = 2 OR RegionFromID = 3 Or RegionFromID = 10) AND (RegionToID = 2 OR RegionToID = 3 Or RegionToID = 10)) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) or (RemoteJob = 0 AND RegionFromID = 3  AND RegionToID = 3  AND ucjbSize in(0,1) AND (Truck = 0 OR Truck is NULL))";
+                            if (string.IsNullOrEmpty(whereToUse))
+                            {
+                                whereToUse = city;
+                            }
+                            else
+                            {
+                                whereToUse += " OR " + city;
+                            }
 
-                        break;
-                    case "Trucks":
-                        const string trucks =
-                            "(ucjbSpeed IN (45,109) OR Truck = 1) AND IsParentJob = 0";
-                        if (string.IsNullOrEmpty(whereToUse))
-                        {
-                            whereToUse = trucks;
-                        }
-                        else
-                        {
-                            whereToUse += " OR " + trucks;
-                        }
+                            break;
+                        case "Trucks":
+                            const string trucks =
+                                "(ucjbSpeed IN (45,109) OR Truck = 1) AND IsParentJob = 0";
+                            if (string.IsNullOrEmpty(whereToUse))
+                            {
+                                whereToUse = trucks;
+                            }
+                            else
+                            {
+                                whereToUse += " OR " + trucks;
+                            }
 
-                        break;
-                    case "All":
-                        break;
+                            break;
+                        case "All":
+                            break;
+                    }
                 }
-            }
         }
 
         var s =

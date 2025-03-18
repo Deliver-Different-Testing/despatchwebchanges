@@ -72,5 +72,3 @@ export class EditDateTimeDialogService implements angular.IServiceProvider {
         return result;
     }
 }
-
-app.service("editDateTimeDialogService", EditDateTimeDialogService);
