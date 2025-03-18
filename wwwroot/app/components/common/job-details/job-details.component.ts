@@ -6,7 +6,6 @@ import {JobNote, JobOptions, TabItem} from "./job-details.interfaces";
 import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import "./job-details.styles.less";
-import app from "../../../app";
 import {SelectDialogService} from "../../dialogs/select-dialog/select-dialog.service";
 import {EditDateTimeDialogService} from "../../dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
 import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interfaces";

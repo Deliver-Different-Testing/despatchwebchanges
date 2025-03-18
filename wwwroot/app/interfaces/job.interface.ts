@@ -143,6 +143,7 @@ export interface IJob {
     isArchived: boolean;
     clientColor?: string;
     searchText?: string;
+    deliverByTime?: Date;
 }
 
 export interface Vehicle {
@@ -279,6 +280,7 @@ export interface JobQueryParams {
     status?: string;
     order?: string;
     orderDirection?: string;
+    statusFilter?: string;
 }
 
 export interface PriceBreakdown {

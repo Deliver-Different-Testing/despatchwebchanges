@@ -19,8 +19,6 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
     : BaseRepository(contextFactory),
         ICourierRepository
 {
-    private readonly DbContextWrapper _dbContextWrapper = new DbContextWrapper(contextFactory);
-
     public async Task<ActiveCouriersViewModel> GetCourierByIdAsync(int courierId)
     {
         var courier = await Context.TucCouriers
@@ -31,7 +29,15 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
                 Name = c.UccrName,
                 CourierId = c.UccrId,
                 DangerousGoods = c.UccrDangerousGoods,
-                DGLicenseExpiry = c.DglicenseExpiry
+                DGLicenseExpiry = c.DglicenseExpiry,
+                IsActive = c.Active == true && (
+                    c.SendJobsViaSms == true ||
+                    c.SendAlertSms == true ||
+                    (c.SendJobsViaSms == false &&
+                     c.CourierLogInOut != null &&
+                     c.CourierLogInOut.LogInTime.Date == DateTime.Today &&
+                     c.CourierLogInOut.LogOutTime == null)
+                )
             })
             .AsNoTracking()
             .FirstOrDefaultAsync();
@@ -328,13 +334,12 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
     {
         try
         {
-            var dbContext = _dbContextWrapper.GetContext();
             // Get all required data upfront
             var activeCouriers = await Context.Procedures.DES_qryCourierCombo_ActiveAsync();
             var query = Context.TblDespatchViews.AsQueryable();
 
             // If view(s) provided, filter to these
-            if (despatchViewIds.Any())
+            if (despatchViewIds.Count != 0)
             {
                 query = query.Where(dv => despatchViewIds.Contains(dv.DespatchViewId));
             }

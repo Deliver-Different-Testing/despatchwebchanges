@@ -17,6 +17,8 @@ public class ActiveCouriersViewModel
 
     public DateTime? DGLicenseExpiry { get; set; }
 
+    public bool IsActive { get; set; }
+
     public string Label
     {
         get => $"{Code} {Name}";

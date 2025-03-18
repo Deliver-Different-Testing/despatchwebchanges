@@ -259,7 +259,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 .ToList(),
 
             IsArchived = false,
-            PreBook = false
+            PreBook = false,
+            DeliverByTime = j.DeliverByTime,
         };
 
     private static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping =
@@ -414,7 +415,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     }
                     : null,
             IsArchived = true,
-            PreBook = false
+            PreBook = false,
+            DeliverByTime = j.DeliverByTime,
         };
 
     private static readonly Expression<Func<TucJobBooking, JobViewModel>> JobPrebookMapping =
@@ -550,7 +552,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     }
                     : null,
             IsArchived = true,
-            PreBook = true
+            PreBook = true,
+            DeliverByTime = j.DeliverByTime
         };
 
     private static readonly int[] SourceArray = [41, 42, 43, 51, 52];
@@ -734,6 +737,41 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
         return order.ToLowerInvariant() switch
         {
+            // Status group ordering cases
+            "group-pending" => query.OrderBy(j =>
+                j.UcjbStatus == (int)JobStatus.New ? 1 :
+                j.UcjbStatus == (int)JobStatus.Dispatched ? 2 :
+                j.UcjbStatus == (int)JobStatus.ReadyForPacking ? 3 :
+                j.UcjbStatus == (int)JobStatus.ReadyToPickup ? 4 :
+                j.UcjbStatus == (int)JobStatus.AwaitingProcessing ? 5 :
+                j.UcjbStatus == (int)JobStatus.Preassigned ? 6 : 99
+            ).ThenBy(j => j.UcjbTime),
+
+            "group-in-transit" => query.OrderBy(j =>
+                j.UcjbStatus == (int)JobStatus.Accepted ? 1 :
+                j.UcjbStatus == (int)JobStatus.PickedUp ? 2 :
+                j.UcjbStatus == (int)JobStatus.InTransit ? 3 :
+                j.UcjbStatus == (int)JobStatus.OutForDelivery ? 4 : 99
+            ).ThenBy(j => j.UcjbTime),
+
+            "group-completed" => query.OrderBy(j =>
+                j.UcjbStatus == (int)JobStatus.Completed ? 1 :
+                j.UcjbStatus == (int)JobStatus.AssumingCompleted ? 2 : 99
+            ).ThenByDescending(j => j.UcjbTime),
+
+            "group-problem" => query.OrderBy(j =>
+                j.UcjbStatus == (int)JobStatus.Rejected ? 1 :
+                j.UcjbStatus == (int)JobStatus.LatePickup ? 2 :
+                j.UcjbStatus == (int)JobStatus.Warning ? 3 :
+                j.UcjbStatus == (int)JobStatus.LateDelivery ? 4 :
+                j.UcjbStatus == (int)JobStatus.AwaitingPod ? 5 :
+                j.UcjbStatus == (int)JobStatus.Undeliverable ? 6 : 99
+            ).ThenBy(j => j.UcjbTime),
+
+            "group-all" => isAscending
+                ? query.OrderBy(j => j.UcjbTime)
+                : query.OrderByDescending(j => j.UcjbTime),
+
             "remain" => isAscending
                 ? query.OrderBy(j => j.UcjbDispTime).ThenBy(j => j.UcjbTime)
                 : query.OrderByDescending(j => j.UcjbDispTime).ThenByDescending(j => j.UcjbTime),

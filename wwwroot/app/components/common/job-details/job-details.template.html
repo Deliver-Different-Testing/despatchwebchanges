@@ -140,12 +140,11 @@
                             </div>
                         </md-list-item>
 
-                        <md-list-item ng-if="ctrl.job.prebook"
-                                md-ink-ripple ng-click="!this.job.locked && ctrl.editDueDate($event, ctrl.job)">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="Next due">event</md-icon>
+                        <md-list-item md-ink-ripple ng-click="!this.job.locked && ctrl.editDueDate($event, ctrl.job)">
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="delivery by time">alarm</md-icon>
                             <div class="timing-detail">
-                                <span class="timing-label">Due Date:</span>
-                                <span class="timing-value">{{ctrl.job.firstDue ? (ctrl.job.firstDue | date:'MM/dd/yyyy') : 'N/A'}}</span>
+                                <span class="timing-label">Deliver By:</span>
+                                <span class="timing-value">{{ctrl.job.deliverByTime ? (ctrl.job.deliverByTime | date:'MM/dd/yyyy') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
                     </md-list>
