@@ -23,6 +23,7 @@ export interface ActiveCourierViewModel {
     dgLicenseExpiry: string | null;
     label: string;
     text: string;
+    isActive: boolean;
 }
 
 export interface TruckCourierStatusViewModel {

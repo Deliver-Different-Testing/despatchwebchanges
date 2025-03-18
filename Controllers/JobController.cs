@@ -25,6 +25,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualBasic;
 using Serilog;
 using EventType = DespatchWeb.Enums.EventType;
+using Exception = System.Exception;
 
 namespace DespatchWeb.Controllers;
 
@@ -49,7 +50,7 @@ public class JobController(
     {
         Log.Information(
             "Index endpoint called with params: {@QueryParams}, IsInternal: {IsInternal}, "
-                + "ClientId: {ClientId}, ClientIds: {ClientIds}, DespatchViewIds: {@DespatchViewIds}",
+            + "ClientId: {ClientId}, ClientIds: {ClientIds}, DespatchViewIds: {@DespatchViewIds}",
             queryParams,
             isInternal,
             cid,
@@ -105,7 +106,7 @@ public class JobController(
         {
             Log.Information(
                 "GetAllJobCoordinates endpoint called with Status: {Status}, IsInternal: {IsInternal}, "
-                    + "ClientIds: {ClientIds}, DespatchViewIds: {@DespatchViewIds}",
+                + "ClientIds: {ClientIds}, DespatchViewIds: {@DespatchViewIds}",
                 status,
                 isInternal,
                 clientIds,
@@ -867,15 +868,31 @@ public class JobController(
     [HttpPost]
     public async Task<IActionResult> Allocate(int courierId, int dispId, List<int> jobIds)
     {
-        await jobRepository.DispatchSelectedJobs(courierId, dispId, jobIds);
-        return Ok();
+        try
+        {
+            await jobRepository.DispatchSelectedJobs(courierId, dispId, jobIds);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error allocating jobs");
+            return StatusCode(500, ex.Message);
+        }
     }
 
     [HttpPost]
     public async Task<IActionResult> ReAllocate(int courierId, int dispId, List<int> jobIds)
     {
-        await jobRepository.ReDispatchSelectedJobs(courierId, dispId, jobIds);
-        return Ok();
+        try
+        {
+            await jobRepository.ReDispatchSelectedJobs(courierId, dispId, jobIds);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error reallocating jobs");
+            return StatusCode(500, ex.Message);
+        }
     }
 
     [HttpPost]

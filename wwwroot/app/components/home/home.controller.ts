@@ -21,7 +21,7 @@ import {
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {bindAllMethods} from "../../bindAllMethods";
-import { JobStatus } from "../../enums/job-status.enum";
+import {JobStatus} from "../../enums/job-status.enum";
 
 interface ResendJobsRequest {
     call: string;
@@ -458,7 +458,7 @@ export class HomeController {
         },];
 
         this.$scope.$on('courierLocationsNeedRefresh', () => {
-            this.getAvailableCourierLocation();
+            return this.getAvailableCourierLocation();
         });
 
         this.init();
@@ -1267,11 +1267,6 @@ export class HomeController {
         }
     }
 
-    async onReorderJobList() {
-        this.queryParams.page = 1;
-        await this.getJobList();
-    }
-
     jobClass(job: IJob): string {
         if (!job) return "";
 
@@ -1328,7 +1323,7 @@ export class HomeController {
             return;
         }
 
-        const jobsToDispatch = this.getJobsToDispatch();
+        const jobsToDispatch = this._getJobsToDispatch();
 
         if (!jobsToDispatch.length) {
             console.warn("No jobs selected for dispatch");
@@ -1339,7 +1334,7 @@ export class HomeController {
             this.dispatchState.processing = true;
 
             // Validate courier number
-            const courier = await this.validateCourier(courierId);
+            const courier = await this.DispatchData.getCourierById(courierId);
             if (!courier) {
                 console.error("Invalid courierId");
             }
@@ -1366,23 +1361,10 @@ export class HomeController {
             throw error;
         } finally {
             this.dispatchState.processing = false;
-
         }
     }
 
-    validateCourier(courierId: number) {
-        // First check active couriers
-        let courier = this.pickCouriers.find((c: ActiveCourierViewModel) => c.courierId === courierId);
-
-        // If not found in active, check all couriers
-        if (!courier) {
-            courier = this.pickAllCouriers?.find((c: ActiveCourierViewModel) => c.courierId === courierId) || null;
-        }
-
-        return courier;
-    }
-
-    getJobsToDispatch() {
+  private  _getJobsToDispatch() {
         return this.jobList.filter((job) => this.dispatchState.selectedJobs.has(job.id));
     }
 
@@ -1580,7 +1562,7 @@ export class HomeController {
             };
 
             this._collectJobIds(resendRequest);
-            const foundCourier = this._findCourierById(resendRequest.courierId);
+            const foundCourier = await this.DispatchData.getCourierById(resendRequest.courierId);
 
             if (resendRequest.jobs.length > 0) {
                 await this.DispatchData.resendAllJobs(resendRequest.courierId);
@@ -1610,11 +1592,6 @@ export class HomeController {
         });
     }
 
-    private _findCourierById(courierId: number): ActiveCourierViewModel | undefined {
-        return this.pickCouriers.find((c: ActiveCourierViewModel) => c.courierId === courierId) ||
-            this.pickAllCouriers?.find((c: ActiveCourierViewModel) => c.courierId === courierId);
-    }
-
     async restoreJobsFromCurrentWindow() {
         const callData = {
             call: "restoreJobs",
@@ -1633,7 +1610,7 @@ export class HomeController {
                 this.updateCallData(callData, job, null);
             }
 
-            const foundCourier = callData.courierId ? this.findCourierInLocalLists(callData.courierId) : null;
+            const foundCourier = callData.courierId ? await this.DispatchData.getCourierById(callData.courierId) : null;
             if (!foundCourier) {
                 await this.restoreJobs(callData);
             }
@@ -1861,7 +1838,7 @@ export class HomeController {
 
     async searchCourier() {
         try {
-            const foundCourier = this.findCourierInLocalLists(this.courier.gpsCourier);
+            const foundCourier = await this.DispatchData.getCourierById(this.courier.gpsCourier);
             if (!foundCourier) {
                 await this.showAlert("Attention", "Courier not found.");
                 return;
@@ -1880,7 +1857,8 @@ export class HomeController {
                 this.currentListLoading = true;
             });
 
-            const foundCourier = this.findCourierInLocalLists(courier.courierId);
+            if(!courier || courier.courierId === undefined) return;
+            const foundCourier = await this.DispatchData.getCourierById(courier.courierId);
             if (foundCourier) {
                 // Update current courier information
                 this.currentCourier = {
@@ -1925,7 +1903,7 @@ export class HomeController {
 
     async selectMapCourier(courier: ActiveCourierViewModel) {
         try {
-            const foundCourier = this.findCourierInLocalLists(courier.courierId);
+            const foundCourier = await this.DispatchData.getCourierById(courier.courierId);
             this.currentCourier = {
                 courierId: foundCourier?.courierId, courier: foundCourier?.label,
             };
@@ -2188,35 +2166,37 @@ export class HomeController {
 
     focusDispatchField(jobId: number) {
         this.$timeout(() => {
-            // Only focus the input field for the selected job
-            const inputField = document.getElementById(`input_${jobId}`);
-            if (inputField) {
-                const inputElement = inputField.querySelector('input');
-                if (inputElement) {
-                    inputElement.focus();
+            const inputField = angular.element(`#input_${jobId}`);
+            if (inputField.length) {
+                const inputElement = inputField.find('input');
+                if (inputElement.length) {
+                    const htmlInputElement = inputElement[0] as HTMLInputElement;
+                    htmlInputElement.focus();
 
-                    // Don't select any text if there's already a courier
                     const job = this.jobList.find(j => j.id === jobId);
                     if (job && !job.courier && !job.assignedCourier) {
-                        inputElement.select();
+                        htmlInputElement.select();
                     }
                 }
             }
         }, 100);
     }
 
-    showJobContextMenu($event: MouseEvent, job: IJob) {
-        // First select the job
-        this.selectJob(job).then(r => {
-            // Find and trigger the context menu controller
+    async showJobContextMenu($event: MouseEvent, job: IJob) {
+        try {
+            await this.selectJob(job);
+
             const contextMenuElement = angular.element('context-menu');
             const contextMenuCtrl = contextMenuElement.controller('contextMenu');
+
             if (contextMenuCtrl) {
                 contextMenuCtrl.showJobContextMenu($event, job);
             } else {
                 console.error('Context menu controller not found');
             }
-        });
+        } catch (error) {
+            console.error('Error selecting job:', error);
+        }
     }
 
     async createMenuItem(text: string, action: any) {
@@ -2343,16 +2323,15 @@ export class HomeController {
                 orderDirection = "desc";
             }
 
-            // Ensure we have valid pagination parameters
             const params = {
                 status: this.queryParams.status,
                 order: orderBy,
                 orderDirection: orderDirection,
+                statusFilter: this.queryParams.statusFilter
             };
 
             console.log('Params:', params);
 
-            // Load the paginated job list for the table
             this.jobListPromise = this.dispatchJobService.getJobListWithCourierData(
                 params,
                 selectedClients,
@@ -2813,27 +2792,21 @@ export class HomeController {
     init() {
         this.initLayoutSystem(ContactID);
 
-        // Load page views first
         this.loadPageViews().then(async () => {
             console.log("Loaded Page Views and Data!");
 
-            // Show specific job if jobId is provided
             const jobId = this.$stateParams.jobId;
-
             if (jobId) {
                 try {
-                    // Wait for initial data load
                     await this.getData();
 
-                    // Get and select the job
                     const job = await this.DispatchData.getJobDetail(jobId);
                     await this.selectJob(job);
-                } catch (error: any) {
+                } catch (error) {
                     console.error("Error loading initial job:", error);
                     this.toastrService.showErrorToast("Error loading job details");
                 }
             } else {
-                // Normal initialization without specific job
                 await this.getData();
             }
         });
@@ -2853,12 +2826,6 @@ export class HomeController {
         } else {
             callData.jobs.push(jobIdElement.attr("data-jobid"));
         }
-    }
-
-    findCourierInLocalLists(courierId?: number): ActiveCourierViewModel | null {
-        if (!courierId) return null;
-        return (this.pickCouriers.find((c: ActiveCourierViewModel) => c?.courierId === courierId) ||
-            this.pickAllCouriers?.find((c: ActiveCourierViewModel) => c?.courierId === courierId));
     }
 
     async fetchAndDisplayCurrentJobs(jobs: IJob[]) {
@@ -2938,5 +2905,13 @@ export class HomeController {
             const normalizedJobStatus = job.statusName.toLowerCase().replace(/\s+/g, '-');
             return normalizedJobStatus === normalizedStatusType;
         }).length;
+    }
+
+    async filterByStatus(statusGroup: string) {
+        console.log('filterByStatus called with:', statusGroup);
+        this.queryParams.order = statusGroup;
+
+        await this.getJobList();
+        console.log(`Jobs ordered by status group: ${statusGroup}`);
     }
 }

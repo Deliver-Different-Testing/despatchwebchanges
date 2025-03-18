@@ -202,6 +202,7 @@ public class JobViewModel
     public int? DeliverToLeaveId { get; set; }
 
     public bool IsArchived { get; set; }
+    public DateTime? DeliverByTime { get; set; }
 }
 
 public class Vehicle

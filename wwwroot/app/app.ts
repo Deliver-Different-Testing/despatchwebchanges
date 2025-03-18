@@ -1,7 +1,6 @@
 import {AppConfig} from "./interfaces/app-config.interface";
 import {AppPages} from "./enums/app-pages.enum";
 import {DfrntLoaderComponent} from "./components/common/dfrnt-loader/dfrnt-loader.component";
-import {DispatchMapDirective} from "./components/common/dispatch-map/dispatch-map.directive";
 import {ContextMenuDirective} from "./components/common/job-context-menu/job-context-menu.controller";
 import {JobDetailComponent} from "./components/common/job-details/job-details.component";
 import {PodPhotoViewerComponent} from "./components/common/pod-photo-viewer/pod-photo-viewer.component";
@@ -55,6 +54,7 @@ import {
     EditDateTimeDialogController
 } from "./components/dialogs/edit-date-time-dialog/edit-date-time-dialog.controller";
 import {EditDateTimeDialogService} from "./components/dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
+import DispatchMapComponent from "./components/common/dispatch-map/dispatch-map.directive";
 
 const app = angular.module("uDispatch", ["ui.router", "ct.ui.router.extras",
     "angularResizable", "ui.sortable", "ui.bootstrap", "ui.bootstrap.pagination",
@@ -173,6 +173,7 @@ app.component("jobDetailWidget", JobDetailComponent);
 app.component("materialSidenav", MaterialSidenavComponent);
 app.component("podPhotoViewer", PodPhotoViewerComponent);
 app.component("openJobsWidget", openJobsComponent)
+app.component("dispatchMap", DispatchMapComponent)
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);
@@ -191,7 +192,6 @@ app.controller('EventGroupDialogController', EventGroupDialogController);
 app.controller("EditDateTimeDialogController", EditDateTimeDialogController);
 
 // Directives
-app.directive("dispatchMap", DispatchMapDirective.factory());
 app.directive("contextMenu", ContextMenuDirective.factory());
 app.directive("parcelVisualization", ParcelVisualizationDirective.factory());
 
