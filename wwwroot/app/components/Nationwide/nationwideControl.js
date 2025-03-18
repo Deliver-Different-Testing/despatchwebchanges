@@ -1479,7 +1479,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
                 await DispatchData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.jobs);
             }
             if (callData.jobs.length > 0) {
-                await DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
+                await DispatchData.restoreJobs(foundCourier.courierID, callData.jobs);
             }
 
             await new Promise(resolve => $timeout(resolve, 1000));
@@ -1669,7 +1669,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
                 await DispatchData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.jobs);
             }
             if (callData.jobs.length > 0) {
-                await DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
+                await DispatchData.restoreJobs(foundCourier.courierID, callData.jobs);
             }
 
             await new Promise(resolve => $timeout(resolve, 1000));

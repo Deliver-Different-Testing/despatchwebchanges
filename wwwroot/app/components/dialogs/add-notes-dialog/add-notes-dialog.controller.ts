@@ -3,7 +3,7 @@ import DispatchCoreService from "../../../services/dispatch-core.service";
 import {IJob} from "../../../interfaces/job.interface";
 import app from "../../../app";
 
-class AddNotesDialogController implements angular.IController {
+export class AddNotesDialogController implements angular.IController {
     static $inject: string[] = ["$mdDialog", "toastrService", "DispatchData", "fieldName", "job"];
 
     public isLoading: boolean;
@@ -95,5 +95,3 @@ class AddNotesDialogController implements angular.IController {
         return fieldName in this.job;
     }
 }
-
-app.controller("AddNotesDialogController", AddNotesDialogController);

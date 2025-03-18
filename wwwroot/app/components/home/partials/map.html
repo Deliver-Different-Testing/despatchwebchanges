@@ -2,10 +2,10 @@
         class="full-height-map"
         courier-positions="ctrl.courierPositions"
         current-job="ctrl.currentJob"
-        jobs="ctrl.jobList"
+        jobs="ctrl.mapJobs"
         map-center="ctrl.mapCenter"
         map-zoom="ctrl.mapZoom"
-        on-marker-click="ctrl.handleMarkerClick(job)"
+        on-marker-click="ctrl.selectJob(job)"
         show-available-couriers="ctrl.allCouriers.display"
         auto-zoom-enabled="ctrl.autoZoomEnabled">
 </dispatch-map>

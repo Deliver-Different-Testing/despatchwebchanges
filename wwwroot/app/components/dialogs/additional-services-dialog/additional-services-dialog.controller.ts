@@ -3,7 +3,7 @@ import ToastrService from "../../../services/ToastrService";
 import {IJob} from "../../../interfaces/job.interface";
 import app from "../../../app";
 
-class AdditionalServicesDialogController implements angular.IController {
+export class AdditionalServicesDialogController implements angular.IController {
     static $inject: string[] = ["$mdDialog", "DispatchData", "toastrService", "job"];
 
     private readonly jobId: number;
@@ -121,5 +121,3 @@ class AdditionalServicesDialogController implements angular.IController {
         this.$mdDialog.cancel();
     }
 }
-
-app.controller("AdditionalServicesDialogController", AdditionalServicesDialogController);

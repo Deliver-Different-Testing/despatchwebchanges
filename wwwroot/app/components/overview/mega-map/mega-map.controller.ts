@@ -8,7 +8,7 @@ import {MapPoint} from "./mega-map.interfaces";
 import {AssignedFlight} from "../../../interfaces/job.interface";
 import {bindAllMethods} from "../../../bindAllMethods";
 
-class MegaMapController implements angular.IController {
+export class MegaMapController implements angular.IController {
     static $inject = [
         "toastrService",
         "NgMap",
@@ -562,5 +562,3 @@ class MegaMapController implements angular.IController {
         }
     }
 }
-
-app.controller("megaMapController", MegaMapController);

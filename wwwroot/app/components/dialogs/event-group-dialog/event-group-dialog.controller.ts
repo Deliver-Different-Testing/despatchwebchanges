@@ -1,4 +1,3 @@
-import app from "../../../app";
 import "./event-group-dialog.styles.less";
 import {Suggestion} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/ToastrService";
@@ -71,5 +70,3 @@ export class EventGroupDialogController implements angular.IController {
         this.$mdDialog.cancel();
     }
 }
-
-app.controller('EventGroupDialogController', EventGroupDialogController);

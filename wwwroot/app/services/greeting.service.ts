@@ -17,5 +17,4 @@ class GreetingService {
     }
 }
 
-app.service("greetingService", GreetingService);
 export default GreetingService;

@@ -1,4 +1,3 @@
-import app from "../../app";
 import "./home.styles.less";
 import GreetingService from "../../services/greeting.service";
 import ToastrService from "../../services/ToastrService";
@@ -14,10 +13,15 @@ import {
     Suggestion,
     SupportViewModel
 } from "../../interfaces/job.interface";
-import {ActiveCourierViewModel, TruckCourierStatusViewModel} from "../../interfaces/courier.interface";
+import {
+    ActiveCourierViewModel,
+    AvailableCourierPosition,
+    TruckCourierStatusViewModel
+} from "../../interfaces/courier.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {bindAllMethods} from "../../bindAllMethods";
+import { JobStatus } from "../../enums/job-status.enum";
 
 interface ResendJobsRequest {
     call: string;
@@ -27,7 +31,7 @@ interface ResendJobsRequest {
     courierId: number;
 }
 
-class HomeController {
+export class HomeController {
     static $inject = [
         '$document',
         'greetingService',
@@ -63,13 +67,10 @@ class HomeController {
     truckMode: any;
     supportChannel: any;
     showInput: any;
-    palletMenu: any;
     isInternal?: boolean = false;
     queryParams: any;
-    totalCount: number;
     isUsCustomer: boolean;
     selectedCourier: any;
-    courierSearchText: any;
     jobRecordSearchText: any;
     dispatchCourierSearchTest: any;
     jobDetailFabIsOpen: any;
@@ -106,7 +107,7 @@ class HomeController {
     currentLayoutName: any;
     layout: any;
     map: any;
-    courierSearchTextv: any;
+    courierSearchText: any;
     inputWidth: any;
     jobListPromise: any;
     refreshData: any;
@@ -141,7 +142,7 @@ class HomeController {
         private uCSData: any,
         private dispatchJobService: DispatchExecutorService,
         private hotkeys: any,
-        APP_CONFIG: AppConfig,
+        private APP_CONFIG: AppConfig,
         private $mdSidenav: angular.material.ISidenavService,
         private AppPages: any,
         private $stateParams: angular.ui.IStateParamsService,
@@ -239,13 +240,6 @@ class HomeController {
            });
    */
 
-        this.palletMenu = [{
-            text: "Delete", click($itemScope: any) {
-                const index = this.currentJob.PalletInfo.indexOf($itemScope.pallet);
-                this.currentJob.PalletInfo.splice(index, 1);
-            },
-        },];
-
         if (!this.isInternal) {
             this.getClientContacts().then(() => console.log("Get Data Complete!"));
         }
@@ -259,14 +253,11 @@ class HomeController {
 
         this.isInternal = ClientInternal === "True";
         this.queryParams = {
-            page: 1,
-            limit: 10,
             order: "time",
             orderDirection: "asc",
             status: "all"
         };
-        this.totalCount = 0;
-        this.isUsCustomer = APP_CONFIG.US_Customer;
+        this.isUsCustomer = this.APP_CONFIG.US_Customer;
         this.selectedCourier = null;
 
         // Init job table limit
@@ -289,8 +280,9 @@ class HomeController {
         this.selectedViews = [];
 
         // New map
-        this.mapCenter = APP_CONFIG.US_Customer ? {lat: 39.8283, lng: -98.5795} // US center
-            : {lat: -36.8485, lng: 174.7633}; // Auckland, NZ
+        this.mapCenter = this.APP_CONFIG.US_Customer ?
+            this.APP_CONFIG.US_Coordinates_Center :
+            this.APP_CONFIG.NZ_Coordinates_Center;
         this.courierPositions = [];
         this.mapZoom = 4;
         this.autoZoomEnabled = true;
@@ -464,6 +456,10 @@ class HomeController {
                 }
             },
         },];
+
+        this.$scope.$on('courierLocationsNeedRefresh', () => {
+            this.getAvailableCourierLocation();
+        });
 
         this.init();
     }
@@ -807,10 +803,7 @@ class HomeController {
             }
         } else {
             // For multiple views, center on continental US
-            this.mapCenter = {
-                lat: 39.8283, // Center of continental US
-                lng: -98.5795,
-            };
+            this.mapCenter = this.APP_CONFIG.US_Coordinates_Center;
             this.mapZoom = 4; // Zoom level to show most of continental US
         }
 
@@ -847,7 +840,8 @@ class HomeController {
         } catch (error: any) {
             console.error('Error updating filters:', error);
             console.error('Error details:', {
-                message: error.message, stack: error.stack
+                message: error.message,
+                stack: error.stack
             });
         }
     }
@@ -878,7 +872,7 @@ class HomeController {
         const target = $event.target as HTMLElement;
         if (target?.tagName === "INPUT") {
             (document.getElementsByName("courierSearch")[0] as HTMLInputElement).value = "";
-            this.courierSearchTextv = "";
+            this.courierSearchText = "";
         }
     }
 
@@ -1047,11 +1041,14 @@ class HomeController {
         // Prevent the job row click event
         event.stopPropagation();
 
+        // Clear the courierSearchText
+        this.courierSearchText = "";
+
         // Select the job
         this.selectForDispatch(job);
     }
 
-    async handleDispatchKeydown(event: KeyboardEvent, job: IJob) {
+    async handleDispatchKeydown(event: KeyboardEvent) {
         if (event.key === 'Enter') {
             const target = event.target as HTMLInputElement;
             const courierId = parseInt(target.value, 10);
@@ -1300,7 +1297,6 @@ class HomeController {
     }
 
     async handleRowClick($event: MouseEvent, job: IJob) {
-        // Ignore clicks on autocomplete fields
         if (!($event.target as HTMLElement)?.closest("md-autocomplete")) {
             try {
                 await this.$timeout(async () => {
@@ -1638,12 +1634,12 @@ class HomeController {
             }
 
             const foundCourier = callData.courierId ? this.findCourierInLocalLists(callData.courierId) : null;
-            if (foundCourier) {
-                await this.restoreJobs(callData, foundCourier);
+            if (!foundCourier) {
+                await this.restoreJobs(callData);
             }
 
             await this.getData();
-            this.courier = {gpsCourier: foundCourier.id};
+            this.courier = {gpsCourier: foundCourier?.id};
             await this.searchCourier();
         } catch (error: any) {
             console.log("Error in restoreJobsFromCurrentWindow:", error);
@@ -1660,7 +1656,7 @@ class HomeController {
         }
     }
 
-    async restoreJobs(callData: any, courier: CourierData) {
+    async restoreJobs(callData: any) {
         const promises = [];
 
         if (callData.splitJobs.length > 0) {
@@ -1865,8 +1861,7 @@ class HomeController {
 
     async searchCourier() {
         try {
-            const foundCourier = this.pickAllCouriers?.find((c: ActiveCourierViewModel) => c.id === this.courier.gpsCourier);
-            console.log(foundCourier);
+            const foundCourier = this.findCourierInLocalLists(this.courier.gpsCourier);
             if (!foundCourier) {
                 await this.showAlert("Attention", "Courier not found.");
                 return;
@@ -1885,15 +1880,12 @@ class HomeController {
                 this.currentListLoading = true;
             });
 
-            // Find the courier in pickCouriers or pickAllCouriers
-            const foundCourier = this.pickCouriers.find((c: ActiveCourierViewModel) => c.courierId === courier.courierId) ||
-                this.pickAllCouriers?.find((c: ActiveCourierViewModel) => c.courierId === courier.courierId);
-
+            const foundCourier = this.findCourierInLocalLists(courier.courierId);
             if (foundCourier) {
                 // Update current courier information
                 this.currentCourier = {
                     courierId: foundCourier.courierId,
-                    courier: foundCourier.label || `${foundCourier.code} ${foundCourier.firstName}`,
+                    courier: foundCourier.label || `${foundCourier.label} ${foundCourier.name}`,
                 };
 
                 // Update current work selection text
@@ -1935,11 +1927,11 @@ class HomeController {
         try {
             const foundCourier = this.findCourierInLocalLists(courier.courierId);
             this.currentCourier = {
-                courierId: foundCourier.courierId, courier: foundCourier.label,
+                courierId: foundCourier?.courierId, courier: foundCourier?.label,
             };
 
             await this.getCurrentJobs(courier.courierId)
-            await this.updateUIAfterCourierSelection(courier, foundCourier);
+            await this.updateUIAfterCourierSelection(courier);
         } catch (error: any) {
             console.error("An error occurred:", error);
         }
@@ -1958,13 +1950,12 @@ class HomeController {
             await this.updateUIForPotentialCourier(courier);
         } catch (error: any) {
             console.error("Error in selectPotentialCourier:", error);
-        } finally {
         }
     }
 
-    updateCourierInfo(courier: any) {
+    updateCourierInfo(courier: CourierData) {
         if (courier.courier === undefined) {
-            courier.courier = `${courier.code} ${courier.firstName}`;
+            courier.courier = `${courier.courier} ${courier.courierName}`;
         }
     }
 
@@ -1984,7 +1975,7 @@ class HomeController {
         await this.activateDrop();
     }
 
-    isValidCoordinates(lat: number, lng: number) {
+    private _isValidCoordinates(lat: number, lng: number) {
         return (lat && lng && !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0 && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180);
     }
 
@@ -2131,8 +2122,8 @@ class HomeController {
                         // Display route points for the single job
                         if (job.pickupAddress?.latitude != null && job.pickupAddress?.longitude != null &&
                             job.deliveryAddress?.latitude != null && job.deliveryAddress?.longitude != null &&
-                            this.isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude) &&
-                            this.isValidCoordinates(job.deliveryAddress.latitude, job.deliveryAddress.longitude)) {
+                            this._isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude) &&
+                            this._isValidCoordinates(job.deliveryAddress.latitude, job.deliveryAddress.longitude)) {
                             // Create bounds that include pickup and delivery points
                             const bounds = new this.$window.google.maps.LatLngBounds();
                             bounds.extend(new this.$window.google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
@@ -2140,7 +2131,7 @@ class HomeController {
 
                             // If courier position is available, include it
                             if (job.courierData.latitude != null && job.courierData.longitude != null &&
-                                this.isValidCoordinates(job.courierData.latitude, job.courierData.longitude)) {
+                                this._isValidCoordinates(job.courierData.latitude, job.courierData.longitude)) {
                                 bounds.extend(new this.$window.google.maps.LatLng(job.courierData.latitude, job.courierData.longitude));
                             }
                         } else {
@@ -2157,7 +2148,8 @@ class HomeController {
                 console.error("An error occurred finding couriers:", error);
             }
 
-            this.focusDispatchField();
+            // Only focus the dispatch field for the selected job, not all jobs
+            this.focusDispatchField(job.id);
         }, 0);
     }
 
@@ -2179,13 +2171,13 @@ class HomeController {
 
         // Verify we have valid coordinates before displaying
         if (this.autoZoomEnabled && this.map) {
-            if (job.pickupAddress?.latitude != null && job.pickupAddress?.longitude != null && this.isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude)) {
+            if (job.pickupAddress?.latitude != null && job.pickupAddress?.longitude != null && this._isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude)) {
                 // Set bounds for pickup point
                 const bounds = new this.$window.google.maps.LatLngBounds();
                 bounds.extend(new this.$window.google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
 
                 // If delivery coordinates are valid, include them too
-                if (job.deliveryAddress?.latitude != null && job.deliveryAddress?.longitude != null && this.isValidCoordinates(job.deliveryAddress.latitude, job.deliveryAddress.longitude)) {
+                if (job.deliveryAddress?.latitude != null && job.deliveryAddress?.longitude != null && this._isValidCoordinates(job.deliveryAddress.latitude, job.deliveryAddress.longitude)) {
                     bounds.extend(new this.$window.google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude));
                 }
             } else {
@@ -2194,13 +2186,20 @@ class HomeController {
         }
     }
 
-    focusDispatchField() {
+    focusDispatchField(jobId: number) {
         this.$timeout(() => {
-            const activeRow = angular.element(".activeTable .active");
-            if (activeRow.length) {
-                const dispatchField = activeRow.find(".dispatchField");
-                if (dispatchField.length) {
-                    dispatchField[0].focus();
+            // Only focus the input field for the selected job
+            const inputField = document.getElementById(`input_${jobId}`);
+            if (inputField) {
+                const inputElement = inputField.querySelector('input');
+                if (inputElement) {
+                    inputElement.focus();
+
+                    // Don't select any text if there's already a courier
+                    const job = this.jobList.find(j => j.id === jobId);
+                    if (job && !job.courier && !job.assignedCourier) {
+                        inputElement.select();
+                    }
                 }
             }
         }, 100);
@@ -2254,30 +2253,78 @@ class HomeController {
         }
 
         try {
-            const bounds = await this.NgMap.getMap().then((map) => map.getBounds());
-            if (!bounds) return;
+            // Get the map instance first
+            const map = await this.NgMap.getMap();
+            const bounds = map.getBounds();
 
+            // If we don't have bounds yet (map not fully initialized), try to get a reasonable default area
+            if (!bounds) {
+                // Use default bounds or the current map center with a reasonable radius
+                const center = this.mapCenter || {lat: -36.8485, lng: 174.7633}; // Default to Auckland, NZ
+
+                // Get courier positions without specific bounds
+                const returnData = await this.DispatchData.getAvailableCourierLocation(
+                    center.lng - 0.5, // Approximate 50km radius bounds
+                    center.lat - 0.5,
+                    center.lng + 0.5,
+                    center.lat + 0.5
+                );
+
+                this.courierPositions = returnData.map((courier: AvailableCourierPosition) => ({
+                    latitude: courier.latitude,
+                    longitude: courier.longitude,
+                    code: courier.code,
+                    totalJobs: courier.totalJobs
+                }));
+
+                return;
+            }
+
+            // If we have bounds, use them to get courier positions
             const sw = bounds.getSouthWest();
             const ne = bounds.getNorthEast();
 
-            const returnData = await this.DispatchData.getAvailableCourierLocation(sw.lng(), sw.lat(), ne.lng(), ne.lat());
+            const returnData = await this.DispatchData.getAvailableCourierLocation(
+                sw.lng(),
+                sw.lat(),
+                ne.lng(),
+                ne.lat()
+            );
 
-            // Update courier positions
-            this.courierPositions = returnData.map((courier) => ({
+            // Update courier positions with enhanced data
+            this.courierPositions = returnData.map((courier: AvailableCourierPosition) => ({
                 latitude: courier.latitude,
                 longitude: courier.longitude,
                 code: courier.code,
+                totalJobs: courier.totalJobs
             }));
-        } catch (error: any) {
+
+            // Emit an event to refresh the map
+            this.$scope.$broadcast('refreshCourierMarkers', this.courierPositions);
+        } catch (error) {
             console.error("Error getting available courier locations:", error);
             this.courierPositions = [];
         }
     }
 
+
     async handleMarkerClick(job: IJob) {
         if (job) {
             await this.selectJob(job);
         }
+    }
+
+    private initializeJobSearchFields(jobs: IJob[]) {
+        if (!Array.isArray(jobs)) {
+            return jobs;
+        }
+
+        return jobs.map(job => {
+            if (!job.hasOwnProperty('searchText')) {
+                job.searchText = '';
+            }
+            return job;
+        });
     }
 
     async getJobList() {
@@ -2299,23 +2346,25 @@ class HomeController {
             // Ensure we have valid pagination parameters
             const params = {
                 status: this.queryParams.status,
-                page: this.queryParams.page,
-                limit: this.queryParams.limit,
                 order: orderBy,
                 orderDirection: orderDirection,
             };
 
             console.log('Params:', params);
 
-            this.jobListPromise = this.dispatchJobService.getJobListWithCourierData(params, selectedClients, this.isInternal ?? false, this.selectedViews);
+            // Load the paginated job list for the table
+            this.jobListPromise = this.dispatchJobService.getJobListWithCourierData(
+                params,
+                selectedClients,
+                this.isInternal ?? false,
+                this.selectedViews
+            );
             const result = await this.jobListPromise;
 
             if (result.items?.length > 0) {
-                this.jobList = result.items;
-                this.totalCount = result.total;
+                this.jobList = this.initializeJobSearchFields(result.items);
             } else {
                 this.jobList = [];
-                this.totalCount = 0;
             }
 
             await this.getAvailableCourierLocation();
@@ -2324,7 +2373,6 @@ class HomeController {
             this.toastrService.showErrorToast("Failed to get job list. Please try again.");
 
             this.jobList = [];
-            this.totalCount = 0;
         }
     }
 
@@ -2335,37 +2383,32 @@ class HomeController {
     }
 
     async closeSupport(support: SupportViewModel) {
-        const validateSupport = (support: SupportViewModel): void => {
-            if (!support.eventId) {
-                throw new Error('Cannot close support with null eventId');
-            }
-        };
+        if (!support.eventId) {
+            throw new Error('Cannot close support with null eventId');
+        }
 
         try {
-            validateSupport(support);
-
-            if (!support.eventId) {
-                throw new Error('Cannot close support with null eventId');
-            }
-
             await this.DispatchData.closeSupport(support.eventId, ContactID);
             await this.getSupports();
-
             this.currentSupport = null;
             this.toastrService.showSuccessToast('Support ticket closed successfully');
         } catch (error) {
-            const errorMessage = error instanceof Error
-                ? error.message
-                : 'An unexpected error occurred while closing support';
-
-            console.error('Support closure failed:', {
-                error: errorMessage,
-                supportId: support.eventId,
-                jobNumber: support.jobNumber
-            });
-
-            throw new Error(errorMessage);
+            this._handleSupportClosureError(error, support);
         }
+    }
+
+    private _handleSupportClosureError(error: any, support: SupportViewModel) {
+        const errorMessage = error instanceof Error
+            ? error.message
+            : 'An unexpected error occurred while closing support';
+
+        console.error('Support closure failed:', {
+            error: errorMessage,
+            supportId: support.eventId,
+            jobNumber: support.jobNumber
+        });
+
+        throw new Error(errorMessage);
     }
 
     async lockSupport(support: SupportViewModel) {
@@ -2628,9 +2671,6 @@ class HomeController {
         }
     }
 
-    /**
-     * @param {Object} $event
-     */
     async interCourierCharge($event: MouseEvent) {
         try {
             await this.$mdDialog.show({
@@ -2815,7 +2855,7 @@ class HomeController {
         }
     }
 
-    findCourierInLocalLists(courierId: number) {
+    findCourierInLocalLists(courierId?: number): ActiveCourierViewModel | null {
         if (!courierId) return null;
         return (this.pickCouriers.find((c: ActiveCourierViewModel) => c?.courierId === courierId) ||
             this.pickAllCouriers?.find((c: ActiveCourierViewModel) => c?.courierId === courierId));
@@ -2838,11 +2878,65 @@ class HomeController {
         return processedJobs;
     }
 
-    async updateUIAfterCourierSelection(courier: ActiveCourierViewModel, foundCourier: ActiveCourierViewModel) {
+    async updateUIAfterCourierSelection(courier: ActiveCourierViewModel) {
         this.currentWorkSelection = ` for Courier ${courier.label}`;
 
         this.truckCourierStatus = await this.DispatchData.truckCourierStatus(courier.courierId);
     }
-}
 
-app.controller('HomeControl', HomeController);
+    getStatusCount(statusType: string): number {
+        if (!this.jobList || !Array.isArray(this.jobList)) {
+            return 0;
+        }
+
+        // Convert status type to lowercase and replace spaces with hyphens
+        const normalizedStatusType = statusType.toLowerCase().replace(/\s+/g, '-');
+
+        // Map common category names to arrays of actual status IDs with proper typing
+        const statusGroups: Record<string, JobStatus[]> = {
+            'pending': [
+                JobStatus.New,
+                JobStatus.Dispatched,
+                JobStatus.ReadyForPacking,
+                JobStatus.ReadyToPickup,
+                JobStatus.AwaitingProcessing,
+                JobStatus.Preassigned
+            ],
+            'in-transit': [
+                JobStatus.Accepted,
+                JobStatus.PickedUp,
+                JobStatus.InTransit,
+                JobStatus.OutForDelivery
+            ],
+            'completed': [
+                JobStatus.Completed,
+                JobStatus.AssumingCompleted
+            ],
+            'problem': [
+                JobStatus.Rejected,
+                JobStatus.LatePickup,
+                JobStatus.Warning,
+                JobStatus.LateDelivery,
+                JobStatus.AwaitingPod,
+                JobStatus.Undeliverable
+            ]
+        };
+
+        // Check if we're looking for a status group
+        if (statusGroups[normalizedStatusType]) {
+            return this.jobList.filter(job =>
+                job.statusId !== undefined &&
+                statusGroups[normalizedStatusType].includes(job.statusId)
+            ).length;
+        }
+
+        // Otherwise, check for a specific status name match
+        return this.jobList.filter(job => {
+            if (!job.statusName) {
+                return false;
+            }
+            const normalizedJobStatus = job.statusName.toLowerCase().replace(/\s+/g, '-');
+            return normalizedJobStatus === normalizedStatusType;
+        }).length;
+    }
+}

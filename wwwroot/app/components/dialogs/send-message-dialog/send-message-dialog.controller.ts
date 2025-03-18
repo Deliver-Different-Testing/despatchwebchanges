@@ -2,7 +2,7 @@ import app from "../../../app";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/ToastrService";
 
-class SendMessageDialogController {
+export class SendMessageDialogController {
     static $inject = [
         "$mdDialog",
         "DispatchData",
@@ -46,5 +46,3 @@ class SendMessageDialogController {
         this.$mdDialog.cancel();
     }
 }
-
-app.controller("SendMessageDialogController", SendMessageDialogController);

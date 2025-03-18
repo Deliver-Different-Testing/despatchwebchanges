@@ -674,8 +674,6 @@ class DispatchCoreService implements angular.IServiceProvider {
             status: String(queryParams.status ?? "all"),
             order: String(queryParams.order ?? "time"),
             orderDirection: String(queryParams.orderDirection ?? "asc"),
-            page: String(queryParams.page ?? 1),
-            limit: String(queryParams.limit ?? 10),
             isInternal: String(internal),
             cid: String(ContactID),
             clientIds: selectedClients.length ? selectedClients.join(',') : ''
@@ -690,13 +688,8 @@ class DispatchCoreService implements angular.IServiceProvider {
             });
         }
 
-        const response = await this.$http.get<PaginatedResponse<IJob>>(`job?${params.toString()}`);
-        return {
-            items: response.data.items,
-            total: response.data.total,
-            page: queryParams.page || 1,
-            limit: queryParams.limit || 10
-        };
+        const response = await this.$http.get<IJob[]>(`job?${params.toString()}`);
+        return response.data;
     }
 
     async getClearListJobs(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[], selectedClearList: ClearListEnvelope) {
@@ -822,5 +815,4 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 }
 
-app.service("DispatchData", DispatchCoreService);
 export default DispatchCoreService;

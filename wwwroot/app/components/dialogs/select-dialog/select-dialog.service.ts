@@ -41,5 +41,3 @@ export class SelectDialogService implements angular.IServiceProvider {
         return result;
     }
 }
-
-app.service('selectDialogService', SelectDialogService);

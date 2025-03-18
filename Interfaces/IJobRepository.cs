@@ -62,15 +62,14 @@ public interface IJobRepository
     Task<List<PrebookListViewModel>> PreBookJobListAsync();
     Task<List<JobViewModel>> CurrentJobList(int courierId, bool done);
 
-    Task<PaginatedResponse<JobViewModel>> JobListAsync(
+    Task<List<JobViewModel>> JobListAsync(
         JobQueryParams queryParams,
         bool isInternal,
         bool isUsTenant,
         string clientIds,
         List<int> selectedViewIds,
         DispatchStatus status,
-        ClearListEnvelopeViewModel clearListEnvelope = null
-    );
+        ClearListEnvelopeViewModel clearListEnvelope = null);
 
     Task<List<SupportViewModel>> SupportEvents(string channel);
     Task<TucEvent> GetSupportEventAsync(int eventId);
@@ -398,4 +397,11 @@ public interface IJobRepository
     Task UpdatePackagesForJobAsync(int jobId, List<ParcelDimensions> parcels);
     Task<List<T>> GetAllAsync<T>()
         where T : class;
+
+    Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(
+        DispatchStatus status,
+        bool isInternal,
+        bool isUsTenant,
+        string clientIds,
+        List<int> selectedViewIds);
 }

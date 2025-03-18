@@ -7,7 +7,7 @@ interface PalletDialogControllerScope extends angular.IScope {
     palletForm: any;
 }
 
-class PalletDialogController {
+export class PalletDialogController {
     static $inject = ["$scope", "$mdDialog", "DispatchData", "toastrService", "rateJobService", "job", "dispatcherName", "contactId", "existingPallet"];
 
     public isLoading: boolean;
@@ -122,5 +122,3 @@ class PalletDialogController {
         this.$mdDialog.cancel();
     }
 }
-
-app.controller("PalletDialogController", PalletDialogController);

@@ -53,27 +53,29 @@
                     <md-tooltip md-direction="bottom">{{ job.deliveryAddress.fullAddress }}</md-tooltip>
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
                 </td>
+
                 <td md-cell>
                     <md-autocomplete
+                            id="input_{{job.id}}"
                             md-item-text="item.text"
-                            md-items="item in ctrl.courierSearch(ctrl.dispatchCourierSearchTest)"
+                            md-items="item in ctrl.courierSearch(job.searchText)"
                             md-min-length="2"
-                            md-search-text="ctrl.dispatchCourierSearchTest"
+                            md-search-text="job.searchText"
                             md-select-on-focus
                             md-selected-item="job.assignedCourier"
-                            md-autoselect
-                            md-clear-button="false"
+                            md-no-cache="true"
+                            md-clear-button="true"
                             md-input-name="dispatchCourierSearch"
                             ng-click="ctrl.handleDispatchFieldClick($event, job)"
-                            ng-disabled="job.assignedCourier"
+                            ng-disabled="job.courier !== null || job.assignedCourier !== null"
                             md-selected-item-change="ctrl.handleDispatchSelection(item, job)"
                             placeholder="Search Courier...">
                         <md-item-template>
-                            <span md-highlight-flags="^i"
-                                  md-highlight-text="ctrl.dispatchCourierSearchTest">{{item.text}}</span>
+            <span md-highlight-flags="^i"
+                  md-highlight-text="job.searchText">{{item.text}}</span>
                         </md-item-template>
                         <md-not-found>
-                            No couriers matching "{{ctrl.dispatchCourierSearchTest}}" were found.
+                            No couriers matching "{{job.searchText}}" were found.
                         </md-not-found>
                     </md-autocomplete>
                 </td>
@@ -123,17 +125,52 @@
                 </td>
             </tr>
             </tbody>
+
+            <tfoot>
+            <tr md-row class="md-table-footer">
+                <td md-cell colspan="14" class="md-table-footer-container">
+                    <div class="md-table-footer-content">
+                        <!-- Left side with Job Summary text -->
+                        <div class="footer-label">
+                            <md-icon md-font-set="material-symbols-outlined" class="muted-icon">summarize</md-icon>
+                            <span class="footer-title">Job Summary</span>
+                        </div>
+
+                        <!-- Right side with status chips -->
+                        <div class="status-summary" ng-if="ctrl.jobList && ctrl.jobList.length > 0">
+                            <div class="status-chip total">
+                                <md-icon md-font-set="material-symbols-outlined">article</md-icon>
+                                <span>{{ctrl.jobList.length || 0}}</span>
+                                <span class="status-label">Total</span>
+                            </div>
+                            <div class="status-chip pending">
+                                <md-icon md-font-set="material-symbols-outlined">hourglass_top</md-icon>
+                                <span>{{ctrl.getStatusCount('pending')}}</span>
+                                <span class="status-label">Pending</span>
+                            </div>
+                            <div class="status-chip in-transit">
+                                <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
+                                <span>{{ctrl.getStatusCount('in-transit')}}</span>
+                                <span class="status-label">In&nbsp;Transit</span>
+                            </div>
+                            <div class="status-chip completed">
+                                <md-icon md-font-set="material-symbols-outlined">done_all</md-icon>
+                                <span>{{ctrl.getStatusCount('completed')}}</span>
+                                <span class="status-label">Completed</span>
+                            </div>
+                            <div class="status-chip problem" ng-if="ctrl.getStatusCount('problem') > 0">
+                                <md-icon md-font-set="material-symbols-outlined">error_outline</md-icon>
+                                <span>{{ctrl.getStatusCount('problem')}}</span>
+                                <span class="status-label">Problem</span>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            </tfoot>
+
         </table>
     </md-table-container>
-
-    <md-table-pagination
-            md-limit="ctrl.queryParams.limit"
-            md-limit-options="[5, 10, 25, 50]"
-            md-on-paginate="ctrl.jobPageChanged"
-            md-page="ctrl.queryParams.page"
-            md-page-select
-            md-total="{{ctrl.totalCount}}">
-    </md-table-pagination>
 
     <!-- No Data Message -->
     <div class="no-data" ng-if="!ctrl.jobList || ctrl.jobList.length === 0">

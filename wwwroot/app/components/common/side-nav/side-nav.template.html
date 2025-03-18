@@ -7,11 +7,11 @@
                     <md-icon md-font-set="material-symbols-outlined">account_circle</md-icon>
                 </div>
                 <div class="account-details">
-                    <span class="md-title">{{userName}}</span>
-                    <span class="md-caption">{{companyName}}</span>
+                    <span class="md-title">{{ctrl.userName}}</span>
+                    <span class="md-caption">{{ctrl.companyName}}</span>
                 </div>
                 <div class="date-container">
-                    <span class="date-display">{{currentDate}}</span>
+                    <span class="date-display">{{ctrl.currentDate}}</span>
                 </div>
             </div>
         </div>
@@ -22,8 +22,8 @@
             <!-- Navigation menu with updated styling -->
             <md-list>
                 <md-list-item class="nav-item"
-                              md-selected="isActive('home')"
-                              ng-class="{'active': isActive('home')}"
+                              md-selected="ctrl.isActive('home')"
+                              ng-class="{'active': ctrl.isActive('home')}"
                               ui-sref="home">
                     <div class="nav-item-content">
                         <md-icon md-font-set="material-symbols-outlined">dashboard</md-icon>
@@ -33,20 +33,20 @@
                 </md-list-item>
 
                 <md-list-item class="nav-item"
-                              md-selected="isActive('nw')"
-                              ng-class="{'active': isActive('nw')}"
+                              md-selected="ctrl.isActive('nw')"
+                              ng-class="{'active': ctrl.isActive('nw')}"
                               ui-sref="nw">
                     <div class="nav-item-content">
                         <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
-                        <p ng-if="isUsCustomer">Domestic</p>
-                        <p ng-if="!isUsCustomer">Nationwide</p>
+                        <p ng-if="ctrl.isUsCustomer">Domestic</p>
+                        <p ng-if="!ctrl.isUsCustomer">Nationwide</p>
                     </div>
                     <div class="nav-indicator"></div>
                 </md-list-item>
 
                 <md-list-item class="nav-item"
-                              md-selected="isActive('overview')"
-                              ng-class="{'active': isActive('overview')}"
+                              md-selected="ctrl.isActive('overview')"
+                              ng-class="{'active': ctrl.isActive('overview')}"
                               ui-sref="overview">
                     <div class="nav-item-content">
                         <md-icon md-font-set="material-symbols-outlined">inventory_2</md-icon>
@@ -56,8 +56,8 @@
                 </md-list-item>
 
                 <md-list-item class="nav-item"
-                              md-selected="isActive('taskDashboard')"
-                              ng-class="{'active': isActive('taskDashboard')}"
+                              md-selected="ctrl.isActive('taskDashboard')"
+                              ng-class="{'active': ctrl.isActive('taskDashboard')}"
                               ui-sref="taskDashboard">
                     <div class="nav-item-content">
                         <md-icon md-font-set="material-symbols-outlined">pinboard</md-icon>
@@ -67,8 +67,8 @@
                 </md-list-item>
 
                 <md-list-item class="nav-item"
-                              md-selected="isActive('cs')"
-                              ng-class="{'active': isActive('cs')}"
+                              md-selected="ctrl.isActive('cs')"
+                              ng-class="{'active': ctrl.isActive('cs')}"
                               ui-sref="cs">
                     <div class="nav-item-content">
                         <md-icon md-font-set="material-symbols-outlined">search</md-icon>
@@ -78,8 +78,8 @@
                 </md-list-item>
 
                 <md-list-item class="nav-item"
-                              md-selected="isActive('prebooks')"
-                              ng-class="{'active': isActive('prebooks')}"
+                              md-selected="ctrl.isActive('prebooks')"
+                              ng-class="{'active': ctrl.isActive('prebooks')}"
                               ui-sref="prebooks">
                     <div class="nav-item-content">
                         <md-icon md-font-set="material-symbols-outlined">event</md-icon>
@@ -90,10 +90,10 @@
             </md-list>
         </md-content>
 
-         <!-- Footer with copyright -->
-         <div class="nav-footer">
+        <!-- Footer with copyright -->
+        <div class="nav-footer">
             <div class="copyright-text">
-                <p>&copy; {{currentYear}} Deliver Different. All rights reserved.</p>
+                <p>&copy; {{ctrl.currentYear}} Deliver Different. All rights reserved.</p>
             </div>
         </div>
     </md-sidenav>

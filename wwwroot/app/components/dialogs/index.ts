@@ -1,24 +1,5 @@
 // Dialog components
 import "./edit-address-dialog/edit-address-dialog.controller";
-import "./auto-complete-dialog/auto-complete-dialog.controller";
-import "./send-message-dialog/send-message-dialog.controller";
-import "./select-dialog/select-dialog.controller";
-import "./select-dialog/select-dialog.service";
-import "./add-notes-dialog/add-notes-dialog.controller";
-import "./create-job-dialog/create-job-dialog.controller";
 import "./inter-courier-charge-dialog/inter-courier-charge-dialog";
-import "./add-pallet-dialog/add-pallet-dialog.controller";
-import "./add-event-dialog/add-event-dialog.controller";
 import "./truck-courier-status-dialog/truck-courier-status-dialog.controller";
-import "./edit-date-time-dialog/edit-date-time-dialog.controller";
-import "./edit-date-time-dialog/edit-date-time-dialog.service";
-import "./additional-services-dialog/additional-services-dialog.controller";
 import "./job-file-upload-dialog/job-file-upload.controller";
-import "./edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.controller";
-import "./edit-parcel-dimensions-dialog/parcel-visualization.directive";
-import "./feature-in-development-dialog/feature-in-development-dialog.controller";
-import "./feature-in-development-dialog/feature-in-development-dialog.service";
-import "./date-range-dialog/date-range-dialog.controller";
-import "./map-dialog/map-dialog.controller";
-import "./event-group-dialog/event-group-dialog.controller";
-import "./event-group-dialog/event-group-dialog.service";

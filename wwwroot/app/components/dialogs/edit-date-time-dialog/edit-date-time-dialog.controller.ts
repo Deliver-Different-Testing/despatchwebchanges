@@ -3,7 +3,7 @@ import ToastrService from "../../../services/ToastrService";
 import app from "../../../app";
 import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interfaces";
 
-class EditDateTimeDialogController {
+export class EditDateTimeDialogController {
     static $inject = [
         "$mdDialog",
         "toastrService",
@@ -126,5 +126,3 @@ class EditDateTimeDialogController {
         this.$mdDialog.cancel();
     }
 }
-
-app.controller("EditDateTimeDialogController", EditDateTimeDialogController);

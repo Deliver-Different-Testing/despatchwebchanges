@@ -608,7 +608,7 @@ function CSControl($scope, jdSvc, uCSData, $state, $filter, $mdDialog, greetingS
                 promises.push(uCSData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.splitJobs));
             }
             if (callData.jobs.length > 0) {
-                promises.push(uCSData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs));
+                promises.push(uCSData.restoreJobs(foundCourier.courierID, callData.jobs));
             }
 
             await Promise.all(promises);

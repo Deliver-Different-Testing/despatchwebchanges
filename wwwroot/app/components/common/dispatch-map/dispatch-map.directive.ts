@@ -1,13 +1,15 @@
-import app from "../../../app";
 import ConfigService from "../../../services/config.service";
 import {IJob} from "../../../interfaces/job.interface";
 import {Courier} from "../../../interfaces/courier.interface";
-import angular from "angular";
 import {DispatchMapControllerScope} from "./dispatch-map.interfaces";
 import "./dispatch-map.styles.less";
+import {bindAllMethods} from "../../../bindAllMethods";
 
 class DispatchMapController implements angular.IController {
     static $inject = ["$scope", "NgMap", "$timeout", "configService", "$window"];
+
+    private locationRefreshInterval: angular.IPromise<void> | null = null;
+    private readonly LOCATION_REFRESH_INTERVAL = 20000; // 20 seconds - adjust as needed
 
     private mapInstance: google.maps.Map | null = null;
     private isUpdating: boolean = false;
@@ -22,32 +24,14 @@ class DispatchMapController implements angular.IController {
                 private $timeout: angular.ITimeoutService,
                 private configService: ConfigService,
                 private $window: angular.IWindowService) {
-        this.$scope.polylines = [];
+        bindAllMethods(this);
 
+        this.$scope.polylines = [];
         this.$scope.mapZoom = this.$scope.mapZoom || 12;
         this.$scope.markers = [];
         this.$scope.flags = [];
         this.$scope.labels = [];
         this.$scope.googleMapsUrl = null;
-
-        this.bindFunctions()
-    }
-
-    private bindFunctions() {
-        this.$onInit = this.$onInit.bind(this);
-        this._createMarkerIcon = this._createMarkerIcon.bind(this);
-        this._setupMarkerIcons = this._setupMarkerIcons.bind(this);
-        this._setupWatchers = this._setupWatchers.bind(this);
-        this._updateDisplayedJobs = this._updateDisplayedJobs.bind(this);
-        this._updateCourierMarkers = this._updateCourierMarkers.bind(this);
-        this._addPickupMarker = this._addPickupMarker.bind(this);
-        this._addDeliveryMarker = this._addDeliveryMarker.bind(this);
-        this._setupMarkerListeners = this._setupMarkerListeners.bind(this);
-        this._addCourierMarker = this._addCourierMarker.bind(this);
-        this._clearJobMarkers = this._clearJobMarkers.bind(this);
-        this._clearCourierMarkers = this._clearCourierMarkers.bind(this);
-        this._fitMapToMarkers = this._fitMapToMarkers.bind(this);
-        this._isValidCoordinates = this._isValidCoordinates.bind(this);
     }
 
     $onInit() {
@@ -56,6 +40,7 @@ class DispatchMapController implements angular.IController {
                 this.$scope.googleMapsUrl = `https://maps.google.com/maps/api/js?key=${apiKey}&libraries=places`;
                 this.$scope.$apply();
 
+                // Wait for map to be ready
                 return this.NgMap.getMap();
             })
             .then((map) => {
@@ -68,14 +53,22 @@ class DispatchMapController implements angular.IController {
                 });
 
                 this._setupWatchers();
+                this._startLocationRefreshInterval();
 
-                if (this.$scope.jobs || this.$scope.currentJob) {
-                    return this._updateDisplayedJobs();
+                // Force initial jobs display after map is fully loaded
+                if (this.$scope.jobs?.length > 0 || this.$scope.currentJob) {
+                    this.$timeout(() => {
+                        this._updateDisplayedJobs();
+                    }, 100);
                 }
             })
             .catch((error) => {
                 console.error("Error initializing map:", error);
             });
+    }
+
+    $onDestroy(): void {
+        this._clearLocationRefreshInterval();
     }
 
     private _createMarkerIcon(color: string, isHovered: boolean = false): google.maps.Symbol {
@@ -166,6 +159,12 @@ class DispatchMapController implements angular.IController {
         this.$scope.$watch("autoZoomEnabled", (newValue: boolean) => {
             if (newValue && this.mapInstance && this.$scope.markers.length > 0) {
                 this._fitMapToMarkers();
+            }
+        });
+
+        this.$scope.$on('refreshCourierMarkers', (event: angular.IAngularEvent, newPositions: any) => {
+            if (newPositions && this.mapInstance) {
+                this._updateCourierMarkers(newPositions);
             }
         });
     }
@@ -369,9 +368,37 @@ class DispatchMapController implements angular.IController {
             lng >= -180 && lng <= 180
         );
     }
+
+    private _startLocationRefreshInterval(): void {
+        this._clearLocationRefreshInterval();
+
+        // Start a new interval
+        this.locationRefreshInterval = this.$timeout(() => {
+            this._refreshCourierLocations();
+        }, this.LOCATION_REFRESH_INTERVAL);
+    }
+
+    private _refreshCourierLocations(): void {
+        if (this.$scope.courierPositions && this.$scope.courierPositions.length > 0) {
+            this._updateCourierMarkers(this.$scope.courierPositions);
+
+            this.$scope.$emit('courierLocationsNeedRefresh');
+        }
+
+        this.locationRefreshInterval = this.$timeout(() => {
+            this._refreshCourierLocations();
+        }, this.LOCATION_REFRESH_INTERVAL);
+    }
+
+    private _clearLocationRefreshInterval(): void {
+        if (this.locationRefreshInterval) {
+            this.$timeout.cancel(this.locationRefreshInterval);
+            this.locationRefreshInterval = null;
+        }
+    }
 }
 
-class DispatchMapDirective implements angular.IDirective {
+export class DispatchMapDirective implements angular.IDirective {
     restrict: string;
     template: string;
     scope: any;
@@ -397,5 +424,3 @@ class DispatchMapDirective implements angular.IDirective {
         return () => new DispatchMapDirective();
     }
 }
-
-app.directive("dispatchMap", DispatchMapDirective.factory());

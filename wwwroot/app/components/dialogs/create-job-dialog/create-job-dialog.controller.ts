@@ -17,7 +17,7 @@ interface CreateJobDialogControllerScope extends angular.IScope {
     selectedClient: any;
     selectedVehicle: any;
 }
-class CreateJobDialogController {
+export class CreateJobDialogController {
     static $inject: string[] = [
         "$scope",
         "$mdDialog",
@@ -316,5 +316,3 @@ class CreateJobDialogController {
         this.$mdDialog.cancel();
     }
 }
-
-app.controller("CreateJobDialogController", CreateJobDialogController);

@@ -4,7 +4,7 @@ import DispatchCoreService from "../../../services/dispatch-core.service";
 import {ParcelDimensions} from "../../../interfaces/job.interface";
 import app from "../../../app";
 
-class EditParcelDimensionsDialogController {
+export class EditParcelDimensionsDialogController {
     static $inject = ["$mdDialog", "toastrService", "DispatchData", "jobId", "parcels"];
 
     selectedParcelIndex: number;
@@ -114,5 +114,3 @@ class EditParcelDimensionsDialogController {
         }
     }
 }
-
-app.controller("EditParcelDimensionsDialogController", EditParcelDimensionsDialogController);

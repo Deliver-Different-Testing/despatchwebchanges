@@ -1,7 +1,7 @@
 import app from "../../../app";
 import {IColumn, ILayout} from "../../../interfaces/layout.interfaces";
 
-class NationwideLayoutService implements angular.IServiceProvider {
+export class NationwideLayoutService implements angular.IServiceProvider {
     static $inject = ["$window", "$mdDialog", "$rootScope"];
 
     // Column width options
@@ -302,6 +302,3 @@ class NationwideLayoutService implements angular.IServiceProvider {
         });
     }
 }
-
-app.service("NationwideLayoutService", NationwideLayoutService);
-export default NationwideLayoutService;

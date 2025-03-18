@@ -4,7 +4,7 @@ import ConfigService from "../../../services/config.service";
 import app from "../../../app";
 import {MapConfig, OverviewTableParentJob} from "../../overview/overview.interfaces";
 
-class MapDialogController implements angular.IController {
+export class MapDialogController implements angular.IController {
     static $inject = ["$mdDialog", "overviewService", "configService", "delivery"];
 
     title: string;
@@ -70,5 +70,3 @@ class MapDialogController implements angular.IController {
         this.$mdDialog.cancel();
     }
 }
-
-app.controller("MapDialogController", MapDialogController);
