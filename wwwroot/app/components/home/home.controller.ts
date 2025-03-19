@@ -15,7 +15,6 @@ import {
 } from "../../interfaces/job.interface";
 import {
     ActiveCourierViewModel,
-    AvailableCourierPosition,
     TruckCourierStatusViewModel
 } from "../../interfaces/courier.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
@@ -49,7 +48,6 @@ export class HomeController extends BaseController {
         '$mdSidenav',
         'AppPages',
         '$stateParams',
-        'NgMap',
     ];
 
     private readonly DOM_SELECTORS = {
@@ -57,6 +55,7 @@ export class HomeController extends BaseController {
         driverLocations: "#driverLocations .listActive"
     } as const;
 
+    mapJobList: IJob[] = []
     initialViewSet: any;
     currentJob?: IJob;
     jobList: IJob[];
@@ -80,7 +79,6 @@ export class HomeController extends BaseController {
     views: DfrntPageViewModel[];
     selectedViews: DfrntPageViewModel[];
     mapCenter: any;
-    courierPositions: any;
     autoZoomEnabled: boolean;
     filters: any;
     selectedFilter: any;
@@ -161,8 +159,7 @@ export class HomeController extends BaseController {
         private APP_CONFIG: AppConfig,
         private $mdSidenav: angular.material.ISidenavService,
         private AppPages: any,
-        private $stateParams: angular.ui.IStateParamsService,
-        private NgMap: angular.map.INgMap,
+        private $stateParams: angular.ui.IStateParamsService
     ) {
         super();
 
@@ -205,12 +202,9 @@ export class HomeController extends BaseController {
             delay: 150,                          // Small delay to prevent accidental drags
             forcePlaceholderSize: true,          // Force the placeholder to have dimensions
 
-            // When dragging starts
             start: (e: JQueryEventObject, ui: any) => {
-                // Add dragging class for visual feedback
                 ui.item.addClass('dragging');
 
-                // Show dragging items container for more feedback
                 const dragInfo = angular.element('#draggingItems');
                 dragInfo.html(`Moving: ${ui.item.find('.md-headline-title').text().trim()}`);
                 dragInfo.css({
@@ -219,7 +213,6 @@ export class HomeController extends BaseController {
                     left: e.pageX + 10 + 'px'
                 });
 
-                // Follow pointer during drag
                 angular.element(document).on('mousemove.sortable', (event) => {
                     dragInfo.css({
                         top: event.pageY + 20 + 'px',
@@ -228,30 +221,19 @@ export class HomeController extends BaseController {
                 });
             },
 
-            // During the drag
-            over: (e: JQueryEventObject, ui: any) => {
-                // Add visual indicator for the column being dragged over
+            over: (e: JQueryEventObject, _: any) => {
                 angular.element(e.target).addClass('ui-sortable-active');
             },
 
-            // When leaving a potential drop target
-            out: (e: JQueryEventObject, ui: any) => {
-                // Remove visual indicator
+            out: (e: JQueryEventObject, _: any) => {
                 angular.element(e.target).removeClass('ui-sortable-active');
             },
 
             // When drag operation stops
-            stop: (e: JQueryEventObject, ui: any) => {
-                // Remove temporary event listener
+            stop: (_: JQueryEventObject, ui: any) => {
                 angular.element(this.$document[0]).off('mousemove.sortable');
-
-                // Hide the drag info element
                 angular.element('#draggingItems').css('display', 'none');
-
-                // Remove the dragging class
                 ui.item.removeClass('dragging');
-
-                // Remove any active column indicators
                 angular.element('.column-sortable').removeClass('ui-sortable-active');
 
                 // Update box metrics and save layout
@@ -364,7 +346,6 @@ export class HomeController extends BaseController {
         this.mapCenter = this.APP_CONFIG.US_Customer ?
             this.APP_CONFIG.US_Coordinates_Center :
             this.APP_CONFIG.NZ_Coordinates_Center;
-        this.courierPositions = [];
         this.mapZoom = 4;
         this.autoZoomEnabled = true;
 
@@ -532,32 +513,25 @@ export class HomeController extends BaseController {
             },
         },];
 
-        this.$scope.$on('courierLocationsNeedRefresh', () => {
-            return this.getAvailableCourierLocation();
-        });
-
         this.init();
     }
 
     private init() {
         this.initLayoutSystem(ContactID);
 
-        this.loadPageViews().then(() => {
+        this.loadPageViews().then(async () => {
             console.log("Loaded Page Views and Data!");
 
             const jobId = this.$stateParams.jobId;
             if (jobId) {
-                return this.getData()
-                    .then(() => {
-                        return this.DispatchData.getJobDetail(jobId);
-                    })
-                    .then((job) => {
-                        return this.selectJob(job);
-                    })
-                    .catch((error) => {
-                        console.error("Error loading initial job:", error);
-                        this.toastrService.showErrorToast("Error loading job details");
-                    });
+                try {
+                    await this.getData();
+                    const job: IJob = await this.DispatchData.getJobDetail(jobId);
+                    return this.selectJob(job);
+                } catch (error) {
+                    console.error("Error loading initial job:", error);
+                    this.toastrService.showErrorToast("Error loading job details");
+                }
             } else {
                 return this.getData();
             }
@@ -600,14 +574,11 @@ export class HomeController extends BaseController {
 
     private _saveCurrentLayout() {
         if (!this.currentLayoutName || this.currentLayoutName === 'Default') {
-            // Don't auto-save changes to Default layout
             return;
         }
 
-        // Update metrics before saving
         this._updateBoxMetrics();
 
-        // Find and update existing layout
         const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
         if (index !== -1) {
             this.layouts[index].layout = angular.copy(this.layout);
@@ -634,7 +605,7 @@ export class HomeController extends BaseController {
     }
 
     initJobWatcher() {
-        this.$scope.$on('refreshJobRequested', (event, jobId) => {
+        this.$scope.$on('refreshJobRequested', (_, jobId) => {
             console.log(`Parent received refresh request for jobId: ${jobId}`);
 
             this.DispatchData.getJobDetail(jobId)
@@ -960,17 +931,6 @@ export class HomeController extends BaseController {
         });
     }
 
-    async storeMapZoomDisplay() {
-        if (Modernizr.localstorage) {
-            localStorage.setItem("mapZoom-" + ContactID, JSON.stringify({display: this.autoZoomEnabled}));
-        }
-
-        // If map is available, trigger a re-render with current auto zoom setting
-        if (this.map && this.autoZoomEnabled) {
-            await this.getAvailableCourierLocation();
-        }
-    }
-
     supportChannelChanged() {
         console.log(this.pickService.channel);
     }
@@ -978,7 +938,7 @@ export class HomeController extends BaseController {
     onCourierSearchClick($event: MouseEvent) {
         const target = $event.target as HTMLElement;
         if (target?.tagName === "INPUT") {
-            (angular.element("courierSearch")[0] as HTMLInputElement).value = "";
+            (target as HTMLInputElement).value = "";
             this.courierSearchText = "";
         }
     }
@@ -1042,7 +1002,7 @@ export class HomeController extends BaseController {
         return this.JobDetailService.lockJob(currentJob);
     }
 
-    async selectClearList(selectedClearList: AreaClearList): Promise<void> {
+    async selectClearList(selectedClearList: AreaClearList) {
         try {
             this._validateClearList(selectedClearList);
 
@@ -1072,7 +1032,7 @@ export class HomeController extends BaseController {
         return activeLocations.length <= 1;
     }
 
-    private async _processClearListJobs(clearListId: number): Promise<void> {
+    private async _processClearListJobs(clearListId: number) {
         const envelope = await this.getClearListEnvelope(clearListId);
         if (!envelope) {
             throw new Error(`Failed to retrieve envelope for clear list ID: ${clearListId}`);
@@ -1090,8 +1050,6 @@ export class HomeController extends BaseController {
         try {
             const jobs = await this.jobListPromise;
             this.jobList = this.initializeJobSearchFields(jobs);
-
-            await this.getAvailableCourierLocation();
         } catch (error) {
             console.error("Error fetching jobs for clear list:", error);
             this.jobList = [];
@@ -1114,11 +1072,6 @@ export class HomeController extends BaseController {
                     const nell = new this.$window.google.maps.LatLng(data.maximumLatitude, data.maximumLongitude);
                     this.map.fitBounds(new this.$window.google.maps.LatLngBounds(swll, nell));
                     this.map.setZoom(13);
-                }
-
-                // Update available courier locations if method exists
-                if (this.getAvailableCourierLocation) {
-                    await this.getAvailableCourierLocation();
                 }
             }
 
@@ -1265,12 +1218,12 @@ export class HomeController extends BaseController {
             const note = await this.$mdDialog
                 .show(this.$mdDialog
                     .prompt()
-                    .title("Void Job")
-                    .textContent("Add Note")
+                    .title("Void Job " + jobNumber)
+                    .textContent("Add note to " + jobNumber)
                     .placeholder("Note")
                     .ariaLabel("Void job")
                     .required(true)
-                    .ok("Void")
+                    .ok("Void " + jobNumber)
                     .cancel("Cancel"));
             await this.DispatchData.addNote(jobId, note, FirstName, false);
             await this.DispatchData.voidJob(jobId);
@@ -1466,9 +1419,6 @@ export class HomeController extends BaseController {
 
             // Inform the user
             this.toastrService.showSuccessToast(jobsToDispatch.length + " job(s) dispatched to " + courier.name);
-
-            // Update courier locations
-            await this.getAvailableCourierLocation();
             await this.getJobList();
         } catch (error: any) {
             console.error("Error dispatching jobs:", error);
@@ -1894,10 +1844,10 @@ export class HomeController extends BaseController {
         }
     }
 
-    async courierSearch(searchText: string) {
-        const url = "/courier/AllActiveSearch";
+    courierSearch(searchText: string) {
         try {
-            return await this.DispatchData.autocompleteSearch(searchText, url);
+            const url = "/courier/AllActiveSearch";
+            return this.DispatchData.autocompleteSearch(searchText, url);
         } catch (error: any) {
             console.error(error.message);
             throw error;
@@ -1934,14 +1884,23 @@ export class HomeController extends BaseController {
         }
     }
 
-    async selectedCourierChange(courier: CourierData | null): Promise<void> {
-        if (!this._isValidCourier(courier)) {
+    async selectedCourierChange(courier: Suggestion) {
+        if (!courier) {
             this.currentCourier = null;
+            this.mapJobList = this.jobList;
             return;
         }
 
-        const {courierId, courierName} = courier;
-        await this.updateCourierData(courierId!, courierName);
+        const courierId = courier.id;
+        const courierName = courier.text;
+
+        if (!courierId || !courierName) {
+            console.error("Invalid courier data structure:", courier);
+            return;
+        }
+
+        await this.updateCourierData(courierId, courierName);
+        this.mapJobList = this.jobsCurrentList || [];
     }
 
     private _isValidCourier(courier: CourierData | null): courier is CourierData {
@@ -1959,6 +1918,8 @@ export class HomeController extends BaseController {
             }
 
             await this.updateCourierData(foundCourier.courierId, foundCourier.name);
+
+            this.mapJobList = this.jobsCurrentList || [];
         } catch (error: any) {
             console.error("Error searching courier:", error);
         }
@@ -1980,13 +1941,9 @@ export class HomeController extends BaseController {
                     courier: foundCourier.label || `${foundCourier.label} ${foundCourier.name}`,
                 };
 
-                // Update current work selection text
                 this.currentWorkSelection = ` for Courier ${this.currentCourier.courier}`;
-
-                // Get current jobs for the courier
                 await this.getCurrentJobs(foundCourier.courierId);
 
-                // Update truck courier status if available
                 try {
                     this.truckCourierStatus = await this.DispatchData.truckCourierStatus(foundCourier.courierId);
                 } catch (error: any) {
@@ -2033,6 +1990,7 @@ export class HomeController extends BaseController {
         this.jobsCurrentList = [];
         this.courier.gpsCourier = "";
         this.currentWorkSelection = "";
+        this.mapJobList = this.jobList;
     }
 
     async selectPotentialCourier(courier: CourierData) {
@@ -2072,8 +2030,6 @@ export class HomeController extends BaseController {
     }
 
     async updateUIForPotentialCourier(courier: CourierData) {
-        await this.getAvailableCourierLocation();
-
         this.currentWorkSelection = ` for Courier ${courier.courier}`;
         this.currentCourier = courier;
     }
@@ -2087,14 +2043,14 @@ export class HomeController extends BaseController {
         try {
             this.currentListLoading = true;
 
-            // Load jobs for the courier
             this.jobsCurrentList = await this.DispatchData.getJobsCurrent(courierId, this.jobFilters && this.jobFilters.status === "done");
+            this.mapJobList = this.jobsCurrentList || [];
 
-            // Set up droppable functionality for job rows
             await this.activateDrop();
         } catch (error: any) {
             console.error("Error getting current jobs:", error);
             this.jobsCurrentList = [];
+            this.mapJobList = [];
         } finally {
             this.currentListLoading = false;
         }
@@ -2233,9 +2189,6 @@ export class HomeController extends BaseController {
                         console.warn("Missing courier data for job:", job);
                     }
                 }
-
-                // Always update available courier locations after handling the job
-                await this.getAvailableCourierLocation();
             } catch (error: any) {
                 console.error("An error occurred finding couriers:", error);
             }
@@ -2340,68 +2293,6 @@ export class HomeController extends BaseController {
         await this.getSupports();
     }
 
-    async getAvailableCourierLocation() {
-        if (!this.allCouriers.display) {
-            this.courierPositions = [];
-            return;
-        }
-
-        try {
-            // Get the map instance first
-            const map = await this.NgMap.getMap();
-            const bounds = map.getBounds();
-
-            // If we don't have bounds yet (map not fully initialized), try to get a reasonable default area
-            if (!bounds) {
-                // Use default bounds or the current map center with a reasonable radius
-                const center = this.mapCenter || {lat: -36.8485, lng: 174.7633}; // Default to Auckland, NZ
-
-                // Get courier positions without specific bounds
-                const returnData = await this.DispatchData.getAvailableCourierLocation(
-                    center.lng - 0.5, // Approximate 50km radius bounds
-                    center.lat - 0.5,
-                    center.lng + 0.5,
-                    center.lat + 0.5
-                );
-
-                this.courierPositions = returnData.map((courier: AvailableCourierPosition) => ({
-                    latitude: courier.latitude,
-                    longitude: courier.longitude,
-                    code: courier.code,
-                    totalJobs: courier.totalJobs
-                }));
-
-                return;
-            }
-
-            // If we have bounds, use them to get courier positions
-            const sw = bounds.getSouthWest();
-            const ne = bounds.getNorthEast();
-
-            const returnData = await this.DispatchData.getAvailableCourierLocation(
-                sw.lng(),
-                sw.lat(),
-                ne.lng(),
-                ne.lat()
-            );
-
-            // Update courier positions with enhanced data
-            this.courierPositions = returnData.map((courier: AvailableCourierPosition) => ({
-                latitude: courier.latitude,
-                longitude: courier.longitude,
-                code: courier.code,
-                totalJobs: courier.totalJobs
-            }));
-
-            // Emit an event to refresh the map
-            this.$scope.$broadcast('refreshCourierMarkers', this.courierPositions);
-        } catch (error) {
-            console.error("Error getting available courier locations:", error);
-            this.courierPositions = [];
-        }
-    }
-
-
     async handleMarkerClick(job: IJob) {
         if (job) {
             await this.selectJob(job);
@@ -2456,16 +2347,26 @@ export class HomeController extends BaseController {
 
             if (result.items?.length > 0) {
                 this.jobList = this.initializeJobSearchFields(result.items);
+
+                if (!this.currentCourier) {
+                    this.mapJobList = this.jobList;
+                }
             } else {
                 this.jobList = [];
-            }
 
-            await this.getAvailableCourierLocation();
+                if (!this.currentCourier) {
+                    this.mapJobList = [];
+                }
+            }
         } catch (error: any) {
             console.error("Error getting job list:", error);
             this.toastrService.showErrorToast("Failed to get job list. Please try again.");
 
             this.jobList = [];
+
+            if (!this.currentCourier) {
+                this.mapJobList = [];
+            }
         }
     }
 
@@ -2570,7 +2471,6 @@ export class HomeController extends BaseController {
 
     async getData() {
         try {
-            // Only reset current selections, not the full job list
             this.currentJob = undefined;
             this.JobDetailService.currentJob = null;
             this.potentialCouriers = null;
@@ -2580,14 +2480,16 @@ export class HomeController extends BaseController {
                 this.currentCourier = null;
             }
 
-            // Fetch data concurrently
-            const [activeCouriers, allCouriers] = await Promise.all([this.DispatchData.getActiveCouriers(), this.DispatchData.getAllCouriers(),]);
+            const [activeCouriers, allCouriers] = await Promise.all([
+                this.DispatchData.getActiveCouriers(),
+                this.DispatchData.getAllCouriers(),
+            ]);
 
             this.pickCouriers = activeCouriers;
             this.pickAllCouriers = allCouriers;
 
-            // Get job list only once - this function manages its own loading state
             await this.getJobList();
+            this.mapJobList = this.jobList;
         } catch (error: any) {
             console.error("Error in getData:", error);
             console.log("An error occurred while loading data. Please refresh the page.");

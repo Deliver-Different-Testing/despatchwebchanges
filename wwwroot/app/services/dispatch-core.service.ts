@@ -748,8 +748,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async autocompleteSearch(searchTerm: string, url: string): Promise<SelectOption[]> {
-        const response = await this.$http.get<SelectOption[]>(url, {
+    async autocompleteSearch(searchTerm: string, url: string) {
+        const response = await this.$http.get<Suggestion[]>(url, {
             params: {
                 searchTerm: searchTerm
             }

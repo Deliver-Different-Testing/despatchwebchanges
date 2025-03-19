@@ -1,15 +1,16 @@
 import ConfigService from "../../../services/config.service";
 import {IJob} from "../../../interfaces/job.interface";
-import {Courier} from "../../../interfaces/courier.interface";
+import {AvailableCourierPosition} from "../../../interfaces/courier.interface";
 import "./dispatch-map.styles.less";
-import {bindAllMethods} from "../../../bindAllMethods";
-import angular from "angular";
+import BaseController from "../../base-controller";
+import DispatchCoreService from "../../../services/dispatch-core.service";
+import {AppConfig} from "../../../interfaces/app-config.interface";
 
-class DispatchMapController implements angular.IController {
-    static $inject = ["NgMap", "$timeout", "configService", "$window", "$rootScope"];
+class DispatchMapController extends BaseController {
+    static $inject = ["NgMap", "$timeout", "configService", "$window", "$rootScope", "DispatchData", "APP_CONFIG"];
 
     private locationRefreshInterval: angular.IPromise<void> | null = null;
-    private readonly LOCATION_REFRESH_INTERVAL = 20000; // 20 seconds - adjust as needed
+    private readonly LOCATION_REFRESH_INTERVAL = 15000;
 
     private mapInstance: google.maps.Map | null = null;
     private isUpdating: boolean = false;
@@ -18,15 +19,16 @@ class DispatchMapController implements angular.IController {
     private COURIER_ICON: google.maps.Symbol | null = null;
     private PICKUP_ICON_HOVER: google.maps.Symbol | null = null;
     private DELIVERY_ICON_HOVER: google.maps.Symbol | null = null;
+    private initialMapZoom?: number;
 
     jobs?: IJob[] = [];
     currentJob?: IJob;
-    courierPositions?: Courier[] = [];
+    courierPositions?: AvailableCourierPosition[] = [];
     mapCenter?: google.maps.LatLng | google.maps.LatLngLiteral;
     mapZoom: number = 12;
-    onMarkerClick?: (params: {job: IJob}) => void;
+    onMarkerClick?: (params: { job: IJob }) => void;
     showAvailableCouriers: boolean = false;
-    autoZoomEnabled: boolean = true; // Set to true by default
+    autoZoomEnabled: boolean = true;
 
     polylines: any[] = [];
     markers: google.maps.Marker[] = [];
@@ -36,21 +38,27 @@ class DispatchMapController implements angular.IController {
     map: google.maps.Map | null = null;
     tooltip: google.maps.InfoWindow | null = null;
 
-    constructor(private NgMap: angular.map.INgMap,
-                private $timeout: angular.ITimeoutService,
-                private configService: ConfigService,
-                private $window: angular.IWindowService,
-                private $rootScope: angular.IRootScopeService) {
-        bindAllMethods(this);
+    constructor(
+        private NgMap: angular.map.INgMap,
+        private $timeout: angular.ITimeoutService,
+        private configService: ConfigService,
+        private $window: angular.IWindowService,
+        private $rootScope: angular.IRootScopeService,
+        private DispatchData: DispatchCoreService,
+        private AppConfig: AppConfig
+    ) {
+        super();
     }
 
     $onInit() {
+        this._loadAutoZoomPreference();
+
         this.configService.getGoogleMapsKey()
             .then((apiKey: string) => {
                 this.googleMapsUrl = `https://maps.google.com/maps/api/js?key=${apiKey}&libraries=places`;
 
                 return this.$timeout(() => {
-                    return this.NgMap.getMap({ id: 'dispatchMap' });
+                    return this.NgMap.getMap({id: 'dispatchMap'});
                 }, 1000);
             })
             .then((map) => {
@@ -58,6 +66,8 @@ class DispatchMapController implements angular.IController {
 
                 this.mapInstance = map;
                 this.map = map;
+                this.initialMapZoom = this.mapZoom;
+
                 this.tooltip = new this.$window.google.maps.InfoWindow({
                     disableAutoPan: true
                 });
@@ -65,7 +75,7 @@ class DispatchMapController implements angular.IController {
                 this._setupWatchers();
                 this._startLocationRefreshInterval();
 
-                if(this.jobs || this.currentJob) {
+                if (this.jobs || this.currentJob) {
                     return this._updateDisplayedJobs();
                 }
             })
@@ -74,7 +84,7 @@ class DispatchMapController implements angular.IController {
             });
     }
 
-    $onDestroy(): void {
+    $onDestroy() {
         this._clearLocationRefreshInterval();
     }
 
@@ -89,17 +99,30 @@ class DispatchMapController implements angular.IController {
 
         if ('jobs' in changes || 'currentJob' in changes) {
             console.log('Updating displayed jobs due to changes in jobs or currentJob');
-           return this._updateDisplayedJobs();
+            return this._updateDisplayedJobs();
         }
 
-        if (changes.courierPositions) {
-            this._updateCourierMarkers(changes.courierPositions.currentValue);
+        if (changes.showAvailableCouriers) {
+            if (changes.showAvailableCouriers.currentValue) {
+                return this.fetchCourierPositions();
+            } else {
+                this._clearCourierMarkers();
+            }
         }
 
         if (changes.autoZoomEnabled &&
-            changes.autoZoomEnabled.currentValue &&
-            this.markers.length > 0) {
-            this._fitMapToMarkers();
+            changes.autoZoomEnabled.isFirstChange() &&
+            changes.autoZoomEnabled.currentValue !== undefined) {
+            this.autoZoomEnabled = changes.autoZoomEnabled.currentValue;
+            this._saveAutoZoomPreference();
+
+            if (this.autoZoomEnabled && this.markers.length > 0) {
+                this._fitMapToMarkers();
+            }
+        }
+
+        if (changes.mapZoom && changes.mapZoom.isFirstChange() && changes.mapZoom.currentValue) {
+            this.initialMapZoom = changes.mapZoom.currentValue;
         }
     }
 
@@ -115,16 +138,15 @@ class DispatchMapController implements angular.IController {
         };
     }
 
-    private _createCarMarkerIcon(color: string): google.maps.Symbol {
+    private _createFlagCarMarkerIcon(color: string): google.maps.Symbol {
         return {
-            // SVG path for a simple car shape
-            path: "M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z",
+            path: 'M2,11 L7,6 L7,2 L14,2 L19,7 L14,12 L7,12 L2,17 L2,11 Z M7,7 L12,7 L12,5 L7,5 L7,7 Z M13,6.5 C13,5.67 13.67,5 14.5,5 C15.33,5 16,5.67 16,6.5 C16,7.33 15.33,8 14.5,8 C13.67,8 13,7.33 13,6.5 Z',
             fillColor: color,
             fillOpacity: 1,
-            strokeWeight: 1,
-            strokeColor: "#FFFFFF",
+            strokeWeight: 1.5,
+            strokeColor: '#FFFFFF',
             scale: 1.5,
-            anchor: new this.$window.google.maps.Point(12, 12)
+            anchor: new this.$window.google.maps.Point(10, 10)
         };
     }
 
@@ -152,7 +174,7 @@ class DispatchMapController implements angular.IController {
     private _setupMarkerIcons() {
         this.PICKUP_ICON = this._createMarkerIcon("#4CAF50");
         this.DELIVERY_ICON = this._createMarkerIcon("#F44336");
-        this.COURIER_ICON = this._createCarMarkerIcon("#2196F3");
+        this.COURIER_ICON = this._createFlagCarMarkerIcon("#3EAFC2");
         this.PICKUP_ICON_HOVER = this._createMarkerIcon("#4CAF50", true);
         this.DELIVERY_ICON_HOVER = this._createMarkerIcon("#F44336", true);
     }
@@ -164,7 +186,100 @@ class DispatchMapController implements angular.IController {
                     this._updateCourierMarkers(newPositions);
                 }
             });
+
+            if (this.mapInstance) {
+                this.$window.google.maps.event.addListener(this.mapInstance, 'bounds_changed', this.onBoundsChanged);
+            }
         });
+    }
+
+    private onBoundsChanged = this._debounce(() => {
+        if (this.showAvailableCouriers) {
+            return this.fetchCourierPositions();
+        }
+    }, 500);
+
+    private _debounce(func: Function, wait: number) {
+        let timeout: any;
+        return (...args: any[]) => {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    async fetchCourierPositions() {
+        console.log('[DispatchMapController] Starting courier positions fetch');
+
+        if (!this.showAvailableCouriers) {
+            console.log('[DispatchMapController] Skipping fetch - couriers not enabled');
+            return;
+        }
+
+        if (!this.mapInstance) {
+            console.log('[DispatchMapController] Skipping fetch - map instance not available');
+            return;
+        }
+
+        try {
+            const coordinates = await this.getSearchCoordinates();
+            const courierData = await this.fetchCourierData(coordinates);
+            this._updateCourierMarkers(courierData);
+
+            console.log('[DispatchMapController] Successfully updated courier positions', {
+                courierCount: courierData?.length ?? 0
+            });
+        } catch (error) {
+            console.error('[DispatchMapController] Failed to fetch courier positions:', error);
+            this._clearCourierMarkers();
+        }
+    }
+
+    private async getSearchCoordinates(): Promise<{
+        west: number;
+        south: number;
+        east: number;
+        north: number;
+    }> {
+        const bounds = this.mapInstance?.getBounds();
+
+        if (bounds) {
+            console.log('[DispatchMapController] Using map bounds for courier search');
+            const sw = bounds.getSouthWest();
+            const ne = bounds.getNorthEast();
+            return {
+                west: sw.lng(),
+                south: sw.lat(),
+                east: ne.lng(),
+                north: ne.lat()
+            };
+        }
+
+        console.log('[DispatchMapController] Using default area for courier search');
+        const center = this.mapCenter || this.AppConfig.US_Coordinates_Center;
+        const offset = 0.5; // Approximate 50km radius bounds
+
+        return {
+            west: Number(center.lng) - offset,
+            south: Number(center.lat) - offset,
+            east: Number(center.lng) + offset,
+            north: Number(center.lat) + offset
+        };
+    }
+
+    private async fetchCourierData(coordinates: {
+        west: number;
+        south: number;
+        east: number;
+        north: number;
+    }) {
+        console.log('[DispatchMapController] Fetching courier locations', coordinates);
+
+        return await this.DispatchData.getAvailableCourierLocation(
+            coordinates.west,
+            coordinates.south,
+            coordinates.east,
+            coordinates.north
+        );
     }
 
     private async _updateDisplayedJobs() {
@@ -207,20 +322,38 @@ class DispatchMapController implements angular.IController {
             }
 
             await this.$timeout(() => {
-                // Always auto-zoom when jobs are updated
-                this._fitMapToMarkers();
+                if (this.autoZoomEnabled && this.markers.length > 0) {
+                    this._fitMapToMarkers();
+                } else if (this.markers.length > 0) {
+                    this._centerMapOnMarkers();
+                }
             }, 100);
         } finally {
             this.isUpdating = false;
         }
     }
 
-    private _updateCourierMarkers(couriers: Courier[]) {
-        if (!couriers || !this.showAvailableCouriers) return;
-        this._clearCourierMarkers();
+    private _centerMapOnMarkers() {
+        if (this.markers.length === 0) return;
 
-        couriers.forEach((courier: any) => {
-            if (this._isValidCoordinates(courier.latitude, courier.longitude)) {
+        const bounds = new this.$window.google.maps.LatLngBounds();
+
+        this.markers.forEach((marker: google.maps.Marker) => {
+            bounds.extend(marker.getPosition() as google.maps.LatLng);
+        });
+
+        const center = bounds.getCenter();
+        this.mapInstance!.setCenter(center);
+    }
+
+    private _updateCourierMarkers(couriers: AvailableCourierPosition[]) {
+        if (!couriers || !this.showAvailableCouriers) return;
+
+        this._clearCourierMarkers();
+        this.courierPositions = couriers;
+
+        couriers.forEach((courier: AvailableCourierPosition) => {
+            if (this._isValidCoordinates(courier.latitude ?? 0, courier.longitude ?? 0)) {
                 this._addCourierMarker(courier);
             }
         });
@@ -286,6 +419,8 @@ class DispatchMapController implements angular.IController {
         });
 
         marker.addListener("click", () => {
+            const currentZoom = this.mapInstance!.getZoom();
+
             if (locationType === "Delivery") {
                 marker.setAnimation(this.$window.google.maps.Animation.BOUNCE);
                 setTimeout(() => {
@@ -293,14 +428,19 @@ class DispatchMapController implements angular.IController {
                 }, 750);
             }
 
-            // Using callback instead of $scope.$apply
+            this.mapInstance!.setCenter(marker.getPosition() as google.maps.LatLng);
+
+            if (!this.autoZoomEnabled && currentZoom) {
+                this.mapInstance!.setZoom(currentZoom);
+            }
+
             if (this.onMarkerClick) {
                 this.onMarkerClick({job: job});
             }
         });
     }
 
-    private _addCourierMarker(courier: Courier) {
+    private _addCourierMarker(courier: AvailableCourierPosition) {
         const position = new this.$window.google.maps.LatLng(courier.latitude, courier.longitude);
 
         // Create the car marker
@@ -308,10 +448,10 @@ class DispatchMapController implements angular.IController {
             position: position,
             map: this.mapInstance,
             icon: this.COURIER_ICON,
-            title: `Courier ${courier.code || courier.name}`
+            title: `Courier ${courier.code}`
         });
 
-        const courierName = courier.code || courier.name || "Courier";
+        const courierName = courier.code || "Courier";
         const label = this._createCourierLabel(position, courierName);
 
         marker.addListener("mouseover", () => {
@@ -347,10 +487,21 @@ class DispatchMapController implements angular.IController {
     }
 
     private _fitMapToMarkers() {
-        if (this.markers.length === 0) return;
+        if (this.markers.length === 0 && this.flags.length === 0) return;
 
         const bounds = new this.$window.google.maps.LatLngBounds();
-        this.markers.forEach((marker: google.maps.Marker) => bounds.extend(marker.getPosition() as google.maps.LatLng));
+
+        this.markers.forEach((marker: google.maps.Marker) => {
+            bounds.extend(marker.getPosition() as google.maps.LatLng);
+        });
+
+        if (this.showAvailableCouriers) {
+            this.flags.forEach((marker: google.maps.Marker) => {
+                bounds.extend(marker.getPosition() as google.maps.LatLng);
+            });
+        }
+
+        if (bounds.isEmpty()) return;
         this.mapInstance!.fitBounds(bounds);
 
         const zoom = this.mapInstance!.getZoom();
@@ -368,7 +519,7 @@ class DispatchMapController implements angular.IController {
         );
     }
 
-    private _startLocationRefreshInterval(): void {
+    private _startLocationRefreshInterval() {
         this._clearLocationRefreshInterval();
 
         // Start a new interval
@@ -377,11 +528,11 @@ class DispatchMapController implements angular.IController {
         }, this.LOCATION_REFRESH_INTERVAL);
     }
 
-    private _refreshCourierLocations(): void {
-        if (this.courierPositions && this.courierPositions.length > 0) {
-            this._updateCourierMarkers(this.courierPositions);
-
-            this.$rootScope.$emit('courierLocationsNeedRefresh');
+    private _refreshCourierLocations() {
+        if (this.showAvailableCouriers) {
+            this.fetchCourierPositions().then(r =>
+                this.$rootScope.$emit('courierLocationsNeedRefresh')
+            );
         }
 
         this.locationRefreshInterval = this.$timeout(() => {
@@ -389,10 +540,48 @@ class DispatchMapController implements angular.IController {
         }, this.LOCATION_REFRESH_INTERVAL);
     }
 
-    private _clearLocationRefreshInterval(): void {
+    private _clearLocationRefreshInterval() {
         if (this.locationRefreshInterval) {
             this.$timeout.cancel(this.locationRefreshInterval);
             this.locationRefreshInterval = null;
+        }
+    }
+
+    toggleAutoZoom(): void {
+        this.autoZoomEnabled = !this.autoZoomEnabled;
+        this._saveAutoZoomPreference();
+
+        if (this.autoZoomEnabled && this.markers.length > 0) {
+            this._fitMapToMarkers();
+        } else if (!this.autoZoomEnabled && this.markers.length > 0) {
+            this._centerMapOnMarkers();
+        }
+    }
+
+    private _saveAutoZoomPreference(): void {
+        const contactId = ContactID;
+        if (contactId && typeof window !== 'undefined' && window.localStorage) {
+            try {
+                window.localStorage.setItem(`mapZoom-${contactId}`, JSON.stringify({display: this.autoZoomEnabled}));
+            } catch (e) {
+                console.error("Error saving auto zoom preference:", e);
+            }
+        }
+    }
+
+    private _loadAutoZoomPreference(): void {
+        const contactId = ContactID;
+        if (contactId && typeof window !== 'undefined' && window.localStorage) {
+            try {
+                const savedPreference = window.localStorage.getItem(`mapZoom-${contactId}`);
+                if (savedPreference) {
+                    const parsed = JSON.parse(savedPreference);
+                    this.autoZoomEnabled = parsed.display;
+                }
+            } catch (e) {
+                console.error("Error loading auto zoom preference:", e);
+                this.autoZoomEnabled = true; // Default to true if any error occurs
+            }
         }
     }
 }
@@ -404,12 +593,10 @@ const DispatchMapComponent: angular.IComponentOptions = {
     bindings: {
         jobs: '<',
         currentJob: '<',
-        courierPositions: '<',
         mapCenter: '<',
         mapZoom: '<',
         onMarkerClick: '&',
-        showAvailableCouriers: '<',
-        autoZoomEnabled: '<'
+        showAvailableCouriers: '<'
     }
 };
 

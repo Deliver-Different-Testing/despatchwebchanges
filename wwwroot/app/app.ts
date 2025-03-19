@@ -54,7 +54,7 @@ import {
     EditDateTimeDialogController
 } from "./components/dialogs/edit-date-time-dialog/edit-date-time-dialog.controller";
 import {EditDateTimeDialogService} from "./components/dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
-import DispatchMapComponent from "./components/common/dispatch-map/dispatch-map.directive";
+import DispatchMapComponent from "./components/common/dispatch-map/dispatch-map.component";
 import EditAddressDialogController from "./components/dialogs/edit-address-dialog/edit-address-dialog.controller";
 import {EditAddressDialogService} from "./components/dialogs/edit-address-dialog/edit-address-dialog.service";
 
