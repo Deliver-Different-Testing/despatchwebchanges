@@ -9,7 +9,6 @@ using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.FlightStats;
-using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -141,14 +140,13 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
     public async Task<List<JobViewModel>> NationwideJobListAsync(string order, string orderDirection,
         bool isInternal, bool isUsTenant,
         string clientIds, NationwideWidget windowPane,
-        List<int> selectedViewIds, DispatchStatus status = DispatchStatus.All)
+        List<int> selectedViewIds)
     {
         if (isInternal == false && string.IsNullOrEmpty(clientIds))
             return [];
 
         return await DespatchQry(
             AppPage.Domestic,
-            status,
             order,
             orderDirection,
             isInternal,

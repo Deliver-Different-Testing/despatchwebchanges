@@ -1,5 +1,8 @@
 import app from "./app";
-import angular from "angular";
+import {HomeController} from "./components/home/home.controller";
+import {OverviewController} from "./components/overview/overview.controller";
+import {MegaMapController} from "./components/overview/mega-map/mega-map.controller";
+import {TaskDashboardController} from "./components/task-dashboard/task-dashboard.controller";
 
 class RouterConfig {
     constructor(private $urlRouterProvider: angular.ui.IUrlRouterProvider,
@@ -24,8 +27,8 @@ class RouterConfig {
     private configureHomeState(): this {
         this.$stateProvider.state("home", {
             url: "/?jobId",
-            template: require("./components/home/homeView.html"),
-            controller: "HomeControl",
+            template: require("./components/home/home.template.html"),
+            controller: HomeController,
             controllerAs: "ctrl",
             params: {
                 jobId: {
@@ -71,7 +74,7 @@ class RouterConfig {
         this.$stateProvider.state("overview", {
             url: "/overview",
             template: require("./components/overview/overview.template.html"),
-            controller: "deliveryOverview",
+            controller: OverviewController,
             controllerAs: "ctrl",
             reloadOnSearch: false
         });
@@ -82,7 +85,7 @@ class RouterConfig {
         this.$stateProvider.state("megaMap", {
             url: "/megaMap",
             template: require("./components/overview/mega-map/mega-map.template.html"),
-            controller: "megaMapController",
+            controller: MegaMapController,
             controllerAs: "ctrl",
             reloadOnSearch: false
         });
@@ -93,7 +96,7 @@ class RouterConfig {
         this.$stateProvider.state("taskDashboard", {
             url: "/taskDashboard",
             template: require("./components/task-dashboard/task-dashboard.template.html"),
-            controller: "taskDashboardController",
+            controller: TaskDashboardController,
             controllerAs: "ctrl",
             reloadOnSearch: false
         });

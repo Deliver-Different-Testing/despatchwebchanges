@@ -4,10 +4,10 @@ import GreetingService from "../../services/greeting.service";
 import OpenJobDispatchService from "../../services/open-job-dispatch.service";
 import OverviewFiltersService from "./services/overview-filters.service";
 import {OverviewTableChildJob, OverviewTableParentJob, Region, Speed} from "./overview.interfaces";
-import {bindAllMethods} from "../../bindAllMethods";
 import "./overview.styles.less";
+import BaseController from "../base-controller";
 
-export class OverviewController implements angular.IController {
+export class OverviewController extends BaseController {
     static $inject = [
         "$mdDialog",
         "$mdSidenav",
@@ -69,7 +69,7 @@ export class OverviewController implements angular.IController {
         private openJobDispatchService: OpenJobDispatchService,
        private overviewFiltersService: OverviewFiltersService
     ) {
-        bindAllMethods(this);
+        super();
 
         // Initialize properties
         this.isLoading = false;

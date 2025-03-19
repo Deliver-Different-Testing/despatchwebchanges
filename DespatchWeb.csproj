@@ -275,6 +275,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.10" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="wwwroot\app\components\base-controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\dfrnt-loader\dfrnt-loader.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\dispatch-map\dispatch-map.directive.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\dispatch-map\dispatch-map.interfaces.ts" />
@@ -292,6 +293,8 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\auto-complete-dialog\auto-complete-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-address-dialog\edit-address-dialog.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-address-dialog\edit-address-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.controller.ts" />
@@ -334,7 +337,6 @@
     <TypeScriptCompile Include="wwwroot\app\contants.ts" />
     <TypeScriptCompile Include="wwwroot\app\directives.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\app-pages.enum.ts" />
-    <TypeScriptCompile Include="wwwroot\app\enums\dispatch-status.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\job-status.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
     <TypeScriptCompile Include="wwwroot\app\bindAllMethods.ts" />

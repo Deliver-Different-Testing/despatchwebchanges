@@ -15,7 +15,6 @@ using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
 using DespatchWeb.EntityClasses;
-using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
@@ -68,14 +67,12 @@ public class JobController(
                 await clientAccessValidator.ValidateClientAccess(cid, clientIds);
             }
 
-            var status = (DispatchStatus)queryParams.Status;
             var result = await jobRepository.JobListAsync(
                 queryParams,
                 isInternal,
                 isUsTenant,
                 clientIds,
-                despatchViewIds,
-                status
+                despatchViewIds
             );
 
             return Json(result);
@@ -97,7 +94,6 @@ public class JobController(
 
     [HttpGet]
     public async Task<IActionResult> GetAllJobCoordinates(
-        [FromQuery] DispatchStatus status,
         bool isInternal,
         string clientIds,
         [FromQuery] List<int> despatchViewIds)
@@ -107,7 +103,6 @@ public class JobController(
             Log.Information(
                 "GetAllJobCoordinates endpoint called with Status: {Status}, IsInternal: {IsInternal}, "
                 + "ClientIds: {ClientIds}, DespatchViewIds: {@DespatchViewIds}",
-                status,
                 isInternal,
                 clientIds,
                 despatchViewIds
@@ -118,7 +113,6 @@ public class JobController(
             if (!isInternal) await clientAccessValidator.ValidateClientAccess(0, clientIds);
 
             var result = await jobRepository.GetJobCoordinatesAsync(
-                status,
                 isInternal,
                 isUsTenant,
                 clientIds,
@@ -163,14 +157,12 @@ public class JobController(
                 await clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
             // Get jobs
-            var status = (DispatchStatus)queryParams.Status;
             var result = await jobRepository.JobListAsync(
                 queryParams,
                 isInternal,
                 isUsTenant,
                 clientIds,
-                despatchViewIds,
-                status
+                despatchViewIds
             );
 
             return Json(result);
@@ -543,7 +535,7 @@ public class JobController(
             file == null
             || string.IsNullOrWhiteSpace(file.FileName)
             || !new[] { ".xls", ".xlsx", ".csv" }.Contains(
-                file.FileName.Trim()[file.FileName.Trim().LastIndexOf(".")..].Trim().ToLower()
+                file.FileName.Trim()[file.FileName.Trim().LastIndexOf(".", StringComparison.Ordinal)..].Trim().ToLower()
             )
         )
             return BadRequest("Invalid file format.");
@@ -551,8 +543,7 @@ public class JobController(
         var folder = DateTime.UtcNow.ToString("yyyyMM");
         var fileExtension = file
             .FileName.Trim()
-            .ToLower()
-            .Substring(file.FileName.Trim().LastIndexOf("."));
+            .ToLower()[file.FileName.Trim().LastIndexOf(".", StringComparison.Ordinal)..];
 
         using var memoryStream = new MemoryStream();
         await file.CopyToAsync(memoryStream);
@@ -568,7 +559,7 @@ public class JobController(
             {
                 BucketName = Environment
                     .GetEnvironmentVariable("S3Bucket")
-                    .Replace("downloads", "uploads"),
+                    ?.Replace("downloads", "uploads"),
                 Key = key,
                 ContentType = file.ContentType,
                 InputStream = ms,
@@ -592,7 +583,7 @@ public class JobController(
         }
 
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-        string sResult = null;
+        string sResult;
 
         using (
             var reader = (
@@ -652,7 +643,7 @@ public class JobController(
             sResult = JsonSerializer.Serialize(rows, options);
             Log.Debug(
                 "Serialized JSON (first 500 chars): {JsonSample}",
-                sResult.Length > 500 ? sResult.Substring(0, 500) + "..." : sResult
+                sResult.Length > 500 ? sResult[..500] + "..." : sResult
             );
         }
 
@@ -1154,7 +1145,7 @@ public class JobController(
         var pw = Environment.GetEnvironmentVariable("ExsalerateAPIPW");
 
         // Set up HttpClient
-        httpClient.BaseAddress = new Uri(baseUrl);
+        httpClient.BaseAddress = new Uri(baseUrl ?? string.Empty);
         httpClient.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue(
                 "Basic",
@@ -2087,7 +2078,7 @@ public class JobController(
             Environment.GetEnvironmentVariable("SMTPUser"),
             Environment.GetEnvironmentVariable("SMTPPass")
         );
-        smtp.Port = int.Parse(Environment.GetEnvironmentVariable("SMTP_Port"));
+        smtp.Port = int.Parse(Environment.GetEnvironmentVariable("SMTP_Port") ?? string.Empty);
         smtp.Send(message);
     }
 
@@ -2128,8 +2119,7 @@ public class JobController(
     public async Task<IActionResult> IsFilesAttachedToJob(int jobId)
     {
         var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-        var tenantId = HttpContext
-            ?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")
+        var tenantId = HttpContext.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")
             ?.Value;
         var key = $"JobAttachments/{jobId}-";
         Log.Debug($"Get S3 Object List for {key}");
@@ -2145,8 +2135,7 @@ public class JobController(
         try
         {
             var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            var tenantId = HttpContext
-                ?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")
+            var tenantId = HttpContext.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")
                 ?.Value;
             var key = $"JobAttachments/{jobId}-";
             Log.Debug($"Get S3 Object List for {key}");

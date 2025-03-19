@@ -204,6 +204,9 @@ export interface AddressViewModel {
     our_suburb?: string;
 }
 
+export interface EditAddressDialogViewModel extends AddressViewModel {
+    stateAbbreviation?: string;
+}
 
 export interface Suggestion {
     id: number;
@@ -277,10 +280,8 @@ export interface Pallet {
 }
 
 export interface JobQueryParams {
-    status?: string;
     order?: string;
     orderDirection?: string;
-    statusFilter?: string;
 }
 
 export interface PriceBreakdown {

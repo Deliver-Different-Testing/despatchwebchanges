@@ -1,6 +1,6 @@
 import ToastrService from "../../../services/ToastrService";
 import {AppConfig} from "../../../interfaces/app-config.interface";
-import {InternalStatus, IJob, PriceBreakdown} from "../../../interfaces/job.interface";
+import {InternalStatus, IJob, PriceBreakdown, EditAddressDialogViewModel} from "../../../interfaces/job.interface";
 import {ContactID, FirstName} from "../../../contants";
 import {JobNote, JobOptions, TabItem} from "./job-details.interfaces";
 import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
@@ -10,6 +10,7 @@ import {SelectDialogService} from "../../dialogs/select-dialog/select-dialog.ser
 import {EditDateTimeDialogService} from "../../dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
 import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interfaces";
 import {bindAllMethods} from "../../../bindAllMethods";
+import {EditAddressDialogService} from "../../dialogs/edit-address-dialog/edit-address-dialog.service";
 
 class JobDetailController implements angular.IController {
     static $inject = [
@@ -23,7 +24,8 @@ class JobDetailController implements angular.IController {
         "$mdMenu",
         "$timeout",
         "selectDialogService",
-        "editDateTimeDialogService"
+        "editDateTimeDialogService",
+        "editAddressDialogService"
     ];
 
     private readonly isUsCustomer: boolean;
@@ -55,7 +57,8 @@ class JobDetailController implements angular.IController {
         private $mdMenu: angular.material.IMenuService,
         private $timeout: angular.ITimeoutService,
         private selectDialogService: SelectDialogService,
-        private editDateTimeDialogService: EditDateTimeDialogService
+        private editDateTimeDialogService: EditDateTimeDialogService,
+        private editAddressDialogService: EditAddressDialogService
     ) {
         this.isUsCustomer = APP_CONFIG.US_Customer;
         this.notes = [];
@@ -526,28 +529,6 @@ class JobDetailController implements angular.IController {
         }
     }
 
-    async showAddressDialog($event: MouseEvent, job: IJob, isDeliveryAddress: boolean) {
-        const addressToUpdate = isDeliveryAddress ? job.deliveryAddress : job.pickupAddress;
-        const pickSuburbs = await this.DispatchData.getSuburbList();
-
-        return this.$mdDialog.show({
-            controller: "EditAddressDialogController",
-            controllerAs: "ctrl",
-            parent: document.body,
-            targetEvent: $event,
-            template: require("../../dialogs/edit-address-dialog/edit-address-dialog.html"),
-            clickOutsideToClose: false,
-            fullscreen: true,
-            locals: {
-                addressDetails: addressToUpdate,
-                suburbOptions: pickSuburbs,
-                title: "Update Address and GPS",
-                submitLabel: "Update",
-            },
-            bindToController: true
-        });
-    }
-
     async showJobDimensionsDialog($event: MouseEvent, job: IJob) {
         await this.$mdDialog.show({
             controller: "EditParcelDimensionsDialogController",
@@ -589,23 +570,28 @@ class JobDetailController implements angular.IController {
 
     async updateAddress($event: MouseEvent, job: IJob, field: string) {
         const isDeliveryAddress = field === "toAddress";
+        const existingAddress = isDeliveryAddress ? job.deliveryAddress : job.pickupAddress;
 
         try {
-            const result = await this.showAddressDialog($event, job, isDeliveryAddress);
-            return this._processAddressUpdate(job, result, isDeliveryAddress);
+            const newAddress = await this.editAddressDialogService.openEditAddressDialog($event, existingAddress);
+            if(!newAddress) {
+                return; // User closed dialog
+            }
+
+            await this._processAddressUpdate(job, newAddress, isDeliveryAddress);
         } catch (error) {
             console.log("Error updating GPS:", error);
         }
     }
 
-    private async _processAddressUpdate(job: IJob, addressResult: any, isDeliveryAddress: boolean) {
+    private async _processAddressUpdate(job: IJob, newAddress: EditAddressDialogViewModel, isDeliveryAddress: boolean) {
         console.log(`isDeliveryAddress: ${isDeliveryAddress}`);
 
         // Update job by address format
-        const updatedJob = this.isUsCustomer ? this._updateJobAddressUs(job, addressResult, isDeliveryAddress) : this._updateJobAddressNz(job, addressResult, isDeliveryAddress);
+        const updatedJob = this._updateJobAddressUs(job, newAddress, isDeliveryAddress);
 
         try {
-            await this._updateJobRateAndAddress(updatedJob, addressResult, isDeliveryAddress);
+            await this._updateJobRateAndAddress(updatedJob, newAddress, isDeliveryAddress);
 
             this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully`);
             await this._refreshJobDetails(job.id);
@@ -614,39 +600,36 @@ class JobDetailController implements angular.IController {
         }
     }
 
-    private _updateJobAddressNz(job: IJob, result: any, isDeliveryAddress: boolean) {
-        const addressField = isDeliveryAddress ? "toAddress" : "from";
-        const suburbIdField = isDeliveryAddress ? "toSuburbId" : "fromSuburbId";
-        const suburbField = isDeliveryAddress ? "toSuburbName" : "fromSuburbName";
-
-        job[addressField] = result.addressData.address;
-        job[suburbIdField] = result.addressData.suburbId;
-        job[suburbField] = result.addressData.suburbName;
-
-        return job;
-    }
-
-    private _updateJobAddressUs(job: IJob, addressResult: any, isDeliveryAddress: boolean) {
+    private _updateJobAddressUs(job: IJob, newAddress: EditAddressDialogViewModel, isDeliveryAddress: boolean) {
         const addressField = isDeliveryAddress ? "deliveryAddress" : "pickupAddress";
         console.log(`Address Field: ${addressField}`);
 
-        job[addressField] = addressResult.addressData;
+        job[addressField] = newAddress;
         return job;
     }
 
-    private async _updateJobRateAndAddress(job: IJob, addressResult: any, isDeliveryAddress: boolean) {
-        job.charge = await this.rateJobService.rateJob(job);
-        const rate = Number(job.charge.replace(/[^0-9.-]+/g, ""));
+    private async _updateJobRateAndAddress(job: IJob, addressResult: EditAddressDialogViewModel, isDeliveryAddress: boolean) {
+        try {
+            job.charge = await this.rateJobService.rateJob(job);
 
-        console.log(`Job Rate: ${rate}`);
+            let rate = 0;
+            if (job.charge && typeof job.charge === 'string') {
+                rate = Number(job.charge.replace(/[^0-9.-]+/g, ""));
+                console.log(`Job Rate: ${rate}`);
+            } else {
+                console.warn("Job charge is undefined or not a string", job.charge);
+            }
 
-        if (isDeliveryAddress) {
-            await this.DispatchData.updateDeliveryAddress(job.id, rate, FirstName, job.preBook, addressResult.addressData);
-        } else {
-            await this.DispatchData.updatePickupAddress(job.id, rate, FirstName, job.preBook, addressResult.addressData);
+            if (isDeliveryAddress) {
+                await this.DispatchData.updateDeliveryAddress(job.id, rate, FirstName, job.preBook, addressResult);
+            } else {
+                await this.DispatchData.updatePickupAddress(job.id, rate, FirstName, job.preBook, addressResult);
+            }
+        } catch (error) {
+            console.error("Error updating job rate and address:", error);
+            throw error;
         }
     }
-
     async editJobContact($event: MouseEvent, job: IJob, contactType: 'from' | 'to') {
         const contactMapping = {
             from: {
@@ -722,7 +705,6 @@ class JobDetailController implements angular.IController {
     async editTrackingEmail($event: MouseEvent, job: IJob) {
         await this.showEditDialog($event, job, "Edit Tracking Email", "Tracking Email...", "tracking email", job.trackingEmail, "TrackingEmail");
     }
-
 
     async clientClick($event: MouseEvent, job: IJob) {
         const url = "/home/ActiveClients";

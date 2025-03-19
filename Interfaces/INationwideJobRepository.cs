@@ -12,7 +12,7 @@ public interface INationwideJobRepository
     Task<List<JobViewModel>> NationwideJobListAsync(string order, string orderDirection, bool isInternal,
         bool isUsTenant,
         string clientIds, NationwideWidget windowPane,
-        List<int> selectedViewIds, DispatchStatus status = DispatchStatus.All);
+        List<int> selectedViewIds);
 
     Task AddJobNationwideAsync(int jobId, ScheduledFlight flight, string webhookAlertId);
 
