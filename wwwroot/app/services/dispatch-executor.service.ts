@@ -1,4 +1,3 @@
-import angular from "angular";
 import {IJob, JobQueryParams} from "../interfaces/job.interface";
 import {ActiveCourierViewModel} from "../interfaces/courier.interface";
 import {JobListResponse} from "../interfaces/job-list-response.interface";
