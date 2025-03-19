@@ -985,7 +985,6 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         bool isUsTenant,
         string clientIds,
         List<int> selectedViewIds,
-        DispatchStatus status,
         ClearListEnvelopeViewModel clearListEnvelope = null)
     {
         if (isInternal == false && string.IsNullOrEmpty(clientIds))
@@ -993,7 +992,6 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
         return await DespatchQry(
             AppPage.Dispatch,
-            status,
             queryParams.Order,
             queryParams.OrderDirection,
             isInternal,

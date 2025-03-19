@@ -68,7 +68,6 @@ public interface IJobRepository
         bool isUsTenant,
         string clientIds,
         List<int> selectedViewIds,
-        DispatchStatus status,
         ClearListEnvelopeViewModel clearListEnvelope = null);
 
     Task<List<SupportViewModel>> SupportEvents(string channel);
@@ -399,7 +398,6 @@ public interface IJobRepository
         where T : class;
 
     Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(
-        DispatchStatus status,
         bool isInternal,
         bool isUsTenant,
         string clientIds,

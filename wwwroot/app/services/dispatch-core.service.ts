@@ -1,4 +1,3 @@
-import app from "../app";
 import {AppConfig} from "../interfaces/app-config.interface";
 import {
     AddressViewModel, ClientItemsViewModel, InternalStatus,
@@ -7,7 +6,7 @@ import {
     Pallet,
     ParcelDimensions, PriceBreakdown, SelectOption, SuburbLookup,
     Suggestion, SupportViewModel,
-    Views, ClearListViewModel,
+    ClearListViewModel,
 } from "../interfaces/job.interface";
 import {PaginatedResponse} from "../interfaces/paginated-response.interface";
 import {DateField, JobField} from "../interfaces/job-field.types";
@@ -26,9 +25,11 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     private readonly isUsCustomer: boolean;
 
-    constructor(private $http: angular.IHttpService,
-                private moment: any,
-                appConfig: AppConfig) {
+    constructor(
+        private $http: angular.IHttpService,
+        private moment: any,
+        appConfig: AppConfig
+    ) {
         this.isUsCustomer = appConfig.US_Customer;
         bindAllMethods(this);
     }
@@ -174,7 +175,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async restoreSplitJobs(jobIds: number[]) {
-       await this.$http.post(`job/RestoreSplitJobs?jobIds=${jobIds}`, null);
+        await this.$http.post(`job/RestoreSplitJobs?jobIds=${jobIds}`, null);
     }
 
     async resendJobs(jobIds: number[]) {
@@ -332,9 +333,9 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async lateCall(lateType: number, lateTime: number, minutes: number, pickupTime: number, alertLatePickup: number,
-                          deliveryTime: number, alertLateDelivery: number, jobNo: string, clientId: number, contact: string, staffId: number,
-                          jobTime: Date, jobId: number, jobType: number, bookedSpeed: string, notifiedSpeed: string,
-                          despatcherName: string, calculationRequired: boolean) {
+                   deliveryTime: number, alertLateDelivery: number, jobNo: string, clientId: number, contact: string, staffId: number,
+                   jobTime: Date, jobId: number, jobType: number, bookedSpeed: string, notifiedSpeed: string,
+                   despatcherName: string, calculationRequired: boolean) {
         const url = "job/LateCall";
         const data = {
             lateType,
@@ -536,17 +537,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                     jobId: jobId,
                     rate: rate,
                     despatcherName: despatcherName,
-                    address: {
-                        addressLine1: addressData.addressLine1,
-                        addressLine2: addressData.addressLine2,
-                        addressLine3: addressData.addressLine3,
-                        addressLine4: addressData.addressLine4,
-                        addressLine5: addressData.addressLine5,
-                        addressLine6: addressData.addressLine6,
-                        addressLine7: addressData.addressLine7,
-                        latitude: addressData.latitude,
-                        longitude: addressData.longitude
-                    }
+                    address: addressData
                 };
                 endpoint += "Us";
             }
@@ -596,7 +587,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             const currentDate = this.moment().format("YYYY-MM-DD");
             const timeValue = this.moment(value).format("HH:mm:ss");
             processedValue = `${currentDate} ${timeValue}`;
-            console.log("Formatted time field:", { field, originalValue, formattedValue: processedValue });
+            console.log("Formatted time field:", {field, originalValue, formattedValue: processedValue});
         }
 
         // Format followup time
@@ -604,26 +595,26 @@ class DispatchCoreService implements angular.IServiceProvider {
             const dateValue = this.moment(value).format("YYYY-MM-DD");
             const timeValue = this.moment(value).format("HH:mm:ss");
             processedValue = `${dateValue} ${timeValue}`;
-            console.log("Formatted followup time:", { field, originalValue, formattedValue: processedValue });
+            console.log("Formatted followup time:", {field, originalValue, formattedValue: processedValue});
         }
 
         // Format date fields
         const dateFields: DateField[] = ["Date", "StopDate", "RestartDate", "InActiveDate", "FirstDue", "LastDone", "NextDue", "DueDate"];
         if (dateFields.includes(field as DateField)) {
             processedValue = this.moment(value).format("YYYY-MM-DD");
-            console.log("Formatted date field:", { field, originalValue, formattedValue: processedValue });
+            console.log("Formatted date field:", {field, originalValue, formattedValue: processedValue});
         }
 
         // Handle field rename
         if (field === "DeliverToContact") {
             processedField = "ToContactName";
-            console.log("Renamed field:", { oldField: field, newField: processedField });
+            console.log("Renamed field:", {oldField: field, newField: processedField});
         }
 
         // Format rate
         const processedRate = typeof rate === "string" ? rate.replace(/[$]/g, "") : rate;
         if (typeof rate === "string") {
-            console.log("Formatted rate:", { originalRate: rate, formattedRate: processedRate });
+            console.log("Formatted rate:", {originalRate: rate, formattedRate: processedRate});
         }
 
         const method: string = preBook ? "job/UpdateJobBooking" : "job/UpdateJob";
@@ -643,14 +634,13 @@ class DispatchCoreService implements angular.IServiceProvider {
         try {
             const response = await this.$http.post(url, null);
             console.log("API response received:", {
-                status: response.status,
                 data: response.data
             });
             return response.data;
         } catch (error) {
             console.error("API request failed:", {
                 error: error instanceof Error ? error.message : 'Unknown error',
-                parameters: { jobId, field: processedField, value: processedValue, rate: processedRate }
+                parameters: {jobId, field: processedField, value: processedValue, rate: processedRate}
             });
             throw error;
         }
@@ -671,7 +661,6 @@ class DispatchCoreService implements angular.IServiceProvider {
         const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
 
         const paramObject = {
-            status: String(queryParams.status ?? "all"),
             order: String(queryParams.order ?? "time"),
             orderDirection: String(queryParams.orderDirection ?? "asc"),
             isInternal: String(internal),
@@ -696,14 +685,12 @@ class DispatchCoreService implements angular.IServiceProvider {
         const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
 
         const defaultParams = {
-            status: 'all',
             order: 'time',
             orderDirection: 'asc'
         };
 
         // Create params object with explicit string conversion
         const paramObject = {
-            status: String(queryParams.status ?? defaultParams.status),
             order: String(queryParams.order ?? defaultParams.order),
             asc: String(queryParams.orderDirection ?? defaultParams.orderDirection),
             isInternal: String(internal),

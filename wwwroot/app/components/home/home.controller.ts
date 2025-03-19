@@ -20,8 +20,8 @@ import {
 } from "../../interfaces/courier.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
-import {bindAllMethods} from "../../bindAllMethods";
 import {JobStatus} from "../../enums/job-status.enum";
+import BaseController from "../base-controller";
 
 interface ResendJobsRequest {
     call: string;
@@ -31,7 +31,7 @@ interface ResendJobsRequest {
     courierId: number;
 }
 
-export class HomeController {
+export class HomeController extends BaseController {
     static $inject = [
         '$document',
         'greetingService',
@@ -128,6 +128,22 @@ export class HomeController {
     jobGroups: any;
     lateForm: any;
     eventForm: any;
+    boxSortableOptions: {
+        handle: string;
+        connectWith: string;
+        placeholder: string;
+        tolerance: string;
+        cursor: string;
+        opacity: number;
+        scroll: boolean;
+        revert: number;
+        delay: number;
+        forcePlaceholderSize: boolean;
+        start: (e: JQueryEventObject, ui: any) => void;
+        over: (e: JQueryEventObject, ui: any) => void;
+        out: (e: JQueryEventObject, ui: any) => void;
+        stop: (e: JQueryEventObject, ui: any) => void
+    };
 
     constructor(
         private $document: angular.IDocumentService,
@@ -148,8 +164,9 @@ export class HomeController {
         private $stateParams: angular.ui.IStateParamsService,
         private NgMap: angular.map.INgMap,
     ) {
+        super();
+
         this.initialViewSet = false;
-        bindAllMethods(this);
 
         $scope.$watch("selectedViews", (newViews) => {
             if (newViews) {
@@ -175,6 +192,76 @@ export class HomeController {
         this.allCouriers = {display: false, includeUA: false};
         this.mapZoom = {display: true};
         this.supportSettings = {autoRefresh: true};
+
+        this.boxSortableOptions = {
+            handle: '.box-handle',               // Use the designated handle div for dragging
+            connectWith: '.column-sortable',     // Connect columns to allow dragging between them
+            placeholder: 'box-placeholder',      // CSS class for placeholder while dragging
+            tolerance: 'pointer',                // Use pointer position for determining drop target
+            cursor: 'move',                      // Cursor style during drag
+            opacity: 0.8,                        // Opacity of dragged element
+            scroll: true,                        // Enable scrolling during drag
+            revert: 200,                         // Animation speed when reverting
+            delay: 150,                          // Small delay to prevent accidental drags
+            forcePlaceholderSize: true,          // Force the placeholder to have dimensions
+
+            // When dragging starts
+            start: (e: JQueryEventObject, ui: any) => {
+                // Add dragging class for visual feedback
+                ui.item.addClass('dragging');
+
+                // Show dragging items container for more feedback
+                const dragInfo = angular.element('#draggingItems');
+                dragInfo.html(`Moving: ${ui.item.find('.md-headline-title').text().trim()}`);
+                dragInfo.css({
+                    display: 'block',
+                    top: e.pageY + 20 + 'px',
+                    left: e.pageX + 10 + 'px'
+                });
+
+                // Follow pointer during drag
+                angular.element(document).on('mousemove.sortable', (event) => {
+                    dragInfo.css({
+                        top: event.pageY + 20 + 'px',
+                        left: event.pageX + 10 + 'px'
+                    });
+                });
+            },
+
+            // During the drag
+            over: (e: JQueryEventObject, ui: any) => {
+                // Add visual indicator for the column being dragged over
+                angular.element(e.target).addClass('ui-sortable-active');
+            },
+
+            // When leaving a potential drop target
+            out: (e: JQueryEventObject, ui: any) => {
+                // Remove visual indicator
+                angular.element(e.target).removeClass('ui-sortable-active');
+            },
+
+            // When drag operation stops
+            stop: (e: JQueryEventObject, ui: any) => {
+                // Remove temporary event listener
+                angular.element(this.$document[0]).off('mousemove.sortable');
+
+                // Hide the drag info element
+                angular.element('#draggingItems').css('display', 'none');
+
+                // Remove the dragging class
+                ui.item.removeClass('dragging');
+
+                // Remove any active column indicators
+                angular.element('.column-sortable').removeClass('ui-sortable-active');
+
+                // Update box metrics and save layout
+                this.$timeout(() => {
+                    this._updateBoxMetrics();
+                    this._saveCurrentLayout();
+                }, 100);
+            }
+        };
+
 
         this.options = {
             detail: {
@@ -259,12 +346,6 @@ export class HomeController {
         };
         this.isUsCustomer = this.APP_CONFIG.US_Customer;
         this.selectedCourier = null;
-
-        // Init job table limit
-        this.initTableLimit();
-
-        // Loading States
-        this.initWidgetLoadingStates();
 
         this.courierSearchText = "";
         this.jobRecordSearchText = "";
@@ -428,12 +509,6 @@ export class HomeController {
             id: "3", label: "Trucks",
         },];
 
-        // Set up table headers
-        this.initTableHeaders();
-
-        //Job Detail Watcher
-        this.initJobWatcher();
-
         this.courierMenu = [{
             text: "Dispatch Selected", click: async ($itemScope: any) => {
                 try {
@@ -462,6 +537,84 @@ export class HomeController {
         });
 
         this.init();
+    }
+
+    private init() {
+        this.initLayoutSystem(ContactID);
+
+        this.loadPageViews().then(() => {
+            console.log("Loaded Page Views and Data!");
+
+            const jobId = this.$stateParams.jobId;
+            if (jobId) {
+                return this.getData()
+                    .then(() => {
+                        return this.DispatchData.getJobDetail(jobId);
+                    })
+                    .then((job) => {
+                        return this.selectJob(job);
+                    })
+                    .catch((error) => {
+                        console.error("Error loading initial job:", error);
+                        this.toastrService.showErrorToast("Error loading job details");
+                    });
+            } else {
+                return this.getData();
+            }
+        });
+
+        // Set up a watch to apply dimensions when layout changes
+        this.$scope.$watch(() => this.layout, () => {
+            this.$timeout(() => this._applyLayoutDimensions());
+        }, true);
+
+        // Ensure draggingItems container exists
+        if (angular.element('#draggingItems').length === 0) {
+            angular.element('body').append('<div id="draggingItems"></div>');
+        }
+
+        this.initJobWatcher();
+        this.initWidgetLoadingStates();
+        this.initTableHeaders();
+    }
+
+    private _updateBoxMetrics() {
+        if (!this.layout || !this.layout.columns) return;
+
+        this.layout.columns.forEach((column: IColumn) => {
+            // Get column width from DOM
+            const columnEl = angular.element(`#co-${column.id}`);
+            if (columnEl.length) {
+                column.width = columnEl.css('flex-basis');
+
+                // Update heights for all boxes in this column
+                column.boxes.forEach((box: IBox) => {
+                    const boxEl = angular.element(`#box-${box.name}`);
+                    if (boxEl.length) {
+                        box.height = boxEl.css('flex-basis');
+                    }
+                });
+            }
+        });
+    }
+
+    private _saveCurrentLayout() {
+        if (!this.currentLayoutName || this.currentLayoutName === 'Default') {
+            // Don't auto-save changes to Default layout
+            return;
+        }
+
+        // Update metrics before saving
+        this._updateBoxMetrics();
+
+        // Find and update existing layout
+        const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
+        if (index !== -1) {
+            this.layouts[index].layout = angular.copy(this.layout);
+            if (Modernizr.localstorage) {
+                localStorage.setItem(`layouts-${ContactID}`, JSON.stringify(this.layouts));
+            }
+        }
     }
 
     getJobStyle(assigned: any) {
@@ -612,23 +765,14 @@ export class HomeController {
         this.currentLayoutName = layout.name;
         this.layout = angular.copy(layout.layout);
 
-        // Apply dimensions
-        this.layout.columns.forEach((column: IColumn) => {
-            const columnEl = angular.element(`#co-${column.id}`);
-            if (columnEl.length) {
-                columnEl.css("flex-basis", column.width);
-                column.boxes.forEach((box: IBox) => {
-                    const boxEl = angular.element(`#box-${box.name}`);
-                    if (boxEl.length) {
-                        boxEl.css("flex-basis", box.height);
-                    }
-                });
+        // Apply dimensions on next digest cycle
+        this.$timeout(() => {
+            this._applyLayoutDimensions();
+
+            if (Modernizr.localstorage) {
+                localStorage.setItem(`lastActiveLayout-${ContactID}`, layout.name);
             }
         });
-
-        if (Modernizr.localstorage) {
-            localStorage.setItem(`lastActiveLayout-${ContactID}`, layout.name);
-        }
     }
 
     saveLayout() {
@@ -732,7 +876,6 @@ export class HomeController {
             this.views = await this.DispatchData.getSelectedViews(ContactID, this.AppPages.Dispatch);
 
             await this.initializeViews();
-            await this.updateDashboardFilters(this.selectedFilter);
             await this.fetchDriverLocations();
         } catch (error: any) {
             console.error("Error fetching dispatch views:", error);
@@ -810,42 +953,6 @@ export class HomeController {
         this.initialViewSet = true;
     }
 
-    async updateDashboardFilters(selectedFilter: string) {
-        console.log('updateFilters started with filter:', selectedFilter);
-        try {
-            // Set all filters to inactive
-            console.log('Current filters state:', JSON.stringify(this.filters));
-            this.filters.forEach((filter: any) => {
-                filter.active = false;
-            });
-
-            this.queryParams.status = selectedFilter;
-            console.log('Updated query params:', this.queryParams);
-
-            console.log('Fetching job list...');
-            await this.getJobList();
-            console.log('Job list fetched successfully');
-
-            // Save the selected filter
-            this.saveFilterToStorage(selectedFilter);
-
-            // Set the selected filter to active
-            const selectedFilterObj = this.filters.find((filter: any) => filter.value === selectedFilter);
-            console.log('Selected filter object:', selectedFilterObj);
-
-            if (selectedFilterObj) {
-                selectedFilterObj.active = true;
-                console.log('Filter activated:', selectedFilterObj.label);
-            }
-        } catch (error: any) {
-            console.error('Error updating filters:', error);
-            console.error('Error details:', {
-                message: error.message,
-                stack: error.stack
-            });
-        }
-    }
-
     setActiveArea(selectedArea: AreaClearList) {
         if (!this.driverLocations) return;
         this.driverLocations?.areas.forEach((area: AreaClearList) => {
@@ -871,7 +978,7 @@ export class HomeController {
     onCourierSearchClick($event: MouseEvent) {
         const target = $event.target as HTMLElement;
         if (target?.tagName === "INPUT") {
-            (document.getElementsByName("courierSearch")[0] as HTMLInputElement).value = "";
+            (angular.element("courierSearch")[0] as HTMLInputElement).value = "";
             this.courierSearchText = "";
         }
     }
@@ -980,8 +1087,15 @@ export class HomeController {
             envelope
         );
 
-        const rawJobs = await this.jobListPromise;
-        await this.fetchAndDisplayCurrentJobs(rawJobs);
+        try {
+            const jobs = await this.jobListPromise;
+            this.jobList = this.initializeJobSearchFields(jobs);
+
+            await this.getAvailableCourierLocation();
+        } catch (error) {
+            console.error("Error fetching jobs for clear list:", error);
+            this.jobList = [];
+        }
     }
 
     private _handleClearListError(error: unknown): void {
@@ -1364,7 +1478,7 @@ export class HomeController {
         }
     }
 
-  private  _getJobsToDispatch() {
+    private _getJobsToDispatch() {
         return this.jobList.filter((job) => this.dispatchState.selectedJobs.has(job.id));
     }
 
@@ -1857,7 +1971,7 @@ export class HomeController {
                 this.currentListLoading = true;
             });
 
-            if(!courier || courier.courierId === undefined) return;
+            if (!courier || courier.courierId === undefined) return;
             const foundCourier = await this.DispatchData.getCourierById(courier.courierId);
             if (foundCourier) {
                 // Update current courier information
@@ -2789,29 +2903,6 @@ export class HomeController {
         }
     }
 
-    init() {
-        this.initLayoutSystem(ContactID);
-
-        this.loadPageViews().then(async () => {
-            console.log("Loaded Page Views and Data!");
-
-            const jobId = this.$stateParams.jobId;
-            if (jobId) {
-                try {
-                    await this.getData();
-
-                    const job = await this.DispatchData.getJobDetail(jobId);
-                    await this.selectJob(job);
-                } catch (error) {
-                    console.error("Error loading initial job:", error);
-                    this.toastrService.showErrorToast("Error loading job details");
-                }
-            } else {
-                await this.getData();
-            }
-        });
-    }
-
     isJobSelected(jobId: number) {
         return this.dispatchState.selectedJobs.has(jobId);
     }
@@ -2913,5 +3004,23 @@ export class HomeController {
 
         await this.getJobList();
         console.log(`Jobs ordered by status group: ${statusGroup}`);
+    }
+
+    private _applyLayoutDimensions() {
+        if (!this.layout || !this.layout.columns) return;
+
+        this.layout.columns.forEach((column: IColumn) => {
+            const columnEl = angular.element(`#co-${column.id}`);
+            if (columnEl.length) {
+                columnEl.css('flex-basis', column.width);
+
+                column.boxes.forEach((box: IBox) => {
+                    const boxEl = angular.element(`#box-${box.name}`);
+                    if (boxEl.length) {
+                        boxEl.css('flex-basis', box.height);
+                    }
+                });
+            }
+        });
     }
 }

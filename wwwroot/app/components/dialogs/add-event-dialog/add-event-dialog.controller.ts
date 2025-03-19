@@ -1,12 +1,13 @@
 import ToastrService from "../../../services/ToastrService";
 import { DfrntEvent, IJob } from "../../../interfaces/job.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
+import BaseController from "../../base-controller";
 
 interface AddEventDialogControllerScope extends angular.IScope {
   eventForm: any;
 }
 
-export class AddEventDialogController implements angular.IController {
+export class AddEventDialogController extends BaseController {
   static $inject = [
     "$scope",
     "$mdDialog",
@@ -42,6 +43,8 @@ export class AddEventDialogController implements angular.IController {
     private dispatcherName: string,
     private contactId: string
   ) {
+    super();
+
     this.isLoading = false;
     this.eventTypes = [];
     this.selectedEvent = null;

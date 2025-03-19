@@ -573,7 +573,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     // This function replaces the sql view "DESWEB_qryDespatch"
     protected async Task<List<JobViewModel>> DespatchQry(
         AppPage page,
-        DispatchStatus status,
         string order,
         string orderDirection,
         bool isInternal,
@@ -594,7 +593,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             switch (page)
             {
                 case AppPage.Dispatch:
-                    query = ApplyDashboardSpecificFilters(query, status);
+                   query = query.Where(j => j.UcjbStatus != 9);
                     query = ApplyDashboardSpecificOrdering(
                         query,
                         order,
@@ -606,7 +605,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     query = ApplyNationwideSpecificFilters(
                         query,
                         isInternal,
-                        status,
                         windowPane ?? NationwideWidget.JobList,
                         clientIds
                     );
@@ -682,45 +680,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             && j.DeliveryLongitude >= clearListEnvelope.MinimumLongitude
             && j.DeliveryLongitude <= clearListEnvelope.MaximumLongitude
         );
-    }
-
-    private static IQueryable<TucJob> ApplyDashboardSpecificFilters(
-        IQueryable<TucJob> query,
-        DispatchStatus status
-    )
-    {
-        // Apply status filters
-        query = status switch
-        {
-            DispatchStatus.New => query.Where(j =>
-                j.UcjbStatusNavigation != null
-                && (j.UcjbCourierId == null || j.UcjbStatus == (int)JobStatus.New)
-            ),
-
-            DispatchStatus.Nda => query.Where(j =>
-                j.UcjbCourierId == null
-                || j.UcjbStatus == (int)JobStatus.New
-                || j.UcjbStatus == (int)JobStatus.Dispatched
-                || j.UcjbStatus == (int)JobStatus.AwaitingPod
-                || j.UcjbStatus == (int)JobStatus.LatePickup
-                || j.UcjbStatus == (int)JobStatus.Accepted
-            ),
-
-            DispatchStatus.Active => query.Where(j =>
-                !j.UcjbJobDone || j.UcjbStatus != (int)JobStatus.Completed
-            ),
-
-            DispatchStatus.Done => query.Where(j =>
-                j.UcjbJobDone || j.UcjbStatus == (int)JobStatus.Completed
-            ),
-
-            DispatchStatus.All => query,
-
-            _ => query
-        };
-
-        // Always exclude status 9
-        return query.Where(j => j.UcjbStatus != 9);
     }
 
     private static IQueryable<TucJob> ApplyDashboardSpecificOrdering(
@@ -891,46 +850,12 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     private static IQueryable<TucJob> ApplyNationwideSpecificFilters(
         IQueryable<TucJob> query,
         bool isInternal,
-        DispatchStatus status,
         NationwideWidget windowPane,
         string clientIds
     )
     {
         // Remove parent jobs
         query = query.Where(j => j.ParentId != null);
-
-        // Apply status viewFilters
-        query = status switch
-        {
-            DispatchStatus.All => windowPane == NationwideWidget.Reprice
-                ? query.Where(j =>
-                    j.Reprice == true || j.InternalStatus == (int)InternalJobStatus.Reprice
-                )
-                : query.Where(j => !j.UcjbJobDone),
-
-            DispatchStatus.Active => windowPane switch
-            {
-                NationwideWidget.JobList => query.Where(j => !j.UcjbJobDone),
-
-                NationwideWidget.Pod or NationwideWidget.ActionRequired => query.Where(j =>
-                    !j.UcjbJobDone && j.FollowupTime < DateTime.Now
-                ),
-
-                NationwideWidget.Reprice => query.Where(j =>
-                    j.Reprice == true || j.InternalStatus == (int)InternalJobStatus.Reprice
-                ),
-
-                _ => query
-            },
-
-            DispatchStatus.Done => windowPane == NationwideWidget.Reprice
-                ? query.Where(j =>
-                    j.Reprice == true || j.InternalStatus == (int)InternalJobStatus.Reprice
-                )
-                : query.Where(j => j.UcjbJobDone),
-
-            _ => query
-        };
 
         // Apply window pane viewFilters
         query = windowPane switch
@@ -1093,9 +1018,12 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 : query.OrderByDescending(j => j.UcjbLateDel),
 
             "time" => isAscending
-                ? query.OrderBy(j => j.UcjbTime).ThenBy(j => j.UcjbCourier.Code)
+                ? query.OrderBy(j => j.UcjbDate)
+                    .ThenBy(j => j.UcjbTime)
+                    .ThenBy(j => j.UcjbCourier.Code)
                 : query
-                    .OrderByDescending(j => j.UcjbTime)
+                    .OrderByDescending(j => j.UcjbDate)
+                    .ThenByDescending(j => j.UcjbTime)
                     .ThenByDescending(j => j.UcjbCourier.Code),
 
             "pod" => isAscending
@@ -1949,7 +1877,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     }
 
     public async Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(
-        DispatchStatus status,
         bool isInternal,
         bool isUsTenant,
         string clientIds,
@@ -1959,36 +1886,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         {
             var query = await BuildBaseQuery(selectedViewIds);
             if (query == null) return [];
-
-            // Apply status filters just like in ApplyDashboardSpecificFilters
-            query = status switch
-            {
-                DispatchStatus.New => query.Where(j =>
-                    j.UcjbStatusNavigation != null
-                    && (j.UcjbCourierId == null || j.UcjbStatus == (int)JobStatus.New)
-                ),
-
-                DispatchStatus.Nda => query.Where(j =>
-                    j.UcjbCourierId == null
-                    || j.UcjbStatus == (int)JobStatus.New
-                    || j.UcjbStatus == (int)JobStatus.Dispatched
-                    || j.UcjbStatus == (int)JobStatus.AwaitingPod
-                    || j.UcjbStatus == (int)JobStatus.LatePickup
-                    || j.UcjbStatus == (int)JobStatus.Accepted
-                ),
-
-                DispatchStatus.Active => query.Where(j =>
-                    !j.UcjbJobDone || j.UcjbStatus != (int)JobStatus.Completed
-                ),
-
-                DispatchStatus.Done => query.Where(j =>
-                    j.UcjbJobDone || j.UcjbStatus == (int)JobStatus.Completed
-                ),
-
-                DispatchStatus.All => query,
-
-                _ => query
-            };
 
             query = query.Where(j => j.UcjbStatus != 9);
 

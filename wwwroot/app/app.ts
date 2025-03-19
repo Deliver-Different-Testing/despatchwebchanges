@@ -55,6 +55,8 @@ import {
 } from "./components/dialogs/edit-date-time-dialog/edit-date-time-dialog.controller";
 import {EditDateTimeDialogService} from "./components/dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
 import DispatchMapComponent from "./components/common/dispatch-map/dispatch-map.directive";
+import EditAddressDialogController from "./components/dialogs/edit-address-dialog/edit-address-dialog.controller";
+import {EditAddressDialogService} from "./components/dialogs/edit-address-dialog/edit-address-dialog.service";
 
 const app = angular.module("uDispatch", ["ui.router", "ct.ui.router.extras",
     "angularResizable", "ui.sortable", "ui.bootstrap", "ui.bootstrap.pagination",
@@ -190,6 +192,7 @@ app.controller("SelectDialogController", SelectDialogController);
 app.controller("MapDialogController", MapDialogController);
 app.controller('EventGroupDialogController', EventGroupDialogController);
 app.controller("EditDateTimeDialogController", EditDateTimeDialogController);
+app.controller("EditAddressDialogController", EditAddressDialogController);
 
 // Directives
 app.directive("contextMenu", ContextMenuDirective.factory());
@@ -219,5 +222,6 @@ app.service("tasksDashboardsService", TasksDashboardService);
 app.service('selectDialogService', SelectDialogService);
 app.service('eventGroupDialogService', EventGroupDialogService);
 app.service("editDateTimeDialogService", EditDateTimeDialogService);
+app.service("editAddressDialogService", EditAddressDialogService);
 
 export default app;

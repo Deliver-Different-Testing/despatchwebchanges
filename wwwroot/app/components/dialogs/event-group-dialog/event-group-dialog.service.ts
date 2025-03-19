@@ -1,4 +1,3 @@
-import app from "../../../app";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 
 export class EventGroupDialogService {

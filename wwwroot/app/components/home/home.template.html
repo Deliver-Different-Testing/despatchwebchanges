@@ -9,25 +9,6 @@
                 <span flex></span>
 
                 <md-menu>
-                    <md-button aria-label="Open status menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
-                        <md-icon md-font-set="material-symbols-outlined">filter_list</md-icon>
-                        <md-tooltip md-direction="bottom">Filters</md-tooltip>
-                    </md-button>
-                    <md-menu-content>
-                        <md-menu-item ng-repeat="filter in ctrl.filters">
-                            <md-button ng-click="ctrl.updateDashboardFilters(filter.value)">
-                                <md-icon md-font-set="material-symbols-outlined">
-                                    {{filter.icon}}
-                                </md-icon>
-                                <span ng-style="filter.active ? {'font-weight':'bold'} : {}">
-                                    {{filter.label}}
-                                </span>
-                            </md-button>
-                        </md-menu-item>
-                    </md-menu-content>
-                </md-menu>
-
-                <md-menu>
                     <md-button aria-label="Open views menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.views">view_list</md-icon>
                         <md-tooltip md-direction="bottom">Views</md-tooltip>
@@ -92,10 +73,12 @@
 
     <div>
         <div class="columns">
-
+            <!-- Add a sortable directive to the columns if you want to reorder them -->
             <div class="column" id="co-{{column.id}}" ng-repeat="(colKey,column) in ctrl.layout.columns"
                  r-directions="['right']" r-flex="true" resizable style="flex-basis: {{column.width}}">
-                <div class="column-sortable" ng-model="column.boxes">
+
+                <!-- Add ui-sortable directive to the column-sortable div -->
+                <div class="column-sortable" ui-sortable="ctrl.boxSortableOptions" ng-model="column.boxes">
                     <div class="box" id="box-{{box.name}}" ng-repeat="(boxName,box) in column.boxes"
                          r-directions="['bottom']" r-flex="true" resizable style="flex-basis: {{box.height}}">
 
@@ -106,15 +89,13 @@
                                     <span class="material-symbols-outlined">{{ctrl.boxes[box.name].icon}}</span>
 
                                     <span class="md-headline-title" flex style="margin-left: 8px;">
-                                        {{ctrl.boxes[box.name].title}}
-                                        <span ng-if="box.name == 'jobDetail'">{{ctrl.currentSelection}}</span>
-                                        <span ng-if="box.name == 'jobGroups'">{{ctrl.groupJobsSelection}}</span>
-                                        <span ng-if="box.name == 'supports'"> ({{ctrl.supportChannel}})</span>
-                                        <span
-                                                ng-if="box.name == 'potentialCouriers'">{{ctrl.potentialCouriersSelection}}</span>
-                                        <span
-                                                ng-if="box.name == 'currentWork' || box.name == 'map'">{{ctrl.currentWorkSelection}}</span>
-                                    </span>
+                                {{ctrl.boxes[box.name].title}}
+                                <span ng-if="box.name == 'jobDetail'">{{ctrl.currentSelection}}</span>
+                                <span ng-if="box.name == 'jobGroups'">{{ctrl.groupJobsSelection}}</span>
+                                <span ng-if="box.name == 'supports'"> ({{ctrl.supportChannel}})</span>
+                                <span ng-if="box.name == 'potentialCouriers'">{{ctrl.potentialCouriersSelection}}</span>
+                                <span ng-if="box.name == 'currentWork' || box.name == 'map'">{{ctrl.currentWorkSelection}}</span>
+                            </span>
                                 </div>
 
                                 <div class="section section-end">
@@ -373,5 +354,5 @@
 
     </div>
 
-    <div id='draggingItems'></div>
+    <div id="draggingItems"></div>
 </div>
