@@ -223,6 +223,24 @@ public class JobController(
         }
     }
 
+    [HttpPost]
+    public async Task<IActionResult> AddPriceComponent([FromBody] ChargeViewModel viewModel)
+    {
+        try
+        {
+            Log.Information("Adding price breakdown for job {JobId}",
+                viewModel.JobId ?? viewModel.PrebookJobId);
+
+            var chargeId = await jobRepository.AddJobPriceBreakdownAsync(viewModel);
+           return Json(chargeId);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error adding price breakdown for job {JobId}", viewModel.JobId);
+            return StatusCode(500, "An error occurred while adding the pricing breakdown");
+        }
+    }
+
     public async Task<IActionResult> SendPrebookJob(int jobId)
     {
         await jobRepository.SendPrebookJobAsync(jobId);

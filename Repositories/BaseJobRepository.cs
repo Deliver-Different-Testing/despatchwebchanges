@@ -580,7 +580,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         string clientIds,
         List<int> selectedViewIds,
         NationwideWidget? windowPane = null,
-        ClearListEnvelopeViewModel clearListEnvelope = null
+        ClearListEnvelopeViewModel clearListEnvelope = null,
+        DateTime? dateCutoff = null
     )
     {
         try
@@ -593,8 +594,12 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             switch (page)
             {
                 case AppPage.Dispatch:
+                    // Filters
                    query = query.Where(j => j.UcjbStatus != 9);
-                    query = ApplyDashboardSpecificOrdering(
+                   if(dateCutoff.HasValue) query = query.Where(j => j.UcjbDate <= dateCutoff.Value.Date);
+
+                   // Sorting
+                   query = ApplyDashboardSpecificOrdering(
                         query,
                         order,
                         orderDirection,

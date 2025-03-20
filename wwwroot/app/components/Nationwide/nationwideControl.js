@@ -2,13 +2,13 @@ import app from "../../app";
 import "./keyboardEvents";
 import './nationwide.styles.less';
 
-function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $timeout,
+function NationwideControl($scope, jdSvc, NWData, $filter, hotkeys, $timeout,
     greetingService, $mdDialog, $document, toastrService, DispatchData, moment,
-    $mdSidenav, AppPages, APP_CONFIG, $mdEditDialog, LayoutService, $mdMenu,
+    $mdSidenav, AppPages, APP_CONFIG, $mdEditDialog, LayoutService,
     dispatchJobService) {
     $scope.jdSvc = jdSvc;
 
-    $scope.$on("angular-resizable.resizeEnd", (event, args) => {
+    $scope.$on("angular-resizable.resizeEnd", (_, args) => {
         const mapContainer = angular.element(args.id ? '#' + args.id : '').find('.here-map');
         if (mapContainer.length > 0) {
             // Broadcast a more specific event for map containers
@@ -373,8 +373,6 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
 
             await $scope.getEventTypes();
             await $scope.getData();
-
-            $timeout(() => sizeHeadings(), 1000);
         } catch (error) {
             console.error('Error fetching dispatch views:', error);
             $scope.views = [];
@@ -772,12 +770,6 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
                 await $scope.selectJob(refreshedJob);
                 console.log('Job reselected successfully');
             }
-
-            // Adjust table headings after data update
-            $timeout(() => {
-                console.log('Adjusting table headings');
-                $scope.sizeHeadings();
-            }, 200);
         } catch (error) {
             console.error("Error in handleStatusChange:", {
                 error: error.message,
@@ -1785,14 +1777,6 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
         DispatchData.getPotentialCouriers(jobId).then(data => {
             $scope.potentialCouriers = data;
 
-            //Set headings
-            $timeout(() => {
-                sizeHeadings(angular.element("#potentialCouriers").parents(".column"));
-            }, 1000);
-            $timeout(() => {
-                sizeHeadings(angular.element("#potentialCouriers").parents(".column"));
-            }, 2000);
-
             angular.element("#box-potentialCouriers .loading").fadeOut();
 
             $scope.activateDrop();
@@ -1968,21 +1952,8 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
 
             const data = await DispatchData.getJobsCurrent(courierId, $scope.jobFilters.status === "done");
 
-            $boxCurrentWork.find(".loading").fadeOut();
-
             $scope.jobsCurrentList = data;
-
-            if (data.length > 0) {
-                displayRoutePoints(data, true);
-            } else {
-                const posData = await DispatchData.getCourierPosition(code);
-                displayCourierPositionOnly(posData.latitude, posData.longitude);
-            }
-
             $scope.activateDrop();
-
-            $timeout(() => sizeHeadings(), 1000);
-
         } catch (error) {
             if (error === undefined) {
                 console.log('User canceled!');
@@ -2470,54 +2441,6 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
         }
     };
 
-    $scope.fromColumnClick = $event => {
-        switch ($event.which) {
-            case 1:
-                // this is left click
-                break;
-            case 2:
-                // in case you need some middle click things
-                break;
-            case 3:
-                // this is right click
-                waitingDialog.show();
-                $timeout(() => {
-                    $scope.jdSvc.updateGPS($scope.currentJob, 'fromAddress', true);
-                }, 100);
-
-                break;
-            default:
-                console.log("you have a strange mouse!");
-                break;
-        }
-
-        return false;
-    };
-
-    $scope.toColumnClick = $event => {
-        switch ($event.which) {
-            case 1:
-                // this is left click
-                break;
-            case 2:
-                // in case you need some middle click things
-                break;
-            case 3:
-                // this is right click
-                waitingDialog.show();
-                $timeout(() => {
-                    $scope.jdSvc.updateGPS($scope.currentJob, 'toAddress', true);
-                }, 100);
-
-                break;
-            default:
-                console.log("you have a strange mouse!");
-                break;
-
-        }
-        return false;
-    };
-
     $scope.latePickColumnClick = $event => {
         switch ($event.which) {
             case 1:
@@ -2591,60 +2514,6 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
     /**
      * @param {Object} $event
      */
-    $scope.speedColumnClick = ($event) => {
-        switch ($event.which) {
-            case 1:
-                // this is left click
-                break;
-            case 2:
-                // in case you need some middle click things
-                break;
-            case 3:
-                // this is right click
-                $timeout(() => {
-                    $scope.jdSvc.speedClick($event, $scope.currentJob);
-                    $scope.$apply();
-                }, 400);
-
-                break;
-            default:
-                console.log("you have a strange mouse!");
-                break;
-
-        }
-        return false;
-    };
-
-    /**
-     * @param {Object} $event
-     */
-    $scope.clientColumnClick = ($event) => {
-        switch ($event.which) {
-            case 1:
-                // this is left click
-                break;
-            case 2:
-                // in case you need some middle click things
-                break;
-            case 3:
-                // this is right click
-                $timeout(() => {
-                    $scope.jdSvc.clientClick($event, $scope.currentJob);
-                    $scope.$apply();
-                }, 400);
-
-                break;
-            default:
-                console.log("you have a strange mouse!");
-                break;
-
-        }
-        return false;
-    };
-
-    /**
-     * @param {Object} $event
-     */
     $scope.notifyColumnClick = ($event) => {
         switch ($event.which) {
             case 1:
@@ -2669,40 +2538,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
         return false;
     };
 
-    /**
-     * Creates and returns the context menu items for job events
-     * @param {Event} $event - The triggering event object
-     * @returns {Promise<Array<Object>>} Array of menu items
-     */
-    $scope.setEventsMenu = $event => [{
-        text: "Void Job", click: () => $scope.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id)
-            .then(() => {
-                console.log('Void Job completed successfully');
-            })
-            .catch(error => {
-                console.log('Error in Void Job:', error);
-            })
-    }, {
-        text: "Add Event - Other", click: () => {
-            $scope.otherEventForm($event, $scope.currentJob);
-        }
-    }, {
-        text: "Split Job", click: () => $scope.splitJob($event, $scope.currentJob)
-            .then(() => {
-                console.log('Split Job completed successfully');
-            })
-            .catch(error => {
-                console.log('Error in Split Job:', error);
-            }), enabled: $itemScope => $itemScope.job.allowSplit
-    }, {
-        text: "Set First Job", click: () => $scope.setFirstJob($scope.currentJob)
-            .then(() => {
-                console.log('Set First Job completed successfully');
-            })
-            .catch(error => {
-                console.log('Error in Set First Job:', error);
-            })
-    }];
+
 
     $scope.setJobsMenu = async () => {
         const multiple = angular.element(".activeTable .active").length > 1;
@@ -2937,11 +2773,6 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             if (requestedTypes.includes($scope.jobDataType.DELIVERY)) {
                 await $scope.getAvailableCourierLocation();
             }
-
-            // Run size headings if any data was fetched
-            if (results.length > 0) {
-                $timeout(() => sizeHeadings(), 1000);
-            }
         } catch (error) {
             console.error("Error fetching job data:", error);
 
@@ -3049,8 +2880,6 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
                     }
                 });
             }, 100);
-
-            $timeout(() => sizeHeadings(), 1000);
         } catch (error) {
             console.error("Error fetching supports:", error);
         }
@@ -3192,7 +3021,7 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             $scope.selectedCourier = null;
             $scope.currentCourier = null;
         } else {
-            this.updateCourierData(courier.id, courier.text);
+            return this.updateCourierData(courier.id, courier.text);
         }
     };
 
@@ -3219,13 +3048,29 @@ function NationwideControl($scope, jdSvc, NWData, $state, $filter, hotkeys, $tim
             return 'status-current';
         }
     };
+
+    $scope.showJobContextMenu = async ($event, job) => {
+        try {
+            await $scope.selectJob(job);
+
+            const contextMenuElement = angular.element('context-menu');
+            const contextMenuCtrl = contextMenuElement.controller('contextMenu');
+
+            if (contextMenuCtrl) {
+                contextMenuCtrl.showJobContextMenu($event, job);
+            } else {
+                console.error('Context menu controller not found');
+            }
+        } catch (error) {
+            console.error('Error selecting job:', error);
+        }
+    }
 }
 
 NationwideControl.$inject = [
     '$scope',
     'JobDetailService',
     'NWData',
-    '$state',
     '$filter',
     'hotkeys',
     '$timeout',
@@ -3240,7 +3085,6 @@ NationwideControl.$inject = [
     'APP_CONFIG',
     '$mdEditDialog',
     'NationwideLayoutService',
-    '$mdMenu',
     'dispatchJobService'
 ];
 

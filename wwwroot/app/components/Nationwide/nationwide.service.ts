@@ -1,7 +1,5 @@
-import app from "../../app";
 import {IJob, JobQueryParams, Suggestion, Views} from "../../interfaces/job.interface";
 import {AgentViewModel, FlightViewModel} from "./nationwide.interfaces";
-
 class NationwideService implements angular.IServiceProvider {
     static $inject = ["$http", "moment"];
 
@@ -38,7 +36,6 @@ class NationwideService implements angular.IServiceProvider {
         };
 
         const paramObject = {
-            status: String(queryParams.status ?? defaultParams.status),
             order: String(queryParams.order ?? defaultParams.order),
             asc: String(queryParams.orderDirection ?? defaultParams.orderDirection),
             isInternal: String(internal),
@@ -149,6 +146,4 @@ class NationwideService implements angular.IServiceProvider {
         });
     }
 }
-
-app.service("NWData", NationwideService);
 export default NationwideService;

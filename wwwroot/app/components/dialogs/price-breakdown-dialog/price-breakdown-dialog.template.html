@@ -1,0 +1,98 @@
+<md-dialog aria-label="Edit Price Breakdown" class="price-breakdown-dialog">
+    <form name="ctrl.priceBreakdownForm" ng-cloak>
+        <md-toolbar>
+            <div class="md-toolbar-tools">
+                <md-icon class="popup-icon" md-font-set="material-symbols-outlined">payments</md-icon>
+                <h2>Edit Price Breakdown</h2>
+                <span flex></span>
+                <md-button class="md-icon-button" ng-click="ctrl.cancel()">
+                    <md-tooltip md-direction="bottom">Cancel</md-tooltip>
+                    <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
+                        close
+                    </md-icon>
+                </md-button>
+            </div>
+        </md-toolbar>
+
+        <md-dialog-content>
+            <div class="md-dialog-content">
+                <!-- Data Table -->
+                <div layout="column">
+                    <md-button class="md-raised full-width-button" ng-click="ctrl.addNewItem()" ng-if="!ctrl.isEditing">
+                        <md-icon md-font-set="material-symbols-outlined">add</md-icon>
+                        Add Price Item
+                    </md-button>
+
+                    <md-table-container ng-if="!ctrl.isEditing">
+                        <table md-table>
+                            <thead md-head>
+                            <tr md-row>
+                                <th md-column>Name</th>
+                                <th md-column>Amount</th>
+                                <th md-column>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody md-body>
+                            <tr md-row ng-repeat="item in ctrl.priceBreakdown">
+                                <td md-cell>{{item.name}}</td>
+                                <td md-cell>{{item.amount | currency}}</td>
+                                <td md-cell>
+                                    <md-button class="md-icon-button" ng-click="ctrl.editItem(item)">
+                                        <md-tooltip md-direction="left">Edit</md-tooltip>
+                                        <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
+                                    </md-button>
+                                    <md-button class="md-icon-button" ng-click="ctrl.deleteItem(item)">
+                                        <md-tooltip md-direction="left">Delete</md-tooltip>
+                                        <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
+                                    </md-button>
+                                </td>
+                            </tr>
+                            <tr md-row ng-if="ctrl.priceBreakdown.length === 0">
+                                <td md-cell colspan="3" class="empty-state">No price breakdown items available</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </md-table-container>
+
+                    <!-- Edit Form -->
+                    <div ng-if="ctrl.isEditing" class="edit-form-container">
+                        <h3>{{ctrl.isNew ? 'Add New Item' : 'Edit Item'}}</h3>
+
+                        <md-input-container class="md-block">
+                            <label for="name">Name</label>
+                            <input id="name" type="text" ng-model="ctrl.selectedPriceBreakdown.name" required/>
+                            <div ng-messages="ctrl.priceBreakdownForm.name.$error">
+                                <div ng-message="required">This field is required.</div>
+                            </div>
+                        </md-input-container>
+
+                        <md-input-container class="md-block">
+                            <label for="amount">Amount</label>
+                            <input id="amount" type="number" ng-model="ctrl.selectedPriceBreakdown.amount" required step="0.01"/>
+                            <div ng-messages="ctrl.priceBreakdownForm.amount.$error">
+                                <div ng-message="required">This field is required.</div>
+                            </div>
+                        </md-input-container>
+
+                        <div layout="row">
+                            <md-button class="md-raised" ng-click="ctrl.cancelEdit()">
+                                Cancel
+                            </md-button>
+                            <span flex></span>
+                            <md-button class="md-raised md-primary" ng-click="ctrl.saveItem()">
+                                Save Item
+                            </md-button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </md-dialog-content>
+
+        <md-dialog-actions layout="row" ng-if="!ctrl.isEditing">
+            <span flex></span>
+            <md-button class="md-raised" ng-click="ctrl.save()">
+                Done
+            </md-button>
+        </md-dialog-actions>
+    </form>
+</md-dialog>

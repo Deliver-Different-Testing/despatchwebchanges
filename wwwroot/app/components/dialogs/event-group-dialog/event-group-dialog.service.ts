@@ -1,4 +1,5 @@
 import DispatchCoreService from "../../../services/dispatch-core.service";
+import {EventGroupDialogController} from "./event-group-dialog.controller";
 
 export class EventGroupDialogService {
     static $inject = [
@@ -18,7 +19,7 @@ export class EventGroupDialogService {
             const users = await this.DispatchData.getActiveStaff();
 
             await this.$mdDialog.show({
-                controller: 'EventGroupDialogController',
+                controller: EventGroupDialogController,
                 controllerAs: 'ctrl',
                 template: require("./event-group-dialog.template.html"),
                 parent: document.body,

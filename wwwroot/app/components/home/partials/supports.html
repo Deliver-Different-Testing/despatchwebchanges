@@ -1,48 +1,22 @@
-<!-- Supports List Component -->
+<!-- Supports List using Task List Item Component -->
 <div class="droppable-box nationwide-job-list">
-    <md-table-container>
-        <table md-dense md-progress="ctrl.supportsLoading" md-table>
-            <thead md-head>
-            <tr md-row>
-                <th md-column>Time</th>
-                <th md-column>#</th>
-                <th md-column>Staff</th>
-                <th md-column>Job #</th>
-                <th md-column>Event</th>
-                <th md-column>Notes</th>
-                <th md-column>Remain</th>
-                <th md-column>Locked by</th>
-            </tr>
-            </thead>
+    <!-- Loading Indicator -->
+    <div ng-if="ctrl.supportsLoading" layout="row" layout-align="center center" style="padding: 24px;">
+        <md-progress-circular md-diameter="40" md-mode="indeterminate"></md-progress-circular>
+    </div>
 
-            <tbody md-body>
-            <tr md-row
+    <!-- Task List using the new component -->
+    <md-list ng-if="!ctrl.supportsLoading && ctrl.supports && ctrl.supports.length > 0">
+        <task-item-component
                 ng-repeat="support in ctrl.supports | filter: box.searchBox"
-                ng-click="ctrl.selectSupportJobDetail(support)"
-                ng-class="ctrl.getSupportColorClass(support)"
-                data-id="{{support.eventId}}">
-
-                <td md-cell>{{support.timeStamp | date: "HH:mm"}}</td>
-                <td md-cell>{{support.courier}}</td>
-                <td md-cell>{{support.staff}}</td>
-                <td md-cell>{{support.jobNumber}}</td>
-                <td md-cell>{{support.description}}</td>
-                <td md-cell>{{support.notes}}</td>
-                <td md-cell>{{support.remainTime}}</td>
-                <td md-cell>
-                    <md-button class="md-icon-button" ng-click="ctrl.lockSupport(support); $event.stopPropagation();">
-                        <md-icon md-font-set="material-symbols-outlined">
-                            {{support.lockedBy === ctrl.Dispatcher ? 'lock' : 'lock_open'}}
-                        </md-icon>
-                        <md-tooltip md-direction="left">
-                            {{support.lockedBy === ctrl.Dispatcher ? 'Unlock' : 'Lock'}}
-                        </md-tooltip>
-                    </md-button>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-    </md-table-container>
+                task="ctrl.supportToTaskModel(support)"
+                config="ctrl.supportItemConfig"
+                on-status-change="ctrl.closeSupport(support)"
+                on-date-click="ctrl.selectSupportJobDetail(support)"
+                on-time-click="ctrl.selectSupportJobDetail(support)"
+                on-reassign="ctrl.lockSupport(support)">
+        </task-item-component>
+    </md-list>
 
     <!-- No Data Message -->
     <div class="no-data" ng-if="!ctrl.supportsLoading && (!ctrl.supports || ctrl.supports.length === 0)">

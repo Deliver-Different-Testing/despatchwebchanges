@@ -1,5 +1,10 @@
 <!-- Nationwide Job List Component -->
 <div class="droppable-box nationwide-job-list">
+    <context-menu
+            on-refresh="refreshData(true)"
+            on-split-job="handleSplitJob(job)">
+    </context-menu>
+
     <md-table-container>
         <table md-dense md-progress="jobListPromise" md-table ng-model="selectedJob">
             <thead md-head md-on-reorder="onReorderJobList" md-order="jobFilters.order">
@@ -23,6 +28,7 @@
                 md-dense
                 ng-repeat="job in jobList | filter: box.searchBox"
                 ng-class="jobClass(job)"
+                ng-right-click="showJobContextMenu($event, job)"
                 ng-click="selectJob(job)"
                 data-jobid="{{job.id}}"
                 data-jobno="{{job.jobNo}}"
@@ -31,20 +37,20 @@
                 data-index="{{$index}}">
 
                 <td md-cell>{{job.booked | date: (isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm")}}</td>
-                <td md-cell ng-click="speedColumnClick($event)" right-click>
+                <td md-cell>
                     <md-icon md-font-set="material-symbols-outlined" ng-if="job.fromAirportId || job.toAirportId">
                         {{getFlightIcon(job.jobNo)}}
                     </md-icon>
                     <span ng-if="!job.fromAirportId && !job.toAirportId">{{job.speed}}</span>
                 </td>
-                <td context-menu="setEventsMenu($event)" md-cell>{{job.jobNo}}</td>
-                <td md-cell ng-click="clientColumnClick($event)" right-click>{{job.client}}</td>
-                <td md-cell ng-click="fromColumnClick($event)" right-click>
+                <td md-cell>{{job.jobNo}}</td>
+                <td md-cell>{{job.client}}</td>
+                <td md-cell>
                     {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
                     <md-tooltip md-direction="bottom">{{ job.pickupAddress.fullAddress }}</md-tooltip>
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
                 </td>
-                <td md-cell ng-click="toColumnClick($event)" right-click>
+                <td md-cell>
                     <span md-truncate>{{isUsCustomer ? job.deliveryAddress.addressLine5 : job.toAddress}}</span>
                     <md-tooltip md-direction="bottom">{{ job.deliveryAddress.fullAddress }}</md-tooltip>
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>

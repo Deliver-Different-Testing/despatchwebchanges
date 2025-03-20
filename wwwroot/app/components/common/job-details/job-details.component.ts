@@ -1,6 +1,6 @@
 import ToastrService from "../../../services/ToastrService";
 import {AppConfig} from "../../../interfaces/app-config.interface";
-import {InternalStatus, IJob, PriceBreakdown, EditAddressDialogViewModel} from "../../../interfaces/job.interface";
+import {InternalStatus, IJob, EditAddressDialogViewModel} from "../../../interfaces/job.interface";
 import {ContactID, FirstName} from "../../../contants";
 import {JobNote, JobOptions, TabItem} from "./job-details.interfaces";
 import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
@@ -9,26 +9,26 @@ import "./job-details.styles.less";
 import {SelectDialogService} from "../../dialogs/select-dialog/select-dialog.service";
 import {EditDateTimeDialogService} from "../../dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
 import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interfaces";
-import {bindAllMethods} from "../../../bindAllMethods";
 import {EditAddressDialogService} from "../../dialogs/edit-address-dialog/edit-address-dialog.service";
+import PriceBreakdownDialogService from "../../dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
+import BaseController from "../../base-controller";
 
-class JobDetailController implements angular.IController {
+class JobDetailController extends BaseController {
     static $inject = [
         "$scope",
         "$mdDialog",
         "toastrService",
         "DispatchData",
-        "APP_CONFIG",
         "rateJobService",
         "moment",
         "$mdMenu",
         "$timeout",
         "selectDialogService",
         "editDateTimeDialogService",
-        "editAddressDialogService"
+        "editAddressDialogService",
+        "priceBreakdownDialogService"
     ];
 
-    private readonly isUsCustomer: boolean;
     job?: IJob;
     internalJob?: IJob;
     notes: JobNote[];
@@ -51,21 +51,20 @@ class JobDetailController implements angular.IController {
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
-        APP_CONFIG: AppConfig,
         private rateJobService: any,
         private moment: any,
         private $mdMenu: angular.material.IMenuService,
         private $timeout: angular.ITimeoutService,
         private selectDialogService: SelectDialogService,
         private editDateTimeDialogService: EditDateTimeDialogService,
-        private editAddressDialogService: EditAddressDialogService
+        private editAddressDialogService: EditAddressDialogService,
+        private priceBreakdownDialogService: PriceBreakdownDialogService
     ) {
-        this.isUsCustomer = APP_CONFIG.US_Customer;
+        super();
+
         this.notes = [];
         this.selectedTab = 0;
         this.allTabs = [];
-
-        bindAllMethods(this);
 
         this.options = {
             detail: {
@@ -560,11 +559,6 @@ class JobDetailController implements angular.IController {
     }
 
     async editDueDate($event: MouseEvent, job: IJob) {
-        if (!job.preBook) {
-            this.toastrService.showWarningToast("Due Date can only be edited on pre-booked jobs. Change not applied");
-            return;
-        }
-
         await this.showEditDateDialog($event, job, "Due Date", "DueDate", job.firstDue);
     }
 
@@ -574,7 +568,7 @@ class JobDetailController implements angular.IController {
 
         try {
             const newAddress = await this.editAddressDialogService.openEditAddressDialog($event, existingAddress);
-            if(!newAddress) {
+            if (!newAddress) {
                 return; // User closed dialog
             }
 
@@ -630,6 +624,7 @@ class JobDetailController implements angular.IController {
             throw error;
         }
     }
+
     async editJobContact($event: MouseEvent, job: IJob, contactType: 'from' | 'to') {
         const contactMapping = {
             from: {
@@ -1125,43 +1120,11 @@ class JobDetailController implements angular.IController {
 
     async showPricingBreakdown($event: MouseEvent, job: IJob) {
         try {
-            console.log("Fetching price breakdown data for job:", job.id);
-            const data = await this.DispatchData.getPriceBreakdown(job.id);
-            console.log("Received price breakdown data:", data);
-
-            console.log("Formatting price breakdown");
-            const formattedBreakdown = this._formatPriceBreakDown(data);
-            console.log("Formatted breakdown:", formattedBreakdown);
-
-            console.log("Showing dialog with formatted breakdown");
-            const dialog = this.$mdDialog.alert()
-                .parent(document.body)
-                .clickOutsideToClose(true)
-                .title("Charge Information")
-                .targetEvent($event)
-                .htmlContent(formattedBreakdown)
-                .ariaLabel("price breakdown")
-                .ok("OK");
-
-            await this.$mdDialog.show(dialog);
-            console.log("Dialog closed successfully");
+            await this.priceBreakdownDialogService.openPriceBreakdownDialog($event, job.id);
         } catch (error) {
             console.error("Error in displayPriceBreakdown:", error);
             this.toastrService.showErrorToast("An error occurred while fetching the price breakdown. Please try again.");
         }
-    }
-
-    private _formatPriceBreakDown(data: PriceBreakdown[]) {
-        let breakdownString = "";
-        let total = 0;
-
-        data.forEach(item => {
-            breakdownString += `${item.name}: $${item.amount.toFixed(2)}<br>`;
-            total += item.amount;
-        });
-
-        breakdownString += `<br>Total: $${total.toFixed(2)}`;
-        return breakdownString;
     }
 }
 

@@ -663,6 +663,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         const paramObject = {
             order: String(queryParams.order ?? "time"),
             orderDirection: String(queryParams.orderDirection ?? "asc"),
+            dateCutoff: String(queryParams.dateCutoff?.toISOString() ?? new Date().toISOString()),
             isInternal: String(internal),
             cid: String(ContactID),
             clientIds: selectedClients.length ? selectedClients.join(',') : ''
@@ -788,6 +789,18 @@ class DispatchCoreService implements angular.IServiceProvider {
     async getPriceBreakdown(jobId: number): Promise<PriceBreakdown[]> {
         const response = await this.$http.get<PriceBreakdown[]>(`job/GetPricingBreakdown?jobId=${jobId}`);
         return response.data;
+    }
+
+    async addPriceBreakdown(breakdown: PriceBreakdown) {
+        try {
+            const response = await this.$http.post<number>('job/AddPriceComponent', {
+                breakdown
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error updating price breakdown:', error);
+            throw error;
+        }
     }
 
     async getJobDeliveryPhotosAndSignature(jobId: number, year: number, month: number) {
