@@ -9,7 +9,7 @@ import {
     AreaClearList,
     ClearListViewModel,
     CourierData,
-    IJob,
+    IJob, JobQueryParams,
     Suggestion,
     SupportViewModel
 } from "../../interfaces/job.interface";
@@ -21,6 +21,8 @@ import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {JobStatus} from "../../enums/job-status.enum";
 import BaseController from "../base-controller";
+import {ITaskListItemConfig} from "../common/task-item-component/task-item.interfaces";
+import {ExtendedTask} from "../task-dashboard/task-dashboard.interfaces";
 
 interface ResendJobsRequest {
     call: string;
@@ -48,6 +50,7 @@ export class HomeController extends BaseController {
         '$mdSidenav',
         'AppPages',
         '$stateParams',
+        '$filter'
     ];
 
     private readonly DOM_SELECTORS = {
@@ -67,7 +70,7 @@ export class HomeController extends BaseController {
     supportChannel: any;
     showInput: any;
     isInternal?: boolean = false;
-    queryParams: any;
+    queryParams: JobQueryParams;
     isUsCustomer: boolean;
     selectedCourier: any;
     jobRecordSearchText: any;
@@ -142,6 +145,20 @@ export class HomeController extends BaseController {
         out: (e: JQueryEventObject, ui: any) => void;
         stop: (e: JQueryEventObject, ui: any) => void
     };
+    jobCutoffDate?: Date;
+    supportItemConfig: ITaskListItemConfig = {
+        showJobId: true,
+        showAssignee: true,
+        showJobType: false,
+        showDateTime: true,
+        showDescription: true,
+        showStatusIndicators: false,
+        maxDescriptionLength: 150,
+        customClass: 'support-list-item',
+        dateFormat: 'HH:mm',
+        timeFormat: 'HH:mm',
+        allowCompletion: true
+    };
 
     constructor(
         private $document: angular.IDocumentService,
@@ -159,10 +176,12 @@ export class HomeController extends BaseController {
         private APP_CONFIG: AppConfig,
         private $mdSidenav: angular.material.ISidenavService,
         private AppPages: any,
-        private $stateParams: angular.ui.IStateParamsService
+        private $stateParams: angular.ui.IStateParamsService,
+        private $filter: angular.IFilterService
     ) {
         super();
 
+        // Views and Layout
         this.initialViewSet = false;
 
         $scope.$watch("selectedViews", (newViews) => {
@@ -191,16 +210,16 @@ export class HomeController extends BaseController {
         this.supportSettings = {autoRefresh: true};
 
         this.boxSortableOptions = {
-            handle: '.box-handle',               // Use the designated handle div for dragging
-            connectWith: '.column-sortable',     // Connect columns to allow dragging between them
-            placeholder: 'box-placeholder',      // CSS class for placeholder while dragging
-            tolerance: 'pointer',                // Use pointer position for determining drop target
-            cursor: 'move',                      // Cursor style during drag
-            opacity: 0.8,                        // Opacity of dragged element
-            scroll: true,                        // Enable scrolling during drag
-            revert: 200,                         // Animation speed when reverting
-            delay: 150,                          // Small delay to prevent accidental drags
-            forcePlaceholderSize: true,          // Force the placeholder to have dimensions
+            handle: '.box-handle',
+            connectWith: '.column-sortable',
+            placeholder: 'box-placeholder',
+            tolerance: 'pointer',
+            cursor: 'move',
+            opacity: 0.8,
+            scroll: true,
+            revert: 200,
+            delay: 150,
+            forcePlaceholderSize: true,
 
             start: (e: JQueryEventObject, ui: any) => {
                 ui.item.addClass('dragging');
@@ -324,8 +343,24 @@ export class HomeController extends BaseController {
         this.queryParams = {
             order: "time",
             orderDirection: "asc",
-            status: "all"
         };
+
+        // Set default date to today
+        this.jobCutoffDate = new Date();
+        if (Modernizr.localstorage) {
+            const savedDate = localStorage.getItem(`jobCutoffDate-${ContactID}`);
+            if (savedDate) {
+                try {
+                    this.jobCutoffDate = new Date(JSON.parse(savedDate));
+                    this.queryParams.dateCutoff = this.jobCutoffDate;
+                } catch (e) {
+                    console.error("Error parsing saved date filter:", e);
+                    this.jobCutoffDate = new Date();
+                }
+            }
+        }
+
+
         this.isUsCustomer = this.APP_CONFIG.US_Customer;
         this.selectedCourier = null;
 
@@ -626,24 +661,6 @@ export class HomeController extends BaseController {
                     this.toastrService.showErrorToast('Failed to refresh job data');
                 });
         });
-    }
-
-    initTableLimit() {
-        // Watcher for job table limit to save value
-        this.$scope.$watch(() => this.queryParams.limit, (newValue, oldValue) => {
-            if (newValue !== oldValue) {
-                if (Modernizr.localstorage) {
-                    localStorage.setItem(`despatchJobLimitDisplay`, this.queryParams.limit);
-                }
-            }
-        });
-
-        // Get saved limit
-        const savedLimit = localStorage.getItem(`despatchJobLimitDisplay`);
-        console.log(`Saved limit is: ${savedLimit}`);
-        if (savedLimit) {
-            this.queryParams.limit = savedLimit;
-        }
     }
 
     initWidgetLoadingStates() {
@@ -2320,19 +2337,18 @@ export class HomeController extends BaseController {
 
             const selectedClients = this.pickService.clients.map((a: any) => a.id);
 
-            let orderBy = this.queryParams.order;
+            let orderBy = this.queryParams.order || '';
             let orderDirection = "asc";
 
-            if (orderBy.startsWith("-")) {
+            if (orderBy && orderBy.startsWith("-")) {
                 orderBy = orderBy.substring(1);
                 orderDirection = "desc";
             }
 
-            const params = {
-                status: this.queryParams.status,
+            const params: JobQueryParams = {
                 order: orderBy,
                 orderDirection: orderDirection,
-                statusFilter: this.queryParams.statusFilter
+                dateCutoff: this.jobCutoffDate
             };
 
             console.log('Params:', params);
@@ -2370,9 +2386,45 @@ export class HomeController extends BaseController {
         }
     }
 
+    changeJobCutoffDate(days: number): void {
+        if (!this.jobCutoffDate) {
+            this.jobCutoffDate = new Date();
+        }
+
+        const newDate = new Date(this.jobCutoffDate);
+        newDate.setDate(newDate.getDate() + days);
+
+        this.jobCutoffDate = newDate;
+        this.applyJobCutoffDate();
+    }
+
+    resetJobCutoffDate(): void {
+        this.jobCutoffDate = new Date();
+
+        if (Modernizr.localstorage) {
+            localStorage.setItem(`jobCutoffDate-${ContactID}`, JSON.stringify(this.jobCutoffDate));
+        }
+
+        this.queryParams.dateCutoff = this.jobCutoffDate;
+
+        this.getJobList();
+        this.toastrService.showSuccessToast("Date filter set to today");
+    }
+
+    applyJobCutoffDate(): void {
+        if (!this.jobCutoffDate) {
+            return;
+        }
+
+        if (Modernizr.localstorage) {
+            localStorage.setItem(`jobCutoffDate-${ContactID}`, JSON.stringify(this.jobCutoffDate));
+        }
+
+        this.queryParams.dateCutoff = this.jobCutoffDate;
+        this.getJobList();
+    }
+
     async jobPageChanged(page: number, limit: number) {
-        this.queryParams.page = page;
-        this.queryParams.limit = limit;
         await this.getJobList();
     }
 
@@ -2924,5 +2976,56 @@ export class HomeController extends BaseController {
                 });
             }
         });
+    }
+
+    supportToTaskModel(support: SupportViewModel): ExtendedTask {
+        const priorityMap: { [key: number]: string } = {
+            73: 'high',   // Yellow status
+            1: 'low',     // Green status
+            2: 'low',     // Green status
+            0: 'medium'   // Default priority
+        };
+
+        // Get priority based on event type or default to medium
+        const priority = support.eventType !== null ? priorityMap[support.eventType] || 'medium' : 'medium';
+
+        // Determine appropriate icon based on support type
+        let icon: string;
+        if (support.description.toLowerCase().includes('late')) {
+            icon = 'schedule';
+        } else if (support.description.toLowerCase().includes('message')) {
+            icon = 'message';
+        } else if (support.description.toLowerCase().includes('call')) {
+            icon = 'phone';
+        } else {
+            icon = 'support';
+        }
+
+        return {
+            id: support.eventId || 0,
+            title: `${support.description || 'Support Event'}`,
+            description: support.notes || '',
+            dueDate: support.timeStamp ? new Date(support.timeStamp).toISOString() : new Date().toISOString(),
+            closed: false,
+            priority: priority,
+            assignee: {
+                id: 0,
+                text: support.staff || 'Unassigned'
+            },
+            eventType: support.description || '',
+            jobId: 0,
+            jobNumber: support.jobNumber || '',
+            icon: icon,
+            isOverdue: false,
+            dueTimeStr: support.timeStamp ? this.$filter('date')(support.timeStamp, 'HH:mm') : ''
+        };
+    }
+
+    getSupportItemClass(support: SupportViewModel): string {
+        const baseClass = this.getSupportColorClass(support);
+        if (support.eventId === (this.currentSupport?.eventId || 0)) {
+            return `${baseClass} selected-support-item`;
+        }
+        return baseClass;
     }
 }

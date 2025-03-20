@@ -1,0 +1,68 @@
+<md-list-item class="task-item" ng-class="{'completed': ctrl.task.closed}">
+    <div class="priority-indicator" ng-class="ctrl.task.priority"></div>
+
+    <md-checkbox class="md-primary"
+                 ng-model="ctrl.task.closed"
+                 ng-change="ctrl.handleTaskCompletion(ctrl.task)"
+                 aria-label="Mark as completed">
+    </md-checkbox>
+
+    <div class="md-list-item-text task-content" flex>
+        <h3 ng-class="{'completed-text': ctrl.task.closed}">
+            {{ctrl.task.title}}
+            <span ng-if="ctrl.task.closed" class="status-indicator done">DONE</span>
+            <span ng-if="ctrl.isTaskOverdue(ctrl.task) && !ctrl.task.closed"
+                  class="status-indicator overdue">OVERDUE</span>
+            <span ng-if="!ctrl.isTaskOverdue(ctrl.task) && !ctrl.task.closed"
+                  class="status-indicator todo">TODO</span>
+        </h3>
+
+        <p ng-class="{'completed-text': ctrl.task.closed}">
+            {{ctrl.task.description}}
+        </p>
+
+        <div class="task-meta" layout="row" layout-wrap>
+            <div class="meta-item assignee" layout="row" layout-align="start center"
+                 md-ink-ripple ng-click="ctrl.reassignTask($event, ctrl.task)">
+                <md-icon md-font-set="material-symbols-outlined">person</md-icon>
+                <span>{{ctrl.task.assignee.text}}</span>
+            </div>
+
+            <div class="meta-item job-type" layout="row" layout-align="start center">
+                <md-icon md-font-set="material-symbols-outlined">label</md-icon>
+                <span>{{ctrl.task.jobType.charAt(0).toUpperCase() + ctrl.task.jobType.slice(1)}}</span>
+            </div>
+
+            <md-chip class="job-id-chip">{{ctrl.task.jobId}}</md-chip>
+        </div>
+    </div>
+
+    <!-- Full-width chip date/time display -->
+    <div class="task-date-compact" layout="column" layout-align="center end">
+        <md-icon ng-if="ctrl.isTaskOverdue(ctrl.task)"
+                 md-font-set="material-symbols-outlined"
+                 class="warning-icon">
+            warning
+        </md-icon>
+
+        <!-- Date chip -->
+        <div class="date-chip" ng-class="{'overdue-chip': ctrl.isTaskOverdue(ctrl.task)}">
+            <md-button class="chip-button"
+                       ng-click="ctrl.openDateDialog($event, ctrl.task)">
+                <md-icon md-font-set="material-symbols-outlined">calendar_today</md-icon>
+                <span>{{ctrl.formatDate(ctrl.task.dueDate)}}</span>
+            </md-button>
+        </div>
+
+        <!-- Time chip -->
+        <div class="time-chip" ng-class="{'overdue-chip': ctrl.isTaskOverdue(ctrl.task)}">
+            <md-button class="chip-button"
+                       ng-click="ctrl.openTimeDialog($event, ctrl.task)">
+                <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
+                <span>{{ctrl.formatTime(ctrl.task.dueDate)}}</span>
+            </md-button>
+        </div>
+    </div>
+
+    <md-divider ng-if="!$last"></md-divider>
+</md-list-item>

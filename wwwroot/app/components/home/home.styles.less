@@ -105,6 +105,7 @@
                         }
                     }
                 }
+
                 // Autocomplete component
                 md-autocomplete {
                     height: 30px;
@@ -216,10 +217,10 @@
     }
 
     // Additional variables for table footer
-    @background-color: #f5f5f5;
+    @background-color: #f8f8f8;
     @border-color: rgba(0, 0, 0, 0.12);
 
-    // Table footer styles
+    // Table footer styles - UPDATED
     .md-table-footer {
         background-color: @background-color;
         border-top: 1px solid @border-color;
@@ -234,8 +235,10 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            height: 40px;
-            padding: 0 5px;
+            height: 50px;
+            padding: 0 16px;
+            background-color: @background-color;
+            border-bottom: 1px solid @border-color;
         }
     }
 
@@ -255,31 +258,108 @@
         margin-left: 8px;
     }
 
-    // Status summary section
-    .status-summary {
+    .date-selector {
+        margin-right: 16px;
+        height: 40px;
         display: flex;
-        gap: 12px;
+        align-items: center;
+        padding: 0 4px;
     }
 
-    // Status chip common styles - more compact
+    .date-selector .cutoff-date {
+        font-size: 13px;
+        font-weight: 500;
+        color: #3c4043;
+        margin-bottom: 2px;
+    }
+
+    .date-selector .today-button {
+        font-size: 11px;
+        line-height: 1;
+        min-height: 20px;
+        margin: 0;
+        padding: 2px 6px;
+        color: @primary-color;
+        text-transform: none;
+    }
+
+    .date-selector .today-button:hover {
+        background-color: rgba(26, 115, 232, 0.05);
+    }
+
+    .date-selector md-datepicker {
+        margin-left: 8px;
+        height: 36px;
+    }
+
+    /* Hide the input container and show only the calendar button */
+    .date-selector .calendar-only-picker .md-datepicker-input-container {
+        visibility: hidden;
+        width: 0;
+        margin-left: 0;
+        margin-right: 0;
+        padding: 0;
+    }
+
+    .date-selector .calendar-only-picker .md-datepicker-button {
+        margin: 0;
+        padding: 0;
+        height: 36px;
+        width: 36px;
+        min-width: 36px;
+        line-height: 36px;
+    }
+
+    .date-selector .calendar-only-picker .md-datepicker-button .md-datepicker-calendar-icon {
+        fill: @primary-color;
+    }
+
+    .date-selector .calendar-only-picker .md-datepicker-triangle-button {
+        display: none;
+    }
+
+    .date-selector .md-icon-button {
+        margin: 0 4px;
+        color: #5f6368;
+    }
+
+    .date-selector .md-icon-button:hover {
+        background-color: rgba(95, 99, 104, 0.1);
+    }
+
+    .date-selector .md-icon-button md-icon {
+        color: #5f6368;
+    }
+
+    // Status summary section - UPDATED
+    .status-summary {
+        display: flex;
+        gap: 8px;
+    }
+
+    // Status chip common styles - UPDATED
     .status-chip {
         &.md-button {
             display: flex;
             align-items: center;
-            padding: 2px 10px;
+            padding: 0 12px;
             border-radius: 16px;
             font-weight: 500;
-            height: 24px;
+            height: 32px;
             white-space: nowrap;
-            min-height: 24px;
+            min-height: 32px;
             margin: 0;
             min-width: 0;
-            line-height: normal;
+            line-height: 32px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
 
             // Override Material button styles
             &:not([disabled]) {
                 &:hover {
-                    opacity: 0.8;
+                    opacity: 0.9;
+                    transform: translateY(-1px);
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
                 }
             }
 
@@ -297,7 +377,7 @@
                 height: 16px !important;
                 min-width: 16px;
                 min-height: 16px;
-                margin: 0 4px 0 0 !important;
+                margin: 0 6px 0 0 !important;
             }
 
             span {
@@ -305,65 +385,100 @@
             }
 
             .status-label {
-                margin-left: 4px;
+                margin-left: 6px;
                 font-weight: normal;
             }
         }
 
-        // Keep your existing color variations
+        // Updated color variations with new material design colors
         &.total {
             &.md-button {
                 background-color: #E0E0E0 !important;
-                color: @text-dark !important;
+                color: #202124 !important;
 
                 md-icon {
-                    color: @text-dark !important;
+                    color: #202124 !important;
                 }
             }
         }
 
         &.pending {
             &.md-button {
-                background-color: @status-blue !important;
-                color: @status-new-text !important;
+                background-color: #e8f0fe !important;
+                color: #174ea6 !important;
 
                 md-icon {
-                    color: @status-new-text !important;
+                    color: #1a73e8 !important;
                 }
             }
         }
 
         &.in-transit {
             &.md-button {
-                background-color: @status-green-dark !important;
-                color: darken(@status-green-dark, 50%) !important;
+                background-color: #e6f4ea !important;
+                color: #137333 !important;
 
                 md-icon {
-                    color: darken(@status-green-dark, 50%) !important;
+                    color: #0f9d58 !important;
                 }
             }
         }
 
         &.completed {
             &.md-button {
-                background-color: @status-gray !important;
-                color: darken(@status-gray, 40%) !important;
+                background-color: #f1f3f4 !important;
+                color: #5f6368 !important;
 
                 md-icon {
-                    color: darken(@status-gray, 40%) !important;
+                    color: #5f6368 !important;
                 }
             }
         }
 
         &.problem {
             &.md-button {
-                background-color: @status-red-light !important;
-                color: @status-undeliverable-text !important;
+                background-color: #fce8e6 !important;
+                color: #c5221f !important;
 
                 md-icon {
-                    color: @status-undeliverable-text !important;
+                    color: #ea4335 !important;
                 }
             }
+        }
+    }
+
+    // Table improvements
+    md-table-container table.md-table {
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        border-radius: 4px;
+        overflow: hidden;
+
+        th.md-column {
+            color: #5f6368;
+            font-weight: 500;
+            background-color: #f8f8f8;
+        }
+
+        td.md-cell {
+            color: #3c4043;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        tr.md-row:hover td.md-cell {
+            background-color: rgba(26, 115, 232, 0.05);
+        }
+
+        // Make the chip status look nicer
+        td.md-cell md-chip.status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 24px;
+            line-height: 24px;
+            min-height: 24px;
+            border-radius: 12px;
+            padding: 0 8px;
+            font-size: 12px;
         }
     }
 }

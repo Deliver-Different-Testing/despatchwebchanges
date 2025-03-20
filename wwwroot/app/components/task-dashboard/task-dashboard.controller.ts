@@ -1,6 +1,5 @@
 import {ExtendedTask, Task, TaskTableFiltersRequest} from "./task-dashboard.interfaces";
 import "./task-dashboard.styles.less";
-import app from "../../app";
 import GreetingService from "../../services/greeting.service";
 import TasksDashboardService from "./tasks-dashboard.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
@@ -12,9 +11,10 @@ import {SelectDialogService} from "../dialogs/select-dialog/select-dialog.servic
 import ToastrService from "../../services/ToastrService";
 import {IDialogDateTimeResult, ISelectDialogResult} from "../../interfaces/dialog-result.interfaces";
 import {EditDateTimeDialogService} from "../dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
-import {bindAllMethods} from "../../bindAllMethods";
+import BaseController from "../base-controller";
+import { ITaskListItemConfig } from "../common/task-item-component/task-item.interfaces";
 
-export class TaskDashboardController implements angular.IController {
+export class TaskDashboardController extends BaseController {
     static $inject = [
         "greetingService",
         "$mdSidenav",
@@ -56,6 +56,23 @@ export class TaskDashboardController implements angular.IController {
     courierList?: ActiveCourierViewModel[];
     eventTypesList?: Suggestion[];
 
+    // Task item configurations
+    taskItemConfig: ITaskListItemConfig = {
+        showJobId: true,
+        showAssignee: true,
+        showJobType: true,
+        showDateTime: true,
+        customClass: ''
+    };
+
+    calendarTaskConfig: ITaskListItemConfig = {
+        showJobId: true,
+        showAssignee: false,
+        showJobType: false,
+        showDateTime: false,
+        customClass: 'calendar-task-item'
+    };
+
     constructor(
         greetingService: GreetingService,
         private $mdSidenav: angular.material.ISidenavService,
@@ -67,9 +84,8 @@ export class TaskDashboardController implements angular.IController {
         private toastrService: ToastrService,
         private editDateTimeDialogService: EditDateTimeDialogService
     ) {
+        super();
         this.greeting = greetingService.greetUser(FirstName);
-
-        bindAllMethods(this);
         this.initialize();
     }
 
@@ -217,46 +233,6 @@ export class TaskDashboardController implements angular.IController {
         }
     }
 
-    async openDateTimeDialog($event: MouseEvent, task: ExtendedTask, isDateDialog: boolean = true) {
-        $event.preventDefault();
-        $event.stopPropagation();
-
-        try {
-            const dialogParams = isDateDialog
-                ? {title: "Due Date", field: "dueDate", type: "date"}
-                : {title: "Due Time", field: "dueDate", type: "time"};
-
-            const result: IDialogDateTimeResult = isDateDialog
-                ? await this.editDateTimeDialogService.showEditDateDialog(
-                    $event, dialogParams.title, dialogParams.field, new Date(task.dueDate))
-                : await this.editDateTimeDialogService.showEditTimeDialog(
-                    $event, dialogParams.title, dialogParams.field, new Date(task.dueDate));
-
-            // Update task in the service
-            const updateMethod = isDateDialog
-                ? this.tasksDashboardsService.updateTaskDate.bind(this.tasksDashboardsService)
-                : this.tasksDashboardsService.updateTaskTime.bind(this.tasksDashboardsService);
-
-            await updateMethod(task.id, result.formattedDateTime);
-
-            // Update local task object
-            task.dueDate = result.formattedDateTime;
-
-            // Refresh tasks
-            await this.getTasks();
-        } catch (error) {
-            console.error(`Error updating task ${isDateDialog ? 'date' : 'time'}:`, error);
-        }
-    }
-
-    async openDateDialog($event: MouseEvent, task: ExtendedTask) {
-        return this.openDateTimeDialog($event, task, true);
-    }
-
-    async openTimeDialog($event: MouseEvent, task: ExtendedTask) {
-        return this.openDateTimeDialog($event, task, false);
-    }
-
     async handleTaskCompletion(task: Task) {
         try {
             await this.tasksDashboardsService.markTaskAsClosed(task.id, task.closed);
@@ -264,6 +240,48 @@ export class TaskDashboardController implements angular.IController {
         } catch (error) {
             console.error(`Error updating task status:`, error);
             task.closed = !task.closed;
+        }
+    }
+
+    async openDateDialog($event: MouseEvent, task: ExtendedTask) {
+        $event.preventDefault();
+        $event.stopPropagation();
+
+        try {
+            const result: IDialogDateTimeResult = await this.editDateTimeDialogService.showEditDateDialog(
+                $event, "Due Date", "dueDate", new Date(task.dueDate));
+
+            // Update task in the service
+            await this.tasksDashboardsService.updateTaskDate(task.id, result.formattedDateTime);
+
+            // Update local task object
+            task.dueDate = result.formattedDateTime;
+
+            // Refresh tasks
+            await this.getTasks();
+        } catch (error) {
+            console.error(`Error updating task date:`, error);
+        }
+    }
+
+    async openTimeDialog($event: MouseEvent, task: ExtendedTask) {
+        $event.preventDefault();
+        $event.stopPropagation();
+
+        try {
+            const result: IDialogDateTimeResult = await this.editDateTimeDialogService.showEditTimeDialog(
+                $event, "Due Time", "dueDate", new Date(task.dueDate));
+
+            // Update task in the service
+            await this.tasksDashboardsService.updateTaskTime(task.id, result.formattedDateTime);
+
+            // Update local task object
+            task.dueDate = result.formattedDateTime;
+
+            // Refresh tasks
+            await this.getTasks();
+        } catch (error) {
+            console.error(`Error updating task time:`, error);
         }
     }
 

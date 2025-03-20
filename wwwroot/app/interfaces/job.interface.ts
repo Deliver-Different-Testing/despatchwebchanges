@@ -282,12 +282,15 @@ export interface Pallet {
 export interface JobQueryParams {
     order?: string;
     orderDirection?: string;
+    dateCutoff?: Date;
 }
 
 export interface PriceBreakdown {
     chargeId: number;
     name: string;
     amount: number;
+    jobId?: number;
+    prebookJobId?: number;
 }
 
 export interface JobRateDetails {

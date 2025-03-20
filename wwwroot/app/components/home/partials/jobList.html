@@ -1,13 +1,40 @@
 <div class="droppable-box">
     <context-menu
             on-refresh="ctrl.refreshData(true)"
-            on-split-job="ctrl.handleSplitJob(job)"
-            on-refresh-courier-jobs="ctrl.refreshCourierJobs(courierId)">
+            on-split-job="ctrl.handleSplitJob(job)">
     </context-menu>
 
     <md-table-container>
         <div class="md-table-footer-content">
+            <div class="date-selector" layout="row" layout-align="start center">
+                <md-datepicker
+                        ng-model="ctrl.jobCutoffDate"
+                        ng-change="ctrl.applyJobCutoffDate()"
+                        md-placeholder="Select date"
+                        md-hide-icons="triangle"
+                        md-open-on-focus="true"
+                        class="calendar-only-picker">
+                </md-datepicker>
+
+                <md-button class="md-icon-button" ng-click="ctrl.changeJobCutoffDate(-1)" aria-label="Previous day">
+                    <md-icon md-font-set="material-symbols-outlined">chevron_left</md-icon>
+                </md-button>
+
+                <div layout="column" layout-align="center center">
+                    <span class="cutoff-date">{{ctrl.jobCutoffDate | date:'EEEE, MMMM d, yyyy'}}</span>
+                    <md-button class="md-small today-button" ng-click="ctrl.resetJobCutoffDate()"
+                               aria-label="Reset filter">
+                        Today
+                    </md-button>
+                </div>
+
+                <md-button class="md-icon-button" ng-click="ctrl.changeJobCutoffDate(1)" aria-label="Next day">
+                    <md-icon md-font-set="material-symbols-outlined">chevron_right</md-icon>
+                </md-button>
+            </div>
+
             <div flex></div>
+
             <!-- Right side with status chips -->
             <div class="status-summary" ng-if="ctrl.jobList && ctrl.jobList.length > 0">
                 <md-button class="md-button status-chip total" ng-click="ctrl.filterByStatus('group-all')">
@@ -69,7 +96,7 @@
 
                 <td md-cell>{{job.time | date: "HH:mm"}}</td>
                 <td md-cell>{{job.speed}}</td>
-                <td md-cell ng-if="job.courierData.courierID !== null">{{job.notify}}</td>
+                <td md-cell>{{job.notify}}</td>
                 <td md-cell>
                     <div class="attention-cell" title="{{ctrl.attention(job)}}">{{ctrl.attention(job)}}</div>
                 </td>

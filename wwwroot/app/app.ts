@@ -57,6 +57,9 @@ import {EditDateTimeDialogService} from "./components/dialogs/edit-date-time-dia
 import DispatchMapComponent from "./components/common/dispatch-map/dispatch-map.component";
 import EditAddressDialogController from "./components/dialogs/edit-address-dialog/edit-address-dialog.controller";
 import {EditAddressDialogService} from "./components/dialogs/edit-address-dialog/edit-address-dialog.service";
+import NationwideService from "./components/Nationwide/nationwide.service";
+import {TaskItemComponent} from "./components/common/task-item-component/task-item.component";
+import PriceBreakdownDialogService from "./components/dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
 
 const app = angular.module("uDispatch", ["ui.router", "ct.ui.router.extras",
     "angularResizable", "ui.sortable", "ui.bootstrap", "ui.bootstrap.pagination",
@@ -176,6 +179,7 @@ app.component("materialSidenav", MaterialSidenavComponent);
 app.component("podPhotoViewer", PodPhotoViewerComponent);
 app.component("openJobsWidget", openJobsComponent)
 app.component("dispatchMap", DispatchMapComponent)
+app.component("taskItemComponent", TaskItemComponent)
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);
@@ -223,5 +227,6 @@ app.service('selectDialogService', SelectDialogService);
 app.service('eventGroupDialogService', EventGroupDialogService);
 app.service("editDateTimeDialogService", EditDateTimeDialogService);
 app.service("editAddressDialogService", EditAddressDialogService);
-
+app.service("NWData", NationwideService);
+app.service("priceBreakdownDialogService", PriceBreakdownDialogService)
 export default app;

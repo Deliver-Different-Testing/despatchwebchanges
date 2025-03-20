@@ -999,7 +999,8 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             clientIds,
             selectedViewIds,
             null,
-            clearListEnvelope
+            clearListEnvelope,
+            queryParams.DateCutoff
         );
     }
 
@@ -1216,7 +1217,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .LoadStoredProc("GEN_qdfSetting_GetMaxAutoLatePickupAlert")
             .WithSqlParam(
                 "@MaxAutoLatePickupAlert",
-                (dbParam) =>
+                dbParam =>
                 {
                     dbParam.Direction = ParameterDirection.Output;
                     dbParam.DbType = DbType.Int32;
@@ -1235,7 +1236,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .LoadStoredProc("GEN_qdfSetting_GetMaxAutoLateDeliveryAlert")
             .WithSqlParam(
                 "@MaxAutoLateDeliveryAlert",
-                (dbParam) =>
+                dbParam =>
                 {
                     dbParam.Direction = ParameterDirection.Output;
                     dbParam.DbType = DbType.Int32;
@@ -1277,7 +1278,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .WithSqlParam("@ToSuburbID", to)
             .WithSqlParam(
                 "@FuelSurcharge",
-                (dbParam) =>
+                dbParam =>
                 {
                     dbParam.Direction = ParameterDirection.Output;
                     dbParam.DbType = DbType.Currency;
@@ -1386,7 +1387,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .WithSqlParam("@JobID", jobId)
             .WithSqlParam(
                 "@Message",
-                (dbParam) =>
+                dbParam =>
                 {
                     dbParam.Direction = ParameterDirection.Output;
                     dbParam.DbType = DbType.String;
@@ -1589,7 +1590,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .WithSqlParam("@TruckHours", truckHours)
             .WithSqlParam(
                 "@Description",
-                (dbParam) =>
+                dbParam =>
                 {
                     dbParam.Direction = ParameterDirection.Output;
                     dbParam.DbType = DbType.String;
@@ -1599,7 +1600,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             )
             .WithSqlParam(
                 "@Rate",
-                (dbParam) =>
+                dbParam =>
                 {
                     dbParam.Direction = ParameterDirection.Output;
                     dbParam.DbType = DbType.Currency;
@@ -1653,7 +1654,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .WithSqlParam("@TruckHours", truckHours)
             .WithSqlParam(
                 "@Description",
-                (dbParam) =>
+                dbParam =>
                 {
                     dbParam.Direction = ParameterDirection.Output;
                     dbParam.DbType = DbType.String;
@@ -1663,7 +1664,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             )
             .WithSqlParam(
                 "@Rate",
-                (dbParam) =>
+                dbParam =>
                 {
                     dbParam.Direction = ParameterDirection.Output;
                     dbParam.DbType = DbType.Currency;
@@ -1683,11 +1684,41 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             {
                 ChargeId = p.PricingBreakdownId,
                 Amount = p.ChargeAmount,
-                Name = p.ChargeName
+                Name = p.ChargeName,
+                JobId = p.JobId,
+                PrebookJobId = p.PrebookJobId
             })
             .AsNoTracking()
             .ToListAsync();
     }
+
+    public async Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel)
+    {
+        var item = new PricingBreakdown
+        {
+            ChargeAmount = viewModel.Amount,
+            ChargeName = viewModel.Name,
+            JobId = viewModel.JobId,
+            PrebookJobId = viewModel.PrebookJobId
+        };
+
+        await Context.PricingBreakdowns.AddAsync(item);
+        await Context.SaveChangesAsync();
+
+        return item.JobId ?? item.PrebookJobId.Value;
+    }
+
+   public async Task DeleteJobPriceBreakdownAsync(int chargeId, int jobId)
+   {
+       var breakdown = await Context.PricingBreakdowns
+           .FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId && p.JobId == jobId);
+
+       if (breakdown != null)
+       {
+           Context.PricingBreakdowns.Remove(breakdown);
+           await Context.SaveChangesAsync();
+       }
+   }
 
     /// <inheritdoc />
     public Task<string> RateJobDescription(
@@ -1732,7 +1763,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .WithSqlParam("@JobID", jobId)
             .WithSqlParam(
                 "@JobTypeID",
-                (dbParam) =>
+                dbParam =>
                 {
                     dbParam.Direction = ParameterDirection.Output;
                     dbParam.DbType = DbType.Int32;
@@ -1741,7 +1772,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             )
             .WithSqlParam(
                 "@Name",
-                (dbParam) =>
+                dbParam =>
                 {
                     dbParam.Direction = ParameterDirection.Output;
                     dbParam.DbType = DbType.String;

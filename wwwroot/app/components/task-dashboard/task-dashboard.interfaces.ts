@@ -12,6 +12,7 @@ export interface Task {
     jobId: number;
     icon: string;
     isOverdue: boolean;
+    jobNumber: string;
 }
 
 export interface TaskTableFiltersRequest {
