@@ -7,10 +7,7 @@ import {ActiveCourierViewModel} from "../../interfaces/courier.interface";
 import {Suggestion} from "../../interfaces/job.interface";
 import {StatusFilter} from "./enums/status-filter";
 import {ViewMode} from "./enums/view-mode";
-import {SelectDialogService} from "../dialogs/select-dialog/select-dialog.service";
 import ToastrService from "../../services/ToastrService";
-import {IDialogDateTimeResult, ISelectDialogResult} from "../../interfaces/dialog-result.interfaces";
-import {EditDateTimeDialogService} from "../dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
 import BaseController from "../base-controller";
 import { ITaskListItemConfig } from "../common/task-item-component/task-item.interfaces";
 
@@ -21,10 +18,7 @@ class TaskDashboardController extends BaseController {
         "$filter",
         "tasksDashboardsService",
         "DispatchData",
-        "$timeout",
-        "selectDialogService",
-        "toastrService",
-        "editDateTimeDialogService"
+        "$timeout"
     ];
 
     // Properties
@@ -62,7 +56,10 @@ class TaskDashboardController extends BaseController {
         showAssignee: true,
         showJobType: true,
         showDateTime: true,
-        customClass: ''
+        customClass: '',
+        allowCompletion: true,
+        showStatusIndicators: true,
+        showOverdueWarning: true
     };
 
     calendarTaskConfig: ITaskListItemConfig = {
@@ -70,7 +67,10 @@ class TaskDashboardController extends BaseController {
         showAssignee: false,
         showJobType: false,
         showDateTime: false,
-        customClass: 'calendar-task-item'
+        customClass: 'calendar-task-item',
+        allowCompletion: true,
+        showStatusIndicators: false,
+        showOverdueWarning: false
     };
 
     constructor(
@@ -79,10 +79,7 @@ class TaskDashboardController extends BaseController {
         private $filter: angular.IFilterService,
         private tasksDashboardsService: TasksDashboardService,
         private DispatchService: DispatchCoreService,
-        private $timeout: angular.ITimeoutService,
-        private selectDialogService: SelectDialogService,
-        private toastrService: ToastrService,
-        private editDateTimeDialogService: EditDateTimeDialogService
+        private $timeout: angular.ITimeoutService
     ) {
         super();
         this.greeting = greetingService.greetUser(FirstName);
@@ -233,6 +230,7 @@ class TaskDashboardController extends BaseController {
         }
     }
 
+    // This function is now only responsible for handling the status change coming from the task-item component
     async handleTaskCompletion(task: Task) {
         try {
             await this.tasksDashboardsService.markTaskAsClosed(task.id, task.closed);
@@ -243,46 +241,8 @@ class TaskDashboardController extends BaseController {
         }
     }
 
-    async openDateDialog($event: MouseEvent, task: ExtendedTask) {
-        $event.preventDefault();
-        $event.stopPropagation();
-
-        try {
-            const result: IDialogDateTimeResult = await this.editDateTimeDialogService.showEditDateDialog(
-                $event, "Due Date", "dueDate", new Date(task.dueDate));
-
-            // Update task in the service
-            await this.tasksDashboardsService.updateTaskDate(task.id, result.formattedDateTime);
-
-            // Update local task object
-            task.dueDate = result.formattedDateTime;
-
-            // Refresh tasks
-            await this.getTasks();
-        } catch (error) {
-            console.error(`Error updating task date:`, error);
-        }
-    }
-
-    async openTimeDialog($event: MouseEvent, task: ExtendedTask) {
-        $event.preventDefault();
-        $event.stopPropagation();
-
-        try {
-            const result: IDialogDateTimeResult = await this.editDateTimeDialogService.showEditTimeDialog(
-                $event, "Due Time", "dueDate", new Date(task.dueDate));
-
-            // Update task in the service
-            await this.tasksDashboardsService.updateTaskTime(task.id, result.formattedDateTime);
-
-            // Update local task object
-            task.dueDate = result.formattedDateTime;
-
-            // Refresh tasks
-            await this.getTasks();
-        } catch (error) {
-            console.error(`Error updating task time:`, error);
-        }
+    refreshTasks() {
+        return this.getTasks();
     }
 
     isTaskOverdue(task: Task): boolean {
@@ -342,33 +302,6 @@ class TaskDashboardController extends BaseController {
     async refreshDashboard() {
         this.initializeDates();
         await this.getTasks();
-    }
-
-    async reassignTask($event: MouseEvent, task: ExtendedTask) {
-        $event.stopPropagation();
-
-        try {
-            const users = await this.DispatchService.getActiveStaff();
-            const result: ISelectDialogResult = await this.selectDialogService.showSelectDialog(
-                $event,
-                users,
-                "assignTask",
-                "Reassign Task",
-                task.assignee.id
-            );
-
-            await this.tasksDashboardsService.reassignTask(task.id, result.value);
-
-            await this.getTasks();
-            this.toastrService.showSuccessToast("Task reassigned successfully");
-        } catch (error) {
-            if (error === undefined) {
-                return; // Dialog closed
-            }
-
-            console.error('Error in reassignTask:', error);
-            this.toastrService.showErrorToast("Error reassigning task");
-        }
     }
 }
 

@@ -157,13 +157,11 @@
                     <!-- Task items using the new component -->
                     <md-list ng-if="!ctrl.tasksLoading">
                         <task-item-component
-                                ng-repeat="task in ctrl.filteredTasks"
+                                ng-repeat="task in ctrl.getOverdueTasks() track by task.id"
                                 task="task"
                                 config="ctrl.taskItemConfig"
                                 on-status-change="ctrl.handleTaskCompletion(task)"
-                                on-date-click="ctrl.openDateDialog($event, task)"
-                                on-time-click="ctrl.openTimeDialog($event, task)"
-                                on-reassign="ctrl.reassignTask($event, task)">
+                                on-task-updated="ctrl.refreshTasks()">
                         </task-item-component>
                     </md-list>
                 </md-card-content>
@@ -207,11 +205,11 @@
 
                                 <!-- Using task-list-item component with calendar config -->
                                 <task-item-component
-                                        ng-repeat="task in ctrl.getOverdueTasks()"
+                                        ng-repeat="task in ctrl.getTasksByDate(date) track by task.id"
                                         task="task"
                                         config="ctrl.calendarTaskConfig"
                                         on-status-change="ctrl.handleTaskCompletion(task)"
-                                        on-reassign="ctrl.reassignTask($event, task)">
+                                        on-task-updated="ctrl.refreshTasks()">
                                 </task-item-component>
                             </div>
                         </div>
@@ -227,11 +225,11 @@
 
                                 <!-- Using task-list-item component with calendar config -->
                                 <task-item-component
-                                        ng-repeat="task in ctrl.getTasksByDate(date)"
+                                        ng-repeat="task in ctrl.getTasksByDate(date) track by task.id"
                                         task="task"
                                         config="ctrl.calendarTaskConfig"
                                         on-status-change="ctrl.handleTaskCompletion(task)"
-                                        on-reassign="ctrl.reassignTask($event, task)">
+                                        on-task-updated="ctrl.refreshTasks()">
                                 </task-item-component>
                             </div>
                         </div>

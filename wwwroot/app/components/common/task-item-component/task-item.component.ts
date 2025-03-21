@@ -1,62 +1,154 @@
 import BaseController from "../../base-controller";
 import {ExtendedTask, Task} from "../../task-dashboard/task-dashboard.interfaces";
 import "./task-item.styles.less";
+import { SelectDialogService } from "../../dialogs/select-dialog/select-dialog.service";
+import { EditDateTimeDialogService } from "../../dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
+import ToastrService from "../../../services/ToastrService";
+import DispatchCoreService from "../../../services/dispatch-core.service";
+import { IDialogDateTimeResult, ISelectDialogResult } from "../../../interfaces/dialog-result.interfaces";
+import { ITaskListItemConfig } from "./task-item.interfaces";
 
 export interface TaskListItemBindings {
     task: ExtendedTask;
+    config: ITaskListItemConfig;
     onStatusChange: (params: { task: Task }) => void;
-    onDateClick: (params: { $event: MouseEvent, task: Task }) => void;
-    onTimeClick: (params: { $event: MouseEvent, task: Task }) => void;
-    onReassign: (params: { $event: MouseEvent, task: Task }) => void;
+    onTaskUpdated: () => void;
 }
 
 export class TaskListItemController extends BaseController {
-    static $inject = ['$filter'];
+    static $inject = [
+        '$filter',
+        'selectDialogService',
+        'editDateTimeDialogService',
+        'toastrService',
+        'DispatchData',
+        '$http'
+    ];
 
     task?: ExtendedTask;
+    config?: ITaskListItemConfig;
     onStatusChange?: (params: { task: Task }) => void;
-    onDateClick?: (params: { $event: MouseEvent, task: Task }) => void;
-    onTimeClick?: (params: { $event: MouseEvent, task: Task }) => void;
-    onReassign?: (params: { $event: MouseEvent, task: Task }) => void;
+    onTaskUpdated?: () => void;
 
-    constructor(private $filter: angular.IFilterService) {
+    constructor(
+        private $filter: angular.IFilterService,
+        private selectDialogService: SelectDialogService,
+        private editDateTimeDialogService: EditDateTimeDialogService,
+        private toastrService: ToastrService,
+        private DispatchService: DispatchCoreService,
+        private $http: angular.IHttpService
+    ) {
         super();
     }
 
-    $onInit(): void {
-        // Component initialization logic if needed
+    $onInit() {
+        // Set default configuration if not provided
+        if (!this.config) {
+            this.config = {
+                showJobId: true,
+                showAssignee: true,
+                showJobType: true,
+                showDateTime: true,
+                customClass: '',
+                showStatusIndicators: true,
+                allowCompletion: true,
+                showOverdueWarning: true,
+                dateFormat: 'MMM d, yyyy',
+                timeFormat: 'h:mm a'
+            };
+        }
     }
 
-    handleTaskCompletion(task: Task): void {
+    handleTaskCompletion(task: Task) {
         if (this.onStatusChange) {
             this.onStatusChange({ task: task });
         }
     }
 
-    openDateDialog($event: MouseEvent, task: Task): void {
+    async openDateDialog($event: MouseEvent, task: Task) {
         $event.preventDefault();
         $event.stopPropagation();
 
-        if (this.onDateClick) {
-            this.onDateClick({ $event: $event, task: task });
+        try {
+            const result: IDialogDateTimeResult = await this.editDateTimeDialogService.showEditDateDialog(
+                $event, "Due Date", "dueDate", new Date(task.dueDate));
+
+            // Update task date via task service
+            await this.updateTaskDate(task.id, result.formattedDateTime);
+
+            // Update local task object
+            task.dueDate = result.formattedDateTime;
+
+            if (this.onTaskUpdated) {
+                this.onTaskUpdated();
+            }
+        } catch (error) {
+            console.error(`Error updating task date:`, error);
         }
     }
 
-    openTimeDialog($event: MouseEvent, task: Task): void {
+    async openTimeDialog($event: MouseEvent, task: Task) {
         $event.preventDefault();
         $event.stopPropagation();
 
-        if (this.onTimeClick) {
-            this.onTimeClick({ $event: $event, task: task });
+        try {
+            const result: IDialogDateTimeResult = await this.editDateTimeDialogService.showEditTimeDialog(
+                $event, "Due Time", "dueDate", new Date(task.dueDate));
+
+            // Update task time via task service
+            await this.updateTaskTime(task.id, result.formattedDateTime);
+
+            // Update local task object
+            task.dueDate = result.formattedDateTime;
+
+            if (this.onTaskUpdated) {
+                this.onTaskUpdated();
+            }
+        } catch (error) {
+            console.error(`Error updating task time:`, error);
         }
     }
 
-    reassignTask($event: MouseEvent, task: Task): void {
+    async reassignTask($event: MouseEvent, task: Task) {
         $event.stopPropagation();
 
-        if (this.onReassign) {
-            this.onReassign({ $event: $event, task: task });
+        try {
+            const users = await this.DispatchService.getActiveStaff();
+            const result: ISelectDialogResult = await this.selectDialogService.showSelectDialog(
+                $event,
+                users,
+                "assignTask",
+                "Reassign Task",
+                task.assignee.id
+            );
+
+            await this.reassignTaskToStaff(task.id, result.value);
+
+            if (this.onTaskUpdated) {
+                this.onTaskUpdated();
+            }
+            this.toastrService.showSuccessToast("Task reassigned successfully");
+        } catch (error) {
+            if (error === undefined) {
+                return; // Dialog closed
+            }
+
+            console.error('Error in reassignTask:', error);
+            this.toastrService.showErrorToast("Error reassigning task");
         }
+    }
+
+    // Service methods
+    private async updateTaskDate(eventId: number, date: string) {
+        return this.$http.post("Task/UpdateTaskDate" + "?eventId=" + eventId + "&date=" + date, null);
+    }
+
+    private async updateTaskTime(eventId: number, time: string) {
+        return this.$http.post("Task/UpdateTaskTime" + "?eventId=" + eventId + "&time=" + time, null);
+    }
+
+    private async reassignTaskToStaff(eventId: number, staffId: number) {
+        return this.$http.post("Task/ReassignTask" + "?eventId=" + eventId + "&staffId=" + staffId, null);
     }
 
     isTaskOverdue(task: Task): boolean {
@@ -65,11 +157,13 @@ export class TaskListItemController extends BaseController {
     }
 
     formatDate(date: string): string {
-        return this.$filter('date')(date, 'MMM d, yyyy');
+        const format = this.config?.dateFormat || 'MMM d, yyyy';
+        return this.$filter('date')(date, format);
     }
 
     formatTime(date: string): string {
-        return this.$filter('date')(date, 'h:mm a');
+        const format = this.config?.timeFormat || 'h:mm a';
+        return this.$filter('date')(date, format);
     }
 }
 
@@ -79,9 +173,8 @@ export const TaskItemComponent: angular.IComponentOptions = {
     controllerAs: 'ctrl',
     bindings: {
         task: '<',
+        config: '<',
         onStatusChange: '&',
-        onDateClick: '&',
-        onTimeClick: '&',
-        onReassign: '&'
+        onTaskUpdated: '&'
     },
 }

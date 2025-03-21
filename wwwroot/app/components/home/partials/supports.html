@@ -5,17 +5,15 @@
         <md-progress-circular md-diameter="40" md-mode="indeterminate"></md-progress-circular>
     </div>
 
-    <!-- Task List using the new component -->
+    <!-- Task List using the updated component -->
     <md-list ng-if="!ctrl.supportsLoading && ctrl.supports && ctrl.supports.length > 0">
-        <task-item-component
+        <task-item
                 ng-repeat="support in ctrl.supports | filter: box.searchBox"
                 task="ctrl.supportToTaskModel(support)"
                 config="ctrl.supportItemConfig"
                 on-status-change="ctrl.closeSupport(support)"
-                on-date-click="ctrl.selectSupportJobDetail(support)"
-                on-time-click="ctrl.selectSupportJobDetail(support)"
-                on-reassign="ctrl.lockSupport(support)">
-        </task-item-component>
+                on-task-updated="ctrl.getSupports()">
+        </task-item>
     </md-list>
 
     <!-- No Data Message -->

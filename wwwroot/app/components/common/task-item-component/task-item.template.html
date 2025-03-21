@@ -1,7 +1,9 @@
-<md-list-item class="task-item" ng-class="{'completed': ctrl.task.closed}">
+<md-list-item class="task-item" ng-class="{'completed': ctrl.task.closed, 'calendar-task-item': ctrl.config.customClass === 'calendar-task-item'}">
     <div class="priority-indicator" ng-class="ctrl.task.priority"></div>
 
+    <!-- Only the checkbox triggers task completion -->
     <md-checkbox class="md-primary"
+                 ng-if="ctrl.config.allowCompletion !== false"
                  ng-model="ctrl.task.closed"
                  ng-change="ctrl.handleTaskCompletion(ctrl.task)"
                  aria-label="Mark as completed">
@@ -10,36 +12,50 @@
     <div class="md-list-item-text task-content" flex>
         <h3 ng-class="{'completed-text': ctrl.task.closed}">
             {{ctrl.task.title}}
-            <span ng-if="ctrl.task.closed" class="status-indicator done">DONE</span>
-            <span ng-if="ctrl.isTaskOverdue(ctrl.task) && !ctrl.task.closed"
+            <span ng-if="ctrl.config.showStatusIndicators !== false && ctrl.task.closed"
+                  class="status-indicator done">DONE</span>
+            <span ng-if="ctrl.config.showStatusIndicators !== false && ctrl.isTaskOverdue(ctrl.task) && !ctrl.task.closed"
                   class="status-indicator overdue">OVERDUE</span>
-            <span ng-if="!ctrl.isTaskOverdue(ctrl.task) && !ctrl.task.closed"
+            <span ng-if="ctrl.config.showStatusIndicators !== false && !ctrl.isTaskOverdue(ctrl.task) && !ctrl.task.closed"
                   class="status-indicator todo">TODO</span>
         </h3>
 
-        <p ng-class="{'completed-text': ctrl.task.closed}">
+        <p ng-if="ctrl.config.showDescription !== false"
+           ng-class="{'completed-text': ctrl.task.closed}"
+           ng-attr-style="{{ctrl.config.maxDescriptionLength ? '-webkit-line-clamp:' + ctrl.config.maxDescriptionLength : ''}}">
             {{ctrl.task.description}}
         </p>
 
         <div class="task-meta" layout="row" layout-wrap>
-            <div class="meta-item assignee" layout="row" layout-align="start center"
-                 md-ink-ripple ng-click="ctrl.reassignTask($event, ctrl.task)">
+            <div ng-if="ctrl.config.showAssignee !== false"
+                 class="meta-item assignee"
+                 layout="row"
+                 layout-align="start center"
+                 md-ink-ripple
+                 ng-click="ctrl.reassignTask($event, ctrl.task)">
                 <md-icon md-font-set="material-symbols-outlined">person</md-icon>
                 <span>{{ctrl.task.assignee.text}}</span>
             </div>
 
-            <div class="meta-item job-type" layout="row" layout-align="start center">
+            <div ng-if="ctrl.config.showJobType !== false"
+                 class="meta-item job-type"
+                 layout="row"
+                 layout-align="start center">
                 <md-icon md-font-set="material-symbols-outlined">label</md-icon>
                 <span>{{ctrl.task.jobType.charAt(0).toUpperCase() + ctrl.task.jobType.slice(1)}}</span>
             </div>
 
-            <md-chip class="job-id-chip">{{ctrl.task.jobId}}</md-chip>
+            <md-chip ng-if="ctrl.config.showJobId !== false"
+                     class="job-id-chip">{{ctrl.task.jobId}}</md-chip>
         </div>
     </div>
 
-    <!-- Full-width chip date/time display -->
-    <div class="task-date-compact" layout="column" layout-align="center end">
-        <md-icon ng-if="ctrl.isTaskOverdue(ctrl.task)"
+    <!-- Date/time display section -->
+    <div ng-if="ctrl.config.showDateTime !== false"
+         class="task-date-compact"
+         layout="column"
+         layout-align="center end">
+        <md-icon ng-if="ctrl.config.showOverdueWarning !== false && ctrl.isTaskOverdue(ctrl.task)"
                  md-font-set="material-symbols-outlined"
                  class="warning-icon">
             warning

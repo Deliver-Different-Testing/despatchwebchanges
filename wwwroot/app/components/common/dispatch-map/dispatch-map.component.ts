@@ -19,8 +19,8 @@ class DispatchMapController extends BaseController {
     private COURIER_ICON: google.maps.Symbol | null = null;
     private PICKUP_ICON_HOVER: google.maps.Symbol | null = null;
     private DELIVERY_ICON_HOVER: google.maps.Symbol | null = null;
-    private initialMapZoom?: number;
 
+    initialMapZoom?: number;
     jobs?: IJob[] = [];
     currentJob?: IJob;
     courierPositions?: AvailableCourierPosition[] = [];
@@ -150,27 +150,6 @@ class DispatchMapController extends BaseController {
         };
     }
 
-    private _createCourierLabel(position: google.maps.LatLng, text: string): google.maps.Marker {
-        return new this.$window.google.maps.Marker({
-            position: new this.$window.google.maps.LatLng(
-                position.lat() + 0.0005,
-                position.lng()
-            ),
-            map: this.mapInstance,
-            icon: {
-                path: this.$window.google.maps.SymbolPath.CIRCLE,
-                scale: 0,
-            },
-            label: {
-                text: text,
-                color: "#000000",
-                fontWeight: "bold",
-                fontSize: "12px",
-                className: "courier-label"
-            }
-        });
-    }
-
     private _setupMarkerIcons() {
         this.PICKUP_ICON = this._createMarkerIcon("#4CAF50");
         this.DELIVERY_ICON = this._createMarkerIcon("#F44336");
@@ -222,11 +201,11 @@ class DispatchMapController extends BaseController {
 
         try {
             const coordinates = await this.getSearchCoordinates();
-            const courierData = await this.fetchCourierData(coordinates);
-            this._updateCourierMarkers(courierData);
+            const couriers: AvailableCourierPosition[]  = await this.fetchCourierData(coordinates);
+            this._updateCourierMarkers(couriers);
 
             console.log('[DispatchMapController] Successfully updated courier positions', {
-                courierCount: courierData?.length ?? 0
+                courierCount: couriers?.length ?? 0
             });
         } catch (error) {
             console.error('[DispatchMapController] Failed to fetch courier positions:', error);
@@ -443,23 +422,38 @@ class DispatchMapController extends BaseController {
     private _addCourierMarker(courier: AvailableCourierPosition) {
         const position = new this.$window.google.maps.LatLng(courier.latitude, courier.longitude);
 
-        // Create the car marker
+        // Determine flag color based on overdue jobs - using Material Design colors
+        const flagColor = courier.overDueJobs > 0 ? '#E53935' : '#43A047'; // Material Red 600 for alert, Material Green 600 for normal
+        const flagIcon = this._createFlagMarkerIcon(flagColor);
+
+        // Create the courier marker
         const marker = new this.$window.google.maps.Marker({
             position: position,
             map: this.mapInstance,
-            icon: this.COURIER_ICON,
-            title: `Courier ${courier.code}`
+            icon: flagIcon,
+            title: `Courier ${courier.code}`,
+            label: {
+                text: courier.totalJobs.toString(),
+                color: '#FFFFFF',
+                fontWeight: 'bold',
+                fontSize: '12px'
+            }
         });
 
         const courierName = courier.code || "Courier";
-        const label = this._createCourierLabel(position, courierName);
 
         marker.addListener("mouseover", () => {
+            const overdueJobsText = courier.overDueJobs > 0
+                ? `<span style="color: #E53935; font-weight: bold;">Overdue Jobs: ${courier.overDueJobs}</span><br>`
+                : '';
+
             const content = `
             <div style="padding: 8px;">
                 <strong>Courier: ${courierName}</strong><br>
-                ${courier.totalJobs ? `Total Jobs: ${courier.totalJobs}<br>` : ''}
-                ${courier.code ? `Courier Code: ${courier.code}<br>` : ''}
+                ${courier.fleetCode ? `Fleet: ${courier.fleetCode}<br>` : ''}
+                ${courier.vehicleType ? `Vehicle: ${courier.vehicleType}<br>` : ''}
+                <strong>Total Jobs: ${courier.totalJobs}</strong><br>
+                ${overdueJobsText}
             </div>
         `;
             this.tooltip!.setContent(content);
@@ -470,8 +464,17 @@ class DispatchMapController extends BaseController {
             this.tooltip!.close();
         });
 
+        marker.addListener("click", () => {
+            this.mapInstance!.setCenter(position);
+
+            // Zoom in if autoZoom is enabled
+            if (this.autoZoomEnabled) {
+                const newZoom = Math.min((this.mapInstance!.getZoom() || 12) + 2, 16);
+                this.mapInstance!.setZoom(newZoom);
+            }
+        });
+
         this.flags.push(marker);
-        this.labels.push(label);
     }
 
     private _clearJobMarkers() {
