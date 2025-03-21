@@ -5,7 +5,7 @@ import {ContextMenuDirective} from "./components/common/job-context-menu/job-con
 import {JobDetailComponent} from "./components/common/job-details/job-details.component";
 import {PodPhotoViewerComponent} from "./components/common/pod-photo-viewer/pod-photo-viewer.component";
 import {MaterialSidenavComponent} from "./components/common/side-nav/side-nav.component";
-import {HomeController} from "./components/home/home.controller";
+import HomeComponent from "./components/home/home.controller";
 import {AddNotesDialogController} from "./components/dialogs/add-notes-dialog/add-notes-dialog.controller";
 import {AddEventDialogController} from "./components/dialogs/add-event-dialog/add-event-dialog.controller";
 import {PalletDialogController} from "./components/dialogs/add-pallet-dialog/add-pallet-dialog.controller";
@@ -28,16 +28,15 @@ import {SendMessageDialogController} from "./components/dialogs/send-message-dia
 import {SelectDialogController} from "./components/dialogs/select-dialog/select-dialog.controller";
 import {MapDialogController} from "./components/dialogs/map-dialog/map-dialog.controller";
 import {NationwideLayoutService} from "./components/Nationwide/services/nationwide-layout.service";
-import {MegaMapController} from "./components/overview/mega-map/mega-map.controller";
+import MegaMapComponent from "./components/overview/mega-map/mega-map.controller";
 import {openJobsComponent} from "./components/overview/open-jobs/open-jobs.controller";
 import OverviewFiltersService from "./components/overview/services/overview-filters.service";
-import {OverviewController} from "./components/overview/overview.controller";
+import OverviewComponent from "./components/overview/overview.controller";
 import OverviewService from "./components/overview/overview.service";
 import PrebookService from "./components/prebooks/prebook.service";
 import {
     FeatureInDevelopmentDialogService
 } from "./components/dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
-import {TaskDashboardController} from "./components/task-dashboard/task-dashboard.controller";
 import TasksDashboardService from "./components/task-dashboard/tasks-dashboard.service";
 import ConfigService from "./services/config.service";
 import DispatchCoreService from "./services/dispatch-core.service";
@@ -60,8 +59,9 @@ import {EditAddressDialogService} from "./components/dialogs/edit-address-dialog
 import NationwideService from "./components/Nationwide/nationwide.service";
 import {TaskItemComponent} from "./components/common/task-item-component/task-item.component";
 import PriceBreakdownDialogService from "./components/dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
+import TaskDashboardComponent from "./components/task-dashboard/task-dashboard.controller";
 
-const app = angular.module("uDispatch", ["ui.router", "ct.ui.router.extras",
+const app = angular.module("uDispatch", ["ui.router",
     "angularResizable", "ui.sortable", "ui.bootstrap", "ui.bootstrap.pagination",
     "ui.bootstrap.contextMenu", "cfp.hotkeys", "ui.timepicker", "pickadate", "ngMap",
     "ngMapAutocomplete", "angularjs-dropdown-multiselect", "heremaps", "ngAnimate",
@@ -177,9 +177,13 @@ app.component('dfrntLoader', DfrntLoaderComponent);
 app.component("jobDetailWidget", JobDetailComponent);
 app.component("materialSidenav", MaterialSidenavComponent);
 app.component("podPhotoViewer", PodPhotoViewerComponent);
-app.component("openJobsWidget", openJobsComponent)
-app.component("dispatchMap", DispatchMapComponent)
-app.component("taskItemComponent", TaskItemComponent)
+app.component("openJobsWidget", openJobsComponent);
+app.component("dispatchMap", DispatchMapComponent);
+app.component("taskItemComponent", TaskItemComponent);
+app.component("homeComponent", HomeComponent);
+app.component("overviewComponent", OverviewComponent)
+app.component("megaMapComponent", MegaMapComponent)
+app.component("taskDashboardComponent", TaskDashboardComponent)
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);
@@ -201,12 +205,6 @@ app.controller("EditAddressDialogController", EditAddressDialogController);
 // Directives
 app.directive("contextMenu", ContextMenuDirective.factory());
 app.directive("parcelVisualization", ParcelVisualizationDirective.factory());
-
-// Controllers
-app.controller('HomeControl', HomeController);
-app.controller("megaMapController", MegaMapController);
-app.controller("deliveryOverview", OverviewController);
-app.controller("taskDashboardController", TaskDashboardController);
 
 // Services
 app.service("configService", ConfigService);

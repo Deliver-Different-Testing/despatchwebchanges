@@ -14,7 +14,7 @@ import {EditDateTimeDialogService} from "../dialogs/edit-date-time-dialog/edit-d
 import BaseController from "../base-controller";
 import { ITaskListItemConfig } from "../common/task-item-component/task-item.interfaces";
 
-export class TaskDashboardController extends BaseController {
+class TaskDashboardController extends BaseController {
     static $inject = [
         "greetingService",
         "$mdSidenav",
@@ -371,3 +371,10 @@ export class TaskDashboardController extends BaseController {
         }
     }
 }
+
+const TaskDashboardComponent: angular.IComponentOptions = {
+    template: require("./task-dashboard.template.html"),
+    controller: TaskDashboardController,
+    controllerAs: "ctrl"
+}
+export default TaskDashboardComponent;

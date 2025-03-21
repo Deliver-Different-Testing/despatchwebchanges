@@ -443,6 +443,16 @@ class JobDetailController extends BaseController {
         }
     }
 
+    async showEditDateAndTimeDialog($event: MouseEvent, job: IJob,
+                             title: string, fieldName: string, dateTime?: Date) {
+        try {
+            const result = await this.editDateTimeDialogService.showEditDateAndTimeDialog($event, title, fieldName, dateTime);
+            await this._processDateTimeUpdateResult(job, result)
+        } catch (error) {
+            this._handleError(error);
+        }
+    }
+
     private async _processDateTimeUpdateResult(job: IJob, result: IDialogDateTimeResult) {
         if (result) {
             if (job.bulkJob) {
@@ -556,6 +566,10 @@ class JobDetailController extends BaseController {
 
     async editFollowUpTime($event: MouseEvent, job: IJob) {
         await this.showEditTimeDialog($event, job, "Follow Up Time", "FollowupTime", job.followupTime);
+    }
+
+    async editPuDate($event: MouseEvent, job: IJob) {
+        await this.showEditDateAndTimeDialog($event, job, "Pick Up Time", "PuTime", job.puTime);
     }
 
     async editDueDate($event: MouseEvent, job: IJob) {
@@ -675,6 +689,10 @@ class JobDetailController extends BaseController {
         }
 
         await this.showEditDialog($event, job, phoneDetails.title, phoneDetails.placeholder, phoneDetails.fieldLabel, phoneDetails.phoneValue, phoneDetails.phoneProperty);
+    }
+
+    async editPodName($event: MouseEvent, job: IJob) {
+        await this.showEditDialog($event, job, "Edit POD Name", "POD Name...", "pod name", job.podName, "PodName");
     }
 
     async editRef($event: MouseEvent, job: IJob, isRefA: boolean) {
@@ -1120,7 +1138,7 @@ class JobDetailController extends BaseController {
 
     async showPricingBreakdown($event: MouseEvent, job: IJob) {
         try {
-            await this.priceBreakdownDialogService.openPriceBreakdownDialog($event, job.id);
+            await this.priceBreakdownDialogService.openPriceBreakdownDialog($event, job.id, job.preBook);
         } catch (error) {
             console.error("Error in displayPriceBreakdown:", error);
             this.toastrService.showErrorToast("An error occurred while fetching the price breakdown. Please try again.");

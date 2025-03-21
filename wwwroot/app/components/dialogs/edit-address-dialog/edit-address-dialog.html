@@ -119,8 +119,6 @@
                     <input id="extras" ng-model="ctrl.addressDetails.addressLine8">
                 </md-input-container>
 
-                <!-- Search Address field removed and merged with Street Address field above -->
-
                 <label>Map</label>
                 <div style="width: 100%; height: 300px; position: relative; border: 1px solid #ccc;">
                     <ng-map
@@ -128,6 +126,18 @@
                             id="map"
                             on-rightclick="ctrl.moveMarker($event)"
                             zoom="15"
+                            styles="[
+                              {
+                                'featureType': 'all',
+                                'elementType': 'labels',
+                                'stylers': [{'visibility': 'off'}]
+                              },
+                              {
+                                'featureType': 'road',
+                                'elementType': 'labels',
+                                'stylers': [{'visibility': 'on'}]
+                              }
+                            ]"
                             style="height: 100%; width: 100%;">
                         <marker draggable="true" on-dragend="ctrl.markerDragend($event)"
                                 position="{{ctrl.addressDetails.latitude}}, {{ctrl.addressDetails.longitude}}"></marker>

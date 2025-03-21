@@ -16,20 +16,39 @@
                  map-lazy-load-params="{{ctrl.googleMapsUrl}}"
                  ng-if="ctrl.googleMapsUrl"
                  style="height: 100%; width: 100%;">
-                <ng-map id="dispatchMap"
-                        center="{{ctrl.mapCenter.lat}}, {{ctrl.mapCenter.lng}}"
+                <ng-map center="{{ctrl.mapCenter.lat}}, {{ctrl.mapCenter.lng}}"
+                        id="dispatchMap"
                         map-type-id="roadmap"
                         street-view-control="false"
                         style="width: 100%; height: 100%;"
+                        styles="[
+                              {
+                                'featureType': 'all',
+                                'elementType': 'labels',
+                                'stylers': [{'visibility': 'off'}]
+                              },
+                              {
+                                'featureType': 'road',
+                                'elementType': 'labels',
+                                'stylers': [{'visibility': 'on'}]
+                              }
+                            ]"
                         zoom="{{ctrl.mapZoom}}">
+                    <traffic-layer></traffic-layer>
                 </ng-map>
             </div>
 
             <!-- Map Controls -->
             <div class="map-controls">
-                <md-button class="md-fab md-mini" ng-class="{'md-primary': ctrl.autoZoomEnabled, 'md-warn': !ctrl.autoZoomEnabled}" aria-label="Toggle Auto Zoom" ng-click="ctrl.toggleAutoZoom()">
-                    <md-tooltip md-direction="right">{{ctrl.autoZoomEnabled ? 'Auto Zoom Enabled' : 'Auto Zoom Disabled'}}</md-tooltip>
-                    <md-icon md-font-set="material-symbols-outlined">{{ctrl.autoZoomEnabled ? 'fit_screen' : 'zoom_out_map'}}</md-icon>
+                <md-button aria-label="Toggle Auto Zoom"
+                           class="md-fab md-mini"
+                           ng-class="{'md-primary': ctrl.autoZoomEnabled, 'md-warn': !ctrl.autoZoomEnabled}" ng-click="ctrl.toggleAutoZoom()">
+                    <md-tooltip md-direction="right">
+                        {{ctrl.autoZoomEnabled ? 'Auto Zoom Enabled' : 'Auto Zoom Disabled'}}
+                    </md-tooltip>
+                    <md-icon md-font-set="material-symbols-outlined">
+                        {{ctrl.autoZoomEnabled ? 'fit_screen' : 'zoom_out_map'}}
+                    </md-icon>
                 </md-button>
             </div>
         </div>

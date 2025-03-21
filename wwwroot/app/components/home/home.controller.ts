@@ -32,7 +32,7 @@ interface ResendJobsRequest {
     courierId: number;
 }
 
-export class HomeController extends BaseController {
+class HomeController extends BaseController {
     static $inject = [
         '$document',
         'greetingService',
@@ -3029,3 +3029,13 @@ export class HomeController extends BaseController {
         return baseClass;
     }
 }
+
+const HomeComponent: angular.IComponentOptions = {
+    template: require("./home.template.html"),
+    controller: HomeController,
+    controllerAs: "ctrl",
+    bindings: {
+        jobId: '<'
+    }
+}
+export default HomeComponent;

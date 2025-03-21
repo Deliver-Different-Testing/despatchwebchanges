@@ -599,7 +599,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
 
         // Format date fields
-        const dateFields: DateField[] = ["Date", "StopDate", "RestartDate", "InActiveDate", "FirstDue", "LastDone", "NextDue", "DueDate"];
+        const dateFields: DateField[] = ["Date", "StopDate", "RestartDate", "InActiveDate", "FirstDue", "LastDone", "NextDue", "DueDate", "PuTime"];
         if (dateFields.includes(field as DateField)) {
             processedValue = this.moment(value).format("YYYY-MM-DD");
             console.log("Formatted date field:", {field, originalValue, formattedValue: processedValue});
@@ -791,14 +791,31 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async addPriceBreakdown(breakdown: PriceBreakdown) {
+    async addPriceBreakdown(priceBreakdown: PriceBreakdown) {
         try {
-            const response = await this.$http.post<number>('job/AddPriceComponent', {
-                breakdown
-            });
+            const response = await this.$http.post<number>('job/AddPriceComponent', priceBreakdown);
             return response.data;
         } catch (error) {
+            console.error('Error adding price breakdown:', error);
+            throw error;
+        }
+    }
+
+    async updatePriceBreakdown(priceBreakdown: PriceBreakdown) {
+        try {
+            await this.$http.post('job/UpdatePriceComponent', priceBreakdown);
+        } catch (error) {
             console.error('Error updating price breakdown:', error);
+            throw error;
+        }
+    }
+
+    async deletePriceBreakdown(chargeId: number) {
+        try {
+            // Pass chargeId as a query parameter
+            await this.$http.post(`job/DeletePriceComponent?chargeId=${chargeId}`, null);
+        } catch (error) {
+            console.error('Error deleting price breakdown:', error);
             throw error;
         }
     }

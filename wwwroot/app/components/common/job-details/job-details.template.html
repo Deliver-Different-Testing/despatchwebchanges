@@ -64,7 +64,7 @@
                         </md-list-item>
 
                         <md-list-item>
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="Created date">calendar_today
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="Created date">add_circle
                             </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Created:</span>
@@ -73,7 +73,7 @@
                         </md-list-item>
 
                         <md-list-item md-ink-ripple ng-click="!this.job.locked && ctrl.editLogTime($event, ctrl.job)">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="Log time">schedule</md-icon>
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="Log time">timer</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Log Time:</span>
                                 <span class="timing-value">{{ctrl.job.time ? (ctrl.job.time | date:'shortTime') : 'N/A'}}</span>
@@ -87,8 +87,9 @@
                 <!-- Middle Column -->
                 <div flex="33" flex-xs="100" class="timing-column">
                     <md-list class="timing-list">
-                        <md-list-item>
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="Pickup time">access_time
+                        <md-list-item md-ink-ripple
+                                       ng-click="!this.job.locked && ctrl.editPuDate($event, ctrl.job)">
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="Pickup time">schedule
                             </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">PU Time:</span>
@@ -98,7 +99,7 @@
 
                         <md-list-item>
                             <md-icon md-font-set="material-symbols-outlined" aria-label="Dispatch status">
-                                local_shipping
+                                outgoing_mail
                             </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Dispatch:</span>
@@ -106,8 +107,9 @@
                             </div>
                         </md-list-item>
 
-                        <md-list-item>
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="POD name">sentiment_satisfied</md-icon>
+                        <md-list-item md-ink-ripple
+                                      ng-click="!ctrl.job.locked && ctrl.editPodName($event, ctrl.job)">
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="POD name">verified_user</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">POD Name:</span>
                                 <span class="timing-value">{{ctrl.job.podName || 'N/A'}}</span>
@@ -123,7 +125,7 @@
                     <md-list class="timing-list">
                         <md-list-item md-ink-ripple
                                       ng-click="!this.job.locked && ctrl.editCompletedTime($event, ctrl.job)">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="POD time">inventory_2</md-icon>
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="POD time">verified</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">POD Time:</span>
                                 <span class="timing-value">{{ctrl.job.completedTime ? (ctrl.job.completedTime | date:'shortTime') : 'N/A'}}</span>
@@ -132,7 +134,7 @@
 
                         <md-list-item md-ink-ripple
                                       ng-click="!this.job.locked && ctrl.editFollowUpTime($event, ctrl.job)">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="Follow up time">update
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="Follow up time">sync
                             </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Follow Up:</span>
@@ -187,7 +189,7 @@
                             <md-list class="contact-info">
                                 <md-list-item md-ink-ripple
                                               ng-click="!ctrl.job.locked && ctrl.editJobContact($event, ctrl.job, 'from')">
-                                    <md-icon md-font-set="material-symbols-outlined">person</md-icon>
+                                    <md-icon md-font-set="material-symbols-outlined">contacts</md-icon>
                                     <p>Contact: {{ctrl.job.fromContactName || 'N/A'}}</p>
                                 </md-list-item>
                                 <md-list-item md-ink-ripple
@@ -231,7 +233,7 @@
                             <md-list class="contact-info">
                                 <md-list-item md-ink-ripple
                                               ng-click="!ctrl.job.locked && ctrl.editJobContact($event, ctrl.job, 'to')">
-                                    <md-icon md-font-set="material-symbols-outlined">person</md-icon>
+                                    <md-icon md-font-set="material-symbols-outlined">contacts</md-icon>
                                     <p>Contact: {{ctrl.job.deliverToContact || 'N/A'}}</p>
                                 </md-list-item>
                                 <md-list-item md-ink-ripple
@@ -483,7 +485,7 @@
                             <md-list-item class="info-row"
                                           ng-click="!ctrl.job.locked && jdSvc.leaveClick($event, ctrl.job)">
                                 <md-icon md-font-set="material-symbols-outlined" aria-label="Delivery instructions">
-                                    local_shipping
+                                    phone_callback
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Leave Parcel:</span>
@@ -501,9 +503,9 @@
                     <div class="info-section">
                         <md-subheader class="section-header">
                             <md-icon md-font-set="material-symbols-outlined" aria-label="Additional details">
-                                info
+                                local_shipping
                             </md-icon>
-                            <span>Additional Details</span>
+                            <span>Delivery Details</span>
                         </md-subheader>
 
                         <md-divider></md-divider>
@@ -511,7 +513,7 @@
                         <md-list>
                             <md-list-item class="info-row">
                                 <md-icon md-font-set="material-symbols-outlined" aria-label="dispatcher">
-                                    supervisor_account
+                                    manage_accounts
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Dispatcher Name:</span>
@@ -519,18 +521,16 @@
                                 </div>
                             </md-list-item>
 
-                            <md-list-item class="info-row">
-                                <md-icon md-font-set="material-symbols-outlined" aria-label="courier name">
-                                    local_shipping
-                                </md-icon>
+                            <md-list-item class="info-row" md-ink-ripple ng-click="ctrl.courierClick($event, ctrl.job)">
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Courier">person_pin</md-icon>
                                 <div class="info-detail">
-                                    <span class="label">Courier Name:</span>
-                                    <span class="value">{{ctrl.job.courierData.courierName || 'N/A'}}</span>
+                                    <span class="label">Courier:</span>
+                                    <span class="value">{{ctrl.job.courierData.courierName}}</span>
                                 </div>
                             </md-list-item>
 
                             <md-list-item class="info-row">
-                                <md-icon md-font-set="material-symbols-outlined" aria-label="courier phone">phone
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="courier phone">smartphone
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Courier Mobile:</span>
@@ -559,7 +559,7 @@
                     <!-- Client Information -->
                     <section class="info-section client-section">
                         <md-subheader class="section-header">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="Client information">business
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="Client information">account_box
                             </md-icon>
                             <span>Client Information</span>
                         </md-subheader>
@@ -568,7 +568,7 @@
 
                         <md-list>
                             <md-list-item class="info-row" md-ink-ripple ng-click="ctrl.clientClick($event, ctrl.job)">
-                                <md-icon md-font-set="material-symbols-outlined" aria-label="Company">apartment
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Company">account_circle
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Client Name:</span>
@@ -580,7 +580,7 @@
                                 <md-icon md-font-set="material-symbols-outlined" aria-label="Account number">tag
                                 </md-icon>
                                 <div class="info-detail">
-                                    <span class="label">Account #:</span>
+                                    <span class="label">Account:</span>
                                     <span class="value">{{ctrl.job.client || 'N/A'}}</span>
                                 </div>
                             </md-list-item>
@@ -610,17 +610,17 @@
 
                             <md-list-item class="info-row" ng-click="ctrl.contactClick($event, ctrl.job)"
                                           ng-if="!ctrl.job.bulkJob">
-                                <md-icon md-font-set="material-symbols-outlined" aria-label="Contact name">badge
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Contact name">person_add
                                 </md-icon>
                                 <div class="info-detail">
-                                    <span class="label">Client Name:</span>
-                                    <span class="value">{{ctrl.job.clientName || 'N/A'}}</span>
+                                    <span class="label">Name:</span>
+                                    <span class="value">{{ctrl.job.fromContactName || 'N/A'}}</span>
                                 </div>
                             </md-list-item>
 
                             <md-list-item class="info-row" md-ink-ripple
                                           ng-click="!ctrl.job.locked && ctrl.editJobContactPhone($event, ctrl.job, 'from')">
-                                <md-icon md-font-set="material-symbols-outlined" aria-label="Phone number">phone
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Phone number">phone_callback
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Phone:</span>
@@ -655,7 +655,7 @@
 
                             <md-list-item class="info-row" md-ink-ripple
                                           ng-click="!ctrl.job.locked && ctrl.jobTypeClick($event, ctrl.job)">
-                                <md-icon md-font-set="material-symbols-outlined" aria-label="Job type">local_shipping
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Job type">category
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Job Type:</span>
@@ -666,7 +666,7 @@
                             <md-list-item class="info-row" md-ink-ripple
                                           ng-click="!ctrl.job.locked && ctrl.sizeClick($event, ctrl.job)">
                                 <md-icon md-font-set="material-symbols-outlined" aria-label="Vehicle size">
-                                    directions_car
+                                    local_shipping
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Size:</span>
@@ -676,7 +676,7 @@
 
                             <md-list-item class="info-row" md-ink-ripple
                                           ng-click="ctrl.editRef($event, ctrl.job, true)">
-                                <md-icon md-font-set="material-symbols-outlined" aria-label="Reference A">tag</md-icon>
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Reference A">bookmark</md-icon>
                                 <div class="info-detail">
                                     <span class="label">Ref A:</span>
                                     <span class="value">{{ctrl.job.refA || '-'}}</span>
@@ -685,7 +685,7 @@
 
                             <md-list-item class="info-row" md-ink-ripple
                                           ng-click="ctrl.editRef($event, ctrl.job, false)">
-                                <md-icon md-font-set="material-symbols-outlined" aria-label="Reference B">tag</md-icon>
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Reference B">label</md-icon>
                                 <div class="info-detail">
                                     <span class="label">Ref B:</span>
                                     <span class="value">{{ctrl.job.refB || '-'}}</span>
@@ -693,19 +693,11 @@
                             </md-list-item>
 
                             <md-list-item class="info-row" md-ink-ripple ng-click="ctrl.editOurRef($event, ctrl.job)">
-                                <md-icon md-font-set="material-symbols-outlined" aria-label="Our reference">numbers
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Our reference">palette
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Our Ref:</span>
                                     <span class="value">{{ctrl.job.ourRef}}</span>
-                                </div>
-                            </md-list-item>
-
-                            <md-list-item class="info-row" md-ink-ripple ng-click="ctrl.courierClick($event, ctrl.job)">
-                                <md-icon md-font-set="material-symbols-outlined" aria-label="Courier">person</md-icon>
-                                <div class="info-detail">
-                                    <span class="label">Courier:</span>
-                                    <span class="value">{{ctrl.job.courier}}</span>
                                 </div>
                             </md-list-item>
                         </md-list>

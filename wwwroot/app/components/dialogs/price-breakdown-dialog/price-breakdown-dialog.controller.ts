@@ -10,9 +10,15 @@ export class PriceBreakdownDialogController extends BaseController {
     isNew: boolean = false;
     priceBreakdownForm: any;
 
+    get totalAmount(): number {
+        if (!this.priceBreakdown || this.priceBreakdown.length === 0) {
+            return 0;
+        }
+        return this.priceBreakdown.reduce((sum, item) => sum + (item.amount || 0), 0);
+    }
+
     static $inject = [
         '$mdDialog',
-        '$http',
         'toastrService',
         'DispatchData',
         'priceBreakdown',
@@ -22,7 +28,6 @@ export class PriceBreakdownDialogController extends BaseController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private $http: angular.IHttpService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
         public priceBreakdown: PriceBreakdown[],
@@ -30,6 +35,10 @@ export class PriceBreakdownDialogController extends BaseController {
         public isPrebook: boolean
     ) {
         super();
+
+        console.log('PriceBreakdownDialogController: Service instantiated');
+        console.log('PriceBreakdownDialogController: isPrebook', isPrebook);
+        console.log('PriceBreakdownDialogController: jobId', jobId);
 
         // Initialize if not provided
         if (!this.priceBreakdown) {
@@ -44,7 +53,6 @@ export class PriceBreakdownDialogController extends BaseController {
     }
 
     addNewItem() {
-        // Create a new item based on whether this is a prebook or regular job
         this.selectedPriceBreakdown = {
             chargeId: 0,
             name: '',
@@ -75,58 +83,67 @@ export class PriceBreakdownDialogController extends BaseController {
 
         try {
             if (this.isNew) {
-                await this.addPriceBreakdown(this.selectedPriceBreakdown);
-                this.toastrService.showSuccessToast('Price breakdown added successfully');
-                // Add to the local array
-                this.priceBreakdown.push(this.selectedPriceBreakdown);
+                // Make sure we're passing the correct data format
+                const newBreakdown: PriceBreakdown = {
+                    chargeId: 0,
+                    name: this.selectedPriceBreakdown.name,
+                    amount: this.selectedPriceBreakdown.amount,
+                    jobId: this.isPrebook ? undefined : this.jobId,
+                    prebookJobId: this.isPrebook ? this.jobId : undefined
+                };
+
+                const chargeId = await this.addPriceBreakdown(newBreakdown);
+                if (chargeId) {
+                    newBreakdown.chargeId = chargeId;
+                    this.priceBreakdown.push(newBreakdown);
+                    this.toastrService.showSuccessToast('Price breakdown added successfully');
+                }
             } else {
                 await this.updatePriceBreakdown(this.selectedPriceBreakdown);
-                this.toastrService.showSuccessToast('Price breakdown updated successfully');
+
                 // Update in the local array
                 const index = this.priceBreakdown.findIndex(pb => pb.chargeId === this.selectedPriceBreakdown?.chargeId);
                 if (index !== -1) {
-                    this.priceBreakdown[index] = this.selectedPriceBreakdown;
+                    this.priceBreakdown[index] = angular.copy(this.selectedPriceBreakdown);
                 }
+                this.toastrService.showSuccessToast('Price breakdown updated successfully');
             }
 
             this.cancelEdit();
         } catch (error) {
             console.error('PriceBreakdownDialogController: Error in save', error);
-            this.toastrService.showErrorToast();
+            this.toastrService.showErrorToast('An error occurred while saving the price breakdown');
         }
     }
 
     async deleteItem(item: PriceBreakdown) {
         if (confirm('Are you sure you want to delete this price breakdown?')) {
             try {
-                await this.deletePriceBreakdown(item);
-                this.toastrService.showSuccessToast('Price breakdown deleted successfully');
+                await this.deletePriceBreakdown(item.chargeId);
+
                 // Remove from the local array
                 const index = this.priceBreakdown.findIndex(pb => pb.chargeId === item.chargeId);
                 if (index !== -1) {
                     this.priceBreakdown.splice(index, 1);
                 }
+                this.toastrService.showSuccessToast('Price breakdown deleted successfully');
             } catch (error) {
                 console.error('PriceBreakdownDialogController: Error in delete', error);
-                this.toastrService.showErrorToast();
+                this.toastrService.showErrorToast('An error occurred while deleting the price breakdown');
             }
         }
     }
 
     private async updatePriceBreakdown(priceBreakdown: PriceBreakdown) {
-        await this.$http.post('pricing/UpdatePriceBreakdown', priceBreakdown);
+        await this.DispatchData.updatePriceBreakdown(priceBreakdown);
     }
 
     private async addPriceBreakdown(priceBreakdown: PriceBreakdown) {
-        const result = await this.DispatchData.addPriceBreakdown(priceBreakdown);
-        if (!result) return;
-
-        priceBreakdown.chargeId = result;
+        return await this.DispatchData.addPriceBreakdown(priceBreakdown);
     }
 
-
-    private async deletePriceBreakdown(priceBreakdown: PriceBreakdown) {
-        await this.$http.post('pricing/DeletePriceBreakdown', {chargeId: priceBreakdown.chargeId});
+    private async deletePriceBreakdown(chargeId: number) {
+        await this.DispatchData.deletePriceBreakdown(chargeId);
     }
 
     cancel(): void {

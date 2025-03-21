@@ -1,17 +1,21 @@
-import app from "../app";
-import angular from "angular";
 import ToastrService from "./ToastrService";
 import OpenJobOptions from "../interfaces/open-job-options.interface";
 
-class OpenJobDispatchService {
+class OpenJobDispatchService implements angular.IServiceProvider {
     static $inject = ["$window", "$state", "toastrService"];
 
-    constructor(private $window: angular.IWindowService,
+    constructor(
+        private $window: angular.IWindowService,
                 private $state: angular.ui.IStateService,
-                private toastrService: ToastrService) {
+                private toastrService: ToastrService
+    ) {
     }
 
-    public openJobDetail(jobId: string | number, options: OpenJobOptions = {}): boolean {
+    $get() {
+        return this;
+    }
+
+    openJobDetail(jobId: string | number, options: OpenJobOptions = {}): boolean {
         const {
             stateName = "home",
             target = "_blank"

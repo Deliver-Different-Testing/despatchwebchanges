@@ -267,26 +267,6 @@
                                         </md-menu>
                                     </div>
 
-                                    <!-- Map Controls -->
-                                    <div class="row-overflow" layout="row" ng-if="box.name === 'map'">
-                                        <div class="switch-container">
-                                            <md-switch class="md-primary material-toolbar-switch"
-                                                       ng-if="box.name === 'driverLocations'" ng-model="ctrl.areaListCity">
-                                                City
-                                            </md-switch>
-                                            <md-switch class="md-primary material-toolbar-switch"
-                                                       ng-change="ctrl.getAvailableCourierLocation()" ng-if="box.name === 'map'"
-                                                       ng-model="ctrl.allCouriers.display">
-                                                All
-                                            </md-switch>
-                                            <md-switch class="md-primary material-toolbar-switch"
-                                                       ng-change="ctrl.getAvailableCourierLocation()" ng-if="box.name === 'map'"
-                                                       ng-model="ctrl.allCouriers.includeUA">
-                                                Include UA
-                                            </md-switch>
-                                        </div>
-                                    </div>
-
                                     <div class="row-overflow" id="box-{{box.name}}-{{$index}}" layout="row"
                                          ng-if="ctrl.boxes[box.name].showSearch">
                                         <md-button aria-label="open search" class="md-icon-button"

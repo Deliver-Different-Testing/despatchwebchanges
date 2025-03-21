@@ -1702,22 +1702,73 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             PrebookJobId = viewModel.PrebookJobId
         };
 
+        var note = $"Added price component: {viewModel.Name} for ${viewModel.Amount:F2}";        var isPrebook = viewModel.PrebookJobId.HasValue;
+        if(isPrebook)
+            await SetPrebookJobAsManuallyPriceAsync(viewModel.PrebookJobId.Value, note);
+        else if (viewModel.JobId != null) await SetJobAsManuallyPriceAsync(viewModel.JobId.Value, note);
+
         await Context.PricingBreakdowns.AddAsync(item);
         await Context.SaveChangesAsync();
 
-        return item.JobId ?? item.PrebookJobId.Value;
+        return item.PricingBreakdownId;
     }
 
-   public async Task DeleteJobPriceBreakdownAsync(int chargeId, int jobId)
+    public async Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel)
+    {
+        var breakdown = Context.PricingBreakdowns.FirstOrDefault(p => p.PricingBreakdownId == viewModel.ChargeId);
+        if(breakdown == null) return;
+
+        breakdown.ChargeAmount = viewModel.Amount;
+        breakdown.ChargeName = viewModel.Name;
+
+        var note = $"Updated price breakdown: {viewModel.Name} charge amount changed to {viewModel.Amount:C}";
+
+                var isPrebook = breakdown.PrebookJobId.HasValue;
+               if(isPrebook)
+                   await SetPrebookJobAsManuallyPriceAsync(breakdown.PrebookJobId.Value, note);
+               else if (breakdown.JobId != null) await SetJobAsManuallyPriceAsync(breakdown.JobId.Value, note);
+
+               Context.Update(breakdown);
+        await Context.SaveChangesAsync();
+    }
+
+   public async Task DeleteJobPriceBreakdownAsync(int chargeId)
    {
        var breakdown = await Context.PricingBreakdowns
-           .FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId && p.JobId == jobId);
+           .FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
+        if(breakdown == null) return;
 
-       if (breakdown != null)
-       {
-           Context.PricingBreakdowns.Remove(breakdown);
-           await Context.SaveChangesAsync();
-       }
+        var note = $"Deleted {chargeId} - {breakdown.ChargeName} - {breakdown.ChargeAmount}";
+
+        var isPrebook = breakdown.PrebookJobId.HasValue;
+       if(isPrebook)
+           await SetPrebookJobAsManuallyPriceAsync(breakdown.PrebookJobId.Value, note);
+       else if (breakdown.JobId != null) await SetJobAsManuallyPriceAsync(breakdown.JobId.Value, note);
+
+       Context.PricingBreakdowns.Remove(breakdown);
+       await Context.SaveChangesAsync();
+   }
+
+   private async Task SetJobAsManuallyPriceAsync(int jobId, string note)
+   {
+       var job = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
+       job.RatedManually = true;
+
+       // Add note of pricing changes
+       job.InternalNotes += $"\n{note}";
+
+       Context.Update(job);
+   }
+
+   private async Task SetPrebookJobAsManuallyPriceAsync(int prebookJobId, string note)
+   {
+       var job = await Context.TucJobBookings.FirstOrDefaultAsync(j => j.UcbkId == prebookJobId);
+       job.RatedManually = true;
+
+       // Add note of pricing changes
+       job.InternalNotes += $"\n{note}";
+
+       Context.Update(job);
    }
 
     /// <inheritdoc />
@@ -2778,6 +2829,12 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             case "Locked":
                 job.UcjbLocked = bool.Parse(value);
                 break;
+            case "PuTime":
+                job.PickUpTime = DateTime.Parse(value);
+                break;
+            case "PodName":
+                job.UcjbPodname = value[..Math.Min(value.Length, 100)];
+                break;
         }
 
         if (!string.IsNullOrEmpty(updateNote))
@@ -3199,6 +3256,12 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             case "Locked":
                 archive.Job.UcjbLocked = int.Parse(value);
                 break;
+            case "PuTime":
+                archive.Job.PickUpTime = DateTime.Parse(value);
+                break;
+            case "PodName":
+                archive.Job.UcjbPodname = value[..Math.Min(value.Length, 100)];
+            break;
         }
 
         if (!string.IsNullOrEmpty(updateNote)) await AddNoteAsync(jobId, updateNote, userName);

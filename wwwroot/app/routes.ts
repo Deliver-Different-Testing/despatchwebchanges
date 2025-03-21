@@ -1,12 +1,10 @@
 import app from "./app";
-import {HomeController} from "./components/home/home.controller";
-import {OverviewController} from "./components/overview/overview.controller";
-import {MegaMapController} from "./components/overview/mega-map/mega-map.controller";
-import {TaskDashboardController} from "./components/task-dashboard/task-dashboard.controller";
 
 class RouterConfig {
-    constructor(private $urlRouterProvider: angular.ui.IUrlRouterProvider,
-                private $stateProvider: angular.ui.IStateProvider) {
+    constructor(
+        private $urlRouterProvider: angular.ui.IUrlRouterProvider,
+        private $stateProvider: angular.ui.IStateProvider
+    ) {
         this.configureRoutes();
     }
 
@@ -27,9 +25,7 @@ class RouterConfig {
     private configureHomeState(): this {
         this.$stateProvider.state("home", {
             url: "/?jobId",
-            template: require("./components/home/home.template.html"),
-            controller: HomeController,
-            controllerAs: "ctrl",
+            component: "homeComponent",
             params: {
                 jobId: {
                     value: null,
@@ -73,10 +69,7 @@ class RouterConfig {
     private configureOverviewState(): this {
         this.$stateProvider.state("overview", {
             url: "/overview",
-            template: require("./components/overview/overview.template.html"),
-            controller: OverviewController,
-            controllerAs: "ctrl",
-            reloadOnSearch: false
+            component: "overviewComponent",
         });
         return this;
     }
@@ -84,10 +77,7 @@ class RouterConfig {
     private configureMegaMapState(): this {
         this.$stateProvider.state("megaMap", {
             url: "/megaMap",
-            template: require("./components/overview/mega-map/mega-map.template.html"),
-            controller: MegaMapController,
-            controllerAs: "ctrl",
-            reloadOnSearch: false
+            component: "megaMapComponent",
         });
         return this;
     }
@@ -95,16 +85,12 @@ class RouterConfig {
     private configureTaskDashboardState(): this {
         this.$stateProvider.state("taskDashboard", {
             url: "/taskDashboard",
-            template: require("./components/task-dashboard/task-dashboard.template.html"),
-            controller: TaskDashboardController,
-            controllerAs: "ctrl",
-            reloadOnSearch: false
+            component: "taskDashboardComponent",
         });
         return this;
     }
 }
 
-// Register the configuration
 app.config(["$urlRouterProvider", "$stateProvider",
     ($urlRouterProvider: angular.ui.IUrlRouterProvider,
      $stateProvider: angular.ui.IStateProvider) => {
