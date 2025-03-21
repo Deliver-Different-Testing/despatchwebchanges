@@ -138,15 +138,15 @@ class DispatchMapController extends BaseController {
         };
     }
 
-    private _createFlagCarMarkerIcon(color: string): google.maps.Symbol {
+    private _createFlagMarkerIcon(color: string): google.maps.Symbol {
         return {
-            path: 'M2,11 L7,6 L7,2 L14,2 L19,7 L14,12 L7,12 L2,17 L2,11 Z M7,7 L12,7 L12,5 L7,5 L7,7 Z M13,6.5 C13,5.67 13.67,5 14.5,5 C15.33,5 16,5.67 16,6.5 C16,7.33 15.33,8 14.5,8 C13.67,8 13,7.33 13,6.5 Z',
+            path: 'M2,2 L2,24 L6,24 L6,20 L6,12 L20,12 L16,7 L20,2 Z',
             fillColor: color,
-            fillOpacity: 1,
-            strokeWeight: 1.5,
+            fillOpacity: 0.9,
+            strokeWeight: 2,
             strokeColor: '#FFFFFF',
-            scale: 1.5,
-            anchor: new this.$window.google.maps.Point(10, 10)
+            scale: 1.8,
+            anchor: new this.$window.google.maps.Point(2, 24)
         };
     }
 
@@ -174,7 +174,7 @@ class DispatchMapController extends BaseController {
     private _setupMarkerIcons() {
         this.PICKUP_ICON = this._createMarkerIcon("#4CAF50");
         this.DELIVERY_ICON = this._createMarkerIcon("#F44336");
-        this.COURIER_ICON = this._createFlagCarMarkerIcon("#3EAFC2");
+        this.COURIER_ICON = this._createFlagMarkerIcon("#1E88E5");
         this.PICKUP_ICON_HOVER = this._createMarkerIcon("#4CAF50", true);
         this.DELIVERY_ICON_HOVER = this._createMarkerIcon("#F44336", true);
     }
@@ -456,12 +456,12 @@ class DispatchMapController extends BaseController {
 
         marker.addListener("mouseover", () => {
             const content = `
-                <div style="padding: 8px;">
-                    <strong>Courier: ${courierName}</strong><br>
-                    ${courier.totalJobs ? `Total Jobs: ${courier.totalJobs}<br>` : ''}
-                    ${courier.code ? `Courier Code: ${courier.code}<br>` : ''}
-                </div>
-            `;
+            <div style="padding: 8px;">
+                <strong>Courier: ${courierName}</strong><br>
+                ${courier.totalJobs ? `Total Jobs: ${courier.totalJobs}<br>` : ''}
+                ${courier.code ? `Courier Code: ${courier.code}<br>` : ''}
+            </div>
+        `;
             this.tooltip!.setContent(content);
             this.tooltip!.open(this.mapInstance, marker);
         });
@@ -470,7 +470,7 @@ class DispatchMapController extends BaseController {
             this.tooltip!.close();
         });
 
-        this.markers.push(marker);
+        this.flags.push(marker);
         this.labels.push(label);
     }
 

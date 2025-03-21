@@ -1,4 +1,3 @@
-import app from "../../../app";
 import ToastrService from "../../../services/ToastrService";
 import OverviewService from "../overview.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
@@ -6,9 +5,9 @@ import ConfigService from "../../../services/config.service";
 import {Coordinates, MegaMapResponse} from "../overview.interfaces";
 import {MapPoint} from "./mega-map.interfaces";
 import {AssignedFlight} from "../../../interfaces/job.interface";
-import {bindAllMethods} from "../../../bindAllMethods";
+import BaseController from "../../base-controller";
 
-export class MegaMapController implements angular.IController {
+class MegaMapController extends BaseController {
     static $inject = [
         "toastrService",
         "NgMap",
@@ -41,6 +40,8 @@ export class MegaMapController implements angular.IController {
         private configService: ConfigService,
         private $window: angular.IWindowService
     ) {
+        super();
+
         this.isUsCustomer = appConfig.US_Customer;
 
         this.jobs = [];
@@ -57,7 +58,6 @@ export class MegaMapController implements angular.IController {
         this.isLoading = false;
         this.googleMapsUrl = null;
 
-        bindAllMethods(this);
         this.initializeMap();
     }
 
@@ -499,16 +499,11 @@ export class MegaMapController implements angular.IController {
     `;
     }
 
-
     formatDateTime(date: number | string | Date | VarDate) {
         if (!date) return "Not scheduled";
         return new Date(date.toString()).toLocaleString();
     }
 
-    /**
-     * Shows info for a map point and pans to its location
-     * @param {Event} $event - The NgMap event object
-     */
     showPointInfo($event: MouseEvent) {
         const element = $event.target as HTMLElement || $event.srcElement as HTMLElement;
         if(element == null) return;
@@ -562,3 +557,10 @@ export class MegaMapController implements angular.IController {
         }
     }
 }
+
+const MegaMapComponent: angular.IComponentOptions = {
+    template: require("./mega-map.template.html"),
+    controller: MegaMapController,
+    controllerAs: "ctrl"
+}
+export default MegaMapComponent;

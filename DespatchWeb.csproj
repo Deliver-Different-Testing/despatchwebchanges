@@ -219,6 +219,8 @@
     <_ContentIncludedByDefault Remove="wwwroot\app\components\Nationwide\tpls\map.tpl" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\common\dispatch-map\services\marker.factory.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\home\services\job-table.service.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\ui-router\angular-ui-router.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\ui-router\ct-ui-router-extras.min.js" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />

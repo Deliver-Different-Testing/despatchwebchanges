@@ -7,7 +7,7 @@ import {OverviewTableChildJob, OverviewTableParentJob, Region, Speed} from "./ov
 import "./overview.styles.less";
 import BaseController from "../base-controller";
 
-export class OverviewController extends BaseController {
+class OverviewController extends BaseController {
     static $inject = [
         "$mdDialog",
         "$mdSidenav",
@@ -499,3 +499,10 @@ export class OverviewController extends BaseController {
         }
     }
 }
+
+const OverviewComponent: angular.IComponentOptions = {
+    template: require("./overview.template.html"),
+    controller: OverviewController,
+    controllerAs: "ctrl",
+};
+export default OverviewComponent;

@@ -1,9 +1,8 @@
-import app from "../../../app";
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import "./side-nav.styles.less";
-import {bindAllMethods} from "../../../bindAllMethods";
+import BaseController from "../../base-controller";
 
-class MaterialSidenavComponentController implements angular.IController {
+class MaterialSidenavComponentController extends BaseController {
     static $inject = ["$state", "$mdSidenav", "$timeout", "APP_CONFIG"];
 
     readonly isUsCustomer: boolean;
@@ -27,7 +26,7 @@ class MaterialSidenavComponentController implements angular.IController {
         private $timeout: angular.ITimeoutService,
         APP_CONFIG: AppConfig
     ) {
-        bindAllMethods(this);
+        super();
         this.isUsCustomer = APP_CONFIG.US_Customer;
         this.userName = FirstName;
         this.currentYear = new Date().getFullYear();

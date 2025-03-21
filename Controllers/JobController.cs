@@ -224,22 +224,58 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddPriceComponent([FromBody] ChargeViewModel viewModel)
+    public async Task<IActionResult> AddPriceComponent([FromBody] ChargeViewModel breakdown)
     {
         try
         {
             Log.Information("Adding price breakdown for job {JobId}",
-                viewModel.JobId ?? viewModel.PrebookJobId);
+                breakdown.JobId ?? breakdown.PrebookJobId);
 
-            var chargeId = await jobRepository.AddJobPriceBreakdownAsync(viewModel);
+            var chargeId = await jobRepository.AddJobPriceBreakdownAsync(breakdown);
            return Json(chargeId);
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error adding price breakdown for job {JobId}", viewModel.JobId);
+            Log.Error(ex, "Error adding price breakdown for job {JobId}", breakdown.JobId);
             return StatusCode(500, "An error occurred while adding the pricing breakdown");
         }
     }
+
+    [HttpPost]
+    public async Task<IActionResult> UpdatePriceComponent([FromBody] ChargeViewModel breakdown)
+    {
+          try
+          {
+              Log.Information("Updating price breakdown for job {JobId}",
+                  breakdown.JobId ?? breakdown.PrebookJobId);
+
+              await jobRepository.UpdateJobPriceBreakdownAsync(breakdown);
+              return Ok();
+          }
+          catch (Exception ex)
+          {
+              Log.Error(ex, "Error updating price breakdown for job {JobId}", breakdown.JobId);
+              return StatusCode(500, "An error occurred while updating the pricing breakdown");
+          }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> DeletePriceComponent(int chargeId)
+    {
+        try
+        {
+            Log.Information("Deleting price breakdown for charge {chargeId}", chargeId);
+
+            await jobRepository.DeleteJobPriceBreakdownAsync(chargeId);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error delting price breakdown for charge {chargeId}", chargeId);
+            return StatusCode(500, "An error occurred while adding the deleting breakdown");
+        }
+    }
+
 
     public async Task<IActionResult> SendPrebookJob(int jobId)
     {
