@@ -24,4 +24,5 @@ export interface TaskTableFiltersRequest {
 
 export interface ExtendedTask extends Task {
     dueTimeStr?: string;
+    _supportData?: any;
 }

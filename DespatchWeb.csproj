@@ -279,7 +279,6 @@
   <ItemGroup>
     <TypeScriptCompile Include="wwwroot\app\components\base-controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\dfrnt-loader\dfrnt-loader.component.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\common\dispatch-map\dispatch-map.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-context-menu\job-context-menu.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-context-menu\job-context-menu.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.interfaces.ts" />

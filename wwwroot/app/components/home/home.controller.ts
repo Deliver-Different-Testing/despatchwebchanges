@@ -45,7 +45,6 @@ class HomeController extends BaseController {
         'DispatchData',
         'uCSData',
         'dispatchJobService',
-        'hotkeys',
         'APP_CONFIG',
         '$mdSidenav',
         'AppPages',
@@ -172,7 +171,6 @@ class HomeController extends BaseController {
         private DispatchData: DispatchCoreService,
         private uCSData: any,
         private dispatchJobService: DispatchExecutorService,
-        private hotkeys: any,
         private APP_CONFIG: AppConfig,
         private $mdSidenav: angular.material.ISidenavService,
         private AppPages: any,
@@ -1033,13 +1031,13 @@ class HomeController extends BaseController {
         }
     }
 
-    private _validateClearList(clearList: AreaClearList): void {
+    private _validateClearList(clearList: AreaClearList) {
         if (!clearList) {
             throw new Error("Selected clear list is null or undefined");
         }
     }
 
-    private _updateUIElements(): void {
+    private _updateUIElements() {
         const areaGroupButtons = angular.element(this.DOM_SELECTORS.areaGroup);
         areaGroupButtons.removeClass("topBarActive");
     }
@@ -1073,7 +1071,7 @@ class HomeController extends BaseController {
         }
     }
 
-    private _handleClearListError(error: unknown): void {
+    private _handleClearListError(error: unknown) {
         console.error("Clear list processing error:", error);
         this.jobList = [];
     }
@@ -1309,7 +1307,7 @@ class HomeController extends BaseController {
         ($event.target as HTMLInputElement)?.select();
     }
 
-    lateOperation(minsAway: Date, job: IJob, obj: any, isPickup: boolean) {
+    async lateOperation(minsAway: Date, job: IJob, obj: any, isPickup: boolean) {
         const operationType = isPickup ? "pickup" : "delivery";
         const currentValue = isPickup ? job.lp : job.ld;
         const lateType = isPickup ? 1 : 2;
@@ -1318,13 +1316,12 @@ class HomeController extends BaseController {
         console.log(`Param minsAway = ${minsAway}`);
         console.log(obj);
 
-        return this.lateCall(minsAway.getTime(), lateType, job, true)
-            .then(() => {
-                console.log(`Late ${operationType} call completed successfully`);
-            })
-            .catch((error: any) => {
-                console.error(`Error in late ${operationType} call:`, error);
-            });
+        try {
+            await this.lateCall(minsAway.getTime(), lateType, job, true);
+            console.log(`Late ${operationType} call completed successfully`);
+        } catch (error) {
+            console.error(`Error in late ${operationType} call:`, error);
+        }
     }
 
     latePickup(minsAway: Date, job: IJob, obj: any) {
@@ -1667,7 +1664,7 @@ class HomeController extends BaseController {
             .cancel("No");
     }
 
-    private _collectJobIds(request: ResendJobsRequest): void {
+    private _collectJobIds(request: ResendJobsRequest) {
         this.jobsCurrentList?.forEach((job: IJob) => {
             request.jobs.push(job.id);
         });
@@ -1918,12 +1915,6 @@ class HomeController extends BaseController {
 
         await this.updateCourierData(courierId, courierName);
         this.mapJobList = this.jobsCurrentList || [];
-    }
-
-    private _isValidCourier(courier: CourierData | null): courier is CourierData {
-        return courier != null
-            && typeof courier.courierId === 'number'
-            && courier.courierName.length > 0;
     }
 
     async searchCourier() {
@@ -2386,7 +2377,7 @@ class HomeController extends BaseController {
         }
     }
 
-    changeJobCutoffDate(days: number): void {
+   async changeJobCutoffDate(days: number) {
         if (!this.jobCutoffDate) {
             this.jobCutoffDate = new Date();
         }
@@ -2395,10 +2386,10 @@ class HomeController extends BaseController {
         newDate.setDate(newDate.getDate() + days);
 
         this.jobCutoffDate = newDate;
-        this.applyJobCutoffDate();
+        await this.applyJobCutoffDate();
     }
 
-    resetJobCutoffDate(): void {
+   async resetJobCutoffDate() {
         this.jobCutoffDate = new Date();
 
         if (Modernizr.localstorage) {
@@ -2407,11 +2398,11 @@ class HomeController extends BaseController {
 
         this.queryParams.dateCutoff = this.jobCutoffDate;
 
-        this.getJobList();
+        await this.getJobList();
         this.toastrService.showSuccessToast("Date filter set to today");
     }
 
-    applyJobCutoffDate(): void {
+    async applyJobCutoffDate() {
         if (!this.jobCutoffDate) {
             return;
         }
@@ -2421,40 +2412,7 @@ class HomeController extends BaseController {
         }
 
         this.queryParams.dateCutoff = this.jobCutoffDate;
-        this.getJobList();
-    }
-
-    async jobPageChanged(page: number, limit: number) {
         await this.getJobList();
-    }
-
-    async closeSupport(support: SupportViewModel) {
-        if (!support.eventId) {
-            throw new Error('Cannot close support with null eventId');
-        }
-
-        try {
-            await this.DispatchData.closeSupport(support.eventId, ContactID);
-            await this.getSupports();
-            this.currentSupport = null;
-            this.toastrService.showSuccessToast('Support ticket closed successfully');
-        } catch (error) {
-            this._handleSupportClosureError(error, support);
-        }
-    }
-
-    private _handleSupportClosureError(error: any, support: SupportViewModel) {
-        const errorMessage = error instanceof Error
-            ? error.message
-            : 'An unexpected error occurred while closing support';
-
-        console.error('Support closure failed:', {
-            error: errorMessage,
-            supportId: support.eventId,
-            jobNumber: support.jobNumber
-        });
-
-        throw new Error(errorMessage);
     }
 
     async lockSupport(support: SupportViewModel) {
@@ -2991,11 +2949,11 @@ class HomeController extends BaseController {
 
         // Determine appropriate icon based on support type
         let icon: string;
-        if (support.description.toLowerCase().includes('late')) {
+        if (support.description?.toLowerCase().includes('late')) {
             icon = 'schedule';
-        } else if (support.description.toLowerCase().includes('message')) {
+        } else if (support.description?.toLowerCase().includes('message')) {
             icon = 'message';
-        } else if (support.description.toLowerCase().includes('call')) {
+        } else if (support.description?.toLowerCase().includes('call')) {
             icon = 'phone';
         } else {
             icon = 'support';
@@ -3009,18 +2967,42 @@ class HomeController extends BaseController {
             closed: false,
             priority: priority,
             assignee: {
-                id: 0,
+                id: support.eventId || 0,
                 text: support.staff || 'Unassigned'
             },
-            eventType: support.description || '',
-            jobId: 0,
-            jobNumber: support.jobNumber || '',
+            eventType: 'support',
+            jobId: support.jobId || 0,
+            jobNumber: support.jobNumber,
             icon: icon,
             isOverdue: false,
-            dueTimeStr: support.timeStamp ? this.$filter('date')(support.timeStamp, 'HH:mm') : ''
+            dueTimeStr: support.timeStamp ? this.$filter('date')(support.timeStamp, 'HH:mm') : '',
+
+            // Additional metadata for handling in callbacks
+            _supportData: support
         };
     }
 
+    async closeSupport(task: ExtendedTask) {
+        const support = task._supportData || this.supports.find((s: SupportViewModel) => s.eventId === task.id);
+
+        if (!support || !support.eventId) {
+            console.error('Cannot close support: Invalid support data');
+            this.toastrService.showErrorToast('Could not close support ticket: Invalid data');
+            return;
+        }
+
+        try {
+            await this.DispatchData.closeSupport(support.eventId, ContactID);
+            await this.getSupports();
+            this.currentSupport = null;
+            this.toastrService.showSuccessToast('Support ticket closed successfully');
+        } catch (error) {
+            console.error('Error closing support:', error);
+            this.toastrService.showErrorToast('Could not close support ticket');
+
+            await this.getSupports();
+        }
+    }
     getSupportItemClass(support: SupportViewModel): string {
         const baseClass = this.getSupportColorClass(support);
         if (support.eventId === (this.currentSupport?.eventId || 0)) {
