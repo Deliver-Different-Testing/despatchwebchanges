@@ -22,7 +22,6 @@ class JobDetailController extends BaseController {
         "rateJobService",
         "moment",
         "$mdMenu",
-        "$timeout",
         "selectDialogService",
         "editDateTimeDialogService",
         "editAddressDialogService",
@@ -54,7 +53,6 @@ class JobDetailController extends BaseController {
         private rateJobService: any,
         private moment: any,
         private $mdMenu: angular.material.IMenuService,
-        private $timeout: angular.ITimeoutService,
         private selectDialogService: SelectDialogService,
         private editDateTimeDialogService: EditDateTimeDialogService,
         private editAddressDialogService: EditAddressDialogService,
@@ -88,7 +86,7 @@ class JobDetailController extends BaseController {
         };
 
         this.internalStatusList = [];
-        $scope.$watch(() => this.job, (newValue, oldValue) => {
+        this.$scope.$watch(() => this.job, (newValue, oldValue) => {
             if (newValue && newValue !== oldValue) {
                 this.internalJob = newValue;
                 this.previousJobId = newValue.id;
@@ -100,6 +98,18 @@ class JobDetailController extends BaseController {
             }
         });
 
+        this.$scope.$watch(() => this.job, (newValue, oldValue) => {
+            if (newValue && !angular.equals(newValue, oldValue)) {
+                this.internalJob = angular.copy(newValue);
+                this.previousJobId = newValue.id;
+                this._initializeJobData();
+
+                if (newValue.completedTime && !this.photosLoaded) {
+                    this._loadPodPhotos();
+                    this.photosLoaded = true;
+                }
+            }
+        }, true);
     }
 
     $onInit() {
@@ -142,19 +152,6 @@ class JobDetailController extends BaseController {
                 if (jobIdChanged) {
                     this.photosLoaded = false;
                 }
-            }
-        }
-    }
-
-    $doCheck() {
-        if (this.internalJob && !this.photosLoaded) {
-            if (this.internalJob.completedTime) {
-                this.$timeout(() => {
-                    if (!this.photosLoaded) {
-                        this._loadPodPhotos();
-                        this.photosLoaded = true;
-                    }
-                }, 0);
             }
         }
     }

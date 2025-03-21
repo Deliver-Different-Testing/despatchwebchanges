@@ -283,8 +283,10 @@
 
                                         <md-autocomplete md-autoselect md-escape-options="clear"
                                                          md-item-text="item.text"
-                                                         md-items="item in ctrl.jobRecordSearch(ctrl.jobRecordSearchText)" md-min-length="1"
-                                                         md-search-text="ctrl.jobRecordSearchText" md-selected-item="ctrl.selectedJobRecord"
+                                                         md-items="item in ctrl.jobRecordSearch(ctrl.jobRecordSearchText)"
+                                                         md-min-length="1"
+                                                         md-search-text="ctrl.jobRecordSearchText"
+                                                         md-selected-item="ctrl.selectedJobRecord"
                                                          md-selected-item-change="ctrl.JobRecordSelected(item.id)"
                                                          ng-if="ctrl.showInput[box.name + '-' + $index]"
                                                          placeholder="Search by job number...">
