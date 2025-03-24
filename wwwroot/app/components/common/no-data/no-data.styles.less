@@ -1,0 +1,172 @@
+@import "../../../../css/variables.less";
+
+.no-data-component {
+  .no-data {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background-color: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+    z-index: 1;
+
+    .content {
+      text-align: center;
+      max-width: 267px;
+      padding: 21px;
+      border-radius: 6px;
+      background-color: #EEF3F8;
+      box-shadow: 0 2px 7px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+
+      &:hover {
+        box-shadow: 0 3px 14px rgba(0, 0, 0, 0.12);
+        transform: translateY(-1px);
+      }
+    }
+
+    .icon {
+      margin-bottom: 16px;
+
+      md-icon {
+        font-size: 43px;
+        height: 43px;
+        width: 43px;
+        color: @primary-color;
+        opacity: 0.9;
+      }
+    }
+
+    .title {
+      font-size: 16px;
+      font-weight: 500;
+      color: rgba(0, 0, 0, 0.87);
+      margin-bottom: 11px;
+      line-height: 1.3;
+    }
+
+    .message {
+      font-size: 11px;
+      line-height: 1.6;
+      color: rgba(0, 0, 0, 0.6);
+      margin-bottom: 16px;
+      max-width: 213px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .action {
+      margin-top: 5px;
+
+      .md-button {
+        min-width: 80px;
+
+        &.md-raised.md-primary {
+          background-color: @primary-color;
+          color: rgba(0, 0, 0, 0.87);
+          box-shadow: 0 2px 1px -1px rgba(0, 0, 0, .2),
+          0 1px 1px 0 rgba(0, 0, 0, .14),
+          0 1px 3px 0 rgba(0, 0, 0, .12);
+          transition: box-shadow 0.3s ease-in-out, transform 0.2s ease;
+
+          &:hover {
+            box-shadow: 0 3px 3px -2px rgba(0, 0, 0, .2),
+            0 5px 7px 1px rgba(0, 0, 0, .14),
+            0 2px 9px 2px rgba(0, 0, 0, .12);
+            transform: translateY(-1px);
+          }
+
+          &:active {
+            transform: translateY(1px);
+          }
+        }
+      }
+    }
+
+    // Illustration
+    &:after {
+      content: '';
+      position: absolute;
+      bottom: 5%;
+      right: 5%;
+      width: 120px;
+      height: 120px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='%23F0F4F8'%3E%3Cpath d='M58 40h-4V14c0-1.7-1.3-3-3-3H13c-1.7 0-3 1.3-3 3v26H6c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h52c1.1 0 2-.9 2-2v-6c0-1.1-.9-2-2-2zM40 42H24c-.6 0-1-.4-1-1s.4-1 1-1h16c.6 0 1 .4 1 1s-.4 1-1 1zm10-10H14V14h36v18z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: center;
+      opacity: 0.2;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    // Responsive adjustments
+    @media (max-width: 600px) {
+      .content {
+        width: 100%;
+        padding: 16px;
+      }
+
+      .icon md-icon {
+        font-size: 32px;
+        height: 32px;
+        width: 32px;
+      }
+
+      .title {
+        font-size: 13px;
+      }
+
+      .message {
+        font-size: 9px;
+        max-width: 187px;
+      }
+
+      &:after {
+        display: none;
+      }
+    }
+
+    // Animation
+    animation: fadeIn 0.4s ease-out;
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(7px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    // Material Design specific details
+    .md-button {
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      font-weight: 500;
+    }
+
+    // Fixed the syntax error in the background-image property
+    &:before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image:
+              radial-gradient(circle at 25% 25%, @primary-color 0%, transparent 7%),
+              radial-gradient(circle at 75% 75%, @primary-color 0%, transparent 7%);
+      background-size: 40px 40px;
+      background-position: 0 0;
+      opacity: 0.04;
+      pointer-events: none;
+      z-index: -1;
+    }
+  }
+}

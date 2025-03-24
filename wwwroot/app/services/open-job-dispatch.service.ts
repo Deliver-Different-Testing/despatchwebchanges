@@ -1,4 +1,4 @@
-import ToastrService from "./ToastrService";
+import ToastrService from "./toastr.service";
 import OpenJobOptions from "../interfaces/open-job-options.interface";
 
 class OpenJobDispatchService implements angular.IServiceProvider {

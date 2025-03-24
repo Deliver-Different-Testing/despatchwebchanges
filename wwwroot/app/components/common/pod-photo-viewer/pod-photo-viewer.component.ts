@@ -1,10 +1,9 @@
 import angular from "angular";
 import {PodPhoto} from "./pod-photo-viewer.interfaces";
 import "./pod-photo-viewer.styles.less";
+import BaseController from "../../base-controller";
 
-class PODPhotoViewerController implements angular.IController {
-    static $inject = [];
-
+class PODPhotoViewerController extends BaseController {
     photos: PodPhoto[] = [];
     isOpen: boolean = false;
     initialPhotoIndex: number = 0;
@@ -13,17 +12,8 @@ class PODPhotoViewerController implements angular.IController {
     currentIndex: number = 0;
 
     constructor() {
-        this._bindFunctions()
+        super();
     }
-
-    private _bindFunctions() {
-        this.$onInit = this.$onInit.bind(this);
-        this.nextPhoto = this.nextPhoto.bind(this);
-        this.prevPhoto = this.prevPhoto.bind(this);
-        this.closeViewer = this.closeViewer.bind(this);
-        this.setPhotoIndex = this.setPhotoIndex.bind(this);
-    }
-
 
     $onInit() {
         this.currentIndex = this.initialPhotoIndex;

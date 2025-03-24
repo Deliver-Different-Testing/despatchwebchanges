@@ -10,6 +10,12 @@ namespace DespatchWeb.EntityClasses
     public partial class DespatchContext
     {
 
+        [DbFunction("UTL_fncClearList_Other", "dbo")]
+        public IQueryable<UTL_fncClearList_OtherResult> UTL_fncClearList_Other()
+        {
+            return FromExpression(() => UTL_fncClearList_Other());
+        }
+
         [DbFunction("UTL_fncSuburb_FromNameWithPostCode", "dbo")]
         public static int? UTL_fncSuburb_FromNameWithPostCode(string Suburb, int? SiteID, int? PostCode)
         {
@@ -18,6 +24,7 @@ namespace DespatchWeb.EntityClasses
 
         protected void OnModelCreatingGeneratedFunctions(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<UTL_fncClearList_OtherResult>().HasNoKey();
         }
     }
 }

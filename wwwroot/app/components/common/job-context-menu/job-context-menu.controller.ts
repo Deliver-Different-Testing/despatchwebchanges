@@ -1,13 +1,13 @@
 import {IJob, Suggestion} from "../../../interfaces/job.interface";
 import {ContactID, FirstName} from "../../../contants";
 import DispatchCoreService from "../../../services/dispatch-core.service";
-import ToastrService from "../../../services/ToastrService";
+import ToastrService from "../../../services/toastr.service";
 import {IContextMenuScope, MenuState} from "./job-context-menu.interfaces";
 import {EventGroupDialogService} from "../../dialogs/event-group-dialog/event-group-dialog.service";
 import "./job-context-menu.styles.less";
-import {bindAllMethods} from "../../../bindAllMethods";
+import BaseController from "../../base-controller";
 
-class ContextMenuController implements angular.IController {
+class ContextMenuController extends BaseController {
     static $inject = [
         "$scope",
         "$document",
@@ -36,19 +36,17 @@ class ContextMenuController implements angular.IController {
         private eventGroupDialogService: EventGroupDialogService,
         private $timeout: angular.ITimeoutService
     ) {
-        bindAllMethods(this);
+        super();
 
         this.initEventGroups();
         this.setupDocumentClickHandler();
     }
 
-    // Lifecycle hooks
     $onInit() {
         console.log('Context menu initialized');
     }
 
     $onDestroy() {
-        // Clean up document click handler
         this.$document.off('click', this.hideMenu);
     }
 
@@ -273,28 +271,14 @@ class ContextMenuController implements angular.IController {
     }
 }
 
-export class ContextMenuDirective implements angular.IDirective {
-    restrict: 'E';
-    template: string;
-    scope: any;
-    controller: any;
-    controllerAs: string;
-    bindToController: boolean;
-
-    constructor() {
-        this.restrict = 'E';
-        this.template = require("./job-context-menu.template.html");
-        this.scope = {
-            onRefresh: '&',
-            onSplitJob: '&',
-            onRefreshCourierJobs: '&'
-        };
-        this.controller = ContextMenuController;
-        this.controllerAs = 'ctrl';
-        this.bindToController = true;
+const ContextMenuComponent: angular.IComponentOptions = {
+    controller: ContextMenuController,
+    controllerAs: 'ctrl',
+    template: require("./job-context-menu.template.html"),
+    bindings: {
+        onRefresh: '&',
+        onSplitJob: '&',
+        onRefreshCourierJobs: '&'
     }
-
-    static factory(): angular.IDirectiveFactory {
-        return () => new ContextMenuDirective();
-    }
-}
+};
+export default ContextMenuComponent;

@@ -1,86 +1,57 @@
 <div class="box-content nationwide-job-list" ng-if="!isDeliveryJob()">
     <!-- State 1: No Current Job Selected -->
-    <div class="no-data" ng-if="!currentJob">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
-            </div>
-            <div class="text">
-                Please select a job to view available flights.
-            </div>
-        </div>
-    </div>
+    <no-data
+            ng-if="!currentJob"
+            title="No Job Selected"
+            message="Please select a job to view available flights."
+            icon="flight_takeoff"
+            show-action="false">
+    </no-data>
 
     <!-- State 2: Job Has Assigned Flight -->
-    <div class="no-data" ng-if="currentJob && currentJob.assignedFlight">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
-            </div>
-            <div class="text">
-                A flight has already been assigned to this job. This can be found in the job details widget.
-            </div>
-        </div>
-    </div>
+    <no-data
+            ng-if="currentJob && currentJob.assignedFlight"
+            title="Flight Already Assigned"
+            message="A flight has already been assigned to this job. This can be found in the job details widget."
+            icon="flight_takeoff"
+            show-action="false">
+    </no-data>
 
     <!-- State 3: Missing Airport Information -->
-    <div class="no-data"
-         ng-if="currentJob && !currentJob.assignedFlight && (!currentJob.toAirportId || !currentJob.fromAirportId)">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">local_airport</md-icon>
-            </div>
-            <div class="text">
-                Airport information not applicable or not provided for this job. If needed, please update the job
-                details with relevant airport data.
-            </div>
-        </div>
-    </div>
+    <no-data
+            ng-if="currentJob && !currentJob.assignedFlight && (!currentJob.toAirportId || !currentJob.fromAirportId)"
+            title="Missing Airport Info"
+            message="Airport information not applicable or not provided for this job. If needed, please update the job details with relevant airport data."
+            icon="local_airport"
+            show-action="false">
+    </no-data>
 
     <!-- State 4: Loading Flights -->
-    <div class="loader-container"
-         ng-if="currentJob && !currentJob.assignedFlight && currentJob.toAirportId && currentJob.fromAirportId && flightsLoading">
-        <div class="full-height" layout="row" layout-align="center center">
-            <div class="material-icon-loader">
-                <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
-                <md-icon class="loader-icon" md-font-set="material-symbols-outlined">flight</md-icon>
-            </div>
-        </div>
-    </div>
+    <dfrnt-loader
+            ng-if="currentJob && !currentJob.assignedFlight && currentJob.toAirportId && currentJob.fromAirportId"
+            is-loading="flightsLoading"
+            icon-name="'flight'">
+    </dfrnt-loader>
 
     <!-- State 5: Flight Error -->
-    <div class="no-data"
-         ng-if="currentJob && !currentJob.assignedFlight && currentJob.toAirportId && currentJob.fromAirportId && !flightsLoading && flightError">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">error</md-icon>
-            </div>
-            <div class="text">
-                {{flightError}}
-            </div>
-        </div>
-    </div>
+    <no-data
+            ng-if="currentJob && !currentJob.assignedFlight && currentJob.toAirportId && currentJob.fromAirportId && !flightsLoading && flightError"
+            title="Error Loading Flights"
+            message="{{flightError}}"
+            icon="error"
+            show-action="false">
+    </no-data>
 
     <!-- State 6: No Flights Available -->
-    <div class="no-data"
-         ng-if="currentJob && !currentJob.assignedFlight && currentJob.toAirportId && currentJob.fromAirportId && !flightsLoading && !flightError && flightOptions.length === 0">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
-            </div>
-            <div class="text">
-                {{flightMessage || 'No flights available for the specified criteria.'}}
-            </div>
-            <div class="action-buttons" layout="row" layout-align="center center">
-                <md-button class="md-raised md-primary" ng-click="loadNextFlights()">
-                    Load More Flights
-                </md-button>
-                <md-button class="md-raised" ng-click="loadNextDayFlights()">
-                    Next Day
-                </md-button>
-            </div>
-        </div>
-    </div>
+    <no-data
+            ng-if="currentJob && !currentJob.assignedFlight && currentJob.toAirportId && currentJob.fromAirportId && !flightsLoading && !flightError && flightOptions.length === 0"
+            title="No Flights Available"
+            message="{{flightMessage || 'No flights available for the specified criteria.'}}"
+            icon="flight_takeoff"
+            show-action="true"
+            action-text="Load More Flights"
+            on-action="loadNextFlights()">
+    </no-data>
 
     <!-- State 7: Flight List -->
     <div ng-if="currentJob && !currentJob.assignedFlight && currentJob.toAirportId && currentJob.fromAirportId && !flightsLoading && !flightError && flightOptions.length > 0">
@@ -139,77 +110,57 @@
 
 <div class="box-content nationwide-job-list" ng-if="isDeliveryJob()">
     <!-- State 1: No Current Job Selected -->
-    <div class="no-data" ng-if="!currentJob">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
-            </div>
-            <div class="text">
-                Please select a job to view available agents.
-            </div>
-        </div>
-    </div>
+    <no-data
+            ng-if="!currentJob"
+            title="No Job Selected"
+            message="Please select a job to view available agents."
+            icon="engineering"
+            show-action="false">
+    </no-data>
 
     <!-- State 2: Job Has Assigned Agent -->
-    <div class="no-data" ng-if="currentJob && currentJob.assignedAgent">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
-            </div>
-            <div class="text">
-                An agent has already been assigned to this job. This can be found in the job details widget.
-            </div>
-        </div>
-    </div>
+    <no-data
+            ng-if="currentJob && currentJob.assignedAgent"
+            title="Agent Already Assigned"
+            message="An agent has already been assigned to this job. This can be found in the job details widget."
+            icon="engineering"
+            show-action="false">
+    </no-data>
 
     <!-- State 3: Not a Delivery Job -->
-    <div class="no-data" ng-if="currentJob && !currentJob.assignedAgent && !isDeliveryJob()">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
-            </div>
-            <div class="text">
-                Agent information is not applicable for this job. This section is only relevant for delivery jobs.
-            </div>
-        </div>
-    </div>
+    <no-data
+            ng-if="currentJob && !currentJob.assignedAgent && !isDeliveryJob()"
+            title="Not a Delivery Job"
+            message="Agent information is not applicable for this job. This section is only relevant for delivery jobs."
+            icon="engineering"
+            show-action="false">
+    </no-data>
 
     <!-- State 4: Loading Agents -->
-    <div class="loader-container" ng-if="currentJob && !currentJob.assignedAgent && isDeliveryJob() && agentsLoading">
-        <div class="full-height" layout="row" layout-align="center center">
-            <div class="material-icon-loader">
-                <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
-                <md-icon class="loader-icon" md-font-set="material-symbols-outlined">handyman</md-icon>
-            </div>
-        </div>
-    </div>
+    <dfrnt-loader
+            ng-if="currentJob && !currentJob.assignedAgent && isDeliveryJob()"
+            is-loading="agentsLoading"
+            icon-name="'handyman'">
+    </dfrnt-loader>
 
     <!-- State 5: Agent Error -->
-    <div class="no-data"
-         ng-if="currentJob && !currentJob.assignedAgent && isDeliveryJob() && !agentsLoading && agentError">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">error</md-icon>
-            </div>
-            <div class="text">
-                {{agentError}}
-            </div>
-        </div>
-    </div>
+    <no-data
+            ng-if="currentJob && !currentJob.assignedAgent && isDeliveryJob() && !agentsLoading && agentError"
+            title="Error Loading Agents"
+            message="{{agentError}}"
+            icon="error"
+            show-action="false">
+    </no-data>
 
     <!-- State 6: No Agents Available -->
-    <div class="no-data"
-         ng-if="currentJob && !currentJob.assignedAgent && isDeliveryJob() && !agentsLoading && !agentError && agentOptions.length === 0">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
-            </div>
-            <div class="text">
-                {{agentMessage || 'No agents available for the specified criteria.'}}
-            </div>
-        </div>
-    </div>
-
+    <no-data
+            ng-if="currentJob && !currentJob.assignedAgent && isDeliveryJob() && !agentsLoading && !agentError && agentOptions.length === 0"
+            title="No Agents Available"
+            message="{{agentMessage || 'No agents available for the specified criteria.'}}"
+            icon="engineering"
+            show-action="false">
+    </no-data>
+    
     <!-- State 7: Agent List -->
     <div ng-if="currentJob && !currentJob.assignedAgent && isDeliveryJob() && !agentsLoading && !agentError && agentOptions.length > 0">
         <md-table-container>

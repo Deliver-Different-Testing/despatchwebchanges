@@ -108,14 +108,11 @@
     </md-table-pagination>
 
     <!-- No Data Message -->
-    <div class="no-data" ng-if="!deliveryListLoading && (!jobListDelivery || jobListDelivery.length === 0)">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
-            </div>
-            <div class="text">
-                No Action Required Jobs Found
-            </div>
-        </div>
-    </div>
+    <no-data
+            ng-if="!deliveryListLoading && (!jobListDelivery || jobListDelivery.length === 0)"
+            title="No Action Required Jobs Found"
+            message="There are currently no jobs that require action."
+            icon="warning"
+            show-action="false">
+    </no-data>
 </div>

@@ -59,11 +59,11 @@ public class CourierController(ICourierRepository courierRepository) : Controlle
     }
 
     [HttpGet]
-    public IActionResult AvailableCourierLocation(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat, bool isUsTenant)
+    public async Task<IActionResult> AvailableCourierLocation(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat, bool isUsTenant)
     {
         try
         {
-            var result = courierRepository.GetAvailableCouriers(minLng, minLat, maxLng, maxLat, isUsTenant);
+            var result = await courierRepository.GetAvailableCouriers(minLng, minLat, maxLng, maxLat, isUsTenant);
             return Json(result);
         }
         catch (Exception ex)

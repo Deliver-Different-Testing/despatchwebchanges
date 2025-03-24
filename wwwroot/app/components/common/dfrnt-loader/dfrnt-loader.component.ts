@@ -4,18 +4,18 @@ class DfrntLoaderController implements angular.IController {
     isLoading?: boolean;
     iconName?: string;
 
-    $onInit(): void {
-        if (this.isLoading === undefined) {
+    $onInit() {
+        if (!this.isLoading) {
             this.isLoading = false;
         }
 
-        if (this.iconName === undefined) {
+        if (!this.iconName) {
             this.iconName = 'person_pin_circle';
         }
     }
 }
 
-export const DfrntLoaderComponent: angular.IComponentOptions = {
+const DfrntLoaderComponent: angular.IComponentOptions = {
     template: require("./dfrnt-loader.template.html"),
     bindings: {
         isLoading: '<',
@@ -24,3 +24,4 @@ export const DfrntLoaderComponent: angular.IComponentOptions = {
     controller: DfrntLoaderController,
     controllerAs: 'ctrl'
 };
+export default DfrntLoaderComponent;

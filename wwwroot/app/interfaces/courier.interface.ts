@@ -45,7 +45,7 @@ export interface AvailableCourierPosition {
     vehicleType: string;
     code: string;
     fleetCode: string;
-    clearListAreaIDs: string;
+    clearListAreaIDs: number[];
     longitude: number | null;
     latitude: number | null;
     totalJobs: number;

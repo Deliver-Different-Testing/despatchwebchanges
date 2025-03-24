@@ -1,0 +1,14 @@
+<div class="no-data-component">
+    <div class="no-data">
+        <div class="content">
+            <div class="icon">
+                <md-icon md-font-set="material-symbols-outlined">{{ctrl.icon}}</md-icon>
+            </div>
+            <div class="title">{{ctrl.title}}</div>
+            <div class="message">{{ctrl.message}}</div>
+            <div class="action" ng-if="ctrl.showAction">
+                <button class="btn-primary" ng-click="ctrl.handleAction()">{{ctrl.actionText}}</button>
+            </div>
+        </div>
+    </div>
+</div>

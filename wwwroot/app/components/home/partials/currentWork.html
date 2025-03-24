@@ -1,6 +1,4 @@
-<!-- Current Work Component -->
 <div class="droppable-box nationwide-job-list">
-    <!-- Context Menu with Hover Submenu for Event Groups -->
     <context-menu
             on-refresh="ctrl.refreshData(true)"
             on-split-job="ctrl.handleSplitJob(job)"
@@ -126,26 +124,21 @@
     </md-table-container>
 
     <!-- No Data Message -->
-    <div class="no-data" ng-if="!ctrl.currentListLoading && (!ctrl.jobsCurrentList || ctrl.jobsCurrentList.length === 0)">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
-            </div>
-            <div class="text">
-                This Courier Does Not Have Any Available Work
-            </div>
-        </div>
-    </div>
+    <no-data
+            ng-if="!ctrl.currentListLoading && (!ctrl.jobsCurrentList || ctrl.jobsCurrentList.length === 0)"
+            title="No Available Work"
+            message="This Courier Does Not Have Any Available Work"
+            icon="local_shipping"
+            show-action="false">
+    </no-data>
+
 
     <!-- No list in scope indicator -->
-    <div class="no-data" ng-if="!ctrl.jobsCurrentList">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
-            </div>
-            <div class="text">
-                Please Select a Courier
-            </div>
-        </div>
-    </div>
+    <no-data
+            ng-if="!ctrl.jobsCurrentList"
+            title="No Courier Selected"
+            message="Please Select a Courier to View Available Work"
+            icon="local_shipping"
+            show-action="false">
+    </no-data>
 </div>

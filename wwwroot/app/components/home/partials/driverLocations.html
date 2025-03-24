@@ -1,4 +1,3 @@
-<!-- Loading Indicator -->
 <dfrnt-loader
         is-loading="ctrl.driverLocationsLoading"
         icon-name="'person_pin_circle'">
@@ -70,14 +69,11 @@
         </div>
     </div>
 
-    <div class="no-data" ng-if="!ctrl.driverLocations || ctrl.driverLocations.areas.length === 0">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">person_pin_circle</md-icon>
-            </div>
-            <div class="text">
-                Please configure driver locations in Admin Manager to continue.
-            </div>
-        </div>
-    </div>
+    <no-data
+            ng-if="!ctrl.driverLocations || ctrl.driverLocations.areas.length === 0"
+            title="No Driver Locations"
+            message="Please configure driver locations in Admin Manager to continue."
+            icon="person_pin_circle"
+            show-action="false">
+    </no-data>
 </div>

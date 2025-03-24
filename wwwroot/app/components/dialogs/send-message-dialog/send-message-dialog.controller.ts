@@ -1,6 +1,6 @@
 import app from "../../../app";
 import DispatchCoreService from "../../../services/dispatch-core.service";
-import ToastrService from "../../../services/ToastrService";
+import ToastrService from "../../../services/toastr.service";
 
 export class SendMessageDialogController {
     static $inject = [

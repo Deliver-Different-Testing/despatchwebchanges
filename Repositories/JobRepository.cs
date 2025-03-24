@@ -1702,8 +1702,9 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             PrebookJobId = viewModel.PrebookJobId
         };
 
-        var note = $"Added price component: {viewModel.Name} for ${viewModel.Amount:F2}";        var isPrebook = viewModel.PrebookJobId.HasValue;
-        if(isPrebook)
+        var note = $"Added price component: {viewModel.Name} for ${viewModel.Amount:F2}";
+        var isPrebook = viewModel.PrebookJobId.HasValue;
+        if (isPrebook)
             await SetPrebookJobAsManuallyPriceAsync(viewModel.PrebookJobId.Value, note);
         else if (viewModel.JobId != null) await SetJobAsManuallyPriceAsync(viewModel.JobId.Value, note);
 
@@ -1716,60 +1717,60 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
     public async Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel)
     {
         var breakdown = Context.PricingBreakdowns.FirstOrDefault(p => p.PricingBreakdownId == viewModel.ChargeId);
-        if(breakdown == null) return;
+        if (breakdown == null) return;
 
         breakdown.ChargeAmount = viewModel.Amount;
         breakdown.ChargeName = viewModel.Name;
 
         var note = $"Updated price breakdown: {viewModel.Name} charge amount changed to {viewModel.Amount:C}";
 
-                var isPrebook = breakdown.PrebookJobId.HasValue;
-               if(isPrebook)
-                   await SetPrebookJobAsManuallyPriceAsync(breakdown.PrebookJobId.Value, note);
-               else if (breakdown.JobId != null) await SetJobAsManuallyPriceAsync(breakdown.JobId.Value, note);
+        var isPrebook = breakdown.PrebookJobId.HasValue;
+        if (isPrebook)
+            await SetPrebookJobAsManuallyPriceAsync(breakdown.PrebookJobId.Value, note);
+        else if (breakdown.JobId != null) await SetJobAsManuallyPriceAsync(breakdown.JobId.Value, note);
 
-               Context.Update(breakdown);
+        Context.Update(breakdown);
         await Context.SaveChangesAsync();
     }
 
-   public async Task DeleteJobPriceBreakdownAsync(int chargeId)
-   {
-       var breakdown = await Context.PricingBreakdowns
-           .FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
-        if(breakdown == null) return;
+    public async Task DeleteJobPriceBreakdownAsync(int chargeId)
+    {
+        var breakdown = await Context.PricingBreakdowns
+            .FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
+        if (breakdown == null) return;
 
         var note = $"Deleted {chargeId} - {breakdown.ChargeName} - {breakdown.ChargeAmount}";
 
         var isPrebook = breakdown.PrebookJobId.HasValue;
-       if(isPrebook)
-           await SetPrebookJobAsManuallyPriceAsync(breakdown.PrebookJobId.Value, note);
-       else if (breakdown.JobId != null) await SetJobAsManuallyPriceAsync(breakdown.JobId.Value, note);
+        if (isPrebook)
+            await SetPrebookJobAsManuallyPriceAsync(breakdown.PrebookJobId.Value, note);
+        else if (breakdown.JobId != null) await SetJobAsManuallyPriceAsync(breakdown.JobId.Value, note);
 
-       Context.PricingBreakdowns.Remove(breakdown);
-       await Context.SaveChangesAsync();
-   }
+        Context.PricingBreakdowns.Remove(breakdown);
+        await Context.SaveChangesAsync();
+    }
 
-   private async Task SetJobAsManuallyPriceAsync(int jobId, string note)
-   {
-       var job = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
-       job.RatedManually = true;
+    private async Task SetJobAsManuallyPriceAsync(int jobId, string note)
+    {
+        var job = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
+        job.RatedManually = true;
 
-       // Add note of pricing changes
-       job.InternalNotes += $"\n{note}";
+        // Add note of pricing changes
+        job.InternalNotes += $"\n{note}";
 
-       Context.Update(job);
-   }
+        Context.Update(job);
+    }
 
-   private async Task SetPrebookJobAsManuallyPriceAsync(int prebookJobId, string note)
-   {
-       var job = await Context.TucJobBookings.FirstOrDefaultAsync(j => j.UcbkId == prebookJobId);
-       job.RatedManually = true;
+    private async Task SetPrebookJobAsManuallyPriceAsync(int prebookJobId, string note)
+    {
+        var job = await Context.TucJobBookings.FirstOrDefaultAsync(j => j.UcbkId == prebookJobId);
+        job.RatedManually = true;
 
-       // Add note of pricing changes
-       job.InternalNotes += $"\n{note}";
+        // Add note of pricing changes
+        job.InternalNotes += $"\n{note}";
 
-       Context.Update(job);
-   }
+        Context.Update(job);
+    }
 
     /// <inheritdoc />
     public Task<string> RateJobDescription(
@@ -2835,6 +2836,9 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             case "PodName":
                 job.UcjbPodname = value[..Math.Min(value.Length, 100)];
                 break;
+            case "DeliverBy":
+                job.DeliverByTime = DateTime.Parse(value);
+                break;
         }
 
         if (!string.IsNullOrEmpty(updateNote))
@@ -3261,7 +3265,10 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 break;
             case "PodName":
                 archive.Job.UcjbPodname = value[..Math.Min(value.Length, 100)];
-            break;
+                break;
+            case "DeliverBy":
+                archive.Job.DeliverByTime = DateTime.Parse(value);
+                break;
         }
 
         if (!string.IsNullOrEmpty(updateNote)) await AddNoteAsync(jobId, updateNote, userName);

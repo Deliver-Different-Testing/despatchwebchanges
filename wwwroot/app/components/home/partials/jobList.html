@@ -57,7 +57,8 @@
                     <span>{{ctrl.getStatusCount('completed')}}</span>
                     <span class="status-label">Completed</span>
                 </md-button>
-                <md-button class="md-button status-chip problem" ng-click="ctrl.filterByStatus('group-problem')" ng-if="ctrl.getStatusCount('problem') > 0">
+                <md-button class="md-button status-chip problem" ng-click="ctrl.filterByStatus('group-problem')"
+                           ng-if="ctrl.getStatusCount('problem') > 0">
                     <md-icon md-font-set="material-symbols-outlined">error_outline</md-icon>
                     <span>{{ctrl.getStatusCount('problem')}}</span>
                     <span class="status-label">Problem</span>
@@ -121,6 +122,7 @@
                             md-min-length="2"
                             md-search-text="job.searchText"
                             md-select-on-focus
+                            md-select-on-match="true"
                             md-selected-item="job.assignedCourier"
                             md-no-cache="true"
                             md-clear-button="false"
@@ -130,8 +132,8 @@
                             md-selected-item-change="ctrl.handleDispatchSelection(item, job)"
                             placeholder="Search Courier...">
                         <md-item-template>
-            <span md-highlight-flags="^i"
-                  md-highlight-text="job.searchText">{{item.text}}</span>
+        <span md-highlight-flags="^i"
+              md-highlight-text="job.searchText">{{item.text}}</span>
                         </md-item-template>
                         <md-not-found>
                             No couriers matching "{{job.searchText}}" were found.
@@ -188,14 +190,11 @@
     </md-table-container>
 
     <!-- No Data Message -->
-    <div class="no-data" ng-if="!ctrl.jobList || ctrl.jobList.length === 0">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">list_alt</md-icon>
-            </div>
-            <div class="text">
-                No Jobs Available
-            </div>
-        </div>
-    </div>
+    <no-data
+            ng-if="!ctrl.jobList || ctrl.jobList.length === 0"
+            title="No Jobs Available"
+            message="There are currently no jobs that match your criteria."
+            icon="list_alt"
+            show-action="false">
+    </no-data>
 </div>

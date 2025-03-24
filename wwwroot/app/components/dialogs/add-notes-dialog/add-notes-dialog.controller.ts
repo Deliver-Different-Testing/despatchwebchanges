@@ -1,4 +1,4 @@
-import ToastrService from "../../../services/ToastrService";
+import ToastrService from "../../../services/toastr.service";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import {IJob} from "../../../interfaces/job.interface";
 import app from "../../../app";

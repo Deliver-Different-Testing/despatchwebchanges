@@ -7,7 +7,10 @@ import {ActiveCourierViewModel} from "../../interfaces/courier.interface";
 import {Suggestion} from "../../interfaces/job.interface";
 import {StatusFilter} from "./enums/status-filter";
 import {ViewMode} from "./enums/view-mode";
-import ToastrService from "../../services/ToastrService";
+import {SelectDialogService} from "../dialogs/select-dialog/select-dialog.service";
+import ToastrService from "../../services/toastr.service";
+import {IDialogDateTimeResult, ISelectDialogResult} from "../../interfaces/dialog-result.interfaces";
+import {EditDateTimeDialogService} from "../dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
 import BaseController from "../base-controller";
 import { ITaskListItemConfig } from "../common/task-item-component/task-item.interfaces";
 

@@ -76,7 +76,7 @@
                             <md-icon md-font-set="material-symbols-outlined" aria-label="Log time">timer</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Log Time:</span>
-                                <span class="timing-value">{{ctrl.job.time ? (ctrl.job.time | date:'shortTime') : 'N/A'}}</span>
+                                <span class="timing-value">{{ctrl.job.time ? (ctrl.job.time | date:'MM/dd/yyyy h:mm a') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
                     </md-list>
@@ -93,7 +93,7 @@
                             </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">PU Time:</span>
-                                <span class="timing-value">{{ctrl.job.puTime ? (ctrl.job.puTime | date:'shortTime') : 'N/A'}}</span>
+                                <span class="timing-value">{{ctrl.job.puTime ? (ctrl.job.puTime | date:'MM/dd/yyyy h:mm a') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
 
@@ -103,7 +103,7 @@
                             </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Dispatch:</span>
-                                <span class="timing-value">{{ctrl.job.dispatchTime ? (ctrl.job.dispatchTime | date:'shortTime') : 'N/A'}}</span>
+                                <span class="timing-value">{{ctrl.job.dispatchTime ? (ctrl.job.dispatchTime | date:'MM/dd/yyyy h:mm a') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
 
@@ -128,7 +128,7 @@
                             <md-icon md-font-set="material-symbols-outlined" aria-label="POD time">verified</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">POD Time:</span>
-                                <span class="timing-value">{{ctrl.job.completedTime ? (ctrl.job.completedTime | date:'shortTime') : 'N/A'}}</span>
+                                <span class="timing-value">{{ctrl.job.completedTime ? (ctrl.job.completedTime | date:'MM/dd/yyyy h:mm a') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
 
@@ -138,15 +138,15 @@
                             </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Follow Up:</span>
-                                <span class="timing-value">{{ctrl.job.followupTime ? (ctrl.job.followupTime | date:'shortTime') : 'N/A'}}</span>
+                                <span class="timing-value">{{ctrl.job.followupTime ? (ctrl.job.followupTime | date:'MM/dd/yyyy h:mm a') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
 
-                        <md-list-item md-ink-ripple ng-click="!this.job.locked && ctrl.editDueDate($event, ctrl.job)">
+                        <md-list-item md-ink-ripple ng-click="!this.job.locked && ctrl.editDeliverBy($event, ctrl.job)">
                             <md-icon md-font-set="material-symbols-outlined" aria-label="delivery by time">alarm</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Deliver By:</span>
-                                <span class="timing-value">{{ctrl.job.deliverByTime ? (ctrl.job.deliverByTime | date:'MM/dd/yyyy') : 'N/A'}}</span>
+                                <span class="timing-value">{{ctrl.job.deliverByTime ? (ctrl.job.deliverByTime | date:'MM/dd/yyyy h:mm a') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
                     </md-list>
@@ -810,16 +810,13 @@
     </md-card>
 </div>
 
-<div class="no-data" ng-if="!ctrl.job">
-    <div class="content">
-        <div class="icon">
-            <md-icon md-font-set="material-symbols-outlined">assignment</md-icon>
-        </div>
-        <div class="text">
-            Please Select a Job or Courier
-        </div>
-    </div>
-</div>
+<no-data
+        ng-if="!ctrl.job"
+        title="No Job Selected"
+        message="Please select a job or courier to view details."
+        icon="assignment"
+        show-action="false">
+</no-data>
 
 
 <div class="pod-photo-section md-whiteframe-1dp" ng-if="ctrl.job && ctrl.job.done && ctrl.formattedPodPhotos.length > 0">

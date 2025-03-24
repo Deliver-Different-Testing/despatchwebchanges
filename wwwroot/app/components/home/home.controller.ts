@@ -1,6 +1,6 @@
 import "./home.styles.less";
 import GreetingService from "../../services/greeting.service";
-import ToastrService from "../../services/ToastrService";
+import ToastrService from "../../services/toastr.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
 import {AppConfig} from "../../interfaces/app-config.interface";
@@ -9,20 +9,19 @@ import {
     AreaClearList,
     ClearListViewModel,
     CourierData,
-    IJob, JobQueryParams,
+    IJob,
+    JobQueryParams,
     Suggestion,
     SupportViewModel
 } from "../../interfaces/job.interface";
-import {
-    ActiveCourierViewModel,
-    TruckCourierStatusViewModel
-} from "../../interfaces/courier.interface";
+import {ActiveCourierViewModel, TruckCourierStatusViewModel} from "../../interfaces/courier.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {JobStatus} from "../../enums/job-status.enum";
 import BaseController from "../base-controller";
 import {ITaskListItemConfig} from "../common/task-item-component/task-item.interfaces";
 import {ExtendedTask} from "../task-dashboard/task-dashboard.interfaces";
+import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 
 interface ResendJobsRequest {
     call: string;
@@ -49,7 +48,8 @@ class HomeController extends BaseController {
         '$mdSidenav',
         'AppPages',
         '$stateParams',
-        '$filter'
+        '$filter',
+        'additionalServicesDialogService'
     ];
 
     private readonly DOM_SELECTORS = {
@@ -74,7 +74,7 @@ class HomeController extends BaseController {
     selectedCourier: any;
     jobRecordSearchText: any;
     dispatchCourierSearchTest: any;
-    jobDetailFabIsOpen: any;
+    jobDetailFabIsOpen: boolean;
     courierListFabIsOpen: boolean;
     isCheckingAttachments: boolean;
     hasAttachedFile: boolean;
@@ -175,7 +175,8 @@ class HomeController extends BaseController {
         private $mdSidenav: angular.material.ISidenavService,
         private AppPages: any,
         private $stateParams: angular.ui.IStateParamsService,
-        private $filter: angular.IFilterService
+        private $filter: angular.IFilterService,
+        private additionalServicesDialogService: AdditionalServicesDialogService
     ) {
         super();
 
@@ -1334,10 +1335,10 @@ class HomeController extends BaseController {
 
     async lateCall(lateTime: number, lateType: number, job: IJob, calc: boolean): Promise<any> {
         try {
-            if (!job.clientId) return;
+            if (!job.clientID) return;
             if (!job.jobType) return;
             const response = await this.DispatchData.lateCall(lateType, lateTime, job.minutes ?? 0, job.pickupTime ?? 0,
-                job.alertLatePickup ?? 0, job.deliveryTime ?? 0, job.alertLateDelivery ?? 0, job.jobNo, job.clientId, job.contactName,
+                job.alertLatePickup ?? 0, job.deliveryTime ?? 0, job.alertLateDelivery ?? 0, job.jobNo, job.clientID, job.contactName,
                 ContactID, job.time ?? new Date(), job.id, job.jobType, job.speed, job.notify || job.speed, FirstName, calc);
 
             await this.getData();
@@ -1914,8 +1915,9 @@ class HomeController extends BaseController {
         }
 
         await this.updateCourierData(courierId, courierName);
-        this.mapJobList = this.jobsCurrentList || [];
+        this.mapJobList = [...(this.jobsCurrentList || [])];
     }
+
 
     async searchCourier() {
         try {
@@ -1926,8 +1928,7 @@ class HomeController extends BaseController {
             }
 
             await this.updateCourierData(foundCourier.courierId, foundCourier.name);
-
-            this.mapJobList = this.jobsCurrentList || [];
+            this.mapJobList = [...(this.jobsCurrentList || [])];
         } catch (error: any) {
             console.error("Error searching courier:", error);
         }
@@ -1935,7 +1936,6 @@ class HomeController extends BaseController {
 
     async selectCourier(courier: CourierData) {
         try {
-            // Set loading states
             await this.$timeout(() => {
                 this.currentListLoading = true;
             });
@@ -1943,7 +1943,6 @@ class HomeController extends BaseController {
             if (!courier || courier.courierId === undefined) return;
             const foundCourier = await this.DispatchData.getCourierById(courier.courierId);
             if (foundCourier) {
-                // Update current courier information
                 this.currentCourier = {
                     courierId: foundCourier.courierId,
                     courier: foundCourier.label || `${foundCourier.label} ${foundCourier.name}`,
@@ -1951,6 +1950,8 @@ class HomeController extends BaseController {
 
                 this.currentWorkSelection = ` for Courier ${this.currentCourier.courier}`;
                 await this.getCurrentJobs(foundCourier.courierId);
+
+                this.mapJobList = [...(this.jobsCurrentList || [])];
 
                 try {
                     this.truckCourierStatus = await this.DispatchData.truckCourierStatus(foundCourier.courierId);
@@ -1965,7 +1966,6 @@ class HomeController extends BaseController {
             console.error("Error selecting courier:", error);
             this.toastrService.showErrorToast("Error loading courier information");
         } finally {
-            // Reset loading states
             await this.$timeout(() => {
                 this.currentListLoading = false;
             });
@@ -2073,9 +2073,9 @@ class HomeController extends BaseController {
 
         await this.checkForAttachments(job.id);
 
-        if (job.rootParentId && job.clientId) {
+        if (job.rootParentId && job.clientID) {
             try {
-                job.relatedJobs = await this.DispatchData.getRelatedJobs(job.rootParentId, job.clientId);
+                job.relatedJobs = await this.DispatchData.getRelatedJobs(job.rootParentId, job.clientID);
             } catch (error: any) {
                 console.error("Error getting related jobs:", error);
             }
@@ -2097,8 +2097,8 @@ class HomeController extends BaseController {
 
             if (this.currentJob && this.currentJob.rootParentId) {
                 try {
-                    if (!this.currentJob.clientId) return;
-                    this.currentJob.relatedJobs = await this.DispatchData.getRelatedJobs(this.currentJob.rootParentId, this.currentJob.clientId);
+                    if (!this.currentJob.clientID) return;
+                    this.currentJob.relatedJobs = await this.DispatchData.getRelatedJobs(this.currentJob.rootParentId, this.currentJob.clientID);
                 } catch (error: any) {
                     console.error("Error getting related jobs:", error);
                 }
@@ -2155,8 +2155,8 @@ class HomeController extends BaseController {
 
             if (job.rootParentId) {
                 try {
-                    if (this.currentJob?.rootParentId && this.currentJob?.clientId) {
-                        this.currentJob.relatedJobs = await this.DispatchData.getRelatedJobs(this.currentJob.rootParentId, this.currentJob.clientId);
+                    if (this.currentJob?.rootParentId && this.currentJob?.clientID) {
+                        this.currentJob.relatedJobs = await this.DispatchData.getRelatedJobs(this.currentJob.rootParentId, this.currentJob.clientID);
                     }
                 } catch (error: any) {
                     console.error("Error getting related jobs:", error);
@@ -2175,7 +2175,9 @@ class HomeController extends BaseController {
                     if (job.courierData) {
                         await this.selectCourier(job.courierData);
 
-                        // Display route points for the single job
+                        // Don't modify mapJobList here - let selectCourier handle it
+                        // This prevents the issue of only one job being shown
+
                         if (job.pickupAddress?.latitude != null && job.pickupAddress?.longitude != null &&
                             job.deliveryAddress?.latitude != null && job.deliveryAddress?.longitude != null &&
                             this._isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude) &&
@@ -2205,6 +2207,7 @@ class HomeController extends BaseController {
             this.focusDispatchField(job.id);
         }, 0);
     }
+
 
     private _isValidJob(job: any): job is IJob {
         return (
@@ -2445,12 +2448,9 @@ class HomeController extends BaseController {
     async getSupports() {
         try {
             this.supportsLoading = true;
-            const data = await this.DispatchData.getSupports(this.supportChannel);
+            this.supports = await this.DispatchData.getSupports(this.supportChannel);
 
-            const first = this.supports === null || this.supports === undefined;
-
-            this.supports = data;
-
+            const first = !this.supports;
             if (first) {
                 this.supportChannel.split(",").forEach((channel: any) => this.setSelectedChannels(channel));
             }
@@ -2774,45 +2774,7 @@ class HomeController extends BaseController {
     }
 
     async showAdditionalServicesMenu($event: MouseEvent, job: IJob) {
-        try {
-            if (!job.clientId || !job.speedId) {
-                return;
-            }
-
-            const isClientItemsAvailable = await this.DispatchData.hasClientItemsAvailable(job.clientId, job.speedId);
-
-            if (!isClientItemsAvailable) {
-                await this.$mdDialog.show(this.$mdDialog
-                    .alert()
-                    .clickOutsideToClose(true)
-                    .title("No Additional Services")
-                    .targetEvent($event)
-                    .textContent("No additional services has been set up for this client. Please add a service through Admin Manager and try again.")
-                    .ok("OK"));
-                return;
-            }
-
-            await this.$mdDialog.show({
-                controller: "AdditionalServicesDialogController",
-                controllerAs: "ctrl",
-                template: require("../dialogs/additional-services-dialog/additional-services-dialog.html"),
-                parent: document.body,
-                clickOutsideToClose: false,
-                fullscreen: true,
-                locals: {
-                    job: job,
-                },
-                bindToController: true,
-            });
-
-            console.log("Additional Services Dialog closed!");
-        } catch (error: any) {
-            if (error === undefined) {
-                console.log("User canceled dialog!");
-            } else {
-                console.error("Error in showAdditionalServicesMenu:", error);
-            }
-        }
+      await this.additionalServicesDialogService.showAdditionalServicesDialog($event, job);
     }
 
     isJobSelected(jobId: number) {

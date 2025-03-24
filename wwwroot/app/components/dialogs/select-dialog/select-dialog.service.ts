@@ -1,5 +1,4 @@
 import {Suggestion} from "../../../interfaces/job.interface";
-import app from "../../../app";
 import {ISelectDialogResult} from "../../../interfaces/dialog-result.interfaces";
 
 export class SelectDialogService implements angular.IServiceProvider {
@@ -13,9 +12,9 @@ export class SelectDialogService implements angular.IServiceProvider {
         console.log('SelectDialogService: Service instantiated');
     }
 
-    $get(): any {
-        return this;
-    }
+        $get(): any {
+            return this;
+        }
 
     async showSelectDialog($event: MouseEvent, data: Suggestion[],
                            fieldName: string, title: string, initialValue: string | null | number = null,

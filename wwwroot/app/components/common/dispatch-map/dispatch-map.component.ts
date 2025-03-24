@@ -12,13 +12,13 @@ class DispatchMapController extends BaseController {
     private locationRefreshInterval: angular.IPromise<void> | null = null;
     private readonly LOCATION_REFRESH_INTERVAL = 15000;
 
-    private mapInstance: google.maps.Map | null = null;
-    private isUpdating: boolean = false;
-    private PICKUP_ICON: google.maps.Symbol | null = null;
-    private DELIVERY_ICON: google.maps.Symbol | null = null;
-    private COURIER_ICON: google.maps.Symbol | null = null;
-    private PICKUP_ICON_HOVER: google.maps.Symbol | null = null;
-    private DELIVERY_ICON_HOVER: google.maps.Symbol | null = null;
+    mapInstance: google.maps.Map | null = null;
+    isUpdating: boolean = false;
+    PICKUP_ICON: google.maps.Symbol | null = null;
+    DELIVERY_ICON: google.maps.Symbol | null = null;
+    COURIER_ICON: google.maps.Symbol | null = null;
+    PICKUP_ICON_HOVER: google.maps.Symbol | null = null;
+    DELIVERY_ICON_HOVER: google.maps.Symbol | null = null;
 
     initialMapZoom?: number;
     jobs?: IJob[] = [];
@@ -99,6 +99,7 @@ class DispatchMapController extends BaseController {
 
         if ('jobs' in changes || 'currentJob' in changes) {
             console.log('Updating displayed jobs due to changes in jobs or currentJob');
+            this._clearJobMarkers();
             return this._updateDisplayedJobs();
         }
 
@@ -146,7 +147,8 @@ class DispatchMapController extends BaseController {
             strokeWeight: 2,
             strokeColor: '#FFFFFF',
             scale: 1.8,
-            anchor: new this.$window.google.maps.Point(2, 24)
+            anchor: new this.$window.google.maps.Point(2, 24),
+            labelOrigin: new this.$window.google.maps.Point(13, 7)
         };
     }
 
@@ -265,11 +267,12 @@ class DispatchMapController extends BaseController {
         if (this.isUpdating) return;
         this.isUpdating = true;
 
+
+
         try {
             this._clearJobMarkers();
 
             if (this.currentJob) {
-                // If a current job is selected, just show that job
                 if (this._isValidCoordinates(
                     this.currentJob.pickupAddress?.latitude,
                     this.currentJob.pickupAddress?.longitude
@@ -283,7 +286,6 @@ class DispatchMapController extends BaseController {
                     this._addDeliveryMarker(this.currentJob);
                 }
             } else if (this.jobs?.length) {
-                // Show all jobs if no current job is selected
                 this.jobs.forEach((job: IJob) => {
                     if (this._isValidCoordinates(
                         job.pickupAddress?.latitude,
@@ -306,7 +308,7 @@ class DispatchMapController extends BaseController {
                 } else if (this.markers.length > 0) {
                     this._centerMapOnMarkers();
                 }
-            }, 100);
+            }, 200);
         } finally {
             this.isUpdating = false;
         }
@@ -422,21 +424,28 @@ class DispatchMapController extends BaseController {
     private _addCourierMarker(courier: AvailableCourierPosition) {
         const position = new this.$window.google.maps.LatLng(courier.latitude, courier.longitude);
 
-        // Determine flag color based on overdue jobs - using Material Design colors
-        const flagColor = courier.overDueJobs > 0 ? '#E53935' : '#43A047'; // Material Red 600 for alert, Material Green 600 for normal
-        const flagIcon = this._createFlagMarkerIcon(flagColor);
+        // Choose color based on overdue jobs
+        const flagColor = courier.overDueJobs > 0 ? '#E53935' : '#43A047';
+
+        // Create a label with both total and overdue jobs
+        const labelText = courier.overDueJobs > 0
+            ? `${courier.totalJobs}/${courier.overDueJobs}`
+            : `${courier.totalJobs}`;
+
+        // Create custom flag icon with the specific color for this courier
+        const courierFlagIcon = this._createFlagMarkerIcon(flagColor);
 
         // Create the courier marker
         const marker = new this.$window.google.maps.Marker({
             position: position,
             map: this.mapInstance,
-            icon: flagIcon,
+            icon: courierFlagIcon,
             title: `Courier ${courier.code}`,
             label: {
-                text: courier.totalJobs.toString(),
+                text: labelText,
                 color: '#FFFFFF',
                 fontWeight: 'bold',
-                fontSize: '12px'
+                fontSize: '10px'
             }
         });
 
@@ -448,14 +457,14 @@ class DispatchMapController extends BaseController {
                 : '';
 
             const content = `
-            <div style="padding: 8px;">
-                <strong>Courier: ${courierName}</strong><br>
-                ${courier.fleetCode ? `Fleet: ${courier.fleetCode}<br>` : ''}
-                ${courier.vehicleType ? `Vehicle: ${courier.vehicleType}<br>` : ''}
-                <strong>Total Jobs: ${courier.totalJobs}</strong><br>
-                ${overdueJobsText}
-            </div>
-        `;
+        <div style="padding: 8px;">
+            <strong>Courier: ${courierName}</strong><br>
+            ${courier.fleetCode ? `Fleet: ${courier.fleetCode}<br>` : ''}
+            ${courier.vehicleType ? `Vehicle: ${courier.vehicleType}<br>` : ''}
+            <strong>Total Jobs: ${courier.totalJobs}</strong><br>
+            ${overdueJobsText}
+        </div>
+    `;
             this.tooltip!.setContent(content);
             this.tooltip!.open(this.mapInstance, marker);
         });
@@ -533,7 +542,7 @@ class DispatchMapController extends BaseController {
 
     private _refreshCourierLocations() {
         if (this.showAvailableCouriers) {
-            this.fetchCourierPositions().then(r =>
+            this.fetchCourierPositions().then(_ =>
                 this.$rootScope.$emit('courierLocationsNeedRefresh')
             );
         }

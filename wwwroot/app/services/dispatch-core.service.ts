@@ -599,7 +599,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
 
         // Format date fields
-        const dateFields: DateField[] = ["Date", "StopDate", "RestartDate", "InActiveDate", "FirstDue", "LastDone", "NextDue", "DueDate", "PuTime"];
+        const dateFields: DateField[] = ["Date", "StopDate", "RestartDate", "InActiveDate", "FirstDue", "LastDone", "NextDue", "DeliverBy", "PuTime"];
         if (dateFields.includes(field as DateField)) {
             processedValue = this.moment(value).format("YYYY-MM-DD");
             console.log("Formatted date field:", {field, originalValue, formattedValue: processedValue});

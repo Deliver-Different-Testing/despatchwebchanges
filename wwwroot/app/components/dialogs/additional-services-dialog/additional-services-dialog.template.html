@@ -1,4 +1,4 @@
-<md-dialog aria-label="Additional Services" style="width: 40%;">
+<md-dialog style="width: 40%;">
     <md-toolbar>
         <div class="md-toolbar-tools">
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">extension</md-icon>
@@ -10,18 +10,20 @@
             </md-button>
             <md-button class="md-icon-button" ng-click="ctrl.cancel()">
                 <md-tooltip md-direction="bottom">Close</md-tooltip>
-                <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
+                <md-icon md-font-set="material-symbols-outlined">
                     close
                 </md-icon>
             </md-button>
         </div>
     </md-toolbar>
 
-    <md-dialog-content ng-cloak>
-
-        <div ng-show="!ctrl.isLoading">
+    <md-dialog-content>
+        <div ng-if="!ctrl.isLoading">
             <md-table-container>
-                <table md-progress="ctrl.isLoading" md-row-select="true" md-table multiple="true"
+                <table md-progress="ctrl.isLoading"
+                       md-row-select
+                       md-table
+                       multiple
                        ng-model="ctrl.selected">
                     <thead md-head>
                     <tr md-row>
@@ -38,14 +40,14 @@
                         <td md-cell>{{service.rate}}</td>
                         <td md-cell>{{service.description}}</td>
                         <td md-cell>
-                            <md-checkbox aria-label="perItem" disabled ng-model="service.perItem"></md-checkbox>
+                            <md-checkbox disabled ng-model="service.perItem"></md-checkbox>
                         </td>
                     </tr>
                     </tbody>
                 </table>
             </md-table-container>
 
-            <md-card class="centered-card" ng-show="ctrl.totalServicesCount !== 0"
+            <md-card class="centered-card" ng-if="ctrl.totalServicesCount !== 0"
                      style="margin-top: 10px; margin-bottom: 10px;">
                 <md-card-content>
 
@@ -78,7 +80,7 @@
             </md-card>
         </div>
 
-        <div ng-show="ctrl.isLoading"
+        <div ng-if="ctrl.isLoading"
              style="display: flex; justify-content: center; align-items: center; height: 100%;">
             <md-progress-circular md-mode="indeterminate"></md-progress-circular>
         </div>
@@ -87,7 +89,7 @@
 
     <md-dialog-actions>
         <md-button class="md-raised md-primary" ng-click="ctrl.bookServices()"
-                   ng-show="!ctrl.isLoading">
+                   ng-if="!ctrl.isLoading">
             Update
         </md-button>
     </md-dialog-actions>

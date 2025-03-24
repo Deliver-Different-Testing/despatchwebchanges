@@ -508,6 +508,10 @@
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[UTL_fncClearList_Other]",
+         "ObjectType": 2
+      },
+      {
          "Name": "[dbo].[UTL_fncSuburb_FromNameWithPostCode]",
          "ObjectType": 2
       }

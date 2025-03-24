@@ -1,6 +1,3 @@
-import app from "../app";
-import angular from "angular";
-
 class ToastrService {
     static $inject = ["$mdToast", "$document"];
 

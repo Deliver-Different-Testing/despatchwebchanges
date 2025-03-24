@@ -1,4 +1,6 @@
-﻿namespace DespatchWeb.Models;
+﻿using System.Collections.Generic;
+
+namespace DespatchWeb.Models;
 
 public class AvailableCourierPosition
 {
@@ -7,7 +9,7 @@ public class AvailableCourierPosition
     public string VehicleType { get; set; }
     public string Code { get; set; }
     public string FleetCode { get; set; }
-    public string ClearListAreaIDs { get; set; }
+    public List<int> ClearListAreaIDs { get; set; }
     public decimal? Longitude { get; set; }
     public decimal? Latitude { get; set; }
     public int TotalJobs { get; set; }
