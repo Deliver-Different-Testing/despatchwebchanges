@@ -1,5 +1,5 @@
 import OverviewService from "./overview.service";
-import ToastrService from "../../services/ToastrService";
+import ToastrService from "../../services/toastr.service";
 import GreetingService from "../../services/greeting.service";
 import OpenJobDispatchService from "../../services/open-job-dispatch.service";
 import OverviewFiltersService from "./services/overview-filters.service";

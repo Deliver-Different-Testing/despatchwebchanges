@@ -1,15 +1,11 @@
-<!-- Pot Couriers Component -->
 <div class="job-list-container">
 
-    <!-- Loading Indicator -->
     <dfrnt-loader
             is-loading="ctrl.potentialCouriersLoading"
             icon-name="'groups'">
     </dfrnt-loader>
 
-    <!-- Pot Couriers Table -->
     <div class="job-list-table" ng-if="!ctrl.potentialCouriersLoading && ctrl.potentialCouriers.length > 0">
-        <!-- Table Headers -->
         <div class="table-headings sticky-header">
             <table>
                 <thead class="thead-dark no select">
@@ -41,14 +37,11 @@
     </div>
 
     <!-- No Data Message -->
-    <div class="no-data" ng-if="!ctrl.potentialCouriersLoading && (!ctrl.potentialCouriers || ctrl.potentialCouriers.length === 0)">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">groups</md-icon>
-            </div>
-            <div class="text">
-                Please Select a Job or Courier
-            </div>
-        </div>
-    </div>
+    <no-data
+            ng-if="!ctrl.potentialCouriersLoading && (!ctrl.potentialCouriers || ctrl.potentialCouriers.length === 0)"
+            title="No Couriers Available"
+            message="Please Select a Job or Courier"
+            icon="groups"
+            show-action="false">
+    </no-data>
 </div>

@@ -1,4 +1,4 @@
-import ToastrService from "../../../services/ToastrService";
+import ToastrService from "../../../services/toastr.service";
 import {Suggestion} from "../../../interfaces/job.interface";
 import app from "../../../app";
 import {ISelectDialogResult} from "../../../interfaces/dialog-result.interfaces";

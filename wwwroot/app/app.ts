@@ -1,17 +1,11 @@
 import {AppConfig} from "./interfaces/app-config.interface";
 import {AppPages} from "./enums/app-pages.enum";
-import {DfrntLoaderComponent} from "./components/common/dfrnt-loader/dfrnt-loader.component";
-import {ContextMenuDirective} from "./components/common/job-context-menu/job-context-menu.controller";
-import {JobDetailComponent} from "./components/common/job-details/job-details.component";
 import {PodPhotoViewerComponent} from "./components/common/pod-photo-viewer/pod-photo-viewer.component";
 import {MaterialSidenavComponent} from "./components/common/side-nav/side-nav.component";
 import HomeComponent from "./components/home/home.controller";
 import {AddNotesDialogController} from "./components/dialogs/add-notes-dialog/add-notes-dialog.controller";
 import {AddEventDialogController} from "./components/dialogs/add-event-dialog/add-event-dialog.controller";
 import {PalletDialogController} from "./components/dialogs/add-pallet-dialog/add-pallet-dialog.controller";
-import {
-    AdditionalServicesDialogController
-} from "./components/dialogs/additional-services-dialog/additional-services-dialog.controller";
 import {AutoCompleteDialogController} from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.controller";
 import {CreateJobDialogController} from "./components/dialogs/create-job-dialog/create-job-dialog.controller";
 import {DateRangeDialogController} from "./components/dialogs/date-range-dialog/date-range-dialog.controller";
@@ -45,7 +39,7 @@ import UsStatesService from "./services/getUsStates.service";
 import GreetingService from "./services/greeting.service";
 import OpenJobDispatchService from "./services/open-job-dispatch.service";
 import RateJobService from "./services/rate-job.service";
-import ToastrService from "./services/ToastrService";
+import ToastrService from "./services/toastr.service";
 import {SelectDialogService} from "./components/dialogs/select-dialog/select-dialog.service";
 import {EventGroupDialogController} from "./components/dialogs/event-group-dialog/event-group-dialog.controller";
 import {EventGroupDialogService} from "./components/dialogs/event-group-dialog/event-group-dialog.service";
@@ -60,6 +54,14 @@ import NationwideService from "./components/Nationwide/nationwide.service";
 import {TaskItemComponent} from "./components/common/task-item-component/task-item.component";
 import PriceBreakdownDialogService from "./components/dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
 import TaskDashboardComponent from "./components/task-dashboard/task-dashboard.controller";
+import AdditionalServicesDialogService
+    from "./components/dialogs/additional-services-dialog/additional-services-dialog.service";
+import AdditionalServicesDialogController
+    from "./components/dialogs/additional-services-dialog/additional-services-dialog.controller";
+import ContextMenuComponent from "./components/common/job-context-menu/job-context-menu.controller";
+import DfrntLoaderComponent from "./components/common/dfrnt-loader/dfrnt-loader.component";
+import JobDetailComponent from "./components/common/job-details/job-details.component";
+import NoDataComponent from "./components/common/no-data/no-data.component";
 
 const app = angular.module("uDispatch", ["ui.router",
     "angularResizable", "ui.sortable", "ui.bootstrap", "ui.bootstrap.pagination",
@@ -184,6 +186,8 @@ app.component("homeComponent", HomeComponent);
 app.component("overviewComponent", OverviewComponent)
 app.component("megaMapComponent", MegaMapComponent)
 app.component("taskDashboardComponent", TaskDashboardComponent)
+app.component("contextMenu", ContextMenuComponent)
+app.component("noData", NoDataComponent)
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);
@@ -203,7 +207,6 @@ app.controller("EditDateTimeDialogController", EditDateTimeDialogController);
 app.controller("EditAddressDialogController", EditAddressDialogController);
 
 // Directives
-app.directive("contextMenu", ContextMenuDirective.factory());
 app.directive("parcelVisualization", ParcelVisualizationDirective.factory());
 
 // Services
@@ -227,4 +230,6 @@ app.service("editDateTimeDialogService", EditDateTimeDialogService);
 app.service("editAddressDialogService", EditAddressDialogService);
 app.service("NWData", NationwideService);
 app.service("priceBreakdownDialogService", PriceBreakdownDialogService)
+app.service("additionalServicesDialogService", AdditionalServicesDialogService)
+
 export default app;

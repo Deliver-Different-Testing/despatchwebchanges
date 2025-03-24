@@ -1,5 +1,5 @@
 import "./edit-parcel-dimensions-dialog.styles.less";
-import ToastrService from "../../../services/ToastrService";
+import ToastrService from "../../../services/toastr.service";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import {ParcelDimensions} from "../../../interfaces/job.interface";
 import app from "../../../app";

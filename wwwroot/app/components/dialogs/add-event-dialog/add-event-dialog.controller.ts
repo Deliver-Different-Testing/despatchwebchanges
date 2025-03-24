@@ -1,4 +1,4 @@
-import ToastrService from "../../../services/ToastrService";
+import ToastrService from "../../../services/toastr.service";
 import { DfrntEvent, IJob } from "../../../interfaces/job.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import BaseController from "../../base-controller";

@@ -1,5 +1,3 @@
-import app from "../app";
-import angular from "angular";
 import ApiConfig from "../interfaces/apiConfig.interface";
 
 class ConfigService {

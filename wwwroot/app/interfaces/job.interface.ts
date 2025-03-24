@@ -22,10 +22,10 @@ export interface IJob {
     source: string;
     notifiedName: string;
     acceptedName: string;
-    speedId?: number;
+    speedID?: number;
     notify: string;
     vehicle: Vehicle;
-    clientId?: number;
+    clientID?: number;
     jobType?: number;
     client: string;
     clientName: string;

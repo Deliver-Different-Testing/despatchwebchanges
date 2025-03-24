@@ -221,6 +221,11 @@
     <_ContentIncludedByDefault Remove="wwwroot\app\components\home\services\job-table.service.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\lib\ui-router\angular-ui-router.min.js" />
     <_ContentIncludedByDefault Remove="wwwroot\lib\ui-router\ct-ui-router-extras.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\fonts\glyphicons-halflings-regular.eot" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\fonts\glyphicons-halflings-regular.svg" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\fonts\glyphicons-halflings-regular.ttf" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\fonts\glyphicons-halflings-regular.woff" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\fonts\glyphicons-halflings-regular.woff2" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
@@ -282,6 +287,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\common\job-context-menu\job-context-menu.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-context-menu\job-context-menu.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\no-data\no-data.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\pod-photo-viewer\pod-photo-viewer.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\side-nav\side-nav.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\side-nav\side-nav.interfaces.ts" />
@@ -292,6 +298,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-notes-dialog\add-notes-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-pallet-dialog\add-pallet-dialog.Controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\additional-services-dialog\additional-services-dialog.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\additional-services-dialog\additional-services-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\auto-complete-dialog\auto-complete-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.controller.ts" />
@@ -370,5 +377,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\app\components\dialogs\event-group-dialog\" />
+    <Folder Include="wwwroot\dist\" />
   </ItemGroup>
 </Project>

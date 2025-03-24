@@ -1,5 +1,5 @@
 import DispatchCoreService from "../../../services/dispatch-core.service";
-import ToastrService from "../../../services/ToastrService";
+import ToastrService from "../../../services/toastr.service";
 import DispatchExecutorService from "../../../services/dispatch-executor.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import UsStatesService from "../../../services/getUsStates.service";

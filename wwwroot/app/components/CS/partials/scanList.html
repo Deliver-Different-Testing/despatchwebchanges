@@ -32,13 +32,10 @@
     </md-table-container>
 </div>
 
-<div class="no-data" ng-if="!scanList || scanList.length == 0">
-    <div class="content">
-        <div class="icon">
-            <md-icon md-font-set="material-symbols-outlined">document_scanner</md-icon>
-        </div>
-        <div class="text">
-            No documents have been scanned for this job yet
-        </div>
-    </div>
-</div>
+<no-data
+        ng-if="!scanList || scanList.length == 0"
+        title="No Scanned Documents"
+        message="No documents have been scanned for this job yet"
+        icon="document_scanner"
+        show-action="false">
+</no-data>

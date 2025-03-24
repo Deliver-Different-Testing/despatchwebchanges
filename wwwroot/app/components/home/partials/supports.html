@@ -1,11 +1,9 @@
-<!-- Supports List using Task List Item Component -->
 <div class="droppable-box nationwide-job-list">
-    <!-- Loading Indicator -->
-    <div ng-if="ctrl.supportsLoading" layout="row" layout-align="center center" style="padding: 24px;">
-        <md-progress-circular md-diameter="40" md-mode="indeterminate"></md-progress-circular>
-    </div>
+    <dfrnt-loader
+            is-loading="ctrl.supportsLoading"
+            icon-name="'support'">
+    </dfrnt-loader>
 
-    <!-- Task List using the updated component -->
     <md-list ng-if="!ctrl.supportsLoading && ctrl.supports && ctrl.supports.length > 0">
         <task-item
                 ng-repeat="support in ctrl.supports | filter: box.searchBox"
@@ -16,15 +14,11 @@
         </task-item>
     </md-list>
 
-    <!-- No Data Message -->
-    <div class="no-data" ng-if="!ctrl.supportsLoading && (!ctrl.supports || ctrl.supports.length === 0)">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">support</md-icon>
-            </div>
-            <div class="text">
-                No Supports Available
-            </div>
-        </div>
-    </div>
+    <no-data
+            ng-if="!ctrl.supportsLoading && (!ctrl.supports || ctrl.supports.length === 0)"
+            title="No Supports Available"
+            message="There are no support items to display at this time."
+            icon="support"
+            show-action="false">
+    </no-data>
 </div>

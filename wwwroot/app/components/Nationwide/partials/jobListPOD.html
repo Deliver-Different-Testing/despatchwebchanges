@@ -108,14 +108,11 @@
     </md-table-pagination>
 
     <!-- No Data Message -->
-    <div class="no-data" ng-if="!podListLoading && (!jobListPOD || jobListPOD.length === 0)">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">pending_actions</md-icon>
-            </div>
-            <div class="text">
-                No Awaiting POD Jobs Found
-            </div>
-        </div>
-    </div>
+    <no-data
+            ng-if="!podListLoading && (!jobListPOD || jobListPOD.length === 0)"
+            title="No Awaiting POD Jobs Found"
+            message="There are currently no jobs awaiting proof of delivery."
+            icon="pending_actions"
+            show-action="false">
+    </no-data>
 </div>

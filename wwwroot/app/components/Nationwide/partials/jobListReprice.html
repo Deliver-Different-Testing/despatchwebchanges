@@ -108,14 +108,11 @@
     </md-table-pagination>
 
     <!-- No Data Message -->
-    <div class="no-data" ng-if="!repriceListLoading && (!jobListReprice || jobListReprice.length === 0)">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">price_change</md-icon>
-            </div>
-            <div class="text">
-                No Repricing Jobs Found
-            </div>
-        </div>
-    </div>
+    <no-data
+            ng-if="!repriceListLoading && (!jobListReprice || jobListReprice.length === 0)"
+            title="No Repricing Jobs Found"
+            message="There are currently no jobs that need repricing."
+            icon="price_change"
+            show-action="false">
+    </no-data>
 </div>

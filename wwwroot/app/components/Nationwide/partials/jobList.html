@@ -1,4 +1,3 @@
-<!-- Nationwide Job List Component -->
 <div class="droppable-box nationwide-job-list">
     <context-menu
             on-refresh="refreshData(true)"
@@ -110,14 +109,11 @@
     </md-table-pagination>
 
     <!-- No Data Message -->
-    <div class="no-data" ng-if="!jobListLoading && (!jobList || jobList.length === 0)">
-        <div class="content">
-            <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">new_releases</md-icon>
-            </div>
-            <div class="text">
-                No New Jobs Found
-            </div>
-        </div>
-    </div>
+    <no-data
+            ng-if="!jobListLoading && (!jobList || jobList.length === 0)"
+            title="No New Jobs Found"
+            message="There are currently no new jobs to display."
+            icon="new_releases"
+            show-action="false">
+    </no-data>
 </div>

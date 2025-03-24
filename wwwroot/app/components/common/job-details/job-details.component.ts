@@ -1,5 +1,4 @@
-import ToastrService from "../../../services/ToastrService";
-import {AppConfig} from "../../../interfaces/app-config.interface";
+import ToastrService from "../../../services/toastr.service";
 import {InternalStatus, IJob, EditAddressDialogViewModel} from "../../../interfaces/job.interface";
 import {ContactID, FirstName} from "../../../contants";
 import {JobNote, JobOptions, TabItem} from "./job-details.interfaces";
@@ -569,8 +568,8 @@ class JobDetailController extends BaseController {
         await this.showEditDateAndTimeDialog($event, job, "Pick Up Time", "PuTime", job.puTime);
     }
 
-    async editDueDate($event: MouseEvent, job: IJob) {
-        await this.showEditDateDialog($event, job, "Due Date", "DueDate", job.firstDue);
+    async editDeliverBy($event: MouseEvent, job: IJob) {
+        await this.showEditDateAndTimeDialog($event, job, "Deliver By", "DeliverBy", job.deliverByTime);
     }
 
     async updateAddress($event: MouseEvent, job: IJob, field: string) {
@@ -721,7 +720,7 @@ class JobDetailController extends BaseController {
         const placeholder = "Start typing to enter new client...";
 
         const existingItem = {
-            id: job.clientId, text: job.clientName
+            id: job.clientID, text: job.clientName
         }
 
         await this.showAutocompleteDialog($event, job, url, placeholder, "clientId", "Client", existingItem, true)
@@ -735,9 +734,9 @@ class JobDetailController extends BaseController {
     }
 
     async contactClick($event: MouseEvent, job: IJob) {
-        if (job.clientId === undefined) return;
+        if (job.clientID === undefined) return;
 
-        const pickContacts = await this.DispatchData.getContactList(job.clientId);
+        const pickContacts = await this.DispatchData.getContactList(job.clientID);
         await this.showSelectDialog($event, job, pickContacts, "ContactID", "Contact", job.contactName);
     }
 
@@ -1143,7 +1142,7 @@ class JobDetailController extends BaseController {
     }
 }
 
-export const JobDetailComponent: angular.IComponentOptions = {
+const JobDetailComponent: angular.IComponentOptions = {
     template: require("./job-details.template.html"),
     bindings: {
         job: "=",
@@ -1152,3 +1151,4 @@ export const JobDetailComponent: angular.IComponentOptions = {
     controller: JobDetailController,
     controllerAs: "ctrl"
 }
+export default JobDetailComponent;

@@ -1,5 +1,5 @@
 import "./price-breakdown-dialog.styles.less";
-import ToastrService from "../../../services/ToastrService";
+import ToastrService from "../../../services/toastr.service";
 import BaseController from "../../base-controller";
 import {PriceBreakdown} from "../../../interfaces/job.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";

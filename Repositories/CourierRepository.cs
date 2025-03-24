@@ -8,6 +8,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
@@ -130,7 +131,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
         );
     }
 
-    public List<AvailableCourierPosition> GetAvailableCouriers(
+    public async Task<List<AvailableCourierPosition>> GetAvailableCouriers(
         decimal minLng,
         decimal minLat,
         decimal maxLng,
@@ -138,25 +139,144 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
         bool isUsTenant
     )
     {
-        var result = new List<AvailableCourierPosition>();
-        var procName = isUsTenant ? "DESWEB_stpUSMapEnvelope" : "DESWEB_stpMapEnvelope";
-        Context
-            .LoadStoredProc(procName)
-            .WithSqlParam("@MinimumLongitude", minLng)
-            .WithSqlParam("@MinimumLatitude", minLat)
-            .WithSqlParam("@MaximumLongitude", maxLng)
-            .WithSqlParam("@MaximumLatitude", maxLat)
-            .ExecuteStoredProc(handle =>
-            {
-                result = handle.ReadToList<AvailableCourierPosition>().ToList();
-            });
-        return result;
+        if (!isUsTenant)
+            return await GetNzAvailableCourierPositions(
+                minLng,
+                minLat,
+                maxLng,
+                maxLat
+                );
+
+        return await GetUsAvailableCourierPositions(
+            minLng,
+            minLat,
+            maxLng,
+            maxLat
+            );
     }
+
+    private async Task<List<AvailableCourierPosition>> GetUsAvailableCourierPositions(
+        decimal minimumLongitude,
+        decimal minimumLatitude,
+        decimal maximumLongitude,
+        decimal maximumLatitude)
+    {
+        var couriers = await Context.TucCouriers
+            .Where(c => c.CourierLogInOut.LogOutTime == null &&
+                        c.CourierGps.Longitude >= minimumLongitude && c.CourierGps.Longitude <= maximumLongitude
+                        && c.CourierGps.Latitude >= minimumLatitude && c.CourierGps.Latitude <= maximumLatitude
+                        && c.CourierFleetId != 29)
+            .Select(c => new CourierDto
+            {
+                    CourierId = c.UccrId,
+                    Latitude = c.CourierGps.Latitude ?? 0,
+                    Longitude = c.CourierGps.Longitude ?? 0,
+                    ChannelId = c.UccrChannelId ?? 0,
+                    VehicleType = c.UccrVehicle,
+                    ClearListAreaIDs = c.CourierGps.ZipPolygon.TblClearListAreaPolygons
+                        .Select(x => x.ClearListArea.ClearListAreaId).ToList(),
+                   Code = c.Code,
+                   FleetId = c.CourierFleetId,
+                   TotalJobs = c.TucJobUcjbCouriers.Count(j => !j.UcjbVoid && !j.UcjbJobDone),
+                   Jobs = c.TucJobUcjbCouriers
+                       .Where(j => !j.UcjbVoid && !j.UcjbJobDone && j.UcjbTime != null)
+                       .Select(j => new JobDto
+                       {
+                           UcjbDate = j.UcjbDate,
+                           UcjbTime = j.UcjbTime,
+                           Minutes = j.AcceptedJobType.Minutes
+                       })
+                       .ToList()
+            })
+            .AsNoTracking()
+            .ToListAsync();
+
+
+        var uaFleetIds = new[] { 32, 33, 34, 35, 36, 37, 38, 64 };
+
+        return couriers.Select(dto => new AvailableCourierPosition
+        {
+            CourierId = dto.CourierId,
+            Latitude = dto.Latitude,
+            Longitude = dto.Longitude,
+            ChannelId = dto.ChannelId,
+            VehicleType = dto.VehicleType,
+            ClearListAreaIDs = dto.ClearListAreaIDs,
+            Code = dto.Code,
+            FleetCode = uaFleetIds.Contains(dto.FleetId ?? 0) ? "UA" : string.Empty,
+            TotalJobs = dto.TotalJobs,
+            OverDueJobs = dto.Jobs.Count(j =>
+                j.UcjbTime != null && j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes ?? 0) < DateTime.Now)
+        }).ToList();
+    }
+
+
+  private async Task<List<AvailableCourierPosition>> GetNzAvailableCourierPositions(
+    decimal minimumLongitude,
+    decimal minimumLatitude,
+    decimal maximumLongitude,
+    decimal maximumLatitude)
+{
+    var couriers = await Context.TucCouriers
+        .Where(c => c.CourierLogInOut.LogOutTime == null &&
+                    c.CourierGps.Longitude >= minimumLongitude && c.CourierGps.Longitude <= maximumLongitude &&
+                    c.CourierGps.Latitude >= minimumLatitude && c.CourierGps.Latitude <= maximumLatitude &&
+                    c.CourierFleetId != 29)
+        .Select(c => new CourierDto
+        {
+            CourierId = c.UccrId,
+            Latitude = c.CourierGps.Latitude ?? 0,
+            Longitude = c.CourierGps.Longitude ?? 0,
+            ChannelId = c.UccrChannelId ?? 0,
+            VehicleType = c.UccrVehicle,
+            ClearListAreaIDs = c.CourierGps.Polygon.TblClearListAreaPolygons
+                .Select(x => x.ClearListArea.ClearListAreaId).ToList(),
+            Code = c.Code,
+            FleetId = c.CourierFleetId,
+            TotalJobs = c.TucJobUcjbCouriers.Count(j => !j.UcjbVoid && !j.UcjbJobDone),
+            Jobs = c.TucJobUcjbCouriers
+                .Where(j => !j.UcjbVoid && !j.UcjbJobDone && j.UcjbTime != null)
+                .Select(j => new JobDto
+                {
+                    UcjbDate = j.UcjbDate,
+                    UcjbTime = j.UcjbTime,
+                    Minutes = j.AcceptedJobType.Minutes
+                })
+                .ToList()
+        })
+        .AsNoTracking()
+        .ToListAsync();
+
+    var now = DateTime.Now;
+    var uaFleetIds = new[] { 32, 33, 34, 35, 36, 37, 38, 64 };
+
+    return couriers.Select(dto => new AvailableCourierPosition
+    {
+        CourierId = dto.CourierId,
+        Latitude = dto.Latitude,
+        Longitude = dto.Longitude,
+        ChannelId = dto.ChannelId,
+        VehicleType = dto.VehicleType,
+        ClearListAreaIDs = dto.ClearListAreaIDs,
+        Code = dto.Code,
+        FleetCode = uaFleetIds.Contains(dto.FleetId ?? 0) ? "UA" : string.Empty,
+        TotalJobs = dto.TotalJobs,
+        OverDueJobs = dto.Jobs.Count(j =>
+            j.UcjbTime != null && j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes ?? 0) < now)
+    }).ToList();
+}
 
     public async Task<List<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId)
     {
         var results = await Context.Procedures.DESWEB_qryPotentialCouriersAsync(jobId);
-        return mapper.Map<List<PotentialCouriersViewModel>>(results);
+        return results.Select(x => new PotentialCouriersViewModel
+        {
+            Code = x.Code,
+            CourierId = x.CourierID ?? 0,
+            FirstName = x.FirstName,
+            Reason = x.Reason,
+            RuleNumber = x.RuleNumber ?? 0
+        }).ToList();
     }
 
     public async Task<List<ActiveCouriersViewModel>> ActiveCouriersAsync()
@@ -164,7 +284,14 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
         try
         {
             var results = await Context.Procedures.DES_qryCourierCombo_ActiveAsync();
-            return mapper.Map<List<ActiveCouriersViewModel>>(results);
+            return results.Select(x => new ActiveCouriersViewModel
+            {
+                Code = x.Code,
+                CourierId = x.CourierID,
+                Name = x.Name,
+                DangerousGoods = x.DangerousGoods,
+                DGLicenseExpiry = x.DGLicenseExpiry,
+            }).ToList();
         }
         catch (DbException ex)
         {
@@ -656,7 +783,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
     )
     {
         if (result == null)
-            return new List<ClearListSection>();
+            return [];
 
         return result
             .Where(c => c.DisplayOrder == displayOrder)
@@ -696,6 +823,6 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
                 ?.Split(',')
                 .Select((d, index) => new Destination { Id = index + 1, Label = d.Trim() })
                 .Where(y => !string.IsNullOrWhiteSpace(y.Label))
-                .ToList() ?? new List<Destination>();
+                .ToList() ?? [];
     }
 }

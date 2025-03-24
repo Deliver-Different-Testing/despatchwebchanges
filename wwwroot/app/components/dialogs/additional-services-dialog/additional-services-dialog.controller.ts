@@ -1,10 +1,10 @@
 import DispatchCoreService from "../../../services/dispatch-core.service";
-import ToastrService from "../../../services/ToastrService";
+import ToastrService from "../../../services/toastr.service";
 import {IJob} from "../../../interfaces/job.interface";
-import app from "../../../app";
+import BaseController from "../../base-controller";
 
-export class AdditionalServicesDialogController implements angular.IController {
-    static $inject: string[] = ["$mdDialog", "DispatchData", "toastrService", "job"];
+class AdditionalServicesDialogController extends BaseController {
+    static $inject = ["$mdDialog", "DispatchData", "toastrService", "job"];
 
     private readonly jobId: number;
     private readonly clientId: number;
@@ -17,13 +17,17 @@ export class AdditionalServicesDialogController implements angular.IController {
     totalServicesCount: number;
     totalCost: number = 0;
 
-    constructor(private $mdDialog: angular.material.IDialogService,
-                private DispatchData: DispatchCoreService,
-                private toastrService: ToastrService,
-                private job: IJob) {
+    constructor(
+        private $mdDialog: angular.material.IDialogService,
+        private DispatchData: DispatchCoreService,
+        private toastrService: ToastrService,
+        private job: IJob
+    ) {
+        super();
+
         this.jobId = this.job.id ?? 0;
-        this.clientId = this.job.clientId ?? 0;
-        this.speedId = this.job.speedId ?? 0;
+        this.clientId = this.job.clientID ?? 0;
+        this.speedId = this.job.speedID ?? 0;
         this.quantity = this.job.items ?? 0;
 
         this.isLoading = false;
@@ -31,18 +35,15 @@ export class AdditionalServicesDialogController implements angular.IController {
         this.selected = [];
         this.additionalServices = [];
         this.totalServicesCount = 0;
-    }
-
-    $onInit(): void {
-        this.setTotalCost(this.job.charge);
-        this.addJobSpeedToSelected();
-
-        this.addToSelectList = this.addToSelectList.bind(this);
-        this.getTotal = this.getTotal.bind(this);
 
         this.refreshServices().catch((error: Error) => {
             this.toastrService.showErrorToast(`Error initializing services: ${error.message}`);
         });
+    }
+
+    $onInit() {
+        this.setTotalCost(this.job.charge);
+        this.addJobSpeedToSelected();
     }
 
     setTotalCost(charge: string) {
@@ -53,7 +54,7 @@ export class AdditionalServicesDialogController implements angular.IController {
     addJobSpeedToSelected() {
         const jobSpeed = {
             itemId: -1,
-            clientId: this.job.clientId,
+            clientId: this.job.clientID,
             name: `${this.job.speedName} rate`,
             description: `${this.job.speedName} rate`,
             perItem: false,
@@ -65,7 +66,7 @@ export class AdditionalServicesDialogController implements angular.IController {
         this.selected.push(jobSpeed);
     }
 
-    async refreshServices(): Promise<void> {
+    async refreshServices() {
         this.isLoading = true;
         try {
             const serviceResponse = await this.DispatchData.getServices(this.clientId, this.speedId, this.jobId);
@@ -80,7 +81,7 @@ export class AdditionalServicesDialogController implements angular.IController {
         }
     }
 
-    async addToSelectList(): Promise<void> {
+    async addToSelectList() {
         this.isTotalCostCalculating = true;
         try {
             this.totalCost = await this.getTotal();
@@ -91,16 +92,16 @@ export class AdditionalServicesDialogController implements angular.IController {
         }
     }
 
-    async getTotal(): Promise<number> {
+    async getTotal() {
         const totalAmount = this.selected.reduce((total: number, item: any) => {
             const itemCharge = item.perItem ? (item.rate * this.quantity) : item.rate;
             return total + itemCharge;
         }, 0.0);
 
-       return await this.DispatchData.ppdExclusiveAmount(this.clientId, totalAmount);
+        return await this.DispatchData.ppdExclusiveAmount(this.clientId, totalAmount);
     }
 
-    async bookServices(): Promise<void> {
+    async bookServices() {
         try {
             const serviceIds = this.selected
                 .filter((service: any) => service.itemId !== -1)
@@ -121,3 +122,5 @@ export class AdditionalServicesDialogController implements angular.IController {
         this.$mdDialog.cancel();
     }
 }
+
+export default AdditionalServicesDialogController;

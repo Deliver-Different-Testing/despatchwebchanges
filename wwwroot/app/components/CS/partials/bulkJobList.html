@@ -1,4 +1,3 @@
-<!-- Bulk Job List Container -->
 <div class="droppable-box" style="min-height:500px">
     <md-table-container>
         <table md-dense md-progress="bulkJobPromise" md-table>
@@ -66,4 +65,12 @@
             md-page-select
             md-total="{{bulkJobTotalCount}}">
     </md-table-pagination>
+
+    <no-data
+            ng-if="!bulkJobPromise && (!bulkJobList || bulkJobList.length === 0)"
+            title="No Bulk Jobs Found"
+            message="There are currently no bulk jobs to display."
+            icon="content_paste"
+            show-action="false">
+    </no-data>
 </div>

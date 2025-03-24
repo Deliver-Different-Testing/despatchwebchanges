@@ -1,4 +1,3 @@
-import app from "../app";
 import StateInfo from "../interfaces/state-info.interface";
 
 class UsStatesService {

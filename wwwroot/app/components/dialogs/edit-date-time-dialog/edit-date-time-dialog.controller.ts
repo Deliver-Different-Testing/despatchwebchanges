@@ -1,5 +1,5 @@
 import "./edit-date-time-dialog.less";
-import ToastrService from "../../../services/ToastrService";
+import ToastrService from "../../../services/toastr.service";
 import app from "../../../app";
 import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interfaces";
 

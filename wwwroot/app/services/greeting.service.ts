@@ -1,5 +1,3 @@
-import app from "../app";
-
 class GreetingService {
     greetUser(userName: string): string {
         const currentHour: number = new Date().getHours();

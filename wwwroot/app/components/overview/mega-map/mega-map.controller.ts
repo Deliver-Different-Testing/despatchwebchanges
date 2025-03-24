@@ -1,4 +1,4 @@
-import ToastrService from "../../../services/ToastrService";
+import ToastrService from "../../../services/toastr.service";
 import OverviewService from "../overview.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import ConfigService from "../../../services/config.service";

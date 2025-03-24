@@ -1,5 +1,5 @@
 import DispatchCoreService from "../../../services/dispatch-core.service";
-import ToastrService from "../../../services/ToastrService";
+import ToastrService from "../../../services/toastr.service";
 import {IJob, PalletInfo} from "../../../interfaces/job.interface";
 import app from "../../../app";
 

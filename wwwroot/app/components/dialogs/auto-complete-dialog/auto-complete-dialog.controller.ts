@@ -1,5 +1,5 @@
 import DispatchCoreService from "../../../services/dispatch-core.service";
-import ToastrService from "../../../services/ToastrService";
+import ToastrService from "../../../services/toastr.service";
 import app from "../../../app";
 import {SelectOption} from "../../../interfaces/job.interface";
 
