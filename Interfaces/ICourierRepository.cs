@@ -13,17 +13,6 @@ public interface ICourierRepository
 
     Task<List<TruckCourierStatusViewModel>> TruckCourierStatusAsync(string courierId);
 
-    Task AddEventAsync(
-        int jobId,
-        int staffId,
-        string despatcherName,
-        string notes,
-        int eventType,
-        float? lateTime = null,
-        DateTime? etaTime = null,
-        bool close = false
-    );
-
    Task<List<AvailableCourierPosition>> GetAvailableCouriers(
         decimal minLng,
         decimal minLat,

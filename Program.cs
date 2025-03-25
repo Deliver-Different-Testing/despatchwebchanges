@@ -145,6 +145,7 @@ builder.Services.AddScoped<IFlightStatsService, FlightStatsService>();
 builder.Services.AddScoped<IClientAccessValidatorService, ClientAccessValidatorService>();
 builder.Services.AddScoped<IRateJobService, RateJobService>();
 builder.Services.AddScoped<ICountryService, CountryService>();
+builder.Services.AddScoped<ITenantTimeService, TenantTimeService>();
 
 // Automapper
 builder.Services.AddAutoMapper(typeof(GenericMapperProfiles));

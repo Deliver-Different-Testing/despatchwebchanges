@@ -141,14 +141,14 @@ class DispatchMapController extends BaseController {
 
     private _createFlagMarkerIcon(color: string): google.maps.Symbol {
         return {
-            path: 'M2,2 L2,24 L6,24 L6,20 L6,12 L20,12 L16,7 L20,2 Z',
+            path: 'M2,2 L2,24 L6,24 L6,20 L6,12 L30,12 L26,7 L30,2 Z',
             fillColor: color,
             fillOpacity: 0.9,
             strokeWeight: 2,
             strokeColor: '#FFFFFF',
             scale: 1.8,
             anchor: new this.$window.google.maps.Point(2, 24),
-            labelOrigin: new this.$window.google.maps.Point(13, 7)
+            labelOrigin: new this.$window.google.maps.Point(18, 7)
         };
     }
 

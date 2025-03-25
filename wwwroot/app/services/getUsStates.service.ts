@@ -1,6 +1,6 @@
 import StateInfo from "../interfaces/state-info.interface";
 
-class UsStatesService {
+class UsStatesService implements angular.IServiceProvider {
     private readonly usStates: StateInfo[]
 
     constructor() {
@@ -58,15 +58,19 @@ class UsStatesService {
         ];
     }
 
-    public getStates(): StateInfo[] {
+    $get() {
+        return this;
+    }
+
+    getStates(): StateInfo[] {
         return this.usStates;
     }
 
-    public getStateByAbbreviation(abbreviation: string): StateInfo | undefined {
+    getStateByAbbreviation(abbreviation: string): StateInfo | undefined {
         return this.usStates.find(state => state.abbreviation === abbreviation);
     }
 
-    public getStateByName(name: string): StateInfo | undefined {
+    getStateByName(name: string): StateInfo | undefined {
         return this.usStates.find(state => state.name.toLowerCase() === name.toLowerCase());
     }
 }

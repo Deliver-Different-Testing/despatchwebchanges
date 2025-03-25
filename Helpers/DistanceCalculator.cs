@@ -3,7 +3,7 @@ using DespatchWeb.Models;
 
 namespace DespatchWeb.Helpers;
 
-public class DistanceCalculator
+public static class DistanceCalculator
 {
     private const double EarthRadiusInMiles = 3959.87433;
 

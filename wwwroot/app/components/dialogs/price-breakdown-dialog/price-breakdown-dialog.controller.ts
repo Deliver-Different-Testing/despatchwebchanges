@@ -143,7 +143,7 @@ export class PriceBreakdownDialogController extends BaseController {
     }
 
     private async deletePriceBreakdown(chargeId: number) {
-        await this.DispatchData.deletePriceBreakdown(chargeId);
+        await this.DispatchData.deletePriceBreakdown(chargeId, this.jobId);
     }
 
     cancel(): void {

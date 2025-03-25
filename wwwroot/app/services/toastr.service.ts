@@ -5,12 +5,20 @@ enum ToastType {
     INFO = 'info'
 }
 
-class ToastrService {
-    static $inject = ["$mdToast"];
+class ToastrService implements angular.IServiceProvider {
+    static $inject = [
+        "$mdToast",
+        "$document"
+    ];
 
     constructor(
         private $mdToast: angular.material.IToastService,
+        private $document: angular.IDocumentService
     ) {
+    }
+
+    $get() {
+        return this;
     }
 
     showErrorToast(errorMessage: string = "An unexpected error occurred. Please try again or contact support") {
@@ -34,7 +42,7 @@ class ToastrService {
             .position("bottom")
             .hideDelay(5000)
             .toastClass(`md-${type}-toast md-toast-custom md-center-toast`)
-            .parent(document.body)
+            .parent(this.$document.parent())
             .theme(`${type}-toast`);
 
         return this.$mdToast.show(preset);

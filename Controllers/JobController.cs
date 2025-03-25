@@ -30,7 +30,7 @@ namespace DespatchWeb.Controllers;
 
 public class JobController(
     IJobRepository jobRepository,
-    ICourierRepository courierRepo,
+    ITaskRepository taskRepository,
     IClientAccessValidatorService clientAccessValidator,
     IAmazonS3 s3Client,
     HttpClient httpClient,
@@ -102,7 +102,7 @@ public class JobController(
         {
             Log.Information(
                 "GetAllJobCoordinates endpoint called with Status: {Status}, IsInternal: {IsInternal}, "
-                + "ClientIds: {ClientIds}, DespatchViewIds: {@DespatchViewIds}",
+                + "ClientIds: {ClientIds}",
                 isInternal,
                 clientIds,
                 despatchViewIds
@@ -224,14 +224,23 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddPriceComponent([FromBody] ChargeViewModel breakdown)
+    public async Task<IActionResult> AddPriceComponent(int staffId, string despatcherName, [FromBody] ChargeViewModel breakdown)
     {
         try
         {
-            Log.Information("Adding price breakdown for job {JobId}",
-                breakdown.JobId ?? breakdown.PrebookJobId);
+            var jobId = breakdown.JobId ?? breakdown.PrebookJobId;
+            ArgumentNullException.ThrowIfNull(jobId);
+
+            Log.Information("Adding price breakdown for job {JobId}", jobId);
 
             var chargeId = await jobRepository.AddJobPriceBreakdownAsync(breakdown);
+
+              await taskRepository.AddEventAsync(
+                  jobId ?? 0,
+                            staffId,
+                            despatcherName,
+                            "Manually rated price",
+                            (int)EventType.ChangePrice);
            return Json(chargeId);
         }
         catch (Exception ex)
@@ -242,14 +251,24 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdatePriceComponent([FromBody] ChargeViewModel breakdown)
+    public async Task<IActionResult> UpdatePriceComponent(int staffId, string despatcherName, [FromBody] ChargeViewModel breakdown)
     {
           try
           {
+                var jobId = breakdown.JobId ?? breakdown.PrebookJobId;
+                          ArgumentNullException.ThrowIfNull(jobId);
+
               Log.Information("Updating price breakdown for job {JobId}",
                   breakdown.JobId ?? breakdown.PrebookJobId);
 
               await jobRepository.UpdateJobPriceBreakdownAsync(breakdown);
+
+              await taskRepository.AddEventAsync(
+                                jobId ?? 0,
+                                          staffId,
+                                          despatcherName,
+                                          "Manually rated price",
+                                          (int)EventType.ChangePrice);
               return Ok();
           }
           catch (Exception ex)
@@ -260,13 +279,21 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> DeletePriceComponent(int chargeId)
+    public async Task<IActionResult> DeletePriceComponent(int staffId, string despatcherName, int jobId, int chargeId)
     {
         try
         {
             Log.Information("Deleting price breakdown for charge {chargeId}", chargeId);
 
             await jobRepository.DeleteJobPriceBreakdownAsync(chargeId);
+
+            await taskRepository.AddEventAsync(
+                jobId,
+                staffId,
+                despatcherName,
+                "Manually rated price",
+                (int)EventType.ChangePrice);
+
             return Ok();
         }
         catch (Exception ex)
@@ -275,7 +302,6 @@ public class JobController(
             return StatusCode(500, "An error occurred while adding the deleting breakdown");
         }
     }
-
 
     public async Task<IActionResult> SendPrebookJob(int jobId)
     {
@@ -867,7 +893,7 @@ public class JobController(
 
     private async Task CreateLateEvent(LateCallRequest request, int late)
     {
-        await courierRepo.AddEventAsync(
+        await taskRepository.AddEventAsync(
             request.JobId,
             int.Parse(request.StaffId),
             request.Contact,
@@ -1096,7 +1122,7 @@ public class JobController(
     {
         try
         {
-            await courierRepo.AddEventAsync(
+            await taskRepository.AddEventAsync(
                 jobId,
                 staffId,
                 despatcherName,
@@ -1126,7 +1152,7 @@ public class JobController(
         string despatcherName
     )
     {
-        await courierRepo.AddEventAsync(
+        await taskRepository.AddEventAsync(
             jobId,
             staffId,
             despatcherName,
@@ -1150,7 +1176,7 @@ public class JobController(
         string notes
     )
     {
-        await courierRepo.AddEventAsync(
+        await taskRepository.AddEventAsync(
             jobId,
             staffId,
             despatcherName,
@@ -1175,7 +1201,7 @@ public class JobController(
         int eventType
     )
     {
-        await courierRepo.AddEventAsync(jobId, staffId, despatcherName, notes, eventType);
+        await taskRepository.AddEventAsync(jobId, staffId, despatcherName, notes, eventType);
 
         return Ok();
     }
@@ -1964,7 +1990,7 @@ public class JobController(
             jobData
         );
 
-        await courierRepo.AddEventAsync(
+        await taskRepository.AddEventAsync(
             jobId,
             staffId,
             despatcher,

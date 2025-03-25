@@ -37,7 +37,7 @@ class NationwideService implements angular.IServiceProvider {
 
         const paramObject = {
             order: String(queryParams.order ?? defaultParams.order),
-            asc: String(queryParams.orderDirection ?? defaultParams.orderDirection),
+            orderDirection: String(queryParams.orderDirection ?? defaultParams.orderDirection),
             isInternal: String(internal),
             cid: String(ContactID),
             clientIds: selectedClients.length ? selectedClients.join(',') : '',

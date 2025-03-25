@@ -2,9 +2,9 @@ import "./edit-parcel-dimensions-dialog.styles.less";
 import ToastrService from "../../../services/toastr.service";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import {ParcelDimensions} from "../../../interfaces/job.interface";
-import app from "../../../app";
+import BaseController from "../../base-controller";
 
-export class EditParcelDimensionsDialogController {
+export class EditParcelDimensionsDialogController extends BaseController {
     static $inject = ["$mdDialog", "toastrService", "DispatchData", "jobId", "parcels"];
 
     selectedParcelIndex: number;
@@ -17,7 +17,8 @@ export class EditParcelDimensionsDialogController {
         public jobId: number,
         public parcels: ParcelDimensions[]
     ) {
-        // Initialize with empty array if no parcels provided
+        super();
+
         this.selectedParcelIndex = 0;
 
         console.log("Initializing EditParcelDimensionsDialog with jobId:", jobId);
@@ -35,13 +36,13 @@ export class EditParcelDimensionsDialogController {
         };
     }
 
-    addNewParcel(): void {
+    addNewParcel() {
         const newParcel = this.initializeParcel();
         this.parcels.push(newParcel);
         this.selectedParcelIndex = this.parcels.length - 1;
     }
 
-    deleteParcel(index: number, $event?: Event): void {
+    deleteParcel(index: number, $event?: Event) {
         if ($event) {
             $event.stopPropagation();
         }
@@ -64,7 +65,7 @@ export class EditParcelDimensionsDialogController {
         return this.parcels.length > 0;
     }
 
-    switchParcel(index: number): void {
+    switchParcel(index: number) {
         console.log(`Switching to parcel ${index}`);
         if (index >= 0 && index < this.parcels.length) {
             this.selectedParcelIndex = index;
@@ -92,13 +93,13 @@ export class EditParcelDimensionsDialogController {
         return isValid;
     }
 
-    cancel(): void {
+    cancel() {
         console.log("Dialog cancelled");
         this.$mdDialog.cancel();
     }
 
 
-    async submit(): Promise<void> {
+    async submit(){
         console.log("Submit called with parcels:", this.parcels);
 
         try {

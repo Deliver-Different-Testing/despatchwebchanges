@@ -5,92 +5,85 @@ using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories;
 
-public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory, IHttpContextAccessor contextAccessor)
+public class TaskRepository(
+    IDbContextFactory<DespatchContext> contextFactory,
+    ITenantTimeService tenantTimeService
+)
     : BaseRepository(contextFactory),
         ITaskRepository
 {
-    public async Task<List<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters)
-    {
-        var tenantTimeZone = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
-        var tenantTimeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTimeZone ?? string.Empty);
-        var utcDateTime = DateTime.UtcNow;
-        var tenantTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tenantTimeZoneInfo);
+   public async Task<List<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters)
+   {
+       // Determine date for filtering
+       var selectedDate = filters?.Date ?? tenantTimeService.GetCurrentTenantTime();
 
-        var selectedDate = tenantTime.Date;
-        if (filters is { Date: not null }) selectedDate = filters.Date.Value;
+       // Build initial query
+       var query = Context.TucEvents
+           .Where(e => e.UcevDate != null && e.UcevDate.Value.Date <= selectedDate.Date);
 
-        var query = Context.TucEvents.AsQueryable();
+       if (filters != null) query = ApplyFilters(query, filters);
 
-        query = query.Where(e =>
-                e.UcevDate != null
-                && (
-                    e.UcevDate.Value.Date == selectedDate
-                    ||
-                    e.UcevDate.Value < tenantTime
-                )
-        );
+       var taskData = await query
+           .GroupJoin(
+               Context.TucStaffs,
+               events => events.UcevStaffIdin,
+               staff => staff.UcstId,
+               (events, staffs) => new { events, staffs }
+           )
+           .SelectMany(
+               x => x.staffs.DefaultIfEmpty(),
+               (x, staff) => new TaskDto
+               {
+                   Id = x.events.UcevId,
+                   Despatcher = x.events.UcevDespatcher,
+                   Notes = x.events.UcevNotes,
+                   JobId = x.events.UcevJobId,
+                   Closed = x.events.UcevClosed,
+                   Date = x.events.UcevDate,
+                   Time = x.events.UcevTime,
+                   Description = x.events.UcevDescription,
+                   EventType = x.events.UcevType ?? 0,
+                   StaffId = staff != null ? staff.UcstId : 0,
+                   StaffFirstName = staff != null ? staff.UcstFirstName : string.Empty,
+                   StaffLastName = staff != null ? staff.UcstLastName : string.Empty
+               }
+           )
+           .ToListAsync();
 
-        // Apply additional filters
-        if (filters != null)
-            query = ApplyFilters(query, filters);
+       // Map to view models and sort by due date descending
+       var taskViewModels = await MapToViewModelsAsync(taskData);
+       return taskViewModels.OrderByDescending(vm => vm.DueDate).ToList();
+   }
 
-        var simpleQuery = query
-            .Join(
-                Context.TucStaffs,
-                events => events.UcevStaffIdin,
-                staff => staff.UcstId,
-                (events, staff) => new
-                {
-                    events.UcevId,
-                    events.UcevDespatcher,
-                    events.UcevNotes,
-                    events.UcevJobId,
-                    events.UcevClosed,
-                    events.UcevDate,
-                    events.UcevTime,
-                    events.UcevDescription,
-                    events.UcevType,
-                    // Staff information
-                    StaffId = staff.UcstId,
-                    StaffName = staff.UcstFirstName + " " + staff.UcstLastName
-                }
-            );
+   private async Task<List<TaskViewModel>> MapToViewModelsAsync(List<TaskDto> taskData)
+   {
+       var eventTypeIds = taskData.Select(dto => (int)dto.EventType).Distinct().ToList();
+       var eventTypeDict = new Dictionary<int, string>();
 
-        var results = await simpleQuery.ToListAsync();
+       foreach (var typeId in eventTypeIds) eventTypeDict[typeId] = await GetEventTypeNameAsync(typeId);
 
-        var tasks = new List<TaskViewModel>();
-        foreach (var e in results)
-        {
-            var eventTypeName = await GetEventTypeNameAsync(e.UcevType);
-
-            var task = new TaskViewModel
-            {
-                Id = e.UcevId,
-                Assignee = new Suggestion
-                {
-                    Id = e.StaffId,
-                    Text = e.StaffName
-                },
-                Description = e.UcevNotes,
-                JobId = e.UcevJobId ?? 0,
-                Closed = e.UcevClosed,
-                DueDate = CombineDateAndTime(e.UcevDate, e.UcevTime),
-                Title = e.UcevDescription,
-                EventType = eventTypeName
-            };
-
-            tasks.Add(task);
-        }
-
-        // Order by newest first
-        return tasks.OrderByDescending(e => e.DueDate).ToList();
-    }
+       return taskData.Select(dto => new TaskViewModel
+       {
+           Id = dto.Id,
+           Assignee = new Suggestion
+           {
+               Id = dto.StaffId,
+               Text = $"{dto.StaffFirstName} {dto.StaffLastName}"
+           },
+           Description = dto.Notes,
+           JobId = dto.JobId ?? 0,
+           Closed = dto.Closed ?? false,
+           DueDate = CombineDateAndTime(dto.Date, dto.Time),
+           Title = dto.Description,
+           EventType = eventTypeDict[(int)dto.EventType]
+       }).ToList();
+   }
 
     public async Task SetEventAsClosedAsync(int eventId, bool closed)
     {
@@ -221,10 +214,10 @@ public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory, I
         var staff = await Context.TucStaffs
             .Where(s => s.UcstActive)
             .Select(s => new Suggestion
-        {
-            Id = s.UcstId,
-            Text = s.UcstFirstName + " " + s.UcstLastName
-        })
+            {
+                Id = s.UcstId,
+                Text = s.UcstFirstName + " " + s.UcstLastName
+            })
             .OrderBy(s => s.Text)
             .AsNoTracking()
             .ToListAsync();
@@ -261,7 +254,8 @@ public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory, I
         return query;
     }
 
-    private async Task<TucEvent> GetEventByIdAsync(int eventId) => await Context.TucEvents.FirstOrDefaultAsync(e => e.UcevId == eventId);
+    private async Task<TucEvent> GetEventByIdAsync(int eventId) =>
+        await Context.TucEvents.FirstOrDefaultAsync(e => e.UcevId == eventId);
 
     private static DateTime CombineDateAndTime(DateTime? date, DateTime? time)
     {
@@ -293,5 +287,43 @@ public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory, I
             .FirstOrDefaultAsync();
 
         return eventType ?? defaultEvent;
+    }
+
+    public async Task AddEventAsync(
+        int jobId,
+        int staffId,
+        string despatcherName,
+        string notes,
+        int eventType,
+        float? lateTime = null,
+        DateTime? etaTime = null,
+        bool close = false
+    )
+    {
+        var job = await Context.TucJobs.FindAsync(jobId);
+        ArgumentNullException.ThrowIfNull(job, "Job not found");
+
+        await Context.Procedures.DES_qdfEvent_InsertAsync(
+            jobNo: job.UcjbNumber,
+            clientID: job.UcjbClientId,
+            contact: job.UcjbContact,
+            date: DateTime.Today,
+            time: DateTime.Now,
+            type: eventType,
+            lateTime: lateTime,
+            eTATime: etaTime,
+            staffIDIn: staffId,
+            staffIDOut: null,
+            responseTime: null,
+            notes: notes,
+            pageCourier: false,
+            closed: close,
+            originator: staffId,
+            description: notes,
+            courierID: job.UcjbCourierId,
+            jobID: jobId,
+            despatcher: despatcherName,
+            jobType: job.UcjbSpeed
+        );
     }
 }

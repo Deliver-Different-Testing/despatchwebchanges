@@ -67,7 +67,7 @@ export class TaskListItemController extends BaseController {
                 $event, "Due Date", "dueDate", new Date(task.dueDate));
 
             // Update task date via task service
-            await this.updateTaskDate(task.id, result.formattedDateTime);
+            await this._updateTaskDate(task.id, result.formattedDateTime);
 
             // Update local task object
             task.dueDate = result.formattedDateTime;
@@ -78,7 +78,7 @@ export class TaskListItemController extends BaseController {
                 this.onTaskUpdated();
             }
         } catch (error) {
-           this.toastrService.showErrorToast("Error updating task date");
+            this._handleError(error);
         }
     }
 
@@ -91,7 +91,7 @@ export class TaskListItemController extends BaseController {
                 $event, "Due Time", "dueDate", new Date(task.dueDate));
 
             // Update task time via task service
-            await this.updateTaskTime(task.id, result.formattedDateTime);
+            await this._updateTaskTime(task.id, result.formattedDateTime);
 
             // Update local task object
             task.dueDate = result.formattedDateTime;
@@ -102,7 +102,7 @@ export class TaskListItemController extends BaseController {
                 this.onTaskUpdated();
             }
         } catch (error) {
-            this.toastrService.showErrorToast("Error updating task time");
+            this._handleError(error);
         }
     }
 
@@ -119,18 +119,14 @@ export class TaskListItemController extends BaseController {
                 task.assignee.id
             );
 
-            await this.reassignTaskToStaff(task.id, result.value);
+            await this._reassignTaskToStaff(task.id, result.value);
             this.toastrService.showSuccessToast("Task reassigned successfully");
 
             if (this.onTaskUpdated) {
                 this.onTaskUpdated();
             }
         } catch (error) {
-            if (error === undefined) {
-                return; // Dialog closed
-            }
-
-            this.toastrService.showErrorToast("Error reassigning task");
+            this._handleError(error);
         }
     }
 
@@ -145,20 +141,8 @@ export class TaskListItemController extends BaseController {
             }
         } catch (error) {
             task.closed = !task.closed;
-            this.toastrService.showErrorToast("Error marking task as completed");
+            this._handleError(error);
         }
-    }
-
-    private async updateTaskDate(eventId: number, date: string) {
-        await this.$http.post("Task/UpdateTaskDate" + "?eventId=" + eventId + "&date=" + date, null);
-    }
-
-    private async updateTaskTime(eventId: number, time: string) {
-        await this.$http.post("Task/UpdateTaskTime" + "?eventId=" + eventId + "&time=" + time, null);
-    }
-
-    private async reassignTaskToStaff(eventId: number, staffId: number) {
-        await this.$http.post("Task/ReassignTask" + "?eventId=" + eventId + "&staffId=" + staffId, null);
     }
 
     isTaskOverdue(task: Task): boolean {
@@ -174,6 +158,28 @@ export class TaskListItemController extends BaseController {
     formatTime(date: string): string {
         const format = this.config?.timeFormat || 'h:mm a';
         return this.$filter('date')(date, format);
+    }
+
+    private async _updateTaskDate(eventId: number, date: string) {
+        await this.$http.post("Task/UpdateTaskDate" + "?eventId=" + eventId + "&date=" + date, null);
+    }
+
+    private async _updateTaskTime(eventId: number, time: string) {
+        await this.$http.post("Task/UpdateTaskTime" + "?eventId=" + eventId + "&time=" + time, null);
+    }
+
+    private async _reassignTaskToStaff(eventId: number, staffId: number) {
+        await this.$http.post("Task/ReassignTask" + "?eventId=" + eventId + "&staffId=" + staffId, null);
+    }
+
+    private _handleError(error: any) {
+        if(!error) {
+            console.log("Dialog Closed")
+            return;
+        }
+
+        // Actual error occured
+        this.toastrService.showErrorToast("Error updating task");
     }
 }
 

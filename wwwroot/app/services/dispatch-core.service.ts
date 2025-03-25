@@ -4,7 +4,7 @@ import {
     IJob,
     JobQueryParams, JobRateDetails, Lookup,
     Pallet,
-    ParcelDimensions, PriceBreakdown, SelectOption, SuburbLookup,
+    ParcelDimensions, PriceBreakdown, SuburbLookup,
     Suggestion, SupportViewModel,
     ClearListViewModel,
 } from "../interfaces/job.interface";
@@ -16,7 +16,6 @@ import {
     TruckCourierStatusViewModel
 } from "../interfaces/courier.interface";
 import {EventGroupViewModel} from "../interfaces/event-group-view-model.interface";
-import {ContactID} from "../contants";
 import {ClearListEnvelopeViewModel, DfrntPageViewModel} from "../interfaces/dfrnt-page-view-model.interface";
 import {bindAllMethods} from "../bindAllMethods";
 import {Task, TaskTableFiltersRequest} from "../components/task-dashboard/task-dashboard.interfaces";
@@ -791,29 +790,46 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async addPriceBreakdown(priceBreakdown: PriceBreakdown) {
+    async addPriceBreakdown(breakdown: PriceBreakdown) {
         try {
-            const response = await this.$http.post<number>('job/AddPriceComponent', priceBreakdown);
+            const queryParams = new URLSearchParams({
+                staffId: String(ContactID),
+                despatcherName: String(FirstName),
+            }).toString();
+
+            const response = await this.$http.post<number>(`job/AddPriceComponent?${queryParams}`, breakdown);
+
             return response.data;
         } catch (error) {
-            console.error('Error adding price breakdown:', error);
+            console.error('Error adding price component:', error);
             throw error;
         }
     }
 
-    async updatePriceBreakdown(priceBreakdown: PriceBreakdown) {
+    async updatePriceBreakdown(breakdown: PriceBreakdown) {
         try {
-            await this.$http.post('job/UpdatePriceComponent', priceBreakdown);
+            const queryParams = new URLSearchParams({
+                staffId: String(ContactID),
+                despatcherName: String(FirstName),
+            }).toString();
+
+            await this.$http.post(`job/UpdatePriceComponent?${queryParams}`, breakdown);
         } catch (error) {
             console.error('Error updating price breakdown:', error);
             throw error;
         }
     }
 
-    async deletePriceBreakdown(chargeId: number) {
+    async deletePriceBreakdown(chargeId: number, jobId: number) {
         try {
-            // Pass chargeId as a query parameter
-            await this.$http.post(`job/DeletePriceComponent?chargeId=${chargeId}`, null);
+            const queryParams = new URLSearchParams({
+                chargeId: String(chargeId),
+                jobId: String(jobId),
+                staffId: String(ContactID),
+                despatcherName: String(FirstName)
+            }).toString();
+
+            await this.$http.post(`job/DeletePriceComponent?${queryParams}`, null);
         } catch (error) {
             console.error('Error deleting price breakdown:', error);
             throw error;
