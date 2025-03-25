@@ -108,7 +108,7 @@
                     <md-tooltip md-direction="bottom">{{ job.pickupAddress.fullAddress }}</md-tooltip>
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
                 </td>
-                <td md-cell md-truncate ng-click="ctrl.toColumnClick($event, job)">
+                <td md-cell md-truncate>
                     <span md-truncate> {{ctrl.isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}</span>
                     <md-tooltip md-direction="bottom">{{ job.deliveryAddress.fullAddress }}</md-tooltip>
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>

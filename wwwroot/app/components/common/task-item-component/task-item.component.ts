@@ -1,17 +1,16 @@
 import BaseController from "../../base-controller";
 import {ExtendedTask, Task} from "../../task-dashboard/task-dashboard.interfaces";
-import "./task-item.styles.less";
-import { SelectDialogService } from "../../dialogs/select-dialog/select-dialog.service";
-import { EditDateTimeDialogService } from "../../dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
-import ToastrService from "../../../services/ToastrService";
+import {SelectDialogService} from "../../dialogs/select-dialog/select-dialog.service";
+import {EditDateTimeDialogService} from "../../dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
 import DispatchCoreService from "../../../services/dispatch-core.service";
-import { IDialogDateTimeResult, ISelectDialogResult } from "../../../interfaces/dialog-result.interfaces";
-import { ITaskListItemConfig } from "./task-item.interfaces";
+import {IDialogDateTimeResult, ISelectDialogResult} from "../../../interfaces/dialog-result.interfaces";
+import {ITaskListItemConfig} from "./task-item.interfaces";
+import ToastrService from "../../../services/toastr.service";
+import "./task-item.styles.less";
 
 export interface TaskListItemBindings {
     task: ExtendedTask;
     config: ITaskListItemConfig;
-    onStatusChange: (params: { task: Task }) => void;
     onTaskUpdated: () => void;
 }
 
@@ -59,12 +58,6 @@ export class TaskListItemController extends BaseController {
         }
     }
 
-    handleTaskCompletion(task: Task) {
-        if (this.onStatusChange) {
-            this.onStatusChange({ task: task });
-        }
-    }
-
     async openDateDialog($event: MouseEvent, task: Task) {
         $event.preventDefault();
         $event.stopPropagation();
@@ -79,11 +72,13 @@ export class TaskListItemController extends BaseController {
             // Update local task object
             task.dueDate = result.formattedDateTime;
 
+            this.toastrService.showSuccessToast("Task date updated successfully");
+
             if (this.onTaskUpdated) {
                 this.onTaskUpdated();
             }
         } catch (error) {
-            console.error(`Error updating task date:`, error);
+           this.toastrService.showErrorToast("Error updating task date");
         }
     }
 
@@ -101,11 +96,13 @@ export class TaskListItemController extends BaseController {
             // Update local task object
             task.dueDate = result.formattedDateTime;
 
+            this.toastrService.showSuccessToast("Task time updated successfully");
+
             if (this.onTaskUpdated) {
                 this.onTaskUpdated();
             }
         } catch (error) {
-            console.error(`Error updating task time:`, error);
+            this.toastrService.showErrorToast("Error updating task time");
         }
     }
 
@@ -123,32 +120,45 @@ export class TaskListItemController extends BaseController {
             );
 
             await this.reassignTaskToStaff(task.id, result.value);
+            this.toastrService.showSuccessToast("Task reassigned successfully");
 
             if (this.onTaskUpdated) {
                 this.onTaskUpdated();
             }
-            this.toastrService.showSuccessToast("Task reassigned successfully");
         } catch (error) {
             if (error === undefined) {
                 return; // Dialog closed
             }
 
-            console.error('Error in reassignTask:', error);
             this.toastrService.showErrorToast("Error reassigning task");
         }
     }
 
-    // Service methods
+    async handleTaskCompletion(task: Task) {
+        try {
+            await this.$http.post("Task/MarkTaskAsClosed" + "?eventId=" + task.id + "&closed=" + task.closed, null);
+
+            this.toastrService.showSuccessToast("Task completed successfully");
+
+            if (this.onTaskUpdated) {
+                this.onTaskUpdated();
+            }
+        } catch (error) {
+            task.closed = !task.closed;
+            this.toastrService.showErrorToast("Error marking task as completed");
+        }
+    }
+
     private async updateTaskDate(eventId: number, date: string) {
-        return this.$http.post("Task/UpdateTaskDate" + "?eventId=" + eventId + "&date=" + date, null);
+        await this.$http.post("Task/UpdateTaskDate" + "?eventId=" + eventId + "&date=" + date, null);
     }
 
     private async updateTaskTime(eventId: number, time: string) {
-        return this.$http.post("Task/UpdateTaskTime" + "?eventId=" + eventId + "&time=" + time, null);
+        await this.$http.post("Task/UpdateTaskTime" + "?eventId=" + eventId + "&time=" + time, null);
     }
 
     private async reassignTaskToStaff(eventId: number, staffId: number) {
-        return this.$http.post("Task/ReassignTask" + "?eventId=" + eventId + "&staffId=" + staffId, null);
+        await this.$http.post("Task/ReassignTask" + "?eventId=" + eventId + "&staffId=" + staffId, null);
     }
 
     isTaskOverdue(task: Task): boolean {
@@ -174,7 +184,6 @@ export const TaskItemComponent: angular.IComponentOptions = {
     bindings: {
         task: '<',
         config: '<',
-        onStatusChange: '&',
         onTaskUpdated: '&'
     },
 }

@@ -344,7 +344,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\enums\view-mode.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\task-dashboard.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\task-dashboard.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\tasks-dashboard.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\contants.ts" />
     <TypeScriptCompile Include="wwwroot\app\directives.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\app-pages.enum.ts" />

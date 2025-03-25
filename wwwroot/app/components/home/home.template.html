@@ -225,16 +225,23 @@
 
                                     <!-- Courier Search-->
                                     <div layout="row" ng-if="box.name === 'jobsList'">
-                                        <md-autocomplete class="fixed-size-autocomplete" md-autoselect
-                                                         md-escape-options="clear" md-input-name="courierSearch"
-                                                         md-item-text="item.text" md-items="item in ctrl.courierSearch(ctrl.courierSearchText)"
-                                                         md-min-length="1" md-search-text="ctrl.courierSearchText" md-select-on-focus
-                                                         md-selected-item="ctrl.selectedCourier"
-                                                         md-selected-item-change="ctrl.selectedCourierChange(item)"
-                                                         ng-click="ctrl.onCourierSearchClick($event)" placeholder="Search Courier...">
+                                        <md-autocomplete
+                                                class="fixed-size-autocomplete"
+                                                md-autoselect
+                                                md-autocomplete-enter-select
+                                                md-escape-options="clear"
+                                                md-input-name="courierSearch"
+                                                md-item-text="item.text"
+                                                md-items="item in ctrl.courierSearch(ctrl.courierSearchText)"
+                                                md-min-length="1"
+                                                md-search-text="ctrl.courierSearchText"
+                                                md-select-on-focus
+                                                md-selected-item="ctrl.selectedCourier"
+                                                md-selected-item-change="ctrl.selectedCourierChange(item)"
+                                                ng-click="ctrl.onCourierSearchClick($event)"
+                                                placeholder="Search Courier...">
                                             <md-item-template>
-                                                <span md-highlight-flags="^i"
-                                                      md-highlight-text="ctrl.courierSearchText">{{item.text}}</span>
+                                                <span md-highlight-flags="^i" md-highlight-text="ctrl.courierSearchText">{{item.text}}</span>
                                             </md-item-template>
                                             <md-not-found>
                                                 No couriers matching "{{ctrl.courierSearchText}}" were found.

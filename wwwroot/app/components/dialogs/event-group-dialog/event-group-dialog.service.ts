@@ -3,12 +3,15 @@ import {EventGroupDialogController} from "./event-group-dialog.controller";
 
 export class EventGroupDialogService {
     static $inject = [
-        '$mdDialog', "DispatchData"
+        "$mdDialog",
+        "DispatchData",
+        "$document"
     ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private DispatchData: DispatchCoreService,
+        private $document: angular.IDocumentService,
     ) {
         console.log('EventGroupDialogService: Service instantiated');
     }
@@ -22,7 +25,7 @@ export class EventGroupDialogService {
                 controller: EventGroupDialogController,
                 controllerAs: 'ctrl',
                 template: require("./event-group-dialog.template.html"),
-                parent: document.body,
+                parent: this.$document.parent(),
                 clickOutsideToClose: false,
                 escapeToClose: true,
                 locals: {

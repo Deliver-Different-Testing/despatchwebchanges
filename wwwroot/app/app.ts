@@ -31,7 +31,6 @@ import PrebookService from "./components/prebooks/prebook.service";
 import {
     FeatureInDevelopmentDialogService
 } from "./components/dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
-import TasksDashboardService from "./components/task-dashboard/tasks-dashboard.service";
 import ConfigService from "./services/config.service";
 import DispatchCoreService from "./services/dispatch-core.service";
 import DispatchExecutorService from "./services/dispatch-executor.service";
@@ -223,7 +222,6 @@ app.service("NationwideLayoutService", NationwideLayoutService);
 app.service("overviewFiltersService", OverviewFiltersService);
 app.service("overviewService", OverviewService);
 app.service("uPBData", PrebookService);
-app.service("tasksDashboardsService", TasksDashboardService);
 app.service('selectDialogService', SelectDialogService);
 app.service('eventGroupDialogService', EventGroupDialogService);
 app.service("editDateTimeDialogService", EditDateTimeDialogService);

@@ -1,36 +1,41 @@
-class ToastrService {
-    static $inject = ["$mdToast", "$document"];
+enum ToastType {
+    SUCCESS = 'success',
+    ERROR = 'error',
+    WARNING = 'warning',
+    INFO = 'info'
+}
 
-    constructor(private $mdToast: angular.material.IToastService,
-                private $document: angular.IDocumentService) {
+class ToastrService {
+    static $inject = ["$mdToast"];
+
+    constructor(
+        private $mdToast: angular.material.IToastService,
+    ) {
     }
 
     showErrorToast(errorMessage: string = "An unexpected error occurred. Please try again or contact support") {
         console.error("Error:", errorMessage);
-        this.showToast(errorMessage, "error");
+        return this.showToast(errorMessage, ToastType.ERROR);
     }
 
     showSuccessToast(successMessage: string) {
         console.log("Success:", successMessage);
-        this.showToast(successMessage, "success");
+        return this.showToast(successMessage, ToastType.SUCCESS);
     }
 
     showWarningToast(warningMessage: string) {
         console.warn("Warning:", warningMessage);
-        this.showToast(warningMessage, "warning");
+        return this.showToast(warningMessage, ToastType.WARNING);
     }
 
-    private showToast(message: string, type: 'success' | 'error' | 'warning' | 'info') {
+    private showToast(message: string, type: ToastType) {
         const preset = this.$mdToast.simple()
             .textContent(message)
-            .position("top right")
+            .position("bottom")
             .hideDelay(5000)
-            .toastClass(`md-${type}-toast md-toast-custom`)
-            .parent(this.$document.parent())
-            .theme(`${type}-toast`)
-            .highlightAction(true)
-            .highlightClass("md-accent")
-            .capsule(true);
+            .toastClass(`md-${type}-toast md-toast-custom md-center-toast`)
+            .parent(document.body)
+            .theme(`${type}-toast`);
 
         return this.$mdToast.show(preset);
     }

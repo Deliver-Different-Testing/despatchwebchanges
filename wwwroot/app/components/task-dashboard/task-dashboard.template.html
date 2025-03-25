@@ -208,7 +208,6 @@
                                         ng-repeat="task in ctrl.getTasksByDate(date) track by task.id"
                                         task="task"
                                         config="ctrl.calendarTaskConfig"
-                                        on-status-change="ctrl.handleTaskCompletion(task)"
                                         on-task-updated="ctrl.refreshTasks()">
                                 </task-item-component>
                             </div>

@@ -304,12 +304,6 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> Supports(string channel)
-    {
-        var result = await jobRepository.SupportEvents(channel);
-        return Json(result);
-    }
-
     [HttpPost]
     public async Task<IActionResult> CloseSupport(int supportId, int staffId)
     {

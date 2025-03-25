@@ -9,26 +9,6 @@
                 <span flex></span>
 
                 <md-menu>
-                    <md-button aria-label="Open status menu" class="md-button-m3 md-icon-button"
-                               ng-click="$mdMenu.open($event)">
-                        <md-icon md-font-set="material-symbols-outlined">filter_list</md-icon>
-                        <md-tooltip md-direction="bottom">Filters</md-tooltip>
-                    </md-button>
-                    <md-menu-content>
-                        <md-menu-item ng-repeat="filter in filters">
-                            <md-button ng-click="updateFilters(filter.value)">
-                                <md-icon md-font-set="material-symbols-outlined">
-                                    {{filter.icon}}
-                                </md-icon>
-                                <span ng-style="filter.active ? {'font-weight':'bold'} : {}">
-                    {{filter.label}}
-                </span>
-                            </md-button>
-                        </md-menu-item>
-                    </md-menu-content>
-                </md-menu>
-
-                <md-menu>
                     <md-button aria-label="Open views menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined" ng-if="views">view_list</md-icon>
                         <md-tooltip md-direction="bottom">Views</md-tooltip>
