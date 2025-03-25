@@ -1,7 +1,6 @@
-import app from "../../../app";
-import template from "./parcel-visualization.template.html";
+import BaseController from "../../base-controller";
 
-export class ParcelVisualizationController implements angular.IController {
+class ParcelVisualizationController extends BaseController {
     baseSize: number;
     maxDimension: number;
     scale?: number;
@@ -13,6 +12,8 @@ export class ParcelVisualizationController implements angular.IController {
     height!: string;
 
     constructor() {
+        super();
+
         this.baseSize = 100;
         this.maxDimension = 200;
     }
@@ -37,18 +38,14 @@ export class ParcelVisualizationController implements angular.IController {
     }
 }
 
-export class ParcelVisualizationDirective implements angular.IDirective {
-    restrict = "E";
-    scope = {
+const ParcelVisualizationComponent: angular.IComponentOptions = {
+    template: require("./parcel-visualization.template.html"),
+    controller: ParcelVisualizationController,
+    controllerAs: "ctrl",
+    bindings: {
         length: "@",
         width: "@",
         height: "@"
-    };
-    template = template;
-    controllerAs = "ctrl";
-    controller = ParcelVisualizationController;
-
-    static factory(): angular.IDirectiveFactory {
-        return () => new ParcelVisualizationDirective();
     }
 }
+export default ParcelVisualizationComponent;

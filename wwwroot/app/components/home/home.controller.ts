@@ -2266,6 +2266,9 @@ class HomeController extends BaseController {
                     this.mapJobList = [];
                 }
             }
+
+            // Clear current jobs
+            this.jobsCurrentList = undefined;
         } catch (error: any) {
             console.error("Error getting job list:", error);
             this.toastrService.showErrorToast("Failed to get job list. Please try again.");
@@ -2646,7 +2649,7 @@ class HomeController extends BaseController {
 
     async updateUIAfterCourierSelection(courier: ActiveCourierViewModel) {
         this.currentWorkSelection = ` for Courier ${courier.label}`;
-
+        this.mapJobList = [...(this.jobsCurrentList || [])];
         this.truckCourierStatus = await this.DispatchData.truckCourierStatus(courier.courierId);
     }
 

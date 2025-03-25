@@ -1,7 +1,7 @@
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import {EventGroupDialogController} from "./event-group-dialog.controller";
 
-export class EventGroupDialogService {
+export class EventGroupDialogService implements angular.IServiceProvider {
     static $inject = [
         "$mdDialog",
         "DispatchData",
@@ -14,6 +14,10 @@ export class EventGroupDialogService {
         private $document: angular.IDocumentService,
     ) {
         console.log('EventGroupDialogService: Service instantiated');
+    }
+
+    $get() {
+        return this;
     }
 
     async openEventGroupDialog(eventGroupId: number, jobId: number) {

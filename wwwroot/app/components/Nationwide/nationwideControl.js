@@ -120,7 +120,7 @@ function NationwideControl($scope, jdSvc, NWData, $filter, hotkeys, $timeout,
             order: 'time',
             filter: '',
             status: 'all',
-            asc: 'asc',
+            orderDirection: 'asc',
             page: 1,
             limit: 10
         };
@@ -129,7 +129,7 @@ function NationwideControl($scope, jdSvc, NWData, $filter, hotkeys, $timeout,
             order: 'time',
             filter: '',
             status: 'all',
-            asc: 'asc',
+            orderDirection: 'asc',
             page: 1,
             limit: 10
         };
@@ -138,7 +138,7 @@ function NationwideControl($scope, jdSvc, NWData, $filter, hotkeys, $timeout,
             order: 'time',
             filter: '',
             status: 'all',
-            asc: 'asc',
+            orderDirection: 'asc',
             page: 1,
             limit: 10
         };
@@ -147,7 +147,7 @@ function NationwideControl($scope, jdSvc, NWData, $filter, hotkeys, $timeout,
             order: 'time',
             filter: '',
             status: 'all',
-            asc: 'asc',
+            orderDirection: 'asc',
             page: 1,
             limit: 10
         };
@@ -177,7 +177,7 @@ function NationwideControl($scope, jdSvc, NWData, $filter, hotkeys, $timeout,
 
         $scope.courierMenu = [{
             text: "Dispatch Selected", click: ($itemScope) => {
-                $scope.dispatchJobs($itemScope.courier.courier || $itemScope.courier.code);
+                return $scope.dispatchJobs($itemScope.courier.courier || $itemScope.courier.code);
             }
         }];
 
@@ -365,7 +365,6 @@ function NationwideControl($scope, jdSvc, NWData, $filter, hotkeys, $timeout,
         try {
             $scope.views = await DispatchData.getSelectedViews(ContactID, AppPages.Domestic);
             await initializeViews();
-            await $scope.updateFilters();
 
             if (!$scope.isInternal) {
                 await $scope.getClientContacts();
@@ -417,79 +416,6 @@ function NationwideControl($scope, jdSvc, NWData, $filter, hotkeys, $timeout,
 
         await $scope.getData();
     };
-
-    $scope.updateFilters = async (selectedFilter) => {
-        try {
-            // If no filter provided, use current selectedFilter
-            selectedFilter = selectedFilter || $scope.selectedFilter;
-
-            // Set all filters to inactive
-            $scope.filters.forEach(filter => {
-                filter.active = false;
-            });
-
-            // Set the selected filter to active
-            const selectedFilterObj = $scope.filters.find(filter => filter.value === selectedFilter);
-            if (selectedFilterObj) {
-                selectedFilterObj.active = true;
-                $scope.selectedFilter = selectedFilter;
-            }
-
-            // Save the selected filter
-            saveFilterToStorage(selectedFilter);
-
-            // Pass the numeric value directly to setFilters without the timeout
-            await setFilters({'status': selectedFilter});
-
-            if (!$scope.$$phase) {
-                $scope.$apply();
-            }
-        } catch (error) {
-            console.error('Error updating filters:', error);
-        }
-    };
-
-    async function setFilters(data) {
-        // Ensure data is an object
-        data = data || {};
-
-        if (data.status) {
-            // Set numeric status directly
-            $scope.queryParams.status = data.status;
-        } else {
-            // Use current selectedFilter if no status provided
-            $scope.queryParams.status = $scope.selectedFilter || 3; // Default to 3 (Active)
-        }
-
-        if (data.area) {
-            let selected = angular.element("#area-group > .btn.topBarActive").length;
-            if (selected > 1) {
-                $scope.queryParams.area += "," + data.area;
-            } else {
-                $scope.queryParams.area = data.area;
-            }
-        }
-
-        if (data.clearList) {
-            let clSelected = angular.element("#driverLocations").find('.listActive').length;
-            if (clSelected > 1) {
-                $scope.queryParams.area += "," + data.clearList;
-            } else {
-                $scope.queryParams.area = data.clearList;
-            }
-        }
-
-        if (data.order) {
-            $scope.queryParams.order = data.order;
-        }
-
-        // Save filters to storage if available
-        if (Modernizr.localstorage) {
-            localStorage.setItem(`nw-filters-${ContactID}`, JSON.stringify($scope.queryParams));
-        }
-
-        return $scope.getData();
-    }
 
     $scope.setActiveArea = selectedArea => {
         angular.forEach($scope.driverLocations.views, area => {
@@ -673,12 +599,6 @@ function NationwideControl($scope, jdSvc, NWData, $filter, hotkeys, $timeout,
         }
     };
 
-    function saveFilterToStorage(filter) {
-        if (Modernizr.localstorage) {
-            localStorage.setItem(`selectedFilter-NW-${ContactID}`, filter);
-        }
-    }
-
     function loadFilterFromStorage() {
         if (Modernizr.localstorage) {
             const savedFilter = localStorage.getItem(`selectedFilter-NW-${ContactID}`);
@@ -786,19 +706,22 @@ function NationwideControl($scope, jdSvc, NWData, $filter, hotkeys, $timeout,
      * Handles reordering of the job list
      */
     $scope.onReorderJobList = async () => {
-        // Reset to first page when order changes
-        $scope.jobFilters.page = 1;
-        await getJobList($scope.jobDataType.NEW);
-    };
+        console.log('[onReorderJobList] Called with order:', $scope.jobFilters.order);
 
-    /**
-     * Handles pagination of the job list
-     * @param {number} page - The page number
-     * @param {number} limit - The number of items per page
-     */
-    $scope.onPaginateJobList = async (page, limit) => {
-        $scope.jobFilters.page = page;
-        $scope.jobFilters.limit = limit;
+        let orderBy = $scope.jobFilters.order || '';
+        let orderDirection = "asc";
+
+        if (orderBy && orderBy.startsWith("-")) {
+            orderBy = orderBy.substring(1);
+            orderDirection = "desc";
+        }
+
+        console.log(`[onReorderJobList] Parsed order: ${orderBy}, direction: ${orderDirection}`);
+
+        // Update jobFilters to match the parsed values
+        $scope.jobFilters.order = orderBy;
+        $scope.jobFilters.orderDirection = orderDirection;
+
         await getJobList($scope.jobDataType.NEW);
     };
 
@@ -806,19 +729,25 @@ function NationwideControl($scope, jdSvc, NWData, $filter, hotkeys, $timeout,
      * Handles reordering of the POD job list
      */
     $scope.onReorderPodList = async () => {
+        console.log('[onReorderPodList] Called with order:', $scope.jobPodFilters.order);
+
+        let orderBy = $scope.jobPodFilters.order || '';
+        let orderDirection = "asc";
+
+        if (orderBy && orderBy.startsWith("-")) {
+            orderBy = orderBy.substring(1);
+            orderDirection = "desc";
+        }
+
+        console.log(`[onReorderPodList] Parsed order: ${orderBy}, direction: ${orderDirection}`);
+
+        // Update jobPodFilters to match the parsed values - use orderDirection consistently
+        $scope.jobPodFilters.order = orderBy;
+        $scope.jobPodFilters.orderDirection = orderDirection;
+
         // Reset to first page when order changes
         $scope.jobPodFilters.page = 1;
-        await getJobList($scope.jobDataType.POD);
-    };
 
-    /**
-     * Handles pagination of the POD job list
-     * @param {number} page - The page number
-     * @param {number} limit - The number of items per page
-     */
-    $scope.onPaginatePodList = async (page, limit) => {
-        $scope.jobPodFilters.page = page;
-        $scope.jobPodFilters.limit = limit;
         await getJobList($scope.jobDataType.POD);
     };
 
@@ -826,19 +755,25 @@ function NationwideControl($scope, jdSvc, NWData, $filter, hotkeys, $timeout,
      * Handles reordering of the Reprice job list
      */
     $scope.onReorderRepriceList = async () => {
+        console.log('[onReorderRepriceList] Called with order:', $scope.jobRepriceFilters.order);
+
+        let orderBy = $scope.jobRepriceFilters.order || '';
+        let orderDirection = "asc";
+
+        if (orderBy && orderBy.startsWith("-")) {
+            orderBy = orderBy.substring(1);
+            orderDirection = "desc";
+        }
+
+        console.log(`[onReorderRepriceList] Parsed order: ${orderBy}, direction: ${orderDirection}`);
+
+        // Update jobRepriceFilters to match the parsed values
+        $scope.jobRepriceFilters.order = orderBy;
+        $scope.jobRepriceFilters.orderDirection = orderDirection;
+
         // Reset to first page when order changes
         $scope.jobRepriceFilters.page = 1;
-        await getJobList($scope.jobDataType.REPRICE);
-    };
 
-    /**
-     * Handles pagination of the Reprice job list
-     * @param {number} page - The page number
-     * @param {number} limit - The number of items per page
-     */
-    $scope.onPaginateRepriceList = async (page, limit) => {
-        $scope.jobRepriceFilters.page = page;
-        $scope.jobRepriceFilters.limit = limit;
         await getJobList($scope.jobDataType.REPRICE);
     };
 
@@ -846,22 +781,27 @@ function NationwideControl($scope, jdSvc, NWData, $filter, hotkeys, $timeout,
      * Handles reordering of the Delivery job list
      */
     $scope.onReorderDeliveryList = async () => {
+        console.log('[onReorderDeliveryList] Called with order:', $scope.jobDeliveryFilters.order);
+
+        let orderBy = $scope.jobDeliveryFilters.order || '';
+        let orderDirection = "asc";
+
+        if (orderBy && orderBy.startsWith("-")) {
+            orderBy = orderBy.substring(1);
+            orderDirection = "desc";
+        }
+
+        console.log(`[onReorderDeliveryList] Parsed order: ${orderBy}, direction: ${orderDirection}`);
+
+        // Update jobDeliveryFilters to match the parsed values
+        $scope.jobDeliveryFilters.order = orderBy;
+        $scope.jobDeliveryFilters.orderDirection = orderDirection;
+
         // Reset to first page when order changes
         $scope.jobDeliveryFilters.page = 1;
+
         await getJobList($scope.jobDataType.DELIVERY);
     };
-
-    /**
-     * Handles pagination of the Delivery job list
-     * @param {number} page - The page number
-     * @param {number} limit - The number of items per page
-     */
-    $scope.onPaginateDeliveryList = async (page, limit) => {
-        $scope.jobDeliveryFilters.page = page;
-        $scope.jobDeliveryFilters.limit = limit;
-        await getJobList($scope.jobDataType.DELIVERY);
-    };
-
 
     /**
      * @param {Job} job
@@ -928,29 +868,74 @@ function NationwideControl($scope, jdSvc, NWData, $filter, hotkeys, $timeout,
      * @returns {Promise<void>}
      */
     $scope.orderList = async (list, prop) => {
+        console.log(`[orderList] Called with list: ${list}, property: ${prop}`);
+
         // Determine if we should use server-side ordering
         const serverOrder = list === "jobList";
+        console.log(`[orderList] Server-side ordering: ${serverOrder}`);
 
-        // Update sort state
-        if ($scope.sort[list] !== prop) {
+        // Check if this is a new sort property or we're toggling an existing one
+        if ($scope.sort[list] !== prop && $scope.sort[list] !== "d-" + prop) {
             // New sort property
+            console.log(`[orderList] New sort property. Previous: ${$scope.sort[list]}, New: ${prop}`);
             $scope.sort[list] = prop;
-            $scope.jobFilters.asc = "asc";
+
+            // Update the appropriate filter object's orderDirection
+            if (list === "jobList") {
+                $scope.jobFilters.orderDirection = "asc";
+            } else if (list === "jobListPOD") {
+                $scope.jobPodFilters.orderDirection = "asc";
+            } else if (list === "jobListDelivery") {
+                $scope.jobDeliveryFilters.orderDirection = "asc";
+            } else if (list === "jobListReprice") {
+                $scope.jobRepriceFilters.orderDirection = "asc";
+            }
         } else {
             // Toggle sort direction for same property
-            $scope.sort[list] = "d-" + prop;
-            $scope.jobFilters.asc = "desc";
+            const isCurrentlyAscending = $scope.sort[list] === prop;
+            console.log(`[orderList] Toggling sort direction for property: ${prop}, currently ascending: ${isCurrentlyAscending}`);
+
+            if (isCurrentlyAscending) {
+                $scope.sort[list] = "d-" + prop;
+
+                // Update the appropriate filter object's orderDirection
+                if (list === "jobList") {
+                    $scope.jobFilters.orderDirection = "desc";
+                } else if (list === "jobListPOD") {
+                    $scope.jobPodFilters.orderDirection = "desc";
+                } else if (list === "jobListDelivery") {
+                    $scope.jobDeliveryFilters.orderDirection = "desc";
+                } else if (list === "jobListReprice") {
+                    $scope.jobRepriceFilters.orderDirection = "desc";
+                }
+            } else {
+                $scope.sort[list] = prop;
+
+                // Update the appropriate filter object's orderDirection
+                if (list === "jobList") {
+                    $scope.jobFilters.orderDirection = "asc";
+                } else if (list === "jobListPOD") {
+                    $scope.jobPodFilters.orderDirection = "asc";
+                } else if (list === "jobListDelivery") {
+                    $scope.jobDeliveryFilters.orderDirection = "asc";
+                } else if (list === "jobListReprice") {
+                    $scope.jobRepriceFilters.orderDirection = "asc";
+                }
+            }
         }
 
         // Handle server-side sorting
         if (serverOrder) {
-            await setFilters(list, {"order": prop});
+            console.log(`[orderList] Applying server-side sorting with order: ${prop}`);
+            await getJobList($scope.jobDataType.NEW);
             return;
         }
 
         // Client-side sorting for other lists
         const direction = $scope.sort[list].startsWith('d-') ? '-' : '';
+        console.log(`[orderList] Client-side sorting with direction: ${direction}, property: ${prop}`);
         $scope[list] = $filter("orderBy")($scope[list], direction + prop);
+        console.log(`[orderList] Sorting complete for ${list}`);
     };
 
     ///////////////////////////
@@ -1947,12 +1932,7 @@ function NationwideControl($scope, jdSvc, NWData, $filter, hotkeys, $timeout,
             const $boxCurrentWork = angular.element("#box-currentWork");
             $boxCurrentWork.find(".loading").show();
 
-            const foundCourier = $scope.pickCouriers.find(x => x.courierID === courierId);
-            const code = foundCourier ? foundCourier.id : "";
-
-            const data = await DispatchData.getJobsCurrent(courierId, $scope.jobFilters.status === "done");
-
-            $scope.jobsCurrentList = data;
+            $scope.jobsCurrentList = await DispatchData.getJobsCurrent(courierId, $scope.jobFilters.status === "done");
             $scope.activateDrop();
         } catch (error) {
             if (error === undefined) {
@@ -2660,16 +2640,69 @@ function NationwideControl($scope, jdSvc, NWData, $filter, hotkeys, $timeout,
             const loadingStates = {
                 [$scope.jobDataType.NEW]: () => {
                     $scope.jobListLoading = true;
+
+                    // Create a copy of filters to ensure both orderDirection and asc parameters are present
+                    // This ensures compatibility with both parameter naming conventions
+                    const filters = { ...$scope.jobFilters };
+                    if (filters.orderDirection && !filters.asc) {
+                        filters.asc = filters.orderDirection;
+                    }
+
                     $scope.jobListPromise = NWData.getNationwideJobsNew(
-                        $scope.jobFilters,
+                        filters,
                         selectedClients,
                         $scope.isInternal,
                         $scope.selectedViews
                     );
                 },
-                [$scope.jobDataType.DELIVERY]: () => $scope.deliveryListLoading = true,
-                [$scope.jobDataType.POD]: () => $scope.podListLoading = true,
-                [$scope.jobDataType.REPRICE]: () => $scope.repriceListLoading = true
+                [$scope.jobDataType.DELIVERY]: () => {
+                    $scope.deliveryListLoading = true;
+
+                    // Create a copy of filters to ensure both orderDirection and asc parameters are present
+                    const filters = { ...$scope.jobDeliveryFilters };
+                    if (filters.orderDirection && !filters.asc) {
+                        filters.asc = filters.orderDirection;
+                    }
+
+                    $scope.deliveryListPromise = NWData.getNationwideJobsBookDelivery(
+                        filters,
+                        selectedClients,
+                        $scope.isInternal,
+                        $scope.selectedViews
+                    );
+                },
+                [$scope.jobDataType.POD]: () => {
+                    $scope.podListLoading = true;
+
+                    // Create a copy of filters to ensure both orderDirection and asc parameters are present
+                    const filters = { ...$scope.jobPodFilters };
+                    if (filters.orderDirection && !filters.asc) {
+                        filters.asc = filters.orderDirection;
+                    }
+
+                    $scope.podListPromise = NWData.getNationwideJobsPOD(
+                        filters,
+                        selectedClients,
+                        $scope.isInternal,
+                        $scope.selectedViews
+                    );
+                },
+                [$scope.jobDataType.REPRICE]: () => {
+                    $scope.repriceListLoading = true;
+
+                    // Create a copy of filters to ensure both orderDirection and asc parameters are present
+                    const filters = { ...$scope.jobRepriceFilters };
+                    if (filters.orderDirection && !filters.asc) {
+                        filters.asc = filters.orderDirection;
+                    }
+
+                    $scope.repriceListPromise = NWData.getNationwideJobsReprice(
+                        filters,
+                        selectedClients,
+                        $scope.isInternal,
+                        $scope.selectedViews
+                    );
+                }
             };
             requestedTypes.forEach(type => loadingStates[type]?.());
 
@@ -2689,15 +2722,7 @@ function NationwideControl($scope, jdSvc, NWData, $filter, hotkeys, $timeout,
                     }
                 },
                 [$scope.jobDataType.POD]: {
-                    fetch: () => {
-                        $scope.podListPromise = NWData.getNationwideJobsPOD(
-                            $scope.jobPodFilters,
-                            selectedClients,
-                            $scope.isInternal,
-                            $scope.selectedViews
-                        );
-                        return $scope.podListPromise;
-                    },
+                    fetch: () => $scope.podListPromise,
                     updateScope: (result) => {
                         if (result && result.items) {
                             $scope.jobListPOD = result.items;
@@ -2710,15 +2735,7 @@ function NationwideControl($scope, jdSvc, NWData, $filter, hotkeys, $timeout,
                     }
                 },
                 [$scope.jobDataType.REPRICE]: {
-                    fetch: () => {
-                        $scope.repriceListPromise = NWData.getNationwideJobsReprice(
-                            $scope.jobRepriceFilters,
-                            selectedClients,
-                            $scope.isInternal,
-                            $scope.selectedViews
-                        );
-                        return $scope.repriceListPromise;
-                    },
+                    fetch: () => $scope.repriceListPromise,
                     updateScope: (result) => {
                         if (result && result.items) {
                             $scope.jobListReprice = result.items;
@@ -2731,15 +2748,7 @@ function NationwideControl($scope, jdSvc, NWData, $filter, hotkeys, $timeout,
                     }
                 },
                 [$scope.jobDataType.DELIVERY]: {
-                    fetch: () => {
-                        $scope.deliveryListPromise = NWData.getNationwideJobsBookDelivery(
-                            $scope.jobDeliveryFilters,
-                            selectedClients,
-                            $scope.isInternal,
-                            $scope.selectedViews
-                        );
-                        return $scope.deliveryListPromise;
-                    },
+                    fetch: () => $scope.deliveryListPromise,
                     updateScope: (result) => {
                         if (result && result.items) {
                             $scope.jobListDelivery = result.items;
@@ -3090,54 +3099,3 @@ NationwideControl.$inject = [
 
 app.controller('NationwideControl', NationwideControl);
 export default NationwideControl;
-
-/**
- * Converts degrees to radians.
- * @param {number} deg - The angle in degrees.
- * @returns {number} The angle in radians.
- */
-function Deg2Rad(deg) {
-    return deg * Math.PI / 180;
-}
-
-/**
- * Calculates the distance between two points on Earth using the Pythagorean theorem on an equirectangular projection.
- * @param {number} lat1 - Latitude of the first point in degrees.
- * @param {number} lon1 - Longitude of the first point in degrees.
- * @param {number} lat2 - Latitude of the second point in degrees.
- * @param {number} lon2 - Longitude of the second point in degrees.
- * @returns {number} The distance between the two points in kilometers.
- */
-function PythagorasEquirectAngular(lat1, lon1, lat2, lon2) {
-    lat1 = Deg2Rad(lat1);
-    lat2 = Deg2Rad(lat2);
-    lon1 = Deg2Rad(lon1);
-    lon2 = Deg2Rad(lon2);
-    const R = 6371; // km
-    const x = (lon2 - lon1) * Math.cos((lat1 + lat2) / 2);
-    const y = (lat2 - lat1);
-    return Math.sqrt(x * x + y * y) * R;
-}
-
-/**
- * Finds the closest location from a list of locations to a given latitude and longitude.
- * @param {number} latitude - The latitude of the reference point.
- * @param {number} longitude - The longitude of the reference point.
- * @param {Array<Array<*>>} locations - An array of locations. Each location should be an array where the second element is latitude and the third element is longitude.
- * @returns {Array<*>} The closest location from the list.
- */
-function closestLocation(latitude, longitude, locations) {
-    let minDifference = 99999;
-    let closest;
-
-    for (let index = 0; index < locations.length; ++index) {
-        const dif = PythagorasEquirectAngular(latitude, longitude, locations[index][1], locations[index][2]);
-        if (dif < minDifference) {
-            closest = index;
-            minDifference = dif;
-        }
-    }
-
-    // return the nearest location
-    return (locations[closest]);
-}

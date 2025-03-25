@@ -33,7 +33,7 @@ public static class AddressFormatter
             .ToList();
 
         // If no valid lines, return empty string
-        return !validLines.Any() ? string.Empty : string.Join(", ", validLines);
+        return validLines.Count == 0 ? string.Empty : string.Join(", ", validLines);
     }
 
     /// <summary>
@@ -91,7 +91,7 @@ public static class AddressFormatter
             .ToList();
 
         // If no valid lines, return empty string
-        return !validLines.Any() ? string.Empty : string.Join("<br/>", validLines);
+        return validLines.Count == 0 ? string.Empty : string.Join("<br/>", validLines);
     }
 
     /// <summary>
@@ -151,35 +151,23 @@ public static class AddressFormatter
         };
     }
 
-    public class Address
+    public class Address(
+        string line1 = null,
+        string line2 = null,
+        string line3 = null,
+        string line4 = null,
+        string line5 = null,
+        string line6 = null,
+        string line7 = null,
+        string line8 = null)
     {
-        public Address(
-            string line1 = null,
-            string line2 = null,
-            string line3 = null,
-            string line4 = null,
-            string line5 = null,
-            string line6 = null,
-            string line7 = null,
-            string line8 = null)
-        {
-            Line1 = line1;
-            Line2 = line2;
-            Line3 = line3;
-            Line4 = line4;
-            Line5 = line5;
-            Line6 = line6;
-            Line7 = line7;
-            Line8 = line8;
-        }
-
-        public string Line1 { get; set; }
-        public string Line2 { get; set; }
-        public string Line3 { get; set; }
-        public string Line4 { get; set; }
-        public string Line5 { get; set; }
-        public string Line6 { get; set; }
-        public string Line7 { get; set; }
-        public string Line8 { get; set; }
+        public string Line1 { get; set; } = line1;
+        public string Line2 { get; set; } = line2;
+        public string Line3 { get; set; } = line3;
+        public string Line4 { get; set; } = line4;
+        public string Line5 { get; set; } = line5;
+        public string Line6 { get; set; } = line6;
+        public string Line7 { get; set; } = line7;
+        public string Line8 { get; set; } = line8;
     }
 }

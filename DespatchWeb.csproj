@@ -241,7 +241,6 @@
     <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.template.html" />
     <None Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
     <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.template.html" />
-    <None Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.controller.js" />
     <None Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.html" />
     <None Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.html" />
     <None Include="wwwroot\css\udispatch.less" />
@@ -307,7 +306,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\parcel-visualization.directive.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\parcel-visualization.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\index.ts" />

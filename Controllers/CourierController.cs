@@ -8,7 +8,10 @@ using Serilog;
 
 namespace DespatchWeb.Controllers;
 
-public class CourierController(ICourierRepository courierRepository) : Controller
+public class CourierController(
+    ICourierRepository courierRepository,
+    ITaskRepository taskRepository
+    ) : Controller
 {
     public async Task<IActionResult> Index([FromQuery] List<int> despatchViewIds, bool isUsTenant)
     {
@@ -169,7 +172,7 @@ public class CourierController(ICourierRepository courierRepository) : Controlle
     {
         try
         {
-            await courierRepository.AddEventAsync(
+            await taskRepository.AddEventAsync(
                 jobId,
                 staffId,
                 despatcherName,

@@ -13,9 +13,6 @@ import {
     EditParcelDimensionsDialogController
 } from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.controller";
 import {
-    ParcelVisualizationDirective
-} from "./components/dialogs/edit-parcel-dimensions-dialog/parcel-visualization.directive";
-import {
     FeatureInDevelopmentDialogController
 } from "./components/dialogs/feature-in-development-dialog/feature-in-development-dialog.controller";
 import {SendMessageDialogController} from "./components/dialogs/send-message-dialog/send-message-dialog.controller";
@@ -61,6 +58,8 @@ import ContextMenuComponent from "./components/common/job-context-menu/job-conte
 import DfrntLoaderComponent from "./components/common/dfrnt-loader/dfrnt-loader.component";
 import JobDetailComponent from "./components/common/job-details/job-details.component";
 import NoDataComponent from "./components/common/no-data/no-data.component";
+import ParcelVisualizationComponent
+    from "./components/dialogs/edit-parcel-dimensions-dialog/parcel-visualization.component";
 
 const app = angular.module("uDispatch", ["ui.router",
     "angularResizable", "ui.sortable", "ui.bootstrap", "ui.bootstrap.pagination",
@@ -187,6 +186,7 @@ app.component("megaMapComponent", MegaMapComponent)
 app.component("taskDashboardComponent", TaskDashboardComponent)
 app.component("contextMenu", ContextMenuComponent)
 app.component("noData", NoDataComponent)
+app.component("parcelVisualization", ParcelVisualizationComponent);
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);
@@ -204,9 +204,6 @@ app.controller("MapDialogController", MapDialogController);
 app.controller('EventGroupDialogController', EventGroupDialogController);
 app.controller("EditDateTimeDialogController", EditDateTimeDialogController);
 app.controller("EditAddressDialogController", EditAddressDialogController);
-
-// Directives
-app.directive("parcelVisualization", ParcelVisualizationDirective.factory());
 
 // Services
 app.service("configService", ConfigService);

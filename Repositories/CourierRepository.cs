@@ -93,44 +93,6 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
         }
     }
 
-    public async Task AddEventAsync(
-        int jobId,
-        int staffId,
-        string despatcherName,
-        string notes,
-        int eventType,
-        float? lateTime = null,
-        DateTime? etaTime = null,
-        bool close = false
-    )
-    {
-       var job = await Context.TucJobs.FindAsync(jobId);
-       ArgumentNullException.ThrowIfNull(job, "Job not found");
-
-        await Context.Procedures.DES_qdfEvent_InsertAsync(
-            jobNo: job.UcjbNumber,
-            clientID: job.UcjbClientId,
-            contact: job.UcjbContact,
-            date: DateTime.Today,
-            time: DateTime.Now,
-            type: eventType,
-            lateTime: lateTime,
-            eTATime: etaTime,
-            staffIDIn: staffId,
-            staffIDOut: null,
-            responseTime: null,
-            notes: notes,
-            pageCourier: false,
-            closed: close,
-            originator: staffId,
-            description: notes,
-            courierID: job.UcjbCourierId,
-            jobID: jobId,
-            despatcher: despatcherName,
-            jobType: job.UcjbSpeed
-        );
-    }
-
     public async Task<List<AvailableCourierPosition>> GetAvailableCouriers(
         decimal minLng,
         decimal minLat,

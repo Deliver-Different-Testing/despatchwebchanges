@@ -45,7 +45,6 @@ class MaterialSidenavComponentController extends BaseController {
     }
 
     $postLink(): void {
-        // Store the sidenav element after DOM is ready
         this.sidenav = angular.element('md-sidenav');
 
         // Set up event listeners
@@ -55,7 +54,7 @@ class MaterialSidenavComponentController extends BaseController {
                 this.timeoutId = null;
             }
 
-            this.toggleNav(true);
+            this._toggleNav(true);
         });
 
         this.sidenav.on("mouseleave", () => {
@@ -64,7 +63,7 @@ class MaterialSidenavComponentController extends BaseController {
             }
 
             this.timeoutId = this.$timeout(() => {
-                this.toggleNav(false);
+                this._toggleNav(false);
             }, this.HOVER_DELAY);
         });
     }
@@ -84,7 +83,7 @@ class MaterialSidenavComponentController extends BaseController {
         return this.$state.current.name === stateName;
     }
 
-    private toggleNav(shouldOpen: boolean): void {
+    private _toggleNav(shouldOpen: boolean): void {
         if (this.navState.isAnimating) return;
         if (shouldOpen === this.navState.isOpen) return;
 
