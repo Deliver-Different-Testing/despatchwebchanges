@@ -3,11 +3,13 @@ import {ISelectDialogResult} from "../../../interfaces/dialog-result.interfaces"
 
 export class SelectDialogService implements angular.IServiceProvider {
     static $inject = [
-        '$mdDialog'
+        '$mdDialog',
+        '$document'
     ];
 
     constructor(
-        private $mdDialog: angular.material.IDialogService
+        private $mdDialog: angular.material.IDialogService,
+        private $document: angular.IDocumentService,
     ) {
         console.log('SelectDialogService: Service instantiated');
     }
@@ -26,7 +28,7 @@ export class SelectDialogService implements angular.IServiceProvider {
         const result: ISelectDialogResult = await this.$mdDialog.show({
             controller: "SelectDialogController",
             controllerAs: "ctrl",
-            parent: document.body,
+            parent: this.$document.parent(),
             targetEvent: $event,
             template: require("./select-dialog.template.html"),
             clickOutsideToClose: true,

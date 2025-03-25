@@ -2,13 +2,19 @@ import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interface
 import app from "../../../app";
 
 export class EditDateTimeDialogService implements angular.IServiceProvider {
-    static $inject = ['$mdDialog'];
+    static $inject = [
+        '$mdDialog',
+        '$document'
+    ];
 
-    constructor(private $mdDialog: angular.material.IDialogService) {
+    constructor(
+        private $mdDialog: angular.material.IDialogService,
+        private $document: angular.IDocumentService,
+    ) {
         console.log('EditDateTimeDialogService: Service instantiated');
     }
 
-    $get(): any {
+    $get() {
         return this;
     }
 
@@ -16,7 +22,7 @@ export class EditDateTimeDialogService implements angular.IServiceProvider {
         return {
             controller: "EditDateTimeDialogController",
             controllerAs: "ctrl",
-            parent: document.body,
+            parent: this.$document.parent(),
             targetEvent: $event,
             template: require("./edit-date-time-dialog.template.html"),
             clickOutsideToClose: true,

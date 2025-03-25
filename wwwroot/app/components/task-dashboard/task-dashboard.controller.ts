@@ -1,16 +1,11 @@
 import {ExtendedTask, Task, TaskTableFiltersRequest} from "./task-dashboard.interfaces";
 import "./task-dashboard.styles.less";
 import GreetingService from "../../services/greeting.service";
-import TasksDashboardService from "./tasks-dashboard.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import {ActiveCourierViewModel} from "../../interfaces/courier.interface";
 import {Suggestion} from "../../interfaces/job.interface";
 import {StatusFilter} from "./enums/status-filter";
 import {ViewMode} from "./enums/view-mode";
-import {SelectDialogService} from "../dialogs/select-dialog/select-dialog.service";
-import ToastrService from "../../services/toastr.service";
-import {IDialogDateTimeResult, ISelectDialogResult} from "../../interfaces/dialog-result.interfaces";
-import {EditDateTimeDialogService} from "../dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
 import BaseController from "../base-controller";
 import { ITaskListItemConfig } from "../common/task-item-component/task-item.interfaces";
 
@@ -19,7 +14,6 @@ class TaskDashboardController extends BaseController {
         "greetingService",
         "$mdSidenav",
         "$filter",
-        "tasksDashboardsService",
         "DispatchData",
         "$timeout"
     ];
@@ -80,7 +74,6 @@ class TaskDashboardController extends BaseController {
         greetingService: GreetingService,
         private $mdSidenav: angular.material.ISidenavService,
         private $filter: angular.IFilterService,
-        private tasksDashboardsService: TasksDashboardService,
         private DispatchService: DispatchCoreService,
         private $timeout: angular.ITimeoutService
     ) {
@@ -150,7 +143,7 @@ class TaskDashboardController extends BaseController {
         const filters = this.buildTaskFilters();
 
         try {
-            const tasks = await this.tasksDashboardsService.getAllTasks(filters);
+            const tasks = await this.DispatchService.getAllTasks(filters);
             this.tasks = tasks as ExtendedTask[];
             this.initializeTaskTimeStrings();
             this.applyFilters();
@@ -230,17 +223,6 @@ class TaskDashboardController extends BaseController {
             this.filteredTasks = this.tasks.filter(task => !task.closed && !this.isTaskOverdue(task));
         } else if (this.statusFilter === StatusFilter.Done) {
             this.filteredTasks = this.tasks.filter(task => task.closed);
-        }
-    }
-
-    // This function is now only responsible for handling the status change coming from the task-item component
-    async handleTaskCompletion(task: Task) {
-        try {
-            await this.tasksDashboardsService.markTaskAsClosed(task.id, task.closed);
-            await this.getTasks();
-        } catch (error) {
-            console.error(`Error updating task status:`, error);
-            task.closed = !task.closed;
         }
     }
 

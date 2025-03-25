@@ -19,6 +19,7 @@ import {EventGroupViewModel} from "../interfaces/event-group-view-model.interfac
 import {ContactID} from "../contants";
 import {ClearListEnvelopeViewModel, DfrntPageViewModel} from "../interfaces/dfrnt-page-view-model.interface";
 import {bindAllMethods} from "../bindAllMethods";
+import {Task, TaskTableFiltersRequest} from "../components/task-dashboard/task-dashboard.interfaces";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = ["$http", "moment", "APP_CONFIG"];
@@ -217,7 +218,6 @@ class DispatchCoreService implements angular.IServiceProvider {
         const response = await this.$http.get<IJob[]>(`job/current?courierId=${courierId}&done=${done}`);
         return response.data;
     }
-
 
     async getSupports(channel: string) {
         const response = await this.$http.get<SupportViewModel[]>(`job/supports?channel=${channel}`);
@@ -822,6 +822,29 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async getJobDeliveryPhotosAndSignature(jobId: number, year: number, month: number) {
         const response = await this.$http.get<any>(`/Job/GetJobDeliveryPhotosAndSignature?jobId=${jobId}&year=${year}&month=${month}`);
+        return response.data;
+    }
+
+    async getAllTasks(filters?: TaskTableFiltersRequest) {
+        const cleanFilters: Record<string, any> = {};
+
+        // Only add defined filters
+        if (filters) {
+            if (filters.courierId) cleanFilters.courierId = filters.courierId;
+            if (filters.eventTypeId) cleanFilters.eventTypeId = filters.eventTypeId;
+            if (filters.searchText) cleanFilters.searchText = filters.searchText;
+            if (filters.date) cleanFilters.date = filters.date;
+        }
+
+        const response = await this.$http<Task[]>({
+            method: 'GET',
+            url: '/Task/GetAllTasks',
+            params: cleanFilters,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
         return response.data;
     }
 

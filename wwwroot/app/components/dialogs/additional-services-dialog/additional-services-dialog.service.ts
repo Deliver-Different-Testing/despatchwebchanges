@@ -5,12 +5,14 @@ import AdditionalServicesDialogController from "./additional-services-dialog.con
 class AdditionalServicesDialogService implements  angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
-        'DispatchData'
+        'DispatchData',
+        '$document'
     ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private DispatchData: DispatchCoreService
+        private DispatchData: DispatchCoreService,
+        private $document: angular.IDocumentService,
     ) {
         console.log('AdditionalServicesDialogService: Service instantiated');
     }
@@ -47,7 +49,7 @@ class AdditionalServicesDialogService implements  angular.IServiceProvider {
                 controller: AdditionalServicesDialogController,
                 controllerAs: "ctrl",
                 template: require("./additional-services-dialog.template.html"),
-                parent: document.body,
+                parent: this.$document.parent(),
                 clickOutsideToClose: false,
                 targetEvent: $event,
                 fullscreen: true,

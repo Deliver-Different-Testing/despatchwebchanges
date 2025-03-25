@@ -22,6 +22,7 @@ import BaseController from "../base-controller";
 import {ITaskListItemConfig} from "../common/task-item-component/task-item.interfaces";
 import {ExtendedTask} from "../task-dashboard/task-dashboard.interfaces";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
+import {EditAddressDialogService} from "../dialogs/edit-address-dialog/edit-address-dialog.service";
 
 interface ResendJobsRequest {
     call: string;
@@ -48,8 +49,8 @@ class HomeController extends BaseController {
         '$mdSidenav',
         'AppPages',
         '$stateParams',
-        '$filter',
-        'additionalServicesDialogService'
+        'additionalServicesDialogService',
+        'editAddressDialogService'
     ];
 
     private readonly DOM_SELECTORS = {
@@ -85,7 +86,7 @@ class HomeController extends BaseController {
     filters: any;
     selectedFilter: any;
     selected: any;
-    supports: any;
+    supports: ExtendedTask[];
     driverLocations?: ClearListViewModel;
     truckCourierStatus?: TruckCourierStatusViewModel;
     boxes: any;
@@ -99,9 +100,6 @@ class HomeController extends BaseController {
     supportsLoading: any;
     potentialCouriersLoading: any;
     currentListLoading: any;
-    supportListHeaders: any;
-    currentListHeaders: any;
-    potentialCouriersHeaders: any;
     layouts: any;
     defaultLayout: any;
     currentLayoutName: any;
@@ -124,9 +122,6 @@ class HomeController extends BaseController {
     potentialCouriersSelection: any;
     currentSelection: any;
     selectedJobs: any;
-    jobForDispatch: any;
-    jobGroups: any;
-    lateForm: any;
     eventForm: any;
     boxSortableOptions: {
         handle: string;
@@ -175,8 +170,8 @@ class HomeController extends BaseController {
         private $mdSidenav: angular.material.ISidenavService,
         private AppPages: any,
         private $stateParams: angular.ui.IStateParamsService,
-        private $filter: angular.IFilterService,
-        private additionalServicesDialogService: AdditionalServicesDialogService
+        private additionalServicesDialogService: AdditionalServicesDialogService,
+        private editAddressDialogService: EditAddressDialogService
     ) {
         super();
 
@@ -312,31 +307,9 @@ class HomeController extends BaseController {
 
         this.allCouriers.display = true;
 
-        /*   ///////////////////////////
-           // HOTKEYS
-           //////////////////////////
-           hotkeys.add({
-               combo: "ctrl+d",
-               description: "Dispatch selected jobs",
-               allowIn: ["INPUT", "SELECT", "TEXTAREA"],
-               callback: () => {
-                   if (angular.element(".activeTable .active").length > 0) {
-                       this.dispatchJobsForm();
-                   }
-               },
-           });
-   */
-
         if (!this.isInternal) {
             this.getClientContacts().then(() => console.log("Get Data Complete!"));
         }
-
-        const runSupportsUpdate = () => {
-            this.getSupports().then(() => {
-                this.$timeout(runSupportsUpdate, 60000);
-            });
-        };
-        runSupportsUpdate();
 
         this.isInternal = ClientInternal === "True";
         this.queryParams = {
@@ -365,7 +338,6 @@ class HomeController extends BaseController {
 
         this.courierSearchText = "";
         this.jobRecordSearchText = "";
-        this.dispatchCourierSearchTest = "";
         this.dispatchCourierSearchTest = "";
 
         this.jobDetailFabIsOpen = false;
@@ -497,15 +469,6 @@ class HomeController extends BaseController {
         this.pickService = {
             clients: [], channel: [], channelTexts: {
                 buttonDefaultText: "Select Channel...",
-            }, channelEvents: {
-                onSelectionChanged: async () => {
-                    try {
-                        const temp = this.pickService.channel.map((el: any) => el.label);
-                        await this.setSupportChannel(String(temp) || "All");
-                    } catch (error: any) {
-                        console.log("Error in onSelectionChanged:", error);
-                    }
-                },
             }, settings: {
                 enableSearch: true,
                 selectedToTop: true,
@@ -583,7 +546,6 @@ class HomeController extends BaseController {
 
         this.initJobWatcher();
         this.initWidgetLoadingStates();
-        this.initTableHeaders();
     }
 
     private _updateBoxMetrics() {
@@ -622,22 +584,6 @@ class HomeController extends BaseController {
         }
     }
 
-    getJobStyle(assigned: any) {
-        const normal = {
-            "font-weight": "normal",
-        };
-
-        const bold = {
-            "font-weight": "bold",
-        };
-
-        if (assigned) {
-            return bold;
-        } else {
-            return normal;
-        }
-    }
-
     initJobWatcher() {
         this.$scope.$on('refreshJobRequested', (_, jobId) => {
             console.log(`Parent received refresh request for jobId: ${jobId}`);
@@ -667,28 +613,6 @@ class HomeController extends BaseController {
         this.supportsLoading = false;
         this.potentialCouriersLoading = false;
         this.currentListLoading = false;
-    }
-
-    initTableHeaders() {
-        this.supportListHeaders = [{key: "time", label: "Time"}, {key: "courier", label: "#"}, {
-            key: "staff", label: "Staff",
-        }, {key: "jobNum", label: "Job #"}, {key: "event", label: "Event"}, {
-            key: "notes", label: "Notes",
-        }, {key: "remain", label: "Remain"}, {key: "lockedBy", label: "Locked by"},];
-
-        this.currentListHeaders = [{key: "time", label: "T"}, {key: "speed", label: "Speed"}, {
-            key: "notify", label: "N",
-        }, {key: "vehicle", label: "V"}, {key: "jobNo", label: "Job"}, {
-            key: "client", label: "Client",
-        }, {key: "from", label: "From"}, {key: "to", label: "To"}, {key: "", label: ""}, {
-            key: "remain", label: "Remain",
-        }, {key: "status", label: "S"}, {key: "lp", label: "LP"}, {key: "ld", label: "LD"}, {
-            key: "runOrder", label: "RO",
-        },];
-
-        this.potentialCouriersHeaders = [{key: "courier", label: "Courier"}, {
-            key: "rule", label: "Rule#",
-        }, {key: "reason", label: "Reason"},];
     }
 
     // Layouts
@@ -945,10 +869,6 @@ class HomeController extends BaseController {
         this.driverLocations?.areas.forEach((area: AreaClearList) => {
             area.isActive = area === selectedArea;
         });
-    }
-
-    supportChannelChanged() {
-        console.log(this.pickService.channel);
     }
 
     onCourierSearchClick($event: MouseEvent) {
@@ -1290,18 +1210,6 @@ class HomeController extends BaseController {
             .then(() => {
                 console.log("Pallet Dialog closed!");
             });
-    }
-
-    getSupportColorClass(support: SupportViewModel) {
-        switch (support.eventType) {
-            case 73:
-                return "Yel";
-            case 1:
-            case 2:
-                return "Gre";
-            default:
-                return "";
-        }
     }
 
     selectAllContent($event: MouseEvent) {
@@ -2051,7 +1959,7 @@ class HomeController extends BaseController {
         try {
             this.currentListLoading = true;
 
-            this.jobsCurrentList = await this.DispatchData.getJobsCurrent(courierId, this.jobFilters && this.jobFilters.status === "done");
+            this.jobsCurrentList = await this.DispatchData.getJobsCurrent(courierId, false);
             this.mapJobList = this.jobsCurrentList || [];
 
             await this.activateDrop();
@@ -2219,7 +2127,6 @@ class HomeController extends BaseController {
     }
 
     async handleUndispatchedJob(job: IJob) {
-        this.jobGroups = false;
         await this.getPotentialCouriers(job.id);
         this.potentialCouriersSelection = ` for Job ${job.jobNo}`;
         this.currentCourier = null;
@@ -2293,15 +2200,6 @@ class HomeController extends BaseController {
     async setTruckMode(mode: string) {
         this.truckMode = mode;
         await this.getData();
-    }
-
-    async setSupportChannel(channel: string) {
-        this.supportChannel = channel;
-        if (Modernizr.localstorage) {
-            localStorage.setItem("support-channel-" + ContactID, JSON.stringify(this.supportChannel));
-        }
-
-        await this.getSupports();
     }
 
     async handleMarkerClick(job: IJob) {
@@ -2378,6 +2276,9 @@ class HomeController extends BaseController {
                 this.mapJobList = [];
             }
         }
+
+        // Get supports
+       await this.getSupports();
     }
 
    async changeJobCutoffDate(days: number) {
@@ -2418,52 +2319,14 @@ class HomeController extends BaseController {
         await this.getJobList();
     }
 
-    async lockSupport(support: SupportViewModel) {
-        if (!support) return;
-
-        console.log(support);
-        try {
-            if (support.lockedBy === FirstName) {
-                if (support.eventId !== null) {
-                    await this.DispatchData.unLockSupport(support.eventId, FirstName);
-                }
-                this.toastrService.showSuccessToast("Support unlocked successfully");
-            } else {
-                if (support.eventId !== null) {
-                    await this.DispatchData.lockSupport(support.eventId, FirstName);
-                }
-                this.toastrService.showSuccessToast("Support locked successfully");
-            }
-            await this.getSupports();
-        } catch (error: any) {
-            console.log("Error locking/unlocking support:", error);
-        }
-    }
-
-    setSelectedChannels(item: string) {
-        const sr = this.pickChannels.find((obj: any) => obj.label === item);
-        this.pickService.channel.push(sr);
-    }
-
     async getSupports() {
         try {
-            this.supportsLoading = true;
-            this.supports = await this.DispatchData.getSupports(this.supportChannel);
-
-            const first = !this.supports;
-            if (first) {
-                this.supportChannel.split(",").forEach((channel: any) => this.setSelectedChannels(channel));
+            // Only show loader on first load
+            if(!this.supports) {
+                this.supportsLoading = true;
             }
 
-            this.$timeout(() => {
-                this.$document.ready(() => {
-                    if (this.currentSupport) {
-                        angular
-                            .element("#supports tr[data-id='" + this.currentSupport.eventId + "']")
-                            .addClass("active");
-                    }
-                });
-            }, 100);
+            this.supports = await this.DispatchData.getAllTasks();
         } catch (error: any) {
             console.log("Error getting supports:", error);
         } finally {
@@ -2484,7 +2347,6 @@ class HomeController extends BaseController {
             this.currentJob = undefined;
             this.JobDetailService.currentJob = null;
             this.potentialCouriers = null;
-            this.jobGroups = false;
 
             if (!this.courier) {
                 this.currentCourier = null;
@@ -2529,17 +2391,11 @@ class HomeController extends BaseController {
     }
 
     async setSplitJobMeetingPoint($event: MouseEvent, currentJob: IJob) {
-        const getDeliveryLocation = (job: IJob) => ({
-            lat: job.deliveryLatitude || "", long: job.deliveryLongitude || "",
-        });
-
         try {
-            const location = getDeliveryLocation(currentJob);
-            console.log("Retrieved job coordinates!");
+            const newAddress = await this.editAddressDialogService.openEditAddressDialog($event, currentJob.deliveryAddress)
+            if(!newAddress) return;
 
-            const selectedSuburbs = await this.DispatchData.getSuburbList();
-            const dialogResult = await this.showEditAddressDialog($event, currentJob, selectedSuburbs, location);
-            await this.handleDialogResult(dialogResult, currentJob);
+            await this.handleNewAddressForSplitJobs(newAddress, currentJob);
         } catch (error: any) {
             console.log(error.message);
         } finally {
@@ -2547,29 +2403,7 @@ class HomeController extends BaseController {
         }
     }
 
-    showEditAddressDialog($event: MouseEvent, currentJob: IJob, selectedSuburbs: any, location: any) {
-        return this.$mdDialog.show({
-            controller: "EditAddressDialogController",
-            controllerAs: "ctrl",
-            templateUrl: "app/components/dialogs/edit-address-dialog/edit-address-dialog.html",
-            parent: document.body,
-            targetEvent: $event,
-            clickOutsideToClose: false,
-            fullscreen: true,
-            locals: {
-                addressDetails: {
-                    address: currentJob.toAddress,
-                    lat: location.lat,
-                    long: location.long,
-                    suburb: currentJob.toSuburbName,
-                    postCode: currentJob.toPostCode,
-                }, suburbOptions: selectedSuburbs, title: "Split Job Address and GPS", submitLabel: "Split Job",
-            },
-            bindToController: true,
-        });
-    }
-
-    async handleDialogResult(addressDetails: AddressViewModel, currentJob: IJob) {
+    async handleNewAddressForSplitJobs(addressDetails: AddressViewModel, currentJob: IJob) {
         if (!addressDetails) {
             console.log("Split jobs canceled!");
             return;
@@ -2896,81 +2730,6 @@ class HomeController extends BaseController {
                 });
             }
         });
-    }
-
-    supportToTaskModel(support: SupportViewModel): ExtendedTask {
-        const priorityMap: { [key: number]: string } = {
-            73: 'high',   // Yellow status
-            1: 'low',     // Green status
-            2: 'low',     // Green status
-            0: 'medium'   // Default priority
-        };
-
-        // Get priority based on event type or default to medium
-        const priority = support.eventType !== null ? priorityMap[support.eventType] || 'medium' : 'medium';
-
-        // Determine appropriate icon based on support type
-        let icon: string;
-        if (support.description?.toLowerCase().includes('late')) {
-            icon = 'schedule';
-        } else if (support.description?.toLowerCase().includes('message')) {
-            icon = 'message';
-        } else if (support.description?.toLowerCase().includes('call')) {
-            icon = 'phone';
-        } else {
-            icon = 'support';
-        }
-
-        return {
-            id: support.eventId || 0,
-            title: `${support.description || 'Support Event'}`,
-            description: support.notes || '',
-            dueDate: support.timeStamp ? new Date(support.timeStamp).toISOString() : new Date().toISOString(),
-            closed: false,
-            priority: priority,
-            assignee: {
-                id: support.eventId || 0,
-                text: support.staff || 'Unassigned'
-            },
-            eventType: 'support',
-            jobId: support.jobId || 0,
-            jobNumber: support.jobNumber,
-            icon: icon,
-            isOverdue: false,
-            dueTimeStr: support.timeStamp ? this.$filter('date')(support.timeStamp, 'HH:mm') : '',
-
-            // Additional metadata for handling in callbacks
-            _supportData: support
-        };
-    }
-
-    async closeSupport(task: ExtendedTask) {
-        const support = task._supportData || this.supports.find((s: SupportViewModel) => s.eventId === task.id);
-
-        if (!support || !support.eventId) {
-            console.error('Cannot close support: Invalid support data');
-            this.toastrService.showErrorToast('Could not close support ticket: Invalid data');
-            return;
-        }
-
-        try {
-            await this.DispatchData.closeSupport(support.eventId, ContactID);
-            await this.getSupports();
-            this.currentSupport = null;
-            this.toastrService.showSuccessToast('Support ticket closed successfully');
-        } catch (error) {
-            console.error('Error closing support:', error);
-            this.toastrService.showErrorToast('Could not close support ticket');
-
-            await this.getSupports();
-        }
-    }
-    getSupportItemClass(support: SupportViewModel): string {
-        const baseClass = this.getSupportColorClass(support);
-        if (support.eventId === (this.currentSupport?.eventId || 0)) {
-            return `${baseClass} selected-support-item`;
-        }
-        return baseClass;
     }
 }
 

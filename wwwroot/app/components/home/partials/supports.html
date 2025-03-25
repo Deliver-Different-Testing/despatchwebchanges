@@ -5,13 +5,12 @@
     </dfrnt-loader>
 
     <md-list ng-if="!ctrl.supportsLoading && ctrl.supports && ctrl.supports.length > 0">
-        <task-item
+        <task-item-component
                 ng-repeat="support in ctrl.supports | filter: box.searchBox"
-                task="ctrl.supportToTaskModel(support)"
+                task="support"
                 config="ctrl.supportItemConfig"
-                on-status-change="ctrl.closeSupport(support)"
                 on-task-updated="ctrl.getSupports()">
-        </task-item>
+        </task-item-component>
     </md-list>
 
     <no-data

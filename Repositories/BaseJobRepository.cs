@@ -615,12 +615,11 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     );
                     query = ApplyNationwideSpecificOrdering(query, order, orderDirection);
                     break;
+                case AppPage.JobSearch:
+                case AppPage.Prebooks:
                 default:
                     return [];
             }
-
-            var total = await query.CountAsync();
-            Log.Information($"Total jobs: {total}");
 
             var sql = query.ToQueryString();
             Log.Information($"Generated SQL: {sql}");
@@ -848,7 +847,10 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 ? query.OrderBy(j => j.UcjbCourier.UccrName)
                 : query.OrderByDescending(j => j.UcjbCourier.UccrName),
 
-            _ => throw new ArgumentOutOfRangeException()
+            // Default to time
+            _ => isAscending
+                ? query.OrderBy(j => j.UcjbTime)
+                : query.OrderByDescending(j => j.UcjbTime),
         };
     }
 
@@ -915,7 +917,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         return order.ToLowerInvariant() switch
         {
             "courier" => isAscending
-                ? query.OrderBy(j => j.UcjbCourier.Code).ThenBy(j => j.UcjbTime)
+                ? query.OrderBy(j => j.UcjbCourier.Code)
+                    .ThenBy(j => j.UcjbTime)
                 : query
                     .OrderByDescending(j => j.UcjbCourier.Code)
                     .ThenByDescending(j => j.UcjbTime),
@@ -935,44 +938,36 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     .OrderBy(j => j.UcjbToNavigation.UcsuName)
                     .ThenBy(j => j.UcjbTime)
                     .ThenBy(j => j.UcjbFromNavigation.UcsuName)
-                    .ThenBy(j => j.UcjbCourier.Code)
                 : query
                     .OrderByDescending(j => j.UcjbToNavigation.UcsuName)
                     .ThenByDescending(j => j.UcjbTime)
-                    .ThenByDescending(j => j.UcjbFromNavigation.UcsuName)
-                    .ThenByDescending(j => j.UcjbCourier.Code),
+                    .ThenByDescending(j => j.UcjbFromNavigation.UcsuName),
 
             "from" => isAscending
                 ? query
                     .OrderBy(j => j.UcjbFromNavigation.UcsuName)
                     .ThenBy(j => j.UcjbToNavigation.UcsuName)
                     .ThenBy(j => j.UcjbTime)
-                    .ThenBy(j => j.UcjbCourier.Code)
                 : query
                     .OrderByDescending(j => j.UcjbFromNavigation.UcsuName)
                     .ThenByDescending(j => j.UcjbToNavigation.UcsuName)
-                    .ThenByDescending(j => j.UcjbTime)
-                    .ThenByDescending(j => j.UcjbCourier.Code),
+                    .ThenByDescending(j => j.UcjbTime),
 
             "client" => isAscending
                 ? query
                     .OrderBy(j => j.UcjbClient.UcclCode)
                     .ThenBy(j => j.UcjbTime)
-                    .ThenBy(j => j.UcjbCourier.Code)
                 : query
                     .OrderByDescending(j => j.UcjbClient.UcclCode)
-                    .ThenByDescending(j => j.UcjbTime)
-                    .ThenByDescending(j => j.UcjbCourier.Code),
+                    .ThenByDescending(j => j.UcjbTime),
 
             "jobno" => isAscending
                 ? query
                     .OrderBy(j => j.UcjbNumber)
                     .ThenBy(j => j.UcjbTime)
-                    .ThenBy(j => j.UcjbCourier.Code)
                 : query
                     .OrderByDescending(j => j.UcjbNumber)
-                    .ThenByDescending(j => j.UcjbTime)
-                    .ThenByDescending(j => j.UcjbCourier.Code),
+                    .ThenByDescending(j => j.UcjbTime),
 
             "status" => isAscending
                 ? query.OrderBy(j => j.UcjbStatus == (int)JobStatus.New ? 1 :
@@ -1025,29 +1020,22 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             "time" => isAscending
                 ? query.OrderBy(j => j.UcjbDate)
                     .ThenBy(j => j.UcjbTime)
-                    .ThenBy(j => j.UcjbCourier.Code)
                 : query
                     .OrderByDescending(j => j.UcjbDate)
-                    .ThenByDescending(j => j.UcjbTime)
-                    .ThenByDescending(j => j.UcjbCourier.Code),
+                    .ThenByDescending(j => j.UcjbTime),
 
             "pod" => isAscending
-                ? query.OrderBy(j => j.UcjbPodname).ThenBy(j => j.UcjbCourier.Code)
+                ? query.OrderBy(j => j.UcjbPodname)
                 : query
-                    .OrderByDescending(j => j.UcjbPodname)
-                    .ThenByDescending(j => j.UcjbCourier.Code),
+                    .OrderByDescending(j => j.UcjbPodname),
 
+            // Default to time
             _ => isAscending
-                ? query
-                    .OrderBy(j => j.FollowupTime)
-                    .ThenBy(j => j.UcjbDispTime)
+                ? query.OrderBy(j => j.UcjbDate)
                     .ThenBy(j => j.UcjbTime)
-                    .ThenBy(j => j.UcjbCourier.Code)
                 : query
-                    .OrderByDescending(j => j.FollowupTime)
-                    .ThenByDescending(j => j.UcjbDispTime)
-                    .ThenByDescending(j => j.UcjbTime)
-                    .ThenByDescending(j => j.UcjbCourier.Code)
+                    .OrderByDescending(j => j.UcjbDate)
+                    .ThenByDescending(j => j.UcjbTime),
         };
     }
 
@@ -1225,10 +1213,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             }
 
             // Update all jobs in the family
-            foreach (var job in jobFamily)
-            {
-                job.Connote = conNote;
-            }
+            foreach (var job in jobFamily) job.Connote = conNote;
 
             Log.Information(
                 "Updating connote for job family. Parent: {ParentId}, Total Jobs: {TotalJobs}",
@@ -1292,7 +1277,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     )
     {
         // Base query
-        var query = Context.TucJobs.Where(j => j.InverseParent.Any());
+        var query = Context.TucJobs.Where(j => j.InverseParent.Count != 0);
 
         // Apply status group
         query = statusGroup switch
@@ -1444,7 +1429,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         string orderDirection
     )
     {
-        var isAscending = orderDirection.ToLower() != "desc";
+        var isAscending = !orderDirection.Equals("desc", StringComparison.CurrentCultureIgnoreCase);
 
         query = orderBy?.ToLower() switch
         {

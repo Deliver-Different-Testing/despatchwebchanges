@@ -1,15 +1,21 @@
-import {AddressViewModel, EditAddressDialogViewModel, IJob} from "../../../interfaces/job.interface";
+import {AddressViewModel, EditAddressDialogViewModel} from "../../../interfaces/job.interface";
 import EditAddressDialogController from "./edit-address-dialog.controller";
 
-export class EditAddressDialogService {
+export class EditAddressDialogService implements angular.IServiceProvider {
     static $inject = [
-        '$mdDialog', "DispatchData"
+        '$mdDialog',
+        "$document"
     ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
+        private $document: angular.IDocumentService,
     ) {
         console.log('EditAddressDialogService: Service instantiated');
+    }
+
+    $get() {
+        return this;
     }
 
     async openEditAddressDialog($event: MouseEvent, addressDetails: AddressViewModel, title: string = 'Edit Address', submitLabel: string = 'Save') {
@@ -18,7 +24,7 @@ export class EditAddressDialogService {
                 controller: EditAddressDialogController,
                 controllerAs: 'ctrl',
                 template: require("./edit-address-dialog.html"),
-                parent: document.body,
+                parent: this.$document.parent(),
                 targetEvent: $event,
                 clickOutsideToClose: false,
                 escapeToClose: true,

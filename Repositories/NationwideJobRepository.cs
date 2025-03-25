@@ -66,7 +66,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         }
         catch (Exception e)
         {
-            Log.Error(e, $"An error occured adding Flight {flight.FlightNumber} to job {jobId}");
+            Log.Error(e, $"An error occured adding Flight {flight?.FlightNumber} to job {jobId}");
             throw;
         }
     }
@@ -104,7 +104,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
         Log.Information(
             "Job details retrieved for {JobId}: AirportId={AirportId}, VehicleSizeId={VehicleSizeId}",
-            jobId, job?.AirPortId, job?.VehicleSizeId);
+            jobId, job.AirPortId, job.VehicleSizeId);
 
         var agents = await GetEligibleAgentsAsync(job.AirPortId, job.VehicleSizeId);
         Log.Information("Found {AgentCount} eligible agents for job {JobId}",
@@ -277,7 +277,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 toCity: job.DeliveryAddressLine4,
                 toState: job.DeliveryAddressLine5,
                 carrierName: carrierName,
-                totalWeight: (decimal)job.UcjbWeight,
+                totalWeight: job.UcjbWeight.HasValue ? (decimal)job.UcjbWeight.Value : 0,
                 quantity: job.UcjbQty,
                 cubic: null,
                 totalPallets: job.TucJobItems.Count,
@@ -324,11 +324,11 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         public DateTime? BookTime { get; init; }
         public bool? DangerousGoods { get; init; }
         public decimal? DryIceWeight { get; init; }
-        public int? Quantity { get; set; }
-        public decimal? Cubic { get; set; }
-        public int? TotalPallets { get; set; }
-        public bool ExtraStopOffs { get; set; }
-        public int? WaitTime { get; set; }
+        public int? Quantity { get; init; }
+        public decimal? Cubic { get; init; }
+        public int? TotalPallets { get; init; }
+        public bool ExtraStopOffs { get; init; }
+        public int? WaitTime { get; init; }
     }
 
     private class AgentInfo

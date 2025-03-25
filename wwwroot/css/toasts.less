@@ -1,18 +1,32 @@
+@import "variables";
+
 md-toast {
   .md-toast-content {
     &.md-success-toast-theme {
-      background-color: rgb(76, 175, 80) !important;
+      background-color: @primary-green !important;
       color: white !important;
     }
 
     &.md-error-toast-theme {
-      background-color: rgb(244, 67, 54) !important;
+      background-color: @error-red !important;
       color: white !important;
     }
 
     &.md-warning-toast-theme {
-      background-color: rgb(255, 152, 0) !important;
+      background-color: @primary-warning !important;
       color: white !important;
     }
+
+    &.md-info-toast-theme {
+      background-color: @primary-color !important;
+      color: white !important;
+    }
+  }
+
+  &.md-bottom {
+    left: 50% !important;
+    right: initial !important;
+    max-width: 80%;
+    min-width: 300px;
   }
 }

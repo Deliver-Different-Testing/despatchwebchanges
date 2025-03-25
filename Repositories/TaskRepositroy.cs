@@ -283,14 +283,15 @@ public class TaskRepository(IDbContextFactory<DespatchContext> contextFactory, I
 
     private async Task<string> GetEventTypeNameAsync(double? eventTypeId)
     {
+        const string defaultEvent = "Default";
         if (eventTypeId == null)
-            return "Default";
+            return defaultEvent;
 
         var eventType = await Context.TucEventTypes
             .Where(jt => Equals(jt.UcetId, eventTypeId))
             .Select(jt => jt.UcetName)
             .FirstOrDefaultAsync();
 
-        return eventType ?? "Default";
+        return eventType ?? defaultEvent;
     }
 }

@@ -70,7 +70,6 @@ public interface IJobRepository
         List<int> selectedViewIds,
         ClearListEnvelopeViewModel clearListEnvelope = null);
 
-    Task<List<SupportViewModel>> SupportEvents(string channel);
     Task<TucEvent> GetSupportEventAsync(int eventId);
     Task<int> UpdateSupportEventAsync(TucEvent supportEvent);
     Task CloseSupportEvent(int supportId, int staffId);
