@@ -1,7 +1,7 @@
 import ToastrService from "../../../services/toastr.service";
-import app from "../../../app";
+import BaseController from "../../base-controller";
 
-class JobFileUploadController implements angular.IController {
+class JobFileUploadController extends BaseController {
     static $inject = [
         "$http",
         "$mdDialog",
@@ -24,6 +24,8 @@ class JobFileUploadController implements angular.IController {
         public bytesFilter: (bytes: any) => string,
         public jobId: number
     ) {
+        super();
+
         this.files = [];
         this.uploadingFiles = [];
     }
@@ -174,5 +176,4 @@ class JobFileUploadController implements angular.IController {
         this.$mdDialog.cancel();
     }
 }
-
-app.controller("JobFileUploadController", JobFileUploadController);
+export default JobFileUploadController;

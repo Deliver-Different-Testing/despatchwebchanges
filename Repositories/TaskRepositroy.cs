@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
-using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,72 +18,104 @@ public class TaskRepository(
     : BaseRepository(contextFactory),
         ITaskRepository
 {
-   public async Task<List<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters)
-   {
-       // Determine date for filtering
-       var selectedDate = filters?.Date ?? tenantTimeService.GetCurrentTenantTime();
+    public async Task<List<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters)
+    {
+        var selectedDate = filters?.Date ?? tenantTimeService.GetCurrentTenantTime();
 
-       // Build initial query
-       var query = Context.TucEvents
-           .Where(e => e.UcevDate != null && e.UcevDate.Value.Date <= selectedDate.Date);
+        var query = Context.TucEvents
+            .Where(e => e.UcevDate != null && e.UcevDate.Value.Date <= selectedDate.Date);
 
-       if (filters != null) query = ApplyFilters(query, filters);
+        if (filters != null)
+        {
+            query = ApplyFilters(query, filters);
+            query = ApplyOrdering(query, filters);
+        }
 
-       var taskData = await query
-           .GroupJoin(
-               Context.TucStaffs,
-               events => events.UcevStaffIdin,
-               staff => staff.UcstId,
-               (events, staffs) => new { events, staffs }
-           )
-           .SelectMany(
-               x => x.staffs.DefaultIfEmpty(),
-               (x, staff) => new TaskDto
-               {
-                   Id = x.events.UcevId,
-                   Despatcher = x.events.UcevDespatcher,
-                   Notes = x.events.UcevNotes,
-                   JobId = x.events.UcevJobId,
-                   Closed = x.events.UcevClosed,
-                   Date = x.events.UcevDate,
-                   Time = x.events.UcevTime,
-                   Description = x.events.UcevDescription,
-                   EventType = x.events.UcevType ?? 0,
-                   StaffId = staff != null ? staff.UcstId : 0,
-                   StaffFirstName = staff != null ? staff.UcstFirstName : string.Empty,
-                   StaffLastName = staff != null ? staff.UcstLastName : string.Empty
-               }
-           )
-           .ToListAsync();
+        var eventTypes = await Context.TucEventTypes
+            .ToDictionaryAsync(et => et.UcetId, et => et.UcetName);
 
-       // Map to view models and sort by due date descending
-       var taskViewModels = await MapToViewModelsAsync(taskData);
-       return taskViewModels.OrderByDescending(vm => vm.DueDate).ToList();
-   }
+        var tasks = await query
+            .GroupJoin(
+                Context.TucStaffs,
+                events => events.UcevStaffIdin,
+                staff => staff.UcstId,
+                (events, staffs) => new { events, staffs }
+            )
+            .SelectMany(
+                x => x.staffs.DefaultIfEmpty(),
+                (x, staff) => new TaskViewModel
+                {
+                    Id = x.events.UcevId,
+                    Assignee = new Suggestion
+                    {
+                        Id = staff != null ? staff.UcstId : 0,
+                        Text = staff != null ? $"{staff.UcstFirstName} {staff.UcstLastName}" : string.Empty
+                    },
+                    Description = x.events.UcevNotes,
+                    JobId = x.events.UcevJobId ?? 0,
+                    Closed = x.events.UcevClosed,
+                    DueDate = x.events.UcevDate != null && x.events.UcevTime != null
+                        ? EF.Functions.DateTimeFromParts(
+                            x.events.UcevDate.Value.Year,
+                            x.events.UcevDate.Value.Month,
+                            x.events.UcevDate.Value.Day,
+                            x.events.UcevTime.Value.Hour,
+                            x.events.UcevTime.Value.Minute,
+                            x.events.UcevTime.Value.Second,
+                            x.events.UcevTime.Value.Millisecond)
+                        : DateTime.MinValue,
+                    Title = x.events.UcevType != null && eventTypes.ContainsKey((int)x.events.UcevType) ? eventTypes[(int)x.events.UcevType] : string.Empty,
+                    EventType = x.events.UcevType != null && eventTypes.ContainsKey((int)x.events.UcevType)
+                        ? eventTypes[(int)x.events.UcevType]
+                        : string.Empty
+                }
+            )
+            .ToListAsync();
 
-   private async Task<List<TaskViewModel>> MapToViewModelsAsync(List<TaskDto> taskData)
-   {
-       var eventTypeIds = taskData.Select(dto => (int)dto.EventType).Distinct().ToList();
-       var eventTypeDict = new Dictionary<int, string>();
+        return tasks;
+    }
 
-       foreach (var typeId in eventTypeIds) eventTypeDict[typeId] = await GetEventTypeNameAsync(typeId);
+    private static IQueryable<TucEvent> ApplyOrdering(IQueryable<TucEvent> query, TaskTableFiltersRequest filters)
+    {
+        if (string.IsNullOrWhiteSpace(filters.OrderBy))
+            return query;
 
-       return taskData.Select(dto => new TaskViewModel
-       {
-           Id = dto.Id,
-           Assignee = new Suggestion
-           {
-               Id = dto.StaffId,
-               Text = $"{dto.StaffFirstName} {dto.StaffLastName}"
-           },
-           Description = dto.Notes,
-           JobId = dto.JobId ?? 0,
-           Closed = dto.Closed ?? false,
-           DueDate = CombineDateAndTime(dto.Date, dto.Time),
-           Title = dto.Description,
-           EventType = eventTypeDict[(int)dto.EventType]
-       }).ToList();
-   }
+        var isDescending = string.Equals(filters.OrderDirection, "desc", StringComparison.OrdinalIgnoreCase);
+
+        return filters.OrderBy.ToLowerInvariant() switch
+        {
+            "assignedto" when filters.StaffId is null =>
+                ApplyOrder(query, e => e.UcevStaffIdout == null, isDescending),
+
+            "assignedto" when filters.StaffId is not null =>
+                ApplyOrder(query, e => (int)e.UcevStaffIdout == filters.StaffId, isDescending),
+
+            "created" =>
+                ApplyDateTimeOrder(query, isDescending),
+
+            _ =>
+                ApplyDateTimeOrder(query, isDescending)
+        };
+    }
+
+    private static IQueryable<TucEvent> ApplyOrder<TKey>(IQueryable<TucEvent> query,
+        Expression<Func<TucEvent, TKey>> keySelector, bool isDescending)
+    {
+        return isDescending
+            ? query.OrderByDescending(keySelector)
+                .ThenByDescending(e => e.UcevDate)
+                .ThenByDescending(e => e.UcevTime)
+            : query.OrderBy(keySelector)
+                .ThenBy(e => e.UcevDate)
+                .ThenBy(e => e.UcevTime);
+    }
+
+    private static IQueryable<TucEvent> ApplyDateTimeOrder(IQueryable<TucEvent> query, bool isDescending)
+    {
+        return isDescending
+            ? query.OrderByDescending(e => e.UcevDate).ThenByDescending(e => e.UcevTime)
+            : query.OrderBy(e => e.UcevDate).ThenBy(e => e.UcevTime);
+    }
 
     public async Task SetEventAsClosedAsync(int eventId, bool closed)
     {
@@ -256,24 +288,6 @@ public class TaskRepository(
 
     private async Task<TucEvent> GetEventByIdAsync(int eventId) =>
         await Context.TucEvents.FirstOrDefaultAsync(e => e.UcevId == eventId);
-
-    private static DateTime CombineDateAndTime(DateTime? date, DateTime? time)
-    {
-        if (date == null)
-            return DateTime.MinValue;
-
-        if (time == null)
-            return date.Value;
-
-        return new DateTime(
-            date.Value.Year,
-            date.Value.Month,
-            date.Value.Day,
-            time.Value.Hour,
-            time.Value.Minute,
-            time.Value.Second
-        );
-    }
 
     private async Task<string> GetEventTypeNameAsync(double? eventTypeId)
     {

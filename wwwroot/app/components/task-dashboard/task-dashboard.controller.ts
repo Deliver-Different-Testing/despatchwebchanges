@@ -1,4 +1,4 @@
-import {ExtendedTask, Task, TaskTableFiltersRequest} from "./task-dashboard.interfaces";
+import {ExtendedTask, TaskViewModel, TaskTableFiltersRequest} from "./task-dashboard.interfaces";
 import "./task-dashboard.styles.less";
 import GreetingService from "../../services/greeting.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
@@ -161,7 +161,7 @@ class TaskDashboardController extends BaseController {
     }
 
     private buildTaskFilters(): TaskTableFiltersRequest {
-        const filters: TaskTableFiltersRequest = {};
+        const filters: TaskTableFiltersRequest = { staffId: -1};
 
         if (this.courierFilter && this.courierFilter !== StatusFilter.All) {
             filters.courierId = parseInt(this.courierFilter, 10);
@@ -230,7 +230,7 @@ class TaskDashboardController extends BaseController {
         return this.getTasks();
     }
 
-    isTaskOverdue(task: Task): boolean {
+    isTaskOverdue(task: TaskViewModel): boolean {
         if (task.closed) return false;
         return new Date(task.dueDate) < this.selectedDate;
     }

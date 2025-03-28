@@ -3,6 +3,19 @@
   padding: 8px 16px;
   min-height: 56px;
 
+  &.clickable {
+    cursor: pointer;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.04);
+      transition: background-color 0.2s ease;
+    }
+
+    &:active {
+      background-color: rgba(0, 0, 0, 0.08);
+    }
+  }
+
   .priority-indicator {
     position: absolute;
     left: 0;

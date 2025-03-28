@@ -1,8 +1,8 @@
 <!-- POD List Component -->
 <div class="droppable-box nationwide-job-list">
     <md-table-container>
-        <table md-dense md-progress="podListPromise" md-table ng-model="selectedPodJob">
-            <thead md-head md-on-reorder="onReorderPodList" md-order="jobPodFilters.order">
+        <table md-dense md-progress="ctrl.podListPromise" md-table ng-model="ctrl.selectedPodJob">
+            <thead md-head md-on-reorder="ctrl.onReorderPodList" md-order="ctrl.jobPodFilters.order">
             <tr md-row>
                 <th md-column md-order-by="time">Time</th>
                 <th md-column md-order-by="speed">Speed</th>
@@ -21,9 +21,9 @@
             <tbody md-body>
             <tr md-row
                 md-dense
-                ng-repeat="job in jobListPOD | filter: box.searchBox"
-                ng-class="jobClass(job)"
-                ng-click="selectJob(job)"
+                ng-repeat="job in ctrl.jobListPOD | filter: box.searchBox"
+                ng-class="ctrl.jobClass(job)"
+                ng-click="ctrl.selectJob(job)"
                 data-jobid="{{job.id}}"
                 data-jobno="{{job.jobNo}}"
                 data-courier="{{job.courier}}"
@@ -33,7 +33,7 @@
                 <td md-cell>{{job.booked | date: (isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm")}}</td>
                 <td md-cell ng-click="speedColumnClick($event)" right-click>
                     <md-icon md-font-set="material-symbols-outlined" ng-if="job.fromAirportId || job.toAirportId">
-                        {{getFlightIcon(job.jobNo)}}
+                        {{ctrl.getFlightIcon(job.jobNo)}}
                     </md-icon>
                     <span ng-if="!job.fromAirportId && !job.toAirportId">{{job.speed}}</span>
                 </td>
@@ -51,20 +51,19 @@
                 </td>
                 <td md-cell>
                     <span ng-if="!job.assignedAgent.agentName && (!job.toAirportId || !job.fromAirportId)"
-                          ng-click="editCourierPOD($event, job)"
-                          ng-style="getJobStyle(job.courierData.courierID !== null)"
+                          ng-style="ctrl.getJobStyle(job.courierData.courierID !== null)"
                           class="dispatch-field">
                         {{job.courier || "Enter courier..."}}
                     </span>
 
                     <span ng-if="!job.assignedAgent.agentName && job.toAirportId && job.fromAirportId"
-                          ng-style="getJobStyle(job.assignedFlight.flightNumber !== null)"
+                          ng-style="ctrl.getJobStyle(job.assignedFlight.flightNumber !== null)"
                           class="dispatch-field">
                         {{job.assignedFlight.flightNumber || "Flight"}}
                     </span>
 
                     <span ng-if="job.assignedAgent.agentName"
-                          ng-style="getJobStyle(job.assignedAgent.agentName !== null)"
+                          ng-style="ctrl.getJobStyle(job.assignedAgent.agentName !== null)"
                           class="dispatch-field">
                         {{job.assignedAgent.agentName || "Agent"}}
                     </span>
@@ -84,13 +83,9 @@
                         <md-icon md-font-set="material-symbols-outlined">calendar_add_on</md-icon>
                         <md-tooltip md-direction="bottom">Create Event</md-tooltip>
                     </span>
-                    <span class="action-icon" ng-click="job.courier == null || restoreJob(job); $event.stopPropagation();">
+                    <span class="action-icon" ng-click="job.courier == null || ctrl.restoreJob(job); $event.stopPropagation();">
                         <md-icon md-font-set="material-symbols-outlined" ng-if="job.courier !== null">undo</md-icon>
                         <md-tooltip md-direction="bottom" ng-if="job.courier !== null">Restore</md-tooltip>
-                    </span>
-                    <span class="action-icon selectjob" ng-click="selectForDispatch(job); $event.stopPropagation();">
-                        <md-icon md-font-set="material-symbols-outlined">check_box_outline_blank</md-icon>
-                        <md-tooltip md-direction="bottom">Select for dispatch</md-tooltip>
                     </span>
                 </td>
             </tr>
@@ -99,17 +94,17 @@
     </md-table-container>
 
     <md-table-pagination
-            md-limit="jobPodFilters.limit"
+            md-limit="ctrl.jobPodFilters.limit"
             md-limit-options="[5, 10, 25, 50]"
-            md-on-paginate="onPaginatePodList"
-            md-page="jobPodFilters.page"
+            md-on-paginate="ctrl.onPaginatePodList"
+            md-page="ctrl.jobPodFilters.page"
             md-page-select
-            md-total="{{totalPodCount}}">
+            md-total="{{ctrl.totalPodCount}}">
     </md-table-pagination>
 
     <!-- No Data Message -->
     <no-data
-            ng-if="!podListLoading && (!jobListPOD || jobListPOD.length === 0)"
+            ng-if="!ctrl.podListLoading && (!ctrl.jobListPOD || ctrl.jobListPOD.length === 0)"
             title="No Awaiting POD Jobs Found"
             message="There are currently no jobs awaiting proof of delivery."
             icon="pending_actions"

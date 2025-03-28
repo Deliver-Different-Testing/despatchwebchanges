@@ -3,9 +3,13 @@ import {ActiveCourierViewModel} from "../interfaces/courier.interface";
 import {JobListResponse} from "../interfaces/job-list-response.interface";
 import DispatchCoreService from "./dispatch-core.service";
 import {bindAllMethods} from "../bindAllMethods";
+import moment from "moment";
 
 class DispatchExecutorService implements angular.IServiceProvider {
-    static $inject = ["$mdDialog", "DispatchData", "moment"];
+    static $inject = [
+        "$mdDialog",
+        "DispatchData",
+    ];
 
     private pickCouriers: ActiveCourierViewModel[] = [];
     private pickAllCouriers: ActiveCourierViewModel[] = [];
@@ -13,12 +17,11 @@ class DispatchExecutorService implements angular.IServiceProvider {
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private DispatchData: DispatchCoreService,
-        private moment: any
-    ) {
+   ) {
         bindAllMethods(this);
     }
 
-    $get(): any {
+    $get() {
         return this;
     }
 
@@ -349,7 +352,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
                 return {isValid: false, message};
             }
 
-            if (this.moment(courier.dgLicenseExpiry) < this.moment().add(1, "days")) {
+            if (moment(courier.dgLicenseExpiry) < moment().add(1, "days")) {
                 const message = `Courier ${courier.id} doesn't have a DGLicense or license has expired.`;
                 console.warn("Job validation failed:", message);
                 return {isValid: false, message};

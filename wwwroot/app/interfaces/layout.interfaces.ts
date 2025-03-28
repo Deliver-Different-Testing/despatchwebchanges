@@ -1,6 +1,12 @@
 export interface IBox {
-    name: string;
-    height: string;
+    name?: string;
+    height?: string;
+    title?: string;
+    icon?: string;
+    templateUrl?: string;
+    showSearch?: number;
+    showRefresh?: number;
+    showDetailButtons?: number;
 }
 
 export interface IColumn {

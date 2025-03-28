@@ -1,3 +1,6 @@
+import {Coordinates} from "../overview/overview.interfaces";
+import JobDataType from "./enums/JobDataType";
+
 export interface FlightViewModel {
     airline: string;
     flightNumber: string;
@@ -28,11 +31,16 @@ export interface Filter {
     active: boolean;
 }
 
-export interface JobFilter {
-    order: string;
-    filter: string;
-    status: string;
-    asc: string;
-    page: number;
-    limit: number;
+export interface HereMapsConfig {
+    center: Coordinates;
+    zoom: number;
+    selectedJobIndex: number;
 }
+
+export interface StatusChangeEvent {
+    jobId: number;
+    previousStatusId: number;
+    newStatusId: number;
+}
+
+export type StatusToListMap = Record<number, JobDataType[]>;

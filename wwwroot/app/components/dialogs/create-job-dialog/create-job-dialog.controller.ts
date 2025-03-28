@@ -5,6 +5,7 @@ import {AppConfig} from "../../../interfaces/app-config.interface";
 import UsStatesService from "../../../services/getUsStates.service";
 import {AddressViewModel, JobCreateViewModel, SelectOption, Suggestion} from "../../../interfaces/job.interface";
 import app from "../../../app";
+import BaseController from "../../base-controller";
 
 interface CreateJobDialogControllerScope extends angular.IScope {
     jobForm: angular.IFormController;
@@ -17,7 +18,7 @@ interface CreateJobDialogControllerScope extends angular.IScope {
     selectedClient: any;
     selectedVehicle: any;
 }
-export class CreateJobDialogController {
+export class CreateJobDialogController extends BaseController {
     static $inject: string[] = [
         "$scope",
         "$mdDialog",
@@ -31,11 +32,8 @@ export class CreateJobDialogController {
         "UsStatesService"
     ];
 
-    private readonly staffId: number;
     private readonly useUsFormat: boolean;
-    private readonly despatcherName: any;
-    dispatchJobService: any;
-    UsStatesService: any;
+
     vehicleSearchText: string = "";
     speedSearchText: string = "";
     states: any;
@@ -55,21 +53,18 @@ export class CreateJobDialogController {
     vehicleSizes: Suggestion[] = [];
 
     constructor(
-        $scope:CreateJobDialogControllerScope,
+        $scope: CreateJobDialogControllerScope,
         private $mdDialog: angular.material.IDialogService,
         private dispatchData: DispatchCoreService,
         private toastrService: ToastrService,
         private $http: angular.IHttpService,
-        dispatchJobService: DispatchExecutorService,
-        staffId: number,
-        despatcherName: string,
+        public dispatchJobService: DispatchExecutorService,
+        public staffId: number,
+        public despatcherName: string,
         APP_CONFIG: AppConfig,
-        UsStatesService: UsStatesService
+        public UsStatesService: UsStatesService
     ) {
-        this.staffId = staffId;
-        this.despatcherName = despatcherName;
-        this.dispatchJobService = dispatchJobService;
-        this.UsStatesService = UsStatesService;
+        super();
 
         this.initializeOptions();
         this.initializeFormData($scope);

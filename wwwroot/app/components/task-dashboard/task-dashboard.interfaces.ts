@@ -1,6 +1,6 @@
 import {Suggestion} from "../../interfaces/job.interface";
 
-export interface Task {
+export interface TaskViewModel {
     id: number;
     title: string;
     description: string;
@@ -20,9 +20,12 @@ export interface TaskTableFiltersRequest {
     eventTypeId?: number;
     searchText?: string;
     date?: string;
+    orderBy?: string;
+    orderDirection?: string;
+    staffId: number;
 }
 
-export interface ExtendedTask extends Task {
+export interface ExtendedTask extends TaskViewModel {
     dueTimeStr?: string;
     _supportData?: any;
 }

@@ -1,4 +1,6 @@
-<md-list-item class="task-item" ng-class="{'completed': ctrl.task.closed, 'calendar-task-item': ctrl.config.customClass === 'calendar-task-item'}">
+<md-list-item class="task-item"
+              ng-class="{'completed': ctrl.task.closed, 'calendar-task-item': ctrl.config.customClass === 'calendar-task-item', 'clickable': ctrl.config.onTaskClick}"
+              ng-click="ctrl.config.onTaskClick && ctrl.handleTaskClick($event)">
     <div class="priority-indicator" ng-class="ctrl.task.priority"></div>
 
     <!-- Only the checkbox triggers task completion -->
@@ -6,6 +8,7 @@
                  ng-if="ctrl.config.allowCompletion !== false"
                  ng-model="ctrl.task.closed"
                  ng-change="ctrl.handleTaskCompletion(ctrl.task)"
+                 ng-click="$event.stopPropagation()"
                  aria-label="Mark as completed">
     </md-checkbox>
 
@@ -32,7 +35,7 @@
                  layout="row"
                  layout-align="start center"
                  md-ink-ripple
-                 ng-click="ctrl.reassignTask($event, ctrl.task)">
+                 ng-click="$event.stopPropagation(); ctrl.reassignTask($event, ctrl.task)">
                 <md-icon md-font-set="material-symbols-outlined">person</md-icon>
                 <span>{{ctrl.task.assignee.text}}</span>
             </div>
@@ -64,7 +67,7 @@
         <!-- Date chip -->
         <div class="date-chip" ng-class="{'overdue-chip': ctrl.isTaskOverdue(ctrl.task)}">
             <md-button class="chip-button"
-                       ng-click="ctrl.openDateDialog($event, ctrl.task)">
+                       ng-click="$event.stopPropagation(); ctrl.openDateDialog($event, ctrl.task)">
                 <md-icon md-font-set="material-symbols-outlined">calendar_today</md-icon>
                 <span>{{ctrl.formatDate(ctrl.task.dueDate)}}</span>
             </md-button>
@@ -73,7 +76,7 @@
         <!-- Time chip -->
         <div class="time-chip" ng-class="{'overdue-chip': ctrl.isTaskOverdue(ctrl.task)}">
             <md-button class="chip-button"
-                       ng-click="ctrl.openTimeDialog($event, ctrl.task)">
+                       ng-click="$event.stopPropagation(); ctrl.openTimeDialog($event, ctrl.task)">
                 <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
                 <span>{{ctrl.formatTime(ctrl.task.dueDate)}}</span>
             </md-button>

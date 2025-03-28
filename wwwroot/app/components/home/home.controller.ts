@@ -12,17 +12,17 @@ import {
     IJob,
     JobQueryParams,
     Suggestion,
-    SupportViewModel
 } from "../../interfaces/job.interface";
 import {ActiveCourierViewModel, TruckCourierStatusViewModel} from "../../interfaces/courier.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {JobStatus} from "../../enums/job-status.enum";
 import BaseController from "../base-controller";
-import {ITaskListItemConfig} from "../common/task-item-component/task-item.interfaces";
-import {ExtendedTask} from "../task-dashboard/task-dashboard.interfaces";
+import {ExtendedTask, TaskViewModel, TaskTableFiltersRequest} from "../task-dashboard/task-dashboard.interfaces";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 import {EditAddressDialogService} from "../dialogs/edit-address-dialog/edit-address-dialog.service";
+import {AppPages} from "../../enums/app-pages.enum";
+import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 
 interface ResendJobsRequest {
     call: string;
@@ -47,10 +47,10 @@ class HomeController extends BaseController {
         'dispatchJobService',
         'APP_CONFIG',
         '$mdSidenav',
-        'AppPages',
         '$stateParams',
         'additionalServicesDialogService',
-        'editAddressDialogService'
+        'editAddressDialogService',
+        'jobFileUploadDialogService'
     ];
 
     private readonly DOM_SELECTORS = {
@@ -64,12 +64,10 @@ class HomeController extends BaseController {
     jobList: IJob[];
     allCouriers: any;
     mapZoom: any;
-    supportSettings: any;
     options: any;
     truckMode: any;
     supportChannel: any;
     showInput: any;
-    isInternal?: boolean = false;
     queryParams: JobQueryParams;
     isUsCustomer: boolean;
     selectedCourier: any;
@@ -94,16 +92,14 @@ class HomeController extends BaseController {
     pickService: any;
     pickClients: any;
     pickChannels: any;
-    courierMenu: any;
-    potentialCourierMenu: any;
-    driverLocationsLoading: any;
-    supportsLoading: any;
-    potentialCouriersLoading: any;
-    currentListLoading: any;
-    layouts: any;
-    defaultLayout: any;
-    currentLayoutName: any;
-    layout: any;
+    driverLocationsLoading: boolean = false;
+    supportsLoading: boolean = false;
+    potentialCouriersLoading: boolean = false;
+    currentListLoading: boolean = false;
+    layouts: ILayout[] = [];
+    defaultLayout?: ILayout;
+    currentLayoutName?: string;
+    layout?: { columns: IColumn[] };
     map: any;
     courierSearchText: any;
     inputWidth: any;
@@ -122,7 +118,6 @@ class HomeController extends BaseController {
     potentialCouriersSelection: any;
     currentSelection: any;
     selectedJobs: any;
-    eventForm: any;
     boxSortableOptions: {
         handle: string;
         connectWith: string;
@@ -140,18 +135,13 @@ class HomeController extends BaseController {
         stop: (e: JQueryEventObject, ui: any) => void
     };
     jobCutoffDate?: Date;
-    supportItemConfig: ITaskListItemConfig = {
-        showJobId: true,
-        showAssignee: true,
-        showJobType: false,
-        showDateTime: true,
-        showDescription: true,
-        showStatusIndicators: false,
-        maxDescriptionLength: 150,
-        customClass: 'support-list-item',
-        dateFormat: 'HH:mm',
-        timeFormat: 'HH:mm',
-        allowCompletion: true
+    supportsFilter: string = 'all';
+    filteredSupports: ExtendedTask[] = [];
+    supportItemConfig = {
+        showAssign: true,
+        showClose: true,
+        showDelete: true,
+        onTaskClick: true
     };
 
     constructor(
@@ -168,10 +158,10 @@ class HomeController extends BaseController {
         private dispatchJobService: DispatchExecutorService,
         private APP_CONFIG: AppConfig,
         private $mdSidenav: angular.material.ISidenavService,
-        private AppPages: any,
         private $stateParams: angular.ui.IStateParamsService,
         private additionalServicesDialogService: AdditionalServicesDialogService,
-        private editAddressDialogService: EditAddressDialogService
+        private editAddressDialogService: EditAddressDialogService,
+        private jobFileUploadDialogService: JobFileUploadDialogService,
     ) {
         super();
 
@@ -201,7 +191,6 @@ class HomeController extends BaseController {
 
         this.allCouriers = {display: false, includeUA: false};
         this.mapZoom = {display: true};
-        this.supportSettings = {autoRefresh: true};
 
         this.boxSortableOptions = {
             handle: '.box-handle',
@@ -307,11 +296,10 @@ class HomeController extends BaseController {
 
         this.allCouriers.display = true;
 
-        if (!this.isInternal) {
+        if (!ClientInternal) {
             this.getClientContacts().then(() => console.log("Get Data Complete!"));
         }
 
-        this.isInternal = ClientInternal === "True";
         this.queryParams = {
             order: "time",
             orderDirection: "asc",
@@ -486,34 +474,9 @@ class HomeController extends BaseController {
         }, {
             id: "3", label: "Trucks",
         },];
-
-        this.courierMenu = [{
-            text: "Dispatch Selected", click: async ($itemScope: any) => {
-                try {
-                    const courierId = $itemScope.courier.courier || $itemScope.courier.code;
-                    await this.dispatchJobs(courierId);
-                    console.log("Dispatch Selected completed successfully");
-                } catch (error: any) {
-                    console.log("Error in Dispatch Selected:", error);
-                }
-            },
-        },];
-
-        this.potentialCourierMenu = [{
-            text: "Dispatch Selected", async click($itemScope: any) {
-                try {
-                    await this.dispatchJobService.dispatchJobsFromPotentialCouriers($itemScope.courier.code);
-                    console.log("Dispatch from Potential Couriers completed successfully");
-                } catch (error: any) {
-                    console.log("Error in Dispatch from Potential Couriers:", error);
-                }
-            },
-        },];
-
-        this.init();
     }
 
-    private init() {
+    $onInit() {
         this.initLayoutSystem(ContactID);
 
         this.loadPageViews().then(async () => {
@@ -546,6 +509,8 @@ class HomeController extends BaseController {
 
         this.initJobWatcher();
         this.initWidgetLoadingStates();
+
+        this.filteredSupports = this.supports;
     }
 
     private _updateBoxMetrics() {
@@ -577,7 +542,10 @@ class HomeController extends BaseController {
 
         const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
         if (index !== -1) {
-            this.layouts[index].layout = angular.copy(this.layout);
+            if (this.layout) {
+                this.layouts[index].layout = angular.copy(this.layout);
+            }
+
             if (Modernizr.localstorage) {
                 localStorage.setItem(`layouts-${ContactID}`, JSON.stringify(this.layouts));
             }
@@ -619,27 +587,32 @@ class HomeController extends BaseController {
     initLayoutSystem(ContactID: number) {
         this.layouts = [];
         this.defaultLayout = {
-            name: "Default", layout: {
-                columns: [{
-                    id: "col1",
-                    width: "65%",
-                    boxes: [{name: "jobsList", height: "45%"}, {name: "jobDetail", height: "65%"},],
-                }, {
-                    id: "col2",
-                    width: "17.5%",
-                    boxes: [{name: "currentWork", height: "50%"}, {name: "supports", height: "50%"},],
-                }, {
-                    id: "col3",
-                    width: "17.5%",
-                    boxes: [{name: "driverLocations", height: "50%"}, {name: "map", height: "50%"},],
-                },],
+            name: "Default",
+            layout: {
+                columns: [
+                    {
+                        id: "col1",
+                        width: "65%",
+                        boxes: [{name: "jobsList", height: "45%"}, {name: "jobDetail", height: "65%"}],
+                    },
+                    {
+                        id: "col2",
+                        width: "17.5%",
+                        boxes: [{name: "currentWork", height: "50%"}, {name: "supports", height: "50%"}],
+                    },
+                    {
+                        id: "col3",
+                        width: "17.5%",
+                        boxes: [{name: "driverLocations", height: "50%"}, {name: "map", height: "50%"}],
+                    }
+                ],
             },
         };
 
         // Load saved layouts or use default
         if (Modernizr.localstorage) {
             try {
-                const storedLayouts = JSON.parse(localStorage.getItem(`layouts-${ContactID}`) || '[]');
+                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(`layouts-${ContactID}`) || '[]');
                 const lastActiveLayout = localStorage.getItem(`lastActiveLayout-${ContactID}`);
 
                 this.layouts = storedLayouts || [this.defaultLayout];
@@ -658,7 +631,7 @@ class HomeController extends BaseController {
         }
 
         // Auto-save changes
-        this.$scope.$watch("layout", (newValue, oldValue) => {
+        this.$scope.$watch("layout", (newValue: { columns: IColumn[] }, oldValue: { columns: IColumn[] }) => {
             if (newValue !== oldValue && this.currentLayoutName) {
                 const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
                 if (index !== -1) {
@@ -672,7 +645,7 @@ class HomeController extends BaseController {
     }
 
     loadLayout(index: number) {
-        const layout = this.layouts[index] || this.layouts[0];
+        const layout: ILayout = this.layouts[index] || this.layouts[0];
         this.currentLayoutName = layout.name;
         this.layout = angular.copy(layout.layout);
 
@@ -698,9 +671,10 @@ class HomeController extends BaseController {
             .then((name) => {
                 if (!name) return;
 
-                const currentLayout = {
-                    name: name, layout: {
-                        columns: this.layout.columns.map((col: IColumn) => ({
+                const currentLayout: ILayout = {
+                    name: name,
+                    layout: {
+                        columns: this.layout?.columns?.map((col: IColumn) => ({
                             ...col,
                             width: angular.element(`#co-${col.id}`).css("flex-basis"),
                             boxes: col.boxes.map((box: IBox) => ({
@@ -708,7 +682,7 @@ class HomeController extends BaseController {
                                     .element(`#box-${box.name}`)
                                     .css("flex-basis"),
                             })),
-                        })),
+                        })) || [],
                     },
                 };
 
@@ -784,7 +758,7 @@ class HomeController extends BaseController {
 
     async loadPageViews() {
         try {
-            this.views = await this.DispatchData.getSelectedViews(ContactID, this.AppPages.Dispatch);
+            this.views = await this.DispatchData.getSelectedViews(ContactID, AppPages.Dispatch);
 
             await this.initializeViews();
             await this.fetchDriverLocations();
@@ -978,7 +952,7 @@ class HomeController extends BaseController {
         this.jobListPromise = this.DispatchData.getClearListJobs(
             this.queryParams,
             selectedClients,
-            this.isInternal ?? false,
+            ClientInternal ?? false,
             this.selectedViews,
             envelope
         );
@@ -1177,7 +1151,7 @@ class HomeController extends BaseController {
             .show({
                 controller: "SendMessageDialogController",
                 controllerAs: "ctrl",
-                parent: document.body,
+                parent: this.$document.parent(),
                 templateUrl: "app/components/dialogs/send-message-dialog/send-message-dialog.html",
                 clickOutsideToClose: false,
                 fullscreen: true,
@@ -1198,7 +1172,7 @@ class HomeController extends BaseController {
                 controller: "AddEventDialogController",
                 controllerAs: "ctrl",
                 templateUrl: "app/components/dialogs/add-event-dialog/add-event-dialog.html",
-                parent: document.body,
+                parent: this.$document.parent(),
                 clickOutsideToClose: true,
                 fullscreen: true,
                 targetEvent: $event,
@@ -1681,7 +1655,7 @@ class HomeController extends BaseController {
     showAlert(title: string, content: string) {
         return this.$mdDialog.show(this.$mdDialog
             .alert()
-            .parent(document.body)
+            .parent(this.$document.parent())
             .clickOutsideToClose(true)
             .title(title)
             .textContent(content)
@@ -1990,29 +1964,64 @@ class HomeController extends BaseController {
         }
     }
 
-    async selectSupportJobDetail(support: SupportViewModel) {
-        console.log(`select Job ${support.jobId}`);
+    async selectSupportJobDetail(task: TaskViewModel) {
+        console.log('[selectSupportJobDetail] Starting with task:', {
+            jobId: task.jobId,
+            jobNumber: task.jobNumber,
+            taskId: task.id
+        });
 
-        // Set the current support before any other operations
-        this.currentSupport = support;
+        this.currentSupport = task;
 
         try {
-            if (!support.jobId) return;
-            const jobData = await this.DispatchData.getJobDetail(support.jobId);
-            await this.selectJob(jobData);
+            if (!task.jobId) {
+                console.warn('[selectSupportJobDetail] No jobId provided, returning early');
+                return;
+            }
 
-            this.currentSelection = ` for Job ${support.jobNumber}`;
+            console.log('[selectSupportJobDetail] Fetching job details for jobId:', task.jobId);
+            const jobData = await this.DispatchData.getJobDetail(task.jobId);
+            console.log('[selectSupportJobDetail] Retrieved job data:', jobData);
+
+            await this.selectJob(jobData);
+            console.log('[selectSupportJobDetail] Job selected successfully');
+
+            this.currentSelection = ` for Job ${task.jobNumber}`;
 
             if (this.currentJob && this.currentJob.rootParentId) {
                 try {
-                    if (!this.currentJob.clientID) return;
-                    this.currentJob.relatedJobs = await this.DispatchData.getRelatedJobs(this.currentJob.rootParentId, this.currentJob.clientID);
+                    if (!this.currentJob.clientID) {
+                        console.warn('[selectSupportJobDetail] No clientID available for related jobs lookup');
+                        return;
+                    }
+
+                    console.log('[selectSupportJobDetail] Fetching related jobs', {
+                        rootParentId: this.currentJob.rootParentId,
+                        clientID: this.currentJob.clientID
+                    });
+
+                    this.currentJob.relatedJobs = await this.DispatchData.getRelatedJobs(
+                        this.currentJob.rootParentId,
+                        this.currentJob.clientID
+                    );
+                    console.log('[selectSupportJobDetail] Retrieved related jobs:', this.currentJob.relatedJobs);
+
                 } catch (error: any) {
-                    console.error("Error getting related jobs:", error);
+                    console.error('[selectSupportJobDetail] Error getting related jobs:', {
+                        error: error.message,
+                        stack: error.stack,
+                        rootParentId: this.currentJob.rootParentId,
+                        clientID: this.currentJob.clientID
+                    });
                 }
             }
         } catch (error: any) {
-            console.error("Error selecting support job detail:", error);
+            console.error('[selectSupportJobDetail] Error selecting support job detail:', {
+                error: error.message,
+                stack: error.stack,
+                taskId: task.id,
+                jobId: task.jobId
+            });
             this.toastrService.showErrorToast("Error loading job details");
         }
     }
@@ -2248,7 +2257,7 @@ class HomeController extends BaseController {
             this.jobListPromise = this.dispatchJobService.getJobListWithCourierData(
                 params,
                 selectedClients,
-                this.isInternal ?? false,
+                ClientInternal ?? false,
                 this.selectedViews
             );
             const result = await this.jobListPromise;
@@ -2280,7 +2289,6 @@ class HomeController extends BaseController {
             }
         }
 
-        // Get supports
        await this.getSupports();
     }
 
@@ -2324,13 +2332,53 @@ class HomeController extends BaseController {
 
     async getSupports() {
         try {
-            // Only show loader on first load
             if(!this.supports) {
                 this.supportsLoading = true;
             }
 
-            this.supports = await this.DispatchData.getAllTasks();
-        } catch (error: any) {
+            // Define filter request based on current filter settings
+            let filterRequest: TaskTableFiltersRequest = {
+                staffId: ContactID
+            };
+
+            if (this.supportsFilter) {
+                switch (this.supportsFilter) {
+                    case 'mine':
+                        filterRequest.staffId = ContactID;
+                        filterRequest.orderBy = 'assignedTo';
+                        filterRequest.orderDirection = 'desc';
+                        break;
+                    case 'unassigned':
+                        filterRequest.staffId = -1;
+                        filterRequest.orderBy = 'assignedTo';
+                        filterRequest.orderDirection = 'desc';
+                        break;
+                    case 'newest':
+                        filterRequest.orderBy = 'created';
+                        filterRequest.orderDirection = 'desc';
+                        break;
+                    case 'oldest':
+                        filterRequest.orderBy = 'created';
+                        filterRequest.orderDirection = 'asc';
+                        break;
+                    default:
+                        filterRequest.orderBy = 'created';
+                        filterRequest.orderDirection = 'desc';
+                        break;
+                }
+            }
+
+            try {
+                this.supports = await this.DispatchData.getAllTasks(filterRequest);
+                this.filteredSupports = this.supports;
+            } catch (serviceError) {
+                console.error("Service error getting supports:", serviceError);
+                this.toastrService.showErrorToast("Failed to load support items");
+
+                this.supports = [];
+                this.filteredSupports = [];
+            }
+        } catch (error) {
             console.log("Error getting supports:", error);
         } finally {
             this.supportsLoading = false;
@@ -2437,34 +2485,12 @@ class HomeController extends BaseController {
         return this.getJobList();
     }
 
-    addEvent() {
-        let time = new Date();
-        time.setSeconds(0);
-        time.setMilliseconds(0);
-
-        if (!this.currentJob) return;
-        this.eventForm = {
-            data: {
-                jobNum: this.currentJob.jobNo,
-                client: this.currentJob.client,
-                event: "Other",
-                date: new Date(),
-                time: time,
-            }, submit() {
-            }, cancel() {
-                angular.element(".eventForm").css("display", "none");
-            },
-        };
-
-        angular.element(".eventForm").css("display", "");
-    }
-
     async truckLoadingStatus($event: MouseEvent) {
         await this.$mdDialog
             .show({
                 controller: "TruckCourierStatusDialogController",
                 controllerAs: "ctrl",
-                parent: document.body,
+                parent: this.$document.parent(),
                 targetEvent: $event,
                 templateUrl: "app/components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.html",
                 clickOutsideToClose: false,
@@ -2491,7 +2517,7 @@ class HomeController extends BaseController {
         return this.$mdDialog.show({
             controller: "CreateJobDialogController",
             controllerAs: "ctrl",
-            parent: document.body,
+            parent: this.$document.parent(),
             template: require("../dialogs/create-job-dialog/create-job-dialog.html"),
             clickOutsideToClose: false,
             fullscreen: true,
@@ -2518,7 +2544,7 @@ class HomeController extends BaseController {
             await this.$mdDialog.show({
                 controller: "InterCourierChargeDialog",
                 controllerAs: "ctrl",
-                parent: document.body,
+                parent: this.$document.parent(),
                 targetEvent: $event,
                 template: require("../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.html"),
                 clickOutsideToClose: false,
@@ -2547,7 +2573,7 @@ class HomeController extends BaseController {
                 controllerAs: "ctrl",
                 template: require("../dialogs/add-event-dialog/add-event-dialog.html"),
                 targetEvent: $event,
-                parent: document.body,
+                parent: this.$document.parent(),
                 clickOutsideToClose: true,
                 fullscreen: true,
                 locals: {
@@ -2585,29 +2611,7 @@ class HomeController extends BaseController {
     }
 
     async openFileAttachmentDialog($event: MouseEvent, job: IJob) {
-        try {
-            await this.$mdDialog.show({
-                controller: "JobFileUploadController",
-                controllerAs: "ctrl",
-                parent: document.body,
-                targetEvent: $event,
-                template: require("../dialogs/job-file-upload-dialog/job-file-upload-dialog.html"),
-                clickOutsideToClose: false,
-                fullscreen: true,
-                locals: {
-                    jobId: job.id,
-                },
-                bindToController: true,
-            });
-
-            console.log("Job File Upload Dialog Closed!");
-        } catch (error: any) {
-            if (error === undefined) {
-                console.log("User canceled!");
-            } else {
-                throw error;
-            }
-        }
+        await this.jobFileUploadDialogService.openJobFileUploadDialog($event, job);
     }
 
     async showAdditionalServicesMenu($event: MouseEvent, job: IJob) {
@@ -2630,23 +2634,6 @@ class HomeController extends BaseController {
         }
     }
 
-    async fetchAndDisplayCurrentJobs(jobs: IJob[]) {
-        if (!Array.isArray(jobs)) {
-            console.warn("Invalid jobs data received:", jobs);
-            return [];
-        }
-
-        // Map numeric values to proper job objects if needed
-        const processedJobs = jobs.map((job) => {
-            return job;
-        });
-
-        this.jobList = processedJobs;
-
-        await this.activateDrop();
-        return processedJobs;
-    }
-
     async updateUIAfterCourierSelection(courier: ActiveCourierViewModel) {
         this.currentWorkSelection = ` for Courier ${courier.label}`;
         this.mapJobList = [...(this.jobsCurrentList || [])];
@@ -2658,10 +2645,8 @@ class HomeController extends BaseController {
             return 0;
         }
 
-        // Convert status type to lowercase and replace spaces with hyphens
         const normalizedStatusType = statusType.toLowerCase().replace(/\s+/g, '-');
 
-        // Map common category names to arrays of actual status IDs with proper typing
         const statusGroups: Record<string, JobStatus[]> = {
             'pending': [
                 JobStatus.New,
@@ -2728,11 +2713,94 @@ class HomeController extends BaseController {
                 column.boxes.forEach((box: IBox) => {
                     const boxEl = angular.element(`#box-${box.name}`);
                     if (boxEl.length) {
-                        boxEl.css('flex-basis', box.height);
+                        boxEl.css('flex-basis', box.height || 'auto');
                     }
                 });
             }
         });
+    }
+
+    getSupportsFilterLabel(): string {
+        switch (this.supportsFilter) {
+            case 'all':
+                return 'All Supports';
+            case 'mine':
+                return 'My Supports';
+            case 'unassigned':
+                return 'Unassigned';
+            case 'newest':
+                return 'Newest First';
+            case 'oldest':
+                return 'Oldest First';
+            default:
+                return 'All Supports';
+        }
+    }
+
+    async filterSupports(filterType: string) {
+        this.supportsFilter = filterType;
+
+        try {
+            this.supportsLoading = true;
+
+            // Build filter request based on selected filter
+            let filterRequest: TaskTableFiltersRequest = {
+                staffId: ContactID
+            };
+
+            switch (filterType) {
+                case 'mine':
+                    // Filter to show only tasks assigned to current user
+                    filterRequest.staffId = ContactID;
+                    filterRequest.orderBy = 'assignedTo';  // Changed from 'created' to 'assignedTo'
+                    filterRequest.orderDirection = 'desc';
+                    break;
+                case 'unassigned':
+                    // Filter to show only unassigned tasks
+                    filterRequest.staffId = -1; // Special value to indicate unassigned
+                    filterRequest.orderBy = 'assignedTo';  // Changed from 'created' to 'assignedTo'
+                    filterRequest.orderDirection = 'desc';
+                    break;
+                case 'newest':
+                    // Order by creation date, newest first
+                    filterRequest.orderBy = 'created';
+                    filterRequest.orderDirection = 'desc';
+                    break;
+                case 'oldest':
+                    // Order by creation date, oldest first
+                    filterRequest.orderBy = 'created';
+                    filterRequest.orderDirection = 'asc';
+                    break;
+                default:
+                    // 'all' - show all tasks with default ordering
+                    filterRequest.orderBy = 'created';
+                    filterRequest.orderDirection = 'desc';
+                    break;
+            }
+
+            // Get filtered supports
+            try {
+                this.supports = await this.DispatchData.getAllTasks(filterRequest);
+                this.filteredSupports = this.supports;
+
+                // Show toast message for successful filter application
+                const filterLabel = this.getSupportsFilterLabel();
+                this.toastrService.showSuccessToast(`Showing ${filterLabel}`);
+            } catch (serviceError) {
+                console.error("Service error filtering supports:", serviceError);
+                this.toastrService.showErrorToast("Failed to apply filter. Please try again.");
+
+                // Initialize empty arrays if service call failed
+                this.supports = [];
+                this.filteredSupports = [];
+            }
+
+        } catch (error) {
+            console.error("Error filtering supports:", error);
+            this.toastrService.showErrorToast("Error filtering support tasks");
+        } finally {
+            this.supportsLoading = false;
+        }
     }
 }
 

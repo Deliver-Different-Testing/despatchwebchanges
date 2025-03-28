@@ -2747,6 +2747,9 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             case "DeliverBy":
                 job.DeliverByTime = DateTime.Parse(value);
                 break;
+            case "BookedTime":
+                job.UcjbDate = DateTime.Parse(value);
+                break;
         }
 
         if (!string.IsNullOrEmpty(updateNote))
@@ -3176,6 +3179,9 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 break;
             case "DeliverBy":
                 archive.Job.DeliverByTime = DateTime.Parse(value);
+                break;
+            case "BookedTime":
+                archive.Job.UcjbDate = DateTime.Parse(value);
                 break;
         }
 

@@ -18,7 +18,6 @@ import {
 import {SendMessageDialogController} from "./components/dialogs/send-message-dialog/send-message-dialog.controller";
 import {SelectDialogController} from "./components/dialogs/select-dialog/select-dialog.controller";
 import {MapDialogController} from "./components/dialogs/map-dialog/map-dialog.controller";
-import {NationwideLayoutService} from "./components/Nationwide/services/nationwide-layout.service";
 import MegaMapComponent from "./components/overview/mega-map/mega-map.controller";
 import {openJobsComponent} from "./components/overview/open-jobs/open-jobs.controller";
 import OverviewFiltersService from "./components/overview/services/overview-filters.service";
@@ -60,6 +59,10 @@ import JobDetailComponent from "./components/common/job-details/job-details.comp
 import NoDataComponent from "./components/common/no-data/no-data.component";
 import ParcelVisualizationComponent
     from "./components/dialogs/edit-parcel-dimensions-dialog/parcel-visualization.component";
+import JobFileUploadController from "./components/dialogs/job-file-upload-dialog/job-file-upload.controller";
+import JobFileUploadDialogService from "./components/dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
+import NationwideComponent from "./components/Nationwide/nationwide.controller";
+import moment from "moment";
 
 const app = angular.module("uDispatch", ["ui.router",
     "angularResizable", "ui.sortable", "ui.bootstrap", "ui.bootstrap.pagination",
@@ -125,7 +128,9 @@ app
     .config(["$qProvider", ($qProvider: angular.IQProvider) => {
         $qProvider.errorOnUnhandledRejections(false);
     }])
-    .config(["$mdDateLocaleProvider", "moment", "APP_CONFIG", ($mdDateLocaleProvider: any, moment: any, APP_CONFIG: any) => {
+    .config(["$mdDateLocaleProvider", "APP_CONFIG", (
+        $mdDateLocaleProvider: angular.material.IDateLocaleProvider,
+        APP_CONFIG: AppConfig) => {
         if (!APP_CONFIG.US_Customer) {
             // Set locale to New Zealand English
             moment.locale("en-nz");
@@ -134,10 +139,8 @@ app
 
             $mdDateLocaleProvider.parseDate = (dateString: string) => {
                 const m = moment(dateString, "DD/MM/YYYY", true);
-                return m.isValid() ? m.toDate() : null;
+                return m.isValid() ? m.toDate() : new Date();
             };
-
-            $mdDateLocaleProvider.isDateComplete = (dateString: string) => moment(dateString, "DD/MM/YYYY", true).isValid();
 
             // First day of the week is Monday (1) in New Zealand
             $mdDateLocaleProvider.firstDayOfWeek = 1;
@@ -159,16 +162,6 @@ app
 
             $mdDateLocaleProvider.msgCalendar = "Calendar";
             $mdDateLocaleProvider.msgOpenCalendar = "Open calendar";
-
-            // Date-picker specific display and parsing
-            $mdDateLocaleProvider.dateFormat = "dd/MM/yyyy";
-            $mdDateLocaleProvider.inputDateFormat = "dd/MM/yyyy";
-
-            // Long date format (e.g., "14 July 2023")
-            $mdDateLocaleProvider.longDateFormat = (date: Date) => moment(date).format("D MMMM YYYY");
-
-            // Short time format
-            $mdDateLocaleProvider.timeFormat = "h:mm a";
         }
     }]);
 
@@ -187,6 +180,7 @@ app.component("taskDashboardComponent", TaskDashboardComponent)
 app.component("contextMenu", ContextMenuComponent)
 app.component("noData", NoDataComponent)
 app.component("parcelVisualization", ParcelVisualizationComponent);
+app.component("nationwideComponent", NationwideComponent);
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);
@@ -204,6 +198,7 @@ app.controller("MapDialogController", MapDialogController);
 app.controller('EventGroupDialogController', EventGroupDialogController);
 app.controller("EditDateTimeDialogController", EditDateTimeDialogController);
 app.controller("EditAddressDialogController", EditAddressDialogController);
+app.controller("jobFileUploadController", JobFileUploadController);
 
 // Services
 app.service("configService", ConfigService);
@@ -215,7 +210,6 @@ app.service("openJobDispatchService", OpenJobDispatchService);
 app.service("rateJobService", RateJobService);
 app.service("toastrService", ToastrService);
 app.service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService);
-app.service("NationwideLayoutService", NationwideLayoutService);
 app.service("overviewFiltersService", OverviewFiltersService);
 app.service("overviewService", OverviewService);
 app.service("uPBData", PrebookService);
@@ -226,5 +220,6 @@ app.service("editAddressDialogService", EditAddressDialogService);
 app.service("NWData", NationwideService);
 app.service("priceBreakdownDialogService", PriceBreakdownDialogService)
 app.service("additionalServicesDialogService", AdditionalServicesDialogService)
+app.service("jobFileUploadDialogService", JobFileUploadDialogService)
 
 export default app;

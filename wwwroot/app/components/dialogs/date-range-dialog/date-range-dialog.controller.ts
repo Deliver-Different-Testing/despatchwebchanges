@@ -1,7 +1,7 @@
 import "./date-range-dialog.styles.less";
-import app from "../../../app";
+import BaseController from "../../base-controller";
 
-export class DateRangeDialogController {
+export class DateRangeDialogController extends BaseController {
     static $inject = ["$mdDialog", "dateRange"];
 
     private readonly startDate: Date;
@@ -10,7 +10,8 @@ export class DateRangeDialogController {
     constructor(
         private $mdDialog: angular.material.IDialogService,
         dateRange: { start?: Date; end?: Date }) {
-        // Initialize with existing date range if provided
+        super();
+
         this.startDate = dateRange?.start || new Date();
         this.endDate = dateRange?.end || new Date();
     }

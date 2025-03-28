@@ -7,7 +7,15 @@ import DispatchCoreService from "../../../services/dispatch-core.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
 
 class DispatchMapController extends BaseController {
-    static $inject = ["NgMap", "$timeout", "configService", "$window", "$rootScope", "DispatchData", "APP_CONFIG"];
+    static $inject = [
+        "NgMap",
+        "$timeout",
+        "configService",
+        "$window",
+        "$rootScope",
+        "DispatchData",
+        "APP_CONFIG"
+    ];
 
     private locationRefreshInterval: angular.IPromise<void> | null = null;
     private readonly LOCATION_REFRESH_INTERVAL = 15000;
