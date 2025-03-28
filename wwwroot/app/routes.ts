@@ -39,9 +39,7 @@ class RouterConfig {
     private configureNationwideState(): this {
         this.$stateProvider.state("nw", {
             url: "/Nationwide",
-            template: require("./components/Nationwide/nationwide.template.html"),
-            controller: "NationwideControl",
-            reloadOnSearch: false
+            component: "nationwideComponent",
         });
         return this;
     }

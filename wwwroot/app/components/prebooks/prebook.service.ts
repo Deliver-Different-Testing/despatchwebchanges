@@ -1,4 +1,3 @@
-import app from "../../app";
 import {PrebookListViewModel} from "./prebooks.interfaces";
 import {IJob} from "../../interfaces/job.interface";
 

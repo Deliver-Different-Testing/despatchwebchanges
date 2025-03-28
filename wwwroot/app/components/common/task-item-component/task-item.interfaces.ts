@@ -12,4 +12,5 @@ export interface ITaskListItemConfig {
     showOverdueWarning?: boolean;
     dateFormat?: string;
     timeFormat?: string;
+    onTaskClick?: boolean;
 }

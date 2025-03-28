@@ -1,7 +1,7 @@
-<div class="box-content nationwide-job-list" ng-if="!isDeliveryJob()">
+<div class="box-content nationwide-job-list" ng-if="!ctrl.isDeliveryJob()">
     <!-- State 1: No Current Job Selected -->
     <no-data
-            ng-if="!currentJob"
+            ng-if="!ctrl.currentJob"
             title="No Job Selected"
             message="Please select a job to view available flights."
             icon="flight_takeoff"
@@ -10,7 +10,7 @@
 
     <!-- State 2: Job Has Assigned Flight -->
     <no-data
-            ng-if="currentJob && currentJob.assignedFlight"
+            ng-if="ctrl.currentJob && ctrl.currentJob.assignedFlight"
             title="Flight Already Assigned"
             message="A flight has already been assigned to this job. This can be found in the job details widget."
             icon="flight_takeoff"
@@ -19,7 +19,7 @@
 
     <!-- State 3: Missing Airport Information -->
     <no-data
-            ng-if="currentJob && !currentJob.assignedFlight && (!currentJob.toAirportId || !currentJob.fromAirportId)"
+            ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && (!ctrl.currentJob.toAirportId || !ctrl.currentJob.fromAirportId)"
             title="Missing Airport Info"
             message="Airport information not applicable or not provided for this job. If needed, please update the job details with relevant airport data."
             icon="local_airport"
@@ -28,36 +28,36 @@
 
     <!-- State 4: Loading Flights -->
     <dfrnt-loader
-            ng-if="currentJob && !currentJob.assignedFlight && currentJob.toAirportId && currentJob.fromAirportId"
-            is-loading="flightsLoading"
+            ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId"
+            is-loading="ctrl.flightsLoading"
             icon-name="'flight'">
     </dfrnt-loader>
 
     <!-- State 5: Flight Error -->
     <no-data
-            ng-if="currentJob && !currentJob.assignedFlight && currentJob.toAirportId && currentJob.fromAirportId && !flightsLoading && flightError"
+            ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading && ctrl.flightError"
             title="Error Loading Flights"
-            message="{{flightError}}"
+            message="{{ctrl.flightError}}"
             icon="error"
             show-action="false">
     </no-data>
 
     <!-- State 6: No Flights Available -->
     <no-data
-            ng-if="currentJob && !currentJob.assignedFlight && currentJob.toAirportId && currentJob.fromAirportId && !flightsLoading && !flightError && flightOptions.length === 0"
+            ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading && !ctrl.flightError && ctrl.flightOptions.length === 0"
             title="No Flights Available"
-            message="{{flightMessage || 'No flights available for the specified criteria.'}}"
+            message="{{ctrl.flightMessage || 'No flights available for the specified criteria.'}}"
             icon="flight_takeoff"
             show-action="true"
             action-text="Load More Flights"
-            on-action="loadNextFlights()">
+            on-action="ctrl.loadNextFlights()">
     </no-data>
 
     <!-- State 7: Flight List -->
-    <div ng-if="currentJob && !currentJob.assignedFlight && currentJob.toAirportId && currentJob.fromAirportId && !flightsLoading && !flightError && flightOptions.length > 0">
+    <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading && !ctrl.flightError && ctrl.flightOptions.length > 0">
         <md-table-container>
-            <table md-dense md-progress="flightListPromise" md-table ng-model="selectedFlight">
-                <thead md-head md-order="flightTableQuery.order">
+            <table md-dense md-progress="ctrl.flightListPromise" md-table ng-model="ctrl.selectedFlight">
+                <thead md-head md-order="ctrl.flightTableQuery.order">
                 <tr md-row>
                     <th md-column md-order-by="airline">Airline</th>
                     <th md-column md-order-by="flightNumber">Flight No</th>
@@ -75,7 +75,7 @@
                 <tbody md-body>
                 <tr md-row
                     md-dense
-                    ng-repeat="flight in flightOptions | filter: box.searchBox | orderBy: flightTableQuery.order">
+                    ng-repeat="flight in ctrl.flightOptions | filter: box.searchBox | orderBy: ctrl.flightTableQuery.order">
                     <td md-cell>{{flight.airline}}</td>
                     <td md-cell>{{flight.flightNumber}}</td>
                     <td md-cell>{{flight.departureTime | date: "MM/dd/yyyy"}}</td>
@@ -86,7 +86,7 @@
                     <td md-cell>{{flight.amount}}</td>
                     <td md-cell>{{flight.aircraft}}</td>
                     <td class="actions" md-cell>
-                        <span class="action-icon" ng-click="addFlightToJob($event, flight, currentJob)">
+                        <span class="action-icon" ng-click="ctrl.addFlightToJob($event, flight, ctrl.currentJob)">
                             <md-icon md-font-set="material-symbols-outlined">add</md-icon>
                             <md-tooltip md-direction="left">Assign Flight</md-tooltip>
                         </span>
@@ -98,20 +98,20 @@
 
         <!-- Flight Table Footer Actions -->
         <div class="table-footer-actions" layout="row" layout-align="end center" layout-padding>
-            <md-button class="md-raised md-primary" ng-click="loadNextFlights()">
+            <md-button class="md-raised md-primary" ng-click="ctrl.loadNextFlights()">
                 Load More Flights
             </md-button>
-            <md-button class="md-raised" ng-click="loadNextDayFlights()">
+            <md-button class="md-raised" ng-click="ctrl.loadNextDayFlights()">
                 Next Day
             </md-button>
         </div>
     </div>
 </div>
 
-<div class="box-content nationwide-job-list" ng-if="isDeliveryJob()">
+<div class="box-content nationwide-job-list" ng-if="ctrl.isDeliveryJob()">
     <!-- State 1: No Current Job Selected -->
     <no-data
-            ng-if="!currentJob"
+            ng-if="!ctrl.currentJob"
             title="No Job Selected"
             message="Please select a job to view available agents."
             icon="engineering"
@@ -120,7 +120,7 @@
 
     <!-- State 2: Job Has Assigned Agent -->
     <no-data
-            ng-if="currentJob && currentJob.assignedAgent"
+            ng-if="ctrl.currentJob && ctrl.currentJob.assignedAgent"
             title="Agent Already Assigned"
             message="An agent has already been assigned to this job. This can be found in the job details widget."
             icon="engineering"
@@ -129,7 +129,7 @@
 
     <!-- State 3: Not a Delivery Job -->
     <no-data
-            ng-if="currentJob && !currentJob.assignedAgent && !isDeliveryJob()"
+            ng-if="ctrl.currentJob && !ctrl.currentJob.assignedAgent && !ctrl.isDeliveryJob()"
             title="Not a Delivery Job"
             message="Agent information is not applicable for this job. This section is only relevant for delivery jobs."
             icon="engineering"
@@ -138,34 +138,34 @@
 
     <!-- State 4: Loading Agents -->
     <dfrnt-loader
-            ng-if="currentJob && !currentJob.assignedAgent && isDeliveryJob()"
-            is-loading="agentsLoading"
+            ng-if="ctrl.currentJob && !ctrl.currentJob.assignedAgent && ctrl.isDeliveryJob()"
+            is-loading="ctrl.agentsLoading"
             icon-name="'handyman'">
     </dfrnt-loader>
 
     <!-- State 5: Agent Error -->
     <no-data
-            ng-if="currentJob && !currentJob.assignedAgent && isDeliveryJob() && !agentsLoading && agentError"
+            ng-if="ctrl.currentJob && !ctrl.currentJob.assignedAgent && ctrl.isDeliveryJob() && !ctrl.agentsLoading && ctrl.agentError"
             title="Error Loading Agents"
-            message="{{agentError}}"
+            message="{{ctrl.agentError}}"
             icon="error"
             show-action="false">
     </no-data>
 
     <!-- State 6: No Agents Available -->
     <no-data
-            ng-if="currentJob && !currentJob.assignedAgent && isDeliveryJob() && !agentsLoading && !agentError && agentOptions.length === 0"
+            ng-if="ctrl.currentJob && !ctrl.currentJob.assignedAgent && ctrl.isDeliveryJob() && !ctrl.agentsLoading && !ctrl.agentError && ctrl.agentOptions.length === 0"
             title="No Agents Available"
-            message="{{agentMessage || 'No agents available for the specified criteria.'}}"
+            message="{{ctrl.agentMessage || 'No agents available for the specified criteria.'}}"
             icon="engineering"
             show-action="false">
     </no-data>
-    
+
     <!-- State 7: Agent List -->
-    <div ng-if="currentJob && !currentJob.assignedAgent && isDeliveryJob() && !agentsLoading && !agentError && agentOptions.length > 0">
+    <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedAgent && ctrl.isDeliveryJob() && !ctrl.agentsLoading && !ctrl.agentError && ctrl.agentOptions.length > 0">
         <md-table-container>
-            <table md-dense md-progress="agentListPromise" md-table ng-model="selectedAgent">
-                <thead md-head md-order="agentTableQuery.order">
+            <table md-dense md-progress="ctrl.agentListPromise" md-table ng-model="ctrl.selectedAgent">
+                <thead md-head md-order="ctrl.agentTableQuery.order">
                 <tr md-row>
                     <th md-column md-order-by="agentName">Agent Name</th>
                     <th md-column md-order-by="agentRate">Rate</th>
@@ -177,16 +177,16 @@
                 <tbody md-body>
                 <tr md-row
                     md-dense
-                    ng-repeat="agent in agentOptions | filter: box.searchBox | orderBy: agentTableQuery.order">
+                    ng-repeat="agent in ctrl.agentOptions | filter: box.searchBox | orderBy: ctrl.agentTableQuery.order">
                     <td md-cell>{{agent.agentName}}</td>
                     <td md-cell>{{agent.agentRate}}</td>
                     <td md-cell>{{agent.agentRanking}}</td>
                     <td class="actions" md-cell>
-                        <span class="action-icon" ng-click="sendQuoteRequest($event, agent, currentJob)">
+                        <span class="action-icon" ng-click="ctrl.sendQuoteRequest($event, agent, ctrl.currentJob)">
                             <md-icon md-font-set="material-symbols-outlined">request_quote</md-icon>
                             <md-tooltip md-direction="left">Send Quote Request</md-tooltip>
                         </span>
-                        <span class="action-icon" ng-click="addAgentToJob($event, agent, currentJob)">
+                        <span class="action-icon" ng-click="ctrl.addAgentToJob($event, agent, ctrl.currentJob)">
                             <md-icon md-font-set="material-symbols-outlined">add</md-icon>
                             <md-tooltip md-direction="left">Assign Job</md-tooltip>
                         </span>

@@ -1,5 +1,5 @@
 import BaseController from "../../base-controller";
-import {ExtendedTask, Task} from "../../task-dashboard/task-dashboard.interfaces";
+import {ExtendedTask, TaskViewModel} from "../../task-dashboard/task-dashboard.interfaces";
 import {SelectDialogService} from "../../dialogs/select-dialog/select-dialog.service";
 import {EditDateTimeDialogService} from "../../dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
 import DispatchCoreService from "../../../services/dispatch-core.service";
@@ -12,6 +12,7 @@ export interface TaskListItemBindings {
     task: ExtendedTask;
     config: ITaskListItemConfig;
     onTaskUpdated: () => void;
+    onTaskClick?: (params: { task: ExtendedTask }) => void;
 }
 
 export class TaskListItemController extends BaseController {
@@ -26,8 +27,9 @@ export class TaskListItemController extends BaseController {
 
     task?: ExtendedTask;
     config?: ITaskListItemConfig;
-    onStatusChange?: (params: { task: Task }) => void;
+    onStatusChange?: (params: { task: TaskViewModel }) => void;
     onTaskUpdated?: () => void;
+    onTaskClick?: (params: { task: ExtendedTask }) => void;
 
     constructor(
         private $filter: angular.IFilterService,
@@ -41,24 +43,24 @@ export class TaskListItemController extends BaseController {
     }
 
     $onInit() {
-        // Set default configuration if not provided
-        if (!this.config) {
-            this.config = {
-                showJobId: true,
-                showAssignee: true,
-                showJobType: true,
-                showDateTime: true,
-                customClass: '',
-                showStatusIndicators: true,
-                allowCompletion: true,
-                showOverdueWarning: true,
-                dateFormat: 'MMM d, yyyy',
-                timeFormat: 'h:mm a'
-            };
-        }
+        if (this.config) return;
+
+        // Default configuration
+        this.config = {
+            showJobId: true,
+            showAssignee: true,
+            showJobType: true,
+            showDateTime: true,
+            customClass: '',
+            showStatusIndicators: true,
+            allowCompletion: true,
+            showOverdueWarning: true,
+            dateFormat: 'MMM d, yyyy',
+            timeFormat: 'h:mm a'
+        };
     }
 
-    async openDateDialog($event: MouseEvent, task: Task) {
+    async openDateDialog($event: MouseEvent, task: TaskViewModel) {
         $event.preventDefault();
         $event.stopPropagation();
 
@@ -66,10 +68,7 @@ export class TaskListItemController extends BaseController {
             const result: IDialogDateTimeResult = await this.editDateTimeDialogService.showEditDateDialog(
                 $event, "Due Date", "dueDate", new Date(task.dueDate));
 
-            // Update task date via task service
             await this._updateTaskDate(task.id, result.formattedDateTime);
-
-            // Update local task object
             task.dueDate = result.formattedDateTime;
 
             this.toastrService.showSuccessToast("Task date updated successfully");
@@ -82,7 +81,7 @@ export class TaskListItemController extends BaseController {
         }
     }
 
-    async openTimeDialog($event: MouseEvent, task: Task) {
+    async openTimeDialog($event: MouseEvent, task: TaskViewModel) {
         $event.preventDefault();
         $event.stopPropagation();
 
@@ -90,10 +89,7 @@ export class TaskListItemController extends BaseController {
             const result: IDialogDateTimeResult = await this.editDateTimeDialogService.showEditTimeDialog(
                 $event, "Due Time", "dueDate", new Date(task.dueDate));
 
-            // Update task time via task service
             await this._updateTaskTime(task.id, result.formattedDateTime);
-
-            // Update local task object
             task.dueDate = result.formattedDateTime;
 
             this.toastrService.showSuccessToast("Task time updated successfully");
@@ -106,7 +102,7 @@ export class TaskListItemController extends BaseController {
         }
     }
 
-    async reassignTask($event: MouseEvent, task: Task) {
+    async reassignTask($event: MouseEvent, task: TaskViewModel) {
         $event.stopPropagation();
 
         try {
@@ -130,7 +126,7 @@ export class TaskListItemController extends BaseController {
         }
     }
 
-    async handleTaskCompletion(task: Task) {
+    async handleTaskCompletion(task: TaskViewModel) {
         try {
             await this.$http.post("Task/MarkTaskAsClosed" + "?eventId=" + task.id + "&closed=" + task.closed, null);
 
@@ -145,7 +141,7 @@ export class TaskListItemController extends BaseController {
         }
     }
 
-    isTaskOverdue(task: Task): boolean {
+    isTaskOverdue(task: TaskViewModel): boolean {
         if (task.closed) return false;
         return new Date(task.dueDate) < new Date();
     }
@@ -178,8 +174,22 @@ export class TaskListItemController extends BaseController {
             return;
         }
 
-        // Actual error occured
         this.toastrService.showErrorToast("Error updating task");
+    }
+
+    handleTaskClick($event: MouseEvent) {
+        console.log('[TaskListItemController.handleTaskClick] Starting click handler');
+        if (this.config?.onTaskClick && this.onTaskClick && this.task) {
+            console.log('[TaskListItemController.handleTaskClick] Conditions met, executing onTaskClick with task:', this.task);
+            $event.stopPropagation();
+            this.onTaskClick({ task: this.task });
+        } else {
+            console.log('[TaskListItemController.handleTaskClick] Click handler conditions not met', {
+                hasConfigOnTaskClick: !!this.config?.onTaskClick,
+                hasOnTaskClick: !!this.onTaskClick,
+                hasTask: !!this.task
+            });
+        }
     }
 }
 
@@ -190,6 +200,7 @@ export const TaskItemComponent: angular.IComponentOptions = {
     bindings: {
         task: '<',
         config: '<',
-        onTaskUpdated: '&'
+        onTaskUpdated: '&',
+        onTaskClick: '&'
     },
 }

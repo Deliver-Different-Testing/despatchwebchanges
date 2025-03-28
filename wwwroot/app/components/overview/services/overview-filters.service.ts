@@ -1,5 +1,3 @@
-import app from "../../../app";
-
 class OverviewFiltersService implements angular.IServiceProvider {
     selectedRegions: Array<{ id: number }>;
     selectedSpeeds: Array<{ id: number }>;

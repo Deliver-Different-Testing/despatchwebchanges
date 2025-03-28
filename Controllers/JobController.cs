@@ -1811,6 +1811,7 @@ public class JobController(
         return Ok();
     }
 
+    [HttpPost]
     public async Task<IActionResult> UpdateJob(
         int jobId,
         string field,

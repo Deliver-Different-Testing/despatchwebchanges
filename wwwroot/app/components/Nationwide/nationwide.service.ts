@@ -1,5 +1,6 @@
 import {IJob, JobQueryParams, Suggestion, Views} from "../../interfaces/job.interface";
 import {AgentViewModel, FlightViewModel} from "./nationwide.interfaces";
+import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 class NationwideService implements angular.IServiceProvider {
     static $inject = ["$http", "moment"];
 
@@ -26,7 +27,7 @@ class NationwideService implements angular.IServiceProvider {
         await this.$http.post(`job/ExsalerateActivity?eventName=${eventName}&notes=${notes}&clientId=${clientId}&jobNumber=${jobNumber}&despatcherName=${despatcherName}`, null);
     }
 
-    async getNationwideJobs(endpoint: string, queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: Suggestion[]): Promise<IJob[]> {
+    async getNationwideJobs(endpoint: string, queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]): Promise<IJob[]> {
         const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
 
         const defaultParams = {
@@ -56,19 +57,19 @@ class NationwideService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getNationwideJobsNew(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: Suggestion[]) {
+    async getNationwideJobsNew(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]) {
         return await this.getNationwideJobs("nationwideJobListNew", queryParams, selectedClients, internal, selectedAreas);
     }
 
-    async getNationwideJobsPOD(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: Suggestion[]) {
+    async getNationwideJobsPOD(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]) {
         return await this.getNationwideJobs("nationwideJobListPOD", queryParams, selectedClients, internal, selectedAreas);
     }
 
-    async getNationwideJobsBookDelivery(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: Suggestion[]) {
+    async getNationwideJobsBookDelivery(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]) {
         return await this.getNationwideJobs("nationwideJobListBookDelivery", queryParams, selectedClients, internal, selectedAreas);
     }
 
-    async getNationwideJobsReprice(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: Suggestion[]) {
+    async getNationwideJobsReprice(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]) {
         return await this.getNationwideJobs("nationwideJobListReprice", queryParams, selectedClients, internal, selectedAreas);
     }
 
@@ -140,7 +141,7 @@ class NationwideService implements angular.IServiceProvider {
         }
     }
 
-    private _prepareViewIdsForRequest(selectedAreas: Views[]): number[] {
+    private _prepareViewIdsForRequest(selectedAreas: DfrntPageViewModel[] | Suggestion[]): number[] {
         return selectedAreas.map(area => {
             return typeof area === "object" && area.id ? area.id : 0;
         });

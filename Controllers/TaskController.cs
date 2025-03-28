@@ -10,7 +10,7 @@ namespace DespatchWeb.Controllers;
 public class TaskController(ITaskRepository taskRepository) : Controller
 {
     [HttpGet]
-    public async Task<IActionResult> GetAllTasks([FromQuery] TaskTableFiltersRequest filters)
+    public async Task<IActionResult> GetAllTasks(TaskTableFiltersRequest filters)
     {
         try
         {

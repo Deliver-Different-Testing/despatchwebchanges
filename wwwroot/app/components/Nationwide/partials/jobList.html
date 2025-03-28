@@ -5,8 +5,8 @@
     </context-menu>
 
     <md-table-container>
-        <table md-dense md-progress="jobListPromise" md-table ng-model="selectedJob">
-            <thead md-head md-on-reorder="onReorderJobList" md-order="jobFilters.order">
+        <table md-dense md-progress="ctrl.jobListPromise" md-table ng-model="ctrl.selectedJob">
+            <thead md-head md-on-reorder="ctrl.onReorderJobList" md-order="ctrl.jobFilters.order">
             <tr md-row>
                 <th md-column md-order-by="time">Time</th>
                 <th md-column md-order-by="speed">Speed</th>
@@ -25,10 +25,10 @@
             <tbody md-body>
             <tr md-row
                 md-dense
-                ng-repeat="job in jobList | filter: box.searchBox"
-                ng-class="jobClass(job)"
-                ng-right-click="showJobContextMenu($event, job)"
-                ng-click="selectJob(job)"
+                ng-repeat="job in ctrl.jobList | filter: box.searchBox"
+                ng-class="ctrl.jobClass(job)"
+                ng-right-click="ctrl.showJobContextMenu($event, job)"
+                ng-click="ctrl.selectJob(job)"
                 data-jobid="{{job.id}}"
                 data-jobno="{{job.jobNo}}"
                 data-courier="{{job.courier}}"
@@ -38,7 +38,7 @@
                 <td md-cell>{{job.booked | date: (isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm")}}</td>
                 <td md-cell>
                     <md-icon md-font-set="material-symbols-outlined" ng-if="job.fromAirportId || job.toAirportId">
-                        {{getFlightIcon(job.jobNo)}}
+                        {{ctrl.getFlightIcon(job.jobNo)}}
                     </md-icon>
                     <span ng-if="!job.fromAirportId && !job.toAirportId">{{job.speed}}</span>
                 </td>
@@ -56,20 +56,19 @@
                 </td>
                 <td md-cell>
                     <span ng-if="!job.assignedAgent.agentName && (!job.toAirportId || !job.fromAirportId)"
-                          ng-click="editCourierNew($event, job)"
-                          ng-style="getJobStyle(job.courierData.courierID !== null)"
+                          ng-style="ctrl.getJobStyle(job.courierData.courierID !== null)"
                           class="dispatch-field">
                         {{job.courier || "NA"}}
                     </span>
 
                     <span ng-if="!job.assignedAgent.agentName && job.toAirportId && job.fromAirportId"
-                          ng-style="getJobStyle(job.assignedFlight.flightNumber !== null)"
+                          ng-style="ctrl.getJobStyle(job.assignedFlight.flightNumber !== null)"
                           class="dispatch-field">
                         {{job.assignedFlight.flightNumber || "NA"}}
                     </span>
 
                     <span ng-if="job.assignedAgent.agentName"
-                          ng-style="getJobStyle(job.assignedAgent.agentName !== null)"
+                          ng-style="ctrl.getJobStyle(job.assignedAgent.agentName !== null)"
                           class="dispatch-field">
                         {{job.assignedAgent.agentName || "NA"}}
                     </span>
@@ -89,7 +88,7 @@
                         <md-icon md-font-set="material-symbols-outlined">calendar_add_on</md-icon>
                         <md-tooltip md-direction="bottom">Create Event</md-tooltip>
                     </span>
-                    <span class="action-icon" ng-click="job.courier == null || restoreJob(job); $event.stopPropagation();">
+                    <span class="action-icon" ng-click="job.courier == null || ctrl.restoreJob(job); $event.stopPropagation();">
                         <md-icon md-font-set="material-symbols-outlined" ng-if="job.courier !== null">undo</md-icon>
                         <md-tooltip md-direction="bottom" ng-if="job.courier !== null">Restore</md-tooltip>
                     </span>
@@ -100,17 +99,17 @@
     </md-table-container>
 
     <md-table-pagination
-            md-limit="jobFilters.limit"
+            md-limit="ctrl.jobFilters.limit"
             md-limit-options="[5, 10, 25, 50]"
-            md-on-paginate="onPaginateJobList"
-            md-page="jobFilters.page"
+            md-on-paginate="ctrl.onPaginateJobList"
+            md-page="ctrl.jobFilters.page"
             md-page-select
-            md-total="{{totalJobCount}}">
+            md-total="{{ctrl.totalJobCount}}">
     </md-table-pagination>
 
     <!-- No Data Message -->
     <no-data
-            ng-if="!jobListLoading && (!jobList || jobList.length === 0)"
+            ng-if="!ctrl.jobListLoading && (!ctrl.jobList || ctrl.jobList.length === 0)"
             title="No New Jobs Found"
             message="There are currently no new jobs to display."
             icon="new_releases"

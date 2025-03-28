@@ -3,109 +3,30 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import {lessLoader} from "esbuild-plugin-less";
-import {es5Plugin} from "esbuild-plugin-es5";
 import esbuildPluginTsc from 'esbuild-plugin-tsc';
 
-// Cross-platform environment configuration
 const isDev = process.argv.includes('--dev') || process.env.NODE_ENV === 'development';
 const rootDir = __dirname;
 const distPath = path.join(rootDir, "wwwroot/dist");
-
-// File change tracking
-const changedFiles = new Set<string>();
 
 function generateHash(content: string | Uint8Array): string {
     return crypto.createHash('md5').update(content).digest('hex').slice(0, 8);
 }
 
-async function cleanDistFolder(distPath: string): Promise<void> {
+async function cleanDistFolder(): Promise<void> {
     if (fs.existsSync(distPath)) {
         const files = fs.readdirSync(distPath);
         for (const file of files) {
             fs.unlinkSync(path.join(distPath, file));
         }
-        console.log("[INFO] Cleaned dist folder");
     } else {
         fs.mkdirSync(distPath, {recursive: true});
-        console.log("[INFO] Created dist folder");
     }
 }
 
-// Convert absolute path to relative for cleaner console output
 function toRelativePath(filePath: string): string {
     return path.relative(rootDir, filePath);
 }
-
-// HTML tracking plugin
-const htmlTrackingPlugin = {
-    name: 'html-tracking',
-    setup(build: esbuild.PluginBuild) {
-        const htmlFiles = new Set<string>();
-
-        build.onResolve({ filter: /\.html$/ }, args => {
-            if (args.path.startsWith('.') || args.path.startsWith('/')) {
-                const resolvedPath = path.resolve(args.resolveDir, args.path);
-                htmlFiles.add(resolvedPath);
-            } else {
-                htmlFiles.add(args.path);
-            }
-            return null;
-        });
-
-        build.onEnd(() => {
-            // Only show HTML template info in production mode
-            if (!isDev) {
-                console.log("\n[INFO] HTML Templates included in bundle:");
-                if (htmlFiles.size === 0) {
-                    console.log("  No HTML templates found in bundle");
-                } else {
-                    const sortedHtmlFiles = Array.from(htmlFiles).sort();
-                    sortedHtmlFiles.forEach(file => {
-                        console.log(`  ${toRelativePath(file)}`);
-                    });
-                    console.log(`  Total: ${htmlFiles.size} HTML templates`);
-                }
-            }
-        });
-    }
-};
-
-// File change tracking plugin
-const fileChangeTrackingPlugin = {
-    name: 'file-change-tracking',
-    setup(build: esbuild.PluginBuild) {
-        if (!isDev) return;
-
-        // Track file changes for multiple file types
-        const trackedExtensions = ['.ts', '.js', '.html', '.less', '.css'];
-
-        trackedExtensions.forEach(ext => {
-            build.onResolve({ filter: new RegExp(`\\${ext}$`) }, args => {
-                if (args.path.startsWith('.') || args.path.startsWith('/')) {
-                    const resolvedPath = path.resolve(args.resolveDir, args.path);
-                    changedFiles.add(resolvedPath);
-                } else {
-                    changedFiles.add(args.path);
-                }
-                return null;
-            });
-        });
-
-        build.onEnd(() => {
-            if (changedFiles.size > 0) {
-                console.log("\n[DEV] Changed files:");
-                const sortedFiles = Array.from(changedFiles).sort();
-                sortedFiles.forEach(file => {
-                    console.log(`  ${toRelativePath(file)}`);
-                });
-                console.log(`  Total: ${changedFiles.size} files changed`);
-
-                // Clear the set for the next build
-                changedFiles.clear();
-            }
-        });
-    }
-};
 
 // Error reporting plugin
 const errorReportingPlugin = {
@@ -119,26 +40,7 @@ const errorReportingPlugin = {
                     console.error(`  ${file}:${error.location?.line || 0}: ${error.text}`);
                 });
             }
-            if (result.warnings.length > 0) {
-                console.warn('\n[WARN] Build warnings:');
-                result.warnings.forEach(warning => {
-                    const file = warning.location?.file ? toRelativePath(warning.location.file) : 'unknown';
-                    console.warn(`  ${file}:${warning.location?.line || 0}: ${warning.text}`);
-                });
-            }
         });
-    }
-};
-
-// Live reload plugin
-const liveReloadPlugin = {
-    name: 'live-reload',
-    setup(build: esbuild.PluginBuild) {
-        if (isDev) {
-            build.onEnd(() => {
-                console.log('[DEV] Build complete - reloading...');
-            });
-        }
     }
 };
 
@@ -146,31 +48,27 @@ async function build(): Promise<void> {
     const startTime = Date.now();
 
     try {
-        await cleanDistFolder(distPath);
+        await cleanDistFolder();
 
         const commonConfig: esbuild.BuildOptions = {
             entryPoints: [path.join(rootDir, "wwwroot/app/index.ts")],
             bundle: true,
-            sourcemap: true,
+            sourcemap: isDev,
             minify: !isDev,
-            target: ["es5"],
-            metafile: true,
+            target: ["es2015"],
+            metafile: !isDev,
             treeShaking: !isDev,
             legalComments: isDev ? "inline" : "none",
             format: "iife",
             mainFields: ["browser", "module", "main"],
             logLevel: 'info',
-            drop: isDev ? [] : ['debugger'],
+            drop: isDev ? [] : ['debugger', 'console'],
             plugins: [
                 esbuildPluginTsc(),
                 lessLoader({
                     math: 'always'
                 }),
-                es5Plugin(),
-                htmlTrackingPlugin,
-                fileChangeTrackingPlugin,
-                errorReportingPlugin,
-                liveReloadPlugin
+                errorReportingPlugin
             ],
             define: {
                 'process.env.NODE_ENV': isDev ? '"development"' : '"production"',
@@ -186,7 +84,6 @@ async function build(): Promise<void> {
                 "angular-material",
                 "angular-material-data-table",
                 "jquery",
-                "moment",
                 "leaflet",
                 "angularResizable",
                 "ui.sortable",
@@ -208,33 +105,24 @@ async function build(): Promise<void> {
             },
             alias: {
                 '@swc/helpers': path.dirname(require.resolve("@swc/helpers/package.json")),
-            },
-            minifyIdentifiers: !isDev
+            }
         };
 
         if (isDev) {
-            // Development build configuration
             const devConfig: esbuild.BuildOptions = {
                 ...commonConfig,
-                outfile: path.join(distPath, 'bundle.js'),
-                splitting: false
+                outfile: path.join(distPath, 'bundle.js')
             };
 
-            // Create context for development
             const ctx = await esbuild.context(devConfig);
 
-            // Start watching
             await ctx.watch();
             console.log("[DEV] Watching for changes...");
 
-            // Start development server
             const {host, port} = await ctx.serve({
                 servedir: path.join(rootDir, "wwwroot"),
                 host: 'localhost',
-                port: 3000,
-                onRequest: (args) => {
-                    console.log(`[DEV] ${args.method} ${args.path}`);
-                }
+                port: 3000
             });
 
             const manifest = {
@@ -247,12 +135,11 @@ async function build(): Promise<void> {
                 JSON.stringify(manifest, null, 2)
             );
 
-            console.log(`[DEV] Development server running at http://${host}:${port}`);
-            // Keep the process running
-            await new Promise(() => {});
+            console.log(`[DEV] Server running at http://${host}:${port}`);
+            await new Promise(() => {
+            });
         } else {
-            // Production build configuration
-            console.log("[PROD] Starting production build...");
+            console.log("[PROD] Building production bundle...");
 
             const tempResult = await esbuild.build({
                 ...commonConfig,
@@ -267,8 +154,7 @@ async function build(): Promise<void> {
             const jsFilename = `bundle.${contentHash}.js`;
             const cssFilename = `bundle.${contentHash}.css`;
 
-            // Final production build
-            const result = await esbuild.build({
+            await esbuild.build({
                 ...commonConfig,
                 outfile: path.join(distPath, jsFilename),
                 write: true,
@@ -308,37 +194,8 @@ async function build(): Promise<void> {
             );
 
             const buildTime = ((Date.now() - startTime) / 1000).toFixed(2);
-            console.log(`[PROD] Build completed successfully in ${buildTime}s`);
-            console.log("[PROD] Generated manifest:", manifest);
-
-            if (result.metafile) {
-                // Print bundle analysis
-                const analysis = await esbuild.analyzeMetafile(result.metafile);
-                console.log("\n[PROD] Bundle analysis:", analysis);
-
-                // Additional detailed reporting
-                console.log("\n[PROD] Bundle composition:");
-                const metafile = result.metafile;
-
-                // Count and display file types
-                const fileTypes: Record<string, number> = {};
-                let totalJsSize = 0;
-                let totalCssSize = 0;
-                let totalHtmlSize = 0;
-
-                Object.entries(metafile.inputs).forEach(([file, info]) => {
-                    const ext = path.extname(file).toLowerCase();
-                    fileTypes[ext] = (fileTypes[ext] || 0) + 1;
-
-                    if (ext === '.js' || ext === '.ts' || ext === '.tsx') {
-                        totalJsSize += info.bytes;
-                    } else if (ext === '.css' || ext === '.less') {
-                        totalCssSize += info.bytes;
-                    } else if (ext === '.html') {
-                        totalHtmlSize += info.bytes;
-                    }
-                });
-            }
+            console.log(`[PROD] Build completed in ${buildTime}s`);
+            console.log(`[PROD] Output: ${jsFilename}, ${cssFilename}`);
         }
     } catch (error) {
         console.error("[ERROR] Build failed:", error);
@@ -346,5 +203,6 @@ async function build(): Promise<void> {
     }
 }
 
-// Execute the build based on environment
-build();
+// Execute the build
+build()
+    .then(_ => console.log("Build completed"));

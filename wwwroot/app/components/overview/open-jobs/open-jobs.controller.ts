@@ -3,9 +3,14 @@ import OverviewFiltersService from "../services/overview-filters.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import {DriverViewModel, OpenJobResponse, OverviewQueryParams, ViewJob} from "../overview.interfaces";
 import BaseController from "../../base-controller";
+import moment from "moment";
 
 class OpenJobsWidgetController extends BaseController {
-    static $inject = ["$scope", "overviewService", "moment", "APP_CONFIG", "overviewFiltersService"];
+    static $inject = [
+        "$scope",
+        "overviewService",
+        "APP_CONFIG",
+        "overviewFiltersService"];
 
     private readonly isUsCustomer: boolean;
     private readonly limitName: string = "openJobsTableViewLimit";
@@ -25,7 +30,6 @@ class OpenJobsWidgetController extends BaseController {
     constructor(
         $scope: angular.IScope,
         private overviewService: OverviewService,
-        private moment: any,
         APP_CONFIG: AppConfig,
         private overviewFiltersService: OverviewFiltersService) {
         super();
@@ -149,7 +153,7 @@ class OpenJobsWidgetController extends BaseController {
     }
 
     private _formatTime(timestamp: Date): string {
-        return this.moment(timestamp).format("HH:mm");
+        return moment(timestamp).format("HH:mm");
     }
 
     compareJobs(a: ViewJob, b: ViewJob): number {
@@ -162,12 +166,12 @@ class OpenJobsWidgetController extends BaseController {
 
             switch (field) {
                 case "pickup":
-                    comparison = this.moment(a.pickup.time).valueOf() -
-                        this.moment(b.pickup.time).valueOf();
+                    comparison = moment(a.pickup.time).valueOf() -
+                        moment(b.pickup.time).valueOf();
                     break;
                 case "delivery":
-                    comparison = this.moment(a.delivery.time).valueOf() -
-                        this.moment(b.delivery.time).valueOf();
+                    comparison = moment(a.delivery.time).valueOf() -
+                        moment(b.delivery.time).valueOf();
                     break;
                 case "driverName":
                     comparison = (a.driverName || '').localeCompare(b.driverName || '');
@@ -225,15 +229,15 @@ class OpenJobsWidgetController extends BaseController {
         if (!timestamp) return "";
 
         const format = this.isUsCustomer ? "MM/DD HH:mm" : "DD/MM HH:mm";
-        return this.moment(timestamp).format(format);
+        return moment(timestamp).format(format);
     }
 
     getTimeSinceLastCompleted(lastCompletedTime: string): number {
         if (lastCompletedTime === "N/A") return 0;
 
-        const lastCompleted = this.moment(lastCompletedTime, "HH:mm");
-        const now = this.moment();
-        const duration = this.moment.duration(now.diff(lastCompleted));
+        const lastCompleted = moment(lastCompletedTime, "HH:mm");
+        const now = moment();
+        const duration = moment.duration(now.diff(lastCompleted));
 
         return Math.round(duration.asMinutes());
     }

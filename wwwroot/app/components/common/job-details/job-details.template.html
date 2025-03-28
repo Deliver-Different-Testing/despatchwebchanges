@@ -1,4 +1,9 @@
 <div class="job-detail-page" ng-if="ctrl.job">
+    <md-progress-linear
+            md-mode="indeterminate"
+            ng-show="ctrl.isLoading"
+            class="md-primary">
+    </md-progress-linear>
 
     <md-card class="warning-section md-whiteframe-1dp" ng-if="ctrl.job.isArchived || ctrl.job.prebook">
         <md-card-content>
@@ -63,12 +68,13 @@
                             </div>
                         </md-list-item>
 
-                        <md-list-item>
+                        <md-list-item md-ink-ripple ng-click="!this.job.locked && ctrl.editBookedDate($event, ctrl.job)">
                             <md-icon md-font-set="material-symbols-outlined" aria-label="Created date">add_circle
                             </md-icon>
                             <div class="timing-detail">
-                                <span class="timing-label">Created:</span>
-                                <span class="timing-value">{{ctrl.job.createdDate ? (ctrl.job.createdDate | date:'MM/dd/yyyy') : 'N/A'}}</span>
+                                <span class="timing-label">Booked:</span>
+                                <span class="timing-value">{{ctrl.job.createdDate ? (ctrl.job.createdDate | date:'MM/dd h:mm a') : 'N/A'}}</span>
+
                             </div>
                         </md-list-item>
 
@@ -93,7 +99,7 @@
                             </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">PU Time:</span>
-                                <span class="timing-value">{{ctrl.job.puTime ? (ctrl.job.puTime | date:'MM/dd/yyyy h:mm a') : 'N/A'}}</span>
+                                <span class="timing-value">{{ctrl.job.puTime ? (ctrl.job.puTime | date:'MM/dd h:mm a') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
 
@@ -103,7 +109,7 @@
                             </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Dispatch:</span>
-                                <span class="timing-value">{{ctrl.job.dispatchTime ? (ctrl.job.dispatchTime | date:'MM/dd/yyyy h:mm a') : 'N/A'}}</span>
+                                <span class="timing-value">{{ctrl.job.dispatchTime ? (ctrl.job.dispatchTime | date:'MM/dd h:mm a') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
 
@@ -128,7 +134,7 @@
                             <md-icon md-font-set="material-symbols-outlined" aria-label="POD time">verified</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">POD Time:</span>
-                                <span class="timing-value">{{ctrl.job.completedTime ? (ctrl.job.completedTime | date:'MM/dd/yyyy h:mm a') : 'N/A'}}</span>
+                                <span class="timing-value">{{ctrl.job.completedTime ? (ctrl.job.completedTime | date:'MM/dd h:mm a') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
 
@@ -138,7 +144,7 @@
                             </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Follow Up:</span>
-                                <span class="timing-value">{{ctrl.job.followupTime ? (ctrl.job.followupTime | date:'MM/dd/yyyy h:mm a') : 'N/A'}}</span>
+                                <span class="timing-value">{{ctrl.job.followupTime ? (ctrl.job.followupTime | date:'MM/dd h:mm a') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
 
@@ -146,7 +152,7 @@
                             <md-icon md-font-set="material-symbols-outlined" aria-label="delivery by time">alarm</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Deliver By:</span>
-                                <span class="timing-value">{{ctrl.job.deliverByTime ? (ctrl.job.deliverByTime | date:'MM/dd/yyyy h:mm a') : 'N/A'}}</span>
+                                <span class="timing-value">{{ctrl.job.deliverByTime ? (ctrl.job.deliverByTime | date:'MM/dd h:mm a') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
                     </md-list>

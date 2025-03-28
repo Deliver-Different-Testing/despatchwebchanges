@@ -226,6 +226,7 @@
     <_ContentIncludedByDefault Remove="wwwroot\dist\fonts\glyphicons-halflings-regular.ttf" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\fonts\glyphicons-halflings-regular.woff" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\fonts\glyphicons-halflings-regular.woff2" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\Nationwide\services\nationwide-layout.service.ts" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
@@ -310,6 +311,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\index.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\price-breakdown-dialog\price-breakdown-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\price-breakdown-dialog\price-breakdown-dialog.service.ts" />
@@ -325,10 +327,9 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\send-message-dialog\send-message-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\home.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\index.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\enums\JobDataType.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwideControl.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\services\nationwide-layout.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\index.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\mega-map\mega-map.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\mega-map\mega-map.interfaces.ts" />
