@@ -318,8 +318,8 @@ export interface DfrntEvent {
     jobNumber: string;
     clientCode: string;
     eventDate: Date;
-    closedDate: Date;
-    eventTime: string;
+    closedDate?: Date;
+    eventTime: Date;
     eventType: string;
     notes: string;
 }
@@ -388,16 +388,20 @@ export interface InternalStatus {
     defaultMins: number | null;
 }
 
-export interface SupportViewModel {
-    timeStamp: Date | null;
-    courier: string;
-    staff: string;
-    jobNumber: string;
-    description: string;
-    notes: string;
-    remainTime: number | null;
-    eventType: number | null;
-    lockedBy: string;
-    jobId: number | null;
-    eventId: number | null;
+export interface TucNoteViewModel {
+    noteId?: number;
+    noteTypeId: number;
+    noteTypeName?: string;
+    jobId?: number;
+    jobNumber?: string;
+    jobBookingId?: number;
+    noteText: string;
+    isImportant: boolean;
+    createdDate: Date;
+    createdBy: number;
+    createdByName?: string;
+    updatedDate?: Date;
+    updatedBy?: number;
+    updatedByName?: string;
+    noteTextSummary?: string;
 }

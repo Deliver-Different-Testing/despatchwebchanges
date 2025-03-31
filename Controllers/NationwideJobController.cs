@@ -20,8 +20,8 @@ public class NationwideJobController(
     : Controller
 {
     [HttpGet]
-    public async Task<IActionResult> NationwideJobListNew([FromQuery] JobQueryParams queryParams, bool isInternal,
-        int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
+    public async Task<IActionResult> NationwideJobListNew(JobQueryParams queryParams, bool isInternal,
+        int cid, string clientIds, List<int> despatchViewIds)
     {
         try
         {
@@ -41,8 +41,8 @@ public class NationwideJobController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> NationwideJobListPod([FromQuery] JobQueryParams queryParams, bool isInternal,
-        int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
+    public async Task<IActionResult> NationwideJobListPod(JobQueryParams queryParams, bool isInternal,
+        int cid, string clientIds, List<int> despatchViewIds)
     {
         try
         {
@@ -62,9 +62,9 @@ public class NationwideJobController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> NationwideJobListBookDelivery([FromQuery] JobQueryParams queryParams,
+    public async Task<IActionResult> NationwideJobListBookDelivery(JobQueryParams queryParams,
         bool isInternal,
-        int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
+        int cid, string clientIds, List<int> despatchViewIds)
     {
         try
         {
@@ -84,8 +84,8 @@ public class NationwideJobController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> NationwideJobListReprice([FromQuery] JobQueryParams queryParams, bool isInternal,
-        int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
+    public async Task<IActionResult> NationwideJobListReprice(JobQueryParams queryParams, bool isInternal,
+        int cid, string clientIds, List<int> despatchViewIds)
     {
         try
         {

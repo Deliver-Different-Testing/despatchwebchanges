@@ -124,11 +124,9 @@ public class JobViewModel
     public DateTime? DispatchTime { get; set; }
     public DateTime Booked { get; set; }
     public DateTime? PuTime { get; set; }
-    public string ClientNotes { get; set; }
-    public string InternalNotes { get; set; }
+
     public DateTime? FollowupTime { get; set; }
     public int? InternalStatusId { get; set; }
-    public string ChildNotes { get; set; }
     public bool? Locked { get; set; }
     public bool? Invoiced { get; set; }
 
@@ -179,7 +177,6 @@ public class JobViewModel
     public string RunName { get; set; }
 
     public string ScheduleName { get; set; }
-    public string ConNote { get; set; }
     public bool? AirportOnly { get; set; }
     public bool? HasNationwide { get; set; }
     public string DispatcherName { get; set; }
@@ -203,6 +200,8 @@ public class JobViewModel
 
     public bool IsArchived { get; set; }
     public DateTime? DeliverByTime { get; set; }
+
+    public List<TucNoteViewModel> Notes { get; set; }
 }
 
 public class Vehicle

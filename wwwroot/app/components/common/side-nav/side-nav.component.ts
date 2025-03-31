@@ -3,7 +3,12 @@ import "./side-nav.styles.less";
 import BaseController from "../../base-controller";
 
 class MaterialSidenavComponentController extends BaseController {
-    static $inject = ["$state", "$mdSidenav", "$timeout", "APP_CONFIG"];
+    static $inject = [
+        "$state",
+        "$mdSidenav",
+        "$timeout",
+        "APP_CONFIG"
+    ];
 
     readonly isUsCustomer: boolean;
     navState = {

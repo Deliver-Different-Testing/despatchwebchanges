@@ -11,7 +11,6 @@ namespace DespatchWeb.Interfaces;
 
 public interface IJobRepository
 {
-    Task<JobViewModel> PreBookDetailAsync(int prebookId);
     Task<List<Suggestion>> RelatedJobs(int parentId, int clientId);
     Task<JobViewModel> BulkJobDetail(int bulkJobId);
 
@@ -189,6 +188,7 @@ public interface IJobRepository
     Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel);
     Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel);
     Task DeleteJobPriceBreakdownAsync(int chargeId);
+
     Task<string> RateJobDescription(
         int clientId,
         int fromId,
@@ -296,9 +296,6 @@ public interface IJobRepository
         int staffId
     );
 
-    Task AddNoteAsync(int jobId, string note, string despatcher);
-    Task AddBulkJobNoteAsync(int bulkJobId, string note, string despatcher);
-    Task AddJobBookingNoteAsync(int jobId, string note, string despatcher);
     Task<int> QuickAddJobAsync(JobCreateViewModel request, int staffId);
     Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel);
     Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId);
@@ -395,6 +392,7 @@ public interface IJobRepository
 
     Task<List<MegaMapResponse>> GetJobsForMegaMapAsync();
     Task UpdatePackagesForJobAsync(int jobId, List<ParcelDimensions> parcels);
+
     Task<List<T>> GetAllAsync<T>()
         where T : class;
 
@@ -403,4 +401,12 @@ public interface IJobRepository
         bool isUsTenant,
         string clientIds,
         List<int> selectedViewIds);
+
+    Task<int> SaveNoteAsync(TucNoteViewModel viewModel, int staffId);
+    Task<int> SaveNoteAsync(int jobId, string noteText, string despatcherName, bool isImportant = false);
+    Task<int> SaveNoteAsync(int jobId, string noteText, int staffId, bool isImportant = false);
+    Task<TucNoteViewModel> GetNoteByIdAsync(int noteId);
+    Task DeleteNoteAsync(int noteId);
+    Task<List<Suggestion>> GetNoteTypesAsync();
+    Task<List<TucNoteViewModel>> GetNotesByJobId(int jobId);
 }

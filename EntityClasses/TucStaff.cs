@@ -103,5 +103,9 @@ public partial class TucStaff
 
     public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
 
+    public virtual ICollection<TucNote> TucNoteCreatedByNavigations { get; set; } = new List<TucNote>();
+
+    public virtual ICollection<TucNote> TucNoteUpdatedByNavigations { get; set; } = new List<TucNote>();
+
     public virtual TucSuburb UcstSuburb { get; set; }
 }

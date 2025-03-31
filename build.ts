@@ -55,6 +55,9 @@ async function build(): Promise<void> {
             bundle: true,
             sourcemap: isDev,
             minify: !isDev,
+            minifyWhitespace: !isDev,
+            minifyIdentifiers: !isDev,
+            minifySyntax: !isDev,
             target: ["es2015"],
             metafile: !isDev,
             treeShaking: !isDev,
@@ -78,12 +81,7 @@ async function build(): Promise<void> {
                 'moment': "window.moment"
             },
             external: [
-                "angular",
-                "angular-aria",
-                "angular-animate",
-                "angular-material",
                 "angular-material-data-table",
-                "jquery",
                 "leaflet",
                 "angularResizable",
                 "ui.sortable",

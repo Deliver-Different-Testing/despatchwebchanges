@@ -1,16 +1,16 @@
-import app from "./app";
-import angular from "angular";
 import {AppConfig} from "./interfaces/app-config.interface";
 
 class ThemeConfig {
     private readonly isUsCustomer: boolean;
 
-    constructor(private $mdThemingProvider: angular.material.IThemingProvider,
-                appConfig: AppConfig) {
+    constructor(
+        private $mdThemingProvider: angular.material.IThemingProvider,
+        appConfig: AppConfig
+    ) {
         this.isUsCustomer = appConfig.US_Customer;
     }
 
-    private defineUrgentPrimaryPalette(): void {
+    private defineUrgentPrimaryPalette(){
         this.$mdThemingProvider.definePalette("urgentPrimary", {
             '50': "fffbe0",
             '100': "fef5b3",
@@ -32,7 +32,7 @@ class ThemeConfig {
         });
     }
 
-    private defineAccentPalette(): void {
+    private defineAccentPalette(){
         this.$mdThemingProvider.definePalette("accent", {
             '50': "ececec",
             '100': "cecece",
@@ -54,7 +54,7 @@ class ThemeConfig {
         });
     }
 
-    private defineDfrntPrimaryPalette(): void {
+    private defineDfrntPrimaryPalette(){
         this.$mdThemingProvider.definePalette("dfrntPrimary", {
             '50': "#e8f6f8",
             '100': "#c5e8ed",
@@ -76,7 +76,7 @@ class ThemeConfig {
         });
     }
 
-    private configureDefaultTheme(): void {
+    private configureDefaultTheme(){
         if (this.isUsCustomer) {
             this.$mdThemingProvider.theme("default")
                 .primaryPalette("dfrntPrimary")
@@ -88,13 +88,13 @@ class ThemeConfig {
         }
     }
 
-    private registerToastThemes(): void {
+    private registerToastThemes(){
         this.$mdThemingProvider.theme("success-toast").primaryPalette("green");
         this.$mdThemingProvider.theme("warning-toast").primaryPalette("orange");
         this.$mdThemingProvider.theme("error-toast").primaryPalette("red");
     }
 
-    public configure(): void {
+    configure(){
         this.defineUrgentPrimaryPalette();
         this.defineAccentPalette();
         this.defineDfrntPrimaryPalette();
@@ -103,10 +103,4 @@ class ThemeConfig {
     }
 }
 
-// Register the configuration
-app.config(["$mdThemingProvider", "APP_CONFIG",
-    ($mdThemingProvider: angular.material.IThemingProvider, APP_CONFIG: AppConfig): void => {
-        const themeConfig = new ThemeConfig($mdThemingProvider, APP_CONFIG);
-        themeConfig.configure();
-    }
-]);
+export default ThemeConfig;

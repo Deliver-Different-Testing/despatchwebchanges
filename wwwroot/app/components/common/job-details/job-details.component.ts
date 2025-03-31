@@ -12,6 +12,7 @@ import {EditAddressDialogService} from "../../dialogs/edit-address-dialog/edit-a
 import PriceBreakdownDialogService from "../../dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
 import BaseController from "../../base-controller";
 import moment from "moment";
+import NoteManagementDialogService from "../../dialogs/note-management-dialog/note-management.dialog.service";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -24,7 +25,7 @@ class JobDetailController extends BaseController {
         "selectDialogService",
         "editDateTimeDialogService",
         "editAddressDialogService",
-        "priceBreakdownDialogService",
+        "priceBreakdownDialogService"
     ];
 
     private photosLoaded: boolean = false;
@@ -54,7 +55,7 @@ class JobDetailController extends BaseController {
         private selectDialogService: SelectDialogService,
         private editDateTimeDialogService: EditDateTimeDialogService,
         private editAddressDialogService: EditAddressDialogService,
-        private priceBreakdownDialogService: PriceBreakdownDialogService,
+        private priceBreakdownDialogService: PriceBreakdownDialogService
     ) {
         super();
 
@@ -140,7 +141,6 @@ class JobDetailController extends BaseController {
         if (changes['job']) {
             console.log('Job changed:', changes['job'].currentValue);
 
-            // If job is being set from undefined/null to a value, we're finishing loading
             if (!changes['job'].previousValue && changes['job'].currentValue) {
                 this.isLoading = false;
             }
@@ -225,10 +225,6 @@ class JobDetailController extends BaseController {
                     this.photosLoaded = true;
 
                     this._setupPhotoKeyboardNavigation();
-
-                    if (this.$scope && this.$scope.$applyAsync) {
-                        this.$scope.$applyAsync();
-                    }
                 })
                 .catch((error: Error) => {
                     this.toastrService.showErrorToast('Failed to load POD photos');
@@ -236,10 +232,6 @@ class JobDetailController extends BaseController {
 
                     this.formattedPodPhotos = [];
                     this.photosLoaded = true;
-
-                    if (this.$scope && this.$scope.$applyAsync) {
-                        this.$scope.$applyAsync();
-                    }
                 });
         } catch (error) {
             this._handleError(error);
@@ -256,114 +248,6 @@ class JobDetailController extends BaseController {
         if (!this.internalJob) return;
 
         console.log('Initializing job data:', this.internalJob.id);
-
-        this.notes = [];
-
-        if (this.internalJob.internalNotes) {
-            console.log('Processing internal notes:', this.internalJob.internalNotes);
-
-            let internalNoteLines;
-            if (this.internalJob.internalNotes.includes('\n')) {
-                internalNoteLines = this.internalJob.internalNotes.split('\n');
-            } else if (this.internalJob.internalNotes.includes('\r\n')) {
-                internalNoteLines = this.internalJob.internalNotes.split('\r\n');
-            } else {
-                internalNoteLines = [this.internalJob.internalNotes];
-            }
-
-            internalNoteLines = internalNoteLines.filter(note => note.trim());
-
-            console.log('Split internal notes into', internalNoteLines.length, 'lines:', internalNoteLines);
-
-            internalNoteLines.forEach((noteLine, index) => {
-                const trimmedNote = noteLine.trim();
-                console.log(`Adding internal note ${index + 1}:`, trimmedNote);
-                this.notes.push({
-                    icon: 'note_stack', text: trimmedNote, type: 'internal'
-                });
-            });
-
-            if (this.notes.length === 0 && this.internalJob.internalNotes.trim()) {
-                console.log('Adding entire internal notes text as one note');
-                this.notes.push({
-                    icon: 'note_stack', text: this.internalJob.internalNotes.trim(), type: 'internal'
-                });
-            }
-        } else {
-            console.log('No internal notes found');
-        }
-
-        if (this.internalJob.conNote) {
-            console.log('Processing consignment notes:', this.internalJob.conNote);
-
-            let consignmentNoteLines;
-            if (this.internalJob.conNote.includes('\n')) {
-                consignmentNoteLines = this.internalJob.conNote.split('\n');
-            } else if (this.internalJob.conNote.includes('\r\n')) {
-                consignmentNoteLines = this.internalJob.conNote.split('\r\n');
-            } else {
-                consignmentNoteLines = [this.internalJob.conNote];
-            }
-
-            consignmentNoteLines = consignmentNoteLines.filter(note => note.trim());
-            console.log('Split consignment notes into', consignmentNoteLines.length, 'lines:', consignmentNoteLines);
-
-            consignmentNoteLines.forEach((noteLine, index) => {
-                const trimmedNote = noteLine.trim();
-                console.log(`Adding consignment note ${index + 1}:`, trimmedNote);
-                this.notes.push({
-                    icon: 'inventory_2', text: trimmedNote, type: 'consignment'
-                });
-            });
-
-            if (consignmentNoteLines.length === 0 && this.internalJob.conNote.trim()) {
-                this.notes.push({
-                    icon: 'inventory_2', text: this.internalJob.conNote.trim(), type: 'consignment'
-                });
-            }
-        } else {
-            console.log('No con note found');
-        }
-
-        if (this.internalJob.clientNotes) {
-            console.log('Processing client notes:', this.internalJob.clientNotes);
-
-            let clientNoteLines;
-            if (this.internalJob.clientNotes.includes('\n')) {
-                clientNoteLines = this.internalJob.clientNotes.split('\n');
-            } else if (this.internalJob.clientNotes.includes('\r\n')) {
-                clientNoteLines = this.internalJob.clientNotes.split('\r\n');
-            } else {
-                clientNoteLines = [this.internalJob.clientNotes];
-            }
-
-            clientNoteLines = clientNoteLines.filter(note => note.trim());
-
-            console.log('Split client notes into', clientNoteLines.length, 'lines:', clientNoteLines);
-
-            clientNoteLines.forEach((noteLine, index) => {
-                const trimmedNote = noteLine.trim();
-                console.log(`Adding client note ${index + 1}:`, trimmedNote);
-                this.notes.push({
-                    icon: 'business', text: trimmedNote, type: 'client'
-                });
-            });
-
-            if (clientNoteLines.length === 0 && this.internalJob.clientNotes.trim()) {
-                this.notes.push({
-                    icon: 'business', text: this.internalJob.clientNotes.trim(), type: 'client'
-                });
-            }
-        } else {
-            console.log('No client notes found');
-        }
-
-        console.log('Final notes array:', this.notes, 'Length:', this.notes.length);
-
-        if (this.$scope && this.$scope.$applyAsync) {
-            this.$scope.$applyAsync();
-        }
-
         this._getSelectedStatusText();
     }
 
@@ -371,29 +255,6 @@ class JobDetailController extends BaseController {
         const icon = this.internalJob?.assignedFlight ? 'flight_takeoff' : 'pin_drop';
         console.log(`[getJobAddressIcon] Icon selected: ${icon}`);
         return icon || 'pin_drop';
-    }
-
-    async showNotesDialog($event: MouseEvent, job: IJob, title: string, fieldName: string) {
-        try {
-            await this.$mdDialog.show({
-                controller: "AddNotesDialogController",
-                controllerAs: "ctrl",
-                template: require("../../dialogs/add-notes-dialog/add-notes-dialog.html"),
-                parent: document.body,
-                targetEvent: $event,
-                clickOutsideToClose: true,
-                fullscreen: true,
-                locals: {
-                    id: "editField", fieldName: fieldName, title: title, job: job,
-                },
-                bindToController: true
-            });
-
-            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully`);
-            await this._refreshJobDetails(job.id);
-        } catch (error) {
-            this._handleError(error);
-        }
     }
 
     async showAutocompleteDialog($event: MouseEvent, job: IJob, url: string, placeholder: string,
@@ -445,7 +306,7 @@ class JobDetailController extends BaseController {
     }
 
     async showEditDateAndTimeDialog($event: MouseEvent, job: IJob,
-                             title: string, fieldName: string, dateTime?: Date) {
+                                    title: string, fieldName: string, dateTime?: Date) {
         try {
             const result = await this.editDateTimeDialogService.showEditDateAndTimeDialog($event, title, fieldName, dateTime);
             await this._processDateTimeUpdateResult(job, result)
@@ -980,8 +841,7 @@ class JobDetailController extends BaseController {
 
     async markJobAsDone(job: IJob) {
         try {
-            if (job.completedTime == undefined) return;
-
+            if (!job.completedTime) return;
             await this.DispatchData.updatePODDetail(job.jobNo, 6, job.podName, job.completedTime);
 
             this.toastrService.showSuccessToast(`Job ${job.jobNo} marked as done successfully`);
@@ -1014,9 +874,7 @@ class JobDetailController extends BaseController {
                     this.isLoading = false;
                     deregister(); // Remove the watcher
 
-                    if (this.$scope && this.$scope.$applyAsync) {
-                        this.$scope.$applyAsync();
-                    }
+
                 }
             });
 
@@ -1024,9 +882,7 @@ class JobDetailController extends BaseController {
             setTimeout(() => {
                 if (this.isLoading) {
                     this.isLoading = false;
-                    if (this.$scope && this.$scope.$applyAsync) {
-                        this.$scope.$applyAsync();
-                    }
+
                 }
             }, 10000);
         } catch (error) {

@@ -11,7 +11,7 @@ import {
     CourierData,
     IJob,
     JobQueryParams,
-    Suggestion,
+    Suggestion, TucNoteViewModel,
 } from "../../interfaces/job.interface";
 import {ActiveCourierViewModel, TruckCourierStatusViewModel} from "../../interfaces/courier.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
@@ -23,6 +23,9 @@ import AdditionalServicesDialogService from "../dialogs/additional-services-dial
 import {EditAddressDialogService} from "../dialogs/edit-address-dialog/edit-address-dialog.service";
 import {AppPages} from "../../enums/app-pages.enum";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
+import AddEventDialogService from "../dialogs/add-event-dialog/add-event-dialog.service";
+import {JobNoteType} from "../../enums/job-note-type.enum";
+import NoteService from "../../services/notes.service";
 
 interface ResendJobsRequest {
     call: string;
@@ -50,7 +53,9 @@ class HomeController extends BaseController {
         '$stateParams',
         'additionalServicesDialogService',
         'editAddressDialogService',
-        'jobFileUploadDialogService'
+        'jobFileUploadDialogService',
+        'addEventDialogService',
+        'noteService'
     ];
 
     private readonly DOM_SELECTORS = {
@@ -104,7 +109,6 @@ class HomeController extends BaseController {
     courierSearchText: any;
     inputWidth: any;
     jobListPromise: any;
-    refreshData: any;
     currentCourier: any;
     pickCouriers: any;
     pickAllCouriers?: ActiveCourierViewModel[];
@@ -162,6 +166,8 @@ class HomeController extends BaseController {
         private additionalServicesDialogService: AdditionalServicesDialogService,
         private editAddressDialogService: EditAddressDialogService,
         private jobFileUploadDialogService: JobFileUploadDialogService,
+        private addEventDialogService: AddEventDialogService,
+        private noteService: NoteService
     ) {
         super();
 
@@ -1120,7 +1126,6 @@ class HomeController extends BaseController {
         await this.uCSData.reSendJobs(secondJobId);
         await this.uCSData.reAssignJobs(firstJobId);
         await this.uCSData.reSendJobs(firstJobId);
-        await this.refreshData(true);
     }
 
     async voidJobForm(jobNumber: string, jobId: number) {
@@ -1135,7 +1140,17 @@ class HomeController extends BaseController {
                     .required(true)
                     .ok("Void " + jobNumber)
                     .cancel("Cancel"));
-            await this.DispatchData.addNote(jobId, note, FirstName, false);
+
+            const jobNote: TucNoteViewModel = {
+                jobId: jobId,
+                createdDate: new Date(),
+                createdBy: ContactID,
+                noteText: note,
+                noteTypeId: JobNoteType.InternalNote,
+                isImportant: false
+            };
+
+            await this.noteService.createNote(ContactID, jobNote);
             await this.DispatchData.voidJob(jobId);
             this.toastrService.showSuccessToast("Job voided successfully");
             return await this.getData();
@@ -1166,24 +1181,8 @@ class HomeController extends BaseController {
             });
     }
 
-    otherEventForm($event: MouseEvent, job: IJob) {
-        this.$mdDialog
-            .show({
-                controller: "AddEventDialogController",
-                controllerAs: "ctrl",
-                templateUrl: "app/components/dialogs/add-event-dialog/add-event-dialog.html",
-                parent: this.$document.parent(),
-                clickOutsideToClose: true,
-                fullscreen: true,
-                targetEvent: $event,
-                locals: {
-                    job: job, dispatcherName: FirstName, contactId: ContactID,
-                },
-                bindToController: true,
-            })
-            .then(() => {
-                console.log("Pallet Dialog closed!");
-            });
+    async otherEventForm($event: MouseEvent, job: IJob) {
+        await this.addEventDialogService.openAddEventDialog($event, job);
     }
 
     selectAllContent($event: MouseEvent) {
@@ -1822,7 +1821,7 @@ class HomeController extends BaseController {
                 this.currentListLoading = true;
             });
 
-            if (!courier || courier.courierId === undefined) return;
+            if (!courier || !courier.courierId) return;
             const foundCourier = await this.DispatchData.getCourierById(courier.courierId);
             if (foundCourier) {
                 this.currentCourier = {
@@ -2567,30 +2566,7 @@ class HomeController extends BaseController {
     }
 
     async createEvent($event: MouseEvent, job: IJob) {
-        try {
-            await this.$mdDialog.show({
-                controller: "AddEventDialogController",
-                controllerAs: "ctrl",
-                template: require("../dialogs/add-event-dialog/add-event-dialog.html"),
-                targetEvent: $event,
-                parent: this.$document.parent(),
-                clickOutsideToClose: true,
-                fullscreen: true,
-                locals: {
-                    job: job, dispatherName: FirstName, contactId: ContactID,
-                },
-                bindToController: true,
-            });
-
-            this.toastrService.showSuccessToast("Event created successfully");
-            console.log("Pallet Dialog closed!");
-        } catch (error: any) {
-            if (error === undefined) {
-                console.log("User canceled!");
-            } else {
-                throw error;
-            }
-        }
+        await this.addEventDialogService.openAddEventDialog($event, job);
     }
 
     async checkForAttachments(jobId: number) {

@@ -1,0 +1,80 @@
+<md-dialog aria-label="{{ctrl.title}}" class="note-dialog">
+    <form name="noteForm" ng-submit="ctrl.save()" novalidate>
+        <md-toolbar>
+            <div class="md-toolbar-tools">
+                <md-icon class="popup-icon" md-font-set="material-symbols-outlined">sticky_note_2</md-icon>
+                <h2>{{ctrl.title}}</h2>
+                <span flex></span>
+                <md-button class="md-icon-button" ng-click="ctrl.cancel()" aria-label="Close">
+                    <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+                    <md-tooltip md-direction="bottom">Cancel</md-tooltip>
+                </md-button>
+            </div>
+        </md-toolbar>
+
+        <md-dialog-content>
+            <div class="md-dialog-content md-padding">
+                <!-- Note Type -->
+                <md-input-container class="md-block">
+                    <label>Note Type</label>
+                    <md-select ng-model="ctrl.model.noteTypeId" required>
+                        <md-option ng-repeat="type in ctrl.noteTypes" ng-value="type.id">
+                            {{type.text}}
+                        </md-option>
+                    </md-select>
+                    <div ng-messages="noteForm.noteTypeId.$error">
+                        <div ng-message="required">Note type is required</div>
+                    </div>
+                </md-input-container>
+
+                <!-- Note Text -->
+                <md-input-container class="md-block" style="margin-top: 50px;">
+                    <label for="note-content">Note</label>
+                    <textarea id="note-content" ng-model="ctrl.model.noteText" required md-maxlength="1000" rows="5"></textarea>
+                    <div ng-messages="noteForm.noteText.$error">
+                        <div ng-message="required">Note text is required</div>
+                        <div ng-message="md-maxlength">Note cannot be longer than 1000 characters</div>
+                    </div>
+                </md-input-container>
+
+                <!-- Mark as Important -->
+                <md-checkbox
+                        ng-model="ctrl.model.isImportant"
+                        aria-label="Mark as Important">
+                    Mark as Important
+                </md-checkbox>
+
+                <!-- Metadata for existing notes -->
+                <md-list ng-if="!ctrl.isNew" class="md-dense note-metadata">
+                    <md-subheader class="md-no-sticky">
+                        <md-icon md-font-set="material-symbols-outlined">info</md-icon>
+                        Note Information
+                    </md-subheader>
+                    <md-list-item>
+                        <md-icon md-font-set="material-symbols-outlined">person</md-icon>
+                        <p>Created by <strong>{{ctrl.model.createdByName || 'System'}}</strong></p>
+                    </md-list-item>
+                    <md-list-item ng-if="ctrl.model.createdDate">
+                        <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
+                        <p>Created on <strong>{{ctrl.model.createdDate | date:'medium'}}</strong></p>
+                    </md-list-item>
+                    <md-list-item ng-if="ctrl.model.updatedDate">
+                        <md-icon md-font-set="material-symbols-outlined">update</md-icon>
+                        <p>Last updated by <strong>{{ctrl.model.updatedByName}}</strong> on <strong>{{ctrl.model.updatedDate | date:'medium'}}</strong></p>
+                    </md-list-item>
+                </md-list>
+            </div>
+        </md-dialog-content>
+
+        <md-dialog-actions layout="row">
+            <span flex></span>
+            <md-button class="md-primary md-raised" type="submit" ng-disabled="noteForm.$invalid || ctrl.isSubmitting">
+                <span ng-if="!ctrl.isSubmitting">Save</span>
+                <dfrnt-loader
+                        is-loading="ctrl.isSubmitting"
+                        icon-name="'sticky_note_2'">
+                </dfrnt-loader>
+            </md-button>
+        </md-dialog-actions>
+    </form>
+</md-dialog>

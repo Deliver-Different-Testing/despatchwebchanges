@@ -489,7 +489,7 @@ public class JobController(
 
     public async Task<IActionResult> PreBookDetail(int preBookJobId)
     {
-        var result = await jobRepository.PreBookDetailAsync(preBookJobId);
+        var result = await jobRepository.GetJobByIdAsync(preBookJobId);
         return Json(result);
     }
 
@@ -1189,20 +1189,14 @@ public class JobController(
 
     [HttpPost]
     public async Task<IActionResult> AddEvent(
-        string jobNo,
-        int clientId,
-        string contact,
         int staffId,
-        int? courierId,
         int jobId,
-        int jobType,
         string despatcherName,
         string notes,
         int eventType
     )
     {
         await taskRepository.AddEventAsync(jobId, staffId, despatcherName, notes, eventType);
-
         return Ok();
     }
 
@@ -1883,36 +1877,12 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddNoteAsync(int jobId, string note, string despatcher)
-    {
-        note = FormatNote(note);
-        await jobRepository.AddNoteAsync(jobId, note, despatcher);
-        return Ok();
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> AddBulkJobNote(int bulkJobId, string note, string despatcher)
-    {
-        note = FormatNote(note);
-        await jobRepository.AddBulkJobNoteAsync(bulkJobId, note, despatcher);
-        return Ok();
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> AddJobBookingNote(int jobId, string note, string despatcher)
-    {
-        note = FormatNote(note);
-        await jobRepository.AddJobBookingNoteAsync(jobId, note, despatcher);
-        return Ok();
-    }
-
-    private static string FormatNote(string note) => $"\n{note}";
-
-    [HttpPost]
     public async Task<IActionResult> QuickCreateJob([FromBody] CreateJobRequest request)
     {
         try
         {
+            ArgumentNullException.ThrowIfNull(request);
+
             if (!IsValidRequest(request))
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
@@ -1928,8 +1898,10 @@ public class JobController(
                     "Created Job Id is null"
                 );
 
-            var notesList = GenerateNotesList(request.Job);
-            await AddNotesToJob(notesList, jobId, request.DespatcherName);
+            // Add note
+            await jobRepository.SaveNoteAsync(jobId,
+                $"This job was created manually by {request.DespatcherName} via the Quick Create Job feature.",
+                request.StaffId.Value);
 
             return Json(jobId);
         }
@@ -1943,24 +1915,6 @@ public class JobController(
     private static bool IsValidRequest(CreateJobRequest request) =>
         !(request?.Job == null || request.Job.ClientId == 0 || request.StaffId == null);
 
-    private static List<string> GenerateNotesList(JobCreateViewModel job)
-    {
-        return
-        [
-            FormatNote($"Job Notes: {job.JobNotes}"),
-            FormatNote($"Pickup Notes: {job.PickupNotes}"),
-            FormatNote($"Delivery Notes: {job.DeliveryNotes}"),
-        ];
-    }
-
-    private async Task AddNotesToJob(List<string> notesList, int jobId, string despatcherName)
-    {
-        if (notesList != null)
-        {
-            foreach (var note in notesList)
-                await AddNoteAsync(jobId, note, despatcherName);
-        }
-    }
 
     [HttpPost]
     public async Task<IActionResult> InterCourierCharge(
@@ -2018,14 +1972,11 @@ public class JobController(
             $"Client advised by email that job changed from a Direct {currentSpeed} to ASAP {result.Name ?? currentSpeed}";
         var msgPhone =
             $" to be called and advised that job changed from a Direct {currentSpeed} to ASAP {result.Name ?? currentSpeed}";
+
         if (jobData.NotifyViaEmail)
-        {
-            await AddNoteAsync(jobId, msg, despatcher);
-        }
+            await jobRepository.SaveNoteAsync(jobId, msg, staffId);
         else
-        {
-            await AddNoteAsync(jobId, jobData.Contact + msgPhone, despatcher);
-        }
+            await jobRepository.SaveNoteAsync(jobId, jobData.Contact + msgPhone, staffId);
 
         return Ok();
     }
@@ -2135,15 +2086,10 @@ public class JobController(
         message.Priority = MailPriority.High;
         message.To.Add(toAddress);
         message.Headers.Add("Message-ID", $"<{Guid.NewGuid()}@DFRNT.com>");
-        if (attachment != null)
-        {
-            message.Attachments.Add(attachment);
-        }
 
-        if (!string.IsNullOrEmpty(replyTo))
-        {
-            message.ReplyToList.Add(new MailAddress(replyTo));
-        }
+        if (attachment != null) message.Attachments.Add(attachment);
+
+        if (!string.IsNullOrEmpty(replyTo)) message.ReplyToList.Add(new MailAddress(replyTo));
 
         using var smtp = new SmtpClient();
         smtp.Host = Environment.GetEnvironmentVariable("SMTPServer");
@@ -2228,7 +2174,7 @@ public class JobController(
                 using var memoryStream = new MemoryStream();
                 await response.ResponseStream.CopyToAsync(memoryStream);
                 var fileName = response.Metadata["FileName"];
-                var s3FileInfo = new S3FileInfo()
+                var s3FileInfo = new S3FileInfo
                 {
                     S3Key = s3Object.Key,
                     FileName = fileName,

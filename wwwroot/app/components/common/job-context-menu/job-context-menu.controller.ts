@@ -1,4 +1,4 @@
-import {IJob, Suggestion} from "../../../interfaces/job.interface";
+import {IJob, Suggestion, TucNoteViewModel} from "../../../interfaces/job.interface";
 import {ContactID, FirstName} from "../../../contants";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
@@ -6,6 +6,9 @@ import {IContextMenuScope, MenuState} from "./job-context-menu.interfaces";
 import {EventGroupDialogService} from "../../dialogs/event-group-dialog/event-group-dialog.service";
 import "./job-context-menu.styles.less";
 import BaseController from "../../base-controller";
+import NoteService from "../../../services/notes.service";
+import AddEventDialogService from "../../dialogs/add-event-dialog/add-event-dialog.service";
+import {JobNoteType} from "../../../enums/job-note-type.enum";
 
 class ContextMenuController extends BaseController {
     static $inject = [
@@ -16,7 +19,9 @@ class ContextMenuController extends BaseController {
         "toastrService",
         "DispatchData",
         "eventGroupDialogService",
-        "$timeout"
+        "$timeout",
+        "noteService",
+        "addEventDialogService"
     ];
 
     private menuState: MenuState = {
@@ -34,7 +39,9 @@ class ContextMenuController extends BaseController {
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
         private eventGroupDialogService: EventGroupDialogService,
-        private $timeout: angular.ITimeoutService
+        private $timeout: angular.ITimeoutService,
+        private noteService: NoteService,
+        private addEventDialogService: AddEventDialogService
     ) {
         super();
 
@@ -92,95 +99,82 @@ class ContextMenuController extends BaseController {
         }
     }
 
-    voidJobAction() {
+    async voidJobAction() {
         if (!this.menuState.currentJob) return;
 
-        this.$mdDialog.show(
-            this.$mdDialog
-                .prompt()
-                .title("Void Job")
-                .textContent("Add Note")
-                .placeholder("Note")
-                .ariaLabel("Void job")
-                .required(true)
-                .ok("Void")
-                .cancel("Cancel")
-        )
-            .then((note: string) => {
-                const job = this.menuState.currentJob;
-                if (!job) return;
+        try {
+            const note = await this.$mdDialog.show(
+                this.$mdDialog
+                    .prompt()
+                    .title("Void Job")
+                    .textContent("Add Note")
+                    .placeholder("Note")
+                    .ariaLabel("Void job")
+                    .required(true)
+                    .ok("Void")
+                    .cancel("Cancel")
+            );
 
-                return this.DispatchData.addNote(job.id, note, FirstName, false);
-            })
-            .then(() => {
-                const job = this.menuState.currentJob;
-                if (!job) return;
+            const job = this.menuState.currentJob;
+            if (!job) return;
 
-                return this.DispatchData.voidJob(job.id);
-            })
-            .then(() => {
-                this.toastrService.showSuccessToast("Job voided successfully");
-                this.onRefresh();
-            })
-            .catch((error: any) => {
-                if (error) {
-                    console.error("Job void error:", error);
-                }
-            });
+            const jobNote: TucNoteViewModel = {
+                jobId: job.id,
+                jobNumber: job.jobNo,
+                isImportant: false,
+                noteTypeId: JobNoteType.InternalNote,
+                noteText: note,
+                createdBy: ContactID,
+                createdDate: new Date(),
+            }
+
+            await this.noteService.createNote(ContactID, jobNote);
+            await this.DispatchData.voidJob(job.id);
+
+            this.toastrService.showSuccessToast("Job voided successfully");
+            this._onRefresh();
+        } catch (error) {
+            if (error) {
+                console.error("Job void error:", error);
+            }
+        }
 
         this.hideMenu();
     }
 
-    addEventOtherAction($event: MouseEvent) {
+    async addEventOtherAction($event: MouseEvent) {
+        if (!this.menuState.currentJob) return;
+        await this.addEventDialogService.openAddEventDialog($event, this.menuState.currentJob)
+        this.hideMenu();
+    }
+
+    async selectEventGroup(eventGroupId: number) {
         if (!this.menuState.currentJob) return;
 
-        this.$mdDialog.show({
-            controller: "AddEventDialogController",
-            controllerAs: "ctrl",
-            template: require("../../dialogs/add-event-dialog/add-event-dialog.html"),
-            parent: document.body,
-            targetEvent: $event,
-            clickOutsideToClose: true,
-            fullscreen: true,
-            locals: {
-                job: this.menuState.currentJob,
-                dispatcherName: FirstName,
-                contactId: ContactID,
-            },
-            bindToController: true,
-        });
+        try {
+            await this.eventGroupDialogService.openEventGroupDialog(
+                eventGroupId,
+                this.menuState.currentJob.id
+            );
+            this._onRefresh();
+        } catch (error) {
+            if (error) {
+                console.error("Error in event group dialog:", error);
+            }
+        }
 
         this.hideMenu();
     }
 
-    selectEventGroup(eventGroupId: number) {
-        if (!this.menuState.currentJob) return;
-
-        this.eventGroupDialogService.openEventGroupDialog(
-            eventGroupId,
-            this.menuState.currentJob.id
-        )
-            .then(() => {
-                this.onRefresh();
-            })
-            .catch((error: any) => {
-                if (error) {
-                    console.error("Error in event group dialog:", error);
-                }
-            });
-
-        this.hideMenu();
-    }
-
-    splitJobAction($event: MouseEvent) {
+    async splitJobAction($event: MouseEvent) {
         if (!this.menuState.currentJob) return;
         const job = this.menuState.currentJob;
 
         if (!job.allowSplit) {
-            this.$mdDialog.show(
+            await this.$mdDialog.show(
                 this.$mdDialog
                     .alert()
-                    .parent(document.body)
+                    .parent(this.$document.parent())
                     .clickOutsideToClose(true)
                     .title("Unable to split job")
                     .textContent(`Can not split ${job.jobNo}.`)
@@ -191,80 +185,74 @@ class ContextMenuController extends BaseController {
             return;
         }
 
-        this.$mdDialog.show(
-            this.$mdDialog
-                .confirm()
-                .title("Split Job?")
-                .textContent("Are you sure you wish to split this job?")
-                .ariaLabel("Confirm")
-                .targetEvent($event)
-                .ok("Yes")
-                .cancel("No")
-        )
-            .then(() => {
-                return this.DispatchData.splitJob(job.id, FirstName);
-            })
-            .then(() => {
-                this.onSplitJob({job: this.menuState.currentJob});
-            })
-            .catch((error: any) => {
-                if (error) {
-                    console.error("Splitting job failed:", error);
-                }
-            });
+        try {
+            await this.$mdDialog.show(
+                this.$mdDialog
+                    .confirm()
+                    .title("Split Job?")
+                    .textContent("Are you sure you wish to split this job?")
+                    .ariaLabel("Confirm")
+                    .targetEvent($event)
+                    .ok("Yes")
+                    .cancel("No")
+            );
+
+            await this.DispatchData.splitJob(job.id, FirstName);
+            this._onSplitJob({job: this.menuState.currentJob});
+        } catch (error) {
+            if (error) {
+                console.error("Splitting job failed:", error);
+            }
+        }
 
         this.hideMenu();
     }
 
-    setFirstJobAction() {
+    async setFirstJobAction() {
         if (!this.menuState.currentJob) return;
         const job = this.menuState.currentJob;
 
-        this.$mdDialog.show(
-            this.$mdDialog
-                .confirm()
-                .title("Set First Job?")
-                .textContent("Are you sure you wish to set this as the First Job?")
-                .ok("Yes")
-                .cancel("No")
-        )
-            .then(() => {
-                if (job.courierData && job.courierData.courierId) {
-                    return this.DispatchData.setFirstJob(job.id, job.courierData.courierId);
-                } else {
-                    throw new Error("Missing courier data for job");
-                }
-            })
-            .then(() => {
+        try {
+            await this.$mdDialog.show(
+                this.$mdDialog
+                    .confirm()
+                    .title("Set First Job?")
+                    .textContent("Are you sure you wish to set this as the First Job?")
+                    .ok("Yes")
+                    .cancel("No")
+            );
+
+            if (job.courierData && job.courierData.courierId) {
+                await this.DispatchData.setFirstJob(job.id, job.courierData.courierId);
                 this.toastrService.showSuccessToast("Job set as first job successfully");
 
-                if (job.courierData && job.courierData.courierId) {
-                    this.onRefreshCourierJobs({courierId: job.courierData.courierId});
-                }
-            })
-            .catch((error: any) => {
-                if (error) {
-                    console.error("Action cancelled or error occurred:", error);
-                }
-            });
+                this._onRefreshCourierJobs({courierId: job.courierData.courierId});
+            } else {
+                throw new Error("Missing courier data for job");
+            }
+        } catch (error) {
+            if (error) {
+                console.error("Action cancelled or error occurred:", error);
+            }
+        }
 
         this.hideMenu();
     }
 
     // Callback functions to parent
-    private onRefresh() {
+    private _onRefresh() {
         if (this.$scope.onRefresh) {
             this.$scope.onRefresh();
         }
     }
 
-    private onSplitJob(params: { job: IJob | null }) {
+    private _onSplitJob(params: { job: IJob | null }) {
         if (this.$scope.onSplitJob && params.job) {
             this.$scope.onSplitJob({job: params.job});
         }
     }
 
-    private onRefreshCourierJobs(params: { courierId: number }) {
+    private _onRefreshCourierJobs(params: { courierId: number }) {
         if (this.$scope.onRefreshCourierJobs) {
             this.$scope.onRefreshCourierJobs({courierId: params.courierId});
         }

@@ -119,11 +119,6 @@
     }
   }
 
-  // Divider styles
-  md-divider[vertical] {
-    margin: 0 @spacing-unit*3;
-  }
-
   // Mobile styles
   @media (max-width: @mobile-breakpoint) {
     .info-section {
@@ -446,10 +441,6 @@
             }
           }
         }
-
-        md-divider[vertical] {
-          margin: 0 @spacing-unit*3;
-        }
       }
 
       // Mobile styles
@@ -470,160 +461,6 @@
               padding: 8px;
             }
           }
-        }
-      }
-    }
-
-    // Notes Section
-    .notes-section {
-      margin: @spacing-unit*2 0;
-      background-color: @background-color;
-      border-radius: @spacing-unit/2;
-      overflow: hidden;
-      .section-transition();
-
-      .section-header {
-        .flex-center();
-        height: @spacing-unit*6;
-        padding: 0 16px;
-        background-color: #f5f5f5;
-        border-bottom: 1px solid @divider-color;
-
-        span {
-          color: @text-secondary;
-          font-size: 14px;
-          font-weight: 500;
-        }
-
-        // Button container
-        > div:last-child {
-          display: flex;
-          gap: 8px;
-        }
-      }
-
-      // Sticky notes container
-      .sticky-notes-container {
-        padding: 16px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 16px;
-        background-color: #f8f8f8;
-        min-height: 120px;
-      }
-
-      // Sticky note base styling
-      .sticky-note {
-        width: ~"calc(50% - 8px)";
-        min-width: 200px;
-        padding: 16px;
-        box-sizing: border-box;
-        position: relative;
-        min-height: 120px;
-        box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.15);
-        transition: all 0.2s ease;
-
-        // Hover effect
-        &:hover {
-          transform: scale(1.02) rotate(0deg) !important;
-          box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2);
-          z-index: 2;
-        }
-
-        // Background element
-        &::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          z-index: -1;
-        }
-
-        // Colors for different note types
-        &.internal::before {
-          background-color: #fff9c4; // Yellow for internal notes
-        }
-
-        &.consignment::before {
-          background-color: #bbdefb; // Blue for consignment/consignment notes
-        }
-
-        &.client::before {
-          background-color: #c8e6c9; // Green for client notes
-        }
-
-        // Default color
-        &:not(.internal):not(.consignment):not(.client)::before {
-          background-color: #ffccbc; // Orange for other notes
-        }
-
-        // Decorative tape element
-        &::after {
-          content: '';
-          position: absolute;
-          top: -8px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 40%;
-          height: 16px;
-          background-color: rgba(0, 0, 0, 0.1);
-          opacity: 0.5;
-        }
-
-        // Header with icon and note type
-        .note-header {
-          display: flex;
-          align-items: flex-start;
-          margin-bottom: 8px;
-
-          md-icon {
-            margin-right: 8px;
-            color: rgba(0, 0, 0, 0.6);
-          }
-
-          .note-type {
-            font-size: 14px;
-            font-weight: 500;
-            color: rgba(0, 0, 0, 0.7);
-          }
-        }
-
-        // Note content styling
-        .note-content {
-          font-size: 16px;
-          line-height: 1.5;
-          color: rgba(0, 0, 0, 0.8);
-          white-space: pre-wrap;
-        }
-      }
-
-      // "No notes" message styling
-      .no-notes-message {
-        width: 100%;
-        padding: 24px;
-        text-align: center;
-        color: @text-light;
-        font-style: italic;
-
-        md-icon {
-          font-size: 32px;
-          height: 32px;
-          width: 32px;
-          margin-bottom: 8px;
-          color: @text-light;
-        }
-
-        p {
-          margin: 0;
-        }
-      }
-
-      // Responsive styling
-      @media (max-width: @mobile-breakpoint) {
-        .sticky-note {
-          width: 100%;
         }
       }
     }
@@ -716,10 +553,6 @@
         .checkboxes-container {
           padding: @spacing-unit*2;
         }
-      }
-
-      md-divider[vertical] {
-        margin: 0 @spacing-unit*3;
       }
     }
   }

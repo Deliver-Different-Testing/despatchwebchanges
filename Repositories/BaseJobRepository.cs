@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +16,7 @@ using CourierLocation = DespatchWeb.Models.Response.CourierLocation;
 
 namespace DespatchWeb.Repositories;
 
-public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory)
+public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory, ITenantTimeService timeService)
     : BaseRepository(contextFactory)
 {
     protected static readonly Expression<Func<TucJob, JobViewModel>> JobMapping =
@@ -115,11 +117,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     }
                     : null,
 
-            // Notes
-            ClientNotes = j.UcjbClient != null ? j.UcjbClient.UcclNotes : null,
-            InternalNotes = j.UcjbNotes,
-            ConNote = j.Connote,
-
             // Suburb information
             From = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : "Unknown",
             FromSuburbName = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : null,
@@ -209,7 +206,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             // References and amounts
             RefA = j.UcjbClientRefa,
             RefB = j.UcjbClientRefb,
-            Charge = $"{j.PricingBreakdowns.Sum(p => p.ChargeAmount):C}",
+            Charge = $"${j.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}",
             OurRef = j.UcjbOurRef,
 
             // Status
@@ -334,11 +331,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 j.Agent != null
                     ? new AgentViewModel { AgentId = j.Agent.UcagId, AgentName = j.Agent.UcagName }
                     : null,
-
-            // Notes
-            ClientNotes = j.ClientNotes,
-            InternalNotes = j.UcjbNotes,
-            ConNote = j.Connote,
 
             FromSuburbId = j.UcjbFrom,
             ToSuburbId = j.UcjbTo,
@@ -484,9 +476,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             AssignedFlight = null,
 
             // Notes
-            ClientNotes = j.ClientNotes,
-            InternalNotes = j.InternalNotes,
-            ConNote = j.Gssconnote,
+            Notes = j.TucNotes.Select(note => new TucNoteViewModel(note)).ToList(),
 
             FromSuburbId = (int)j.UcbkFrom,
             ToSuburbId = (int)j.UcbkTo,
@@ -539,7 +529,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             // References and amounts
             RefA = j.UcbkClientRefa,
             RefB = j.UcbkClientRefb,
-            Charge = j.UcbkAmount.HasValue ? $"{j.UcbkAmount:C}" : null,
+            Charge = $"${j.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}",
             OurRef = j.UcbkOurRef,
 
             // Size - has navigation in archive
@@ -595,11 +585,11 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             {
                 case AppPage.Dispatch:
                     // Filters
-                   query = query.Where(j => j.UcjbStatus != 9);
-                   if(dateCutoff.HasValue) query = query.Where(j => j.UcjbDate <= dateCutoff.Value.Date);
+                    query = query.Where(j => j.UcjbStatus != 9);
+                    if (dateCutoff.HasValue) query = query.Where(j => j.UcjbDate <= dateCutoff.Value.Date);
 
-                   // Sorting
-                   query = ApplyDashboardSpecificOrdering(
+                    // Sorting
+                    query = ApplyDashboardSpecificOrdering(
                         query,
                         order,
                         orderDirection,
@@ -1093,32 +1083,46 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     {
         try
         {
-            var isLiveJob = Context.TucJobs.Any(j => j.UcjbId == jobId);
-            if (isLiveJob)
-            {
-                return await Context
-                    .TucJobs.Where(j => j.UcjbId == jobId)
-                    .Select(JobMapping)
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync();
-            }
-
-            var isArchivedJob = Context.TucJobArchives.Any(j => j.UcjbId == jobId);
-            if (isArchivedJob)
-            {
-                return await Context
-                    .TucJobArchives.Where(j => j.UcjbId == jobId)
-                    .Select(JobArchiveMapping)
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync();
-            }
-
-            // Will be pre-book
-            return await Context
-                .TucJobBookings.Where(j => j.UcbkId == jobId)
-                .Select(JobPrebookMapping)
+            // Check for live job first
+            var liveJob = await Context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .Select(JobMapping)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
+
+            if (liveJob != null) return liveJob;
+
+            // Check for archived job
+            var archivedJob = await Context.TucJobArchives
+                .Where(j => j.UcjbId == jobId)
+                .Select(JobArchiveMapping)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+
+            if (archivedJob == null)
+            {
+                return await Context.TucJobBookings
+                    .Where(j => j.UcbkId == jobId)
+                    .Select(JobPrebookMapping)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync();
+            }
+
+            // Get charge here
+            var totalCharge = await Context.PricingBreakdowns
+                .Where(x => x.JobId == jobId)
+                .SumAsync(x => x.ChargeAmount);
+            archivedJob.Charge = $"${totalCharge:F2}";
+
+            // Get notes here
+            var notes = await Context.TucNotes
+                .Where(x => x.JobBookingId == jobId)
+                .Select(note => new TucNoteViewModel(note))
+                .AsNoTracking()
+                .ToListAsync();
+            archivedJob.Notes = notes;
+
+            return archivedJob;
         }
         catch (Exception e)
         {
@@ -1906,5 +1910,364 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             Log.Error(e, "Error occurred getting job coordinates. Please see exception.");
             throw;
         }
+    }
+
+    public async Task<List<TucNoteViewModel>> GetNotesByJobId(int jobId)
+    {
+        ArgumentNullException.ThrowIfNull(jobId);
+
+        return await IsJobArchived(jobId)
+            ? await GetArchivedNotesByJobIdAsync(jobId)
+            : await GetActiveNotesByJobIdAsync(jobId);
+    }
+
+    public async Task<TucNoteViewModel> GetNoteByIdAsync(int noteId)
+    {
+        ArgumentNullException.ThrowIfNull(noteId);
+
+        var note = await Context.TucNotes
+            .Include(x => x.NoteType)
+            .Include(x => x.CreatedByNavigation)
+            .Include(x => x.UpdatedByNavigation)
+            .AsNoTracking()
+            .Where(x => x.NoteId == noteId)
+            .Select(x => new TucNoteViewModel(x))
+            .FirstOrDefaultAsync();
+
+        return note ?? await GetArchivedNoteByIdAsync(noteId);
+    }
+
+    public async Task<int> SaveNoteAsync(TucNoteViewModel viewModel, int staffId)
+    {
+        ArgumentNullException.ThrowIfNull(viewModel);
+        ArgumentNullException.ThrowIfNull(staffId);
+
+        return viewModel.NoteId == 0
+            ? await CreateNoteAsync(viewModel, staffId)
+            : await UpdateNoteAsync(viewModel, staffId);
+    }
+
+    public async Task<int> SaveNoteAsync(int jobId, string noteText, string despatcherName, bool isImportant = false)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(noteText, nameof(noteText));
+        ArgumentException.ThrowIfNullOrWhiteSpace(despatcherName, nameof(despatcherName));
+
+        var staffId = await Context.TucStaffs
+            .Where(s => s.UcstFirstName + " " + s.UcstLastName == despatcherName)
+            .Select(s => s.UcstId)
+            .FirstOrDefaultAsync();
+
+        ArgumentNullException.ThrowIfNull(staffId);
+
+        return await CreateBasicNoteAsync(jobId, noteText, staffId, isImportant);
+    }
+
+    public async Task<int> SaveNoteAsync(int jobId, string noteText, int staffId, bool isImportant = false)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(noteText, nameof(noteText));
+        return await CreateBasicNoteAsync(jobId, noteText, staffId, isImportant);
+    }
+
+    public async Task DeleteNoteAsync(int noteId)
+    {
+        var note = await Context.TucNotes.FindAsync(noteId);
+        if (note != null)
+        {
+            Context.TucNotes.Remove(note);
+            await Context.SaveChangesAsync();
+        }
+    }
+
+    private async Task<bool> IsJobArchived(int jobId) =>
+        await Context.TucJobArchives.AnyAsync(j => j.UcjbId == jobId);
+
+    private async Task<List<TucNoteViewModel>> GetActiveNotesByJobIdAsync(int jobId) =>
+        await Context.TucNotes
+            .Include(x => x.NoteType)
+            .Include(x => x.CreatedByNavigation)
+            .Include(x => x.UpdatedByNavigation)
+            .Where(x => x.JobId == jobId || x.JobBookingId == jobId)
+            .AsNoTracking()
+            .Select(x => new TucNoteViewModel(x))
+            .ToListAsync();
+
+   private async Task<List<TucNoteViewModel>> GetArchivedNotesByJobIdAsync(int jobId)
+{
+var query = from note in Context.TucNoteArchives
+    join noteType in Context.TucNoteTypes
+        on note.NoteTypeId equals noteType.NoteTypeId into noteTypes
+    from nt in noteTypes.DefaultIfEmpty()
+    join createdBy in Context.TucStaffs
+        on note.CreatedBy equals createdBy.UcstId into createdStaff
+    from cs in createdStaff.DefaultIfEmpty()
+    join updatedBy in Context.TucStaffs
+        on note.UpdatedBy equals updatedBy.UcstId into updatedStaff
+    from us in updatedStaff.DefaultIfEmpty()
+    join job in Context.TucJobArchives
+        on note.JobId equals job.UcjbId into jobs
+    from j in jobs.DefaultIfEmpty()
+    where note.JobId == jobId || note.JobBookingId == jobId
+    select new TucNoteViewModel
+    {
+        // Note properties
+        NoteId = note.NoteId,
+        NoteText = note.NoteText,
+        CreatedDate = note.CreatedDate ?? j.UcjbComplTime ?? DateTime.MinValue,
+        UpdatedDate = note.UpdatedDate,
+        JobId = note.JobId,
+        JobBookingId = note.JobBookingId,
+
+        // Related entity properties
+        NoteTypeId = note.NoteTypeId,
+        NoteTypeName = nt.NoteTypeName,
+
+        // Staff information
+        CreatedBy = note.CreatedBy,
+        CreatedByName = cs != null ? cs.UcstFirstName + " " + cs.UcstLastName : null,
+        UpdatedBy = note.UpdatedBy,
+        UpdatedByName = us != null ? us.UcstFirstName + " " + us.UcstLastName : null,
+
+        // Job information
+        JobNumber = j != null ? j.UcjbNumber : null
+    };
+
+    var archivedNotes = await query.ToListAsync();
+    return archivedNotes;
+}
+
+private async Task<TucNoteViewModel> GetArchivedNoteByIdAsync(int noteId)
+{
+    var query = from note in Context.TucNoteArchives
+        join noteType in Context.TucNoteTypes
+            on note.NoteTypeId equals noteType.NoteTypeId into noteTypes
+        from nt in noteTypes.DefaultIfEmpty()
+        join createdBy in Context.TucStaffs
+            on note.CreatedBy equals createdBy.UcstId into createdStaff
+        from cs in createdStaff.DefaultIfEmpty()
+        join updatedBy in Context.TucStaffs
+            on note.UpdatedBy equals updatedBy.UcstId into updatedStaff
+        from us in updatedStaff.DefaultIfEmpty()
+        join job in Context.TucJobArchives
+            on note.JobId equals job.UcjbId into jobs
+        from j in jobs.DefaultIfEmpty()
+        where note.NoteId == noteId
+           select new TucNoteViewModel
+            {
+                // Note properties
+                NoteId = note.NoteId,
+                NoteText = note.NoteText,
+                CreatedDate = note.CreatedDate ?? j.UcjbComplTime ?? DateTime.MinValue,
+                UpdatedDate = note.UpdatedDate,
+                JobId = note.JobId,
+                JobBookingId = note.JobBookingId,
+
+                // Related entity properties
+                NoteTypeId = note.NoteTypeId,
+                NoteTypeName =nt.NoteTypeName,
+
+                // Staff information
+                CreatedBy = note.CreatedBy,
+                CreatedByName = cs != null ? cs.UcstFirstName + " " + cs.UcstLastName : null,
+                UpdatedBy = note.UpdatedBy,
+                UpdatedByName = us != null ? us.UcstFirstName + " " + us.UcstLastName : null,
+
+                // Job information
+                JobNumber = j != null ? j.UcjbNumber : null
+            };
+
+            var archivedNote = await query.FirstOrDefaultAsync();
+            return archivedNote;
+}
+
+    private async Task<int> CreateNoteAsync(TucNoteViewModel viewModel, int staffId)
+    {
+        ArgumentNullException.ThrowIfNull(viewModel);
+        ArgumentNullException.ThrowIfNull(viewModel.JobId);
+
+        var currentTime = timeService.GetCurrentTenantTime();
+        int noteId;
+
+        if (await IsJobArchived(viewModel.JobId.Value))
+            noteId = await CreateArchivedNoteAsync(viewModel, staffId, currentTime);
+        else
+            noteId = await CreateActiveNoteAsync(viewModel, staffId, currentTime);
+
+        await UpdateJobNotesIfPublicAsync(viewModel.NoteTypeId, viewModel.JobId.Value, viewModel.NoteText);
+        return noteId;
+    }
+
+    private async Task<int> CreateArchivedNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime)
+    {
+        var archivedNote = viewModel.ToArchivedEntity();
+        archivedNote.CreatedDate = currentTime;
+        archivedNote.CreatedBy = staffId;
+
+        await Context.TucNoteArchives.AddAsync(archivedNote);
+        await Context.SaveChangesAsync();
+        return archivedNote.NoteId;
+    }
+
+    private async Task<int> CreateActiveNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime)
+    {
+        var activeNote = viewModel.ToEntity();
+        activeNote.CreatedDate = currentTime;
+        activeNote.CreatedBy = staffId;
+
+        await Context.TucNotes.AddAsync(activeNote);
+        await Context.SaveChangesAsync();
+        return activeNote.NoteId;
+    }
+
+    private async Task<int> UpdateNoteAsync(TucNoteViewModel viewModel, int staffId)
+    {
+        ArgumentNullException.ThrowIfNull(viewModel);
+        ArgumentNullException.ThrowIfNull(viewModel.JobId);
+
+        var currentTime = timeService.GetCurrentTenantTime();
+        int noteId;
+
+        if (await IsJobArchived(viewModel.JobId.Value))
+            noteId = await UpdateArchivedNoteAsync(viewModel, staffId, currentTime);
+        else
+            noteId = await UpdateActiveNoteAsync(viewModel, staffId, currentTime);
+
+        if (viewModel.JobId.HasValue)
+            await UpdateJobNotesIfPublicAsync(viewModel.NoteTypeId, viewModel.JobId.Value, viewModel.NoteText);
+
+        return noteId;
+    }
+
+    private async Task<int> UpdateArchivedNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime)
+    {
+        var archivedNote = await Context.TucNoteArchives.FindAsync(viewModel.NoteId);
+        ArgumentNullException.ThrowIfNull(archivedNote);
+
+        UpdateNoteProperties(archivedNote, viewModel);
+        archivedNote.UpdatedDate = currentTime;
+        archivedNote.UpdatedBy = staffId;
+
+        Context.TucNoteArchives.Update(archivedNote);
+        await Context.SaveChangesAsync();
+
+        return archivedNote.NoteId;
+    }
+
+    private async Task<int> UpdateActiveNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime)
+    {
+        var activeNote = await Context.TucNotes.FindAsync(viewModel.NoteId);
+        ArgumentNullException.ThrowIfNull(activeNote);
+
+        UpdateNoteProperties(activeNote, viewModel);
+        activeNote.UpdatedDate = currentTime;
+        activeNote.UpdatedBy = staffId;
+
+        Context.TucNotes.Update(activeNote);
+        await Context.SaveChangesAsync();
+
+        return activeNote.NoteId;
+    }
+
+    private static void UpdateNoteProperties<T>(T note, TucNoteViewModel viewModel)
+        where T : class
+    {
+        dynamic dynamicNote = note;
+        dynamicNote.NoteTypeId = viewModel.NoteTypeId;
+        dynamicNote.JobId = viewModel.JobId;
+        dynamicNote.JobBookingId = viewModel.JobBookingId;
+        dynamicNote.NoteText = viewModel.NoteText;
+        dynamicNote.IsImportant = viewModel.IsImportant;
+    }
+
+    private async Task<int> CreateBasicNoteAsync(
+        int jobId,
+        string noteText,
+        int staffId,
+        bool isImportant,
+        CancellationToken cancellationToken = default)
+    {
+        var currentTime = timeService.GetCurrentTenantTime();
+        const int internalNoteTypeId = (int)NoteType.InternalNote;
+        int noteId;
+
+        if (await IsJobArchived(jobId))
+        {
+            var archivedNote = new TucNoteArchive
+            {
+                JobId = jobId,
+                NoteTypeId = internalNoteTypeId,
+                NoteText = noteText,
+                IsImportant = isImportant,
+                CreatedDate = currentTime,
+                CreatedBy = staffId
+            };
+
+            await Context.TucNoteArchives.AddAsync(archivedNote, cancellationToken);
+            await Context.SaveChangesAsync(cancellationToken);
+            noteId = archivedNote.NoteId;
+        }
+        else
+        {
+            var activeNote = new TucNote
+            {
+                JobId = jobId,
+                NoteTypeId = internalNoteTypeId,
+                NoteText = noteText,
+                IsImportant = isImportant,
+                CreatedDate = currentTime,
+                CreatedBy = staffId
+            };
+
+            await Context.TucNotes.AddAsync(activeNote, cancellationToken);
+            await Context.SaveChangesAsync(cancellationToken);
+            noteId = activeNote.NoteId;
+        }
+
+        await UpdateJobNotesIfPublicAsync(internalNoteTypeId, jobId, noteText, cancellationToken);
+        return noteId;
+    }
+
+    private async Task UpdateJobNotesIfPublicAsync(
+        int noteTypeId,
+        int jobId,
+        string noteText,
+        CancellationToken cancellationToken = default)
+    {
+        var noteType = await Context.TucNoteTypes
+            .FirstOrDefaultAsync(nt => nt.NoteTypeId == noteTypeId, cancellationToken);
+
+        if (noteType?.IsPublic == false) return;
+
+        await UpdateJobNotesAsync(jobId, noteText, cancellationToken);
+    }
+
+    private async Task UpdateJobNotesAsync(
+        int jobId,
+        string noteText,
+        CancellationToken cancellationToken = default)
+    {
+        const string noteSeparator = "\n ";
+        var job = await Context.TucJobs.FindAsync([jobId], cancellationToken);
+
+        if (job != null)
+        {
+            job.UcjbNotes = job.UcjbNotes + noteSeparator + noteText;
+            Context.TucJobs.Update(job);
+            await Context.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    public async Task<List<Suggestion>> GetNoteTypesAsync()
+    {
+        var noteTypes = await Context.TucNoteTypes
+            .Where(x => x.IsActive)
+            .Select(x => new Suggestion
+            {
+                Id = x.NoteTypeId,
+                Text = x.NoteTypeName
+            })
+            .AsNoTracking()
+            .ToListAsync();
+
+        return noteTypes;
     }
 }

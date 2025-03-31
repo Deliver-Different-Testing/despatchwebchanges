@@ -24,7 +24,7 @@ import moment from "moment";
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [
         "$http",
-        "APP_CONFIG"
+        "APP_CONFIG",
     ];
 
     private readonly isUsCustomer: boolean;
@@ -44,19 +44,6 @@ class DispatchCoreService implements angular.IServiceProvider {
     async getSelectedViews(userId: number, pageId: number) {
         const response = await this.$http.get<DfrntPageViewModel[]>(`home/GetPageViews?userid=${userId}&pageid=${pageId}`);
         return response.data;
-    }
-
-    async addNote(jobId: number, note: string, despatcherName: string, preBook: boolean) {
-        const method = preBook ? "job/AddJobBookingNote" : "job/UpdateNote";
-        await this.$http.post(method + "?jobId=" + jobId + "&note=" + note, null);
-    }
-
-    async addConNote(jobId: number, conNote: string) {
-        await this.$http.post(`job/UpdateConnote?jobId= ${jobId}&conNote=${conNote}`, null);
-    }
-
-    async addBulkJobNote(bulkJobId: number, note: string, despatcherName: string, preBook: boolean) {
-        await this.$http.post(`job/AddBulkJobNote?BulkJobId=${bulkJobId}&note=${note}&despatcher=${despatcherName}`, null);
     }
 
     async addPallet(pallet: Pallet, preBook: boolean, despatcherName: string) {

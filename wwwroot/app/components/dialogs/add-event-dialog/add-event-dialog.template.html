@@ -65,21 +65,14 @@
         </form>
     </md-dialog-content>
 
-    <md-dialog-actions>
-        <md-progress-circular
-                class="md-primary"
-                md-diameter="40"
-                md-mode="indeterminate"
-                ng-disabled="ctrl.eventForm.$invalid"
-                ng-if="ctrl.isLoading">
-        </md-progress-circular>
-
-        <md-button
-                ng-if="!ctrl.isLoading"
-                class="md-raised md-primary"
-                ng-click="ctrl.submit(ctrl.event)"
-                ng-disabled="!ctrl.event">
-            Save
+    <md-dialog-actions layout="row">
+        <span flex></span>
+        <md-button class="md-primary md-raised" type="submit" ng-disabled="ctrl.eventForm.$invalid || ctrl.isLoading">
+            <span ng-if="!ctrl.isLoading">Save</span>
+            <dfrnt-loader
+                    is-loading="ctrl.isLoading"
+                    icon-name="'event'">
+            </dfrnt-loader>
         </md-button>
     </md-dialog-actions>
 </md-dialog>

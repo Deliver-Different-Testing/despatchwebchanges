@@ -56,7 +56,7 @@ public static class EFExtensions
 
         var param = cmd.CreateParameter();
         param.ParameterName = paramName;
-        param.Value = (paramValue != null ? paramValue : DBNull.Value);
+        param.Value = paramValue != null ? paramValue : DBNull.Value;
         configureParam?.Invoke(param);
         cmd.Parameters.Add(param);
         return cmd;
