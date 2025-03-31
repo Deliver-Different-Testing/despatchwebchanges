@@ -1,6 +1,7 @@
 import "./dfrnt-loader.styles.less";
+import {IComponentOptions, IController} from "angular";
 
-class DfrntLoaderController implements angular.IController {
+class DfrntLoaderController implements IController {
     isLoading?: boolean;
     iconName?: string;
 
@@ -15,7 +16,7 @@ class DfrntLoaderController implements angular.IController {
     }
 }
 
-const DfrntLoaderComponent: angular.IComponentOptions = {
+const DfrntLoaderComponent: IComponentOptions = {
     template: require("./dfrnt-loader.template.html"),
     bindings: {
         isLoading: '<',

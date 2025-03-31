@@ -18,9 +18,8 @@ class NationwideService implements angular.IServiceProvider {
         }&despatcherName=${despatcherName}`, null);
     }
 
-    async addEvent(jobNo: string, clientId: number, contact: string, staffId: number, courierId: number, jobId: number, jobType: number, despatcherName: string, notes: string, eventType: number) {
-        await this.$http.post(`job/addEvent?jobNo=${jobNo}&clientId=${clientId}&contact=${contact}&staffId=${staffId}&courierId=${courierId}&jobId=${jobId}&jobType=${jobType
-        }&despatcherName=${despatcherName}&notes=${notes}&eventType=${eventType}`, null);
+    async addEvent(staffId: number, jobId: number, despatcherName: string, notes: string, eventType: number) {
+        await this.$http.post(`job/addEvent?staffId=${staffId}&jobId=${jobId}&despatcherName=${encodeURIComponent(despatcherName)}&notes=${encodeURIComponent(notes)}&eventType=${eventType}`, null);
     }
 
     async exsalerateActivity(eventName: string, notes: string, clientId: number, jobNumber: string, despatcherName: string) {

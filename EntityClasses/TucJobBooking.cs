@@ -361,6 +361,8 @@ public partial class TucJobBooking
 
     public virtual ICollection<TucJobNationwide> TucJobNationwides { get; set; } = new List<TucJobNationwide>();
 
+    public virtual ICollection<TucNote> TucNotes { get; set; } = new List<TucNote>();
+
     public virtual TucClient UcbkClient { get; set; }
 
     public virtual VehicleSize UcbkSizeNavigation { get; set; }

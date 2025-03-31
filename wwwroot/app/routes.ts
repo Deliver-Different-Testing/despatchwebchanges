@@ -1,5 +1,3 @@
-import app from "./app";
-
 class RouterConfig {
     constructor(
         private $urlRouterProvider: angular.ui.IUrlRouterProvider,
@@ -88,10 +86,4 @@ class RouterConfig {
         return this;
     }
 }
-
-app.config(["$urlRouterProvider", "$stateProvider",
-    ($urlRouterProvider: angular.ui.IUrlRouterProvider,
-     $stateProvider: angular.ui.IStateProvider) => {
-        new RouterConfig($urlRouterProvider, $stateProvider);
-    }
-]);
+export default RouterConfig;

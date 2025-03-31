@@ -168,16 +168,14 @@
                 <div layout="row" layout-xs="column" class="address-section md-whiteframe-1dp">
                     <!-- Pickup Location -->
                     <div flex="50" flex-xs="100" class="address-block pickup-block">
-                        <md-subheader class="address-header">
-                            <md-icon md-font-set="material-symbols-outlined"
-                                     class="location-icon"
-                                     aria-label="Pickup location">
-                                {{ctrl.getJobAddressIcon()}}
-                            </md-icon>
-                            <span>Pickup Location</span>
-                        </md-subheader>
-
-                        <md-divider></md-divider>
+                        <md-toolbar class="md-primary">
+                            <div class="md-toolbar-tools-m3">
+                                <div class="section section-start">
+                                    <span class="material-symbols-outlined">   {{ctrl.getJobAddressIcon()}}</span>
+                                    <span class="md-headline-title" flex style="margin-left: 8px;">Pickup Location</span>
+                                </div>
+                            </div>
+                        </md-toolbar>
 
                         <md-card-content class="address-content">
                             <div ng-click="!ctrl.job.locked && ctrl.updateAddress($event, ctrl.job, 'fromAddress')">
@@ -211,16 +209,14 @@
 
                     <!-- Delivery Location -->
                     <div flex="50" flex-xs="100" class="address-block delivery-block">
-                        <md-subheader class="address-header">
-                            <md-icon md-font-set="material-symbols-outlined"
-                                     class="location-icon"
-                                     aria-label="Delivery location">
-                                {{ctrl.getJobAddressIcon()}}
-                            </md-icon>
-                            <span>Delivery Location</span>
-                        </md-subheader>
-
-                        <md-divider></md-divider>
+                        <md-toolbar class="md-primary">
+                            <div class="md-toolbar-tools-m3">
+                                <div class="section section-start">
+                                    <span class="material-symbols-outlined">   {{ctrl.getJobAddressIcon()}}</span>
+                                    <span class="md-headline-title" flex style="margin-left: 8px;">Delivery Location</span>
+                                </div>
+                            </div>
+                        </md-toolbar>
 
                         <md-card-content class="address-content">
                             <div md-ink-ripple
@@ -258,13 +254,14 @@
                      style="background: #f5f5f5;">
                     <!-- Flight Information -->
                     <section class="info-section client-section" ng-if="ctrl.job.assignedFlight">
-                        <md-subheader class="section-header">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="flight information">flight
-                            </md-icon>
-                            <span>Flight Information</span>
-                        </md-subheader>
-
-                        <md-divider></md-divider>
+                        <md-toolbar class="md-primary">
+                            <div class="md-toolbar-tools-m3">
+                                <div class="section section-start">
+                                    <span class="material-symbols-outlined">flight</span>
+                                    <span class="md-headline-title" flex style="margin-left: 8px;">Flight Information</span>
+                                </div>
+                            </div>
+                        </md-toolbar>
 
                         <md-list>
                             <md-list-item class="info-row">
@@ -299,14 +296,14 @@
 
                     <!-- Agent information -->
                     <section class="info-section booker-section" ng-if="ctrl.job.assignedAgent">
-                        <md-subheader class="section-header">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="Booking information">
-                                badge
-                            </md-icon>
-                            <span>Agent Information</span>
-                        </md-subheader>
-
-                        <md-divider></md-divider>
+                        <md-toolbar class="md-primary">
+                            <div class="md-toolbar-tools-m3">
+                                <div class="section section-start">
+                                    <span class="material-symbols-outlined">badge</span>
+                                    <span class="md-headline-title" flex style="margin-left: 8px;">Agent Information</span>
+                                </div>
+                            </div>
+                        </md-toolbar>
 
                         <md-list>
                             <md-list-item class="info-row">
@@ -340,98 +337,20 @@
                 </div>
 
                 <!-- Notes Section with sticky note design -->
-                <div class="notes-section md-whiteframe-1dp">
-                    <div class="section-header">
-                        <div style="display: flex; align-items: center;">
-                            <md-icon md-font-set="material-symbols-outlined">info</md-icon>
-                            <span>Notes / Consignment Notes / AWB</span>
-                        </div>
-
-                        <div flex></div>
-
-                            <md-button class="md-fab md-mini md-primary" aria-label="add note"
-                                       ng-click="ctrl.showNotesDialog($event, ctrl.job, 'Notes','Note')">
-                                <md-icon md-font-set="material-symbols-outlined">note_add</md-icon>
-                                <md-tooltip md-direction="bottom">Edit Note</md-tooltip>
-                            </md-button>
-
-                            <md-button class="md-fab md-mini md-primary" aria-label="add con note"
-                                       ng-click="ctrl.showNotesDialog($event, ctrl.job, 'Consignment Note / AWB','ConNote')">
-                                <md-icon md-font-set="material-symbols-outlined">inventory</md-icon>
-                                <md-tooltip md-direction="bottom">Edit Consignment / AWB</md-tooltip>
-                            </md-button>
-                    </div>
-
-                    <md-divider></md-divider>
-
-                    <div class="sticky-notes-container">
-                        <div ng-repeat="note in ctrl.notes"
-                             class="sticky-note {{note.type}}"
-                             ng-style="{'transform': 'rotate(' + (-1 + $index % 3) + 'deg)'}">
-                            <div class="note-header">
-                                <md-icon md-font-set="material-symbols-outlined">{{note.icon}}</md-icon>
-                                <div class="note-type">
-                                    <span ng-if="note.type === 'internal'">Internal Note</span>
-                                    <span ng-if="note.type === 'consignment'">Consignment Note</span>
-                                    <span ng-if="note.type === 'client'">Client Note</span>
-                                    <span ng-if="!note.type || (note.type !== 'internal' && note.type !== 'consignment' && note.type !== 'client')">Note</span>
-                                </div>
-                            </div>
-                            <div class="note-content">{{note.text}}</div>
-                        </div>
-
-                        <!-- Fallback to display raw notes data if the notes array is empty -->
-                        <div ng-if="ctrl.notes.length === 0 && ctrl.job.internalNotes"
-                             class="sticky-note internal"
-                             style="transform: rotate(-1deg);">
-                            <div class="note-header">
-                                <md-icon md-font-set="material-symbols-outlined">note_stack</md-icon>
-                                <div class="note-type">Internal Note</div>
-                            </div>
-                            <div class="note-content">{{ctrl.job.internalNotes}}</div>
-                        </div>
-
-                        <div ng-if="ctrl.notes.length === 0 && ctrl.job.clientNotes"
-                             class="sticky-note client"
-                             style="transform: rotate(1deg);">
-                            <div class="note-header">
-                                <md-icon md-font-set="material-symbols-outlined">business</md-icon>
-                                <div class="note-type">Client Note</div>
-                            </div>
-                            <div class="note-content">{{ctrl.job.clientNotes}}</div>
-                        </div>
-
-                        <div ng-if="ctrl.notes.length === 0 && ctrl.job.conNote"
-                             class="sticky-note consignment"
-                             style="transform: rotate(-0.5deg);">
-                            <div class="note-header">
-                                <md-icon md-font-set="material-symbols-outlined">inventory_2</md-icon>
-                                <div class="note-type">Consignment Note</div>
-                            </div>
-                            <div class="note-content">{{ctrl.job.conNote}}</div>
-                        </div>
-
-                        <!-- Message when truly no notes -->
-                        <div ng-if="ctrl.notes.length === 0 && !ctrl.job.internalNotes && !ctrl.job.clientNotes && !ctrl.job.conNote"
-                             class="no-notes-message">
-                            <md-icon md-font-set="material-symbols-outlined">sticky_note_2</md-icon>
-                            <p>No notes available for this job.</p>
-                        </div>
-                    </div>
-                </div>
+                <sticky-notes job-id="ctrl.job.id"></sticky-notes>
 
                 <!-- Package Details -->
                 <div layout="row" layout-xs="column" class="info-sections-container md-whiteframe-1dp">
                     <!-- Package Details -->
                     <div flex="50" flex-xs="100" class="info-section">
-                        <md-subheader class="section-header">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="Package details">
-                                inventory_2
-                            </md-icon>
-                            <span>Package Details</span>
-                        </md-subheader>
-
-                        <md-divider></md-divider>
+                        <md-toolbar class="md-primary">
+                            <div class="md-toolbar-tools-m3">
+                                <div class="section section-start">
+                                    <span class="material-symbols-outlined">inventory_2</span>
+                                    <span class="md-headline-title" flex style="margin-left: 8px;">Package Details</span>
+                                </div>
+                            </div>
+                        </md-toolbar>
 
                         <md-list>
                             <md-list-item class="info-row" md-ink-ripple
@@ -463,14 +382,14 @@
 
                     <!-- Additional Info -->
                     <div flex="50" flex-xs="100" class="info-section">
-                        <md-subheader class="section-header">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="Additional information">
-                                description
-                            </md-icon>
-                            <span>Additional Info</span>
-                        </md-subheader>
-
-                        <md-divider></md-divider>
+                        <md-toolbar class="md-primary">
+                            <div class="md-toolbar-tools-m3">
+                                <div class="section section-start">
+                                    <span class="material-symbols-outlined">description</span>
+                                    <span class="md-headline-title" flex style="margin-left: 8px;">Additional Info</span>
+                                </div>
+                            </div>
+                        </md-toolbar>
 
                         <md-list>
                             <md-list-item class="info-row" md-ink-ripple
@@ -507,14 +426,14 @@
                 <div flex="50" flex-xs="100" class="info-sections-container job-details-info md-whiteframe-1dp"
                      ng-if="!ctrl.job.prebook">
                     <div class="info-section">
-                        <md-subheader class="section-header">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="Additional details">
-                                local_shipping
-                            </md-icon>
-                            <span>Delivery Details</span>
-                        </md-subheader>
-
-                        <md-divider></md-divider>
+                        <md-toolbar class="md-primary">
+                            <div class="md-toolbar-tools-m3">
+                                <div class="section section-start">
+                                    <span class="material-symbols-outlined">local_shipping</span>
+                                    <span class="md-headline-title" flex style="margin-left: 8px;">Delivery Details</span>
+                                </div>
+                            </div>
+                        </md-toolbar>
 
                         <md-list>
                             <md-list-item class="info-row">
@@ -564,13 +483,14 @@
                 <div class="info-sections-container md-whiteframe-1dp" style="background: #f5f5f5;">
                     <!-- Client Information -->
                     <section class="info-section client-section">
-                        <md-subheader class="section-header">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="Client information">account_box
-                            </md-icon>
-                            <span>Client Information</span>
-                        </md-subheader>
-
-                        <md-divider></md-divider>
+                        <md-toolbar class="md-primary">
+                            <div class="md-toolbar-tools-m3">
+                                <div class="section section-start">
+                                    <span class="material-symbols-outlined">account_box</span>
+                                    <span class="md-headline-title" flex style="margin-left: 8px;">Client Information</span>
+                                </div>
+                            </div>
+                        </md-toolbar>
 
                         <md-list>
                             <md-list-item class="info-row" md-ink-ripple ng-click="ctrl.clientClick($event, ctrl.job)">
@@ -595,14 +515,14 @@
 
                     <!-- Booked By -->
                     <section class="info-section booker-section">
-                        <md-subheader class="section-header">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="Booking information">
-                                person_outline
-                            </md-icon>
-                            <span>Booked By</span>
-                        </md-subheader>
-
-                        <md-divider></md-divider>
+                        <md-toolbar class="md-primary">
+                            <div class="md-toolbar-tools-m3">
+                                <div class="section section-start">
+                                    <span class="material-symbols-outlined">person_outline</span>
+                                    <span class="md-headline-title" flex style="margin-left: 8px;">Booked By</span>
+                                </div>
+                            </div>
+                        </md-toolbar>
 
                         <md-list>
                             <md-list-item class="info-row">
@@ -640,14 +560,14 @@
                 <!-- Job Details -->
                 <div class="info-sections-container job-details-info md-whiteframe-1dp">
                     <div class="info-section">
-                        <md-subheader class="section-header">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="Job details">
-                                assignment
-                            </md-icon>
-                            <span>Job Details</span>
-                        </md-subheader>
-
-                        <md-divider></md-divider>
+                        <md-toolbar class="md-primary">
+                            <div class="md-toolbar-tools-m3">
+                                <div class="section section-start">
+                                    <span class="material-symbols-outlined">assignment</span>
+                                    <span class="md-headline-title" flex style="margin-left: 8px;">Job Details</span>
+                                </div>
+                            </div>
+                        </md-toolbar>
 
                         <md-list>
                             <md-list-item class="info-row" md-ink-ripple

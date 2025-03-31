@@ -137,6 +137,12 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TucJobTypeGrouping> TucJobTypeGroupings { get; set; }
 
+    public virtual DbSet<TucNote> TucNotes { get; set; }
+
+    public virtual DbSet<TucNoteArchive> TucNoteArchives { get; set; }
+
+    public virtual DbSet<TucNoteType> TucNoteTypes { get; set; }
+
     public virtual DbSet<TucSource> TucSources { get; set; }
 
     public virtual DbSet<TucStaff> TucStaffs { get; set; }
@@ -3597,6 +3603,7 @@ public partial class DespatchContext : DbContext
 
             entity.ToTable("tucJob", tb =>
                 {
+                    tb.HasTrigger("trg_TucJob_Notes_Update");
                     tb.HasTrigger("tucJob_ChangeAmount");
                     tb.HasTrigger("tucJob_ChangeWeight");
                     tb.HasTrigger("tucJob_InsertJob");
@@ -3623,6 +3630,7 @@ public partial class DespatchContext : DbContext
                     tb.HasTrigger("tucJob_Update_RecalculateRawBaseAmount_And_CourierBonus");
                     tb.HasTrigger("tucJob_Update_SendToDevices");
                     tb.HasTrigger("tucJob_Update_Speed");
+                    tb.HasTrigger("tucJob_Update_Status_CreateEvent");
                     tb.HasTrigger("tucJob_Update_Status_CreateWebHook");
                     tb.HasTrigger("tucJob_Update_TruckHire_JobCompleted");
                     tb.HasTrigger("tucJob_Update_UpdateBaggageJobFromPickupJob");
@@ -4058,6 +4066,7 @@ public partial class DespatchContext : DbContext
             entity.ToTable("tucJobArchive", tb =>
                 {
                     tb.HasTrigger("AutomaticSpeedUpdate_Archive");
+                    tb.HasTrigger("trg_TucJobArchive_Notes_Update");
                     tb.HasTrigger("tucJobArchive_Update_AddPickupAmountToNationwideAmount");
                     tb.HasTrigger("tucJobArchive_Update_AutomaticSpeedUpdate");
                     tb.HasTrigger("tucJobArchive_Update_BlockChanges");
@@ -4445,7 +4454,7 @@ public partial class DespatchContext : DbContext
                 .IsClustered(false)
                 .HasAnnotation("SqlServer:FillFactor", 80);
 
-            entity.ToTable("tucJobBooking");
+            entity.ToTable("tucJobBooking", tb => tb.HasTrigger("trg_TucJobBooking_Notes_Update"));
 
             entity.HasIndex(e => e.BookingInformationParentId, "BookingInformationParentID");
 
@@ -4954,6 +4963,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.Grouping).WithMany(p => p.TucJobTypes)
                 .HasForeignKey(d => d.GroupingId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__tucJobTyp__Group__1F3A56BC");
         });
 
@@ -4967,6 +4977,89 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.GroupingName)
                 .IsRequired()
                 .HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<TucNote>(entity =>
+        {
+            entity.HasKey(e => e.NoteId).HasName("PK__tucNote__EACE357FF13C671E");
+
+            entity.ToTable("tucNote");
+
+            entity.HasIndex(e => e.CreatedDate, "IX_Note_CreatedDate");
+
+            entity.HasIndex(e => e.JobBookingId, "IX_Note_JobBookingID").HasFilter("([JobBookingID] IS NOT NULL)");
+
+            entity.HasIndex(e => e.JobId, "IX_Note_JobID").HasFilter("([JobID] IS NOT NULL)");
+
+            entity.HasIndex(e => e.NoteTypeId, "IX_Note_NoteTypeID");
+
+            entity.Property(e => e.NoteId).HasColumnName("NoteID");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.JobBookingId).HasColumnName("JobBookingID");
+            entity.Property(e => e.JobId).HasColumnName("JobID");
+            entity.Property(e => e.NoteText).IsRequired();
+            entity.Property(e => e.NoteTypeId).HasColumnName("NoteTypeID");
+            entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.TucNoteCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
+                .HasConstraintName("FK_Note_CreatedBy");
+
+            entity.HasOne(d => d.JobBooking).WithMany(p => p.TucNotes)
+                .HasForeignKey(d => d.JobBookingId)
+                .HasConstraintName("FK_Note_JobBooking");
+
+            entity.HasOne(d => d.Job).WithMany(p => p.TucNotes)
+                .HasForeignKey(d => d.JobId)
+                .HasConstraintName("FK_Note_Job");
+
+            entity.HasOne(d => d.NoteType).WithMany(p => p.TucNotes)
+                .HasForeignKey(d => d.NoteTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Note_NoteType");
+
+            entity.HasOne(d => d.UpdatedByNavigation).WithMany(p => p.TucNoteUpdatedByNavigations)
+                .HasForeignKey(d => d.UpdatedBy)
+                .HasConstraintName("FK_Note_UpdatedBy");
+        });
+
+        modelBuilder.Entity<TucNoteArchive>(entity =>
+        {
+            entity.HasKey(e => e.NoteId).HasName("PK__tucNoteA__EACE357F902212BB");
+
+            entity.ToTable("tucNoteArchive");
+
+            entity.HasIndex(e => e.JobBookingId, "IX_tucNoteArchive_JobBookingId");
+
+            entity.HasIndex(e => e.JobId, "IX_tucNoteArchive_JobId");
+
+            entity.Property(e => e.NoteId)
+                .ValueGeneratedNever()
+                .HasColumnName("NoteID");
+            entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+            entity.Property(e => e.JobBookingId).HasColumnName("JobBookingID");
+            entity.Property(e => e.JobId).HasColumnName("JobID");
+            entity.Property(e => e.NoteText).IsRequired();
+            entity.Property(e => e.NoteTypeId).HasColumnName("NoteTypeID");
+            entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
+        });
+
+        modelBuilder.Entity<TucNoteType>(entity =>
+        {
+            entity.HasKey(e => e.NoteTypeId).HasName("PK__tucNoteT__28ABD5CFC7BB1CD0");
+
+            entity.ToTable("tucNoteType");
+
+            entity.HasIndex(e => e.NoteTypeName, "UC_NoteTypeName").IsUnique();
+
+            entity.Property(e => e.NoteTypeId).HasColumnName("NoteTypeID");
+            entity.Property(e => e.Description).HasMaxLength(255);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.NoteTypeName)
+                .IsRequired()
+                .HasMaxLength(50);
         });
 
         modelBuilder.Entity<TucSource>(entity =>

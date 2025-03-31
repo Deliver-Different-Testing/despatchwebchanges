@@ -227,12 +227,11 @@
     <_ContentIncludedByDefault Remove="wwwroot\dist\fonts\glyphicons-halflings-regular.woff" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\fonts\glyphicons-halflings-regular.woff2" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\Nationwide\services\nationwide-layout.service.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\add-notes-dialog\add-notes-dialog.controller.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\add-notes-dialog\add-notes-dialog.html" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Helpers\DynamicLinqParser.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="bundleconfig.json" />
@@ -291,11 +290,12 @@
     <TypeScriptCompile Include="wwwroot\app\components\common\pod-photo-viewer\pod-photo-viewer.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\side-nav\side-nav.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\side-nav\side-nav.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\sticky-notes\sticky-notes.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\task-item-component\task-item.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\task-item-component\task-item.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\CS\services\cs-layout.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-event-dialog\add-event-dialog.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-notes-dialog\add-notes-dialog.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-event-dialog\add-event-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-pallet-dialog\add-pallet-dialog.Controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\additional-services-dialog\additional-services-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\additional-services-dialog\additional-services-dialog.service.ts" />
@@ -313,6 +313,8 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\index.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\note-management-dialog\note-management-dialog.component.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\note-management-dialog\note-management.dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\price-breakdown-dialog\price-breakdown-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\price-breakdown-dialog\price-breakdown-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.controller.ts" />
@@ -347,6 +349,7 @@
     <TypeScriptCompile Include="wwwroot\app\contants.ts" />
     <TypeScriptCompile Include="wwwroot\app\directives.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\app-pages.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\job-note-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\job-status.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
     <TypeScriptCompile Include="wwwroot\app\bindAllMethods.ts" />
@@ -371,6 +374,7 @@
     <TypeScriptCompile Include="wwwroot\app\services\getUsStates.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\greeting.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\index.ts" />
+    <TypeScriptCompile Include="wwwroot\app\services\notes.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\open-job-dispatch.service.ts" />
     <TypeScriptCompile Include="wwwroot\types\html.d.ts" />
   </ItemGroup>

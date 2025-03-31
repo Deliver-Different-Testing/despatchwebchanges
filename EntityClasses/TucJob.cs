@@ -465,6 +465,8 @@ public partial class TucJob
 
     public virtual ICollection<TucJobNationwide> TucJobNationwides { get; set; } = new List<TucJobNationwide>();
 
+    public virtual ICollection<TucNote> TucNotes { get; set; } = new List<TucNote>();
+
     public virtual TucClient UcjbClient { get; set; }
 
     public virtual TucCourier UcjbCourier { get; set; }

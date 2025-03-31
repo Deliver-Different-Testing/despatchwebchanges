@@ -21,143 +21,9 @@ using Serilog;
 
 namespace DespatchWeb.Repositories;
 
-public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> contextFactory)
-    : BaseJobRepository(contextFactory), IJobRepository
+public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> contextFactory, ITenantTimeService timeService)
+    : BaseJobRepository(contextFactory, timeService), IJobRepository
 {
-    public async Task<JobViewModel> PreBookDetailAsync(int prebookId)
-    {
-        return await Context
-            .TucJobBookings.Where(jb => jb.UcbkId == prebookId)
-            .Select(jb => new JobViewModel
-            {
-                Id = jb.UcbkId,
-                Time = jb.UcbkTime,
-                BookedDate = jb.UcbkDate,
-                Date = jb.UcbkDate != null ? jb.UcbkDate.Value.ToString("dd/MM/yyyy") : null,
-                Booked =
-                    jb.UcbkDate != null && jb.UcbkTime != null
-                        ? DateTime.Parse(
-                            jb.UcbkDate.Value.ToString("yyyy-MM-dd")
-                            + " "
-                            + jb.UcbkTime.Value.ToString("HH:mm:ss")
-                        )
-                        : DateTime.MinValue,
-                Direct = jb.Direct,
-                SizeId = jb.UcbkSize,
-                Van = jb.UcbkVan,
-                VanOk = jb.VanOk,
-                Truck = jb.Truck,
-                SaturdayDelivery = jb.SaturdayDelivery,
-                Return = jb.UcbkReturn,
-                Attention = jb.UcbkAttention,
-                Done = jb.UcbkDone,
-                PickupFrom = (short?)jb.UcbkPickUpFrom,
-                JobNo = jb.UcbkJobNumber,
-                Speed = jb.UcbkSpeedNavigation != null ? jb.UcbkSpeedNavigation.ShortName : null,
-                SpeedName = jb.UcbkSpeedNavigation != null ? jb.UcbkSpeedNavigation.UcjtName : null,
-                SpeedId = jb.UcbkSpeed,
-                AcceptedJobTypeId = jb.AcceptedJobTypeId,
-                NotifiedJobTypeId = jb.NotifiedJobTypeId,
-                Source = jb.Source != null ? jb.Source.Name : null,
-                Client = jb.UcbkClientCode,
-                ClientId = jb.UcbkClientId,
-                ClientName = jb.UcbkClient != null ? jb.UcbkClient.UcclName : null,
-                JobType = (int)jb.UcbkType,
-                PickupAddress = new AddressViewModel
-                {
-                    AddressLine1 = jb.PickupAddressLine1,
-                    AddressLine2 = jb.PickupAddressLine2,
-                    AddressLine3 = jb.PickupAddressLine3,
-                    AddressLine4 = jb.PickupAddressLine4,
-                    AddressLine5 = jb.PickupAddressLine5,
-                    AddressLine6 = jb.PickupAddressLine6,
-                    AddressLine7 = jb.PickupAddressLine7,
-                    AddressLine8 = jb.PickupAddressLine8,
-                    Latitude = jb.PickUpLatitude,
-                    Longitude = jb.PickUpLongitude
-                },
-                DeliveryAddress = new AddressViewModel
-                {
-                    AddressLine1 = jb.DeliveryAddressLine1,
-                    AddressLine2 = jb.DeliveryAddressLine2,
-                    AddressLine3 = jb.DeliveryAddressLine3,
-                    AddressLine4 = jb.DeliveryAddressLine4,
-                    AddressLine5 = jb.DeliveryAddressLine5,
-                    AddressLine6 = jb.DeliveryAddressLine6,
-                    AddressLine7 = jb.DeliveryAddressLine7,
-                    AddressLine8 = jb.DeliveryAddressLine8,
-                    Latitude = jb.DeliveryLatitude,
-                    Longitude = jb.DeliveryLongitude
-                },
-                FromContactName = jb.PickupFromContact,
-                FromContactNumber = jb.PickupFromPhone,
-                Courier = jb.Courier != null ? jb.Courier.Code : null,
-                ContactName = jb.UcbkContact,
-                ToContactPhone = jb.DeliverToPhone,
-                Weight = jb.UcbkWeight,
-                Items = jb.Quantity,
-                RefA = jb.UcbkClientRefa,
-                RefB = jb.UcbkClientRefb,
-                OurRef = jb.UcbkOurRef,
-                Charge = jb.UcbkAmount != null ? $"{jb.UcbkAmount:C}" : null,
-                ClientNotes = jb.UcbkClient != null ? jb.UcbkClient.UcclNotes : null,
-                InternalNotes = jb.UcbkNotes,
-                CourierData = new CourierData
-                {
-                    Courier =
-                        jb.Courier != null
-                            ? jb.Courier.Code
-                              + " "
-                              + jb.Courier.UccrName
-                              + " "
-                              + jb.Courier.UccrSurname
-                            : null,
-                    CourierId = jb.Courier != null ? jb.Courier.UccrId : null
-                },
-                DgClass = jb.Dgclass,
-                DgDocumentation = jb.Dgdocument,
-                DeliverToContact = jb.DeliverToContact,
-                TrackingMethod = jb.TrackingMethod,
-                TrackingMobile = jb.TrackingMobile,
-                TrackingEmail = jb.TrackingEmail,
-                RatedManually = jb.RatedManually,
-                OneOff = jb.UcbkOneOff,
-                Active = jb.UcbkActive,
-                InActiveBy = jb.UcbkInActiveBy,
-                InActiveDate = jb.UcbkInActiveDate,
-                FirstDue = jb.UcbkFirstDue,
-                NextDue = jb.UcbkNextDue,
-                LastDone = jb.UcbkDateDone,
-                RestartDate = jb.RestartDate,
-                StopDate = jb.StopDate,
-                Days = jb.UcbkDays,
-                PreBook = true,
-                Pedal = jb.UcbkCbd,
-                Reprice = jb.Reprice,
-                LoggedInContactName =
-                    jb.LoggedInContact != null
-                        ? jb.LoggedInContact.UcctFirstname + jb.LoggedInContact.UcctSurname
-                        : string.Empty,
-                PalletInfo = jb
-                    .TucJobBookingItems.Select(i => new PalletInfo
-                    {
-                        Id = i.BookingId,
-                        Quantity = i.Items,
-                        ItemId = i.ItemId,
-                        Weight = i.Weight,
-                        Length = i.Length,
-                        Depth = i.Depth,
-                        Height = i.Height,
-                        Pu = i.Pu,
-                        Do = i.Do,
-                        DgClass = i.Dgclass,
-                        Notes = i.Notes
-                    })
-                    .ToList()
-            })
-            .FirstOrDefaultAsync();
-    }
-
     public async Task<List<Suggestion>> RelatedJobs(int parentId, int clientId)
     {
         return await Context
@@ -238,7 +104,6 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 OurRef = j.OurRef,
                 SigNotRequired = leave.Name ?? "",
                 Charge = $"{j.Amount:C}",
-                InternalNotes = j.Notes,
                 PickUpLatitude = decimal.Parse(j.PickUpLatitude),
                 PickUpLongitude = decimal.Parse(j.PickUpLongitude),
                 DeliveryLatitude = decimal.Parse(j.DeliveryLatitude),
@@ -606,8 +471,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 (dynamic)dbData.FirstOrDefault(j => j.UcjbId == d.Id)
                 ?? dbDataArchive.FirstOrDefault(j => j.UcjbId == d.Id);
 
-            if (match == null)
-                throw new ArgumentException("Id not found.", "Id");
+            ArgumentNullException.ThrowIfNull(match);
 
             match.UcjbAmount = Math.Round(d.Amount, 4, MidpointRounding.AwayFromZero);
             match.FuelSurchargeAmount = Math.Round(d.Fuel, 4, MidpointRounding.AwayFromZero);
@@ -1853,7 +1717,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
             // Record change in note
             var note = $" Changed Delivery Address to {request.Address}";
-            await AddNoteAsync(request.JobId, note, request.DespatcherName);
+            await SaveNoteAsync(request.JobId, note, request.DespatcherName);
         }
         catch (Exception e)
         {
@@ -1889,7 +1753,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
             // Record change in note
             var note = $" Changed Delivery Address to {request.Address.FullAddress}";
-            await AddNoteAsync(request.JobId, note, request.DespatcherName);
+            await SaveNoteAsync(request.JobId, note, request.DespatcherName);
         }
         catch (Exception e)
         {
@@ -1937,7 +1801,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
             // Record change in note
             var note = $" Changed Pickup Address to {request.Address}";
-            await AddNoteAsync(request.JobId, note, request.DespatcherName);
+            await SaveNoteAsync(request.JobId, note, request.DespatcherName);
         }
         catch (Exception e)
         {
@@ -1973,7 +1837,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
             // Record change in note
             var note = $" Changed Pickup Address to {request.Address.FullAddress}";
-            await AddNoteAsync(request.JobId, note, request.DespatcherName);
+            await SaveNoteAsync(request.JobId, note, request.DespatcherName);
         }
         catch (Exception e)
         {
@@ -2120,21 +1984,6 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             despatcher,
             staffId
         );
-    }
-
-    public async Task AddNoteAsync(int jobId, string note, string despatcher)
-    {
-        await Context.Procedures.DESWEB_stpJob_AddNotesAsync(jobId, note, despatcher);
-    }
-
-    public async Task AddBulkJobNoteAsync(int bulkJobId, string note, string despatcher)
-    {
-        await Context.Procedures.DESWEB_stpBulkJob_AddNotesAsync(bulkJobId, note, despatcher);
-    }
-
-    public async Task AddJobBookingNoteAsync(int jobId, string note, string despatcher)
-    {
-        await Context.Procedures.DES_stpJobBooking_AddNotesAsync(jobId, note, despatcher);
     }
 
     public async Task<int> QuickAddJobAsync(JobCreateViewModel request, int staffId)
@@ -2753,11 +2602,11 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         }
 
         if (!string.IsNullOrEmpty(updateNote))
-            await AddNoteAsync(jobId, updateNote, userName);
+            await SaveNoteAsync(jobId, updateNote, userName);
 
         // Add additional notes for undeliverable location
         if (field == "UndeliverableLocationID" && job.UndeliverableLocation?.Message != null)
-            await AddNoteAsync(jobId, job.UndeliverableLocation.Message, userName);
+            await SaveNoteAsync(jobId, job.UndeliverableLocation.Message, userName);
 
         Context.TucJobs.Update(job);
         await Context.SaveChangesAsync();
@@ -3185,11 +3034,11 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 break;
         }
 
-        if (!string.IsNullOrEmpty(updateNote)) await AddNoteAsync(jobId, updateNote, userName);
+        if (!string.IsNullOrEmpty(updateNote)) await SaveNoteAsync(jobId, updateNote, userName);
 
         // Add additional notes for undeliverable location
         if (field == "UndeliverableLocationID" && archive.UndeliverableLocation?.Message != null)
-            await AddNoteAsync(jobId, archive.UndeliverableLocation.Message, userName);
+            await SaveNoteAsync(jobId, archive.UndeliverableLocation.Message, userName);
 
         Context.Update(archive.Job);
         await Context.SaveChangesAsync();

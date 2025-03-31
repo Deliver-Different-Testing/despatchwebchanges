@@ -77,7 +77,7 @@ public partial class TucJobType
 
     public int? UcjtClientId { get; set; }
 
-    public int? GroupingId { get; set; }
+    public int GroupingId { get; set; }
 
     public virtual TucJobTypeGrouping Grouping { get; set; }
 

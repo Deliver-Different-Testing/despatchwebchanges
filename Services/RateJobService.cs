@@ -20,7 +20,7 @@ public class RateJobService(
     public async Task<JobRateResult> CalculateJobRateUs(JobRateRequest request)
     {
         var speed = await jobRepository.GetJobTypeById(request.SpeedId);
-        var speedGrouping = await jobRepository.GetJobTypeGrouping(speed.GroupingId ?? 0);
+        var speedGrouping = await jobRepository.GetJobTypeGrouping(speed.GroupingId);
 
         var result = new JobRateResult
         {
@@ -98,18 +98,18 @@ public class RateJobService(
             { "return", "summary" }
         };
 
-        var queryString = string.Join("&", queryParams.Select(p => 
+        var queryString = string.Join("&", queryParams.Select(p =>
             $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value)}"));
-    
+
         try
         {
             var response = await _httpClient.GetAsync($"routes?{queryString}");
             response.EnsureSuccessStatusCode();
-        
+
             var result = await response.Content.ReadFromJsonAsync<HereMapRouteResponseV8>();
             if (result == null)
                 throw new ApplicationException("Failed to deserialize HERE Maps API response");
-            
+
             return result;
         }
         catch (HttpRequestException ex)

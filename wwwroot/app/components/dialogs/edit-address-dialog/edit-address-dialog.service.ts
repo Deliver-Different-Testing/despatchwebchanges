@@ -1,5 +1,6 @@
 import {AddressViewModel, EditAddressDialogViewModel} from "../../../interfaces/job.interface";
 import EditAddressDialogController from "./edit-address-dialog.controller";
+import {bindAllMethods} from "../../../bindAllMethods";
 
 export class EditAddressDialogService implements angular.IServiceProvider {
     static $inject = [
@@ -12,6 +13,7 @@ export class EditAddressDialogService implements angular.IServiceProvider {
         private $document: angular.IDocumentService,
     ) {
         console.log('EditAddressDialogService: Service instantiated');
+        bindAllMethods(this);
     }
 
     $get() {

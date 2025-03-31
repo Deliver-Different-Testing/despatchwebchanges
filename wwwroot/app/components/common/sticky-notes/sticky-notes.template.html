@@ -1,0 +1,63 @@
+<div class="sticky-notes">
+    <div class="note-list-container md-whiteframe-1dp">
+
+        <md-toolbar class="md-primary">
+            <div class="md-toolbar-tools-m3">
+                <div class="section section-start">
+                    <span class="material-symbols-outlined">note</span>
+                    <span class="md-headline-title" flex style="margin-left: 8px;">Notes</span>
+
+                    <div class="section section-end">
+                        <md-button class="md-icon-button md-accent" ng-click="ctrl.addNote($event)">
+                            <md-icon md-font-set="material-symbols-outlined">note_add</md-icon>
+                            <md-tooltip md-direction="bottom">Add Note</md-tooltip>
+                        </md-button>
+                    </div>
+                </div>
+            </div>
+        </md-toolbar>
+
+        <dfrnt-loader
+                is-loading="ctrl.loading"
+                icon-name="'note'">
+        </dfrnt-loader>
+
+        <div class="sticky-notes-container">
+            <div ng-repeat="note in ctrl.notes"
+                 class="sticky-note {{note.noteTypeName | lowercase}} {{note.isImportant ? 'important' : ''}}"
+                 ng-style="{'transform': 'rotate(' + (-1 + $index % 3) + 'deg)'}"
+                 ng-click="ctrl.editNote($event, note)">
+
+                <div class="note-header">
+                    <div class="note-type-info">
+                        <md-icon md-font-set="material-symbols-outlined">
+                            {{note.isImportant ? 'priority_high' : 'note'}}
+                        </md-icon>
+                        <div class="note-type">
+                            {{note.noteTypeName || 'Note'}}
+                        </div>
+                    </div>
+                    <div class="note-metadata">
+                        {{ctrl.formatDate(note.createdDate)}}
+                    </div>
+                </div>
+
+                <div class="note-content">{{note.noteText}}</div>
+
+                <div class="note-actions">
+                    <md-button class="md-icon-button" ng-click="ctrl.deleteNote($event, note)" aria-label="Delete">
+                        <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
+                        <md-tooltip>Delete Note</md-tooltip>
+                    </md-button>
+                </div>
+            </div>
+
+            <!-- Message when no notes -->
+            <div ng-if="!ctrl.loading && ctrl.notes.length === 0"
+                 class="empty-state">
+                <md-icon md-font-set="material-symbols-outlined">sticky_note_2</md-icon>
+                <p>No notes available for this job.</p>
+            </div>
+        </div>
+    </div>
+</div>

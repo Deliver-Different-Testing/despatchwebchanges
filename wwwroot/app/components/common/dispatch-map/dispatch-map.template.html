@@ -2,14 +2,10 @@
     <div class="dispatch-map-container">
         <div class="map-wrapper" style="height: 100%; width: 100%; position: absolute;">
             <!-- Loading Indicator -->
-            <div class="loader-container" ng-if="!ctrl.googleMapsUrl">
-                <div class="full-height" layout="row" layout-align="center center">
-                    <div class="material-icon-loader">
-                        <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
-                        <md-icon class="loader-icon" md-font-set="material-symbols-outlined">map</md-icon>
-                    </div>
-                </div>
-            </div>
+            <dfrnt-loader
+                    is-loading="!ctrl.googleMapsUrl"
+                    icon-name="'map'">
+            </dfrnt-loader>
 
             <!-- Map -->
             <div map-lazy-load="https://maps.google.com/maps/api/js"

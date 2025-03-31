@@ -3,8 +3,6 @@ import {AppPages} from "./enums/app-pages.enum";
 import {PodPhotoViewerComponent} from "./components/common/pod-photo-viewer/pod-photo-viewer.component";
 import {MaterialSidenavComponent} from "./components/common/side-nav/side-nav.component";
 import HomeComponent from "./components/home/home.controller";
-import {AddNotesDialogController} from "./components/dialogs/add-notes-dialog/add-notes-dialog.controller";
-import {AddEventDialogController} from "./components/dialogs/add-event-dialog/add-event-dialog.controller";
 import {PalletDialogController} from "./components/dialogs/add-pallet-dialog/add-pallet-dialog.controller";
 import {AutoCompleteDialogController} from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.controller";
 import {CreateJobDialogController} from "./components/dialogs/create-job-dialog/create-job-dialog.controller";
@@ -63,6 +61,17 @@ import JobFileUploadController from "./components/dialogs/job-file-upload-dialog
 import JobFileUploadDialogService from "./components/dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import NationwideComponent from "./components/Nationwide/nationwide.controller";
 import moment from "moment";
+import NoteManagementDialogService from "./components/dialogs/note-management-dialog/note-management.dialog.service";
+import NoteManagementDialogController
+    from "./components/dialogs/note-management-dialog/note-management-dialog.component";
+import StickyNoteComponent from "./components/common/sticky-notes/sticky-notes.component";
+import NoteService from "./services/notes.service";
+import {mdAutocompleteEnterSelectDirective, ngRightClickDirective, rightClickDirective} from "./directives";
+import RouterConfig from "./routes";
+import ThemeConfig from "./materialTheme";
+import AddEventDialogController from "./components/dialogs/add-event-dialog/add-event-dialog.controller";
+import AddEventDialogService from "./components/dialogs/add-event-dialog/add-event-dialog.service";
+import {IQProvider, material, ui} from "angular";
 
 const app = angular.module("uDispatch", ["ui.router",
     "angularResizable", "ui.sortable", "ui.bootstrap", "ui.bootstrap.pagination",
@@ -86,29 +95,24 @@ app
     } as AppConfig)
     .constant("AppPages", AppPages);
 
-// Directives
-app
-    .directive("rightClick", ["$document", ($document: angular.IDocumentService) => {
-        $document.on('contextmenu', (event: JQueryEventObject) => {
-            const target = event.target as HTMLElement;
-            if (target.hasAttribute("right-click")) {
-                event.preventDefault();
-                event.stopPropagation();
-                return false;
-            }
-        });
+// Routes
+app.config(["$urlRouterProvider", "$stateProvider",
+    ($urlRouterProvider: ui.IUrlRouterProvider,
+     $stateProvider: ui.IStateProvider) => {
+        new RouterConfig($urlRouterProvider, $stateProvider);
+    }
+]);
 
-        return (scope: angular.IScope, el: JQLite, attrs: any) => {
-            el.bind("contextmenu", (e: JQueryEventObject) => {
-                e.preventDefault();
-                scope.$apply(() => {
-                    scope.$eval(attrs.rightClick, {
-                        'event': e
-                    });
-                });
-            });
-        };
-    }]);
+// Theme
+app.config(["$mdThemingProvider", "APP_CONFIG",
+    (
+        $mdThemingProvider: material.IThemingProvider,
+        APP_CONFIG: AppConfig
+    ): void => {
+        const themeConfig = new ThemeConfig($mdThemingProvider, APP_CONFIG);
+        themeConfig.configure();
+    }
+]);
 
 // Configs
 app
@@ -125,11 +129,11 @@ app
             }
         });
     }])
-    .config(["$qProvider", ($qProvider: angular.IQProvider) => {
+    .config(["$qProvider", ($qProvider: IQProvider) => {
         $qProvider.errorOnUnhandledRejections(false);
     }])
     .config(["$mdDateLocaleProvider", "APP_CONFIG", (
-        $mdDateLocaleProvider: angular.material.IDateLocaleProvider,
+        $mdDateLocaleProvider: material.IDateLocaleProvider,
         APP_CONFIG: AppConfig) => {
         if (!APP_CONFIG.US_Customer) {
             // Set locale to New Zealand English
@@ -165,6 +169,11 @@ app
         }
     }]);
 
+// Directives
+app.directive('ngRightClick', ngRightClickDirective)
+app.directive('mdAutocompleteEnterSelect', mdAutocompleteEnterSelectDirective)
+app.directive("rightClick", rightClickDirective);
+
 // Components
 app.component('dfrntLoader', DfrntLoaderComponent);
 app.component("jobDetailWidget", JobDetailComponent);
@@ -181,10 +190,10 @@ app.component("contextMenu", ContextMenuComponent)
 app.component("noData", NoDataComponent)
 app.component("parcelVisualization", ParcelVisualizationComponent);
 app.component("nationwideComponent", NationwideComponent);
+app.component("stickyNotes", StickyNoteComponent);
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);
-app.controller("AddNotesDialogController", AddNotesDialogController);
 app.controller("PalletDialogController", PalletDialogController);
 app.controller("AdditionalServicesDialogController", AdditionalServicesDialogController);
 app.controller("AutoCompleteDialogController", AutoCompleteDialogController);
@@ -199,6 +208,7 @@ app.controller('EventGroupDialogController', EventGroupDialogController);
 app.controller("EditDateTimeDialogController", EditDateTimeDialogController);
 app.controller("EditAddressDialogController", EditAddressDialogController);
 app.controller("jobFileUploadController", JobFileUploadController);
+app.controller("jobNoteEditorDialogController", NoteManagementDialogController);
 
 // Services
 app.service("configService", ConfigService);
@@ -221,5 +231,8 @@ app.service("NWData", NationwideService);
 app.service("priceBreakdownDialogService", PriceBreakdownDialogService)
 app.service("additionalServicesDialogService", AdditionalServicesDialogService)
 app.service("jobFileUploadDialogService", JobFileUploadDialogService)
+app.service("noteManagementDialogService", NoteManagementDialogService)
+app.service("noteService", NoteService)
+app.service("addEventDialogService", AddEventDialogService)
 
 export default app;

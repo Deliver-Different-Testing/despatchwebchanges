@@ -1,54 +1,46 @@
 import ToastrService from "../../../services/toastr.service";
-import { DfrntEvent, IJob } from "../../../interfaces/job.interface";
+import {DfrntEvent, IJob, Suggestion, TucNoteViewModel} from "../../../interfaces/job.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import BaseController from "../../base-controller";
+import NationwideService from "../../Nationwide/nationwide.service";
+import NoteService from "../../../services/notes.service";
+import {JobNoteType} from "../../../enums/job-note-type.enum";
+import { material } from "angular";
 
-interface AddEventDialogControllerScope extends angular.IScope {
-  eventForm: any;
-}
-
-export class AddEventDialogController extends BaseController {
+class AddEventDialogController extends BaseController {
   static $inject = [
-    "$scope",
     "$mdDialog",
     "DispatchData",
     "toastrService",
     "NWData",
+      "noteService",
     "job",
     "dispatcherName",
     "contactId",
   ];
 
   public isLoading: boolean;
-  public eventTypes: Array<any>;
+  public eventTypes: Suggestion[];
   public selectedEvent: any | null;
   public eventForm: any;
-  public event: {
-    jobId: any;
-    jobNumber: any;
-    clientCode: any;
-    eventDate: Date;
-    eventTime: Date;
-    eventType: string;
-    notes: string;
-  };
+  public event?: DfrntEvent;
 
   constructor(
-    $scope: AddEventDialogControllerScope,
-    private $mdDialog: angular.material.IDialogService,
-    private DispatchData: DispatchCoreService,
-    private toastrService: ToastrService,
-    private NWData: any,
-    private job: IJob,
-    private dispatcherName: string,
-    private contactId: string
+      private $mdDialog: material.IDialogService,
+      private DispatchData: DispatchCoreService,
+      private toastrService: ToastrService,
+      private NWData: NationwideService,
+      private noteService: NoteService,
+      private job: IJob,
+      private dispatcherName: string,
+      private contactId: number
   ) {
     super();
 
     this.isLoading = false;
     this.eventTypes = [];
     this.selectedEvent = null;
-    this.eventForm = $scope.eventForm;
+    this.eventForm = null;
 
     let time = new Date();
 
@@ -56,13 +48,13 @@ export class AddEventDialogController extends BaseController {
     time.setMilliseconds(0);
 
     this.event = {
-      jobId: job.id,
+      id: job.id,
       jobNumber: job.jobNo,
       clientCode: job.client,
       eventDate: new Date(),
-      eventTime: time,
+      eventTime: new Date(),
       eventType: "",
-      notes: "",
+      notes: ""
     };
   }
 
@@ -70,10 +62,10 @@ export class AddEventDialogController extends BaseController {
     this.DispatchData.getEventTypes().then((data: Suggestion[]) => {
       this.eventTypes = data;
 
-      // Find the event that matches "Other" and set it to this.selectedEvent
       const otherEvent = this.eventTypes.find(
-        (eventType) => eventType.text === "Other"
+          (eventType) => eventType.text === "Other"
       );
+
       if (otherEvent) {
         this.selectedEvent = otherEvent;
       }
@@ -82,10 +74,11 @@ export class AddEventDialogController extends BaseController {
 
   async submit(event: DfrntEvent): Promise<void> {
     try {
-      if (!this.eventForm.$valid) {
+      if (this.eventForm && !this.eventForm.$valid) {
         this.toastrService.showWarningToast(
-          "Please complete all the required fields."
+            "Please complete all the required fields."
         );
+
         return;
       }
 
@@ -97,42 +90,47 @@ export class AddEventDialogController extends BaseController {
       // Exsalerate Event
       if (eventId === "7" || eventId === "92") {
         await this.NWData.exsalerateActivity(
-          eventName,
-          event.notes,
-          this.job.clientId,
-          event.jobNumber,
-          this.dispatcherName
+            eventName,
+            event.notes,
+            this.job.clientID ?? 0,
+            event.jobNumber,
+            this.dispatcherName
         );
       }
 
       //Process Event
       if (
-        eventId === "48" ||
-        eventId === "52" ||
-        eventId === "54" ||
-        eventId === "60" ||
-        eventId === "6"
+          eventId === "48" ||
+          eventId === "52" ||
+          eventId === "54" ||
+          eventId === "60" ||
+          eventId === "6"
       ) {
-        //Add Notes
         const newNote = eventName + ":" + event.notes;
-        await this.NWData.addNote(event.id, newNote, FirstName, false);
+
+        const jobNote: TucNoteViewModel = {
+          jobId: this.job.id,
+          jobNumber: this.job.jobNo,
+          isImportant: false,
+          noteTypeId: JobNoteType.InternalNote,
+          noteText: newNote,
+          createdBy: ContactID,
+          createdDate: new Date(),
+        };
+
+        await this.noteService.createNote(ContactID, jobNote);
       }
 
       await this.NWData.addEvent(
-        event.jobNumber,
-        this.job.clientId,
-        this.job.contactName,
-        this.contactId,
-        this.job.courierData.courierId,
-        this.job.id,
-        this.job.jobType,
-        this.dispatcherName,
-        event.notes,
-        eventId
+          this.contactId,
+          this.job.id,
+          this.dispatcherName,
+          event.notes,
+          eventId
       );
 
       if (eventId === "6") {
-        await this.NWData.voidJob(this.job.id);
+        await this.DispatchData.voidJob(this.job.id);
       }
     } catch (error: any) {
       this.toastrService.showErrorToast(error.message);
@@ -146,4 +144,10 @@ export class AddEventDialogController extends BaseController {
   cancel(): void {
     this.$mdDialog.cancel();
   }
+
+  setEventForm(form: any): void {
+    this.eventForm = form;
+  }
 }
+
+export default AddEventDialogController;

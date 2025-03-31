@@ -15,6 +15,7 @@ import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-fi
 import JobDataType from "./enums/JobDataType";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import moment from "moment";
+import AddEventDialogService from "../dialogs/add-event-dialog/add-event-dialog.service";
 
 class NationwideControl extends BaseController {
     layouts: ILayout[] = [];
@@ -100,7 +101,8 @@ class NationwideControl extends BaseController {
         '$mdSidenav',
         'APP_CONFIG',
         'dispatchJobService',
-        'jobFileUploadDialogService'
+        'jobFileUploadDialogService',
+        'addEventDialogService'
     ];
 
     constructor(
@@ -118,6 +120,7 @@ class NationwideControl extends BaseController {
         private APP_CONFIG: AppConfig,
         private dispatchJobService: DispatchExecutorService,
         private jobFileUploadDialogService: JobFileUploadDialogService,
+        private addEventDialogService: AddEventDialogService
     ) {
         super();
 
@@ -333,7 +336,7 @@ class NationwideControl extends BaseController {
                     left: e.pageX + 10 + 'px'
                 });
 
-                angular.element(document).on('mousemove.sortable', (event) => {
+                this.$document.on('mousemove.sortable', (event) => {
                     dragInfo.css({
                         top: event.pageY + 20 + 'px',
                         left: event.pageX + 10 + 'px'
@@ -369,12 +372,10 @@ class NationwideControl extends BaseController {
         if (!this.layout || !this.layout.columns) return;
 
         this.layout.columns.forEach((column: IColumn) => {
-            // Get column width from DOM
             const columnEl = angular.element(`#co-${column.id}`);
             if (columnEl.length) {
                 column.width = columnEl.css('flex-basis');
 
-                // Update heights for all boxes in this column
                 column.boxes.forEach((box: IBox) => {
                     const boxEl = angular.element(`#box-${box.name}`);
                     if (boxEl.length) {
@@ -456,18 +457,14 @@ class NationwideControl extends BaseController {
         }
     }
 
-    // Initialize views
     initializeViews() {
         if (this.views && this.views.length > 0) {
-            // Load saved views or initialize empty array
             this.selectedViews = this.loadViewsFromStorage();
 
-            // Set selected property on each view
             this.views = this.views.map(view => ({
                 ...view, selected: this.selectedViews.some((v: DfrntPageViewModel) => v.id === view.id)
             }));
 
-            // If no views are selected, select the first one by default
             if (this.selectedViews.length === 0) {
                 this.views[0].selected = true;
                 this.selectedViews.push(this.views[0]);
@@ -500,7 +497,7 @@ class NationwideControl extends BaseController {
             .map(job => ({id: job.id, text: job.jobNo}));
     }
 
-    JobRecordSelected(selectedJobId: number) {
+    jobRecordSelected(selectedJobId: number) {
         if (!this.jobList) return;
 
         const selectedJob = this.jobList.find(job => job.id === selectedJobId);
@@ -592,18 +589,13 @@ class NationwideControl extends BaseController {
                 localStorage.setItem(`layoutsNW-${ContactID}`, JSON.stringify(this.layouts));
             }
 
-            // If the deleted layout was active, switch to default
             if (this.currentLayoutName === this.layouts[index]?.name) {
                 this.loadLayout(0);
             }
 
             this.toastrService.showSuccessToast("Layout deleted successfully");
         } catch (error) {
-            if (error === undefined) {
-                console.log("Delete Layout Cancelled!");
-            } else {
-                console.error("Unable to delete layout:", error);
-            }
+            this._handleError(error)
         }
     }
 
@@ -652,18 +644,15 @@ class NationwideControl extends BaseController {
                 newStatus: event.newStatusId
             });
 
-            // Determine which lists need refreshing
             const listsToRefresh = new Set([
                 ...(this.STATUS_TO_LIST_MAP[event.previousStatusId] || []),
                 ...(this.STATUS_TO_LIST_MAP[event.newStatusId] || [])
             ]);
             console.log('Lists to refresh:', Array.from(listsToRefresh));
 
-            // Only refresh the affected lists
             await this.getJobList(Array.from(listsToRefresh));
             console.log('Job lists refreshed successfully');
 
-            // Get all potentially affected lists based on what we just refreshed
             const relevantLists = [];
             if (listsToRefresh.has(JobDataType.NEW)) {
                 relevantLists.push(...(this.jobList || []));
@@ -883,7 +872,6 @@ class NationwideControl extends BaseController {
             if (isCurrentlyAscending) {
                 this.sort[list] = "d-" + prop;
 
-                // Update the appropriate filter object's orderDirection
                 if (list === "jobList") {
                     if (this.jobFilters) {
                         this.jobFilters.orderDirection = "desc";
@@ -904,7 +892,6 @@ class NationwideControl extends BaseController {
             } else {
                 this.sort[list] = prop;
 
-                // Update the appropriate filter object's orderDirection
                 if (list === "jobList") {
                     if (this.jobFilters) {
                         this.jobFilters.orderDirection = "asc";
@@ -1464,6 +1451,10 @@ class NationwideControl extends BaseController {
         } else {
             console.error('Error assigning flight to job:', error);
         }
+    }
+
+    async createEvent($event: MouseEvent, job: IJob) {
+        await this.addEventDialogService.openAddEventDialog($event, job);
     }
 }
 

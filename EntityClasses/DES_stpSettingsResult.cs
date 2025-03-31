@@ -98,7 +98,7 @@ namespace DespatchWeb.EntityClasses
         public string Notes { get; set; }
         [StringLength(500)]
         public string ComposerExtrasPath { get; set; }
-        [StringLength(500)]
+        [StringLength(2147483647)]
         public string StatementMessage { get; set; }
         [StringLength(500)]
         public string StatementReport { get; set; }
@@ -223,5 +223,8 @@ namespace DespatchWeb.EntityClasses
         public string OpenforceClientGuid { get; set; }
         [StringLength(100)]
         public string ReceivableAccount { get; set; }
+        [StringLength(200)]
+        public string StatementSubject { get; set; }
+        public DateTime? CourierServiceProcessed { get; set; }
     }
 }

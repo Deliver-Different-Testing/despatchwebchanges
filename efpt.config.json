@@ -231,6 +231,18 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucNote]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucNoteArchive]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucNoteType]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucSource]",
          "ObjectType": 0
       },
