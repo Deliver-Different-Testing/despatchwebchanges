@@ -1,18 +1,27 @@
-import app from "../../../app";
-import template from "./feature-in-development-dialog.html";
+import FeatureInDevelopmentDialogController from "./feature-in-development-dialog.controller";
+import {IDocumentService, material} from "angular";
+import {bindAllMethods} from "../../../bindAllMethods";
 
 export class FeatureInDevelopmentDialogService {
-    static $inject = ["$mdDialog"];
+    static $inject = [
+        "$mdDialog",
+        "$document"
+    ];
 
-    constructor(private $mdDialog: angular.material.IDialogService) {
+    constructor(
+        private $mdDialog: material.IDialogService,
+        private $document: IDocumentService,
+    ) {
+        console.log('InterCourierChargeDialogService: Service instantiated');
+        bindAllMethods(this);
     }
 
     async openFeatureInDevelopmentDialog() {
         await this.$mdDialog.show({
-            controller: "FeatureInDevelopmentDialogController",
+            controller: FeatureInDevelopmentDialogController,
             controllerAs: "ctrl",
-            template: template,
-            parent: document.body,
+            template: require("./feature-in-development-dialog.html"),
+            parent: this.$document.parent(),
             clickOutsideToClose: true,
             fullscreen: true
         });

@@ -1,0 +1,167 @@
+@import "../../../../css/variables.less";
+
+// Additional variables specific to this component
+@dialog-width: 500px;
+@card-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.26);
+@border-color: rgba(0, 0, 0, 0.12);
+@background-color: #FFFFFF;
+
+// Mixins
+.elevation(@level) {
+  @shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+
+  & when (@level = 1) {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  }
+  & when (@level = 2) {
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+  }
+  & when (@level = 3) {
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+  }
+  & when (@level = 4) {
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+  }
+}
+
+.transition(@property: all, @duration: @animationDuration, @timing: ease) {
+  transition: @property @duration @timing;
+}
+
+// Dialog Styles
+.inter-courier-charge-dialog {
+  min-width: @dialog-width;
+
+  .md-toolbar-tools {
+    background-color: @primary-color;
+
+    .popup-icon {
+      margin-right: @spacing - 6px;
+      color: @text-light;
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 500;
+      color: @text-light;
+    }
+  }
+
+  md-dialog-content {
+    .md-dialog-content {
+      padding: @spacing @spacing + 10px @spacing + 10px;
+
+      md-input-container {
+        margin: @spacing - 6px 0;
+
+        label {
+          color: @text-muted;
+        }
+
+        input {
+          border-bottom-color: @border-color;
+        }
+
+        &.md-input-invalid {
+          label {
+            color: @error-red;
+          }
+
+          .md-input-message-animation {
+            color: @error-red;
+          }
+        }
+      }
+
+      md-autocomplete {
+        margin-bottom: @spacing + 2px;
+
+        &.md-default-theme {
+          background: @background-color;
+        }
+      }
+    }
+  }
+
+  md-dialog-actions {
+    padding: @spacing - 6px @spacing + 2px @spacing + 2px;
+
+    .md-button {
+      margin: 0 0 0 @spacing - 6px;
+      min-width: 88px;
+
+      &.md-raised {
+        .elevation(1);
+
+        &:hover {
+          .elevation(2);
+          background-color: @hover-color;
+        }
+
+        &:active {
+          background-color: @active-color;
+        }
+      }
+
+      &.md-primary {
+        background-color: @primary-color;
+        color: @text-light;
+
+        &:hover {
+          background-color: darken(@primary-color, 5%);
+        }
+      }
+
+      &[disabled] {
+        background-color: rgba(0, 0, 0, 0.12) !important;
+        color: rgba(0, 0, 0, 0.38) !important;
+      }
+    }
+  }
+
+  // Loading state
+  md-progress-circular {
+    margin-right: @spacing - 6px;
+
+    path {
+      stroke: @text-light;
+    }
+  }
+
+  // Form layout
+  .layout-row {
+    margin-bottom: @spacing - 6px;
+  }
+
+  // Error messages
+  .md-input-message-animation {
+    font-size: 12px;
+    padding-top: 4px;
+    color: @error-red;
+  }
+
+  // Not found messages in autocomplete
+  .md-not-found {
+    padding: @spacing - 6px @spacing + 2px;
+    font-style: italic;
+    color: @text-muted;
+  }
+
+  // Autocomplete highlight
+  .highlight {
+    color: @primary-color;
+    font-weight: bold;
+  }
+}
+
+// Global overrides for this dialog
+.md-dialog-container {
+  .inter-courier-charge-dialog {
+    .elevation(2);
+    border-radius: 2px;
+
+    .md-dialog-content {
+      max-height: 90vh;
+    }
+  }
+}

@@ -163,7 +163,7 @@
                     </md-menu>
                 </div>
 
-                <md-expansion-panel class="driver-panel" ng-repeat="driver in ctrl.drivers">
+                <md-expansion-panel class="driver-panel md-padding" ng-repeat="driver in ctrl.drivers">
                     <md-expansion-panel-expanded>
                         <md-toolbar class="md-primary driver-header" ng-click="driver.expanded = !driver.expanded">
                             <div class="md-toolbar-tools">
@@ -172,8 +172,11 @@
                                 </md-icon>
                                 <div flex layout="row" layout-align="start center">
                                     <span class="driver-name">{{driver.name || 'Unassigned'}}</span>
+                                    <md-divider class="vertical-divider"></md-divider>
                                     <span class="job-count">({{driver.jobs.length}} open jobs)</span>
                                 </div>
+
+
                                 <div class="driver-stats" layout="row" layout-align="end center">
                                     <div class="completed-jobs">
                                         <md-icon class="success-icon"
@@ -183,6 +186,9 @@
                                         </md-icon>
                                         <span>{{driver.completedToday}} completed today</span>
                                     </div>
+
+                                    <md-divider class="vertical-divider"></md-divider>
+
                                     <div class="last-completed" layout="column">
                                         <div class="last-time">
                                             Last completed: <span class="na-warning"
@@ -200,7 +206,7 @@
                         <div class="job-list" ng-if="driver.expanded">
                             <div layout="row" layout-wrap>
                                 <div flex="50" ng-repeat="job in driver.jobs">
-                                    <md-card class="job-card">
+                                    <md-card class="job-card md-whiteframe-1dp">
                                         <md-card-content>
                                             <!-- Job Header -->
                                             <div class="job-header" layout="row" layout-align="space-between center">

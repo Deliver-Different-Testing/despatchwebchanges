@@ -227,8 +227,6 @@ class ContextMenuController extends BaseController {
                 this.toastrService.showSuccessToast("Job set as first job successfully");
 
                 this._onRefreshCourierJobs({courierId: job.courierData.courierId});
-            } else {
-                throw new Error("Missing courier data for job");
             }
         } catch (error) {
             if (error) {

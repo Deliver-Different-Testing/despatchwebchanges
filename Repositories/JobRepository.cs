@@ -2048,7 +2048,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
             // Manual
             RatedManually = true,
-            UcjbType = 3,
+            UcjbType = (int)JobType.AllServices,
             UcjbLocked = true,
             SourceId = 13,
             UcjbStatus = 6,
@@ -2070,23 +2070,13 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         try
         {
             var note = $"From # {viewModel.FromCourierId} To # {viewModel.ToCourierId}";
-            var currentTime = DateTime.Now;
+            var currentTime = timeService.GetCurrentTenantTime();
 
-            var fromJobNumber = new OutputParameter<string>();
-            await Context.Procedures.NET_stpJob_Insert_JobNumberAsync(
-                viewModel.StaffId,
-                1,
-                fromJobNumber
-            );
-            var toJobNumber = new OutputParameter<string>();
-            await Context.Procedures.NET_stpJob_Insert_JobNumberAsync(
-                viewModel.StaffId,
-                1,
-                toJobNumber
-            );
+            var fromJobNumber = await GenerateJobNumberAsync(viewModel.StaffId, (int)JobType.AllServices);
+            var toJobNumber = await GenerateJobNumberAsync(viewModel.StaffId, (int)JobType.AllServices);
 
             var fromJob = CreateJobEntry(
-                fromJobNumber.Value,
+                fromJobNumber,
                 viewModel.FromCourierId,
                 viewModel.Amount,
                 viewModel.Reference,
@@ -2099,7 +2089,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             await Context.TucJobs.AddAsync(fromJob);
 
             var toJob = CreateJobEntry(
-                toJobNumber.Value,
+                toJobNumber,
                 viewModel.ToCourierId,
                 viewModel.Amount,
                 viewModel.Reference,
@@ -2299,7 +2289,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     CompletedToday = d.TucJobUcjbCouriers.Count(j =>
                         j.UcjbStatus == (int)JobStatus.Completed
                         && j.UcjbComplTime.HasValue
-                        && j.UcjbComplTime.Value.Date == DateTime.Now
+                        && j.UcjbComplTime.Value.Date == timeService.GetCurrentTenantTime()
                     ),
                     LastCompleted = d
                         .TucJobUcjbCouriers.Where(j =>
@@ -2454,7 +2444,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 {
                     // Safely handle DefaultMinutes when InternalStatusNavigation is null
                     var defaultMinutes = job.InternalStatusNavigation?.DefaultMinutes ?? 0;
-                    job.FollowupTime = DateTime.Now.AddMinutes(defaultMinutes);
+                    job.FollowupTime = timeService.GetCurrentTenantTime().AddMinutes(defaultMinutes);
                 }
                 else
                 {
@@ -2509,7 +2499,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 job.UndeliverableLocationId = int.Parse(value);
                 job.UcjbStatus = (int)JobStatus.Undeliverable;
                 job.UcjbJobDone = true;
-                job.UcjbComplTime = DateTime.Now;
+                job.UcjbComplTime = timeService.GetCurrentTenantTime();
                 job.UcjbPodname =
                     job.UndeliverableLocation != null
                         ? job.UndeliverableLocation.Podname
@@ -2522,7 +2512,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 if (delivered)
                 {
                     job.UcjbStatus = (int)JobStatus.Completed;
-                    job.UcjbComplTime = DateTime.Now;
+                    job.UcjbComplTime = timeService.GetCurrentTenantTime();
                 }
 
                 break;
@@ -2890,7 +2880,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                         (int)InternalJobStatus.Reprice
                     }.Contains(internalStatusId)
                 )
-                    archive.Job.FollowupTime = DateTime.Now.AddMinutes(
+                    archive.Job.FollowupTime = timeService.GetCurrentTenantTime().AddMinutes(
                         archive.InternalStatusNavigation.DefaultMinutes ?? 0
                     );
                 else
@@ -2941,7 +2931,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 archive.Job.UndeliverableLocationId = int.Parse(value);
                 archive.Job.UcjbStatus = (int)JobStatus.Undeliverable;
                 archive.Job.UcjbJobDone = true;
-                archive.Job.UcjbComplTime = DateTime.Now;
+                archive.Job.UcjbComplTime = timeService.GetCurrentTenantTime();
                 archive.Job.UcjbPodname =
                     archive.UndeliverableLocation != null
                         ? archive.UndeliverableLocation.Podname
@@ -2955,7 +2945,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 if (delivered)
                 {
                     archive.Job.UcjbStatus = 6;
-                    archive.Job.UcjbComplTime = DateTime.Now;
+                    archive.Job.UcjbComplTime = timeService.GetCurrentTenantTime();
                 }
 
                 break;
@@ -3135,26 +3125,24 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             UcjbNumber = jobNumber,
             UcjbDate = currentTime,
             UcjbTime = currentTime,
-            UcjbType = 1,
+            UcjbType = (int)JobType.AllServices,
             UcjbClientId = 911,
             UcjbContact = $"Courier {courierId}",
             UcjbChargeType = 3,
             UcjbAmount = amount,
             UcjbSpeed = 1,
-            UcjbFrom = 1,
-            UcjbFromAddr = note,
-            UcjbTo = 1,
-            UcjbToAddr = "ToSP",
-            UcjbSize = 1,
+            PickupAddressLine1 = note,
+        DeliveryAddressLine1 = "ToSP",
+        UcjbSize = 1,
             UcjbQty = 1,
             UcjbCbd = false,
             UcjbKm = 0,
             UcjbFlightDetails = "FD",
             UcjbWeight = 1,
             UcjbCourierId = courierId,
-            UcjbClientRefa = reference,
-            UcjbClientRefb = clientRefB,
-            UcjbOurRef = ourRef,
+            UcjbClientRefa = reference[..Math.Min(reference.Length, 20)],
+            UcjbClientRefb = clientRefB[..Math.Min(clientRefB.Length, 15)],
+            UcjbOurRef = ourRef[..Math.Min(ourRef.Length, 20)],
             UcjbOpId = staffId,
             UcjbVan = false,
             Truck = false,

@@ -311,6 +311,8 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\index.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\inter-courier-charge-dialog\inter-courier-charge-dialog.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\inter-courier-charge-dialog\inter-courier-charge-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\note-management-dialog\note-management-dialog.component.ts" />

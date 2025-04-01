@@ -19,7 +19,7 @@
         <material-sidenav></material-sidenav>
     </div>
 
-    <div class="delivery-dashboard md-padding" layout="column">
+    <div class="delivery-dashboard" layout="column">
         <div layout="row" layout-xs="column">
             <!-- Filters Panel -->
             <md-card flex="20">
@@ -30,57 +30,66 @@
                     </div>
                 </md-toolbar>
 
-                <div class="md-padding">
+                <div>
                     <!-- Date Range Filter -->
                     <div class="filter-section">
-                        <div class="statistics-header">
-                            <h4>Date Range</h4>
-                        </div>
-                        <md-button class="date-range-button"
-                                   ng-class="{'active': ctrl.hasDateFilter()}"
-                                   ng-click="ctrl.showDateRangeDialog($event)">
-                            <div layout="row" layout-align="space-between center">
-                                <div layout="row" layout-align="start center">
-                                    <md-icon md-font-set="material-symbols-outlined">
-                                        {{ctrl.hasDateFilter() ? 'calendar_month' : 'date_range'}}
-                                    </md-icon>
-                                    <span class="date-label" ng-if="!ctrl.hasDateFilter()">Select Dates</span>
-                                    <span class="date-label"
-                                          ng-if="ctrl.hasDateFilter()">{{ctrl.getDateRangeDisplay()}}</span>
+                        <md-toolbar class="md-primary">
+                            <div class="md-toolbar-tools-m3">
+                                <div class="section section-start">
+                                    <span class="material-symbols-outlined">date_range</span>
+                                    <span class="md-headline-title" flex style="margin-left: 8px;">Date Range</span>
                                 </div>
-                                <md-icon class="clear-icon" md-font-set="material-symbols-outlined"
-                                         ng-click="ctrl.clearDateRange($event)"
-                                         ng-if="ctrl.hasDateFilter()">close
-                                </md-icon>
                             </div>
-                        </md-button>
+                        </md-toolbar>
+
+                        <div class="md-padding">
+                            <md-button class="date-range-button"
+                                       ng-class="{'active': ctrl.hasDateFilter()}"
+                                       ng-click="ctrl.showDateRangeDialog($event)">
+                                <div layout="row" layout-align="space-between center">
+                                    <div layout="row" layout-align="start center">
+                                        <md-icon md-font-set="material-symbols-outlined">
+                                            {{ctrl.hasDateFilter() ? 'calendar_month' : 'date_range'}}
+                                        </md-icon>
+                                        <span class="date-label" ng-if="!ctrl.hasDateFilter()">Select Dates</span>
+                                        <span class="date-label"
+                                              ng-if="ctrl.hasDateFilter()">{{ctrl.getDateRangeDisplay()}}</span>
+                                    </div>
+                                    <md-icon class="clear-icon" md-font-set="material-symbols-outlined"
+                                             ng-click="ctrl.clearDateRange($event)"
+                                             ng-if="ctrl.hasDateFilter()">close
+                                    </md-icon>
+                                </div>
+                            </md-button>
+                        </div>
                     </div>
 
-                    <md-divider></md-divider>
-
                     <div class="filter-section">
-                        <div class="statistics-header" layout="row" layout-align="space-between center">
-                            <h4>Regions</h4>
-                            <md-checkbox
-                                    aria-label="{{ctrl.allRegionsSelected ? 'Unselect All Regions' : 'Select All Regions'}}"
-                                    ng-change="ctrl.toggleAllRegions()"
-                                    ng-model="ctrl.allRegionsSelected">
-                                {{ctrl.allRegionsSelected ? 'Unselect All' : 'Select All'}}
-                            </md-checkbox>
-                        </div>
+                            <md-toolbar class="md-primary">
+                                <div class="md-toolbar-tools-m3">
+                                    <div class="section section-start">
+                                        <span class="material-symbols-outlined">public_off</span>
+                                        <span class="md-headline-title" flex style="margin-left: 8px;">Regions</span>
 
-                        <div class="loader-container" ng-if="ctrl.regionsLoading">
-                            <div class="full-height" layout="row" layout-align="center center">
-                                <div class="material-icon-loader">
-                                    <md-progress-circular md-diameter="60"
-                                                          md-mode="indeterminate"></md-progress-circular>
-                                    <md-icon class="loader-icon" md-font-set="material-symbols-outlined">public_off
-                                    </md-icon>
+                                        <div flex></div>
+
+                                        <md-checkbox
+                                                aria-label="{{ctrl.allRegionsSelected ? 'Unselect All Regions' : 'Select All Regions'}}"
+                                                ng-change="ctrl.toggleAllRegions()"
+                                                ng-model="ctrl.allRegionsSelected">
+                                            {{ctrl.allRegionsSelected ? 'Unselect All' : 'Select All'}}
+                                        </md-checkbox>
+
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                            </md-toolbar>
 
-                        <div ng-if="!ctrl.regionsLoading">
+                        <dfrnt-loader
+                                is-loading="ctrl.regionsLoading"
+                                icon-name="'public_off'">
+                        </dfrnt-loader>
+
+                        <div class="md-padding" ng-if="!ctrl.regionsLoading">
                             <div class="empty-state" layout="column" layout-align="center center"
                                  ng-if="!ctrl.regions.length">
                                 <md-icon class="empty-icon" md-font-set="material-symbols-outlined">public_off</md-icon>
@@ -100,32 +109,31 @@
                         </div>
                     </div>
 
-                    <md-divider></md-divider>
-
                     <div class="filter-section">
-                        <div class="statistics-header" layout="row" layout-align="space-between center">
-                            <h4>Speeds</h4>
-                            <md-checkbox
-                                    aria-label="{{ctrl.allSpeedsSelected ? 'Unselect All Speeds' : 'Select All Speeds'}}"
-                                    ng-change="ctrl.toggleAllSpeeds()"
-                                    ng-model="ctrl.allSpeedsSelected">
-                                {{ctrl.allSpeedsSelected ? 'Unselect All' : 'Select All'}}
-                            </md-checkbox>
-                        </div>
+                        <md-toolbar class="md-primary">
+                            <div class="md-toolbar-tools-m3">
+                                <div class="section section-start">
+                                    <span class="material-symbols-outlined">speed</span>
+                                    <span class="md-headline-title" flex style="margin-left: 8px;">Speeds</span>
 
-                        <div class="loader-container"
-                             ng-if="ctrl.speedsLoading">
-                            <div class="full-height" layout="row" layout-align="center center">
-                                <div class="material-icon-loader">
-                                    <md-progress-circular md-diameter="60"
-                                                          md-mode="indeterminate"></md-progress-circular>
-                                    <md-icon class="loader-icon" md-font-set="material-symbols-outlined">speed
-                                    </md-icon>
+                                    <div flex></div>
+
+                                    <md-checkbox
+                                            aria-label="{{ctrl.allSpeedsSelected ? 'Unselect All Speeds' : 'Select All Speeds'}}"
+                                            ng-change="ctrl.toggleAllSpeeds()"
+                                            ng-model="ctrl.allSpeedsSelected">
+                                        {{ctrl.allSpeedsSelected ? 'Unselect All' : 'Select All'}}
+                                    </md-checkbox>
                                 </div>
                             </div>
-                        </div>
+                        </md-toolbar>
 
-                        <div ng-if="!ctrl.speedsLoading">
+                        <dfrnt-loader
+                                is-loading="ctrl.speedsLoading"
+                                icon-name="'speed'">
+                        </dfrnt-loader>
+
+                        <div class="md-padding" ng-if="!ctrl.speedsLoading">
                             <div class="empty-state" layout="column" layout-align="center center"
                                  ng-if="!ctrl.speeds.length">
                                 <md-icon class="empty-icon" md-font-set="material-symbols-outlined">speed</md-icon>
@@ -152,7 +160,7 @@
                     <md-toolbar class="md-accent">
                         <div class="md-toolbar-tools">
                             <span class="material-symbols-outlined">overview</span>
-                            <span class="md-headline-title" flex flex style="margin-left: 8px;">Overview</span>
+                            <span class="md-headline-title" flex style="margin-left: 8px;">Overview</span>
 
                             <span flex></span>
 

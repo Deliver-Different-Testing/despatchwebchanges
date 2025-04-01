@@ -72,6 +72,9 @@ import ThemeConfig from "./materialTheme";
 import AddEventDialogController from "./components/dialogs/add-event-dialog/add-event-dialog.controller";
 import AddEventDialogService from "./components/dialogs/add-event-dialog/add-event-dialog.service";
 import {IQProvider, material, ui} from "angular";
+import InterCourierChargeDialogController from "./components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.controller";
+import InterCourierChargeDialogService
+    from "./components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
 
 const app = angular.module("uDispatch", ["ui.router",
     "angularResizable", "ui.sortable", "ui.bootstrap", "ui.bootstrap.pagination",
@@ -209,6 +212,7 @@ app.controller("EditDateTimeDialogController", EditDateTimeDialogController);
 app.controller("EditAddressDialogController", EditAddressDialogController);
 app.controller("jobFileUploadController", JobFileUploadController);
 app.controller("jobNoteEditorDialogController", NoteManagementDialogController);
+app.controller("InterCourierChargeDialog", InterCourierChargeDialogController);
 
 // Services
 app.service("configService", ConfigService);
@@ -234,5 +238,6 @@ app.service("jobFileUploadDialogService", JobFileUploadDialogService)
 app.service("noteManagementDialogService", NoteManagementDialogService)
 app.service("noteService", NoteService)
 app.service("addEventDialogService", AddEventDialogService)
+app.service("interCourierChargeDialogService", InterCourierChargeDialogService)
 
 export default app;

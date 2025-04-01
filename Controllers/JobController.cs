@@ -1921,8 +1921,7 @@ public class JobController(
         [FromBody] InterCourierChargeViewModel viewModel
     )
     {
-        if (viewModel == null)
-            throw new ArgumentNullException(nameof(viewModel), "ViewModel is null");
+        ArgumentNullException.ThrowIfNull(viewModel);
 
         await jobRepository.AddInterCourierChargeAsync(viewModel);
         return Ok();

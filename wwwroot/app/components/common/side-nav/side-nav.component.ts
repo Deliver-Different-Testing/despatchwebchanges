@@ -1,6 +1,7 @@
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import "./side-nav.styles.less";
 import BaseController from "../../base-controller";
+import {IComponentOptions, IPromise, ITimeoutService, material, ui} from "angular";
 
 class MaterialSidenavComponentController extends BaseController {
     static $inject = [
@@ -20,15 +21,15 @@ class MaterialSidenavComponentController extends BaseController {
     currentYear: number;
     currentDate: string;
 
-    private timeoutId: angular.IPromise<void> | null = null;
+    private timeoutId: IPromise<void> | null = null;
     private readonly HOVER_DELAY = 300;
     private readonly ANIMATION_DURATION = 200;
     private sidenav?: JQuery;
 
     constructor(
-        private $state: angular.ui.IStateService,
-        private $mdSidenav: angular.material.ISidenavService,
-        private $timeout: angular.ITimeoutService,
+        private $state: ui.IStateService,
+        private $mdSidenav: material.ISidenavService,
+        private $timeout: ITimeoutService,
         APP_CONFIG: AppConfig
     ) {
         super();
@@ -105,7 +106,7 @@ class MaterialSidenavComponentController extends BaseController {
     }
 }
 
-export const MaterialSidenavComponent: angular.IComponentOptions = {
+export const MaterialSidenavComponent: IComponentOptions = {
     template: require("./side-nav.template.html"),
     controller: MaterialSidenavComponentController,
     controllerAs: "ctrl"

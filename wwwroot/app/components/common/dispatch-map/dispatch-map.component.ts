@@ -14,11 +14,20 @@ class DispatchMapController extends BaseController {
         "$window",
         "$rootScope",
         "DispatchData",
-        "APP_CONFIG"
+        "APP_CONFIG",
     ];
 
     private locationRefreshInterval: angular.IPromise<void> | null = null;
     private readonly LOCATION_REFRESH_INTERVAL = 15000;
+    private refreshCouriersMarkerListener: Function | null = null;
+    private boundsChangedListener: Function | null = null;
+    private pendingChanges: {
+        jobs?: IJob[];
+        currentJob?: IJob;
+        mapCenter?: google.maps.LatLng | google.maps.LatLngLiteral;
+        mapZoom?: number;
+        showAvailableCouriers?: boolean;
+    } = {};
 
     mapInstance: google.maps.Map | null = null;
     isUpdating: boolean = false;
@@ -27,6 +36,10 @@ class DispatchMapController extends BaseController {
     COURIER_ICON: google.maps.Symbol | null = null;
     PICKUP_ICON_HOVER: google.maps.Symbol | null = null;
     DELIVERY_ICON_HOVER: google.maps.Symbol | null = null;
+    OTHER_PICKUP_ICON: google.maps.Symbol | null = null;
+    OTHER_DELIVERY_ICON: google.maps.Symbol | null = null;
+    OTHER_PICKUP_ICON_HOVER: google.maps.Symbol | null = null;
+    OTHER_DELIVERY_ICON_HOVER: google.maps.Symbol | null = null;
 
     initialMapZoom?: number;
     jobs?: IJob[] = [];
@@ -37,7 +50,6 @@ class DispatchMapController extends BaseController {
     onMarkerClick?: (params: { job: IJob }) => void;
     showAvailableCouriers: boolean = false;
     autoZoomEnabled: boolean = true;
-
     polylines: any[] = [];
     markers: google.maps.Marker[] = [];
     flags: any[] = [];
@@ -80,33 +92,77 @@ class DispatchMapController extends BaseController {
                     disableAutoPan: true
                 });
 
-                this._setupWatchers();
+                this._setupEventListeners();
                 this._startLocationRefreshInterval();
 
-                if (this.jobs || this.currentJob) {
+                // Check if we have jobs data already
+                if ((this.jobs && this.jobs.length > 0) || this.currentJob) {
+                    console.log('[DispatchMapController] Map initialized with existing jobs data, updating markers...');
                     return this._updateDisplayedJobs();
+                } else {
+                    console.log('[DispatchMapController] Map initialized without jobs data, will wait for changes');
                 }
             })
             .catch((error) => {
-                console.error("Error initializing map:", error);
+                console.error("[DispatchMapController] Error initializing map:", error);
             });
     }
 
     $onDestroy() {
         this._clearLocationRefreshInterval();
+        this._removeEventListeners();
     }
 
     $onChanges(changes: angular.IOnChangesObject) {
-        console.log('$onChanges called with changes:', changes);
+        console.log('[DispatchMapController] $onChanges called with changes:', changes);
 
-        if (!this.mapInstance) return;
+        // If map isn't ready, store changes to apply later
+        if (!this.mapInstance) {
+            console.log('[DispatchMapController] Map instance not ready yet, storing changes for later');
 
+            // Store the changes to apply after map is initialized
+            if ('jobs' in changes && changes.jobs.currentValue) {
+                console.log(`[DispatchMapController] Storing jobs array with ${changes.jobs.currentValue.length} jobs`);
+                this.pendingChanges.jobs = changes.jobs.currentValue;
+            }
+
+            if ('currentJob' in changes && changes.currentJob.currentValue) {
+                console.log('[DispatchMapController] Storing current job for later');
+                this.pendingChanges.currentJob = changes.currentJob.currentValue;
+            }
+
+            if ('mapCenter' in changes && changes.mapCenter.currentValue) {
+                this.pendingChanges.mapCenter = changes.mapCenter.currentValue;
+            }
+
+            if ('mapZoom' in changes && changes.mapZoom.currentValue) {
+                this.pendingChanges.mapZoom = changes.mapZoom.currentValue;
+            }
+
+            if ('showAvailableCouriers' in changes) {
+                this.pendingChanges.showAvailableCouriers = changes.showAvailableCouriers.currentValue;
+            }
+
+            return;
+        }
+
+        // Apply changes normally when map is ready
         if (changes.mapCenter && changes.mapCenter.currentValue) {
             this.mapInstance.setCenter(changes.mapCenter.currentValue);
         }
 
+        // Handle jobs and currentJob changes
         if ('jobs' in changes || 'currentJob' in changes) {
-            console.log('Updating displayed jobs due to changes in jobs or currentJob');
+            console.log('[DispatchMapController] Jobs or currentJob changed, updating markers...');
+
+            if ('jobs' in changes) {
+                console.log(`[DispatchMapController] Jobs array changed: ${changes.jobs.currentValue?.length || 0} jobs available`);
+            }
+
+            if ('currentJob' in changes) {
+                console.log(`[DispatchMapController] Current job changed: ${changes.currentJob.currentValue?.jobNo || 'none'}`);
+            }
+
             this._clearJobMarkers();
             return this._updateDisplayedJobs();
         }
@@ -166,20 +222,44 @@ class DispatchMapController extends BaseController {
         this.COURIER_ICON = this._createFlagMarkerIcon("#1E88E5");
         this.PICKUP_ICON_HOVER = this._createMarkerIcon("#4CAF50", true);
         this.DELIVERY_ICON_HOVER = this._createMarkerIcon("#F44336", true);
+
+        this.OTHER_PICKUP_ICON = this._createMarkerIcon("#3F51B5");
+        this.OTHER_DELIVERY_ICON = this._createMarkerIcon("#FF5722");
+        this.OTHER_PICKUP_ICON_HOVER = this._createMarkerIcon("#3F51B5", true);
+        this.OTHER_DELIVERY_ICON_HOVER = this._createMarkerIcon("#FF5722", true);
     }
 
-    private _setupWatchers() {
-        this.$timeout(() => {
-            this.$rootScope.$on('refreshCourierMarkers', (_: angular.IAngularEvent, newPositions: any) => {
+    private _setupEventListeners() {
+        // Setup event listeners that were previously in _setupWatchers
+        this.refreshCouriersMarkerListener = this.$rootScope.$on('refreshCourierMarkers',
+            (_: angular.IAngularEvent, newPositions: any) => {
                 if (newPositions && this.mapInstance) {
                     this._updateCourierMarkers(newPositions);
                 }
-            });
-
-            if (this.mapInstance) {
-                this.$window.google.maps.event.addListener(this.mapInstance, 'bounds_changed', this.onBoundsChanged);
             }
-        });
+        );
+
+        if (this.mapInstance) {
+            this.boundsChangedListener = this.$window.google.maps.event.addListener(
+                this.mapInstance,
+                'bounds_changed',
+                this.onBoundsChanged
+            );
+        }
+    }
+
+    private _removeEventListeners() {
+        // Clean up event listeners
+        if (this.refreshCouriersMarkerListener) {
+            // TypeScript doesn't recognize that the listener has an unbind method
+            (this.refreshCouriersMarkerListener as any)();
+            this.refreshCouriersMarkerListener = null;
+        }
+
+        if (this.boundsChangedListener && this.mapInstance) {
+            this.$window.google.maps.event.removeListener(this.boundsChangedListener);
+            this.boundsChangedListener = null;
+        }
     }
 
     private onBoundsChanged = this._debounce(() => {
@@ -272,51 +352,109 @@ class DispatchMapController extends BaseController {
     }
 
     private async _updateDisplayedJobs() {
-        if (this.isUpdating) return;
+        if (this.isUpdating) {
+            // Only allow multiple updates during initialization
+            if (this.markers.length === 0) {
+                console.log('[DispatchMapController] Initial update, allowing even though update is in progress');
+            } else {
+                console.log('[DispatchMapController] Already updating displayed jobs, skipping this update');
+                return;
+            }
+        }
+
+        if (!this.mapInstance) {
+            console.log('[DispatchMapController] Map instance not ready yet, cannot update jobs');
+            return;
+        }
+
         this.isUpdating = true;
-
-
+        console.log('[DispatchMapController] Starting to update displayed jobs...');
 
         try {
-            this._clearJobMarkers();
+            // Count markers added for better debugging
+            let markersAdded = 0;
 
+            // Keep track of the current job ID if there is one
+            const currentJobId = this.currentJob?.id;
+
+            // Check if we're in courier's job mode
+            const isShowingCourierJobs = Boolean(
+                this.currentJob &&
+                (this.currentJob.courier || this.currentJob.assignedCourier) &&
+                this.jobs && this.jobs.length > 1
+            );
+
+            console.log(`[DispatchMapController] Map mode: ${isShowingCourierJobs ? 'Courier jobs view' : 'Normal view'}`);
+
+            // First, add the current job if it exists
             if (this.currentJob) {
+                console.log(`[DispatchMapController] Adding current job to map: ${this.currentJob.jobNo}`);
+
                 if (this._isValidCoordinates(
                     this.currentJob.pickupAddress?.latitude,
                     this.currentJob.pickupAddress?.longitude
                 )) {
-                    this._addPickupMarker(this.currentJob);
+                    this._addPickupMarker(this.currentJob, true);
+                    markersAdded++;
                 }
+
                 if (this._isValidCoordinates(
                     this.currentJob.deliveryAddress?.latitude,
                     this.currentJob.deliveryAddress?.longitude
                 )) {
-                    this._addDeliveryMarker(this.currentJob);
+                    this._addDeliveryMarker(this.currentJob, true);
+                    markersAdded++;
                 }
-            } else if (this.jobs?.length) {
+            }
+
+            // Then add all other jobs
+            if (this.jobs?.length) {
+                console.log(`[DispatchMapController] Adding ${this.jobs.length} jobs to map`);
+
                 this.jobs.forEach((job: IJob) => {
+                    // Skip if this is the current job (already added)
+                    if (currentJobId && job.id === currentJobId) {
+                        return;
+                    }
+
+                    // Only use the alternate colors if we're in courier jobs mode
+                    const useAlternateColor = isShowingCourierJobs;
+
                     if (this._isValidCoordinates(
                         job.pickupAddress?.latitude,
                         job.pickupAddress?.longitude
                     )) {
-                        this._addPickupMarker(job);
+                        this._addPickupMarker(job, false, useAlternateColor);
+                        markersAdded++;
                     }
+
                     if (this._isValidCoordinates(
                         job.deliveryAddress?.latitude,
                         job.deliveryAddress?.longitude
                     )) {
-                        this._addDeliveryMarker(job);
+                        this._addDeliveryMarker(job, false, useAlternateColor);
+                        markersAdded++;
                     }
                 });
             }
 
-            await this.$timeout(() => {
-                if (this.autoZoomEnabled && this.markers.length > 0) {
-                    this._fitMapToMarkers();
-                } else if (this.markers.length > 0) {
-                    this._centerMapOnMarkers();
-                }
-            }, 200);
+            console.log(`Added ${markersAdded} markers to the map`);
+
+            if (markersAdded > 0) {
+                await this.$timeout(() => {
+                    if (this.autoZoomEnabled) {
+                        console.log('[DispatchMapController] Auto-zoom enabled, fitting map to markers');
+                        this._fitMapToMarkers();
+                    } else {
+                        console.log('[DispatchMapController] Auto-zoom disabled, centering map on markers');
+                        this._centerMapOnMarkers();
+                    }
+                }, 200);
+            } else {
+                console.log('[DispatchMapController] No markers added to map');
+            }
+        } catch (error) {
+            console.error('[DispatchMapController] Error updating displayed jobs:', error);
         } finally {
             this.isUpdating = false;
         }
@@ -348,7 +486,7 @@ class DispatchMapController extends BaseController {
         });
     }
 
-    private _addPickupMarker(job: IJob) {
+    private _addPickupMarker(job: IJob, isCurrentJob: boolean = false, useAlternateColor: boolean = false) {
         if (!job.pickupAddress) return;
 
         const position = new this.$window.google.maps.LatLng(
@@ -356,19 +494,36 @@ class DispatchMapController extends BaseController {
             job.pickupAddress.longitude
         );
 
+        let icon, hoverIcon;
+
+        if (isCurrentJob) {
+            icon = this.PICKUP_ICON;
+            hoverIcon = this.PICKUP_ICON_HOVER;
+        } else if (useAlternateColor) {
+            icon = this.OTHER_PICKUP_ICON;
+            hoverIcon = this.OTHER_PICKUP_ICON_HOVER;
+        } else {
+            icon = this.PICKUP_ICON;
+            hoverIcon = this.PICKUP_ICON_HOVER;
+        }
+
         const marker = new this.$window.google.maps.Marker({
             position: position,
             map: this.mapInstance,
-            icon: this.PICKUP_ICON,
-            title: `Click to open job ${job.jobNo}`,
-            animation: this.$window.google.maps.Animation.DROP
+            icon: icon,
+            title: `Click to open job ${job.jobNo}${isCurrentJob ? ' (Current Job)' : ''}`,
+            opacity: 0.4
         });
 
-        this._setupMarkerListeners(marker, job, this.PICKUP_ICON!, this.PICKUP_ICON_HOVER!, "Pickup");
+        this.$timeout(() => {
+            this._fadeInMarker(marker);
+        }, Math.random() * 200);
+
+        this._setupMarkerListeners(marker, job, icon!, hoverIcon!, "Pickup");
         this.markers.push(marker);
     }
 
-    private _addDeliveryMarker(job: IJob) {
+    private _addDeliveryMarker(job: IJob, isCurrentJob: boolean = false, useAlternateColor: boolean = false) {
         if (!job.deliveryAddress) return;
 
         const position = new this.$window.google.maps.LatLng(
@@ -376,28 +531,60 @@ class DispatchMapController extends BaseController {
             job.deliveryAddress.longitude
         );
 
+        // Choose the appropriate icon based on the same logic as pickup markers
+        let icon, hoverIcon;
+
+        if (isCurrentJob) {
+            icon = this.DELIVERY_ICON;
+            hoverIcon = this.DELIVERY_ICON_HOVER;
+        } else if (useAlternateColor) {
+            icon = this.OTHER_DELIVERY_ICON;
+            hoverIcon = this.OTHER_DELIVERY_ICON_HOVER;
+        } else {
+            icon = this.DELIVERY_ICON;
+            hoverIcon = this.DELIVERY_ICON_HOVER;
+        }
+
         const marker = new this.$window.google.maps.Marker({
             position: position,
             map: this.mapInstance,
-            icon: this.DELIVERY_ICON,
-            title: `Click to open job ${job.jobNo}`,
-            animation: this.$window.google.maps.Animation.DROP
+            icon: icon,
+            title: `Click to open job ${job.jobNo}${isCurrentJob ? ' (Current Job)' : ''}`,
+            opacity: 0.4
         });
 
-        this._setupMarkerListeners(marker, job, this.DELIVERY_ICON!, this.DELIVERY_ICON_HOVER!, "Delivery");
+        this.$timeout(() => {
+            this._fadeInMarker(marker);
+        }, Math.random() * 200);
+
+        this._setupMarkerListeners(marker, job, icon!, hoverIcon!, "Delivery");
         this.markers.push(marker);
     }
 
+    private _fadeInMarker(marker: google.maps.Marker) {
+        let opacity = 0.4;
+        const fadeInterval = setInterval(() => {
+            opacity += 0.1;
+            if (opacity >= 1) {
+                opacity = 1;
+                clearInterval(fadeInterval);
+            }
+            marker.setOpacity(opacity);
+        }, 40); // 40ms intervals for smooth fade
+    }
+
     private _setupMarkerListeners(marker: google.maps.Marker, job: any, normalIcon: google.maps.Symbol, hoverIcon: google.maps.Symbol, locationType: string) {
+        const isCurrentJob = job.id === this.currentJob?.id;
+
         marker.addListener("mouseover", () => {
             marker.setIcon(hoverIcon);
             const content = `
-                <div style="padding: 8px;">
-                    <strong>Job ${job.jobNo}</strong><br>
-                    ${locationType} Location<br>
-                    <small style="color: #666;">Click to open job details</small>
-                </div>
-            `;
+            <div style="padding: 8px;">
+                <strong>Job ${job.jobNo}</strong>${isCurrentJob ? ' <span style="color: #1976D2;">(Current Job)</span>' : ''}<br>
+                ${locationType} Location<br>
+                <small style="color: #666;">Click to open job details</small>
+            </div>
+        `;
             this.tooltip!.setContent(content);
             this.tooltip!.open(this.mapInstance, marker);
         });
@@ -454,8 +641,14 @@ class DispatchMapController extends BaseController {
                 color: '#FFFFFF',
                 fontWeight: 'bold',
                 fontSize: '10px'
-            }
+            },
+            opacity: 0.4
         });
+
+        // Add fade-in effect to courier markers
+        this.$timeout(() => {
+            this._fadeInMarker(marker);
+        }, Math.random() * 200);
 
         const courierName = courier.code || "Courier";
 
@@ -531,12 +724,18 @@ class DispatchMapController extends BaseController {
     }
 
     private _isValidCoordinates(lat?: number, lng?: number): boolean {
-        return Boolean(
+        const isValid = Boolean(
             lat && lng && !isNaN(lat) && !isNaN(lng) &&
             lat !== 0 && lng !== 0 &&
             lat >= -90 && lat <= 90 &&
             lng >= -180 && lng <= 180
         );
+
+        if (!isValid && (lat || lng)) {
+            console.log(`[DispatchMapController] Invalid coordinates detected: lat=${lat}, lng=${lng}`);
+        }
+
+        return isValid;
     }
 
     private _startLocationRefreshInterval() {
