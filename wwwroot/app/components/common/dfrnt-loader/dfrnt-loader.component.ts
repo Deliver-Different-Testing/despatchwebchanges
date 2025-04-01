@@ -1,7 +1,12 @@
 import "./dfrnt-loader.styles.less";
-import {IComponentOptions, IController} from "angular";
+import {IComponentOptions} from "angular";
+import BaseController from "../../base-controller";
 
-class DfrntLoaderController implements IController {
+class DfrntLoaderController extends BaseController {
+    constructor() {
+        super();
+    }
+
     isLoading?: boolean;
     iconName?: string;
 

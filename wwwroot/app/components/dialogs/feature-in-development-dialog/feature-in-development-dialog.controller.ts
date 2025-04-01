@@ -1,10 +1,12 @@
 import "./feature-in-development-dialog.styles.less";
-import app from "../../../app";
+import {material} from "angular";
 
 export class FeatureInDevelopmentDialogController {
     static $inject = ["$mdDialog"];
 
-    constructor(private $mdDialog: angular.material.IDialogService) {
+    constructor(
+        private $mdDialog: material.IDialogService
+    ) {
         this.$mdDialog = $mdDialog;
     }
 

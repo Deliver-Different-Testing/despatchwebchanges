@@ -699,7 +699,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async autocompleteSearch(searchTerm: string, url: string) {
+    async autocompleteSearch(searchTerm: string, url: string): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>(url, {
             params: {
                 searchTerm: searchTerm

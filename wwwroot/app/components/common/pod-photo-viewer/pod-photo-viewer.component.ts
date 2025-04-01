@@ -1,4 +1,4 @@
-import angular from "angular";
+import angular, {IComponentOptions} from "angular";
 import {PodPhoto} from "./pod-photo-viewer.interfaces";
 import "./pod-photo-viewer.styles.less";
 import BaseController from "../../base-controller";
@@ -38,7 +38,7 @@ class PODPhotoViewerController extends BaseController {
     }
 }
 
-export const PodPhotoViewerComponent: angular.IComponentOptions = {
+export const PodPhotoViewerComponent: IComponentOptions = {
     template: require("./pod-photo-viewer.template.html"),
     bindings: {
         photos: '<',

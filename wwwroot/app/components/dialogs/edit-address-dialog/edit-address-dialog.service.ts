@@ -1,16 +1,17 @@
 import {AddressViewModel, EditAddressDialogViewModel} from "../../../interfaces/job.interface";
 import EditAddressDialogController from "./edit-address-dialog.controller";
 import {bindAllMethods} from "../../../bindAllMethods";
+import {IDocumentService, IServiceProvider, material} from "angular";
 
-export class EditAddressDialogService implements angular.IServiceProvider {
+export class EditAddressDialogService implements IServiceProvider {
     static $inject = [
         '$mdDialog',
         "$document"
     ];
 
     constructor(
-        private $mdDialog: angular.material.IDialogService,
-        private $document: angular.IDocumentService,
+        private $mdDialog: material.IDialogService,
+        private $document: IDocumentService,
     ) {
         console.log('EditAddressDialogService: Service instantiated');
         bindAllMethods(this);
