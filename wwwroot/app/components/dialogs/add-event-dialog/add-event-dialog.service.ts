@@ -1,4 +1,4 @@
-import {IJob} from "../../../interfaces/job.interface";
+import {DispatchJob, IJob} from "../../../interfaces/job.interface";
 import AddEventDialogController from "./add-event-dialog.controller";
 import {bindAllMethods} from "../../../bindAllMethods";
 
@@ -20,7 +20,7 @@ class AddEventDialogService implements angular.IServiceProvider {
         return this;
     }
 
-    async openAddEventDialog($event: MouseEvent, job: IJob) {
+    async openAddEventDialog($event: MouseEvent, job: IJob | DispatchJob) {
         await this.$mdDialog
             .show({
                 controller: AddEventDialogController,

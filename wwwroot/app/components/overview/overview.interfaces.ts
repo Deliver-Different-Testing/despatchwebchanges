@@ -1,4 +1,4 @@
-import {AssignedFlight} from "../../interfaces/job.interface";
+import {AssignedFlight, Suggestion} from "../../interfaces/job.interface";
 
 export interface OverviewQueryParams {
     statusGroup?: number;
@@ -9,18 +9,8 @@ export interface OverviewQueryParams {
     endDate?: Date;
     orderBy?: string;
     orderDirection?: string;
-    regions?: Region[];
-    speeds?: Speed[];
-}
-
-export interface Region {
-    id: number;
-    selected?: boolean;
-}
-
-export interface Speed {
-    id: number;
-    selected?: boolean;
+    regions?: Suggestion[];
+    speeds?: Suggestion[];
 }
 
 export interface DateRange {

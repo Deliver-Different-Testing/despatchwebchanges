@@ -1,3 +1,5 @@
+import {JobStatus} from "../enums/job-status.enum";
+
 export interface IJob {
     id: number;
     rootParentId?: number;
@@ -24,7 +26,7 @@ export interface IJob {
     acceptedName: string;
     speedID?: number;
     notify: string;
-    vehicle: Vehicle;
+    vehicle: Suggestion;
     clientID?: number;
     jobType?: number;
     client: string;
@@ -146,16 +148,6 @@ export interface IJob {
     deliverByTime?: Date;
 }
 
-export interface Vehicle {
-    id?: number;
-    label: string;
-}
-
-export interface Size {
-    id: number;
-    label: string;
-}
-
 export interface ParcelDimensions {
     itemId?: number;
     itemName: string;
@@ -211,6 +203,7 @@ export interface EditAddressDialogViewModel extends AddressViewModel {
 export interface Suggestion {
     id: number;
     text: string;
+    selected?: boolean;
 }
 
 export interface Views extends Suggestion {
@@ -404,4 +397,82 @@ export interface TucNoteViewModel {
     updatedBy?: number;
     updatedByName?: string;
     noteTextSummary?: string;
+}
+
+export interface DispatchJob {
+    // Core identifiers
+    id: number;
+    jobNo: string;
+
+    // Status and timing information
+    statusId?: JobStatus;
+    statusName?: string;
+    status?: string;
+    time?: Date;
+    booked: Date;
+    remain?: string;
+
+    // Courier information
+    courier?: string;
+    assignedCourier?: Suggestion;
+    courierData?: CourierData;
+
+    // Addresses
+    from?: string;
+    toAddress?: string;
+    toSuburbID?: number;
+    pickupAddress?: AddressViewModel;
+    deliveryAddress?: AddressViewModel;
+    pickUpLongitude?: number;
+    pickUpLatitude?: number;
+    deliveryLongitude?: number;
+    deliveryLatitude?: number;
+
+    // Routing data
+    direct?: boolean;
+    speed?: string;
+    notify?: string;
+    vehicle?: Suggestion;
+
+    // Job properties
+    client?: string;
+    clientID?: number;
+    jobType?: number;
+    minutes?: number;
+    pickupTime?: number;
+    alertLatePickup?: number;
+    deliveryTime?: number;
+    alertLateDelivery?: number;
+
+    // Late call fields
+    lp?: number;
+    ld?: number;
+
+    // Job flags
+    locked?: boolean;
+    invoiced?: boolean;
+    allowSplit?: boolean;
+    isActive?: boolean;
+    done?: boolean;
+    bulkJob?: boolean;
+    preBook?: boolean;
+
+    // Special delivery options
+    size?: Suggestion;
+    return?: boolean;
+    dgClass?: number;
+    saturdayDelivery?: boolean;
+
+    // Special fields
+    childNotes?: string;
+    pickupFrom?: number;
+    rootParentId?: number;
+    displaySplitJobDetail?: boolean;
+
+    // UI helper fields
+    searchText?: string;
+    relatedJobs?: Suggestion[];
+
+    // Search helper property
+    [key: string]: any;
 }

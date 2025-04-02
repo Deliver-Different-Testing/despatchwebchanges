@@ -6,7 +6,7 @@ import {
     Pallet,
     ParcelDimensions, PriceBreakdown, SuburbLookup,
     Suggestion,
-    ClearListViewModel,
+    ClearListViewModel, DispatchJob,
 } from "../interfaces/job.interface";
 import {PaginatedResponse} from "../interfaces/paginated-response.interface";
 import {DateField, JobField} from "../interfaces/job-field.types";
@@ -204,7 +204,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getJobsCurrent(courierId: number, done: boolean) {
-        const response = await this.$http.get<IJob[]>(`job/current?courierId=${courierId}&done=${done}`);
+        const response = await this.$http.get<DispatchJob[]>(`job/current?courierId=${courierId}&done=${done}`);
         return response.data;
     }
 
@@ -603,8 +603,12 @@ class DispatchCoreService implements angular.IServiceProvider {
         await this.$http.post(`job/UpdateBulkJob?bulkJobId=${bulkJobId}&field=${field}&value=${value}&rate=${rate}&despatcherName=${despatcherName}&staffId=${staffId}`, null);
     }
 
-    async getJobsWithFilters(queryParams: JobQueryParams, selectedClients: string[],
-                             internal: boolean, selectedAreas: Suggestion[]) {
+    async getJobsWithFilters(
+        queryParams: JobQueryParams,
+        selectedClients: string[],
+        internal: boolean,
+        selectedAreas: Suggestion[]
+    ): Promise<DispatchJob[]> {
         const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
 
         const paramObject = {
@@ -625,11 +629,17 @@ class DispatchCoreService implements angular.IServiceProvider {
             });
         }
 
-        const response = await this.$http.get<IJob[]>(`job?${params.toString()}`);
+        const response = await this.$http.get<DispatchJob[]>(`job?${params.toString()}`);
         return response.data;
     }
 
-    async getClearListJobs(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[], selectedClearList: ClearListEnvelope) {
+    async getClearListJobs(
+        queryParams: JobQueryParams,
+        selectedClients: string[],
+        internal: boolean,
+        selectedAreas: DfrntPageViewModel[],
+        selectedClearList: ClearListEnvelope
+    ) {
         const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
 
         const defaultParams = {
@@ -659,7 +669,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             });
         }
 
-        const response = await this.$http.get(`job/GetJobsByClearListEnvelope?${params.toString()}`);
+        const response = await this.$http.get<DispatchJob[]>(`job/GetJobsByClearListEnvelope?${params.toString()}`);
         return response.data;
     }
 

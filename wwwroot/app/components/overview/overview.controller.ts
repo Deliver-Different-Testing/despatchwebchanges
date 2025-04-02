@@ -3,9 +3,11 @@ import ToastrService from "../../services/toastr.service";
 import GreetingService from "../../services/greeting.service";
 import OpenJobDispatchService from "../../services/open-job-dispatch.service";
 import OverviewFiltersService from "./services/overview-filters.service";
-import {OverviewTableChildJob, OverviewTableParentJob, Region, Speed} from "./overview.interfaces";
+import {OverviewTableChildJob, OverviewTableParentJob} from "./overview.interfaces";
 import "./overview.styles.less";
 import BaseController from "../base-controller";
+import {Suggestion} from "../../interfaces/job.interface";
+import moment from "moment";
 
 class OverviewController extends BaseController {
     static $inject = [
@@ -15,12 +17,12 @@ class OverviewController extends BaseController {
         "$scope",
         "$timeout",
         "toastrService",
-        "moment",
         "$state",
         "$window",
         "greetingService",
         "openJobDispatchService",
         "overviewFiltersService",
+        "$document"
     ];
 
     private readonly OverviewJobLimitDisplay: string = "overviewJobLimitDisplay";
@@ -40,17 +42,17 @@ class OverviewController extends BaseController {
     isOverviewCardCollapsed: boolean;
 
     deliveries: any[];
-    regions: any[];
-    speeds: any[];
+    regions: Suggestion[];
+    speeds: Suggestion[];
     promise: Promise<any> | null;
 
     search: string;
     searchTimeout: any;
 
     dateRange: { start: Date | null; end: Date | null };
-    selectedRegions: any[];
+    selectedRegions: Suggestion[];
     allRegionsSelected: boolean;
-    selectedSpeeds: any[];
+    selectedSpeeds: Suggestion[];
     allSpeedsSelected: boolean;
 
     activeTab: number;
@@ -62,19 +64,19 @@ class OverviewController extends BaseController {
         private $scope: angular.IScope,
         private $timeout: angular.ITimeoutService,
         private toastrService: ToastrService,
-        private moment: any,
         private $state: angular.ui.IStateService,
         private $window: angular.IWindowService,
         greetingService: GreetingService,
         private openJobDispatchService: OpenJobDispatchService,
-       private overviewFiltersService: OverviewFiltersService
+        private overviewFiltersService: OverviewFiltersService,
+        private $document: angular.IDocumentService
     ) {
         super();
 
         // Initialize properties
         this.isLoading = false;
         this.greeting = greetingService.greetUser((FirstName as any) as string);
-        this.statistics = { active: 0, inactive: 0, completed: 0 };
+        this.statistics = {active: 0, inactive: 0, completed: 0};
         this.query = {
             order: "jobName",
             direction: "asc",
@@ -101,7 +103,7 @@ class OverviewController extends BaseController {
         this.searchTimeout = null;
 
         // Filters
-        this.dateRange = { start: null, end: null };
+        this.dateRange = {start: null, end: null};
         this.selectedRegions = [];
         this.allRegionsSelected = false;
         this.selectedSpeeds = [];
@@ -128,7 +130,7 @@ class OverviewController extends BaseController {
             () => this.activeTab,
             (newValue: number, oldValue: number) => {
                 if (newValue !== oldValue) {
-                    this.refreshData();
+                    return this.refreshData();
                 }
             }
         );
@@ -241,7 +243,7 @@ class OverviewController extends BaseController {
         }
     }
 
-    async toggleRegion(region: Region) {
+    async toggleRegion(region: Suggestion) {
         const idx = this.selectedRegions.indexOf(region);
 
         if (region.selected && idx === -1) {
@@ -278,7 +280,7 @@ class OverviewController extends BaseController {
         await this.refreshData();
     }
 
-   async getSpeeds() {
+    async getSpeeds() {
         try {
             this.speedsLoading = true;
             this.speeds = await this.overviewService.getAllSpeeds();
@@ -289,7 +291,7 @@ class OverviewController extends BaseController {
         }
     }
 
-   async toggleSpeed(speed: Speed) {
+    async toggleSpeed(speed: Suggestion) {
         const idx = this.selectedSpeeds.indexOf(speed);
 
         if (speed.selected && idx === -1) {
@@ -308,7 +310,7 @@ class OverviewController extends BaseController {
         await this.refreshData();
     }
 
-   async toggleAllSpeeds() {
+    async toggleAllSpeeds() {
         this.speeds.forEach((speed) => {
             speed.selected = this.allSpeedsSelected;
         });
@@ -323,17 +325,17 @@ class OverviewController extends BaseController {
         await this.refreshData();
     }
 
-   toggleSidenav() {
+    toggleSidenav() {
         this.$mdSidenav("right").toggle();
     }
 
-   transformStatus(status: string): string {
+    transformStatus(status: string): string {
         // Remove spaces and special characters, convert to uppercase
         return status.toUpperCase().replace(/[\s-]/g, "_");
     }
 
 
-   getProgressClass(completion: number): string {
+    getProgressClass(completion: number): string {
         if (completion < 30) {
             return "md-low"; // Light green for low progress
         } else if (completion < 70) {
@@ -342,14 +344,14 @@ class OverviewController extends BaseController {
         return "md-high"; // Gray for high progress
     }
 
-   async showDateRangeDialog($event: MouseEvent) {
+    async showDateRangeDialog($event: MouseEvent) {
         try {
             this.dateRange = await this.$mdDialog.show({
                 controller: "DateRangeDialogController",
                 controllerAs: "ctrl",
                 targetEvent: $event,
                 template: require("../dialogs/date-range-dialog/date-range-dialog.html"),
-                parent: document.body,
+                parent: this.$document.parent(),
                 clickOutsideToClose: true,
                 fullscreen: false,
                 bindToController: true,
@@ -370,11 +372,11 @@ class OverviewController extends BaseController {
         }
     }
 
-   hasDateFilter(): boolean {
+    hasDateFilter(): boolean {
         return this.dateRange.start !== null || this.dateRange.end !== null;
     }
 
-   getDateRangeDisplay(): string {
+    getDateRangeDisplay(): string {
         if (!this.hasDateFilter()) return "";
 
         if (this.dateRange.start && this.dateRange.end) {
@@ -388,11 +390,11 @@ class OverviewController extends BaseController {
         }
     }
 
-   formatDate(date: Date | null): string {
-        return date ? this.moment(date).format("MMM D, YYYY") : "";
+    formatDate(date: Date | null): string {
+        return date ? moment(date).format("MMM D, YYYY") : "";
     }
 
-   async clearDateRange($event: MouseEvent | undefined) {
+    async clearDateRange($event: MouseEvent | undefined) {
         if ($event) {
             $event.stopPropagation();
         }
@@ -409,12 +411,12 @@ class OverviewController extends BaseController {
         await this.refreshData();
     }
 
-   async showMap(delivery: OverviewTableParentJob) {
+    async showMap(delivery: OverviewTableParentJob) {
         await this.$mdDialog.show({
             controller: "MapDialogController",
             controllerAs: "ctrl",
             template: require("../dialogs/map-dialog/map-dialog.template.html"),
-            parent: document.body,
+            parent: this.$document.parent(),
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
@@ -424,18 +426,18 @@ class OverviewController extends BaseController {
         });
     }
 
-   openJobDetail(delivery: OverviewTableParentJob) {
+    openJobDetail(delivery: OverviewTableParentJob) {
         if (delivery && delivery.jobId) {
             this.openJobDispatchService.openJobDetail(delivery.jobId);
         }
     }
 
-   openMegaMap() {
+    openMegaMap() {
         const url = this.$state.href("megaMap");
         this.$window.open(url, "_blank");
     }
 
-   async onReorder() {
+    async onReorder() {
         this.query.page = 1;
         await this.refreshData();
     }

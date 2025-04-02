@@ -6,7 +6,7 @@ import DispatchCoreService from "../../services/dispatch-core.service";
 import {AppPages} from "../../enums/app-pages.enum";
 import {AppConfig} from "../../interfaces/app-config.interface";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
-import {AgentViewModel, IJob, JobQueryParams} from "../../interfaces/job.interface";
+import {AgentViewModel, DispatchJob, JobQueryParams} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
 import {FlightViewModel, HereMapsConfig, StatusChangeEvent, StatusToListMap} from "./nationwide.interfaces";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
@@ -18,16 +18,18 @@ import moment from "moment";
 import AddEventDialogService from "../dialogs/add-event-dialog/add-event-dialog.service";
 
 class NationwideControl extends BaseController {
+    readonly nationwidePageId: number = AppPages.Domestic;
     layouts: ILayout[] = [];
     defaultLayout?: ILayout;
     currentLayoutIndex: number = 0;
     currentLayoutName: string = "Default";
     layout?: { columns: IColumn[] };
-    currentJob?: IJob;
-    jobList?: IJob[] = [];
-    jobListDelivery?: IJob[] = [];
-    jobListPOD?: IJob[] = [];
-    jobListReprice?: IJob[] = [];
+    currentJob?: DispatchJob;
+    currentJobId?: number;
+    jobList?: DispatchJob[] = [];
+    jobListDelivery?: DispatchJob[] = [];
+    jobListPOD?: DispatchJob[] = [];
+    jobListReprice?: DispatchJob[] = [];
     STATUS_TO_LIST_MAP: StatusToListMap;
     courier: { gpsCourier?: any } = {};
     totalJobCount: number = 0;
@@ -82,10 +84,10 @@ class NationwideControl extends BaseController {
     agentListPromise?: Promise<{ agents: AgentViewModel[], message: string | null }>;
     selectedJobs: any;
     flightListPromise?: Promise<{ flights: FlightViewModel[], message: string | null }>;
-    jobListPromise?: Promise<IJob[]>;
-    deliveryListPromise?: Promise<IJob[]>;
-    podListPromise?: Promise<IJob[]>;
-    repriceListPromise?: Promise<IJob[]>;
+    jobListPromise?: Promise<DispatchJob[]>;
+    deliveryListPromise?: Promise<DispatchJob[]>;
+    podListPromise?: Promise<DispatchJob[]>;
+    repriceListPromise?: Promise<DispatchJob[]>;
 
     static $inject = [
         '$scope',
@@ -780,7 +782,7 @@ class NationwideControl extends BaseController {
         await this.getJobList(JobDataType.DELIVERY);
     }
 
-    attention(job: IJob) {
+    attention(job: DispatchJob) {
         let temp = "";
 
         if (job.direct) {
@@ -795,14 +797,14 @@ class NationwideControl extends BaseController {
         if (job.return) {
             temp += "RTN ";
         }
-        if (job.size.id === 2 && !job.van && !job.truck && job.speedID !== 45) {
+        if (job.size?.id === 2 && !job.van && !job.truck && job.speedID !== 45) {
             temp = "CAR " + temp;
         }
-        if (job.size.id === 5) {
+        if (job.size?.id === 5) {
             temp = "Scoot " + temp;
         }
 
-        if (job.childNotes !== null && job.childNotes.length > 0) {
+        if (job.childNotes && job.childNotes?.length > 0) {
             temp += job.childNotes;
         }
         if (job.pickupFrom === 1) {
@@ -928,15 +930,15 @@ class NationwideControl extends BaseController {
         console.log(`[orderList] Sorting complete for ${list}`);
     }
 
-    async unlockJob(job: IJob) {
+    async unlockJob(job: DispatchJob) {
         await this.jdSvc.unlockJob(job);
     }
 
-    async lockJob(job: IJob) {
+    async lockJob(job: DispatchJob) {
         await this.jdSvc.lockJob(job);
     }
 
-    async restoreJob(job: IJob) {
+    async restoreJob(job: DispatchJob) {
         try {
             const result = await this.dispatchJobService.restoreJob(job);
             this.courier = {gpsCourier: result.gpsCourier};
@@ -948,22 +950,30 @@ class NationwideControl extends BaseController {
         }
     }
 
-    selectJobDetail(job: IJob) {
+    selectJobDetail(job: DispatchJob) {
         this.currentJob = job;
     }
 
     async loadRelatedJobDetail(jobId: number, jobNumber: string) {
         try {
-            const currentJob = await this.DispatchData.getJobDetail(jobId);
+            const currentJob =
+                this.jobList?.find(job => job.id === jobId) ||
+                this.jobListDelivery?.find(job => job.id === jobId) ||
+                this.jobListPOD?.find(job => job.id === jobId) ||
+                this.jobListReprice?.find(job => job.id === jobId);
 
-            await this.selectJob(currentJob);
-            this.currentSelection = ` for Job ${jobNumber}`;
+            if (currentJob) {
+                await this.selectJob(currentJob);
+                this.currentSelection = ` for Job ${jobNumber}`;
+            } else {
+                console.warn(`Job with ID ${jobId} not found in any list`);
+            }
         } catch (error) {
             console.error("Error in loadRelatedJobDetail:", error);
         }
     }
 
-    async sendQuoteRequest($event: MouseEvent, agent: AgentViewModel, job: IJob) {
+    async sendQuoteRequest($event: MouseEvent, agent: AgentViewModel, job: DispatchJob) {
         try {
             // Show confirmation dialog
             const confirm = this.$mdDialog.confirm()
@@ -987,9 +997,10 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async selectJob(job: IJob) {
+    async selectJob(job: DispatchJob) {
         try {
             this.currentJob = job;
+            this.currentJobId = job.id;
 
             // Show flight table
             if (job.toAirportId && job.fromAirportId) {
@@ -1007,7 +1018,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    private _displayJobOnMap(job: IJob) {
+    private _displayJobOnMap(job: DispatchJob) {
         try {
             this.mapConfig = this._calculateMapBounds(job);
             console.log('Calculated map bounds!');
@@ -1018,15 +1029,15 @@ class NationwideControl extends BaseController {
         }
     }
 
-    private _calculateMapBounds(job: IJob) {
+    private _calculateMapBounds(job: DispatchJob) {
         const pickupCoords: Coordinates = {
-            lat: job.pickupAddress.latitude ?? 0,
-            lng: job.pickupAddress.longitude ?? 0
+            lat: job.pickupAddress?.latitude ?? 0,
+            lng: job.pickupAddress?.longitude ?? 0
         };
 
         const deliveryCoords: Coordinates = {
-            lat: job.deliveryAddress.latitude ?? 0,
-            lng: job.deliveryAddress.longitude ?? 0
+            lat: job.deliveryAddress?.latitude ?? 0,
+            lng: job.deliveryAddress?.longitude ?? 0
         };
 
         // Calculate the center point between pickup and delivery
@@ -1053,7 +1064,7 @@ class NationwideControl extends BaseController {
         };
     }
 
-    private async _processFlights(job: IJob) {
+    private async _processFlights(job: DispatchJob) {
         console.log('Getting flights');
 
         this.flightsLoading = true;
@@ -1095,7 +1106,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    private async _processAgents(job: IJob) {
+    private async _processAgents(job: DispatchJob) {
         console.log('Getting agents');
 
         this.agentsLoading = true;
@@ -1163,7 +1174,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async addFlightToJob($event: MouseEvent, flight: FlightViewModel, job: IJob) {
+    async addFlightToJob($event: MouseEvent, flight: FlightViewModel, job: DispatchJob) {
         try {
             const confirm = this.$mdDialog.confirm()
                 .title('Assign Flight')
@@ -1200,7 +1211,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async addAgentToJob($event: MouseEvent, agent: AgentViewModel, job: IJob) {
+    async addAgentToJob($event: MouseEvent, agent: AgentViewModel, job: DispatchJob) {
         try {
             const confirm = this.$mdDialog.confirm()
                 .title('Assign Agent')
@@ -1284,8 +1295,8 @@ class NationwideControl extends BaseController {
 
             // Define fetch functions for each type
             const fetchMap: Record<Exclude<JobDataType, JobDataType.ALL>, {
-                fetch: () => Promise<IJob[]>;
-                updateScope: (result: IJob[]) => void;
+                fetch: () => Promise<DispatchJob[]>;
+                updateScope: (result: DispatchJob[]) => void;
             }> = {
                 [JobDataType.NEW]: {
                     fetch: () => {
@@ -1294,7 +1305,7 @@ class NationwideControl extends BaseController {
                         }
                         return this.jobListPromise;
                     },
-                    updateScope: (result: IJob[]) => {
+                    updateScope: (result: DispatchJob[]) => {
                         this.jobList = result || [];
                         this.totalJobCount = result.length | 0;
 
@@ -1308,7 +1319,7 @@ class NationwideControl extends BaseController {
                         }
                         return this.podListPromise;
                     },
-                    updateScope: (result: IJob[]) => {
+                    updateScope: (result: DispatchJob[]) => {
                         this.jobListPOD = result || [];
                         this.totalPodCount = result.length | 0;
 
@@ -1322,7 +1333,7 @@ class NationwideControl extends BaseController {
                         }
                         return this.repriceListPromise;
                     },
-                    updateScope: (result: IJob[]) => {
+                    updateScope: (result: DispatchJob[]) => {
                         this.jobListReprice = result || [];
                         this.totalRepriceCount = result.length;
 
@@ -1336,7 +1347,7 @@ class NationwideControl extends BaseController {
                         }
                         return this.deliveryListPromise;
                     },
-                    updateScope: (result: IJob[]) => {
+                    updateScope: (result: DispatchJob[]) => {
                         this.jobListDelivery = result || [];
                         this.totalDeliveryCount = result.length;
                         this.deliveryListLoading = false;
@@ -1352,7 +1363,7 @@ class NationwideControl extends BaseController {
                 return null;
             }).filter((promise): promise is Promise<{
                 type: Exclude<JobDataType, JobDataType.ALL>;
-                data: IJob[]
+                data: DispatchJob[]
             }> => promise !== null);
 
             const results = await Promise.all(promises);
@@ -1384,7 +1395,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async openFileAttachmentDialog($event: MouseEvent, job: IJob) {
+    async openFileAttachmentDialog($event: MouseEvent, job: DispatchJob) {
         await this.jobFileUploadDialogService.openJobFileUploadDialog($event, job);
     }
 
@@ -1409,7 +1420,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    jobClass(job: IJob): string {
+    jobClass(job: DispatchJob): string {
         if (!job || !job.followupTime) {
             return '';
         }
@@ -1428,7 +1439,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async showJobContextMenu($event: MouseEvent, job: IJob) {
+    async showJobContextMenu($event: MouseEvent, job: DispatchJob) {
         try {
             await this.selectJob(job);
 
@@ -1453,7 +1464,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async createEvent($event: MouseEvent, job: IJob) {
+    async createEvent($event: MouseEvent, job: DispatchJob) {
         await this.addEventDialogService.openAddEventDialog($event, job);
     }
 }
