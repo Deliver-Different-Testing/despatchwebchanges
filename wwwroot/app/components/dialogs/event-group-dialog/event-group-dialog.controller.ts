@@ -4,7 +4,7 @@ import ToastrService from "../../../services/toastr.service";
 import {EventGroupViewModel} from "../../../interfaces/event-group-view-model.interface";
 
 export class EventGroupDialogController implements angular.IController {
-    searchText: string = '';
+    searchText?: string;
     selectedUser?: Suggestion;
 
     static $inject = [
@@ -29,8 +29,22 @@ export class EventGroupDialogController implements angular.IController {
     async save(jobId: number, events: EventGroupViewModel[]) {
         try {
             const activeEvents = events.filter(event => event.active);
+            if (activeEvents.length === 0) {
+                this.toastrService.showWarningToast('No events are active. Please select active events to assign.');
+                return;
+            }
 
-            await this.addTasksToJob(jobId, activeEvents);
+            const unassignedEvents = activeEvents.filter(event => !event.assignTo);
+            if (unassignedEvents.length > 0) {
+                this.toastrService.showWarningToast('Please assign all active events before saving.');
+                return;
+            }
+
+            await this.$http.post('task/AddTasks', {
+                jobId,
+                eventGroupViewModels: activeEvents
+            });
+
             const taskCount = activeEvents.length;
             this.toastrService.showSuccessToast(`${taskCount} task${taskCount !== 1 ? 's' : ''} added successfully`);
         } catch (error) {
@@ -39,14 +53,7 @@ export class EventGroupDialogController implements angular.IController {
         }
     }
 
-    private async addTasksToJob(jobId: number, eventGroupViewModels: EventGroupViewModel[]) {
-        await this.$http.post('task/AddTasks', {
-            jobId,
-            eventGroupViewModels
-        });
-    }
-
-    querySearch(text: string, index: number): Suggestion[] {
+    querySearch(text: string): Suggestion[] {
         if (!text) return this.users;
 
         const lowercaseQuery = text.toLowerCase();

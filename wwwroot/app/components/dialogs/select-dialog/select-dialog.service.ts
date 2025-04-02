@@ -1,5 +1,6 @@
 import {Suggestion} from "../../../interfaces/job.interface";
 import {ISelectDialogResult} from "../../../interfaces/dialog-result.interfaces";
+import {SelectDialogController} from "./select-dialog.controller";
 
 export class SelectDialogService implements angular.IServiceProvider {
     static $inject = [
@@ -26,7 +27,7 @@ export class SelectDialogService implements angular.IServiceProvider {
         };
 
         const result: ISelectDialogResult = await this.$mdDialog.show({
-            controller: "SelectDialogController",
+            controller: SelectDialogController,
             controllerAs: "ctrl",
             parent: this.$document.parent(),
             targetEvent: $event,

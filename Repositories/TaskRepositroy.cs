@@ -8,33 +8,33 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace DespatchWeb.Repositories;
 
 public class TaskRepository(
     IDbContextFactory<DespatchContext> contextFactory,
-    ITenantTimeService tenantTimeService
+    ITenantTimeService timeService
 )
     : BaseRepository(contextFactory),
         ITaskRepository
 {
     public async Task<List<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters)
     {
-        var selectedDate = filters?.Date ?? tenantTimeService.GetCurrentTenantTime();
+        var today = filters?.Date ?? timeService.GetCurrentTenantTime();
 
         var query = Context.TucEvents
-            .Where(e => e.UcevDate != null && e.UcevDate.Value.Date <= selectedDate.Date);
+            .Where(e => e.UcevDate.Value.Date <= today.Date || !e.UcevClosed);
 
-        if (filters != null)
-        {
-            query = ApplyFilters(query, filters);
-            query = ApplyOrdering(query, filters);
-        }
+        if (filters != null) query = ApplyFilters(query, filters);
+
+        query = ApplyOrdering(query, filters, today);
 
         var eventTypes = await Context.TucEventTypes
+            .AsNoTracking()
             .ToDictionaryAsync(et => et.UcetId, et => et.UcetName);
 
-        var tasks = await query
+        var tasksQueryable = query
             .GroupJoin(
                 Context.TucStaffs,
                 events => events.UcevStaffIdin,
@@ -69,14 +69,19 @@ public class TaskRepository(
                         ? eventTypes[(int)x.events.UcevType]
                         : string.Empty
                 }
-            )
-            .ToListAsync();
+            );
 
+        var sql = tasksQueryable.ToQueryString();
+        Log.Information($"Generated SQL: {sql}");
+
+       var tasks = await tasksQueryable.ToListAsync();
         return tasks;
     }
 
-    private static IQueryable<TucEvent> ApplyOrdering(IQueryable<TucEvent> query, TaskTableFiltersRequest filters)
+    private static IQueryable<TucEvent> ApplyOrdering(IQueryable<TucEvent> query, TaskTableFiltersRequest filters, DateTime today)
     {
+        if(filters == null) return query;
+
         if (string.IsNullOrWhiteSpace(filters.OrderBy))
             return query;
 
@@ -84,37 +89,23 @@ public class TaskRepository(
 
         return filters.OrderBy.ToLowerInvariant() switch
         {
-            "assignedto" when filters.StaffId is null =>
-                ApplyOrder(query, e => e.UcevStaffIdout == null, isDescending),
-
-            "assignedto" when filters.StaffId is not null =>
-                ApplyOrder(query, e => (int)e.UcevStaffIdout == filters.StaffId, isDescending),
-
             "created" =>
-                ApplyDateTimeOrder(query, isDescending),
+                ApplyDateTimeOrder(query, isDescending,today),
 
             _ =>
-                ApplyDateTimeOrder(query, isDescending)
+                ApplyDateTimeOrder(query, isDescending, today)
         };
     }
 
-    private static IQueryable<TucEvent> ApplyOrder<TKey>(IQueryable<TucEvent> query,
-        Expression<Func<TucEvent, TKey>> keySelector, bool isDescending)
+    private static IQueryable<TucEvent> ApplyDateTimeOrder(IQueryable<TucEvent> query, bool isDescending, DateTime today)
     {
         return isDescending
-            ? query.OrderByDescending(keySelector)
+            ? query.OrderByDescending(e => e.UcevDate < today)
                 .ThenByDescending(e => e.UcevDate)
                 .ThenByDescending(e => e.UcevTime)
-            : query.OrderBy(keySelector)
+            : query.OrderByDescending(e => e.UcevDate < today)
                 .ThenBy(e => e.UcevDate)
                 .ThenBy(e => e.UcevTime);
-    }
-
-    private static IQueryable<TucEvent> ApplyDateTimeOrder(IQueryable<TucEvent> query, bool isDescending)
-    {
-        return isDescending
-            ? query.OrderByDescending(e => e.UcevDate).ThenByDescending(e => e.UcevTime)
-            : query.OrderBy(e => e.UcevDate).ThenBy(e => e.UcevTime);
     }
 
     public async Task SetEventAsClosedAsync(int eventId, bool closed)
@@ -193,11 +184,7 @@ public class TaskRepository(
                     Text = x.EventType.UcetName
                 },
                 Sequence = x.Sequence,
-                Group = x.EventTypeGroup.Name,
-                AssignTo = new Suggestion
-                {
-                    Text = x.EventTypeGroup.CreatedBy
-                }
+                Group = x.EventTypeGroup.Name
             })
             .OrderBy(x => x.Sequence)
             .AsNoTracking()
@@ -268,19 +255,26 @@ public class TaskRepository(
 
         // Filter by EventTypeId if provided
         if (filters.EventTypeId.HasValue)
-            query = query.Where(e => Equals(e.UcevType, filters.EventTypeId.Value));
+            query = query.Where(e => (int)e.UcevType == filters.EventTypeId);
+
+        // Filter by staffId
+        if(filters.StaffId.HasValue && filters.StaffId.Value != -1)
+            query = query.Where(e => Equals((int)e.UcevStaffIdin, filters.StaffId.Value) || e.UcevStaffIdin == null);
+
+        if (filters.StaffId is -1)
+            query = query.Where(e => e.UcevStaffIdin == null);
 
         // Filter by SearchText if provided
         if (string.IsNullOrWhiteSpace(filters.SearchText)) return query;
 
         var searchText = filters.SearchText.ToLower();
         query = query.Where(e =>
-            (e.UcevDescription != null && e.UcevDescription.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            (e.UcevDescription != null && e.UcevDescription.ToLower().Contains(searchText))
             || (
                 e.UcevNotes != null
-                && e.UcevNotes.Contains(searchText, StringComparison.CurrentCultureIgnoreCase)
+                && e.UcevNotes.Contains(searchText)
             )
-            || (e.UcevDespatcher != null && e.UcevDespatcher.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            || (e.UcevDespatcher != null && e.UcevDespatcher.ToLower().Contains(searchText))
         );
 
         return query;
@@ -288,20 +282,6 @@ public class TaskRepository(
 
     private async Task<TucEvent> GetEventByIdAsync(int eventId) =>
         await Context.TucEvents.FirstOrDefaultAsync(e => e.UcevId == eventId);
-
-    private async Task<string> GetEventTypeNameAsync(double? eventTypeId)
-    {
-        const string defaultEvent = "Default";
-        if (eventTypeId == null)
-            return defaultEvent;
-
-        var eventType = await Context.TucEventTypes
-            .Where(jt => Equals(jt.UcetId, eventTypeId))
-            .Select(jt => jt.UcetName)
-            .FirstOrDefaultAsync();
-
-        return eventType ?? defaultEvent;
-    }
 
     public async Task AddEventAsync(
         int jobId,

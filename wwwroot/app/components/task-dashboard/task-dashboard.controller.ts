@@ -29,8 +29,8 @@ class TaskDashboardController extends BaseController {
     calendarViewMode: boolean = false;
 
     // Filter states
-    searchQuery: string = '';
-    courierFilter: string = StatusFilter.All;
+    searchQuery?: string;
+    staffFilter: string = StatusFilter.All;
     eventTypeFilter: string = StatusFilter.All;
     statusFilter: string = StatusFilter.All;
 
@@ -44,7 +44,7 @@ class TaskDashboardController extends BaseController {
     timeOptions: string[] = [];
 
     // Lists
-    courierList?: ActiveCourierViewModel[];
+    staffList?: Suggestion[];
     eventTypesList?: Suggestion[];
 
     // Task item configurations
@@ -79,26 +79,28 @@ class TaskDashboardController extends BaseController {
     ) {
         super();
         this.greeting = greetingService.greetUser(FirstName);
-        this.initialize();
-    }
 
-    private initialize() {
         this.generateTimeOptions();
         this.selectedDate = new Date();
         this.initializeDates();
         this.calendarViewMode = this.viewMode === ViewMode.Calendar;
 
-        this.loadListsSequentially()
+        this._loadLists()
             .then(() => this.getTasks())
             .catch(error => {
                 console.error('Initialization error:', error);
             });
     }
 
-    private async loadListsSequentially() {
+    private async _loadLists() {
         try {
-            this.courierList = await this.DispatchService.getAllCouriers();
-            this.eventTypesList = await this.DispatchService.getEventTypes();
+            const [staffList, eventTypesList] = await Promise.all([
+                this.DispatchService.getActiveStaff(),
+                this.DispatchService.getEventTypes()
+            ]);
+
+            this.staffList = staffList;
+            this.eventTypesList = eventTypesList;
         } catch (error) {
             console.error('Error loading lists:', error);
             throw error;
@@ -161,16 +163,19 @@ class TaskDashboardController extends BaseController {
     }
 
     private buildTaskFilters(): TaskTableFiltersRequest {
-        const filters: TaskTableFiltersRequest = {staffId: -1};
+        const filters: TaskTableFiltersRequest = {};
 
-        if (this.courierFilter && this.courierFilter !== StatusFilter.All) {
-            filters.courierId = parseInt(this.courierFilter, 10);
+        console.log('[TaskDashboardController] Staff filter:', this.staffFilter);
+        if (this.staffFilter && this.staffFilter !== StatusFilter.All) {
+            filters.staffId = parseInt(this.staffFilter, 10);
         }
 
+        console.log('[TaskDashboardController] Event type filter:', this.eventTypeFilter);
         if (this.eventTypeFilter && this.eventTypeFilter !== StatusFilter.All) {
             filters.eventTypeId = parseInt(this.eventTypeFilter, 10);
         }
 
+        console.log('[TaskDashboardController] search text filter:', this.searchQuery);
         if (this.searchQuery) {
             filters.searchText = this.searchQuery;
         }
