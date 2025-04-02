@@ -103,8 +103,6 @@ export class TaskListItemController extends BaseController {
     }
 
     async reassignTask($event: MouseEvent, task: TaskViewModel) {
-        $event.stopPropagation();
-
         try {
             const users = await this.DispatchService.getActiveStaff();
             const result: ISelectDialogResult = await this.selectDialogService.showSelectDialog(

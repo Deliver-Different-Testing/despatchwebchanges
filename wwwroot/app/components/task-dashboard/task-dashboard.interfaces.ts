@@ -22,7 +22,7 @@ export interface TaskTableFiltersRequest {
     date?: string;
     orderBy?: string;
     orderDirection?: string;
-    staffId: number;
+    staffId?: number;
 }
 
 export interface ExtendedTask extends TaskViewModel {

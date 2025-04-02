@@ -30,15 +30,15 @@
         </p>
 
         <div class="task-meta" layout="row" layout-wrap>
-            <div ng-if="ctrl.config.showAssignee !== false"
-                 class="meta-item assignee"
-                 layout="row"
-                 layout-align="start center"
-                 md-ink-ripple
-                 ng-click="$event.stopPropagation(); ctrl.reassignTask($event, ctrl.task)">
+            <md-button
+                    ng-if="ctrl.config.showAssignee !== false"
+                    class="meta-item assignee"
+                    layout="row"
+                    layout-align="start center"
+                    ng-click="ctrl.reassignTask($event, ctrl.task)">
                 <md-icon md-font-set="material-symbols-outlined">person</md-icon>
-                <span>{{ctrl.task.assignee.text}}</span>
-            </div>
+                {{ctrl.task.assignee.text}}
+            </md-button>
 
             <div ng-if="ctrl.config.showJobType !== false"
                  class="meta-item job-type"

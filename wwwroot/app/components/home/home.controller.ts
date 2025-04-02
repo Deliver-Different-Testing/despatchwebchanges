@@ -2119,15 +2119,6 @@ class HomeController extends BaseController {
         }, 0);
     }
 
-    private _isValidJob(job: any): job is DispatchJob {
-        return (
-            job !== null &&
-            typeof job === 'object' &&
-            'id' in job &&
-            typeof job.id !== 'undefined'
-        );
-    }
-
     async handleUndispatchedJob(job: DispatchJob) {
         await this.getPotentialCouriers(job.id);
         this.potentialCouriersSelection = ` for Job ${job.jobNo}`;
@@ -2282,8 +2273,6 @@ class HomeController extends BaseController {
                 this.mapJobList = [];
             }
         }
-
-        await this.getSupports();
     }
 
     async changeJobCutoffDate(days: number) {
@@ -2320,61 +2309,6 @@ class HomeController extends BaseController {
         await this.getJobList();
     }
 
-    async getSupports() {
-        try {
-            if (!this.supports) {
-                this.supportsLoading = true;
-            }
-
-            // Define filter request based on current filter settings
-            let filterRequest: TaskTableFiltersRequest = {
-                staffId: ContactID
-            };
-
-            if (this.supportsFilter) {
-                switch (this.supportsFilter) {
-                    case 'mine':
-                        filterRequest.staffId = ContactID;
-                        filterRequest.orderBy = 'assignedTo';
-                        filterRequest.orderDirection = 'desc';
-                        break;
-                    case 'unassigned':
-                        filterRequest.staffId = -1;
-                        filterRequest.orderBy = 'assignedTo';
-                        filterRequest.orderDirection = 'desc';
-                        break;
-                    case 'newest':
-                        filterRequest.orderBy = 'created';
-                        filterRequest.orderDirection = 'desc';
-                        break;
-                    case 'oldest':
-                        filterRequest.orderBy = 'created';
-                        filterRequest.orderDirection = 'asc';
-                        break;
-                    default:
-                        filterRequest.orderBy = 'created';
-                        filterRequest.orderDirection = 'desc';
-                        break;
-                }
-            }
-
-            try {
-                this.supports = await this.DispatchData.getAllTasks(filterRequest);
-                this.filteredSupports = this.supports;
-            } catch (serviceError) {
-                console.error("Service error getting supports:", serviceError);
-                this.toastrService.showErrorToast("Failed to load support items");
-
-                this.supports = [];
-                this.filteredSupports = [];
-            }
-        } catch (error) {
-            console.log("Error getting supports:", error);
-        } finally {
-            this.supportsLoading = false;
-        }
-    }
-
     async getClientContacts() {
         try {
             this.pickClients = await this.DispatchData.getClientContacts(ContactID);
@@ -2401,6 +2335,7 @@ class HomeController extends BaseController {
             this.pickCouriers = activeCouriers;
             this.pickAllCouriers = allCouriers;
 
+            await this.getSupports();
             await this.getJobList();
 
             if (!this.currentCourier && !this.currentJob) {
@@ -2686,70 +2621,69 @@ class HomeController extends BaseController {
         }
     }
 
-    async filterSupports(filterType: string) {
-        this.supportsFilter = filterType;
+    private _buildFilterRequest(filterType: string): TaskTableFiltersRequest {
+        const filterRequest: TaskTableFiltersRequest = {};
 
+        switch (filterType) {
+            case 'mine':
+                filterRequest.staffId = ContactID;
+                filterRequest.orderBy = 'assignedTo';
+                filterRequest.orderDirection = 'desc';
+                break;
+            case 'unassigned':
+                filterRequest.staffId = -1;
+                filterRequest.orderBy = 'assignedTo';
+                filterRequest.orderDirection = 'desc';
+                break;
+            case 'newest':
+                filterRequest.orderBy = 'created';
+                filterRequest.orderDirection = 'desc';
+                break;
+            case 'oldest':
+                filterRequest.orderBy = 'created';
+                filterRequest.orderDirection = 'asc';
+                break;
+            default:
+                filterRequest.orderBy = 'created';
+                filterRequest.orderDirection = 'desc';
+                break;
+        }
+
+        return filterRequest;
+    }
+
+    async loadSupports(filterType: string = this.supportsFilter): Promise<void> {
         try {
             this.supportsLoading = true;
 
-            // Build filter request based on selected filter
-            let filterRequest: TaskTableFiltersRequest = {
-                staffId: ContactID
-            };
+            // Build filter request based on filter type
+            const filterRequest = this._buildFilterRequest(filterType);
 
-            switch (filterType) {
-                case 'mine':
-                    // Filter to show only tasks assigned to current user
-                    filterRequest.staffId = ContactID;
-                    filterRequest.orderBy = 'assignedTo';  // Changed from 'created' to 'assignedTo'
-                    filterRequest.orderDirection = 'desc';
-                    break;
-                case 'unassigned':
-                    // Filter to show only unassigned tasks
-                    filterRequest.staffId = -1; // Special value to indicate unassigned
-                    filterRequest.orderBy = 'assignedTo';  // Changed from 'created' to 'assignedTo'
-                    filterRequest.orderDirection = 'desc';
-                    break;
-                case 'newest':
-                    // Order by creation date, newest first
-                    filterRequest.orderBy = 'created';
-                    filterRequest.orderDirection = 'desc';
-                    break;
-                case 'oldest':
-                    // Order by creation date, oldest first
-                    filterRequest.orderBy = 'created';
-                    filterRequest.orderDirection = 'asc';
-                    break;
-                default:
-                    // 'all' - show all tasks with default ordering
-                    filterRequest.orderBy = 'created';
-                    filterRequest.orderDirection = 'desc';
-                    break;
-            }
-
-            // Get filtered supports
             try {
                 this.supports = await this.DispatchData.getAllTasks(filterRequest);
                 this.filteredSupports = this.supports;
-
-                // Show toast message for successful filter application
-                const filterLabel = this.getSupportsFilterLabel();
-                this.toastrService.showSuccessToast(`Showing ${filterLabel}`);
             } catch (serviceError) {
-                console.error("Service error filtering supports:", serviceError);
-                this.toastrService.showErrorToast("Failed to apply filter. Please try again.");
+                console.error("Service error getting supports:", serviceError);
+                this.toastrService.showErrorToast("Failed to load support items");
 
-                // Initialize empty arrays if service call failed
                 this.supports = [];
                 this.filteredSupports = [];
             }
-
         } catch (error) {
-            console.error("Error filtering supports:", error);
-            this.toastrService.showErrorToast("Error filtering support tasks");
+            console.error("Error loading supports:", error);
+            this.toastrService.showErrorToast("Error loading support tasks");
         } finally {
             this.supportsLoading = false;
         }
+    }
+
+    async getSupports(): Promise<void> {
+            await this.loadSupports();
+    }
+
+    async filterSupports(filterType: string): Promise<void> {
+        this.supportsFilter = filterType;
+        await this.loadSupports(filterType);
     }
 }
 

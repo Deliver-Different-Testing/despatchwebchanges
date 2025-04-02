@@ -104,11 +104,11 @@
                         <!-- Courier Filter -->
                         <div flex="50" flex-xs="100" class="filter-group">
                             <md-input-container class="md-block">
-                                <label>Courier</label>
-                                <md-select ng-model="ctrl.courierFilter" ng-change="ctrl.onFilterChange()">
-                                    <md-option value="all">All Couriers</md-option>
-                                    <md-option ng-repeat="courier in ctrl.courierList" value="{{courier.id}}">
-                                        {{courier.name}}
+                                <label>Staff</label>
+                                <md-select ng-model="ctrl.staffFilter" ng-change="ctrl.onFilterChange()">
+                                    <md-option value="all">All Staff</md-option>
+                                    <md-option ng-repeat="staff in ctrl.staffList" value="{{staff.id}}">
+                                        {{staff.text}}
                                     </md-option>
                                 </md-select>
                             </md-input-container>
@@ -120,7 +120,7 @@
                                 <label>Event Type</label>
                                 <md-select ng-model="ctrl.eventTypeFilter" ng-change="ctrl.onFilterChange()">
                                     <md-option value="all">All Event Types</md-option>
-                                    <md-option ng-repeat="eventType in ctrl.eventTypesList" value="{{eventType}}">
+                                    <md-option ng-repeat="eventType in ctrl.eventTypesList" value="{{eventType.id}}">
                                         {{eventType.text}}
                                     </md-option>
                                 </md-select>
@@ -157,7 +157,7 @@
                     <!-- Task items using the new component -->
                     <md-list ng-if="!ctrl.tasksLoading">
                         <task-item-component
-                                ng-repeat="task in ctrl.getOverdueTasks() track by task.id"
+                                ng-repeat="task in ctrl.filteredTasks track by task.id"
                                 task="task"
                                 config="ctrl.taskItemConfig"
                                 on-status-change="ctrl.handleTaskCompletion(task)"
