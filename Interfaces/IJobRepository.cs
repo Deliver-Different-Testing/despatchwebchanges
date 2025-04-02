@@ -59,9 +59,9 @@ public interface IJobRepository
     );
 
     Task<List<PrebookListViewModel>> PreBookJobListAsync();
-    Task<List<JobViewModel>> CurrentJobList(int courierId, bool done);
+    Task<List<DispatchJobViewModel>> CurrentJobList(int courierId, bool done);
 
-    Task<List<JobViewModel>> JobListAsync(
+    Task<List<DispatchJobViewModel>> JobListAsync(
         JobQueryParams queryParams,
         bool isInternal,
         bool isUsTenant,

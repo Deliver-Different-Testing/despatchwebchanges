@@ -832,18 +832,18 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         return prebooks;
     }
 
-    public async Task<List<JobViewModel>> CurrentJobList(int courierId, bool done)
+    public async Task<List<DispatchJobViewModel>> CurrentJobList(int courierId, bool done)
     {
         return await Context
             .TucCouriers.Where(c => c.UccrId == courierId)
             .SelectMany(c => c.TucJobUcjbCouriers)
             .Where(j => j.UcjbJobDone == done)
-            .Select(JobMapping)
+            .Select(JobMappings.JobDispatchMapping)
             .AsNoTracking()
             .ToListAsync();
     }
 
-    public async Task<List<JobViewModel>> JobListAsync(
+    public async Task<List<DispatchJobViewModel>> JobListAsync(
         JobQueryParams queryParams,
         bool isInternal,
         bool isUsTenant,

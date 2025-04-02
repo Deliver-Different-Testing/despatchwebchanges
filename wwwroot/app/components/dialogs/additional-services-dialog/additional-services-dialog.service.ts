@@ -1,4 +1,4 @@
-import {IJob} from "../../../interfaces/job.interface";
+import {DispatchJob, IJob} from "../../../interfaces/job.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import AdditionalServicesDialogController from "./additional-services-dialog.controller";
 
@@ -21,7 +21,7 @@ class AdditionalServicesDialogService implements  angular.IServiceProvider {
         return this;
     }
 
-    async showAdditionalServicesDialog($event: MouseEvent, job: IJob) {
+    async showAdditionalServicesDialog($event: MouseEvent, job: IJob | DispatchJob) {
         try {
             console.log("Additional Services Dialog opened!");
             console.log("Job: ", job);

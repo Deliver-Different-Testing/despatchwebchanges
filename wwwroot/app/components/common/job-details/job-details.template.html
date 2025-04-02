@@ -10,7 +10,8 @@
             <div layout="row" layout-align="start center">
                 <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
                 <span class="warning-text" ng-if="ctrl.job.isArchived">Job archived. Some fields can't be edited</span>
-                <span class="warning-text" ng-if="ctrl.job.prebook">Pre-booked job. Some fields may require confirmation</span>
+                <span class="warning-text"
+                      ng-if="ctrl.job.prebook">Pre-booked job. Some fields may require confirmation</span>
             </div>
         </md-card-content>
     </md-card>
@@ -18,7 +19,7 @@
     <md-card class="job-detail-widget">
         <!-- Top Bar -->
         <div class="header-bar">
-            <md-menu>
+            <md-menu ng-if="ctrl.showStageDropdown">
                 <md-button aria-label="internal stage"
                            ng-click="$mdMenu.open($event)">
                     <md-tooltip md-direction="bottom">Modify Status</md-tooltip>
@@ -68,7 +69,8 @@
                             </div>
                         </md-list-item>
 
-                        <md-list-item md-ink-ripple ng-click="!this.job.locked && ctrl.editBookedDate($event, ctrl.job)">
+                        <md-list-item md-ink-ripple
+                                      ng-click="!this.job.locked && ctrl.editBookedDate($event, ctrl.job)">
                             <md-icon md-font-set="material-symbols-outlined" aria-label="Created date">add_circle
                             </md-icon>
                             <div class="timing-detail">
@@ -94,7 +96,7 @@
                 <div flex="33" flex-xs="100" class="timing-column">
                     <md-list class="timing-list">
                         <md-list-item md-ink-ripple
-                                       ng-click="!this.job.locked && ctrl.editPuDate($event, ctrl.job)">
+                                      ng-click="!this.job.locked && ctrl.editPuDate($event, ctrl.job)">
                             <md-icon md-font-set="material-symbols-outlined" aria-label="Pickup time">schedule
                             </md-icon>
                             <div class="timing-detail">
@@ -115,7 +117,8 @@
 
                         <md-list-item md-ink-ripple
                                       ng-click="!ctrl.job.locked && ctrl.editPodName($event, ctrl.job)">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="POD name">verified_user</md-icon>
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="POD name">verified_user
+                            </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">POD Name:</span>
                                 <span class="timing-value">{{ctrl.job.podName || 'N/A'}}</span>
@@ -149,7 +152,8 @@
                         </md-list-item>
 
                         <md-list-item md-ink-ripple ng-click="!this.job.locked && ctrl.editDeliverBy($event, ctrl.job)">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="delivery by time">alarm</md-icon>
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="delivery by time">alarm
+                            </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Deliver By:</span>
                                 <span class="timing-value">{{ctrl.job.deliverByTime ? (ctrl.job.deliverByTime | date:'MM/dd h:mm a') : 'N/A'}}</span>
@@ -172,7 +176,8 @@
                             <div class="md-toolbar-tools-m3">
                                 <div class="section section-start">
                                     <span class="material-symbols-outlined">   {{ctrl.getJobAddressIcon()}}</span>
-                                    <span class="md-headline-title" flex style="margin-left: 8px;">Pickup Location</span>
+                                    <span class="md-headline-title" flex
+                                          style="margin-left: 8px;">Pickup Location</span>
                                 </div>
                             </div>
                         </md-toolbar>
@@ -213,7 +218,8 @@
                             <div class="md-toolbar-tools-m3">
                                 <div class="section section-start">
                                     <span class="material-symbols-outlined">   {{ctrl.getJobAddressIcon()}}</span>
-                                    <span class="md-headline-title" flex style="margin-left: 8px;">Delivery Location</span>
+                                    <span class="md-headline-title" flex
+                                          style="margin-left: 8px;">Delivery Location</span>
                                 </div>
                             </div>
                         </md-toolbar>
@@ -258,7 +264,8 @@
                             <div class="md-toolbar-tools-m3">
                                 <div class="section section-start">
                                     <span class="material-symbols-outlined">flight</span>
-                                    <span class="md-headline-title" flex style="margin-left: 8px;">Flight Information</span>
+                                    <span class="md-headline-title" flex
+                                          style="margin-left: 8px;">Flight Information</span>
                                 </div>
                             </div>
                         </md-toolbar>
@@ -300,7 +307,8 @@
                             <div class="md-toolbar-tools-m3">
                                 <div class="section section-start">
                                     <span class="material-symbols-outlined">badge</span>
-                                    <span class="md-headline-title" flex style="margin-left: 8px;">Agent Information</span>
+                                    <span class="md-headline-title" flex
+                                          style="margin-left: 8px;">Agent Information</span>
                                 </div>
                             </div>
                         </md-toolbar>
@@ -347,7 +355,8 @@
                             <div class="md-toolbar-tools-m3">
                                 <div class="section section-start">
                                     <span class="material-symbols-outlined">inventory_2</span>
-                                    <span class="md-headline-title" flex style="margin-left: 8px;">Package Details</span>
+                                    <span class="md-headline-title" flex
+                                          style="margin-left: 8px;">Package Details</span>
                                 </div>
                             </div>
                         </md-toolbar>
@@ -386,7 +395,8 @@
                             <div class="md-toolbar-tools-m3">
                                 <div class="section section-start">
                                     <span class="material-symbols-outlined">description</span>
-                                    <span class="md-headline-title" flex style="margin-left: 8px;">Additional Info</span>
+                                    <span class="md-headline-title" flex
+                                          style="margin-left: 8px;">Additional Info</span>
                                 </div>
                             </div>
                         </md-toolbar>
@@ -430,7 +440,8 @@
                             <div class="md-toolbar-tools-m3">
                                 <div class="section section-start">
                                     <span class="material-symbols-outlined">local_shipping</span>
-                                    <span class="md-headline-title" flex style="margin-left: 8px;">Delivery Details</span>
+                                    <span class="md-headline-title" flex
+                                          style="margin-left: 8px;">Delivery Details</span>
                                 </div>
                             </div>
                         </md-toolbar>
@@ -447,7 +458,8 @@
                             </md-list-item>
 
                             <md-list-item class="info-row" md-ink-ripple ng-click="ctrl.courierClick($event, ctrl.job)">
-                                <md-icon md-font-set="material-symbols-outlined" aria-label="Courier">person_pin</md-icon>
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Courier">person_pin
+                                </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Courier:</span>
                                     <span class="value">{{ctrl.job.courierData.courierName}}</span>
@@ -487,7 +499,8 @@
                             <div class="md-toolbar-tools-m3">
                                 <div class="section section-start">
                                     <span class="material-symbols-outlined">account_box</span>
-                                    <span class="md-headline-title" flex style="margin-left: 8px;">Client Information</span>
+                                    <span class="md-headline-title" flex
+                                          style="margin-left: 8px;">Client Information</span>
                                 </div>
                             </div>
                         </md-toolbar>
@@ -546,7 +559,8 @@
 
                             <md-list-item class="info-row" md-ink-ripple
                                           ng-click="!ctrl.job.locked && ctrl.editJobContactPhone($event, ctrl.job, 'from')">
-                                <md-icon md-font-set="material-symbols-outlined" aria-label="Phone number">phone_callback
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Phone number">
+                                    phone_callback
                                 </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Phone:</span>
@@ -602,7 +616,8 @@
 
                             <md-list-item class="info-row" md-ink-ripple
                                           ng-click="ctrl.editRef($event, ctrl.job, true)">
-                                <md-icon md-font-set="material-symbols-outlined" aria-label="Reference A">bookmark</md-icon>
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Reference A">bookmark
+                                </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Ref A:</span>
                                     <span class="value">{{ctrl.job.refA || '-'}}</span>
@@ -611,7 +626,8 @@
 
                             <md-list-item class="info-row" md-ink-ripple
                                           ng-click="ctrl.editRef($event, ctrl.job, false)">
-                                <md-icon md-font-set="material-symbols-outlined" aria-label="Reference B">label</md-icon>
+                                <md-icon md-font-set="material-symbols-outlined" aria-label="Reference B">label
+                                </md-icon>
                                 <div class="info-detail">
                                     <span class="label">Ref B:</span>
                                     <span class="value">{{ctrl.job.refB || '-'}}</span>
@@ -736,6 +752,11 @@
     </md-card>
 </div>
 
+<dfrnt-loader
+        is-loading="!ctrl.job && ctrl.isLoading"
+        icon-name="'assignment'">
+</dfrnt-loader>
+
 <no-data
         ng-if="!ctrl.job"
         title="No Job Selected"
@@ -745,7 +766,8 @@
 </no-data>
 
 
-<div class="pod-photo-section md-whiteframe-1dp" ng-if="ctrl.job && ctrl.job.done && ctrl.formattedPodPhotos.length > 0">
+<div class="pod-photo-section md-whiteframe-1dp"
+     ng-if="ctrl.job && ctrl.job.done && ctrl.formattedPodPhotos.length > 0">
     <div class="section-header">
         <div class="md-dense"
              style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px;">

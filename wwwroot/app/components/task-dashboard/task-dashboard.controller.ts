@@ -7,7 +7,7 @@ import {Suggestion} from "../../interfaces/job.interface";
 import {StatusFilter} from "./enums/status-filter";
 import {ViewMode} from "./enums/view-mode";
 import BaseController from "../base-controller";
-import { ITaskListItemConfig } from "../common/task-item-component/task-item.interfaces";
+import {ITaskListItemConfig} from "../common/task-item-component/task-item.interfaces";
 
 class TaskDashboardController extends BaseController {
     static $inject = [
@@ -161,7 +161,7 @@ class TaskDashboardController extends BaseController {
     }
 
     private buildTaskFilters(): TaskTableFiltersRequest {
-        const filters: TaskTableFiltersRequest = { staffId: -1};
+        const filters: TaskTableFiltersRequest = {staffId: -1};
 
         if (this.courierFilter && this.courierFilter !== StatusFilter.All) {
             filters.courierId = parseInt(this.courierFilter, 10);

@@ -890,6 +890,7 @@ function CSControl($scope, jdSvc, uCSData, $state, $filter, $mdDialog, greetingS
 
             const data = await uCSData.getJobDetail(jobId);
             $scope.currentJob = data;
+            $scope.currentJobId = jobId;
             await jdSvc.setJob($scope.currentJob);
             $scope.currentSelection = " for Job " + data.jobNo;
 

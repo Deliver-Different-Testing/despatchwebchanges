@@ -1,6 +1,7 @@
-import {IJob, JobQueryParams, Suggestion, Views} from "../../interfaces/job.interface";
+import {DispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
 import {AgentViewModel, FlightViewModel} from "./nationwide.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
+
 class NationwideService implements angular.IServiceProvider {
     static $inject = ["$http", "moment"];
 
@@ -26,7 +27,13 @@ class NationwideService implements angular.IServiceProvider {
         await this.$http.post(`job/ExsalerateActivity?eventName=${eventName}&notes=${notes}&clientId=${clientId}&jobNumber=${jobNumber}&despatcherName=${despatcherName}`, null);
     }
 
-    async getNationwideJobs(endpoint: string, queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]): Promise<IJob[]> {
+    async getNationwideJobs(
+        endpoint: string,
+        queryParams: JobQueryParams,
+        selectedClients: string[],
+        internal: boolean,
+        selectedAreas: DfrntPageViewModel[]
+    ): Promise<DispatchJob[]> {
         const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
 
         const defaultParams = {
@@ -52,7 +59,7 @@ class NationwideService implements angular.IServiceProvider {
         }
 
         const url = `nationwidejob/${endpoint}?${params.toString()}`;
-        const response = await this.$http.get<IJob[]>(url);
+        const response = await this.$http.get<DispatchJob[]>(url);
         return response.data;
     }
 
@@ -146,4 +153,5 @@ class NationwideService implements angular.IServiceProvider {
         });
     }
 }
+
 export default NationwideService;

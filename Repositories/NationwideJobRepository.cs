@@ -130,7 +130,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         }
     }
 
-    public async Task<List<JobViewModel>> NationwideJobListAsync(string order, string orderDirection,
+    public async Task<List<DispatchJobViewModel>> NationwideJobListAsync(string order, string orderDirection,
         bool isInternal, bool isUsTenant,
         string clientIds, NationwideWidget windowPane,
         List<int> selectedViewIds)

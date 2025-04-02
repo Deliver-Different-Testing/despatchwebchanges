@@ -1,5 +1,5 @@
 import ToastrService from "../../../services/toastr.service";
-import {InternalStatus, IJob, EditAddressDialogViewModel} from "../../../interfaces/job.interface";
+import {EditAddressDialogViewModel, IJob, InternalStatus} from "../../../interfaces/job.interface";
 import {ContactID, FirstName} from "../../../contants";
 import {JobNote, JobOptions, TabItem} from "./job-details.interfaces";
 import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
@@ -12,7 +12,7 @@ import {EditAddressDialogService} from "../../dialogs/edit-address-dialog/edit-a
 import PriceBreakdownDialogService from "../../dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
 import BaseController from "../../base-controller";
 import moment from "moment";
-import NoteManagementDialogService from "../../dialogs/note-management-dialog/note-management.dialog.service";
+import {AppPages} from "../../../enums/app-pages.enum";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -25,12 +25,12 @@ class JobDetailController extends BaseController {
         "selectDialogService",
         "editDateTimeDialogService",
         "editAddressDialogService",
-        "priceBreakdownDialogService"
+        "priceBreakdownDialogService",
+        "$document"
     ];
 
-    private photosLoaded: boolean = false;
-    private previousJobId?: number;
-
+    appPage?: AppPages = AppPages.Dispatch;
+    jobId?: number;
     job?: IJob;
     internalJob?: IJob;
     notes: JobNote[];
@@ -44,6 +44,7 @@ class JobDetailController extends BaseController {
     onStatusChange?: (params: { $event: any }) => void;
     selectedStatusText?: string;
     isLoading: boolean = false;
+    showStageDropdown: boolean = false;
 
     constructor(
         private $scope: angular.IScope,
@@ -55,7 +56,8 @@ class JobDetailController extends BaseController {
         private selectDialogService: SelectDialogService,
         private editDateTimeDialogService: EditDateTimeDialogService,
         private editAddressDialogService: EditAddressDialogService,
-        private priceBreakdownDialogService: PriceBreakdownDialogService
+        private priceBreakdownDialogService: PriceBreakdownDialogService,
+        private $document: angular.IDocumentService,
     ) {
         super();
 
@@ -85,77 +87,43 @@ class JobDetailController extends BaseController {
         };
 
         this.internalStatusList = [];
-        this.$scope.$watch(() => this.job, (newValue, oldValue) => {
-            if (newValue && newValue !== oldValue) {
-                this.internalJob = newValue;
-                this.previousJobId = newValue.id;
-                this._initializeJobData();
-
-                if (newValue.completedTime) {
-                    this._loadPodPhotos();
-                }
-            }
-        });
-
-        this.$scope.$watch(() => this.job, (newValue, oldValue) => {
-            if (newValue && !angular.equals(newValue, oldValue)) {
-                this.internalJob = angular.copy(newValue);
-                this.previousJobId = newValue.id;
-                this._initializeJobData();
-
-                if (newValue.completedTime && !this.photosLoaded) {
-                    this._loadPodPhotos();
-                    this.photosLoaded = true;
-                }
-            }
-        }, true);
     }
 
     $onInit() {
-        console.log('$onInit called - job exists:', !!this.job);
+        console.log('$onInit called - jobId:', this.jobId);
 
         this.DispatchData.getInternalStatusList()
             .then((statusList: InternalStatus[]) => {
                 this.internalStatusList = statusList;
-                this._getSelectedStatusText();
             })
             .catch(error => {
                 console.error("Error loading internal status list:", error);
             });
 
-        // Initial job data setup if job is already available
-        if (this.job) {
-            this.internalJob = this.job;
-            this.previousJobId = this.job.id;
-            this._initializeJobData();
-
-            if (this.job.completedTime) {
-                this._loadPodPhotos();
-            }
+        if (this.jobId) {
+            return this._loadJobData(this.jobId);
         }
     }
 
     $onChanges(changes: angular.IOnChangesObject) {
         console.log('$onChanges called with changes:', changes);
 
-        if (changes['job']) {
-            console.log('Job changed:', changes['job'].currentValue);
+        if (changes['jobId']) {
+            console.log('jobId changed:', changes['jobId'].currentValue);
 
-            if (!changes['job'].previousValue && changes['job'].currentValue) {
-                this.isLoading = false;
+            if (changes['jobId'].currentValue) {
+                return this._loadJobData(changes['jobId'].currentValue);
+            } else {
+                this.job = undefined;
+                this.internalJob = undefined;
             }
+        }
 
-            this.internalJob = changes['job'].currentValue;
-
-            if (this.internalJob) {
-                const jobIdChanged = !this.previousJobId || this.previousJobId !== this.internalJob.id;
-                this.previousJobId = this.internalJob.id;
-
-                this._initializeJobData();
-
-                if (jobIdChanged) {
-                    this.photosLoaded = false;
-                }
+        if (changes['appPage']) {
+            if (changes['appPage'].currentValue == AppPages.Domestic) {
+                this.showStageDropdown = true;
+            } else {
+                this.showStageDropdown = false;
             }
         }
     }
@@ -167,16 +135,35 @@ class JobDetailController extends BaseController {
         if (photoSection) {
             photoSection.off('keydown', this._handleKeydown);
         }
+    }
 
-        if (this.$scope) {
-            this.$scope.$emit('cleanupRequested');
+    private async _loadJobData(jobId: number) {
+        if (!jobId) return;
+
+        this.isLoading = true;
+
+        try {
+            const jobData = await this.DispatchData.getJobDetail(jobId);
+            this.job = jobData;
+            this.internalJob = jobData;
+
+            this._initializeJobData();
+
+            if (jobData.completedTime) {
+                this._loadPodPhotos();
+            }
+
+            this.isLoading = false;
+        } catch (error) {
+            console.error("Error loading job data:", error);
+            this.toastrService.showErrorToast("Failed to load job details");
+            this.isLoading = false;
         }
     }
 
     private _loadPodPhotos() {
         if (!this.internalJob?.completedTime) {
             console.log('No POD time available for job');
-            this.photosLoaded = true;
             return;
         }
 
@@ -222,7 +209,6 @@ class JobDetailController extends BaseController {
                     console.log(`Successfully processed ${this.formattedPodPhotos.length} POD photos`);
 
                     this.selectedPhotoIndex = 0;
-                    this.photosLoaded = true;
 
                     this._setupPhotoKeyboardNavigation();
                 })
@@ -231,16 +217,10 @@ class JobDetailController extends BaseController {
                     console.error('Error loading POD photos:', error);
 
                     this.formattedPodPhotos = [];
-                    this.photosLoaded = true;
                 });
         } catch (error) {
             this._handleError(error);
             this.formattedPodPhotos = [];
-            this.photosLoaded = true;
-
-            if (this.$scope && this.$scope.$applyAsync) {
-                this.$scope.$applyAsync();
-            }
         }
     }
 
@@ -267,7 +247,7 @@ class JobDetailController extends BaseController {
             await this.$mdDialog.show({
                 controller: "AutoCompleteDialogController",
                 controllerAs: "ctrl",
-                parent: document.body,
+                parent: this.$document.parent(),
                 targetEvent: $event,
                 template: require("../../dialogs/auto-complete-dialog/auto-complete-dialog.html"),
                 clickOutsideToClose: true,
@@ -404,7 +384,7 @@ class JobDetailController extends BaseController {
         await this.$mdDialog.show({
             controller: "EditParcelDimensionsDialogController",
             controllerAs: "ctrl",
-            parent: document.body,
+            parent: this.$document.parent(),
             targetEvent: $event,
             template: require("../../dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.html"),
             clickOutsideToClose: false,
@@ -856,42 +836,13 @@ class JobDetailController extends BaseController {
     private async _refreshJobDetails(jobId: number) {
         try {
             console.log(`Refreshing job details for jobId: ${jobId}`);
-
             this.isLoading = true;
 
-            if (this.$scope && this.$scope.$applyAsync) {
-                this.$scope.$applyAsync();
-            }
+            await this._loadJobData(jobId);
 
-            this.internalJob = undefined;
-            this.$scope.$emit('refreshJobRequested', jobId);
-
-            console.log('Refresh request emitted to parent controller');
-
-            const deregister = this.$scope.$watch(() => this.job, (newValue) => {
-                if (newValue) {
-                    // Job is loaded, stop loading
-                    this.isLoading = false;
-                    deregister(); // Remove the watcher
-
-
-                }
-            });
-
-            // Fallback - if after 5 seconds the job hasn't loaded, stop showing loader
-            setTimeout(() => {
-                if (this.isLoading) {
-                    this.isLoading = false;
-
-                }
-            }, 10000);
+            console.log('Job data refreshed');
         } catch (error) {
-            // Stop loading on error
             this.isLoading = false;
-            if (this.$scope && this.$scope.$applyAsync) {
-                this.$scope.$applyAsync();
-            }
-
             console.error("Error during refresh process:", error);
             this.toastrService.showErrorToast("Failed to refresh job details");
         }
@@ -1064,7 +1015,8 @@ class JobDetailController extends BaseController {
 const JobDetailComponent: angular.IComponentOptions = {
     template: require("./job-details.template.html"),
     bindings: {
-        job: "=",
+        jobId: "<",
+        appPage: "<",
         onStatusChange: "&"
     },
     controller: JobDetailController,

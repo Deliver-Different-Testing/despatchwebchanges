@@ -9,7 +9,7 @@ namespace DespatchWeb.Interfaces;
 
 public interface INationwideJobRepository
 {
-    Task<List<JobViewModel>> NationwideJobListAsync(string order, string orderDirection, bool isInternal,
+    Task<List<DispatchJobViewModel>> NationwideJobListAsync(string order, string orderDirection, bool isInternal,
         bool isUsTenant,
         string clientIds, NationwideWidget windowPane,
         List<int> selectedViewIds);
