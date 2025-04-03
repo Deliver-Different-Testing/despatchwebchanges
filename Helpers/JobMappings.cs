@@ -113,6 +113,9 @@ public static class JobMappings
                     Text = p.UcjbNumber
                 })
                 .ToList(),
+
+            ToAirportId = j.ToAirportId,
+            FromAirportId = j.FromAirportId,
         };
 
     public static readonly Expression<Func<TucJob, JobViewModel>> JobMapping =

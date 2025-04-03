@@ -75,6 +75,10 @@ public class DispatchJobViewModel
         public int? RootParentId { get; set; }
         public bool? DisplaySplitJobDetail { get; set; }
 
+        // Airport Fields
+        public int? ToAirportId { get; set; }
+        public int? FromAirportId { get; set; }
+
         // UI helper fields
         public string SearchText { get; set; }
         public List<Suggestion> RelatedJobs { get; set; }

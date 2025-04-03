@@ -1450,8 +1450,10 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
     public async Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId)
     {
-        return await Context
-            .PricingBreakdowns.Where(p => p.JobId == jobId)
+        var effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
+
+        return await Context.PricingBreakdowns
+            .Where(p => p.JobId == effectiveJobId)
             .Select(p => new ChargeViewModel
             {
                 ChargeId = p.PricingBreakdownId,
@@ -1462,6 +1464,31 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             })
             .AsNoTracking()
             .ToListAsync();
+    }
+
+    private async Task<int> GetJobRelationshipInfoAsync(int jobId)
+    {
+        var jobInfo = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new
+            {
+                EffectiveJobId = j.ParentId ?? j.UcjbId,
+            })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        if (jobInfo != null) return jobInfo.EffectiveJobId;
+
+        var bookingInfo = await Context.TucJobBookings
+            .Where(j => j.UcbkId == jobId)
+            .Select(j => new
+            {
+                EffectiveJobId = j.ParentId ?? j.UcbkId,
+            })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        return bookingInfo?.EffectiveJobId ?? jobId;
     }
 
     public async Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel)

@@ -2440,6 +2440,7 @@ public class JobController(
         }
     }
 
+    [HttpGet]
     public async Task<IActionResult> GetJobTypes()
     {
         var types = await jobRepository.GetAllAsync<TucJobType>();
@@ -2448,6 +2449,13 @@ public class JobController(
             .ToList();
 
         return Json(formattedList);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> IsJobParent(int jobId)
+    {
+        var isParent = await jobRepository.IsJobParentAsync(jobId);
+        return Json(isParent);
     }
 
     #region Single use Api models

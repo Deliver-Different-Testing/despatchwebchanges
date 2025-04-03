@@ -9,11 +9,13 @@ export class PriceBreakdownDialogController extends BaseController {
     isEditing: boolean = false;
     isNew: boolean = false;
     priceBreakdownForm: any;
+    isParentJob: boolean = false;
 
     get totalAmount(): number {
         if (!this.priceBreakdown || this.priceBreakdown.length === 0) {
             return 0;
         }
+
         return this.priceBreakdown.reduce((sum, item) => sum + (item.amount || 0), 0);
     }
 
@@ -46,6 +48,12 @@ export class PriceBreakdownDialogController extends BaseController {
         }
     }
 
+    $onInit() {
+        this.DispatchData.isJobParent(this.jobId).then(isParentJob => {
+            this.isParentJob = isParentJob;
+        })
+    }
+
     editItem(item: PriceBreakdown) {
         this.selectedPriceBreakdown = angular.copy(item);
         this.isEditing = true;
@@ -56,7 +64,7 @@ export class PriceBreakdownDialogController extends BaseController {
         this.selectedPriceBreakdown = {
             chargeId: 0,
             name: '',
-            amount: 0
+            amount: 0,
         };
 
         // Set the appropriate job ID
@@ -83,7 +91,6 @@ export class PriceBreakdownDialogController extends BaseController {
 
         try {
             if (this.isNew) {
-                // Make sure we're passing the correct data format
                 const newBreakdown: PriceBreakdown = {
                     chargeId: 0,
                     name: this.selectedPriceBreakdown.name,
@@ -146,11 +153,11 @@ export class PriceBreakdownDialogController extends BaseController {
         await this.DispatchData.deletePriceBreakdown(chargeId, this.jobId);
     }
 
-    cancel(): void {
+    cancel() {
         this.$mdDialog.cancel();
     }
 
-    save(): void {
+    save() {
         this.$mdDialog.hide(this.priceBreakdown);
     }
 }

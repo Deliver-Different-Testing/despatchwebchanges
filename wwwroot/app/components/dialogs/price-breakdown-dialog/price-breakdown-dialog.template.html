@@ -17,6 +17,15 @@
                 <div class="md-dialog-content">
                     <!-- Main content area -->
                     <div layout="column">
+                        <!-- Parent Job Note -->
+                        <div class="parent-job-note" ng-if="ctrl.isParentJob">
+                            <md-icon md-font-set="material-symbols-outlined">work_alert</md-icon>
+                            <div class="note-content">
+                                <span class="note-title">Child Job</span>
+                                <span class="note-text">Pricing information is inherited from the parent job.</span>
+                            </div>
+                        </div>
+
                         <!-- Add item button -->
                         <md-button class="md-accent" ng-click="ctrl.addNewItem()"
                                    ng-if="!ctrl.isEditing">
