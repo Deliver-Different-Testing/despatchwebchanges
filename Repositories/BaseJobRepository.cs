@@ -1690,4 +1690,24 @@ private async Task<TucNoteViewModel> GetArchivedNoteByIdAsync(int noteId)
 
         return noteTypes;
     }
+
+    public async Task<bool> IsJobParentAsync(int jobId)
+    {
+        var jobInfo = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new { HasParent = j.ParentId.HasValue })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        if (jobInfo != null)
+            return jobInfo.HasParent;
+
+        var bookingInfo = await Context.TucJobBookings
+            .Where(j => j.UcbkId == jobId)
+            .Select(j => new { HasParent = j.ParentId.HasValue })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        return bookingInfo?.HasParent ?? false;
+    }
 }

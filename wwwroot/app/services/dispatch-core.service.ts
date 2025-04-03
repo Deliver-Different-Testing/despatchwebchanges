@@ -88,6 +88,11 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
+    async isJobParent(jobId: number) {
+        const response = await this.$http.get<boolean>('job/IsJobParent?jobId=' + jobId);
+        return response.data;
+    }
+
     async addRestoreEvent(jobId: number) {
         const response = await this.$http.post("job/AddRestoreEvent", null, {
             params: {

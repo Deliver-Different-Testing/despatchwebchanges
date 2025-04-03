@@ -35,7 +35,7 @@
                 data-allowDispatch="{{job.allowDispatch}}"
                 data-index="{{$index}}">
 
-                <td md-cell>{{job.booked | date: (isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm")}}</td>
+                <td md-cell>{{job.booked | date: (ctrl.isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm")}}</td>
                 <td md-cell>
                     <md-icon md-font-set="material-symbols-outlined" ng-if="job.fromAirportId || job.toAirportId">
                         {{ctrl.getFlightIcon(job.jobNo)}}
@@ -45,12 +45,12 @@
                 <td md-cell>{{job.jobNo}}</td>
                 <td md-cell>{{job.client}}</td>
                 <td md-cell>
-                    {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
+                    {{ctrl.isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
                     <md-tooltip md-direction="bottom">{{ job.pickupAddress.fullAddress }}</md-tooltip>
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
                 </td>
                 <td md-cell>
-                    <span md-truncate>{{isUsCustomer ? job.deliveryAddress.addressLine5 : job.toAddress}}</span>
+                    <span md-truncate>{{ctrl.isUsCustomer ? job.deliveryAddress.addressLine5 : job.toAddress}}</span>
                     <md-tooltip md-direction="bottom">{{ job.deliveryAddress.fullAddress }}</md-tooltip>
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
                 </td>
@@ -79,7 +79,7 @@
                 </td>
 
                 <td md-cell>
-                    <md-chip class="status {{job.statusName | lowercase | replace:' ':'-'}}">
+                    <md-chip class="status {{job.statusName | lowercase }}">
                         {{job.status}}
                     </md-chip>
                 </td>
@@ -97,15 +97,6 @@
             </tbody>
         </table>
     </md-table-container>
-
-    <md-table-pagination
-            md-limit="ctrl.jobDeliveryFilters.limit"
-            md-limit-options="[5, 10, 25, 50]"
-            md-on-paginate="ctrl.onPaginateDeliveryList"
-            md-page="ctrl.jobDeliveryFilters.page"
-            md-page-select
-            md-total="{{ctrl.totalDeliveryCount}}">
-    </md-table-pagination>
 
     <!-- No Data Message -->
     <no-data

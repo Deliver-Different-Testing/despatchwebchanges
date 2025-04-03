@@ -409,4 +409,5 @@ public interface IJobRepository
     Task DeleteNoteAsync(int noteId);
     Task<List<Suggestion>> GetNoteTypesAsync();
     Task<List<TucNoteViewModel>> GetNotesByJobId(int jobId);
+    Task<bool> IsJobParentAsync(int jobId);
 }

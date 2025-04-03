@@ -16,9 +16,31 @@ import JobDataType from "./enums/JobDataType";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import moment from "moment";
 import AddEventDialogService from "../dialogs/add-event-dialog/add-event-dialog.service";
+import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 
 class NationwideControl extends BaseController {
+    static $inject = [
+        '$scope',
+        'JobDetailService',
+        'NWData',
+        '$filter',
+        '$timeout',
+        'greetingService',
+        '$mdDialog',
+        '$document',
+        'toastrService',
+        'DispatchData',
+        '$mdSidenav',
+        'APP_CONFIG',
+        'dispatchJobService',
+        'jobFileUploadDialogService',
+        'addEventDialogService',
+        'additionalServicesDialogService'
+    ];
+
     readonly nationwidePageId: number = AppPages.Domestic;
+    readonly isUsCustomer: boolean = false;
+
     layouts: ILayout[] = [];
     defaultLayout?: ILayout;
     currentLayoutIndex: number = 0;
@@ -89,24 +111,6 @@ class NationwideControl extends BaseController {
     podListPromise?: Promise<DispatchJob[]>;
     repriceListPromise?: Promise<DispatchJob[]>;
 
-    static $inject = [
-        '$scope',
-        'JobDetailService',
-        'NWData',
-        '$filter',
-        '$timeout',
-        'greetingService',
-        '$mdDialog',
-        '$document',
-        'toastrService',
-        'DispatchData',
-        '$mdSidenav',
-        'APP_CONFIG',
-        'dispatchJobService',
-        'jobFileUploadDialogService',
-        'addEventDialogService'
-    ];
-
     constructor(
         private $scope: angular.IScope,
         private jdSvc: any,
@@ -122,9 +126,12 @@ class NationwideControl extends BaseController {
         private APP_CONFIG: AppConfig,
         private dispatchJobService: DispatchExecutorService,
         private jobFileUploadDialogService: JobFileUploadDialogService,
-        private addEventDialogService: AddEventDialogService
+        private addEventDialogService: AddEventDialogService,
+        private additionalServicesDialogService: AdditionalServicesDialogService
     ) {
         super();
+
+        this.isUsCustomer = this.APP_CONFIG.US_Customer;
 
         this.$scope.$on("angular-resizable.resizeEnd", (_, args) => {
             const mapContainer = angular.element(args.id ? '#' + args.id : '').find('.here-map');
@@ -428,7 +435,9 @@ class NationwideControl extends BaseController {
         };
 
         this.mapConfig = {
-            center: this.APP_CONFIG.US_Customer ? this.APP_CONFIG.US_Coordinates_Center : this.APP_CONFIG.NZ_Coordinates_Center,
+            center: this.APP_CONFIG.US_Customer ?
+                this.APP_CONFIG.US_Coordinates_Center :
+                this.APP_CONFIG.NZ_Coordinates_Center,
             zoom: 7,
             selectedJobIndex: 0 // Default to parent job view
         };
@@ -1397,6 +1406,10 @@ class NationwideControl extends BaseController {
 
     async openFileAttachmentDialog($event: MouseEvent, job: DispatchJob) {
         await this.jobFileUploadDialogService.openJobFileUploadDialog($event, job);
+    }
+
+    async showAdditionalServicesMenu($event: MouseEvent, job: DispatchJob) {
+        await this.additionalServicesDialogService.showAdditionalServicesDialog($event, job);
     }
 
     async getClientContacts() {

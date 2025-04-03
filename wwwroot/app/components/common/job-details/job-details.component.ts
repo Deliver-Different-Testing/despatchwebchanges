@@ -419,7 +419,7 @@ class JobDetailController extends BaseController {
     }
 
     async editBookedDate($event: MouseEvent, job: IJob) {
-        await this.showEditDateAndTimeDialog($event, job, "Booked Time", "BookedTime", job.createdDate);
+        await this.showEditDateDialog($event, job, "Booked Time", "BookedTime", job.createdDate);
     }
 
     async updateAddress($event: MouseEvent, job: IJob, field: string) {

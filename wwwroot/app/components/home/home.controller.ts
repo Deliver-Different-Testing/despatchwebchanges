@@ -112,7 +112,7 @@ class HomeController extends BaseController {
     layout?: { columns: IColumn[] };
     map: any;
     courierSearchText: string;
-    inputWidth?: any;
+    inputWidth: Record<string, number> = {};
     jobListPromise: any;
     currentCourier: any;
     pickCouriers: any;
@@ -867,7 +867,10 @@ class HomeController extends BaseController {
 
     openSearch(boxName: string, index: number) {
         const boxID = boxName + "-" + index;
-        if (!this.inputWidth) return;
+
+        if (!this.inputWidth) {
+            this.inputWidth = {};
+        }
 
         if (this.showInput[boxID]) {
             this.showInput[boxID] = false;
@@ -1962,53 +1965,27 @@ class HomeController extends BaseController {
 
         try {
             if (!task.jobId) {
+                this.toastrService.showWarningToast("No job is attached to this support.");
                 console.warn('[selectSupportJobDetail] No jobId provided, returning early');
                 return;
             }
 
             console.log('[selectSupportJobDetail] Fetching job details for jobId:', task.jobId);
 
-            if(!this.currentJob) return;
-            await this.selectJob(this.currentJob);
+            const attachedJob = this.jobList.find((job) => job.id === task.jobId);
+            if (!attachedJob) {
+                this.toastrService.showWarningToast("No job is attached to this support.");
+                return;
+            }
+
+            await this.selectJob(attachedJob);
             console.log('[selectSupportJobDetail] Job selected successfully');
 
-            this.currentSelection = ` for Job ${task.jobNumber}`;
-
-            if (this.currentJob && this.currentJob.rootParentId) {
-                try {
-                    if (!this.currentJob.clientID) {
-                        console.warn('[selectSupportJobDetail] No clientID available for related jobs lookup');
-                        return;
-                    }
-
-                    console.log('[selectSupportJobDetail] Fetching related jobs', {
-                        rootParentId: this.currentJob.rootParentId,
-                        clientID: this.currentJob.clientID
-                    });
-
-                    this.currentJob.relatedJobs = await this.DispatchData.getRelatedJobs(
-                        this.currentJob.rootParentId,
-                        this.currentJob.clientID
-                    );
-                    console.log('[selectSupportJobDetail] Retrieved related jobs:', this.currentJob.relatedJobs);
-
-                } catch (error: any) {
-                    console.error('[selectSupportJobDetail] Error getting related jobs:', {
-                        error: error.message,
-                        stack: error.stack,
-                        rootParentId: this.currentJob.rootParentId,
-                        clientID: this.currentJob.clientID
-                    });
-                }
-            }
-        } catch (error: any) {
-            console.error('[selectSupportJobDetail] Error selecting support job detail:', {
-                error: error.message,
-                stack: error.stack,
-                taskId: task.id,
-                jobId: task.jobId
-            });
-            this.toastrService.showErrorToast("Error loading job details");
+            this.currentSelection = ` for Job ${attachedJob.jobNo}`;
+        }
+        catch(error) {
+            this.toastrService.showErrorToast("Error loading job information");
+            console.error('[selectSupportJobDetail] Error loading job information', error);
         }
     }
 

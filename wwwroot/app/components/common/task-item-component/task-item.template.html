@@ -37,7 +37,7 @@
                     layout-align="start center"
                     ng-click="ctrl.reassignTask($event, ctrl.task)">
                 <md-icon md-font-set="material-symbols-outlined">person</md-icon>
-                {{ctrl.task.assignee.text}}
+                {{ctrl.task.assignee.text || 'Unassigned'}}
             </md-button>
 
             <div ng-if="ctrl.config.showJobType !== false"
