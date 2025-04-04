@@ -327,7 +327,9 @@ public static class JobMappings
             // References and amounts
             RefA = j.UcjbClientRefa,
             RefB = j.UcjbClientRefb,
-            Charge = $"${j.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}",
+            Charge = j.ParentId == null ?
+                $"${j.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}" :
+                $"${j.Parent.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}",
             OurRef = j.UcjbOurRef,
 
             // Status
