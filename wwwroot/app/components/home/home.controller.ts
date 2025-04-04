@@ -29,6 +29,7 @@ import NoteService from "../../services/notes.service";
 import InterCourierChargeDialogService
     from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
 import {Coordinates} from "../overview/overview.interfaces";
+import JobContextMenuService from "../../services/job-context-menu.service";
 
 interface ResendJobsRequest {
     call: string;
@@ -59,7 +60,9 @@ class HomeController extends BaseController {
         'jobFileUploadDialogService',
         'addEventDialogService',
         'noteService',
-        'interCourierChargeDialogService'
+        'interCourierChargeDialogService',
+        'jobContextMenuService',
+        '$mdSticky'
     ];
 
     private readonly DOM_SELECTORS = {
@@ -173,7 +176,9 @@ class HomeController extends BaseController {
         private jobFileUploadDialogService: JobFileUploadDialogService,
         private addEventDialogService: AddEventDialogService,
         private noteService: NoteService,
-        private interCourierChargeDialogService: InterCourierChargeDialogService
+        private interCourierChargeDialogService: InterCourierChargeDialogService,
+        private jobContextMenuService: JobContextMenuService,
+        private $mdSticky: angular.material.IStickyService,
     ) {
         super();
 
@@ -2661,6 +2666,37 @@ class HomeController extends BaseController {
     async filterSupports(filterType: string): Promise<void> {
         this.supportsFilter = filterType;
         await this.loadSupports(filterType);
+    }
+
+    getContextMenuOptions(job: DispatchJob) {
+        if (!job) return [];
+
+        const callbacks = {
+            onRefresh: () => this.getData(),
+            onSplitJob: (params: { job: DispatchJob }) => this.handleSplitJob(params.job),
+            onRefreshCourierJobs: (params: { courierId: number }) => {
+                if (this.currentCourier) {
+                    return this.getCurrentJobs(params.courierId);
+                }
+            }
+        };
+
+        return this.jobContextMenuService.getMenuOptions(job, callbacks);
+    }
+
+    async handleSplitJob(job: DispatchJob) {
+        if (!job) return;
+
+        try {
+            await this.setSplitJobMeetingPoint(new MouseEvent('click'), job);
+            await this.getData();
+        } catch (error: any) {
+            console.error("Error handling split job:", error);
+        }
+    }
+
+    makeHeaderSticky(headerElement: JQLite) {
+        this.$mdSticky(this.$scope, headerElement)
     }
 }
 

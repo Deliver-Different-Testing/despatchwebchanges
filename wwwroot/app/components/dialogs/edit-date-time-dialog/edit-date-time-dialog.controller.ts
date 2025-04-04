@@ -87,7 +87,7 @@ export class EditDateTimeDialogController {
             // Create result object
             const result: IDialogDateTimeResult = {
                 fieldName: this.fieldName,
-                value: formattedDateTime,
+                value: newDateTime,
                 formattedDateTime: formattedDateTime
             };
 

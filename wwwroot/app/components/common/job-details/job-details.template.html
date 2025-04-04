@@ -705,9 +705,9 @@
                                                  ng-model="ctrl.job.truck" class="compact">Truck
                                     </md-checkbox>
                                 </div>
-                                <div flex="20">
+                                <div flex="20" ng-if="!ctrl.isUsCustomer">
                                     <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'pedal')"
-                                                 ng-model="ctrl.job.ped" class="compact">PED
+                                                 ng-model="ctrl.job.ped" class="compact">Pedal (CBD)
                                     </md-checkbox>
                                 </div>
                                 <div flex="20">
@@ -734,13 +734,8 @@
                                     </md-checkbox>
                                 </div>
                                 <div flex="20">
-                                    <md-checkbox ng-click="ctrl.markJobAsDone(ctrl.job)"
+                                    <md-checkbox ng-click="ctrl.markJobAsDone($event, ctrl.job)"
                                                  ng-model="ctrl.job.done" class="compact">Done
-                                    </md-checkbox>
-                                </div>
-                                <div flex="20">
-                                    <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'delivered')"
-                                                 ng-model="ctrl.delivered" class="compact">Delivered
                                     </md-checkbox>
                                 </div>
                             </div>

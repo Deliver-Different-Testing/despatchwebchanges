@@ -1,13 +1,16 @@
 import {DispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
 import {AgentViewModel, FlightViewModel} from "./nationwide.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
+import moment from "moment";
 
 class NationwideService implements angular.IServiceProvider {
-    static $inject = ["$http", "moment"];
+    static $inject = [
+        "$http"
+    ];
 
     constructor(
-        private $http: angular.IHttpService,
-        private moment: any) {
+        private $http: angular.IHttpService
+    ) {
     }
 
     $get(): any {
@@ -84,7 +87,7 @@ class NationwideService implements angular.IServiceProvider {
         flights: FlightViewModel[];
         message: "Sorry, we couldn't find any flights between these airports on the selected date. Please try different dates or airports." | null
     }> {
-        const formattedDate = this.moment(departureDate, this.moment.ISO_8601, true)
+        const formattedDate = moment(departureDate, moment.ISO_8601, true)
             .format("YYYY-MM-DDTHH:mm:ss");
 
         console.log(formattedDate);

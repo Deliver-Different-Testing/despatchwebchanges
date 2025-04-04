@@ -17,6 +17,7 @@ import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interfa
 import moment from "moment";
 import AddEventDialogService from "../dialogs/add-event-dialog/add-event-dialog.service";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
+import JobContextMenuService from "../../services/job-context-menu.service";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -35,7 +36,8 @@ class NationwideControl extends BaseController {
         'dispatchJobService',
         'jobFileUploadDialogService',
         'addEventDialogService',
-        'additionalServicesDialogService'
+        'additionalServicesDialogService',
+        'jobContextMenuService'
     ];
 
     readonly nationwidePageId: number = AppPages.Domestic;
@@ -127,7 +129,8 @@ class NationwideControl extends BaseController {
         private dispatchJobService: DispatchExecutorService,
         private jobFileUploadDialogService: JobFileUploadDialogService,
         private addEventDialogService: AddEventDialogService,
-        private additionalServicesDialogService: AdditionalServicesDialogService
+        private additionalServicesDialogService: AdditionalServicesDialogService,
+        private jobContextMenuService: JobContextMenuService
     ) {
         super();
 
@@ -1479,6 +1482,32 @@ class NationwideControl extends BaseController {
 
     async createEvent($event: MouseEvent, job: DispatchJob) {
         await this.addEventDialogService.openAddEventDialog($event, job);
+    }
+
+    getContextMenuOptions(job: DispatchJob) {
+        if (!job) return [];
+
+        const callbacks = {
+            onRefresh: () => this.getData(),
+            onSplitJob: (params: { job: DispatchJob }) => this.handleSplitJob(params.job),
+            onRefreshCourierJobs: (params: { courierId: number }) => {
+                console.log('Refreshing courier jobs:', params.courierId);
+            }
+        };
+
+        return this.jobContextMenuService.getMenuOptions(job, callbacks);
+    }
+
+    async handleSplitJob(job: DispatchJob) {
+        if (!job) return;
+
+        try {
+            console.log("Split job requested for:", job.id);
+
+            await this.getData();
+        } catch (error: any) {
+            console.error("Error handling split job:", error);
+        }
     }
 }
 

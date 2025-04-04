@@ -283,8 +283,6 @@
   <ItemGroup>
     <TypeScriptCompile Include="wwwroot\app\components\base-controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\dfrnt-loader\dfrnt-loader.component.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\common\job-context-menu\job-context-menu.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\common\job-context-menu\job-context-menu.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\no-data\no-data.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\pod-photo-viewer\pod-photo-viewer.interfaces.ts" />
@@ -351,6 +349,7 @@
     <TypeScriptCompile Include="wwwroot\app\contants.ts" />
     <TypeScriptCompile Include="wwwroot\app\directives.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\app-pages.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\event-type.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\job-note-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\job-status.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
@@ -376,6 +375,7 @@
     <TypeScriptCompile Include="wwwroot\app\services\getUsStates.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\greeting.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\index.ts" />
+    <TypeScriptCompile Include="wwwroot\app\services\job-context-menu.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\notes.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\open-job-dispatch.service.ts" />
     <TypeScriptCompile Include="wwwroot\types\html.d.ts" />

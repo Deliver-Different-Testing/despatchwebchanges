@@ -82,7 +82,7 @@ public static class JobMappings
             Direct = j.Direct,
             Speed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : null,
             Notify = j.NotifiedJobType.UcjtName,
-            Vehicle =  j.UcjbSizeNavigation != null
+            Vehicle = j.UcjbSizeNavigation != null
                 ? new Suggestion
                 {
                     Id = j.UcjbSizeNavigation.VehicleSizeId,
@@ -116,6 +116,28 @@ public static class JobMappings
 
             ToAirportId = j.ToAirportId,
             FromAirportId = j.FromAirportId,
+
+            AssignedFlight = j
+                .TucJobNationwides.Select(nj => new AssignedFlight
+                {
+                    ExpectedArrival = nj.UcnwEta,
+                    ExpectedDeparture = nj.UcnwEtd,
+                    FlightNumber = nj.UcnwFlightNo,
+                    Notes = nj.UcnwNotes
+                })
+                .FirstOrDefault(),
+
+            // Assigned agent
+            AssignedAgent =
+                j.Agent != null
+                    ? new AgentViewModel
+                    {
+                        AgentId = j.Agent.UcagId,
+                        AgentName = j.Agent.UcagName,
+                        AgentRanking =
+                            j.Agent.Ranking != null ? j.Agent.Ranking.AgentRankingName : null
+                    }
+                    : null,
         };
 
     public static readonly Expression<Func<TucJob, JobViewModel>> JobMapping =
@@ -315,7 +337,7 @@ public static class JobMappings
             InternalStatusId = j.InternalStatus,
 
             // Checkboxes
-            Reprice = j.InternalStatus == (int)InternalJobStatus.Reprice,
+            Reprice = j.Reprice,
 
             // Size
             Size =
@@ -357,9 +379,10 @@ public static class JobMappings
             IsArchived = false,
             PreBook = false,
             DeliverByTime = j.DeliverByTime,
+            Attention = j.UcjbAttention
         };
 
-       public static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping =
+    public static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping =
         j => new JobViewModel
         {
             ClientId = j.UcjbClientId,
@@ -494,7 +517,7 @@ public static class JobMappings
             InternalStatusId = j.InternalStatus,
 
             // Checkboxes
-            Reprice = j.InternalStatus == (int)InternalJobStatus.Reprice,
+            Reprice = j.Reprice,
 
             // Size - has navigation in archive
             Size =
@@ -508,9 +531,10 @@ public static class JobMappings
             IsArchived = true,
             PreBook = false,
             DeliverByTime = j.DeliverByTime,
+            Attention = j.UcjbAttention
         };
 
-         public static readonly Expression<Func<TucJobBooking, JobViewModel>> JobPrebookMapping =
+    public static readonly Expression<Func<TucJobBooking, JobViewModel>> JobPrebookMapping =
         j => new JobViewModel
         {
             ClientId = j.UcbkClientId,
@@ -642,56 +666,57 @@ public static class JobMappings
                     : null,
             IsArchived = true,
             PreBook = true,
-            DeliverByTime = j.DeliverByTime
+            DeliverByTime = j.DeliverByTime,
+            Attention = j.UcbkAttention
         };
 
-          private static int? CalculateRemainTime(TucJob job, TucJobType jobType)
-             {
-                 if (job == null)
-                     return null;
+    private static int? CalculateRemainTime(TucJob job, TucJobType jobType)
+    {
+        if (job == null)
+            return null;
 
-                 var now = DateTime.Now;
-                 var jobDateTime = CombineDateAndTime(job.UcjbDate, job.UcjbTime);
+        var now = DateTime.Now;
+        var jobDateTime = CombineDateAndTime(job.UcjbDate, job.UcjbTime);
 
-                 // Handle Economy Delivery (Speed = 36)
-                 if (job.UcjbSpeed == 36)
-                 {
-                     var economyDeliveryDateTime = CombineDateAndTime(job.UcjbDate, job.DeliverByTime);
-                     return (int)(economyDeliveryDateTime - now).TotalMinutes;
-                 }
+        // Handle Economy Delivery (Speed = 36)
+        if (job.UcjbSpeed == 36)
+        {
+            var economyDeliveryDateTime = CombineDateAndTime(job.UcjbDate, job.DeliverByTime);
+            return (int)(economyDeliveryDateTime - now).TotalMinutes;
+        }
 
-                 // Handle Special Speeds (41,42,43,51,52) with Required Delivery Time
-                 if (
-                     job.UcjbSpeed != null
-                     && SourceArray.Contains(job.UcjbSpeed.Value)
-                     && job.RequiredDeliveryTime.HasValue
-                 )
-                 {
-                     var requiredDeliveryDateTime = CombineDateAndTime(
-                         job.UcjbDate,
-                         job.RequiredDeliveryTime.Value
-                     );
-                     return (int)(requiredDeliveryDateTime - now).TotalMinutes;
-                 }
+        // Handle Special Speeds (41,42,43,51,52) with Required Delivery Time
+        if (
+            job.UcjbSpeed != null
+            && SourceArray.Contains(job.UcjbSpeed.Value)
+            && job.RequiredDeliveryTime.HasValue
+        )
+        {
+            var requiredDeliveryDateTime = CombineDateAndTime(
+                job.UcjbDate,
+                job.RequiredDeliveryTime.Value
+            );
+            return (int)(requiredDeliveryDateTime - now).TotalMinutes;
+        }
 
-                 // Handle Standard Case
-                 var standardDeliveryDateTime = jobDateTime.AddMinutes(jobType.Minutes ?? 0);
-                 return (int)(standardDeliveryDateTime - now).TotalMinutes;
-             }
+        // Handle Standard Case
+        var standardDeliveryDateTime = jobDateTime.AddMinutes(jobType.Minutes ?? 0);
+        return (int)(standardDeliveryDateTime - now).TotalMinutes;
+    }
 
-             private static DateTime CombineDateAndTime(DateTime date, DateTime? time)
-             {
-                 if (time is null)
-                     return date;
+    private static DateTime CombineDateAndTime(DateTime date, DateTime? time)
+    {
+        if (time is null)
+            return date;
 
-                 // Else combine the dates
-                 return new DateTime(
-                     date.Year,
-                     date.Month,
-                     date.Day,
-                     time.Value.Hour,
-                     time.Value.Minute,
-                     time.Value.Second
-                 );
-             }
+        // Else combine the dates
+        return new DateTime(
+            date.Year,
+            date.Month,
+            date.Day,
+            time.Value.Hour,
+            time.Value.Minute,
+            time.Value.Second
+        );
+    }
 }

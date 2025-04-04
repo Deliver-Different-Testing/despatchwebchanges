@@ -4,6 +4,7 @@ import path from "path";
 import crypto from "crypto";
 import {lessLoader} from "esbuild-plugin-less";
 import esbuildPluginTsc from 'esbuild-plugin-tsc';
+import {es5Plugin} from "esbuild-plugin-es5";
 
 const isDev = process.argv.includes('--dev') || process.env.NODE_ENV === 'development';
 const rootDir = __dirname;
@@ -58,7 +59,7 @@ async function build(): Promise<void> {
             minifyWhitespace: !isDev,
             minifyIdentifiers: !isDev,
             minifySyntax: !isDev,
-            target: ["es2015"],
+            target: ["es5"],
             metafile: !isDev,
             treeShaking: !isDev,
             legalComments: isDev ? "inline" : "none",
@@ -68,6 +69,7 @@ async function build(): Promise<void> {
             drop: isDev ? [] : ['debugger', 'console'],
             plugins: [
                 esbuildPluginTsc(),
+                es5Plugin(),
                 lessLoader({
                     math: 'always'
                 }),
@@ -88,12 +90,9 @@ async function build(): Promise<void> {
                 "ui.bootstrap",
                 "ui.timepicker",
                 "pickadate",
-                "ngMap",
                 "ngMapAutocomplete",
                 "heremaps",
                 "angularPromiseButtons",
-                "angularMoment",
-                "ngFileUpload"
             ],
             loader: {
                 '.js': "js",

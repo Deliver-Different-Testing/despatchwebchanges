@@ -1,7 +1,13 @@
 interface IMdAutocompleteController extends angular.IController {
     matches: any[];
+
     select(index: number): void;
+
     index: number;
+}
+
+interface JQuery {
+    outerWidth(includeMargin?: boolean): number;
 }
 
 export const ngRightClickDirective = ['$parse', ($parse: angular.IParseService): angular.IDirective => ({

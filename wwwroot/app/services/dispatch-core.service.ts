@@ -410,8 +410,15 @@ class DispatchCoreService implements angular.IServiceProvider {
         await this.$http.post(`job/finishSplitJobProcess?jobId=${jobId}&despatcherName=${despatcherName}`, null);
     }
 
-    async updatePODDetail(jobNumber: string, jobStatus: number, podName: string, podTime: Date) {
-        await this.$http.post(`job/UpdatePODDetails?jobNumber=${jobNumber}&jobStatus=${jobStatus}&podName=${podName}&podTime=${podTime}`, null);
+    async updatePODDetail(jobId: number, jobStatus: number, podName: string, podTime: string) {
+        console.log(`[DispatchCoreService] Updating POD details - Job: ${jobId}, Status: ${jobStatus}, POD Name: ${podName}, POD Time: ${podTime}`);
+        try {
+            await this.$http.post(`job/UpdatePODDetails?jobId=${jobId}&jobStatus=${jobStatus}&podName=${podName}&podTime=${podTime}`, null);
+            console.log(`[DispatchCoreService] Successfully updated POD details for job ${jobNumber}`);
+        } catch (error) {
+            console.error(`[DispatchCoreService] Error updating POD details for job ${jobNumber}:`, error);
+            throw error;
+        }
     }
 
     async sendSMS(courierId: number, staffId: number, despatcherName: string, message: string) {

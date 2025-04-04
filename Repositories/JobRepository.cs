@@ -957,22 +957,134 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .ExecuteStoredNonQueryAsync();
     }
 
-    public async Task UpdatePodDetails(
-        string jobNumber,
-        int jobStatus,
-        string podName,
-        DateTime podTime
-    )
-    {
-        await Context
-            .LoadStoredProc("DESWEB_qdfJob_UpdatePODDetails")
-            .WithSqlParam("@ucjbNumber", jobNumber)
-            .WithSqlParam("@ucjbJobDone", true)
-            .WithSqlParam("@ucjbStatus", jobStatus)
-            .WithSqlParam("@ucjbPODName", podName)
-            .WithSqlParam("@ucjbComplTime", podTime)
-            .ExecuteStoredNonQueryAsync();
-    }
+   public async Task UpdatePodDetails(int jobId, int jobStatus, string podName, DateTime podTime)
+   {
+       // Find if job is in active or archive table
+       var activeJob = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
+       var isArchived = activeJob == null;
+       int? parentId;
+
+       // Determine parent ID based on job location
+       if (isArchived)
+       {
+           var archivedJob = await Context.TucJobArchives.FirstOrDefaultAsync(j => j.UcjbId == jobId);
+           if (archivedJob == null)
+           {
+               // Job not found in either table
+               return;
+           }
+           parentId = archivedJob.ParentId;
+       }
+       else
+       {
+           parentId = activeJob.ParentId;
+       }
+
+       // Check for uncompleted sibling jobs (child jobs with same parent)
+       var hasUncompletedSiblings = await Context.TucJobs
+           .AnyAsync(j => j.ParentId == parentId &&
+                          j.UcjbId != jobId &&
+                          j.UcjbId != parentId &&
+                          j.UcjbJobDone == false &&
+                          j.UcjbVoid == false);
+
+       // Update job record with completion details
+       await UpdateJobCompletionDetails(
+           jobId,
+           jobStatus,
+           podName,
+           podTime,
+           isArchived);
+
+       // Update parent job if all siblings are complete
+       if (!hasUncompletedSiblings && parentId != null)
+       {
+           await UpdateParentJobCompletionDetails(
+               parentId.Value,
+               jobStatus,
+               podName,
+               podTime,
+               isArchived);
+       }
+
+       await Context.SaveChangesAsync();
+   }
+
+   private async Task UpdateJobCompletionDetails(
+       int jobId,
+       int jobStatus,
+       string podName,
+       DateTime podTime,
+       bool isArchived)
+   {
+       if (isArchived)
+       {
+           var archivedJob = await Context.TucJobArchives
+               .FirstOrDefaultAsync(j => j.UcjbId == jobId && j.UcjbJobDone == false);
+
+           if (archivedJob != null)
+           {
+               archivedJob.UcjbJobDone = true;
+               archivedJob.UcjbStatus = jobStatus;
+               archivedJob.UcjbPodname = podName;
+               archivedJob.UcjbComplTime = podTime;
+               archivedJob.InternalStatus = (int)InternalJobStatus.Reprice;
+           }
+       }
+       else
+       {
+           var activeJob = await Context.TucJobs
+               .FirstOrDefaultAsync(j => j.UcjbId == jobId && j.UcjbJobDone == false);
+
+           if (activeJob != null)
+           {
+               activeJob.UcjbJobDone = true;
+               activeJob.UcjbStatus = jobStatus;
+               activeJob.UcjbPodname = podName;
+               activeJob.UcjbComplTime = podTime;
+               activeJob.InternalStatus = (int)InternalJobStatus.Reprice;
+           }
+       }
+   }
+
+   private async Task UpdateParentJobCompletionDetails(
+       int parentId,
+       int jobStatus,
+       string podName,
+       DateTime podTime,
+       bool isArchived)
+   {
+       if (isArchived)
+       {
+           var parentJob = await Context.TucJobArchives
+               .FirstOrDefaultAsync(j => j.UcjbId == parentId &&
+                                         j.UcjbJobDone == false &&
+                                         j.UcjbSpeed != 79);
+
+           if (parentJob != null)
+           {
+               parentJob.UcjbJobDone = true;
+               parentJob.UcjbStatus = jobStatus;
+               parentJob.UcjbPodname = podName;
+               parentJob.UcjbComplTime = podTime;
+           }
+       }
+       else
+       {
+           var parentJob = await Context.TucJobs
+               .FirstOrDefaultAsync(j => j.UcjbId == parentId &&
+                                         j.UcjbJobDone == false &&
+                                         j.UcjbSpeed != 79);
+
+           if (parentJob != null)
+           {
+               parentJob.UcjbJobDone = true;
+               parentJob.UcjbStatus = jobStatus;
+               parentJob.UcjbPodname = podName;
+               parentJob.UcjbComplTime = podTime;
+           }
+       }
+   }
 
     public async Task ReSendAllJobs(int courierId)
     {
@@ -1964,9 +2076,9 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             // Update either active or archived job
             var isActiveJob = Context.TucJobs.Any(j => j.UcjbId == jobId);
             if (isActiveJob)
-                await UpdateTucJob(jobId, field, value, userName);
+                await UpdateTucJob(jobId, field, value, staffId);
             else
-                await UpdateTucJobArchive(jobId, field, value, userName);
+                await UpdateTucJobArchive(jobId, field, value, staffId);
         }
         catch (Exception e)
         {
@@ -2341,7 +2453,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
     private static bool IsCbdLocation(decimal latitude, decimal longitude) =>
         latitude is >= -37.81897m and <= -37.80647m && longitude is >= 144.95573m and <= 144.97737m;
 
-    private async Task UpdateTucJob(int jobId, string field, string value, string userName)
+    private async Task UpdateTucJob(int jobId, string field, string value, int staffId)
     {
         var job = await Context
             .TucJobs.Where(j => j.UcjbId == jobId)
@@ -2416,7 +2528,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     job.UcjbWeight = weight;
 
                     // Update child jobs
-                    if (job.InverseParent != null && job.InverseParent.Any())
+                    if (job.InverseParent != null && job.InverseParent.Count != 0)
                     {
                         foreach (var childJob in job.InverseParent)
                             childJob.UcjbWeight = weight;
@@ -2572,6 +2684,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 job.TrackingEmail = value[..Math.Min(value.Length, 100)];
                 break;
             case "PODName":
+            case "PodName":
                 job.UcjbPodname = value[..Math.Min(value.Length, 100)];
                 break;
             case "Amount":
@@ -2607,9 +2720,6 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             case "PuTime":
                 job.PickUpTime = DateTime.Parse(value);
                 break;
-            case "PodName":
-                job.UcjbPodname = value[..Math.Min(value.Length, 100)];
-                break;
             case "DeliverBy":
                 job.DeliverByTime = DateTime.Parse(value);
                 break;
@@ -2619,17 +2729,17 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         }
 
         if (!string.IsNullOrEmpty(updateNote))
-            await SaveNoteAsync(jobId, updateNote, userName);
+            await SaveNoteAsync(jobId, updateNote, staffId);
 
         // Add additional notes for undeliverable location
         if (field == "UndeliverableLocationID" && job.UndeliverableLocation?.Message != null)
-            await SaveNoteAsync(jobId, job.UndeliverableLocation.Message, userName);
+            await SaveNoteAsync(jobId, job.UndeliverableLocation.Message, staffId);
 
         Context.TucJobs.Update(job);
         await Context.SaveChangesAsync();
     }
 
-    private async Task UpdateTucJobArchive(int jobId, string field, string value, string userName)
+    private async Task UpdateTucJobArchive(int jobId, string field, string value, int staffId)
     {
         var archive = await Context
             .TucJobArchives.Join(
@@ -3051,11 +3161,11 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 break;
         }
 
-        if (!string.IsNullOrEmpty(updateNote)) await SaveNoteAsync(jobId, updateNote, userName);
+        if (!string.IsNullOrEmpty(updateNote)) await SaveNoteAsync(jobId, updateNote, staffId);
 
         // Add additional notes for undeliverable location
         if (field == "UndeliverableLocationID" && archive.UndeliverableLocation?.Message != null)
-            await SaveNoteAsync(jobId, archive.UndeliverableLocation.Message, userName);
+            await SaveNoteAsync(jobId, archive.UndeliverableLocation.Message, staffId);
 
         Context.Update(archive.Job);
         await Context.SaveChangesAsync();

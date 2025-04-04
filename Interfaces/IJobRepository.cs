@@ -81,7 +81,7 @@ public interface IJobRepository
     Task SetFirstJob(int jobId, int courierId);
     Task TransferJob(int jobId, int courierId, int dispId);
 
-    Task UpdatePodDetails(string jobNumber, int jobStatus, string podName, DateTime podTime);
+    Task UpdatePodDetails(int jobId, int jobStatus, string podName, DateTime podTime);
 
     Task ReSendAllJobs(int courierId);
     Task<int> MaxAutoLatePickupAlert();
