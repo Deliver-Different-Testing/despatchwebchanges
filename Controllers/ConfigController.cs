@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
 using System;
+using DespatchWeb.Models.Response;
 
 namespace DespatchWeb.Controllers;
 
@@ -11,16 +12,19 @@ public class ConfigController(IWebHostEnvironment environment) : Controller
     [HttpGet]
     public IActionResult GetHereMapsKey()
     {
-        return Json(new { apiKey = Environment.GetEnvironmentVariable("HereMapsAPIKey") });
+        var apiKey = new ApiKeyResponse(Environment.GetEnvironmentVariable("HereMapsAPIKey"));
+        return Json(apiKey);
     }
-    
+
     [HttpGet]
     public IActionResult GetGoogleMapsKey()
     {
-        var key = environment.IsDevelopment()
+        var apiKey = new ApiKeyResponse(
+            environment.IsDevelopment()
             ? Environment.GetEnvironmentVariable("GoogleMapsDevKey")
-            : Environment.GetEnvironmentVariable("GoogleMapsKey");
+            : Environment.GetEnvironmentVariable("GoogleMapsKey")
+        );
 
-        return Json(new { apiKey = key });
+        return Json(apiKey);
     }
 }

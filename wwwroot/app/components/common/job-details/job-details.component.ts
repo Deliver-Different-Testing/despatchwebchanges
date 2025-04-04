@@ -13,10 +13,11 @@ import PriceBreakdownDialogService from "../../dialogs/price-breakdown-dialog/pr
 import BaseController from "../../base-controller";
 import moment from "moment";
 import {AppPages} from "../../../enums/app-pages.enum";
+import {AppConfig} from "../../../interfaces/app-config.interface";
+import {JobStatus} from "../../../enums/job-status.enum";
 
 class JobDetailController extends BaseController {
     static $inject = [
-        "$scope",
         "$mdDialog",
         "toastrService",
         "DispatchData",
@@ -26,10 +27,12 @@ class JobDetailController extends BaseController {
         "editDateTimeDialogService",
         "editAddressDialogService",
         "priceBreakdownDialogService",
-        "$document"
+        "$document",
+        "APP_CONFIG"
     ];
 
-    appPage?: AppPages = AppPages.Dispatch;
+    readonly appPage: AppPages = AppPages.Dispatch;
+    readonly isUsCustomer: boolean = false;
     jobId?: number;
     job?: IJob;
     internalJob?: IJob;
@@ -47,7 +50,6 @@ class JobDetailController extends BaseController {
     showStageDropdown: boolean = false;
 
     constructor(
-        private $scope: angular.IScope,
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
@@ -58,8 +60,11 @@ class JobDetailController extends BaseController {
         private editAddressDialogService: EditAddressDialogService,
         private priceBreakdownDialogService: PriceBreakdownDialogService,
         private $document: angular.IDocumentService,
+        APP_CONFIG: AppConfig
     ) {
         super();
+
+        this.isUsCustomer = APP_CONFIG.US_Customer;
 
         this.notes = [];
         this.selectedTab = 0;
@@ -120,11 +125,7 @@ class JobDetailController extends BaseController {
         }
 
         if (changes['appPage']) {
-            if (changes['appPage'].currentValue == AppPages.Domestic) {
-                this.showStageDropdown = true;
-            } else {
-                this.showStageDropdown = false;
-            }
+            this.showStageDropdown = changes['appPage'].currentValue == AppPages.Domestic;
         }
     }
 
@@ -209,7 +210,6 @@ class JobDetailController extends BaseController {
                     console.log(`Successfully processed ${this.formattedPodPhotos.length} POD photos`);
 
                     this.selectedPhotoIndex = 0;
-
                     this._setupPhotoKeyboardNavigation();
                 })
                 .catch((error: Error) => {
@@ -258,7 +258,7 @@ class JobDetailController extends BaseController {
                 bindToController: true
             });
 
-            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully`);
+            this.toastrService.showSuccessToast(`${job.jobNo} updated`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
@@ -316,7 +316,7 @@ class JobDetailController extends BaseController {
                 );
             }
 
-            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully`);
+            this.toastrService.showSuccessToast(`${job.jobNo} updated`);
             await this._refreshJobDetails(job.id);
         }
     }
@@ -343,7 +343,7 @@ class JobDetailController extends BaseController {
                     }
                 }
 
-                this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully`);
+                this.toastrService.showSuccessToast(`${job.jobNo} updated`);
                 await this._refreshJobDetails(job.id);
             }
         } catch (error) {
@@ -373,7 +373,7 @@ class JobDetailController extends BaseController {
             };
             await this.updateField(false, job, callData);
 
-            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully`);
+            this.toastrService.showSuccessToast(`${job.jobNo} updated`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
@@ -403,7 +403,7 @@ class JobDetailController extends BaseController {
     }
 
     async editCompletedTime($event: MouseEvent, job: IJob) {
-        await this.showEditTimeDialog($event, job, "POD Time", "CompletedTime", job.completedTime);
+        await this.showEditDateAndTimeDialog($event, job, "POD Time", "CompletedTime", job.completedTime);
     }
 
     async editFollowUpTime($event: MouseEvent, job: IJob) {
@@ -447,7 +447,7 @@ class JobDetailController extends BaseController {
         try {
             await this._updateJobRateAndAddress(updatedJob, newAddress, isDeliveryAddress);
 
-            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully`);
+            this.toastrService.showSuccessToast(`${job.jobNo} updated`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             this._handleError(error);
@@ -616,7 +616,7 @@ class JobDetailController extends BaseController {
 
         try {
             await this.showSelectDialog($event, job, data, "JobTypeID", "Job Type", jobTypeDes);
-            console.log('Select dialog completed successfully');
+            console.log('Select dialog completed}');
         } catch (error) {
             console.error('Error showing select dialog:', error);
             throw error;
@@ -665,20 +665,11 @@ class JobDetailController extends BaseController {
 
     private _showLoading() {
         this.isLoading = true;
-
-        if (this.$scope && this.$scope.$applyAsync) {
-            this.$scope.$applyAsync();
-        }
     }
 
     private _hideLoading() {
         this.isLoading = false;
-
-        if (this.$scope && this.$scope.$applyAsync) {
-            this.$scope.$applyAsync();
-        }
     }
-
 
     async updateField(reRate: boolean, job: IJob, callData: {
         call?: string;
@@ -690,7 +681,8 @@ class JobDetailController extends BaseController {
 
         try {
             if (reRate && !job.bulkJob) {
-                const rate = await this.rateJobService.rateJob(job);
+                const rate = job.charge;
+                // await this.rateJobService.rateJob(job);
 
                 // Ensure rate is decimal
                 const numericRate = parseFloat(rate.replace(/[^\d.-]/g, ""));
@@ -750,86 +742,101 @@ class JobDetailController extends BaseController {
     }
 
     async toggleJobProperty(job: IJob, property: string, useCharge: boolean = true) {
-        console.log(`Toggle job property: ${property}`);
-        const newValue = job ? !(property in job && job[property as keyof typeof job]) : false;
-        console.log(`New value: ${newValue}`);
-        const capitalizedProperty = property.charAt(0).toUpperCase() + property.slice(1);
-        console.log(`Capitalized property: ${capitalizedProperty}`);
+        console.log(`[JobDetailsComponentController] Start toggleJobProperty - property: ${property}, useCharge: ${useCharge}`);
 
-        const updateJob = async (rate: number) => {
-            await this.DispatchData.updateJobDetail(job.id, capitalizedProperty, newValue, rate, job.preBook);
-        };
+        if (!job || !job.id) {
+            console.log(`[JobDetailsComponentController] Error: Invalid job data`);
+            this.toastrService.showErrorToast(`Cannot update: Invalid job data`);
+            return;
+        }
 
         try {
-            // Special handling for "reprice"
-            if (property === "reprice") {
-                const previousStatus = job.internalStatusId;
+            const newValue = !(property in job && job[property as keyof typeof job]);
+            console.log(`[JobDetailsComponentController] Toggling ${property} for job ${job.jobNo || job.id} from ${!newValue} to ${newValue}`);
 
-                const callData = {
-                    call: "updateDetailField", field: "Reprice", value: newValue, jobID: job.id
-                };
+            const capitalizedProperty = property.charAt(0).toUpperCase() + property.slice(1);
+            const callData = {
+                call: "updateDetailField",
+                field: capitalizedProperty,
+                value: newValue,
+                jobID: job.id
+            };
 
-                // Update the reprice status
-                await this.updateField(false, job, callData);
+            console.log(`[JobDetailsComponentController] Calling updateField with data:`, callData);
 
-                if (newValue) {
-                    const repriceStatusId = 4;
-                    await this.DispatchData.updateJobDetail(job.id, "InternalStatusID", repriceStatusId, job.charge, job.preBook);
-                } else if (previousStatus) {
-                    await this.DispatchData.updateJobDetail(job.id, "InternalStatusID", previousStatus, job.charge, job.preBook);
-                }
-            }  // Special handling for "van"
-            else if (property === "van") {
-                const callData = {
-                    call: "updateDetailField", field: "Van", value: newValue, jobID: job.id
-                };
+            await this.updateField(useCharge, job, callData);
 
-                await this.updateField(true, job, callData);
-            } // Special handling for "vanOK"
-            else if (property === "vanOK") {
-                const callData = {
-                    call: "updateDetailField", field: "VanOK", value: newValue, jobID: job.id
-                };
-
-                await this.updateField(true, job, callData);
-            }
-            // General handling for other properties
-            else {
-                // General toggle logic for other properties
-                if (useCharge) {
-                    await updateJob(this._extractNumericRate(job.charge));
-                } else {
-                    const rate = await this.rateJobService.rateJob(job);
-                    await updateJob(this._extractNumericRate(rate));
-                }
+            if (property === "reprice" && newValue) {
+                console.log(`[JobDetailsComponentController] Special handling for reprice - updating internal status`);
+                const repriceStatusId = 4;
+                await this.DispatchData.updateJobDetail(job.id, "InternalStatusID", repriceStatusId,
+                    this._extractNumericRate(job.charge), job.preBook);
             }
 
-            // Show success toast and refresh job details
-            this.toastrService.showSuccessToast(`Job ${job.jobNo} updated successfully`);
+            console.log(`[JobDetailsComponentController] Update successful for ${property}`);
+            this.toastrService.showSuccessToast(`${job.jobNo} updated`);
+
+            console.log(`[JobDetailsComponentController] Refreshing job details for ID: ${job.id}`);
             await this._refreshJobDetails(job.id);
+
+            console.log(`[JobDetailsComponentController] Toggle operation completed for ${property}`);
         } catch (error) {
-            console.error(`Error toggling ${property}:`, error);
+            console.error(`[JobDetailsComponentController] Error toggling ${property}:`, error);
             this.toastrService.showErrorToast(`Failed to update ${property}. Please try again.`);
         }
     }
 
     async toggleProperty(job: IJob, property: string) {
-        const propertiesUsingDefaultCharge = ["pedal", "truck", "direct", "attention", "return", "oneOff", "active", "void", "van", "vanOK", "done", "reprice"];
+        console.log(`[JobDetailsComponentController] Toggling property '${property}' for job ${job?.jobNo || job?.id || 'unknown'}`);
+
+        const propertiesUsingDefaultCharge = [
+            "pedal", "truck", "direct",
+            "return", "oneOff", "active", "void",
+            "van", "vanOK", "reprice"
+        ];
+
         const useCharge = propertiesUsingDefaultCharge.includes(property);
+        console.log(`[JobDetailsComponentController] Using default charge: ${useCharge}`);
+
         await this.toggleJobProperty(job, property, useCharge);
+
+        console.log(`[JobDetailsComponentController] Property '${property}' toggle completed`);
     }
 
-    async markJobAsDone(job: IJob) {
+    async markJobAsDone($event: MouseEvent, job: IJob) {
         try {
-            if (!job.completedTime) return;
-            await this.DispatchData.updatePODDetail(job.jobNo, 6, job.podName, job.completedTime);
+            if (!job.completedTime) {
+                const result = await this.editDateTimeDialogService.showEditDateAndTimeDialog(
+                    $event,
+                    "Completed Time",
+                    "CompletedTime",
+                    job.completedTime);
 
-            this.toastrService.showSuccessToast(`Job ${job.jobNo} marked as done successfully`);
+                job.completedTime = result.value;
+            }
+
+            if(!job.podName) {
+                const prompt = this.$mdDialog.prompt()
+                    .title("POD Name")
+                    .placeholder("POD Name..")
+                    .ariaLabel("pod name")
+                    .initialValue(job.podName ?? '')
+                    .targetEvent($event)
+                    .required(true)
+                    .ok("Complete Job")
+                    .cancel("Cancel");
+
+                job.podName = await this.$mdDialog.show(prompt);
+            }
+
+            console.log("[JobDetailsComponentController] Marking job as done]")
+            await this.DispatchData.updatePODDetail(job.id, JobStatus.Completed, job.podName, job.completedTime.toISOString());
+
+            this.toastrService.showSuccessToast(`${job.jobNo} marked as done`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
-            const message = "Failed to mark job as done. Please try again.";
-            console.error(message);
-            this.toastrService.showErrorToast(message);
+            console.error("Error marking job as done:", error);
+            this.toastrService.showErrorToast("Failed to mark job as done. Please try again.");
         }
     }
 
@@ -843,7 +850,6 @@ class JobDetailController extends BaseController {
             console.log('Job data refreshed');
         } catch (error) {
             this.isLoading = false;
-            console.error("Error during refresh process:", error);
             this.toastrService.showErrorToast("Failed to refresh job details");
         }
     }
@@ -852,13 +858,20 @@ class JobDetailController extends BaseController {
         if (error === undefined) {
             console.log("User closed dialog");
         } else {
-            console.error(error);
             this.toastrService.showErrorToast();
         }
     }
 
-    private _extractNumericRate(rate: string): number {
-        return Number(rate.replace(/[^0-9.-]+/g, ""));
+    private _extractNumericRate(rate: string | number | undefined | null): number {
+        if (!rate) {
+            console.log(`[JobDetailsComponentController] Warning: Rate is ${rate}, returning default 0`);
+            return 0;
+        }
+
+        if (typeof rate === 'number') return rate;
+
+        const numericString = rate.replace(/[^0-9.]/g, '');
+        return numericString ? parseFloat(numericString) : 0;
     }
 
     getTrackingMethod(trackingMethod?: number) {

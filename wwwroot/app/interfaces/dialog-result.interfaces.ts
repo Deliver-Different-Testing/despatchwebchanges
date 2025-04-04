@@ -6,6 +6,6 @@ export interface ISelectDialogResult {
 
 export interface IDialogDateTimeResult {
     fieldName: string;
-    value: string;
+    value: Date;
     formattedDateTime: string;
 }

@@ -1,9 +1,4 @@
 <div class="droppable-box">
-    <context-menu
-            on-refresh="ctrl.getData(true)"
-            on-split-job="ctrl.handleSplitJob(job)">
-    </context-menu>
-
     <md-table-container>
         <div class="md-table-footer-content">
             <div class="date-selector" layout="row" layout-align="start center">
@@ -69,7 +64,7 @@
         <md-divider></md-divider>
 
         <table md-dense md-progress="ctrl.jobListPromise" md-table ng-model="ctrl.selectedJob">
-            <thead md-head md-on-reorder="ctrl.getJobList" md-order="ctrl.queryParams.order">
+            <thead md-head md-on-reorder="ctrl.getJobList" md-order="ctrl.queryParams.order" md-sticky-init="ctrl.makeHeaderSticky($element)">
             <tr md-row>
                 <th md-column md-order-by="time">Time</th>
                 <th md-column md-order-by="speed">Speed</th>
@@ -91,7 +86,9 @@
             <tbody md-body>
             <tr md-row
                 md-dense
-                ng-right-click="ctrl.showJobContextMenu($event, job)"
+                context-menu="ctrl.getContextMenuOptions(job)"
+                context-menu-on="contextmenu"
+                context-menu-class="job-context-menu"
                 ng-click="ctrl.selectJob(job)"
                 ng-repeat="job in ctrl.jobList">
 

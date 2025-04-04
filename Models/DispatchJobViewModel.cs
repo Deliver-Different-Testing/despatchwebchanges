@@ -79,6 +79,9 @@ public class DispatchJobViewModel
         public int? ToAirportId { get; set; }
         public int? FromAirportId { get; set; }
 
+        public AssignedFlight AssignedFlight { get; set; }
+        public AgentViewModel AssignedAgent { get; set; }
+
         // UI helper fields
         public string SearchText { get; set; }
         public List<Suggestion> RelatedJobs { get; set; }

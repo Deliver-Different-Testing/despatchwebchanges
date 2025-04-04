@@ -1,9 +1,4 @@
 <div class="droppable-box nationwide-job-list">
-    <context-menu
-            on-refresh="refreshData(true)"
-            on-split-job="handleSplitJob(job)">
-    </context-menu>
-
     <md-table-container>
         <table md-dense md-progress="ctrl.jobListPromise" md-table ng-model="ctrl.selectedJob">
             <thead md-head md-on-reorder="ctrl.onReorderJobList" md-order="ctrl.jobFilters.order">
@@ -15,7 +10,6 @@
                 <th md-column md-order-by="from">From</th>
                 <th md-column md-order-by="to">To</th>
                 <th md-column md-order-by="courier">Dispatch</th>
-                <th md-column md-order-by="pod">POD</th>
                 <th md-column md-order-by="remain">Remain</th>
                 <th md-column md-order-by="status">Status</th>
                 <th md-column>Actions</th>
@@ -27,7 +21,9 @@
                 md-dense
                 ng-repeat="job in ctrl.jobList | filter: box.searchBox"
                 ng-class="ctrl.jobClass(job)"
-                ng-right-click="ctrl.showJobContextMenu($event, job)"
+                context-menu="ctrl.getContextMenuOptions(job)"
+                context-menu-on="contextmenu"
+                context-menu-class="job-context-menu"
                 ng-click="ctrl.selectJob(job)"
                 data-jobid="{{job.id}}"
                 data-jobno="{{job.jobNo}}"
@@ -73,7 +69,6 @@
                         {{job.assignedAgent.agentName || "NA"}}
                     </span>
                 </td>
-                <td md-cell>{{job.pod}}</td>
                 <td md-cell>
                     <span class="remain-time">{{job.remain}}</span>
                 </td>

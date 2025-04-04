@@ -1,5 +1,6 @@
+@import "../../../../css/variables.less";
+
 // Primary color and variants
-@primary-color: #3EAFC2;
 @primary-color-light: fade(@primary-color, 10%);
 @on-primary-color: #FFFFFF;
 
@@ -176,12 +177,12 @@
 
   // New footer styles
   .nav-footer {
-    min-height: 48px;
-    padding: 12px 16px;
+    min-height: 64px;
+    padding: 16px 24px;
     background-color: @surface-variant;
-    border-top: 1px solid rgba(0, 0, 0, 0.12);
-    flex-shrink: 0; // Prevent footer from shrinking
-    margin-top: auto; // Push to the bottom if content doesn't fill space
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    flex-shrink: 0;
+    margin-top: auto;
 
     .copyright-text {
       text-align: center;
@@ -190,6 +191,32 @@
         margin: 0;
         font-size: 12px;
         color: @outline-color;
+        letter-spacing: 0.4px;
+      }
+
+      .nz-made {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 12px;
+        background-color: @primary-color-light;
+        border-radius: 16px;
+        padding: 8px 12px;
+
+        md-icon {
+          color: @primary-color;
+          font-size: 18px;
+          height: 18px;
+          width: 18px;
+          margin-right: 8px;
+        }
+
+        span {
+          font-size: 12px;
+          color: rgba(0, 0, 0, 0.87);
+          font-weight: 500;
+          letter-spacing: 0.25px;
+        }
       }
     }
   }

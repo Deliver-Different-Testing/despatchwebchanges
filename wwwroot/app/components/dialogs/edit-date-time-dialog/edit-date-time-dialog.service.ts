@@ -1,5 +1,6 @@
 import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interfaces";
 import app from "../../../app";
+import {EditDateTimeDialogController} from "./edit-date-time-dialog.controller";
 
 export class EditDateTimeDialogService implements angular.IServiceProvider {
     static $inject = [
@@ -20,7 +21,7 @@ export class EditDateTimeDialogService implements angular.IServiceProvider {
 
     private _getBaseDialogConfig($event: MouseEvent, title: string, fieldName: string, dateTime?: Date) {
         return {
-            controller: "EditDateTimeDialogController",
+            controller: EditDateTimeDialogController,
             controllerAs: "ctrl",
             parent: this.$document.parent(),
             targetEvent: $event,

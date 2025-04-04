@@ -51,7 +51,6 @@ import AdditionalServicesDialogService
     from "./components/dialogs/additional-services-dialog/additional-services-dialog.service";
 import AdditionalServicesDialogController
     from "./components/dialogs/additional-services-dialog/additional-services-dialog.controller";
-import ContextMenuComponent from "./components/common/job-context-menu/job-context-menu.controller";
 import DfrntLoaderComponent from "./components/common/dfrnt-loader/dfrnt-loader.component";
 import JobDetailComponent from "./components/common/job-details/job-details.component";
 import NoDataComponent from "./components/common/no-data/no-data.component";
@@ -64,24 +63,54 @@ import moment from "moment";
 import NoteManagementDialogService from "./components/dialogs/note-management-dialog/note-management.dialog.service";
 import NoteManagementDialogController
     from "./components/dialogs/note-management-dialog/note-management-dialog.component";
-import StickyNoteComponent from "./components/common/sticky-notes/sticky-notes.component";
 import NoteService from "./services/notes.service";
-import {mdAutocompleteEnterSelectDirective, ngRightClickDirective, rightClickDirective} from "./directives";
+import {
+    mdAutocompleteEnterSelectDirective,
+    ngRightClickDirective,
+    rightClickDirective
+} from "./directives";
 import RouterConfig from "./routes";
 import ThemeConfig from "./materialTheme";
 import AddEventDialogController from "./components/dialogs/add-event-dialog/add-event-dialog.controller";
 import AddEventDialogService from "./components/dialogs/add-event-dialog/add-event-dialog.service";
 import {IQProvider, material, ui} from "angular";
-import InterCourierChargeDialogController from "./components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.controller";
+import InterCourierChargeDialogController
+    from "./components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.controller";
 import InterCourierChargeDialogService
     from "./components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
+import {
+    bytesFilter, getByAttrFilter, jobStatusIconFilter,
+    replaceFilter, selectedToTopFilter, switchFilter, uniqueFilter, urlFixFilter
+} from "./filters";
+import JobContextMenuService from "./services/job-context-menu.service";
 
-const app = angular.module("uDispatch", ["ui.router",
-    "angularResizable", "ui.sortable", "ui.bootstrap", "ui.bootstrap.pagination",
-    "ui.bootstrap.contextMenu", "cfp.hotkeys", "ui.timepicker", "pickadate", "ngMap",
-    "ngMapAutocomplete", "angularjs-dropdown-multiselect", "heremaps", "ngAnimate",
-    "ngMessages", "ngSanitize", "ngMaterial", "angularPromiseButtons", "ng-mfb",
-    "md.time.picker", "angularMoment", "md.data.table", "ngFileUpload", "hereMapTracking.services", "hereMapTracking.components"]);
+const app = angular.module("uDispatch", [
+    "ui.router",
+    "angularResizable",
+    "ui.sortable",
+    "ui.bootstrap",
+    "ui.bootstrap.pagination",
+    "ui.bootstrap.contextMenu",
+    "cfp.hotkeys",
+    "ui.timepicker",
+    "pickadate",
+    "ngMap",
+    "ngMapAutocomplete",
+    "angularjs-dropdown-multiselect",
+    "heremaps",
+    "ngAnimate",
+    "ngMessages",
+    "ngSanitize",
+    "ngMaterial",
+    "angularPromiseButtons",
+    "ng-mfb",
+    "md.time.picker",
+    "angularMoment",
+    "md.data.table",
+    "ngFileUpload",
+    "hereMapTracking.services",
+    "hereMapTracking.components",
+]);
 
 // Constants
 app
@@ -172,9 +201,19 @@ app
         }
     }]);
 
+// Filters
+app.filter("unique", () => uniqueFilter);
+app.filter("urlFix", () => urlFixFilter);
+app.filter("getByAttr", () => getByAttrFilter);
+app.filter("switch", () => switchFilter);
+app.filter("selectedToTop", () => selectedToTopFilter);
+app.filter("bytes", () => bytesFilter);
+app.filter("jobStatusIcon", () => jobStatusIconFilter);
+app.filter("replace", () => replaceFilter);
+
 // Directives
-app.directive('ngRightClick', ngRightClickDirective)
-app.directive('mdAutocompleteEnterSelect', mdAutocompleteEnterSelectDirective)
+app.directive('ngRightClick', ngRightClickDirective);
+app.directive('mdAutocompleteEnterSelect', mdAutocompleteEnterSelectDirective);
 app.directive("rightClick", rightClickDirective);
 
 // Components
@@ -186,14 +225,12 @@ app.component("openJobsWidget", openJobsComponent);
 app.component("dispatchMap", DispatchMapComponent);
 app.component("taskItemComponent", TaskItemComponent);
 app.component("homeComponent", HomeComponent);
-app.component("overviewComponent", OverviewComponent)
-app.component("megaMapComponent", MegaMapComponent)
-app.component("taskDashboardComponent", TaskDashboardComponent)
-app.component("contextMenu", ContextMenuComponent)
-app.component("noData", NoDataComponent)
+app.component("overviewComponent", OverviewComponent);
+app.component("megaMapComponent", MegaMapComponent);
+app.component("taskDashboardComponent", TaskDashboardComponent);
+app.component("noData", NoDataComponent);
 app.component("parcelVisualization", ParcelVisualizationComponent);
 app.component("nationwideComponent", NationwideComponent);
-app.component("stickyNotes", StickyNoteComponent);
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);
@@ -232,12 +269,13 @@ app.service('eventGroupDialogService', EventGroupDialogService);
 app.service("editDateTimeDialogService", EditDateTimeDialogService);
 app.service("editAddressDialogService", EditAddressDialogService);
 app.service("NWData", NationwideService);
-app.service("priceBreakdownDialogService", PriceBreakdownDialogService)
-app.service("additionalServicesDialogService", AdditionalServicesDialogService)
-app.service("jobFileUploadDialogService", JobFileUploadDialogService)
-app.service("noteManagementDialogService", NoteManagementDialogService)
-app.service("noteService", NoteService)
-app.service("addEventDialogService", AddEventDialogService)
-app.service("interCourierChargeDialogService", InterCourierChargeDialogService)
+app.service("priceBreakdownDialogService", PriceBreakdownDialogService);
+app.service("additionalServicesDialogService", AdditionalServicesDialogService);
+app.service("jobFileUploadDialogService", JobFileUploadDialogService);
+app.service("noteManagementDialogService", NoteManagementDialogService);
+app.service("noteService", NoteService);
+app.service("addEventDialogService", AddEventDialogService);
+app.service("interCourierChargeDialogService", InterCourierChargeDialogService);
+app.service("jobContextMenuService", JobContextMenuService);
 
 export default app;

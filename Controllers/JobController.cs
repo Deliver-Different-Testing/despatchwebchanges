@@ -1064,13 +1064,13 @@ public class JobController(
 
     [HttpPost]
     public async Task<IActionResult> UpdatePodDetails(
-        string jobNumber,
+        int jobId,
         int jobStatus,
         string podName,
         DateTime podTime
     )
     {
-        await jobRepository.UpdatePodDetails(jobNumber, jobStatus, podName, podTime);
+        await jobRepository.UpdatePodDetails(jobId, jobStatus, podName, podTime);
         return Ok();
     }
 
