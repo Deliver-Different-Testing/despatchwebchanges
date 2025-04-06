@@ -18,6 +18,7 @@ import moment from "moment";
 import AddEventDialogService from "../dialogs/add-event-dialog/add-event-dialog.service";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 import JobContextMenuService from "../../services/job-context-menu.service";
+import {ExtendedTask, TaskTableFiltersRequest, TaskViewModel} from "../task-dashboard/task-dashboard.interfaces";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -51,7 +52,6 @@ class NationwideControl extends BaseController {
     currentJob?: DispatchJob;
     currentJobId?: number;
     jobList?: DispatchJob[] = [];
-    jobListDelivery?: DispatchJob[] = [];
     jobListPOD?: DispatchJob[] = [];
     jobListReprice?: DispatchJob[] = [];
     STATUS_TO_LIST_MAP: StatusToListMap;
@@ -59,7 +59,6 @@ class NationwideControl extends BaseController {
     totalJobCount: number = 0;
     totalPodCount: number = 0;
     totalRepriceCount: number = 0;
-    totalDeliveryCount: number = 0;
     jobRecordSearchText?: string;
     mapCenter?: Coordinates;
     mapZoom: number = 4;
@@ -75,15 +74,10 @@ class NationwideControl extends BaseController {
     showInput: Record<string, boolean> = {};
     inputWidth: Record<string, number> = {};
     jobListLoading: boolean = false;
-    deliveryListLoading: boolean = false;
     podListLoading: boolean = false;
     repriceListLoading: boolean = false;
     selected: any;
     jobFilters: JobQueryParams = {
-        order: 'time',
-        orderDirection: 'asc',
-    };
-    jobDeliveryFilters: JobQueryParams = {
         order: 'time',
         orderDirection: 'asc',
     };
@@ -106,12 +100,21 @@ class NationwideControl extends BaseController {
     currentSelection?: string;
     agentsLoading: boolean = false;
     agentListPromise?: Promise<{ agents: AgentViewModel[], message: string | null }>;
-    selectedJobs: any;
     flightListPromise?: Promise<{ flights: FlightViewModel[], message: string | null }>;
     jobListPromise?: Promise<DispatchJob[]>;
-    deliveryListPromise?: Promise<DispatchJob[]>;
     podListPromise?: Promise<DispatchJob[]>;
     repriceListPromise?: Promise<DispatchJob[]>;
+    tasksLoading: boolean = false;
+    filteredTasks: ExtendedTask[] = [];
+    tasksFilter: string = 'all';
+    tasks: ExtendedTask[] = [];
+    taskItemConfig = {
+        showAssign: true,
+        showClose: true,
+        showDelete: true,
+        onTaskClick: true
+    };
+    currentSupport: any;
 
     constructor(
         private $scope: angular.IScope,
@@ -168,7 +171,6 @@ class NationwideControl extends BaseController {
 
         this.STATUS_TO_LIST_MAP = {
             1: [JobDataType.NEW],
-            2: [JobDataType.DELIVERY],
             3: [JobDataType.POD],
             4: [JobDataType.REPRICE]
         };
@@ -177,7 +179,7 @@ class NationwideControl extends BaseController {
     initLayoutSystem(contactID: number) {
         const jobsListBox: IBox = {name: "jobsList", height: "60%"};
         const jobsListPODBox: IBox = {name: "jobsListPOD", height: "40%"};
-        const jobsListDeliveryBox: IBox = {name: "jobsListDelivery", height: "50%"};
+        const tasksListBox: IBox = {name: "tasksList", height: "50%"};
         const jobsListRepriceBox: IBox = {name: "jobsListReprice", height: "50%"};
         const mapBox: IBox = {name: "map", height: "30%"};
         const jobDetailBox: IBox = {name: "jobDetail", height: "60%"};
@@ -199,7 +201,7 @@ class NationwideControl extends BaseController {
         const column3: IColumn = {
             id: "col3",
             width: "30%",
-            boxes: [jobsListPODBox, jobsListDeliveryBox, jobsListRepriceBox]
+            boxes: [jobsListPODBox, tasksListBox, jobsListRepriceBox]
         };
 
         // Create default layout
@@ -276,11 +278,11 @@ class NationwideControl extends BaseController {
                 "showSearch": 1,
                 "showRefresh": 1
             },
-            "jobsListDelivery": {
-                "title": "Action Required",
-                "icon": "warning",
-                "templateUrl": "app/components/Nationwide/partials/jobListDelivery.html",
-                "showSearch": 1,
+            "tasksList": {
+                "title": "Tasks",
+                "icon": "support",
+                "templateUrl": "app/components/Nationwide/partials/tasksList.html",
+                "showSearch": 0,
                 "showRefresh": 1
             },
             "jobsListReprice": {
@@ -416,7 +418,6 @@ class NationwideControl extends BaseController {
             }
         }
     }
-
 
     getJobStyle(assigned: boolean = false) {
         const normal = {
@@ -676,10 +677,6 @@ class NationwideControl extends BaseController {
                 relevantLists.push(...(this.jobListPOD || []));
                 console.log('Added POD jobs list:', this.jobListPOD?.length || 0, 'items');
             }
-            if (listsToRefresh.has(JobDataType.DELIVERY)) {
-                relevantLists.push(...(this.jobListDelivery || []));
-                console.log('Added DELIVERY jobs list:', this.jobListDelivery?.length || 0, 'items');
-            }
             if (listsToRefresh.has(JobDataType.REPRICE)) {
                 relevantLists.push(...(this.jobListReprice || []));
                 console.log('Added REPRICE jobs list:', this.jobListReprice?.length || 0, 'items');
@@ -773,27 +770,6 @@ class NationwideControl extends BaseController {
         await this.getJobList(JobDataType.REPRICE);
     }
 
-    async onReorderDeliveryList() {
-        console.log('[onReorderDeliveryList] Called with order:', this.jobDeliveryFilters?.order);
-
-        let orderBy = this.jobDeliveryFilters?.order || '';
-        let orderDirection = "asc";
-
-        if (orderBy && orderBy.startsWith("-")) {
-            orderBy = orderBy.substring(1);
-            orderDirection = "desc";
-        }
-
-        console.log(`[onReorderDeliveryList] Parsed order: ${orderBy}, direction: ${orderDirection}`);
-
-        if (this.jobDeliveryFilters) {
-            this.jobDeliveryFilters.order = orderBy;
-            this.jobDeliveryFilters.orderDirection = orderDirection;
-        }
-
-        await this.getJobList(JobDataType.DELIVERY);
-    }
-
     attention(job: DispatchJob) {
         let temp = "";
 
@@ -867,16 +843,6 @@ class NationwideControl extends BaseController {
                 if (this.jobPodFilters) {
                     this.jobPodFilters.orderDirection = "asc";
                 }
-            } else if (list === "jobListDelivery") {
-                if (this.jobDeliveryFilters) {
-                    this.jobDeliveryFilters.orderDirection = "asc";
-                }
-            } else if (list === "jobListReprice") {
-                if (this.jobDeliveryFilters) {
-                    if (this.jobRepriceFilters) {
-                        this.jobRepriceFilters.orderDirection = "asc";
-                    }
-                }
             }
         } else {
             // Toggle sort direction for same property
@@ -894,10 +860,6 @@ class NationwideControl extends BaseController {
                     if (this.jobPodFilters) {
                         this.jobPodFilters.orderDirection = "desc";
                     }
-                } else if (list === "jobListDelivery") {
-                    if (this.jobDeliveryFilters) {
-                        this.jobDeliveryFilters.orderDirection = "desc";
-                    }
                 } else if (list === "jobListReprice") {
                     if (this.jobRepriceFilters) {
                         this.jobRepriceFilters.orderDirection = "desc";
@@ -913,10 +875,6 @@ class NationwideControl extends BaseController {
                 } else if (list === "jobListPOD") {
                     if (this.jobPodFilters) {
                         this.jobPodFilters.orderDirection = "asc";
-                    }
-                } else if (list === "jobListDelivery") {
-                    if (this.jobDeliveryFilters) {
-                        this.jobDeliveryFilters.orderDirection = "asc";
                     }
                 } else if (list === "jobListReprice") {
                     if (this.jobRepriceFilters) {
@@ -970,7 +928,6 @@ class NationwideControl extends BaseController {
         try {
             const currentJob =
                 this.jobList?.find(job => job.id === jobId) ||
-                this.jobListDelivery?.find(job => job.id === jobId) ||
                 this.jobListPOD?.find(job => job.id === jobId) ||
                 this.jobListReprice?.find(job => job.id === jobId);
 
@@ -1257,22 +1214,12 @@ class NationwideControl extends BaseController {
 
         try {
             // Set loading states
-            const loadingStates: Record<JobDataType.NEW | JobDataType.POD | JobDataType.REPRICE | JobDataType.DELIVERY, () => void> = {
+            const loadingStates: Record<JobDataType.NEW | JobDataType.POD | JobDataType.REPRICE, () => void> = {
                 [JobDataType.NEW]: () => {
                     this.jobListLoading = true;
 
                     this.jobListPromise = this.nationwideService.getNationwideJobsNew(
                         this.jobFilters || {},
-                        selectedClients,
-                        ClientInternal,
-                        this.selectedViews
-                    );
-                },
-                [JobDataType.DELIVERY]: () => {
-                    this.deliveryListLoading = true;
-
-                    this.deliveryListPromise = this.nationwideService.getNationwideJobsBookDelivery(
-                        this.jobDeliveryFilters || {},
                         selectedClients,
                         ClientInternal,
                         this.selectedViews
@@ -1300,7 +1247,7 @@ class NationwideControl extends BaseController {
                 }
             };
             requestedTypes.forEach((type) => {
-                if (type === JobDataType.NEW || type === JobDataType.POD || type === JobDataType.REPRICE || type === JobDataType.DELIVERY) {
+                if (type === JobDataType.NEW || type === JobDataType.POD || type === JobDataType.REPRICE) {
                     loadingStates[type]?.();
                 }
             });
@@ -1351,19 +1298,6 @@ class NationwideControl extends BaseController {
 
                         this.repriceListLoading = false;
                     }
-                },
-                [JobDataType.DELIVERY]: {
-                    fetch: () => {
-                        if (!this.deliveryListPromise) {
-                            throw new Error('Job delivery list promise not initialized');
-                        }
-                        return this.deliveryListPromise;
-                    },
-                    updateScope: (result: DispatchJob[]) => {
-                        this.jobListDelivery = result || [];
-                        this.totalDeliveryCount = result.length;
-                        this.deliveryListLoading = false;
-                    }
                 }
             };
 
@@ -1380,10 +1314,12 @@ class NationwideControl extends BaseController {
 
             const results = await Promise.all(promises);
 
-            // Update scope with results
             results.forEach(({type, data}) => {
                 fetchMap[type].updateScope(data);
             });
+
+            await this.loadTasks();
+
         } catch (error) {
             console.error("Error fetching job data:", error);
 
@@ -1393,9 +1329,7 @@ class NationwideControl extends BaseController {
                     case JobDataType.NEW:
                         this.jobListLoading = false;
                         break;
-                    case JobDataType.DELIVERY:
-                        this.deliveryListLoading = false;
-                        break;
+
                     case JobDataType.POD:
                         this.podListLoading = false;
                         break;
@@ -1507,6 +1441,128 @@ class NationwideControl extends BaseController {
             await this.getData();
         } catch (error: any) {
             console.error("Error handling split job:", error);
+        }
+    }
+
+    // Tasks
+    getSupportsFilterLabel(): string {
+        switch (this.tasksFilter) {
+            case 'all':
+                return 'All Supports';
+            case 'mine':
+                return 'My Supports';
+            case 'unassigned':
+                return 'Unassigned';
+            case 'newest':
+                return 'Newest First';
+            case 'oldest':
+                return 'Oldest First';
+            default:
+                return 'All Supports';
+        }
+    }
+
+    private _buildFilterRequest(filterType: string): TaskTableFiltersRequest {
+        const filterRequest: TaskTableFiltersRequest = {};
+
+        switch (filterType) {
+            case 'mine':
+                filterRequest.staffId = ContactID;
+                filterRequest.orderBy = 'assignedTo';
+                filterRequest.orderDirection = 'desc';
+                break;
+            case 'unassigned':
+                filterRequest.staffId = -1;
+                filterRequest.orderBy = 'assignedTo';
+                filterRequest.orderDirection = 'desc';
+                break;
+            case 'newest':
+                filterRequest.orderBy = 'created';
+                filterRequest.orderDirection = 'desc';
+                break;
+            case 'oldest':
+                filterRequest.orderBy = 'created';
+                filterRequest.orderDirection = 'asc';
+                break;
+            default:
+                filterRequest.orderBy = 'created';
+                filterRequest.orderDirection = 'desc';
+                break;
+        }
+
+        return filterRequest;
+    }
+
+    async loadTasks(filterType: string = this.tasksFilter){
+        try {
+            this.tasksLoading = true;
+
+            // Build filter request based on filter type
+            const filterRequest = this._buildFilterRequest(filterType);
+
+            try {
+                this.tasks = await this.DispatchData.getAllTasks(filterRequest);
+                this.filteredTasks = this.tasks;
+            } catch (serviceError) {
+                console.error("Service error getting tasks:", serviceError);
+                this.toastrService.showErrorToast("Failed to load tasks");
+
+                this.tasks = [];
+                this.filteredTasks = [];
+            }
+        } catch (error) {
+            console.error("Error loading tasks:", error);
+            this.toastrService.showErrorToast("Error loading tasks");
+        } finally {
+            this.tasksLoading = false;
+        }
+    }
+
+    async getTasks(){
+        await this.loadTasks();
+    }
+
+    async filterTasks(filterType: string): Promise<void> {
+        this.tasksFilter = filterType;
+        await this.loadTasks(filterType);
+    }
+
+    async selectTaskJobDetail(task: TaskViewModel) {
+        console.log('[selectSupportJobDetail] Starting with task:', {
+            jobId: task.jobId,
+            jobNumber: task.jobNumber,
+            taskId: task.id
+        });
+
+        this.currentSupport = task;
+
+        try {
+            const noJobMessage = "The attached job is not available on this page"
+            if (!task.jobId) {
+                this.toastrService.showWarningToast(noJobMessage);
+                console.warn('[selectSupportJobDetail] No jobId provided, returning early');
+                return;
+            }
+
+            console.log('[selectSupportJobDetail] Fetching job details for jobId:', task.jobId);
+
+            const attachedJob = this.jobList?.find((job) => job.id === task.jobId) ||
+                this.jobListPOD?.find((job) => job.id === task.jobId) ||
+                this.jobListReprice?.find((job) => job.id === task.jobId);
+
+            if (!attachedJob) {
+                this.toastrService.showWarningToast(noJobMessage);
+                return;
+            }
+
+            await this.selectJob(attachedJob);
+            console.log('[selectSupportJobDetail] Job selected successfully');
+
+            this.currentSelection = ` for Job ${attachedJob.jobNo}`;
+        }
+        catch(error) {
+            this.toastrService.showErrorToast("Error loading job information");
+            console.error('[selectSupportJobDetail] Error loading job information', error);
         }
     }
 }
