@@ -1,0 +1,28 @@
+<div class="droppable-box nationwide-job-list">
+    <dfrnt-loader
+            is-loading="ctrl.tasksLoading"
+            icon-name="'support'">
+    </dfrnt-loader>
+
+    <div class="current-filter-label" ng-if="!ctrl.tasksLoading && ctrl.tasksFilter">
+        <span>Filter: {{ctrl.getSupportsFilterLabel()}}</span>
+    </div>
+
+    <md-list ng-if="!ctrl.tasksLoading && ctrl.filteredTasks && ctrl.filteredTasks.length > 0">
+        <task-item-component
+                ng-repeat="task in ctrl.filteredTasks | filter: box.searchBox"
+                task="task"
+                config="ctrl.taskItemConfig"
+                on-task-updated="ctrl.getTasks()"
+                on-task-click="ctrl.selectTaskJobDetail(task)">
+        </task-item-component>
+    </md-list>
+
+    <no-data
+            ng-if="!ctrl.tasksLoading && (!ctrl.filteredTasks || ctrl.filteredTasks.length === 0)"
+            title="No Tasks Available"
+            message="There are no support items matching your filter criteria."
+            icon="support"
+            show-action="false">
+    </no-data>
+</div>

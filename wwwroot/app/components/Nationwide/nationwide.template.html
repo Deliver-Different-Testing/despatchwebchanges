@@ -134,6 +134,52 @@
                                         <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
                                     </md-button>
 
+                                    <md-menu ng-if="box.name === 'tasksList'">
+                                        <md-button aria-label="Filter tasks" class="md-icon-button" ng-click="$mdMenu.open($event)">
+                                            <md-icon md-font-set="material-symbols-outlined">filter_list</md-icon>
+                                            <md-tooltip md-direction="bottom">Filter Tasks</md-tooltip>
+                                        </md-button>
+
+                                        <md-menu-content>
+                                            <md-menu-item>
+                                                <md-button ng-click="ctrl.filterTasks('all')" ng-class="{'selected-filter': ctrl.tasksFilter === 'all'}">
+                                                    <md-icon md-font-set="material-symbols-outlined" ng-class="{'md-accent': ctrl.tasksFilter === 'all'}">list</md-icon>
+                                                    <span ng-class="{'active-filter-text': ctrl.tasksFilter === 'all'}">All Tasks</span>
+                                                    <md-icon md-font-set="material-symbols-outlined" class="md-secondary active-check" ng-if="ctrl.tasksFilter === 'all'">check</md-icon>
+                                                </md-button>
+                                            </md-menu-item>
+                                            <md-menu-item>
+                                                <md-button ng-click="ctrl.filterTasks('mine')" ng-class="{'selected-filter': ctrl.tasksFilter === 'mine'}">
+                                                    <md-icon md-font-set="material-symbols-outlined" ng-class="{'md-accent': ctrl.tasksFilter === 'mine'}">person</md-icon>
+                                                    <span ng-class="{'active-filter-text': ctrl.tasksFilter === 'mine'}">My Tasks</span>
+                                                    <md-icon md-font-set="material-symbols-outlined" class="md-secondary active-check" ng-if="ctrl.tasksFilter === 'mine'">check</md-icon>
+                                                </md-button>
+                                            </md-menu-item>
+                                            <md-menu-item>
+                                                <md-button ng-click="ctrl.filterTasks('unassigned')" ng-class="{'selected-filter': ctrl.tasksFilter === 'unassigned'}">
+                                                    <md-icon md-font-set="material-symbols-outlined" ng-class="{'md-accent': ctrl.tasksFilter === 'unassigned'}">person_off</md-icon>
+                                                    <span ng-class="{'active-filter-text': ctrl.tasksFilter === 'unassigned'}">Unassigned</span>
+                                                    <md-icon md-font-set="material-symbols-outlined" class="md-secondary active-check" ng-if="ctrl.tasksFilter === 'unassigned'">check</md-icon>
+                                                </md-button>
+                                            </md-menu-item>
+                                            <md-divider></md-divider>
+                                            <md-menu-item>
+                                                <md-button ng-click="ctrl.filterTasks('newest')" ng-class="{'selected-filter': ctrl.tasksFilter === 'newest'}">
+                                                    <md-icon md-font-set="material-symbols-outlined" ng-class="{'md-accent': ctrl.tasksFilter === 'newest'}">arrow_downward</md-icon>
+                                                    <span ng-class="{'active-filter-text': ctrl.tasksFilter === 'newest'}">Newest First</span>
+                                                    <md-icon md-font-set="material-symbols-outlined" class="md-secondary active-check" ng-if="ctrl.tasksFilter === 'newest'">check</md-icon>
+                                                </md-button>
+                                            </md-menu-item>
+                                            <md-menu-item>
+                                                <md-button ng-click="ctrl.filterTasks('oldest')" ng-class="{'selected-filter': ctrl.tasksFilter === 'oldest'}">
+                                                    <md-icon md-font-set="material-symbols-outlined" ng-class="{'md-accent': ctrl.tasksFilter === 'oldest'}">arrow_upward</md-icon>
+                                                    <span ng-class="{'active-filter-text': ctrl.tasksFilter === 'oldest'}">Oldest First</span>
+                                                    <md-icon md-font-set="material-symbols-outlined" class="md-secondary active-check" ng-if="ctrl.tasksFilter === 'oldest'">check</md-icon>
+                                                </md-button>
+                                            </md-menu-item>
+                                        </md-menu-content>
+                                    </md-menu>
+
                                     <div class="row-overflow" layout="row"
                                          ng-if="box.name === 'flightAgentDataTable' && ctrl.flightOptions.length > 0">
                                         <md-button class="md-button-m3 md-icon-button md-primary"
