@@ -140,36 +140,36 @@ public class JobController(
 
     [HttpGet]
     public async Task<IActionResult> GetJobsByClearListEnvelope(
-        [FromQuery] JobQueryParams queryParams,
+        JobQueryParams queryParams,
         bool isInternal,
         int cid,
         string clientIds,
         [FromQuery] List<int> despatchViewIds,
-        [FromQuery] ClearListEnvelopeViewModel clearListEnvelopeViewModel
+        [FromQuery] ClearListEnvelopeViewModel clearListEnvelope
     )
     {
         try
         {
             var isUsTenant = countryService.IsUsTenant();
 
-            // Validate Client Access
             if (!isInternal)
                 await clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
             // Get jobs
             var result = await jobRepository.JobListAsync(
-                queryParams,
-                isInternal,
-                isUsTenant,
-                clientIds,
-                despatchViewIds
+                queryParams: queryParams,
+                isInternal: isInternal,
+                isUsTenant: isUsTenant,
+                clientIds: clientIds,
+                selectedViewIds: despatchViewIds,
+                clearListEnvelope: clearListEnvelope
             );
 
             return Json(result);
         }
         catch (Exception e)
         {
-            Log.Error(e, $"an error occured geting jobs by clear list");
+            Log.Error(e, $"an error occured getting jobs by clear list");
             return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
         }
     }

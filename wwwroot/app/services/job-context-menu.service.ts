@@ -3,7 +3,7 @@ import ToastrService from "./toastr.service";
 import NoteService from "./notes.service";
 import {EventGroupDialogService} from "../components/dialogs/event-group-dialog/event-group-dialog.service";
 import AddEventDialogService from "../components/dialogs/add-event-dialog/add-event-dialog.service";
-import {DispatchJob, TucNoteViewModel} from "../interfaces/job.interface";
+import {IDispatchJob, IJobNote} from "../interfaces/job.interface";
 import {JobNoteType} from "../enums/job-note-type.enum";
 
 interface IContextMenuOption {
@@ -60,7 +60,7 @@ export default class JobContextMenuService implements angular.IServiceProvider {
             });
     }
 
-    getMenuOptions(job: DispatchJob, callbacks: any): IContextMenuOption[] {
+    getMenuOptions(job: IDispatchJob, callbacks: any): IContextMenuOption[] {
         if (!job) return [];
 
         const menuOptions: IContextMenuOption[] = [
@@ -136,7 +136,7 @@ export default class JobContextMenuService implements angular.IServiceProvider {
         };
     }
 
-    async voidJobAction(job: DispatchJob, onRefresh: () => void) {
+    async voidJobAction(job: IDispatchJob, onRefresh: () => void) {
         if (!job) return;
 
         try {
@@ -152,7 +152,7 @@ export default class JobContextMenuService implements angular.IServiceProvider {
                     .cancel("Cancel")
             );
 
-            const jobNote: TucNoteViewModel = {
+            const jobNote: IJobNote = {
                 jobId: job.id,
                 jobNumber: job.jobNo,
                 isImportant: false,
@@ -177,7 +177,7 @@ export default class JobContextMenuService implements angular.IServiceProvider {
         }
     }
 
-    async addEventOtherAction($event: MouseEvent, job: DispatchJob, onRefresh: () => void) {
+    async addEventOtherAction($event: MouseEvent, job: IDispatchJob, onRefresh: () => void) {
         if (!job) return;
 
         await this.addEventDialogService.openAddEventDialog($event, job);
@@ -204,7 +204,7 @@ export default class JobContextMenuService implements angular.IServiceProvider {
         }
     }
 
-    async splitJobAction($event: MouseEvent, job: DispatchJob, onSplitJob: (params: { job: DispatchJob }) => void) {
+    async splitJobAction($event: MouseEvent, job: IDispatchJob, onSplitJob: (params: { job: IDispatchJob }) => void) {
         if (!job) return;
 
         if (!job.allowSplit) {
@@ -243,7 +243,7 @@ export default class JobContextMenuService implements angular.IServiceProvider {
         }
     }
 
-    async setFirstJobAction(job: DispatchJob, onRefreshCourierJobs: (params: { courierId: number }) => void) {
+    async setFirstJobAction(job: IDispatchJob, onRefreshCourierJobs: (params: { courierId: number }) => void) {
         if (!job) return;
 
         try {

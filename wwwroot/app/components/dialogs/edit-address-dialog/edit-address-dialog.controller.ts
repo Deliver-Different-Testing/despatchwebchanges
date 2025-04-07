@@ -4,7 +4,7 @@ import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import UsStatesService from "../../../services/getUsStates.service";
-import StateInfo from "../../../interfaces/state-info.interface";
+import IStateInfo from "../../../interfaces/state-info.interface";
 
 class EditAddressDialogController extends BaseController {
     static $inject = [
@@ -29,7 +29,7 @@ class EditAddressDialogController extends BaseController {
     mapDisplay: boolean | undefined;
     map!: google.maps.Map;
     marker!: google.maps.Marker;
-    usStateList: StateInfo[];
+    usStateList: IStateInfo[];
 
     constructor(
         private $scope: angular.IScope,

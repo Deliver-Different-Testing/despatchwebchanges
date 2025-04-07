@@ -345,7 +345,7 @@
                 </div>
 
                 <!-- Notes Section with sticky note design -->
-                <sticky-notes job-id="ctrl.job.id"></sticky-notes>
+                <sticky-note job-id="ctrl.job.id"></sticky-note>
 
                 <!-- Package Details -->
                 <div layout="row" layout-xs="column" class="info-sections-container md-whiteframe-1dp">
@@ -695,12 +695,12 @@
                     <div class="checkboxes-container">
                         <div class="checkbox-grid">
                             <div layout="row" layout-wrap>
-                                <div flex="20">
+                                <div flex="20" ng-if="!ctrl.isUsCustomer">
                                     <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'van')"
                                                  ng-model="ctrl.job.van" class="compact">Van
                                     </md-checkbox>
                                 </div>
-                                <div flex="20">
+                                <div flex="20" ng-if="!ctrl.isUsCustomer">
                                     <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'truck')"
                                                  ng-model="ctrl.job.truck" class="compact">Truck
                                     </md-checkbox>
@@ -710,12 +710,12 @@
                                                  ng-model="ctrl.job.ped" class="compact">Pedal (CBD)
                                     </md-checkbox>
                                 </div>
-                                <div flex="20">
+                                <div flex="20" ng-if="!ctrl.isUsCustomer">
                                     <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'attention')"
                                                  ng-model="ctrl.job.attention" class="compact">Attention
                                     </md-checkbox>
                                 </div>
-                                <div flex="20">
+                                <div flex="20" ng-if="!ctrl.isUsCustomer">
                                     <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'vanOK')"
                                                  ng-model="ctrl.job.vanOk" class="compact">Van OK?
                                     </md-checkbox>

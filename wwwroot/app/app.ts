@@ -54,8 +54,6 @@ import AdditionalServicesDialogController
 import DfrntLoaderComponent from "./components/common/dfrnt-loader/dfrnt-loader.component";
 import JobDetailComponent from "./components/common/job-details/job-details.component";
 import NoDataComponent from "./components/common/no-data/no-data.component";
-import ParcelVisualizationComponent
-    from "./components/dialogs/edit-parcel-dimensions-dialog/parcel-visualization.component";
 import JobFileUploadController from "./components/dialogs/job-file-upload-dialog/job-file-upload.controller";
 import JobFileUploadDialogService from "./components/dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import NationwideComponent from "./components/Nationwide/nationwide.controller";
@@ -83,6 +81,11 @@ import {
     replaceFilter, selectedToTopFilter, switchFilter, uniqueFilter, urlFixFilter
 } from "./filters";
 import JobContextMenuService from "./services/job-context-menu.service";
+import StickyNoteComponent from "./components/common/sticky-notes/sticky-notes.component";
+import EditParcelDimensionsDialogService
+    from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
+import ParcelVisualizationComponent
+    from "./components/dialogs/edit-parcel-dimensions-dialog/parcel-visuailzation/parcel-visualization.component";
 
 const app = angular.module("uDispatch", [
     "ui.router",
@@ -231,6 +234,7 @@ app.component("taskDashboardComponent", TaskDashboardComponent);
 app.component("noData", NoDataComponent);
 app.component("parcelVisualization", ParcelVisualizationComponent);
 app.component("nationwideComponent", NationwideComponent);
+app.component("stickyNote", StickyNoteComponent);
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);
@@ -277,5 +281,6 @@ app.service("noteService", NoteService);
 app.service("addEventDialogService", AddEventDialogService);
 app.service("interCourierChargeDialogService", InterCourierChargeDialogService);
 app.service("jobContextMenuService", JobContextMenuService);
+app.service("editParcelDimensionsDialogService", EditParcelDimensionsDialogService);
 
 export default app;

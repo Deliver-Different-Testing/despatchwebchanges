@@ -83,7 +83,6 @@ async function build(): Promise<void> {
                 'moment': "window.moment"
             },
             external: [
-                "angular-material-data-table",
                 "leaflet",
                 "angularResizable",
                 "ui.sortable",

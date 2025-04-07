@@ -24,10 +24,10 @@ export interface IJob {
     source: string;
     notifiedName: string;
     acceptedName: string;
-    speedID?: number;
+    speedId?: number;
     notify: string;
     vehicle: Suggestion;
-    clientID?: number;
+    clientId?: number;
     jobType?: number;
     client: string;
     clientName: string;
@@ -328,9 +328,7 @@ export interface ClientItemsViewModel {
     selected: boolean;
 }
 
-export interface SelectOption {
-    id: number | string;
-    text: string;
+export interface SelectOption extends Suggestion {
 }
 
 export interface JobCreateViewModel {
@@ -363,25 +361,16 @@ export interface JobCreateViewModel {
     vehicleId: number;
 }
 
-export interface SuburbLookup {
-    id: number;
-    text: string;
+export interface SuburbLookup extends Suggestion {
     alias: string;
 }
 
-export interface Lookup {
-    id: number;
-    text: string;
-}
-
-export interface InternalStatus {
-    id: number;
-    text: string;
+export interface InternalStatus extends Suggestion {
     defaultSchedule: string;
     defaultMins: number | null;
 }
 
-export interface TucNoteViewModel {
+export interface IJobNote {
     noteId?: number;
     noteTypeId: number;
     noteTypeName?: string;
@@ -399,7 +388,7 @@ export interface TucNoteViewModel {
     noteTextSummary?: string;
 }
 
-export interface DispatchJob {
+export interface IDispatchJob {
     // Core identifiers
     id: number;
     jobNo: string;
@@ -436,7 +425,7 @@ export interface DispatchJob {
 
     // Job properties
     client?: string;
-    clientID?: number;
+    clientId?: number;
     jobType?: number;
     minutes?: number;
     pickupTime?: number;
@@ -475,4 +464,11 @@ export interface DispatchJob {
 
     // Search helper property
     [key: string]: any;
+}
+
+export interface IClearListEnvelope {
+    minimumLatitude: number;
+    maximumLatitude: number;
+    minimumLongitude: number;
+    maximumLongitude: number;
 }

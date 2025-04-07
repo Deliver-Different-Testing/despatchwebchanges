@@ -1,4 +1,4 @@
-import {TucNoteViewModel} from "../../../interfaces/job.interface";
+import {IJobNote} from "../../../interfaces/job.interface";
 import NoteManagementDialogController from "./note-management-dialog.component";
 import {IDocumentService, material} from "angular";
 
@@ -17,7 +17,7 @@ class NoteManagementDialogService {
         return this;
     }
 
-    async openNoteDialog($event: MouseEvent, model: TucNoteViewModel | null, staffId: number) {
+    async openNoteDialog($event: MouseEvent, model: IJobNote | null, staffId: number) {
         await this.$mdDialog.show({
             controller: NoteManagementDialogController,
             controllerAs: 'ctrl',

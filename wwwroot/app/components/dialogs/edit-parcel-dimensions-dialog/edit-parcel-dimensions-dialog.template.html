@@ -1,5 +1,5 @@
 <md-dialog aria-label="Edit Dimensions" id="edit-dimensions-dialog" class="parcel-dimensions-dialog-component">
-<md-toolbar class="md-primary">
+    <md-toolbar class="md-primary">
         <div class="md-toolbar-tools">
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">inventory_2</md-icon>
             <h2>Edit Dimensions</h2>
@@ -12,6 +12,12 @@
             </md-button>
         </div>
     </md-toolbar>
+
+    <!-- Parent Job Info Banner -->
+    <div ng-if="ctrl.isParentJob" class="parent-job-info" md-colors="{background: 'primary-50'}">
+        <md-icon md-font-set="material-symbols-outlined" class="info-icon" md-colors="{color: 'primary'}">info</md-icon>
+        <span class="info-text">This is a child job. Parcel information has been inherited from the parent job.</span>
+    </div>
 
     <!-- Empty State -->
     <div ng-if="!ctrl.hasCurrentParcel()" class="empty-state" layout="column" layout-align="center center">

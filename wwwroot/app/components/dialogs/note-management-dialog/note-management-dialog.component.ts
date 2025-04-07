@@ -1,4 +1,4 @@
-import {Suggestion, TucNoteViewModel} from "../../../interfaces/job.interface";
+import {Suggestion, IJobNote} from "../../../interfaces/job.interface";
 import "./note-management-dialog.styles.less";
 import NoteService from "../../../services/notes.service";
 import ToastrService from "../../../services/toastr.service";
@@ -8,7 +8,7 @@ class NoteManagementDialogController {
     noteTypes: Suggestion[] = [];
     title: string = '';
     isNew: boolean = false;
-    model: TucNoteViewModel;
+    model: IJobNote;
     isSubmitting: boolean = false;
 
     static $inject = [
@@ -23,7 +23,7 @@ class NoteManagementDialogController {
         private $mdDialog: material.IDialogService,
         private noteService: NoteService,
         private toastrService: ToastrService,
-        model: TucNoteViewModel,
+        model: IJobNote,
         private staffId: number
     ) {
         this.model = angular.copy(model || this.createEmptyNote());
@@ -33,7 +33,7 @@ class NoteManagementDialogController {
         this.loadNoteTypes();
     }
 
-    private createEmptyNote(): TucNoteViewModel {
+    private createEmptyNote(): IJobNote {
         return {
             noteId: 0,
             noteTypeId: 0,

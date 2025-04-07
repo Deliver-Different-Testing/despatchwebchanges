@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
 
 namespace DespatchWeb.Repositories;
 
@@ -24,63 +22,47 @@ public class TaskRepository(
         var today = filters?.Date ?? timeService.GetCurrentTenantTime();
 
         var query = Context.TucEvents
-            .Where(e => e.UcevDate.Value.Date <= today.Date || !e.UcevClosed);
+            .Where(e => e.UcevDate.Value.Date > today.Date ||
+                        (e.UcevDate.Value.Date <= today.Date && !e.UcevClosed));
 
         if (filters != null) query = ApplyFilters(query, filters);
 
         query = ApplyOrdering(query, filters, today);
 
-        var eventTypes = await Context.TucEventTypes
-            .AsNoTracking()
-            .ToDictionaryAsync(et => et.UcetId, et => et.UcetName);
-
-        var tasksQueryable = query
-            .GroupJoin(
-                Context.TucStaffs,
-                events => events.UcevStaffIdin,
-                staff => staff.UcstId,
-                (events, staffs) => new { events, staffs }
-            )
-            .SelectMany(
-                x => x.staffs.DefaultIfEmpty(),
-                (x, staff) => new TaskViewModel
+        var tasks = await query.Select(x => new TaskViewModel
+            {
+                Id = x.UcevId,
+                Assignee = new Suggestion
                 {
-                    Id = x.events.UcevId,
-                    Assignee = new Suggestion
-                    {
-                        Id = staff != null ? staff.UcstId : 0,
-                        Text = staff != null ? $"{staff.UcstFirstName} {staff.UcstLastName}" : string.Empty
-                    },
-                    Description = x.events.UcevNotes,
-                    JobId = x.events.UcevJobId ?? 0,
-                    Closed = x.events.UcevClosed,
-                    DueDate = x.events.UcevDate != null && x.events.UcevTime != null
-                        ? EF.Functions.DateTimeFromParts(
-                            x.events.UcevDate.Value.Year,
-                            x.events.UcevDate.Value.Month,
-                            x.events.UcevDate.Value.Day,
-                            x.events.UcevTime.Value.Hour,
-                            x.events.UcevTime.Value.Minute,
-                            x.events.UcevTime.Value.Second,
-                            x.events.UcevTime.Value.Millisecond)
-                        : DateTime.MinValue,
-                    Title = x.events.UcevType != null && eventTypes.ContainsKey((int)x.events.UcevType) ? eventTypes[(int)x.events.UcevType] : string.Empty,
-                    EventType = x.events.UcevType != null && eventTypes.ContainsKey((int)x.events.UcevType)
-                        ? eventTypes[(int)x.events.UcevType]
-                        : string.Empty
-                }
-            );
+                    Id = x.UcevStaffIdin ?? 0,
+                    Text = x.UcevStaffIdinNavigation.UcstFirstName + " " + x.UcevStaffIdinNavigation.UcstLastName
+                },
+                Description = x.UcevNotes,
+                JobId = x.UcevJobId ?? 0,
+                Closed = x.UcevClosed,
+                DueDate = x.UcevDate != null && x.UcevTime != null
+                    ? EF.Functions.DateTimeFromParts(
+                        x.UcevDate.Value.Year,
+                        x.UcevDate.Value.Month,
+                        x.UcevDate.Value.Day,
+                        x.UcevTime.Value.Hour,
+                        x.UcevTime.Value.Minute,
+                        x.UcevTime.Value.Second,
+                        x.UcevTime.Value.Millisecond)
+                    : DateTime.MinValue,
+                Title = x.UcevTypeNavigation.UcetGroup,
+                EventType = x.UcevTypeNavigation.UcetGroup
+            })
+            .AsNoTracking()
+            .ToListAsync();
 
-        var sql = tasksQueryable.ToQueryString();
-        Log.Information($"Generated SQL: {sql}");
-
-       var tasks = await tasksQueryable.ToListAsync();
         return tasks;
     }
 
-    private static IQueryable<TucEvent> ApplyOrdering(IQueryable<TucEvent> query, TaskTableFiltersRequest filters, DateTime today)
+    private static IQueryable<TucEvent> ApplyOrdering(IQueryable<TucEvent> query, TaskTableFiltersRequest filters,
+        DateTime today)
     {
-        if(filters == null) return query;
+        if (filters == null) return query;
 
         if (string.IsNullOrWhiteSpace(filters.OrderBy))
             return query;
@@ -90,14 +72,15 @@ public class TaskRepository(
         return filters.OrderBy.ToLowerInvariant() switch
         {
             "created" =>
-                ApplyDateTimeOrder(query, isDescending,today),
+                ApplyDateTimeOrder(query, isDescending, today),
 
             _ =>
                 ApplyDateTimeOrder(query, isDescending, today)
         };
     }
 
-    private static IQueryable<TucEvent> ApplyDateTimeOrder(IQueryable<TucEvent> query, bool isDescending, DateTime today)
+    private static IQueryable<TucEvent> ApplyDateTimeOrder(IQueryable<TucEvent> query, bool isDescending,
+        DateTime today)
     {
         return isDescending
             ? query.OrderByDescending(e => e.UcevDate < today)
@@ -161,7 +144,8 @@ public class TaskRepository(
     public async Task<List<Suggestion>> GetEventGroupsAsync()
     {
         var eventGroups = await Context
-            .TucEventTypeGroups.Select(x => new Suggestion { Id = x.Id, Text = x.Name })
+            .TucEventTypeGroups
+            .Select(x => new Suggestion { Id = x.Id, Text = x.Name })
             .OrderBy(x => x.Text)
             .AsNoTracking()
             .ToListAsync();
@@ -258,7 +242,7 @@ public class TaskRepository(
             query = query.Where(e => (int)e.UcevType == filters.EventTypeId);
 
         // Filter by staffId
-        if(filters.StaffId.HasValue && filters.StaffId.Value != -1)
+        if (filters.StaffId.HasValue && filters.StaffId.Value != -1)
             query = query.Where(e => Equals((int)e.UcevStaffIdin, filters.StaffId.Value) || e.UcevStaffIdin == null);
 
         if (filters.StaffId is -1)

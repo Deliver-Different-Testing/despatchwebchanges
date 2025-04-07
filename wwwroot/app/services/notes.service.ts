@@ -1,4 +1,4 @@
-import {Suggestion, TucNoteViewModel} from "../interfaces/job.interface";
+import {Suggestion, IJobNote} from "../interfaces/job.interface";
 
 class NoteService {
     static $inject = [
@@ -15,9 +15,9 @@ class NoteService {
         return this;
     }
 
-    async createNote(staffId: number, noteViewModel: TucNoteViewModel): Promise<TucNoteViewModel> {
+    async createNote(staffId: number, noteViewModel: IJobNote): Promise<IJobNote> {
         try {
-            const response = await this.$http.post<TucNoteViewModel>('note/CreateNote', noteViewModel, {
+            const response = await this.$http.post<IJobNote>('note/CreateNote', noteViewModel, {
                 params: { staffId }
             });
             return response.data;
@@ -27,7 +27,7 @@ class NoteService {
         }
     }
 
-    async updateNote(staffId: number, noteViewModel: TucNoteViewModel): Promise<void> {
+    async updateNote(staffId: number, noteViewModel: IJobNote): Promise<void> {
         try {
             await this.$http.post('note/UpdateNote', noteViewModel, {
                 params: { staffId }
@@ -49,9 +49,9 @@ class NoteService {
         }
     }
 
-    async getJobNotes(jobId: number): Promise<TucNoteViewModel[]> {
+    async getJobNotes(jobId: number): Promise<IJobNote[]> {
         try {
-            const response = await this.$http.get<TucNoteViewModel[]>(`note/GetNotes?jobId=${jobId}`);
+            const response = await this.$http.get<IJobNote[]>(`note/GetNotes?jobId=${jobId}`);
             return response.data;
         } catch (error) {
             console.error('Error getting job notes:', error);
@@ -59,9 +59,9 @@ class NoteService {
         }
     }
 
-    async getNoteById(noteId: number): Promise<TucNoteViewModel | null> {
+    async getNoteById(noteId: number): Promise<IJobNote | null> {
         try {
-            const response = await this.$http.get<TucNoteViewModel>(`note/GetNote?noteId=${noteId}`);
+            const response = await this.$http.get<IJobNote>(`note/GetNote?noteId=${noteId}`);
             return response.data;
         } catch (error) {
             console.error('Error getting note by ID:', error);

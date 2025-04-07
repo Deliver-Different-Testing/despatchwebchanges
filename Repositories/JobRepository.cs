@@ -1401,7 +1401,8 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
     public async Task<List<InternalStatus>> GetInternalStatusListAsync()
     {
         return await Context
-            .TucJobInternalStatuses.Where(x => x.Tcis != 5) // Ignore Overnight CP. Better solution is needed
+            .TucJobInternalStatuses.Where(x => x.Tcis != (int)InternalJobStatus.OvernightCp
+                                               && x.Tcis != (int)InternalJobStatus.ActionRequired)
             .OrderBy(u => u.Tcis)
             .Select(x => new InternalStatus
             {
@@ -1451,7 +1452,6 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         double truckHours
     )
     {
-        DbParameter outputDescriptionParam = null;
         DbParameter outputRateParam = null;
 
         await Context
@@ -1479,7 +1479,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     dbParam.Direction = ParameterDirection.Output;
                     dbParam.DbType = DbType.String;
                     dbParam.Size = 1000;
-                    outputDescriptionParam = dbParam;
+                    _ = dbParam;
                 }
             )
             .WithSqlParam(
@@ -1578,30 +1578,6 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .ToListAsync();
     }
 
-    private async Task<int> GetJobRelationshipInfoAsync(int jobId)
-    {
-        var jobInfo = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Select(j => new
-            {
-                EffectiveJobId = j.ParentId ?? j.UcjbId,
-            })
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
-
-        if (jobInfo != null) return jobInfo.EffectiveJobId;
-
-        var bookingInfo = await Context.TucJobBookings
-            .Where(j => j.UcbkId == jobId)
-            .Select(j => new
-            {
-                EffectiveJobId = j.ParentId ?? j.UcbkId,
-            })
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
-
-        return bookingInfo?.EffectiveJobId ?? jobId;
-    }
 
     public async Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel)
     {

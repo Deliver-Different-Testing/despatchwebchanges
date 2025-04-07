@@ -5,10 +5,17 @@ import {ParcelDimensions} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 
 export class EditParcelDimensionsDialogController extends BaseController {
-    static $inject = ["$mdDialog", "toastrService", "DispatchData", "jobId", "parcels"];
+    static $inject = [
+        "$mdDialog",
+        "toastrService",
+        "DispatchData",
+        "jobId",
+        "parcels"
+    ];
 
-    selectedParcelIndex: number;
-    isLoading: boolean;
+    selectedParcelIndex: number = 0;
+    isLoading: boolean = false;
+    isParentJob: boolean = false;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -18,15 +25,21 @@ export class EditParcelDimensionsDialogController extends BaseController {
         public parcels: ParcelDimensions[]
     ) {
         super();
-
-        this.selectedParcelIndex = 0;
-
-        console.log("Initializing EditParcelDimensionsDialog with jobId:", jobId);
-        console.log("Initial parcels:", this.parcels);
-        this.isLoading = false;
     }
 
-    private initializeParcel(): ParcelDimensions {
+    $onInit() {
+        this.DispatchData.isJobParent(this.jobId).then(isParentJob => {
+            this.isParentJob = isParentJob;
+        })
+    }
+
+    addNewParcel() {
+        const newParcel = this._initializeParcel();
+        this.parcels.push(newParcel);
+        this.selectedParcelIndex = this.parcels.length - 1;
+    }
+
+    private _initializeParcel(): ParcelDimensions {
         return {
             itemName: "",
             length: undefined,
@@ -34,12 +47,6 @@ export class EditParcelDimensionsDialogController extends BaseController {
             height: undefined,
             dimensions: "",
         };
-    }
-
-    addNewParcel() {
-        const newParcel = this.initializeParcel();
-        this.parcels.push(newParcel);
-        this.selectedParcelIndex = this.parcels.length - 1;
     }
 
     deleteParcel(index: number, $event?: Event) {
@@ -98,8 +105,7 @@ export class EditParcelDimensionsDialogController extends BaseController {
         this.$mdDialog.cancel();
     }
 
-
-    async submit(){
+    async submit() {
         console.log("Submit called with parcels:", this.parcels);
 
         try {

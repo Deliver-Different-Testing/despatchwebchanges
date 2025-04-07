@@ -1,4 +1,4 @@
-import {PaginatedResponse} from "../../interfaces/paginated-response.interface";
+import {IPaginatedResponse} from "../../interfaces/paginated-response.interface";
 import {Suggestion} from "../../interfaces/job.interface";
 import {
     MapConfig,
@@ -17,11 +17,11 @@ class OverviewService implements angular.IServiceProvider {
         return this;
     }
 
-    async getAllJobs(params: OverviewQueryParams): Promise<PaginatedResponse<OverviewTableParentJob>> {
+    async getAllJobs(params: OverviewQueryParams): Promise<IPaginatedResponse<OverviewTableParentJob>> {
         const regionIds = params.regions?.map(r => r.id).join(",");
         const speedIds = params.speeds?.map(s => s.id).join(",");
 
-        const response = await this.$http.get<PaginatedResponse<OverviewTableParentJob>>("/overview", {
+        const response = await this.$http.get<IPaginatedResponse<OverviewTableParentJob>>("/overview", {
             params: {
                 statusGroup: params.statusGroup,
                 page: params.page,

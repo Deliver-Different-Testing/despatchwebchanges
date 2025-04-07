@@ -2,13 +2,13 @@ import {AppConfig} from "../interfaces/app-config.interface";
 import {
     AddressViewModel, ClientItemsViewModel, InternalStatus,
     IJob,
-    JobQueryParams, JobRateDetails, Lookup,
+    JobQueryParams, JobRateDetails,
     Pallet,
     ParcelDimensions, PriceBreakdown, SuburbLookup,
     Suggestion,
-    ClearListViewModel, DispatchJob,
+    ClearListViewModel, IDispatchJob, IClearListEnvelope,
 } from "../interfaces/job.interface";
-import {PaginatedResponse} from "../interfaces/paginated-response.interface";
+import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {DateField, JobField} from "../interfaces/job-field.types";
 import {
     ActiveCourierViewModel,
@@ -209,7 +209,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getJobsCurrent(courierId: number, done: boolean) {
-        const response = await this.$http.get<DispatchJob[]>(`job/current?courierId=${courierId}&done=${done}`);
+        const response = await this.$http.get<IDispatchJob[]>(`job/current?courierId=${courierId}&done=${done}`);
         return response.data;
     }
 
@@ -290,7 +290,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getLeaveList() {
-        const response = await this.$http.get<Lookup[]>("job/LeaveList");
+        const response = await this.$http.get<Suggestion[]>("job/LeaveList");
         return response.data;
     }
 
@@ -387,9 +387,9 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getServices(clientId: number, speedId: number, jobId: number): Promise<PaginatedResponse<ClientItemsViewModel>> {
+    async getServices(clientId: number, speedId: number, jobId: number): Promise<IPaginatedResponse<ClientItemsViewModel>> {
         const url = "job/GetAllClientItems";
-        const response = await this.$http.get<PaginatedResponse<ClientItemsViewModel>>(url + "?clientId=" + clientId + "&speedId=" + speedId + "&jobId=" + jobId);
+        const response = await this.$http.get<IPaginatedResponse<ClientItemsViewModel>>(url + "?clientId=" + clientId + "&speedId=" + speedId + "&jobId=" + jobId);
 
         return response.data;
     }
@@ -410,13 +410,13 @@ class DispatchCoreService implements angular.IServiceProvider {
         await this.$http.post(`job/finishSplitJobProcess?jobId=${jobId}&despatcherName=${despatcherName}`, null);
     }
 
-    async updatePODDetail(jobId: number, jobStatus: number, podName: string, podTime: string) {
-        console.log(`[DispatchCoreService] Updating POD details - Job: ${jobId}, Status: ${jobStatus}, POD Name: ${podName}, POD Time: ${podTime}`);
+    async updatePODDetail(jobId: number, jobStatus: number, podName: string, podTime: Date) {
+        console.log(`[DispatchCoreService] Updating POD details - Job: ${jobId}, Status: ${jobStatus}, POD Name: ${podName}, POD Time: ${podTime.toString()}`);
         try {
-            await this.$http.post(`job/UpdatePODDetails?jobId=${jobId}&jobStatus=${jobStatus}&podName=${podName}&podTime=${podTime}`, null);
-            console.log(`[DispatchCoreService] Successfully updated POD details for job ${jobNumber}`);
+            await this.$http.post(`job/UpdatePODDetails?jobId=${jobId}&jobStatus=${jobStatus}&podName=${podName}&podTime=${podTime.toString()}`, null);
+            console.log(`[DispatchCoreService] Successfully updated POD details for job ${jobId}`);
         } catch (error) {
-            console.error(`[DispatchCoreService] Error updating POD details for job ${jobNumber}:`, error);
+            console.error(`[DispatchCoreService] Error updating POD details for job ${jobId}:`, error);
             throw error;
         }
     }
@@ -620,7 +620,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         selectedClients: string[],
         internal: boolean,
         selectedAreas: Suggestion[]
-    ): Promise<DispatchJob[]> {
+    ): Promise<IDispatchJob[]> {
         const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
 
         const paramObject = {
@@ -641,7 +641,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             });
         }
 
-        const response = await this.$http.get<DispatchJob[]>(`job?${params.toString()}`);
+        const response = await this.$http.get<IDispatchJob[]>(`job?${params.toString()}`);
         return response.data;
     }
 
@@ -650,8 +650,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         selectedClients: string[],
         internal: boolean,
         selectedAreas: DfrntPageViewModel[],
-        selectedClearList: ClearListEnvelope
-    ) {
+        selectedClearList: IClearListEnvelope
+    ): Promise<IDispatchJob[]> {
         const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
 
         const defaultParams = {
@@ -659,29 +659,34 @@ class DispatchCoreService implements angular.IServiceProvider {
             orderDirection: 'asc'
         };
 
-        // Create params object with explicit string conversion
-        const paramObject = {
-            order: String(queryParams.order ?? defaultParams.order),
-            asc: String(queryParams.orderDirection ?? defaultParams.orderDirection),
-            isInternal: String(internal),
-            cid: String(ContactID),
-            clientIds: selectedClients.length ? selectedClients.join(',') : '',
-            minimumLatitude: String(selectedClearList.minimumLatitude),
-            maximumLatitude: String(selectedClearList.maximumLatitude),
-            minimumLongitude: String(selectedClearList.minimumLongitude),
-            maximumLongitude: String(selectedClearList.maximumLongitude)
-        };
+        // Build query parameters
+        const params = new URLSearchParams();
 
-        const params = new URLSearchParams(paramObject);
+        // Add JobQueryParams
+        params.append('order', queryParams.order ?? defaultParams.order);
+        params.append('asc', queryParams.orderDirection ?? defaultParams.orderDirection);
 
-        // Add despatch view IDs
-        if (despatchViewIds.length) {
-            despatchViewIds.forEach(id => {
-                params.append('despatchViewIds', String(id));
-            });
-        }
+        // Add basic parameters
+        params.append('isInternal', internal.toString());
+        params.append('cid', ContactID.toString());
+        params.append('clientIds', selectedClients.join(','));
 
-        const response = await this.$http.get<DispatchJob[]>(`job/GetJobsByClearListEnvelope?${params.toString()}`);
+        // Add despatchViewIds as repeated parameters
+        despatchViewIds.forEach(id => {
+            params.append('despatchViewIds', id.toString());
+        });
+
+        // Add ClearListEnvelope properties as query parameters
+        params.append('clearListEnvelope.minimumLatitude', selectedClearList.minimumLatitude.toString());
+        params.append('clearListEnvelope.maximumLatitude', selectedClearList.maximumLatitude.toString());
+        params.append('clearListEnvelope.minimumLongitude', selectedClearList.minimumLongitude.toString());
+        params.append('clearListEnvelope.maximumLongitude', selectedClearList.maximumLongitude.toString());
+
+        // Make the request
+        const response = await this.$http.get<IDispatchJob[]>(
+            `job/GetJobsByClearListEnvelope?${params.toString()}`
+        );
+
         return response.data;
     }
 

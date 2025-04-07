@@ -3530,6 +3530,18 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.UcevJob).WithMany(p => p.TucEvents)
                 .HasForeignKey(d => d.UcevJobId)
                 .HasConstraintName("FK_tucEvent_Job");
+
+            entity.HasOne(d => d.UcevStaffIdinNavigation).WithMany(p => p.TucEventUcevStaffIdinNavigations)
+                .HasForeignKey(d => d.UcevStaffIdin)
+                .HasConstraintName("FK_tucEvent_tucStaff_In");
+
+            entity.HasOne(d => d.UcevStaffIdoutNavigation).WithMany(p => p.TucEventUcevStaffIdoutNavigations)
+                .HasForeignKey(d => d.UcevStaffIdout)
+                .HasConstraintName("FK_tucEvent_tucStaff_Out");
+
+            entity.HasOne(d => d.UcevTypeNavigation).WithMany(p => p.TucEvents)
+                .HasForeignKey(d => d.UcevType)
+                .HasConstraintName("FK_tucEvent_tucEventType");
         });
 
         modelBuilder.Entity<TucEventType>(entity =>
@@ -4725,6 +4737,10 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("ucbkWeight");
             entity.Property(e => e.VanOk).HasColumnName("VanOK");
 
+            entity.HasOne(d => d.BookingParent).WithMany(p => p.InverseBookingParent)
+                .HasForeignKey(d => d.BookingParentId)
+                .HasConstraintName("FK_tucJobBooking_ParentBooking");
+
             entity.HasOne(d => d.Courier).WithMany(p => p.TucJobBookings)
                 .HasForeignKey(d => d.CourierId)
                 .HasConstraintName("FK_tucJobBooking_tucCourier");
@@ -5027,7 +5043,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucNoteArchive>(entity =>
         {
-            entity.HasKey(e => e.NoteId).HasName("PK__tucNoteA__EACE357F902212BB");
+            entity.HasKey(e => e.NoteId).HasName("PK__tucNoteA__EACE357F9C2F0B4B");
 
             entity.ToTable("tucNoteArchive");
 
@@ -5035,9 +5051,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.JobId, "IX_tucNoteArchive_JobId");
 
-            entity.Property(e => e.NoteId)
-                .ValueGeneratedNever()
-                .HasColumnName("NoteID");
+            entity.Property(e => e.NoteId).HasColumnName("NoteID");
             entity.Property(e => e.CreatedDate).HasColumnType("datetime");
             entity.Property(e => e.JobBookingId).HasColumnName("JobBookingID");
             entity.Property(e => e.JobId).HasColumnName("JobID");
