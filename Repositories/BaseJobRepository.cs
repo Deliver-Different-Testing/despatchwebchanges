@@ -1035,15 +1035,15 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             clientId,
             speed,
             string.IsNullOrEmpty(fromZip) ? null : int.Parse(fromZip),
-            null, // Added missing parameter
+            null,
             string.IsNullOrEmpty(toZip) ? null : int.Parse(toZip),
-            null, // Added missing parameter
+            null,
             totalMiles,
             fromMiles,
             toMiles,
             weight,
-            null, // Added missing parameter
-            null, // Added missing parameter
+            null,
+            null,
             totalPallets,
             extraStopOffs,
             booked,
@@ -1057,14 +1057,14 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             toAirportId,
             description,
             rate,
-            returnValue // Added missing parameter
+            returnValue
         );
 
         await Context.Procedures.DD_InsertPricingBreakdownAsync(
             jobId,
             null,
             description.Value,
-            returnValue // Added missing parameter
+            returnValue
         );
 
         return rate.Value ?? 0;
@@ -1226,18 +1226,19 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     }
 
     private static bool IsFlightJobNumber(string input) =>
-        !string.IsNullOrEmpty(input) && input.EndsWith("2");
+        !string.IsNullOrEmpty(input) && input.EndsWith('2');
 
     public async Task UpdatePackagesForJobAsync(int jobId, List<ParcelDimensions> parcels)
     {
         try
         {
-            // Map and split parcels into new and existing items
+            var effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
+
             var mappedParcels = parcels
                 .Select(p => new TucJobItem
                 {
                     ItemId = p.ItemId ?? 0,
-                    JobId = jobId,
+                    JobId = effectiveJobId,
                     Height = p.Height ?? 0,
                     Length = p.Length ?? 0,
                     Depth = p.Depth ?? 0,
@@ -1249,8 +1250,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             var existingParcels = mappedParcels.Where(p => p.ItemId != 0).ToList();
 
             // Handle new items
-            if (newParcels.Count != 0)
-                await Context.TucJobItems.AddRangeAsync(newParcels);
+            if (newParcels.Count != 0) await Context.TucJobItems.AddRangeAsync(newParcels);
 
             // Handle existing items
             foreach (var parcel in existingParcels)
@@ -1261,6 +1261,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
                 if (existingItem == null)
                     continue;
+
                 existingItem.Height = parcel.Height;
                 existingItem.Length = parcel.Length;
                 existingItem.Depth = parcel.Depth;
@@ -1411,67 +1412,23 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             .Select(x => new TucNoteViewModel(x))
             .ToListAsync();
 
-   private async Task<List<TucNoteViewModel>> GetArchivedNotesByJobIdAsync(int jobId)
-{
-var query = from note in Context.TucNoteArchives
-    join noteType in Context.TucNoteTypes
-        on note.NoteTypeId equals noteType.NoteTypeId into noteTypes
-    from nt in noteTypes.DefaultIfEmpty()
-    join createdBy in Context.TucStaffs
-        on note.CreatedBy equals createdBy.UcstId into createdStaff
-    from cs in createdStaff.DefaultIfEmpty()
-    join updatedBy in Context.TucStaffs
-        on note.UpdatedBy equals updatedBy.UcstId into updatedStaff
-    from us in updatedStaff.DefaultIfEmpty()
-    join job in Context.TucJobArchives
-        on note.JobId equals job.UcjbId into jobs
-    from j in jobs.DefaultIfEmpty()
-    where note.JobId == jobId || note.JobBookingId == jobId
-    select new TucNoteViewModel
+    private async Task<List<TucNoteViewModel>> GetArchivedNotesByJobIdAsync(int jobId)
     {
-        // Note properties
-        NoteId = note.NoteId,
-        NoteText = note.NoteText,
-        CreatedDate = note.CreatedDate ?? j.UcjbComplTime ?? DateTime.MinValue,
-        UpdatedDate = note.UpdatedDate,
-        JobId = note.JobId,
-        JobBookingId = note.JobBookingId,
-
-        // Related entity properties
-        NoteTypeId = note.NoteTypeId,
-        NoteTypeName = nt.NoteTypeName,
-
-        // Staff information
-        CreatedBy = note.CreatedBy,
-        CreatedByName = cs != null ? cs.UcstFirstName + " " + cs.UcstLastName : null,
-        UpdatedBy = note.UpdatedBy,
-        UpdatedByName = us != null ? us.UcstFirstName + " " + us.UcstLastName : null,
-
-        // Job information
-        JobNumber = j != null ? j.UcjbNumber : null
-    };
-
-    var archivedNotes = await query.ToListAsync();
-    return archivedNotes;
-}
-
-private async Task<TucNoteViewModel> GetArchivedNoteByIdAsync(int noteId)
-{
-    var query = from note in Context.TucNoteArchives
-        join noteType in Context.TucNoteTypes
-            on note.NoteTypeId equals noteType.NoteTypeId into noteTypes
-        from nt in noteTypes.DefaultIfEmpty()
-        join createdBy in Context.TucStaffs
-            on note.CreatedBy equals createdBy.UcstId into createdStaff
-        from cs in createdStaff.DefaultIfEmpty()
-        join updatedBy in Context.TucStaffs
-            on note.UpdatedBy equals updatedBy.UcstId into updatedStaff
-        from us in updatedStaff.DefaultIfEmpty()
-        join job in Context.TucJobArchives
-            on note.JobId equals job.UcjbId into jobs
-        from j in jobs.DefaultIfEmpty()
-        where note.NoteId == noteId
-           select new TucNoteViewModel
+        var query = from note in Context.TucNoteArchives
+            join noteType in Context.TucNoteTypes
+                on note.NoteTypeId equals noteType.NoteTypeId into noteTypes
+            from nt in noteTypes.DefaultIfEmpty()
+            join createdBy in Context.TucStaffs
+                on note.CreatedBy equals createdBy.UcstId into createdStaff
+            from cs in createdStaff.DefaultIfEmpty()
+            join updatedBy in Context.TucStaffs
+                on note.UpdatedBy equals updatedBy.UcstId into updatedStaff
+            from us in updatedStaff.DefaultIfEmpty()
+            join job in Context.TucJobArchives
+                on note.JobId equals job.UcjbId into jobs
+            from j in jobs.DefaultIfEmpty()
+            where note.JobId == jobId || note.JobBookingId == jobId
+            select new TucNoteViewModel
             {
                 // Note properties
                 NoteId = note.NoteId,
@@ -1483,7 +1440,7 @@ private async Task<TucNoteViewModel> GetArchivedNoteByIdAsync(int noteId)
 
                 // Related entity properties
                 NoteTypeId = note.NoteTypeId,
-                NoteTypeName =nt.NoteTypeName,
+                NoteTypeName = nt.NoteTypeName,
 
                 // Staff information
                 CreatedBy = note.CreatedBy,
@@ -1495,9 +1452,53 @@ private async Task<TucNoteViewModel> GetArchivedNoteByIdAsync(int noteId)
                 JobNumber = j != null ? j.UcjbNumber : null
             };
 
-            var archivedNote = await query.FirstOrDefaultAsync();
-            return archivedNote;
-}
+        var archivedNotes = await query.ToListAsync();
+        return archivedNotes;
+    }
+
+    private async Task<TucNoteViewModel> GetArchivedNoteByIdAsync(int noteId)
+    {
+        var query = from note in Context.TucNoteArchives
+            join noteType in Context.TucNoteTypes
+                on note.NoteTypeId equals noteType.NoteTypeId into noteTypes
+            from nt in noteTypes.DefaultIfEmpty()
+            join createdBy in Context.TucStaffs
+                on note.CreatedBy equals createdBy.UcstId into createdStaff
+            from cs in createdStaff.DefaultIfEmpty()
+            join updatedBy in Context.TucStaffs
+                on note.UpdatedBy equals updatedBy.UcstId into updatedStaff
+            from us in updatedStaff.DefaultIfEmpty()
+            join job in Context.TucJobArchives
+                on note.JobId equals job.UcjbId into jobs
+            from j in jobs.DefaultIfEmpty()
+            where note.NoteId == noteId
+            select new TucNoteViewModel
+            {
+                // Note properties
+                NoteId = note.NoteId,
+                NoteText = note.NoteText,
+                CreatedDate = note.CreatedDate ?? j.UcjbComplTime ?? DateTime.MinValue,
+                UpdatedDate = note.UpdatedDate,
+                JobId = note.JobId,
+                JobBookingId = note.JobBookingId,
+
+                // Related entity properties
+                NoteTypeId = note.NoteTypeId,
+                NoteTypeName = nt.NoteTypeName,
+
+                // Staff information
+                CreatedBy = note.CreatedBy,
+                CreatedByName = cs != null ? cs.UcstFirstName + " " + cs.UcstLastName : null,
+                UpdatedBy = note.UpdatedBy,
+                UpdatedByName = us != null ? us.UcstFirstName + " " + us.UcstLastName : null,
+
+                // Job information
+                JobNumber = j != null ? j.UcjbNumber : null
+            };
+
+        var archivedNote = await query.FirstOrDefaultAsync();
+        return archivedNote;
+    }
 
     private async Task<int> CreateNoteAsync(TucNoteViewModel viewModel, int staffId)
     {
@@ -1709,5 +1710,30 @@ private async Task<TucNoteViewModel> GetArchivedNoteByIdAsync(int noteId)
             .FirstOrDefaultAsync();
 
         return bookingInfo?.HasParent ?? false;
+    }
+
+    protected async Task<int> GetJobRelationshipInfoAsync(int jobId)
+    {
+        var jobInfo = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new
+            {
+                EffectiveJobId = j.ParentId ?? j.UcjbId,
+            })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        if (jobInfo != null) return jobInfo.EffectiveJobId;
+
+        var bookingInfo = await Context.TucJobBookings
+            .Where(j => j.UcbkId == jobId)
+            .Select(j => new
+            {
+                EffectiveJobId = j.ParentId ?? j.UcbkId,
+            })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        return bookingInfo?.EffectiveJobId ?? jobId;
     }
 }

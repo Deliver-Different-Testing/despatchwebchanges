@@ -6,7 +6,7 @@ import DispatchCoreService from "../../services/dispatch-core.service";
 import {AppPages} from "../../enums/app-pages.enum";
 import {AppConfig} from "../../interfaces/app-config.interface";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
-import {AgentViewModel, DispatchJob, JobQueryParams} from "../../interfaces/job.interface";
+import {AgentViewModel, IDispatchJob, JobQueryParams} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
 import {FlightViewModel, HereMapsConfig, StatusChangeEvent, StatusToListMap} from "./nationwide.interfaces";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
@@ -18,7 +18,8 @@ import moment from "moment";
 import AddEventDialogService from "../dialogs/add-event-dialog/add-event-dialog.service";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 import JobContextMenuService from "../../services/job-context-menu.service";
-import {ExtendedTask, TaskTableFiltersRequest, TaskViewModel} from "../task-dashboard/task-dashboard.interfaces";
+import {JobStatus} from "../../enums/job-status.enum";
+import {ExtendedTask, TaskTableFiltersRequest, TaskViewModel} from '../task-dashboard/task-dashboard.interfaces';
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -49,11 +50,11 @@ class NationwideControl extends BaseController {
     currentLayoutIndex: number = 0;
     currentLayoutName: string = "Default";
     layout?: { columns: IColumn[] };
-    currentJob?: DispatchJob;
+    currentJob?: IDispatchJob;
     currentJobId?: number;
-    jobList?: DispatchJob[] = [];
-    jobListPOD?: DispatchJob[] = [];
-    jobListReprice?: DispatchJob[] = [];
+    jobList?: IDispatchJob[] = [];
+    jobListPOD?: IDispatchJob[] = [];
+    jobListReprice?: IDispatchJob[] = [];
     STATUS_TO_LIST_MAP: StatusToListMap;
     courier: { gpsCourier?: any } = {};
     totalJobCount: number = 0;
@@ -81,6 +82,10 @@ class NationwideControl extends BaseController {
         order: 'time',
         orderDirection: 'asc',
     };
+    jobDeliveryFilters: JobQueryParams = {
+        order: 'time',
+        orderDirection: 'asc',
+    };
     jobPodFilters: JobQueryParams = {
         order: 'time',
         orderDirection: 'asc',
@@ -101,9 +106,9 @@ class NationwideControl extends BaseController {
     agentsLoading: boolean = false;
     agentListPromise?: Promise<{ agents: AgentViewModel[], message: string | null }>;
     flightListPromise?: Promise<{ flights: FlightViewModel[], message: string | null }>;
-    jobListPromise?: Promise<DispatchJob[]>;
-    podListPromise?: Promise<DispatchJob[]>;
-    repriceListPromise?: Promise<DispatchJob[]>;
+    jobListPromise?: Promise<IDispatchJob[]>;
+    podListPromise?: Promise<IDispatchJob[]>;
+    repriceListPromise?: Promise<IDispatchJob[]>;
     tasksLoading: boolean = false;
     filteredTasks: ExtendedTask[] = [];
     tasksFilter: string = 'all';
@@ -418,6 +423,7 @@ class NationwideControl extends BaseController {
             }
         }
     }
+
 
     getJobStyle(assigned: boolean = false) {
         const normal = {
@@ -770,7 +776,7 @@ class NationwideControl extends BaseController {
         await this.getJobList(JobDataType.REPRICE);
     }
 
-    attention(job: DispatchJob) {
+    attention(job: IDispatchJob) {
         let temp = "";
 
         if (job.direct) {
@@ -843,6 +849,16 @@ class NationwideControl extends BaseController {
                 if (this.jobPodFilters) {
                     this.jobPodFilters.orderDirection = "asc";
                 }
+            } else if (list === "jobListDelivery") {
+                if (this.jobDeliveryFilters) {
+                    this.jobDeliveryFilters.orderDirection = "asc";
+                }
+            } else if (list === "jobListReprice") {
+                if (this.jobDeliveryFilters) {
+                    if (this.jobRepriceFilters) {
+                        this.jobRepriceFilters.orderDirection = "asc";
+                    }
+                }
             }
         } else {
             // Toggle sort direction for same property
@@ -860,6 +876,10 @@ class NationwideControl extends BaseController {
                     if (this.jobPodFilters) {
                         this.jobPodFilters.orderDirection = "desc";
                     }
+                } else if (list === "jobListDelivery") {
+                    if (this.jobDeliveryFilters) {
+                        this.jobDeliveryFilters.orderDirection = "desc";
+                    }
                 } else if (list === "jobListReprice") {
                     if (this.jobRepriceFilters) {
                         this.jobRepriceFilters.orderDirection = "desc";
@@ -875,6 +895,10 @@ class NationwideControl extends BaseController {
                 } else if (list === "jobListPOD") {
                     if (this.jobPodFilters) {
                         this.jobPodFilters.orderDirection = "asc";
+                    }
+                } else if (list === "jobListDelivery") {
+                    if (this.jobDeliveryFilters) {
+                        this.jobDeliveryFilters.orderDirection = "asc";
                     }
                 } else if (list === "jobListReprice") {
                     if (this.jobRepriceFilters) {
@@ -900,15 +924,15 @@ class NationwideControl extends BaseController {
         console.log(`[orderList] Sorting complete for ${list}`);
     }
 
-    async unlockJob(job: DispatchJob) {
+    async unlockJob(job: IDispatchJob) {
         await this.jdSvc.unlockJob(job);
     }
 
-    async lockJob(job: DispatchJob) {
+    async lockJob(job: IDispatchJob) {
         await this.jdSvc.lockJob(job);
     }
 
-    async restoreJob(job: DispatchJob) {
+    async restoreJob(job: IDispatchJob) {
         try {
             const result = await this.dispatchJobService.restoreJob(job);
             this.courier = {gpsCourier: result.gpsCourier};
@@ -920,7 +944,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    selectJobDetail(job: DispatchJob) {
+    selectJobDetail(job: IDispatchJob) {
         this.currentJob = job;
     }
 
@@ -942,7 +966,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async sendQuoteRequest($event: MouseEvent, agent: AgentViewModel, job: DispatchJob) {
+    async sendQuoteRequest($event: MouseEvent, agent: AgentViewModel, job: IDispatchJob) {
         try {
             // Show confirmation dialog
             const confirm = this.$mdDialog.confirm()
@@ -966,7 +990,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async selectJob(job: DispatchJob) {
+    async selectJob(job: IDispatchJob) {
         try {
             this.currentJob = job;
             this.currentJobId = job.id;
@@ -987,7 +1011,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    private _displayJobOnMap(job: DispatchJob) {
+    private _displayJobOnMap(job: IDispatchJob) {
         try {
             this.mapConfig = this._calculateMapBounds(job);
             console.log('Calculated map bounds!');
@@ -998,7 +1022,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    private _calculateMapBounds(job: DispatchJob) {
+    private _calculateMapBounds(job: IDispatchJob) {
         const pickupCoords: Coordinates = {
             lat: job.pickupAddress?.latitude ?? 0,
             lng: job.pickupAddress?.longitude ?? 0
@@ -1033,7 +1057,7 @@ class NationwideControl extends BaseController {
         };
     }
 
-    private async _processFlights(job: DispatchJob) {
+    private async _processFlights(job: IDispatchJob) {
         console.log('Getting flights');
 
         this.flightsLoading = true;
@@ -1075,7 +1099,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    private async _processAgents(job: DispatchJob) {
+    private async _processAgents(job: IDispatchJob) {
         console.log('Getting agents');
 
         this.agentsLoading = true;
@@ -1143,7 +1167,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async addFlightToJob($event: MouseEvent, flight: FlightViewModel, job: DispatchJob) {
+    async addFlightToJob($event: MouseEvent, flight: FlightViewModel, job: IDispatchJob) {
         try {
             const confirm = this.$mdDialog.confirm()
                 .title('Assign Flight')
@@ -1180,7 +1204,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async addAgentToJob($event: MouseEvent, agent: AgentViewModel, job: DispatchJob) {
+    async addAgentToJob($event: MouseEvent, agent: AgentViewModel, job: IDispatchJob) {
         try {
             const confirm = this.$mdDialog.confirm()
                 .title('Assign Agent')
@@ -1254,8 +1278,8 @@ class NationwideControl extends BaseController {
 
             // Define fetch functions for each type
             const fetchMap: Record<Exclude<JobDataType, JobDataType.ALL>, {
-                fetch: () => Promise<DispatchJob[]>;
-                updateScope: (result: DispatchJob[]) => void;
+                fetch: () => Promise<IDispatchJob[]>;
+                updateScope: (result: IDispatchJob[]) => void;
             }> = {
                 [JobDataType.NEW]: {
                     fetch: () => {
@@ -1264,7 +1288,7 @@ class NationwideControl extends BaseController {
                         }
                         return this.jobListPromise;
                     },
-                    updateScope: (result: DispatchJob[]) => {
+                    updateScope: (result: IDispatchJob[]) => {
                         this.jobList = result || [];
                         this.totalJobCount = result.length | 0;
 
@@ -1278,7 +1302,7 @@ class NationwideControl extends BaseController {
                         }
                         return this.podListPromise;
                     },
-                    updateScope: (result: DispatchJob[]) => {
+                    updateScope: (result: IDispatchJob[]) => {
                         this.jobListPOD = result || [];
                         this.totalPodCount = result.length | 0;
 
@@ -1292,7 +1316,7 @@ class NationwideControl extends BaseController {
                         }
                         return this.repriceListPromise;
                     },
-                    updateScope: (result: DispatchJob[]) => {
+                    updateScope: (result: IDispatchJob[]) => {
                         this.jobListReprice = result || [];
                         this.totalRepriceCount = result.length;
 
@@ -1309,7 +1333,7 @@ class NationwideControl extends BaseController {
                 return null;
             }).filter((promise): promise is Promise<{
                 type: Exclude<JobDataType, JobDataType.ALL>;
-                data: DispatchJob[]
+                data: IDispatchJob[]
             }> => promise !== null);
 
             const results = await Promise.all(promises);
@@ -1318,8 +1342,9 @@ class NationwideControl extends BaseController {
                 fetchMap[type].updateScope(data);
             });
 
-            await this.loadTasks();
-
+            if (requestedTypes.includes(JobDataType.NEW)) {
+                await this.loadTasks();
+            }
         } catch (error) {
             console.error("Error fetching job data:", error);
 
@@ -1341,11 +1366,13 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async openFileAttachmentDialog($event: MouseEvent, job: DispatchJob) {
+    async openFileAttachmentDialog($event: MouseEvent, job: IDispatchJob) {
         await this.jobFileUploadDialogService.openJobFileUploadDialog($event, job);
     }
 
-    async showAdditionalServicesMenu($event: MouseEvent, job: DispatchJob) {
+    async showAdditionalServicesMenu($event: MouseEvent, job: IDispatchJob) {
+        console.log('[NationwideControl] Showing additional services menu');
+        console.log('[NationwideControl] Job:', job);
         await this.additionalServicesDialogService.showAdditionalServicesDialog($event, job);
     }
 
@@ -1370,7 +1397,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    jobClass(job: DispatchJob): string {
+    jobClass(job: IDispatchJob): string {
         if (!job || !job.followupTime) {
             return '';
         }
@@ -1389,7 +1416,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async showJobContextMenu($event: MouseEvent, job: DispatchJob) {
+    async showJobContextMenu($event: MouseEvent, job: IDispatchJob) {
         try {
             await this.selectJob(job);
 
@@ -1414,16 +1441,16 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async createEvent($event: MouseEvent, job: DispatchJob) {
+    async createEvent($event: MouseEvent, job: IDispatchJob) {
         await this.addEventDialogService.openAddEventDialog($event, job);
     }
 
-    getContextMenuOptions(job: DispatchJob) {
+    getContextMenuOptions(job: IDispatchJob) {
         if (!job) return [];
 
         const callbacks = {
             onRefresh: () => this.getData(),
-            onSplitJob: (params: { job: DispatchJob }) => this.handleSplitJob(params.job),
+            onSplitJob: (params: { job: IDispatchJob }) => this.handleSplitJob(params.job),
             onRefreshCourierJobs: (params: { courierId: number }) => {
                 console.log('Refreshing courier jobs:', params.courierId);
             }
@@ -1432,7 +1459,7 @@ class NationwideControl extends BaseController {
         return this.jobContextMenuService.getMenuOptions(job, callbacks);
     }
 
-    async handleSplitJob(job: DispatchJob) {
+    async handleSplitJob(job: IDispatchJob) {
         if (!job) return;
 
         try {
@@ -1444,7 +1471,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    // Tasks
+// Tasks
     getSupportsFilterLabel(): string {
         switch (this.tasksFilter) {
             case 'all':
@@ -1565,11 +1592,114 @@ class NationwideControl extends BaseController {
             console.error('[selectSupportJobDetail] Error loading job information', error);
         }
     }
+
+    // Status Group Filters
+    async filterNewJobsByStatus(statusGroup: string) {
+        console.log('filterNewJobsByStatus called with:', statusGroup);
+        this.jobFilters.order = statusGroup;
+        await this.getJobList(JobDataType.NEW);
+        console.log(`Jobs filtered by status group: ${statusGroup}`);
+    }
+
+    async filterPodJobsByStatus(statusGroup: string) {
+        console.log('filterPodJobsByStatus called with:', statusGroup);
+        this.jobPodFilters.order = statusGroup;
+        await this.getJobList(JobDataType.POD);
+        console.log(`POD jobs filtered by status group: ${statusGroup}`);
+    }
+
+    async filterRepriceJobsByStatus(statusGroup: string) {
+        console.log('filterRepriceJobsByStatus called with:', statusGroup);
+        this.jobRepriceFilters.order = statusGroup;
+        await this.getJobList(JobDataType.REPRICE);
+        console.log(`Reprice jobs filtered by status group: ${statusGroup}`);
+    }
+
+    getNewJobsStatusCount(statusGroup: string): number {
+        return this.getStatusCount(statusGroup, JobDataType.NEW);
+    }
+
+    getPodJobsStatusCount(statusGroup: string): number {
+        return this.getStatusCount(statusGroup, JobDataType.POD);
+    }
+
+    getRepriceJobsStatusCount(statusGroup: string): number {
+        return this.getStatusCount(statusGroup, JobDataType.REPRICE);
+    }
+
+    getStatusCount(statusType: string, jobDataType: JobDataType): number {
+        let jobList: IDispatchJob[] | undefined;
+
+        switch (jobDataType) {
+            case JobDataType.NEW:
+                jobList = this.jobList;
+                break;
+            case JobDataType.POD:
+                jobList = this.jobListPOD;
+                break;
+            case JobDataType.REPRICE:
+                jobList = this.jobListReprice;
+                break;
+            default:
+                return 0;
+        }
+
+        if (!jobList || !Array.isArray(jobList)) {
+            return 0;
+        }
+
+        const normalizedStatusType = statusType.toLowerCase().replace(/\s+/g, '-');
+
+        const statusGroups: Record<string, JobStatus[]> = {
+            'pending': [
+                JobStatus.New,
+                JobStatus.Dispatched,
+                JobStatus.ReadyForPacking,
+                JobStatus.ReadyToPickup,
+                JobStatus.AwaitingProcessing,
+                JobStatus.Preassigned
+            ],
+            'in-transit': [
+                JobStatus.Accepted,
+                JobStatus.PickedUp,
+                JobStatus.InTransit,
+                JobStatus.OutForDelivery
+            ],
+            'completed': [
+                JobStatus.Completed,
+                JobStatus.AssumingCompleted
+            ],
+            'problem': [
+                JobStatus.Rejected,
+                JobStatus.LatePickup,
+                JobStatus.Warning,
+                JobStatus.LateDelivery,
+                JobStatus.AwaitingPod,
+                JobStatus.Undeliverable
+            ]
+        };
+
+        if (statusGroups[normalizedStatusType]) {
+            return jobList.filter(job =>
+                job.statusId !== undefined &&
+                statusGroups[normalizedStatusType].includes(job.statusId)
+            ).length;
+        }
+
+        return jobList.filter(job => {
+            if (!job.statusName) {
+                return false;
+            }
+            const normalizedJobStatus = job.statusName.toLowerCase().replace(/\s+/g, '-');
+            return normalizedJobStatus === normalizedStatusType;
+        }).length;
+    }
 }
 
 const NationwideComponent: angular.IComponentOptions = {
     template: require('./nationwide.template.html'),
     controller: NationwideControl,
     controllerAs: "ctrl"
-}
+};
+
 export default NationwideComponent;

@@ -15,6 +15,8 @@ import moment from "moment";
 import {AppPages} from "../../../enums/app-pages.enum";
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import {JobStatus} from "../../../enums/job-status.enum";
+import EditParcelDimensionsDialogService
+    from "../../dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -28,14 +30,14 @@ class JobDetailController extends BaseController {
         "editAddressDialogService",
         "priceBreakdownDialogService",
         "$document",
-        "APP_CONFIG"
+        "APP_CONFIG",
+        "editParcelDimensionsDialogService"
     ];
 
     readonly appPage: AppPages = AppPages.Dispatch;
     readonly isUsCustomer: boolean = false;
     jobId?: number;
     job?: IJob;
-    internalJob?: IJob;
     notes: JobNote[];
     selectedTab: number;
     allTabs: TabItem[];
@@ -60,7 +62,8 @@ class JobDetailController extends BaseController {
         private editAddressDialogService: EditAddressDialogService,
         private priceBreakdownDialogService: PriceBreakdownDialogService,
         private $document: angular.IDocumentService,
-        APP_CONFIG: AppConfig
+        APP_CONFIG: AppConfig,
+        private editParcelDimensionsDialogService: EditParcelDimensionsDialogService
     ) {
         super();
 
@@ -120,7 +123,7 @@ class JobDetailController extends BaseController {
                 return this._loadJobData(changes['jobId'].currentValue);
             } else {
                 this.job = undefined;
-                this.internalJob = undefined;
+                this.job = undefined;
             }
         }
 
@@ -146,7 +149,7 @@ class JobDetailController extends BaseController {
         try {
             const jobData = await this.DispatchData.getJobDetail(jobId);
             this.job = jobData;
-            this.internalJob = jobData;
+            this.job = jobData;
 
             this._initializeJobData();
 
@@ -163,21 +166,21 @@ class JobDetailController extends BaseController {
     }
 
     private _loadPodPhotos() {
-        if (!this.internalJob?.completedTime) {
+        if (!this.job?.completedTime) {
             console.log('No POD time available for job');
             return;
         }
 
-        console.log(`Loading POD photos for job: ${this.internalJob.id}`);
+        console.log(`Loading POD photos for job: ${this.job.id}`);
 
         try {
-            const completedTime = moment(this.internalJob?.completedTime);
+            const completedTime = moment(this.job?.completedTime);
             const month = completedTime.month() + 1;
             const year = completedTime.year();
 
             console.log(`Getting POD photos for date: ${year}-${month}`);
 
-            this.DispatchData.getJobDeliveryPhotosAndSignature(this.internalJob.id, year, month)
+            this.DispatchData.getJobDeliveryPhotosAndSignature(this.job.id, year, month)
                 .then((photosData: any) => {
                     if (!photosData || photosData.length === 0) {
                         console.log('No POD photos returned from server');
@@ -190,12 +193,12 @@ class JobDetailController extends BaseController {
                                 try {
                                     const podPhoto: PodPhoto = {
                                         url: photoData,
-                                        timestamp: this.internalJob?.completedTime ?
-                                            new Date(this.internalJob.completedTime).toLocaleString() : undefined,
-                                        uploadedBy: this.internalJob?.courierData.courierName ?? 'Unknown',
+                                        timestamp: this.job?.completedTime ?
+                                            new Date(this.job.completedTime).toLocaleString() : undefined,
+                                        uploadedBy: this.job?.courierData.courierName ?? 'Unknown',
                                         coordinates: {
-                                            lat: this.internalJob?.deliveryAddress?.latitude ?? 0,
-                                            lng: this.internalJob?.deliveryAddress?.longitude ?? 0
+                                            lat: this.job?.deliveryAddress?.latitude ?? 0,
+                                            lng: this.job?.deliveryAddress?.longitude ?? 0
                                         }
                                     };
 
@@ -225,14 +228,14 @@ class JobDetailController extends BaseController {
     }
 
     private _initializeJobData() {
-        if (!this.internalJob) return;
+        if (!this.job) return;
 
-        console.log('Initializing job data:', this.internalJob.id);
+        console.log('Initializing job data:', this.job.id);
         this._getSelectedStatusText();
     }
 
     getJobAddressIcon() {
-        const icon = this.internalJob?.assignedFlight ? 'flight_takeoff' : 'pin_drop';
+        const icon = this.job?.assignedFlight ? 'flight_takeoff' : 'pin_drop';
         console.log(`[getJobAddressIcon] Icon selected: ${icon}`);
         return icon || 'pin_drop';
     }
@@ -381,20 +384,7 @@ class JobDetailController extends BaseController {
     }
 
     async showJobDimensionsDialog($event: MouseEvent, job: IJob) {
-        await this.$mdDialog.show({
-            controller: "EditParcelDimensionsDialogController",
-            controllerAs: "ctrl",
-            parent: this.$document.parent(),
-            targetEvent: $event,
-            template: require("../../dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.html"),
-            clickOutsideToClose: false,
-            fullscreen: true,
-            locals: {
-                jobId: job.id, parcels: job.parcelDimensions
-            },
-            bindToController: true
-        });
-
+        await this.editParcelDimensionsDialogService.showJobDimensionsDialog($event, job);
         await this._refreshJobDetails(job.id);
     }
 
@@ -404,6 +394,11 @@ class JobDetailController extends BaseController {
 
     async editCompletedTime($event: MouseEvent, job: IJob) {
         await this.showEditDateAndTimeDialog($event, job, "POD Time", "CompletedTime", job.completedTime);
+
+        // Begin job done process
+        const refreshedJob = this.job;
+        if(!refreshedJob) return;
+        await this.markJobAsDone($event, refreshedJob);
     }
 
     async editFollowUpTime($event: MouseEvent, job: IJob) {
@@ -539,6 +534,11 @@ class JobDetailController extends BaseController {
 
     async editPodName($event: MouseEvent, job: IJob) {
         await this.showEditDialog($event, job, "Edit POD Name", "POD Name...", "pod name", job.podName, "PodName");
+
+        // Begin job done process
+        const refreshedJob = this.job;
+        if(!refreshedJob) return;
+        await this.markJobAsDone($event, refreshedJob);
     }
 
     async editRef($event: MouseEvent, job: IJob, isRefA: boolean) {
@@ -570,7 +570,7 @@ class JobDetailController extends BaseController {
         const placeholder = "Start typing to enter new client...";
 
         const existingItem = {
-            id: job.clientID, text: job.clientName
+            id: job.clientId, text: job.clientName
         }
 
         await this.showAutocompleteDialog($event, job, url, placeholder, "clientId", "Client", existingItem, true)
@@ -584,9 +584,9 @@ class JobDetailController extends BaseController {
     }
 
     async contactClick($event: MouseEvent, job: IJob) {
-        if (job.clientID === undefined) return;
+        if (job.clientId === undefined) return;
 
-        const pickContacts = await this.DispatchData.getContactList(job.clientID);
+        const pickContacts = await this.DispatchData.getContactList(job.clientId);
         await this.showSelectDialog($event, job, pickContacts, "ContactID", "Contact", job.contactName);
     }
 
@@ -830,9 +830,9 @@ class JobDetailController extends BaseController {
             }
 
             console.log("[JobDetailsComponentController] Marking job as done]")
-            await this.DispatchData.updatePODDetail(job.id, JobStatus.Completed, job.podName, job.completedTime.toISOString());
+            await this.DispatchData.updatePODDetail(job.id, JobStatus.Completed, job.podName, job.completedTime);
 
-            this.toastrService.showSuccessToast(`${job.jobNo} marked as done`);
+            this.toastrService.showSuccessToast(`${job.jobNo} Completed`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
             console.error("Error marking job as done:", error);
@@ -931,10 +931,10 @@ class JobDetailController extends BaseController {
     }
 
     async sendPOD($event: MouseEvent) {
-        if (!this.internalJob?.podPhotos) return;
+        if (!this.job?.podPhotos) return;
 
         try {
-            if (!this.internalJob?.podPhoto) {
+            if (!this.job?.podPhoto) {
                 await this.$mdDialog.show(this.$mdDialog.alert()
                     .clickOutsideToClose(true)
                     .title('No Photo')
@@ -956,7 +956,7 @@ class JobDetailController extends BaseController {
 
             const email = await this.$mdDialog.show(confirm);
 
-            await this.DispatchData.sendPOD(this.internalJob.id, email);
+            await this.DispatchData.sendPOD(this.job.id, email);
 
             await this.$mdDialog.show(this.$mdDialog.alert()
                 .clickOutsideToClose(true)
@@ -972,12 +972,12 @@ class JobDetailController extends BaseController {
     private _getSelectedStatusText() {
         console.log('getSelectedStatusText() called');
         const defaultText = 'Stage';
-        console.log('Current internalJob:', this.internalJob);
+        console.log('Current job:', this.job);
 
         console.log('Current internalStatusList:', this.internalStatusList);
 
         const selectedStatus = this.internalStatusList?.find(status =>
-            status.id === this.internalJob?.internalStatusId
+            status.id === this.job?.internalStatusId
         );
         console.log('Found selectedStatus:', selectedStatus);
 

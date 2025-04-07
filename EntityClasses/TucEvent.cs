@@ -19,15 +19,15 @@ public partial class TucEvent
 
     public DateTime? UcevTime { get; set; }
 
-    public double? UcevType { get; set; }
+    public int? UcevType { get; set; }
 
     public double? UcevLateTime { get; set; }
 
     public DateTime? UcevEtatime { get; set; }
 
-    public double? UcevStaffIdin { get; set; }
+    public int? UcevStaffIdin { get; set; }
 
-    public double? UcevStaffIdout { get; set; }
+    public int? UcevStaffIdout { get; set; }
 
     public DateTime? UcevResponseTime { get; set; }
 
@@ -74,4 +74,10 @@ public partial class TucEvent
     public virtual TucCourier UcevCourier { get; set; }
 
     public virtual TucJob UcevJob { get; set; }
+
+    public virtual TucStaff UcevStaffIdinNavigation { get; set; }
+
+    public virtual TucStaff UcevStaffIdoutNavigation { get; set; }
+
+    public virtual TucEventType UcevTypeNavigation { get; set; }
 }

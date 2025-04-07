@@ -1,5 +1,5 @@
 import ToastrService from "../../../services/toastr.service";
-import {DfrntEvent, IJob, Suggestion, TucNoteViewModel} from "../../../interfaces/job.interface";
+import {DfrntEvent, IJob, Suggestion, IJobNote} from "../../../interfaces/job.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import BaseController from "../../base-controller";
 import NationwideService from "../../Nationwide/nationwide.service";
@@ -93,7 +93,7 @@ class AddEventDialogController extends BaseController {
                 await this.NWData.exsalerateActivity(
                     eventName,
                     event.notes,
-                    this.job.clientID ?? 0,
+                    this.job.clientId ?? 0,
                     event.jobNumber,
                     this.dispatcherName
                 );
@@ -109,7 +109,7 @@ class AddEventDialogController extends BaseController {
             ) {
                 const newNote = eventName + ":" + event.notes;
 
-                const jobNote: TucNoteViewModel = {
+                const jobNote: IJobNote = {
                     jobId: this.job.id,
                     jobNumber: this.job.jobNo,
                     isImportant: false,

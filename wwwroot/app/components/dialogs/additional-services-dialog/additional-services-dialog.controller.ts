@@ -26,8 +26,8 @@ class AdditionalServicesDialogController extends BaseController {
         super();
 
         this.jobId = this.job.id ?? 0;
-        this.clientId = this.job.clientID ?? 0;
-        this.speedId = this.job.speedID ?? 0;
+        this.clientId = this.job.clientId ?? 0;
+        this.speedId = this.job.speedId ?? 0;
         this.quantity = this.job.items ?? 0;
 
         this.isLoading = false;
@@ -54,7 +54,7 @@ class AdditionalServicesDialogController extends BaseController {
     addJobSpeedToSelected() {
         const jobSpeed = {
             itemId: -1,
-            clientId: this.job.clientID,
+            clientId: this.job.clientId,
             name: `${this.job.speedName} rate`,
             description: `${this.job.speedName} rate`,
             perItem: false,

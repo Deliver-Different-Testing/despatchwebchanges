@@ -1,7 +1,7 @@
-import StateInfo from "../interfaces/state-info.interface";
+import IStateInfo from "../interfaces/state-info.interface";
 
 class UsStatesService implements angular.IServiceProvider {
-    private readonly usStates: StateInfo[]
+    private readonly usStates: IStateInfo[]
 
     constructor() {
         this.usStates = [
@@ -62,15 +62,15 @@ class UsStatesService implements angular.IServiceProvider {
         return this;
     }
 
-    getStates(): StateInfo[] {
+    getStates(): IStateInfo[] {
         return this.usStates;
     }
 
-    getStateByAbbreviation(abbreviation: string): StateInfo | undefined {
+    getStateByAbbreviation(abbreviation: string): IStateInfo | undefined {
         return this.usStates.find(state => state.abbreviation === abbreviation);
     }
 
-    getStateByName(name: string): StateInfo | undefined {
+    getStateByName(name: string): IStateInfo | undefined {
         return this.usStates.find(state => state.name.toLowerCase() === name.toLowerCase());
     }
 }

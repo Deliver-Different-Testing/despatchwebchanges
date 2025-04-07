@@ -1,4 +1,4 @@
-import {DispatchJob, IJob} from "../../../interfaces/job.interface";
+import {IDispatchJob, IJob} from "../../../interfaces/job.interface";
 import JobFileUploadController from "./job-file-upload.controller";
 
 class JobFileUploadDialogService implements angular.IServiceProvider {
@@ -18,7 +18,7 @@ class JobFileUploadDialogService implements angular.IServiceProvider {
         return this;
     }
 
-    async openJobFileUploadDialog($event: MouseEvent, job: IJob | DispatchJob) {
+    async openJobFileUploadDialog($event: MouseEvent, job: IJob | IDispatchJob) {
         try {
             await this.$mdDialog.show({
                 controller: JobFileUploadController,

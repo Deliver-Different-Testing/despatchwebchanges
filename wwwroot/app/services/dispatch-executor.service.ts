@@ -1,4 +1,4 @@
-import {DispatchJob, JobQueryParams} from "../interfaces/job.interface";
+import {IDispatchJob, JobQueryParams} from "../interfaces/job.interface";
 import {ActiveCourierViewModel} from "../interfaces/courier.interface";
 import {JobListResponse} from "../interfaces/job-list-response.interface";
 import DispatchCoreService from "./dispatch-core.service";
@@ -89,7 +89,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
     }
 
     async getCurrentJobsForCourier(courierId: number, isDone: boolean = false): Promise<{
-        jobs: DispatchJob[],
+        jobs: IDispatchJob[],
         courier: object | null,
         position?: object | null
     }> {
@@ -153,7 +153,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         }
     }
 
-    async dispatchJobsByCourierId(courierId: number, jobs: DispatchJob[]): Promise<any> {
+    async dispatchJobsByCourierId(courierId: number, jobs: IDispatchJob[]): Promise<any> {
         console.log("Dispatching multiple jobs by courier ID:", {courierId, jobCount: jobs.length});
         try {
             const courier = await this.DispatchData.getCourierById(courierId);
@@ -170,7 +170,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         }
     }
 
-    async dispatchJobs(courierNumber: number, jobs: DispatchJob[]): Promise<any> {
+    async dispatchJobs(courierNumber: number, jobs: IDispatchJob[]): Promise<any> {
         await this.fetchCouriersData();
         const foundCourier = await this._findCourierByNumber(courierNumber);
 
@@ -179,7 +179,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         }
     }
 
-    async dispatchJob(courierNumber: number, job: DispatchJob): Promise<any> {
+    async dispatchJob(courierNumber: number, job: IDispatchJob): Promise<any> {
         await this.fetchCouriersData();
         const foundCourier = await this._findCourierByNumber(courierNumber);
 
@@ -188,7 +188,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         }
     }
 
-    async dispatchJobsFromPotentialCouriers(courierId: number, jobList: DispatchJob[], contactId: number) {
+    async dispatchJobsFromPotentialCouriers(courierId: number, jobList: IDispatchJob[], contactId: number) {
         // Find courier and check if active
         const foundCourier = await this.DispatchData.getCourierById(courierId);
         if (!foundCourier || !foundCourier.isActive) {
@@ -235,7 +235,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         }
     }
 
-    async restoreJob(job: DispatchJob): Promise<{ gpsCourier: number | undefined }> {
+    async restoreJob(job: IDispatchJob): Promise<{ gpsCourier: number | undefined }> {
         console.log(`[restoreJob] Starting restoration for job #${job.jobNo}`);
 
         const validationResult = await this._validateJobForRestore(job);
@@ -299,12 +299,12 @@ class DispatchExecutorService implements angular.IServiceProvider {
         );
     }
 
-    private async _dispatchJobsContinue(courier: ActiveCourierViewModel, jobs: DispatchJob[]): Promise<void> {
+    private async _dispatchJobsContinue(courier: ActiveCourierViewModel, jobs: IDispatchJob[]): Promise<void> {
         const validationResults = await Promise.all(
             jobs.map(job => this._validateJob(job, courier))
         );
 
-        const validJobs: DispatchJob[] = [];
+        const validJobs: IDispatchJob[] = [];
         const errorMessages: string[] = [];
 
         jobs.forEach((job, index) => {
@@ -325,11 +325,11 @@ class DispatchExecutorService implements angular.IServiceProvider {
         await this._processValidJobs(courier, validJobs);
     }
 
-    private _requiresFollowupEvent(job: DispatchJob): boolean {
+    private _requiresFollowupEvent(job: IDispatchJob): boolean {
         return job.dgClass !== undefined && job.dgClass > 0;
     }
 
-    private async _validateJob(job: DispatchJob, courier: ActiveCourierViewModel): Promise<{
+    private async _validateJob(job: IDispatchJob, courier: ActiveCourierViewModel): Promise<{
         isValid: boolean;
         message: string;
     }> {
@@ -363,7 +363,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         return {isValid: true, message: ""};
     }
 
-    private async _processValidJobs(courier: ActiveCourierViewModel, jobs: DispatchJob[]): Promise<void> {
+    private async _processValidJobs(courier: ActiveCourierViewModel, jobs: IDispatchJob[]): Promise<void> {
         const LOG_MESSAGES = {
             PROCESSING_JOBS: "Processing valid jobs",
             FOLLOWUP_JOBS: "Jobs requiring followup",
@@ -396,7 +396,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         }
     }
 
-    private async _processFollowupJobs(jobs: DispatchJob[]): Promise<void> {
+    private async _processFollowupJobs(jobs: IDispatchJob[]): Promise<void> {
         const jobsRequiringFollowup = jobs.filter(this._requiresFollowupEvent);
         console.log("Jobs requiring followup:", jobsRequiringFollowup.length);
 
@@ -408,7 +408,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         }
     }
 
-    private async _allocateJobsToCourier(courier: ActiveCourierViewModel, jobs: DispatchJob[]): Promise<void> {
+    private async _allocateJobsToCourier(courier: ActiveCourierViewModel, jobs: IDispatchJob[]): Promise<void> {
         const jobIds = jobs.map(job => job.id);
         console.log("Allocating jobs:", jobIds.length);
         await this.DispatchData.allocateJobs(courier.courierId, ContactID, jobIds);
@@ -420,7 +420,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         throw error;
     }
 
-    private async _validateJobForRestore(job: DispatchJob): Promise<{ isValid: boolean; courier?: ActiveCourierViewModel }> {
+    private async _validateJobForRestore(job: IDispatchJob): Promise<{ isValid: boolean; courier?: ActiveCourierViewModel }> {
         const courierId = job?.courierData?.courierId;
         if (courierId === undefined) {
             await this._handleError("Job has no assigned courier to restore from");
@@ -436,7 +436,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         return {isValid: true, courier};
     }
 
-    private async _processJobRestore(job: DispatchJob, courier: ActiveCourierViewModel) {
+    private async _processJobRestore(job: IDispatchJob, courier: ActiveCourierViewModel) {
         console.log(`[_processJobRestore] Starting restore process for job #${job.jobNo} with ID ${job.id}`);
 
         try {

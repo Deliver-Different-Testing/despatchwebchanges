@@ -9,9 +9,9 @@ import {
     AreaClearList,
     ClearListViewModel,
     CourierData,
-    DispatchJob,
+    IDispatchJob,
     JobQueryParams,
-    Suggestion, TucNoteViewModel,
+    Suggestion, IJobNote,
 } from "../../interfaces/job.interface";
 import {ActiveCourierViewModel, TruckCourierStatusViewModel} from "../../interfaces/courier.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
@@ -70,11 +70,11 @@ class HomeController extends BaseController {
         driverLocations: "#driverLocations .listActive"
     } as const;
 
-    mapJobList: DispatchJob[] = []
+    mapJobList: IDispatchJob[] = []
     initialViewSet: any;
-    currentJob?: DispatchJob;
+    currentJob?: IDispatchJob;
     currentJobId?: number;
-    jobList: DispatchJob[];
+    jobList: IDispatchJob[];
     allCouriers: any;
     mapZoom?: number;
     options: any;
@@ -122,7 +122,7 @@ class HomeController extends BaseController {
     pickAllCouriers?: ActiveCourierViewModel[];
     courier: any;
     lastjob: any;
-    jobsCurrentList?: DispatchJob[];
+    jobsCurrentList?: IDispatchJob[];
     potentialCouriers: any;
     currentWorkSelection: any;
     jobFilters: any;
@@ -830,7 +830,7 @@ class HomeController extends BaseController {
         }
     }
 
-    attention(job: DispatchJob) {
+    attention(job: IDispatchJob) {
         const components = [];
 
         // Add DIRECT if applicable
@@ -886,37 +886,28 @@ class HomeController extends BaseController {
         }
     }
 
-    unlockJob(currentJob: DispatchJob) {
+    unlockJob(currentJob: IDispatchJob) {
         return this.JobDetailService.unlockJob(currentJob);
     }
 
-    lockJob(currentJob: DispatchJob) {
+    lockJob(currentJob: IDispatchJob) {
         return this.JobDetailService.lockJob(currentJob);
     }
 
     async selectClearList(selectedClearList: AreaClearList) {
         try {
-            this._validateClearList(selectedClearList);
+            if (!selectedClearList) return;
 
-            this._updateUIElements();
+            const areaGroupButtons = angular.element(this.DOM_SELECTORS.areaGroup);
+            areaGroupButtons.removeClass("topBarActive");
 
             if (this._shouldProcessJobs()) {
                 await this._processClearListJobs(selectedClearList.id);
             }
         } catch (error) {
-            this._handleClearListError(error);
+            console.error("Clear list processing error:", error);
+            this.jobList = [];
         }
-    }
-
-    private _validateClearList(clearList: AreaClearList) {
-        if (!clearList) {
-            throw new Error("Selected clear list is null or undefined");
-        }
-    }
-
-    private _updateUIElements() {
-        const areaGroupButtons = angular.element(this.DOM_SELECTORS.areaGroup);
-        areaGroupButtons.removeClass("topBarActive");
     }
 
     private _shouldProcessJobs(): boolean {
@@ -948,11 +939,6 @@ class HomeController extends BaseController {
         }
     }
 
-    private _handleClearListError(error: unknown) {
-        console.error("Clear list processing error:", error);
-        this.jobList = [];
-    }
-
     async getClearListEnvelope(clearListId: number) {
         try {
             const data = await this.DispatchData.getDriverDestinationEnvelope(clearListId);
@@ -974,7 +960,7 @@ class HomeController extends BaseController {
         }
     }
 
-    async handleDispatchSelection(selectedCourier: Suggestion, job: DispatchJob) {
+    async handleDispatchSelection(selectedCourier: Suggestion, job: IDispatchJob) {
         if (this.dispatchState.processing) {
             console.log("Dispatch already in progress");
             return;
@@ -996,7 +982,7 @@ class HomeController extends BaseController {
         }
     }
 
-    handleDispatchFieldClick(event: MouseEvent, job: DispatchJob) {
+    handleDispatchFieldClick(event: MouseEvent, job: IDispatchJob) {
         // Prevent the job row click event
         event.stopPropagation();
 
@@ -1015,7 +1001,7 @@ class HomeController extends BaseController {
         }
     }
 
-    selectForDispatch(job: DispatchJob) {
+    selectForDispatch(job: IDispatchJob) {
         const jobId = job.id;
 
         if (this.dispatchState.selectedJobs.has(jobId)) {
@@ -1117,7 +1103,7 @@ class HomeController extends BaseController {
                     .ok("Void " + jobNumber)
                     .cancel("Cancel"));
 
-            const jobNote: TucNoteViewModel = {
+            const jobNote: IJobNote = {
                 jobId: jobId,
                 createdDate: new Date(),
                 createdBy: ContactID,
@@ -1135,7 +1121,7 @@ class HomeController extends BaseController {
         }
     }
 
-    messageClick($event: MouseEvent, job: DispatchJob) {
+    messageClick($event: MouseEvent, job: IDispatchJob) {
         const selectedCourierId = this.selectedCourier ? this.selectedCourier.id : job.courierData?.courierId;
 
         this.$mdDialog
@@ -1157,7 +1143,7 @@ class HomeController extends BaseController {
             });
     }
 
-    async otherEventForm($event: MouseEvent, job: DispatchJob) {
+    async otherEventForm($event: MouseEvent, job: IDispatchJob) {
         await this.addEventDialogService.openAddEventDialog($event, job);
     }
 
@@ -1165,7 +1151,7 @@ class HomeController extends BaseController {
         ($event.target as HTMLInputElement)?.select();
     }
 
-    async lateOperation(minsAway: Date, job: DispatchJob, obj: any, isPickup: boolean) {
+    async lateOperation(minsAway: Date, job: IDispatchJob, obj: any, isPickup: boolean) {
         const operationType = isPickup ? "pickup" : "delivery";
         const currentValue = isPickup ? job.lp : job.ld;
         const lateType = isPickup ? 1 : 2;
@@ -1182,20 +1168,20 @@ class HomeController extends BaseController {
         }
     }
 
-    latePickup(minsAway: Date, job: DispatchJob, obj: any) {
+    latePickup(minsAway: Date, job: IDispatchJob, obj: any) {
         return this.lateOperation(minsAway, job, obj, true);
     }
 
-    lateDelivery(minsAway: Date, job: DispatchJob, obj: any) {
+    lateDelivery(minsAway: Date, job: IDispatchJob, obj: any) {
         return this.lateOperation(minsAway, job, obj, false);
     }
 
-    async lateCall(lateTime: number, lateType: number, job: DispatchJob, calc: boolean): Promise<any> {
+    async lateCall(lateTime: number, lateType: number, job: IDispatchJob, calc: boolean): Promise<any> {
         try {
-            if (!job.clientID) return;
+            if (!job.clientId) return;
             if (!job.jobType) return;
             const response = await this.DispatchData.lateCall(lateType, lateTime, job.minutes ?? 0, job.pickupTime ?? 0,
-                job.alertLatePickup ?? 0, job.deliveryTime ?? 0, job.alertLateDelivery ?? 0, job.jobNo, job.clientID, job.contactName,
+                job.alertLatePickup ?? 0, job.deliveryTime ?? 0, job.alertLateDelivery ?? 0, job.jobNo, job.clientId, job.contactName,
                 ContactID, job.time ?? new Date(), job.id, job.jobType, job.speed ?? '', (job.notify || job.speed) ?? '', FirstName, calc);
 
             await this.getData();
@@ -1206,7 +1192,7 @@ class HomeController extends BaseController {
         }
     }
 
-    jobClass(job: DispatchJob): string {
+    jobClass(job: IDispatchJob): string {
         if (!job) return "";
 
         const classes = [];
@@ -1230,7 +1216,7 @@ class HomeController extends BaseController {
         return classes.join(" ");
     }
 
-    async handleRowClick($event: MouseEvent, job: DispatchJob) {
+    async handleRowClick($event: MouseEvent, job: IDispatchJob) {
         if (!($event.target as HTMLElement)?.closest("md-autocomplete")) {
             try {
                 await this.$timeout(async () => {
@@ -1304,7 +1290,7 @@ class HomeController extends BaseController {
         return this.jobList.filter((job) => this.dispatchState.selectedJobs.has(job.id));
     }
 
-    async reAllocateJobs(job: DispatchJob) {
+    async reAllocateJobs(job: IDispatchJob) {
         if (!job) return;
 
         const callData = {
@@ -1362,7 +1348,7 @@ class HomeController extends BaseController {
         }
     }
 
-    async restoreJob(job: DispatchJob) {
+    async restoreJob(job: IDispatchJob) {
         try {
             const result = await this.dispatchJobService.restoreJob(job);
             this.courier = {gpsCourier: result.gpsCourier};
@@ -1520,7 +1506,7 @@ class HomeController extends BaseController {
     }
 
     private _collectJobIds(request: ResendJobsRequest) {
-        this.jobsCurrentList?.forEach((job: DispatchJob) => {
+        this.jobsCurrentList?.forEach((job: IDispatchJob) => {
             request.jobs.push(job.id);
         });
     }
@@ -1556,7 +1542,7 @@ class HomeController extends BaseController {
         }
     }
 
-    async addRestoreEvent(job: DispatchJob) {
+    async addRestoreEvent(job: IDispatchJob) {
         try {
             await this.DispatchData.addRestoreEvent(job.id);
             console.log("Restore event added successfully");
@@ -1585,7 +1571,7 @@ class HomeController extends BaseController {
         }
     }
 
-    async setFirstJob(job: DispatchJob) {
+    async setFirstJob(job: IDispatchJob) {
         try {
             await this.$mdDialog.show(this.$mdDialog
                 .confirm()
@@ -1604,7 +1590,7 @@ class HomeController extends BaseController {
     //////////////////////////////
     //  SPLIT JOB //
     /////////////////////////////
-    async splitJob($event: MouseEvent, job: DispatchJob) {
+    async splitJob($event: MouseEvent, job: IDispatchJob) {
         if (!job.allowSplit) {
             await this.showAlert("Unable to split job", `Can not split ${job.jobNo}.`);
             return;
@@ -1941,7 +1927,7 @@ class HomeController extends BaseController {
         }
     }
 
-    async selectJobDetail(job: DispatchJob) {
+    async selectJobDetail(job: IDispatchJob) {
         this.currentJob = job;
         this.currentSupport = null;
         this.potentialCouriers = false;
@@ -1950,9 +1936,9 @@ class HomeController extends BaseController {
 
         await this.checkForAttachments(job.id);
 
-        if (job.rootParentId && job.clientID) {
+        if (job.rootParentId && job.clientId) {
             try {
-                job.relatedJobs = await this.DispatchData.getRelatedJobs(job.rootParentId, job.clientID);
+                job.relatedJobs = await this.DispatchData.getRelatedJobs(job.rootParentId, job.clientId);
             } catch (error: any) {
                 console.error("Error getting related jobs:", error);
             }
@@ -1994,7 +1980,7 @@ class HomeController extends BaseController {
         }
     }
 
-    async selectJob(job: DispatchJob) {
+    async selectJob(job: IDispatchJob) {
         console.log("Selected job run...");
         console.log(job);
 
@@ -2019,8 +2005,8 @@ class HomeController extends BaseController {
 
             if (job.rootParentId) {
                 try {
-                    if (this.currentJob?.rootParentId && this.currentJob?.clientID) {
-                        this.currentJob.relatedJobs = await this.DispatchData.getRelatedJobs(this.currentJob.rootParentId, this.currentJob.clientID);
+                    if (this.currentJob?.rootParentId && this.currentJob?.clientId) {
+                        this.currentJob.relatedJobs = await this.DispatchData.getRelatedJobs(this.currentJob.rootParentId, this.currentJob.clientId);
                     }
                 } catch (error: any) {
                     console.error("Error getting related jobs:", error);
@@ -2101,7 +2087,7 @@ class HomeController extends BaseController {
         }, 0);
     }
 
-    async handleUndispatchedJob(job: DispatchJob) {
+    async handleUndispatchedJob(job: IDispatchJob) {
         await this.getPotentialCouriers(job.id);
         this.potentialCouriersSelection = ` for Job ${job.jobNo}`;
         this.currentCourier = null;
@@ -2144,7 +2130,7 @@ class HomeController extends BaseController {
         }, 100);
     }
 
-    async showJobContextMenu($event: MouseEvent, job: DispatchJob) {
+    async showJobContextMenu($event: MouseEvent, job: IDispatchJob) {
         try {
             await this.selectJob(job);
 
@@ -2179,13 +2165,13 @@ class HomeController extends BaseController {
         await this.getData();
     }
 
-    async handleMarkerClick(job: DispatchJob) {
+    async handleMarkerClick(job: IDispatchJob) {
         if (job) {
             await this.selectJob(job);
         }
     }
 
-    private initializeJobSearchFields(jobs: DispatchJob[]) {
+    private initializeJobSearchFields(jobs: IDispatchJob[]) {
         if (!Array.isArray(jobs)) {
             return jobs;
         }
@@ -2352,7 +2338,7 @@ class HomeController extends BaseController {
         }
     }
 
-    async setSplitJobMeetingPoint($event: MouseEvent, currentJob: DispatchJob) {
+    async setSplitJobMeetingPoint($event: MouseEvent, currentJob: IDispatchJob) {
         try {
             if(!currentJob.deliveryAddress) return;
 
@@ -2367,7 +2353,7 @@ class HomeController extends BaseController {
         }
     }
 
-    async handleNewAddressForSplitJobs(addressDetails: AddressViewModel, currentJob: DispatchJob) {
+    async handleNewAddressForSplitJobs(addressDetails: AddressViewModel, currentJob: IDispatchJob) {
         if (!addressDetails) {
             console.log("Split jobs canceled!");
             return;
@@ -2455,7 +2441,7 @@ class HomeController extends BaseController {
         await this.interCourierChargeDialogService.showInterCourierCharge($event);
     }
 
-    async createEvent($event: MouseEvent, job: DispatchJob) {
+    async createEvent($event: MouseEvent, job: IDispatchJob) {
         await this.addEventDialogService.openAddEventDialog($event, job);
     }
 
@@ -2476,11 +2462,11 @@ class HomeController extends BaseController {
         }
     }
 
-    async openFileAttachmentDialog($event: MouseEvent, job: DispatchJob) {
+    async openFileAttachmentDialog($event: MouseEvent, job: IDispatchJob) {
         await this.jobFileUploadDialogService.openJobFileUploadDialog($event, job);
     }
 
-    async showAdditionalServicesMenu($event: MouseEvent, job: DispatchJob) {
+    async showAdditionalServicesMenu($event: MouseEvent, job: IDispatchJob) {
         await this.additionalServicesDialogService.showAdditionalServicesDialog($event, job);
     }
 
@@ -2488,7 +2474,7 @@ class HomeController extends BaseController {
         return this.dispatchState.selectedJobs.has(jobId);
     }
 
-    updateCallData(callData: any, job: DispatchJob, jobIdElement: any) {
+    updateCallData(callData: any, job: IDispatchJob, jobIdElement: any) {
         if (!callData.courierId) {
             callData.courierId = job.courierData?.courierId ?? 0;
         }
@@ -2668,12 +2654,12 @@ class HomeController extends BaseController {
         await this.loadSupports(filterType);
     }
 
-    getContextMenuOptions(job: DispatchJob) {
+    getContextMenuOptions(job: IDispatchJob) {
         if (!job) return [];
 
         const callbacks = {
             onRefresh: () => this.getData(),
-            onSplitJob: (params: { job: DispatchJob }) => this.handleSplitJob(params.job),
+            onSplitJob: (params: { job: IDispatchJob }) => this.handleSplitJob(params.job),
             onRefreshCourierJobs: (params: { courierId: number }) => {
                 if (this.currentCourier) {
                     return this.getCurrentJobs(params.courierId);
@@ -2684,7 +2670,7 @@ class HomeController extends BaseController {
         return this.jobContextMenuService.getMenuOptions(job, callbacks);
     }
 
-    async handleSplitJob(job: DispatchJob) {
+    async handleSplitJob(job: IDispatchJob) {
         if (!job) return;
 
         try {

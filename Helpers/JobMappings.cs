@@ -4,6 +4,7 @@ using System.Linq.Expressions;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Helpers;
 
@@ -17,13 +18,12 @@ public static class JobMappings
             Id = j.UcjbId,
             JobNo = j.UcjbNumber,
 
+            SpeedId = j.UcjbSpeed,
             StatusId = j.UcjbStatus,
             Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsCode : null,
             StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
             Time = j.UcjbTime,
-            Booked = DateTime.Parse(
-                j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime.Value.ToString("HH:mm:ss")
-            ),
+            Booked = CombineDateAndTime(j.UcjbDate, j.UcjbTime),
             Remain = CalculateRemainTime(j, j.UcjbSpeedNavigation),
 
             Courier = j.UcjbCourierId != null ? j.UcjbCourier.Code : null,
@@ -120,10 +120,7 @@ public static class JobMappings
             AssignedFlight = j
                 .TucJobNationwides.Select(nj => new AssignedFlight
                 {
-                    ExpectedArrival = nj.UcnwEta,
-                    ExpectedDeparture = nj.UcnwEtd,
                     FlightNumber = nj.UcnwFlightNo,
-                    Notes = nj.UcnwNotes
                 })
                 .FirstOrDefault(),
 
@@ -132,10 +129,7 @@ public static class JobMappings
                 j.Agent != null
                     ? new AgentViewModel
                     {
-                        AgentId = j.Agent.UcagId,
                         AgentName = j.Agent.UcagName,
-                        AgentRanking =
-                            j.Agent.Ranking != null ? j.Agent.Ranking.AgentRankingName : null
                     }
                     : null,
         };
@@ -149,9 +143,7 @@ public static class JobMappings
             Time = j.UcjbTime,
             RootParentId = j.RootParentId,
             Date = j.UcjbDate.ToString("MM/dd/yyyy"),
-            Booked = DateTime.Parse(
-                j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime.Value.ToString("HH:mm:ss")
-            ),
+            Booked = CombineDateAndTime(j.UcjbDate, j.UcjbTime),
             DispatchTime = j.UcjbDispTime,
             CreatedDate = j.UcjbDate,
             ScheduleName = j.ScheduleName,
@@ -291,16 +283,25 @@ public static class JobMappings
             Truck = j.Truck,
             DgClass = j.Dgclass,
             DgDocumentation = j.Dgdocument,
-            ParcelDimensions = j
-                .TucJobItems.Select(p => new ParcelDimensions
-                {
-                    ItemId = p.ItemId,
-                    ItemName = p.Notes,
-                    Height = p.Height,
-                    Depth = p.Depth,
-                    Length = p.Length
-                })
-                .ToList(),
+            ParcelDimensions = j.ParentId == null
+                ? j.TucJobItems.Select(p => new ParcelDimensions
+                    {
+                        ItemId = p.ItemId,
+                        ItemName = p.Notes,
+                        Height = p.Height,
+                        Depth = p.Depth,
+                        Length = p.Length
+                    })
+                    .ToList()
+                : j.Parent.TucJobItems.Select(p => new ParcelDimensions
+                    {
+                        ItemId = p.ItemId,
+                        ItemName = p.Notes,
+                        Height = p.Height,
+                        Depth = p.Depth,
+                        Length = p.Length
+                    })
+                    .ToList(),
 
             // Job status and details
             Done = j.UcjbJobDone,
@@ -327,9 +328,9 @@ public static class JobMappings
             // References and amounts
             RefA = j.UcjbClientRefa,
             RefB = j.UcjbClientRefb,
-            Charge = j.ParentId == null ?
-                $"${j.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}" :
-                $"${j.Parent.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}",
+            Charge = j.ParentId == null
+                ? $"${j.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}"
+                : $"${j.Parent.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}",
             OurRef = j.UcjbOurRef,
 
             // Status
@@ -545,14 +546,7 @@ public static class JobMappings
             Time = j.UcbkTime,
             RootParentId = j.RootParentId,
             Date = j.UcbkDate.HasValue ? j.UcbkDate.Value.ToString("MM/dd/yyyy") : null,
-            Booked =
-                j.UcbkDate.HasValue && j.UcbkTime.HasValue
-                    ? DateTime.Parse(
-                        j.UcbkDate.Value.ToString("yyyy-MM-dd")
-                        + " "
-                        + j.UcbkTime.Value.ToString("HH:mm:ss")
-                    )
-                    : DateTime.MinValue,
+            Booked = j.UcbkDate.HasValue ? CombineDateAndTime(j.UcbkDate.Value, j.UcbkTime) : DateTime.MinValue,
             CreatedDate = j.UcbkDate,
             ScheduleName = j.ScheduleName,
 
@@ -666,10 +660,30 @@ public static class JobMappings
                         Text = j.UcbkSizeNavigation.VehicleName
                     }
                     : null,
-            IsArchived = true,
+            IsArchived = false,
             PreBook = true,
             DeliverByTime = j.DeliverByTime,
-            Attention = j.UcbkAttention
+            Attention = j.UcbkAttention,
+
+            ParcelDimensions = j.ParentId == null
+                ? j.TucJobBookingItems.Select(p => new ParcelDimensions
+                    {
+                        ItemId = p.ItemId,
+                        ItemName = p.Notes,
+                        Height = p.Height,
+                        Depth = p.Depth,
+                        Length = p.Length
+                    })
+                    .ToList()
+                : j.BookingParent.TucJobBookingItems.Select(p => new ParcelDimensions
+                    {
+                        ItemId = p.ItemId,
+                        ItemName = p.Notes,
+                        Height = p.Height,
+                        Depth = p.Depth,
+                        Length = p.Length
+                    })
+                    .ToList(),
         };
 
     private static int? CalculateRemainTime(TucJob job, TucJobType jobType)
@@ -687,7 +701,6 @@ public static class JobMappings
             return (int)(economyDeliveryDateTime - now).TotalMinutes;
         }
 
-        // Handle Special Speeds (41,42,43,51,52) with Required Delivery Time
         if (
             job.UcjbSpeed != null
             && SourceArray.Contains(job.UcjbSpeed.Value)
@@ -708,10 +721,8 @@ public static class JobMappings
 
     private static DateTime CombineDateAndTime(DateTime date, DateTime? time)
     {
-        if (time is null)
-            return date;
+        if (time is null) return date;
 
-        // Else combine the dates
         return new DateTime(
             date.Year,
             date.Month,

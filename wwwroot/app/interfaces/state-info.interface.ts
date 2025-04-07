@@ -1,4 +1,4 @@
-export default interface StateInfo {
+export default interface IStateInfo {
     abbreviation: string;
     name: string;
 }

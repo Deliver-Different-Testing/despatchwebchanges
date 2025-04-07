@@ -1,4 +1,4 @@
-import {DispatchJob, IJob} from "../../../interfaces/job.interface";
+import {IDispatchJob, IJob} from "../../../interfaces/job.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import AdditionalServicesDialogController from "./additional-services-dialog.controller";
 
@@ -21,18 +21,18 @@ class AdditionalServicesDialogService implements  angular.IServiceProvider {
         return this;
     }
 
-    async showAdditionalServicesDialog($event: MouseEvent, job: IJob | DispatchJob) {
+    async showAdditionalServicesDialog($event: MouseEvent, job: IJob | IDispatchJob) {
         try {
             console.log("Additional Services Dialog opened!");
             console.log("Job: ", job);
 
-            if (!job.clientID || !job.speedID) {
-                console.log("Speed is: ", job.speedID, "Client is: ", job.clientID, "")
+            if (!job.clientId || !job.speedId) {
+                console.log("Speed is: ", job.speedId, "Client is: ", job.clientId, "")
                 console.log("No client or speed selected!");
                 return;
             }
 
-            const isClientItemsAvailable = await this.DispatchData.hasClientItemsAvailable(job.clientID, job.speedID);
+            const isClientItemsAvailable = await this.DispatchData.hasClientItemsAvailable(job.clientId, job.speedId);
 
             if (!isClientItemsAvailable) {
                 await this.$mdDialog.show(this.$mdDialog

@@ -1,7 +1,7 @@
 import NoteService from "../../../services/notes.service";
 import NoteManagementDialogService from "../../dialogs/note-management-dialog/note-management.dialog.service";
 import ToastrService from "../../../services/toastr.service";
-import {TucNoteViewModel} from "../../../interfaces/job.interface";
+import {IJobNote} from "../../../interfaces/job.interface";
 import "./sticky-notes.styles.less";
 import BaseController from "../../base-controller";
 import {IComponentOptions, IOnChangesObject, material} from "angular";
@@ -9,7 +9,7 @@ import {IComponentOptions, IOnChangesObject, material} from "angular";
 class StickyNoteController extends BaseController {
     private previousJobId?: number;
 
-    notes?: TucNoteViewModel[] = [];
+    notes?: IJobNote[] = [];
     jobId?: number;
     loading: boolean = false;
 
@@ -38,15 +38,12 @@ class StickyNoteController extends BaseController {
     $onChanges(changes: IOnChangesObject) {
         console.log('StickyNoteController - $onChanges called with changes:', JSON.stringify(changes));
 
-        // Check if jobId is present and is a valid change
         if (changes['jobId']) {
             const currentValue = changes['jobId'].currentValue;
 
-            // Make sure we have a valid number for jobId
             if (currentValue && typeof currentValue === 'number') {
                 console.log('StickyNoteController - Valid jobId detected:', currentValue);
 
-                // Only reload if the ID actually changed
                 if (this.previousJobId !== currentValue) {
                     this.previousJobId = currentValue;
                     this.loadNotes();
@@ -78,7 +75,7 @@ class StickyNoteController extends BaseController {
     }
 
     async addNote($event: MouseEvent) {
-        const emptyNote: TucNoteViewModel = {
+        const emptyNote: IJobNote = {
             noteId: 0,
             noteTypeId: 0,
             noteText: '',
@@ -98,23 +95,21 @@ class StickyNoteController extends BaseController {
         }
     }
 
-    async editNote($event: MouseEvent, note: TucNoteViewModel) {
+    async editNote($event: MouseEvent, note: IJobNote) {
         try {
             await this.noteManagementDialogService.openNoteDialog($event, note, ContactID);
             this.loadNotes();
             this.toastrService.showSuccessToast('Note updated successfully');
         } catch (error) {
-            // Dialog was likely canceled
-            console.log('Note dialog was canceled or had an error');
+            if(!error) return;
+            console.error("An error occured!")
         }
     }
 
-    async deleteNote($event: MouseEvent, note: TucNoteViewModel) {
-        // Prevent event propagation to avoid triggering edit
+    async deleteNote($event: MouseEvent, note: IJobNote) {
         $event.stopPropagation();
 
         try {
-            // Show confirmation dialog
             const confirmed = await this.$mdDialog.show(
                 this.$mdDialog.confirm()
                     .title('Delete Note')

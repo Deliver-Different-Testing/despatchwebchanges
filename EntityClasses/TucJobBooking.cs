@@ -343,9 +343,13 @@ public partial class TucJobBooking
 
     public decimal? CourierFuel { get; set; }
 
+    public virtual TucJobBooking BookingParent { get; set; }
+
     public virtual TucCourier Courier { get; set; }
 
     public virtual TblAirport FromAirport { get; set; }
+
+    public virtual ICollection<TucJobBooking> InverseBookingParent { get; set; } = new List<TucJobBooking>();
 
     public virtual TblJobRelationshipType JobRelationshipType { get; set; }
 

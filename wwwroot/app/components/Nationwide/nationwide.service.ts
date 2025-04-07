@@ -1,4 +1,4 @@
-import {DispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
+import {IDispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
 import {AgentViewModel, FlightViewModel} from "./nationwide.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import moment from "moment";
@@ -36,7 +36,7 @@ class NationwideService implements angular.IServiceProvider {
         selectedClients: string[],
         internal: boolean,
         selectedAreas: DfrntPageViewModel[]
-    ): Promise<DispatchJob[]> {
+    ): Promise<IDispatchJob[]> {
         const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
 
         const defaultParams = {
@@ -62,7 +62,7 @@ class NationwideService implements angular.IServiceProvider {
         }
 
         const url = `nationwidejob/${endpoint}?${params.toString()}`;
-        const response = await this.$http.get<DispatchJob[]>(url);
+        const response = await this.$http.get<IDispatchJob[]>(url);
         return response.data;
     }
 

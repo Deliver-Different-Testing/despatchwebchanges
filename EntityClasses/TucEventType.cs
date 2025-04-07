@@ -14,4 +14,6 @@ public partial class TucEventType
     public string UcetName { get; set; }
 
     public virtual ICollection<TucEventTypeEventTypeGroup> TucEventTypeEventTypeGroups { get; set; } = new List<TucEventTypeEventTypeGroup>();
+
+    public virtual ICollection<TucEvent> TucEvents { get; set; } = new List<TucEvent>();
 }

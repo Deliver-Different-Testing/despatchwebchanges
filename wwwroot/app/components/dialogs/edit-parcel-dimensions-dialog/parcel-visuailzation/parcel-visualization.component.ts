@@ -1,4 +1,4 @@
-import BaseController from "../../base-controller";
+import BaseController from "../../../base-controller";
 
 class ParcelVisualizationController extends BaseController {
     baseSize: number;
@@ -18,7 +18,7 @@ class ParcelVisualizationController extends BaseController {
         this.maxDimension = 200;
     }
 
-    $onChanges(changes: any): void {
+    $onChanges(): void {
         this.updateDimensions();
     }
 

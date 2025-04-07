@@ -1,5 +1,40 @@
 <div class="droppable-box nationwide-job-list">
     <md-table-container>
+        <div class="md-table-footer-content">
+            <div flex></div>
+
+            <div class="status-summary" ng-if="ctrl.jobList && ctrl.jobList.length > 0">
+                <md-button class="md-button status-chip total" ng-click="ctrl.filterPodJobsByStatus('group-all')">
+                    <md-icon md-font-set="material-symbols-outlined">article</md-icon>
+                    <span>{{ctrl.jobList.length || 0}}</span>
+                    <span class="status-label">Total</span>
+                </md-button>
+                <md-button class="md-button status-chip pending" ng-click="ctrl.filterPodJobsByStatus('group-pending')">
+                    <md-icon md-font-set="material-symbols-outlined">hourglass_top</md-icon>
+                    <span>{{ctrl.getPodJobsStatusCount('pending')}}</span>
+                    <span class="status-label">Pending</span>
+                </md-button>
+                <md-button class="md-button status-chip in-transit" ng-click="ctrl.filterPodJobsByStatus('group-in-transit')">
+                    <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
+                    <span>{{ctrl.getPodJobsStatusCount('in-transit')}}</span>
+                    <span class="status-label">In&nbsp;Transit</span>
+                </md-button>
+                <md-button class="md-button status-chip completed" ng-click="ctrl.filterPodJobsByStatus('group-completed')">
+                    <md-icon md-font-set="material-symbols-outlined">done_all</md-icon>
+                    <span>{{ctrl.getPodJobsStatusCount('completed')}}</span>
+                    <span class="status-label">Completed</span>
+                </md-button>
+                <md-button class="md-button status-chip problem" ng-click="ctrl.filterPodJobsByStatus('group-problem')"
+                           ng-if="ctrl.getPodJobsStatusCount('problem') > 0">
+                    <md-icon md-font-set="material-symbols-outlined">error_outline</md-icon>
+                    <span>{{ctrl.getPodJobsStatusCount('problem')}}</span>
+                    <span class="status-label">Problem</span>
+                </md-button>
+            </div>
+        </div>
+
+        <md-divider></md-divider>
+
         <table md-dense md-progress="ctrl.podListPromise" md-table ng-model="ctrl.selectedPodJob">
             <thead md-head md-on-reorder="ctrl.onReorderPodList" md-order="ctrl.jobPodFilters.order">
             <tr md-row>
