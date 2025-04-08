@@ -44,7 +44,7 @@
 
     <!-- State 6: No Flights Available -->
     <no-data
-            ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading && !ctrl.flightError && ctrl.flightOptions.length === 0"
+            ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading && ctrl.flightOptions.length === 0"
             title="No Flights Available"
             message="{{ctrl.flightMessage || 'No flights available for the specified criteria.'}}"
             icon="flight_takeoff"
@@ -54,7 +54,7 @@
     </no-data>
 
     <!-- State 7: Flight List -->
-    <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading && !ctrl.flightError && ctrl.flightOptions.length > 0">
+    <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading && ctrl.flightOptions.length > 0">
         <md-table-container>
             <table md-dense md-progress="ctrl.flightListPromise" md-table ng-model="ctrl.selectedFlight">
                 <thead md-head md-order="ctrl.flightTableQuery.order">
@@ -154,7 +154,7 @@
 
     <!-- State 6: No Agents Available -->
     <no-data
-            ng-if="ctrl.currentJob && !ctrl.currentJob.assignedAgent && ctrl.isDeliveryJob() && !ctrl.agentsLoading && !ctrl.agentError && ctrl.agentOptions.length === 0"
+            ng-if="ctrl.currentJob && !ctrl.currentJob.assignedAgent && ctrl.isDeliveryJob() && !ctrl.agentsLoading && ctrl.agentOptions.length === 0"
             title="No Agents Available"
             message="{{ctrl.agentMessage || 'No agents available for the specified criteria.'}}"
             icon="engineering"
@@ -162,7 +162,7 @@
     </no-data>
 
     <!-- State 7: Agent List -->
-    <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedAgent && ctrl.isDeliveryJob() && !ctrl.agentsLoading && !ctrl.agentError && ctrl.agentOptions.length > 0">
+    <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedAgent && ctrl.isDeliveryJob() && !ctrl.agentsLoading && ctrl.agentOptions.length > 0">
         <md-table-container>
             <table md-dense md-progress="ctrl.agentListPromise" md-table ng-model="ctrl.selectedAgent">
                 <thead md-head md-order="ctrl.agentTableQuery.order">

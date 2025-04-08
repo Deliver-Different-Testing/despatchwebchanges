@@ -17,11 +17,6 @@ class NationwideService implements angular.IServiceProvider {
         return this;
     }
 
-    async addFollowupEvent(jobNo: string, clientId: number, contact: string, staffId: number, courierId: number, jobId: number, jobType: number, despatcherName: string) {
-        await this.$http.post(`courier/AddFollowupEvent?jobNo=${jobNo}&clientId=${clientId}&contact=${contact}&staffId=${staffId}&courierId=${courierId}&jobId=${jobId}&jobType=${jobType
-        }&despatcherName=${despatcherName}`, null);
-    }
-
     async addEvent(staffId: number, jobId: number, despatcherName: string, notes: string, eventType: number) {
         await this.$http.post(`job/addEvent?staffId=${staffId}&jobId=${jobId}&despatcherName=${encodeURIComponent(despatcherName)}&notes=${encodeURIComponent(notes)}&eventType=${eventType}`, null);
     }
@@ -72,10 +67,6 @@ class NationwideService implements angular.IServiceProvider {
 
     async getNationwideJobsPOD(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]) {
         return await this.getNationwideJobs("nationwideJobListPOD", queryParams, selectedClients, internal, selectedAreas);
-    }
-
-    async getNationwideJobsBookDelivery(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]) {
-        return await this.getNationwideJobs("nationwideJobListBookDelivery", queryParams, selectedClients, internal, selectedAreas);
     }
 
     async getNationwideJobsReprice(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]) {

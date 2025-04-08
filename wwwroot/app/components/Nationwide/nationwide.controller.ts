@@ -18,8 +18,8 @@ import moment from "moment";
 import AddEventDialogService from "../dialogs/add-event-dialog/add-event-dialog.service";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 import JobContextMenuService from "../../services/job-context-menu.service";
+import {ExtendedTask, TaskTableFiltersRequest, TaskViewModel} from "../task-dashboard/task-dashboard.interfaces";
 import {JobStatus} from "../../enums/job-status.enum";
-import {ExtendedTask, TaskTableFiltersRequest, TaskViewModel} from '../task-dashboard/task-dashboard.interfaces';
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -56,7 +56,6 @@ class NationwideControl extends BaseController {
     jobListPOD?: IDispatchJob[] = [];
     jobListReprice?: IDispatchJob[] = [];
     STATUS_TO_LIST_MAP: StatusToListMap;
-    courier: { gpsCourier?: any } = {};
     totalJobCount: number = 0;
     totalPodCount: number = 0;
     totalRepriceCount: number = 0;
@@ -79,10 +78,6 @@ class NationwideControl extends BaseController {
     repriceListLoading: boolean = false;
     selected: any;
     jobFilters: JobQueryParams = {
-        order: 'time',
-        orderDirection: 'asc',
-    };
-    jobDeliveryFilters: JobQueryParams = {
         order: 'time',
         orderDirection: 'asc',
     };
@@ -134,7 +129,7 @@ class NationwideControl extends BaseController {
         private DispatchData: DispatchCoreService,
         private $mdSidenav: angular.material.ISidenavService,
         private APP_CONFIG: AppConfig,
-        private dispatchJobService: DispatchExecutorService,
+        private DispatchJobService: DispatchExecutorService,
         private jobFileUploadDialogService: JobFileUploadDialogService,
         private addEventDialogService: AddEventDialogService,
         private additionalServicesDialogService: AdditionalServicesDialogService,
@@ -423,7 +418,6 @@ class NationwideControl extends BaseController {
             }
         }
     }
-
 
     getJobStyle(assigned: boolean = false) {
         const normal = {
@@ -827,103 +821,6 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async orderList(list: string, prop: string) {
-        console.log(`[orderList] Called with list: ${list}, property: ${prop}`);
-
-        // Determine if we should use server-side ordering
-        const serverOrder = list === "jobList";
-        console.log(`[orderList] Server-side ordering: ${serverOrder}`);
-
-        // Check if this is a new sort property or we're toggling an existing one
-        if (this.sort[list] !== prop && this.sort[list] !== "d-" + prop) {
-            // New sort property
-            console.log(`[orderList] New sort property. Previous: ${this.sort[list]}, New: ${prop}`);
-            this.sort[list] = prop;
-
-            // Update the appropriate filter object's orderDirection
-            if (list === "jobList") {
-                if (this.jobFilters) {
-                    this.jobFilters.orderDirection = "asc";
-                }
-            } else if (list === "jobListPOD") {
-                if (this.jobPodFilters) {
-                    this.jobPodFilters.orderDirection = "asc";
-                }
-            } else if (list === "jobListDelivery") {
-                if (this.jobDeliveryFilters) {
-                    this.jobDeliveryFilters.orderDirection = "asc";
-                }
-            } else if (list === "jobListReprice") {
-                if (this.jobDeliveryFilters) {
-                    if (this.jobRepriceFilters) {
-                        this.jobRepriceFilters.orderDirection = "asc";
-                    }
-                }
-            }
-        } else {
-            // Toggle sort direction for same property
-            const isCurrentlyAscending = this.sort[list] === prop;
-            console.log(`[orderList] Toggling sort direction for property: ${prop}, currently ascending: ${isCurrentlyAscending}`);
-
-            if (isCurrentlyAscending) {
-                this.sort[list] = "d-" + prop;
-
-                if (list === "jobList") {
-                    if (this.jobFilters) {
-                        this.jobFilters.orderDirection = "desc";
-                    }
-                } else if (list === "jobListPOD") {
-                    if (this.jobPodFilters) {
-                        this.jobPodFilters.orderDirection = "desc";
-                    }
-                } else if (list === "jobListDelivery") {
-                    if (this.jobDeliveryFilters) {
-                        this.jobDeliveryFilters.orderDirection = "desc";
-                    }
-                } else if (list === "jobListReprice") {
-                    if (this.jobRepriceFilters) {
-                        this.jobRepriceFilters.orderDirection = "desc";
-                    }
-                }
-            } else {
-                this.sort[list] = prop;
-
-                if (list === "jobList") {
-                    if (this.jobFilters) {
-                        this.jobFilters.orderDirection = "asc";
-                    }
-                } else if (list === "jobListPOD") {
-                    if (this.jobPodFilters) {
-                        this.jobPodFilters.orderDirection = "asc";
-                    }
-                } else if (list === "jobListDelivery") {
-                    if (this.jobDeliveryFilters) {
-                        this.jobDeliveryFilters.orderDirection = "asc";
-                    }
-                } else if (list === "jobListReprice") {
-                    if (this.jobRepriceFilters) {
-                        this.jobRepriceFilters.orderDirection = "asc";
-                    }
-                }
-            }
-        }
-
-        // Handle server-side sorting
-        if (serverOrder) {
-            console.log(`[orderList] Applying server-side sorting with order: ${prop}`);
-            await this.getJobList(JobDataType.NEW);
-            return;
-        }
-
-        // Client-side sorting for other lists
-        const direction = this.sort[list].startsWith('d-') ? '-' : '';
-        console.log(`[orderList] Client-side sorting with direction: ${direction}, property: ${prop}`);
-        (this.$scope as { [key: string]: any })[list] = this.$filter("orderBy")((this.$scope as {
-            [key: string]: any
-        })[list], direction + prop);
-        console.log(`[orderList] Sorting complete for ${list}`);
-    }
-
     async unlockJob(job: IDispatchJob) {
         await this.jdSvc.unlockJob(job);
     }
@@ -934,11 +831,8 @@ class NationwideControl extends BaseController {
 
     async restoreJob(job: IDispatchJob) {
         try {
-            const result = await this.dispatchJobService.restoreJob(job);
-            this.courier = {gpsCourier: result.gpsCourier};
-
+            const result = await this.DispatchJobService.restoreJob(job);
             await this.getData();
-
         } catch (error) {
             console.error('Error restoring job:', error);
         }
@@ -1219,7 +1113,6 @@ class NationwideControl extends BaseController {
 
             await this.nationwideService.assignAgentToJob(job.id, agent.agentId);
 
-            // Refresh both new jobs and POD lists since flight assignment can affect both
             await this.getJobList([JobDataType.NEW, JobDataType.POD]);
 
             const successMessage = (`Successfully assigned agent ${agent.agentName} to job ${job.jobNo}`)
@@ -1229,371 +1122,6 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async getJobList(dataTypes: JobDataType | JobDataType[] = JobDataType.ALL) {
-        const selectedClients = this.pickService.clients.map((a: { id: number }) => a.id);
-        const types = Array.isArray(dataTypes) ? dataTypes : [dataTypes];
-        const requestedTypes = types.includes(JobDataType.ALL) ?
-            Object.values(JobDataType).filter(type => type !== JobDataType.ALL) :
-            types;
-
-        try {
-            // Set loading states
-            const loadingStates: Record<JobDataType.NEW | JobDataType.POD | JobDataType.REPRICE, () => void> = {
-                [JobDataType.NEW]: () => {
-                    this.jobListLoading = true;
-
-                    this.jobListPromise = this.nationwideService.getNationwideJobsNew(
-                        this.jobFilters || {},
-                        selectedClients,
-                        ClientInternal,
-                        this.selectedViews
-                    );
-                },
-                [JobDataType.POD]: () => {
-                    this.podListLoading = true;
-
-                    this.podListPromise = this.nationwideService.getNationwideJobsPOD(
-                        this.jobPodFilters || {},
-                        selectedClients,
-                        ClientInternal,
-                        this.selectedViews
-                    );
-                },
-                [JobDataType.REPRICE]: () => {
-                    this.repriceListLoading = true;
-
-                    this.repriceListPromise = this.nationwideService.getNationwideJobsReprice(
-                        this.jobRepriceFilters || {},
-                        selectedClients,
-                        ClientInternal,
-                        this.selectedViews
-                    );
-                }
-            };
-            requestedTypes.forEach((type) => {
-                if (type === JobDataType.NEW || type === JobDataType.POD || type === JobDataType.REPRICE) {
-                    loadingStates[type]?.();
-                }
-            });
-
-            // Define fetch functions for each type
-            const fetchMap: Record<Exclude<JobDataType, JobDataType.ALL>, {
-                fetch: () => Promise<IDispatchJob[]>;
-                updateScope: (result: IDispatchJob[]) => void;
-            }> = {
-                [JobDataType.NEW]: {
-                    fetch: () => {
-                        if (!this.jobListPromise) {
-                            throw new Error('Job list promise not initialized');
-                        }
-                        return this.jobListPromise;
-                    },
-                    updateScope: (result: IDispatchJob[]) => {
-                        this.jobList = result || [];
-                        this.totalJobCount = result.length | 0;
-
-                        this.jobListLoading = false;
-                    }
-                },
-                [JobDataType.POD]: {
-                    fetch: () => {
-                        if (!this.podListPromise) {
-                            throw new Error('Job pod list promise not initialized');
-                        }
-                        return this.podListPromise;
-                    },
-                    updateScope: (result: IDispatchJob[]) => {
-                        this.jobListPOD = result || [];
-                        this.totalPodCount = result.length | 0;
-
-                        this.podListLoading = false;
-                    }
-                },
-                [JobDataType.REPRICE]: {
-                    fetch: () => {
-                        if (!this.repriceListPromise) {
-                            throw new Error('Job reprice list promise not initialized');
-                        }
-                        return this.repriceListPromise;
-                    },
-                    updateScope: (result: IDispatchJob[]) => {
-                        this.jobListReprice = result || [];
-                        this.totalRepriceCount = result.length;
-
-                        this.repriceListLoading = false;
-                    }
-                }
-            };
-
-            // Execute promises and store results with their types
-            const promises = requestedTypes.map(async (type: JobDataType) => {
-                if (type !== JobDataType.ALL) {
-                    return {type, data: await fetchMap[type].fetch()};
-                }
-                return null;
-            }).filter((promise): promise is Promise<{
-                type: Exclude<JobDataType, JobDataType.ALL>;
-                data: IDispatchJob[]
-            }> => promise !== null);
-
-            const results = await Promise.all(promises);
-
-            results.forEach(({type, data}) => {
-                fetchMap[type].updateScope(data);
-            });
-
-            if (requestedTypes.includes(JobDataType.NEW)) {
-                await this.loadTasks();
-            }
-        } catch (error) {
-            console.error("Error fetching job data:", error);
-
-            // Reset loading states
-            requestedTypes.forEach(type => {
-                switch (type) {
-                    case JobDataType.NEW:
-                        this.jobListLoading = false;
-                        break;
-
-                    case JobDataType.POD:
-                        this.podListLoading = false;
-                        break;
-                    case JobDataType.REPRICE:
-                        this.repriceListLoading = false;
-                        break;
-                }
-            });
-        }
-    }
-
-    async openFileAttachmentDialog($event: MouseEvent, job: IDispatchJob) {
-        await this.jobFileUploadDialogService.openJobFileUploadDialog($event, job);
-    }
-
-    async showAdditionalServicesMenu($event: MouseEvent, job: IDispatchJob) {
-        console.log('[NationwideControl] Showing additional services menu');
-        console.log('[NationwideControl] Job:', job);
-        await this.additionalServicesDialogService.showAdditionalServicesDialog($event, job);
-    }
-
-    async getClientContacts() {
-        try {
-            this.pickClients = await this.DispatchData.getClientContacts(ContactID);
-        } catch (error) {
-            console.error("Error fetching client contacts:", error);
-        }
-    }
-
-    async getData() {
-        // Clear data once
-        this.jobList = [];
-        this.jobListPOD = [];
-        this.currentJob = undefined;
-
-        try {
-            await this.getJobList(JobDataType.ALL);
-        } catch (error) {
-            console.error("Error in getData:", error);
-        }
-    }
-
-    jobClass(job: IDispatchJob): string {
-        if (!job || !job.followupTime) {
-            return '';
-        }
-
-        // Add time-based status class
-        const followupTime = moment(job.followupTime);
-        const now = moment();
-        const diffMinutes = followupTime.diff(now, 'minutes');
-
-        if (diffMinutes > 30) {
-            return 'status-future';
-        } else if (diffMinutes < -30) {
-            return 'status-past';
-        } else {
-            return 'status-current';
-        }
-    }
-
-    async showJobContextMenu($event: MouseEvent, job: IDispatchJob) {
-        try {
-            await this.selectJob(job);
-
-            const contextMenuElement = angular.element('context-menu');
-            const contextMenuCtrl = contextMenuElement.controller('contextMenu');
-
-            if (contextMenuCtrl) {
-                contextMenuCtrl.showJobContextMenu($event, job);
-            } else {
-                console.error('Context menu controller not found');
-            }
-        } catch (error) {
-            console.error('Error selecting job:', error);
-        }
-    }
-
-    private _handleError(error: any) {
-        if (!error) {
-            console.log('User canceled!');
-        } else {
-            console.error('Error assigning flight to job:', error);
-        }
-    }
-
-    async createEvent($event: MouseEvent, job: IDispatchJob) {
-        await this.addEventDialogService.openAddEventDialog($event, job);
-    }
-
-    getContextMenuOptions(job: IDispatchJob) {
-        if (!job) return [];
-
-        const callbacks = {
-            onRefresh: () => this.getData(),
-            onSplitJob: (params: { job: IDispatchJob }) => this.handleSplitJob(params.job),
-            onRefreshCourierJobs: (params: { courierId: number }) => {
-                console.log('Refreshing courier jobs:', params.courierId);
-            }
-        };
-
-        return this.jobContextMenuService.getMenuOptions(job, callbacks);
-    }
-
-    async handleSplitJob(job: IDispatchJob) {
-        if (!job) return;
-
-        try {
-            console.log("Split job requested for:", job.id);
-
-            await this.getData();
-        } catch (error: any) {
-            console.error("Error handling split job:", error);
-        }
-    }
-
-// Tasks
-    getSupportsFilterLabel(): string {
-        switch (this.tasksFilter) {
-            case 'all':
-                return 'All Supports';
-            case 'mine':
-                return 'My Supports';
-            case 'unassigned':
-                return 'Unassigned';
-            case 'newest':
-                return 'Newest First';
-            case 'oldest':
-                return 'Oldest First';
-            default:
-                return 'All Supports';
-        }
-    }
-
-    private _buildFilterRequest(filterType: string): TaskTableFiltersRequest {
-        const filterRequest: TaskTableFiltersRequest = {};
-
-        switch (filterType) {
-            case 'mine':
-                filterRequest.staffId = ContactID;
-                filterRequest.orderBy = 'assignedTo';
-                filterRequest.orderDirection = 'desc';
-                break;
-            case 'unassigned':
-                filterRequest.staffId = -1;
-                filterRequest.orderBy = 'assignedTo';
-                filterRequest.orderDirection = 'desc';
-                break;
-            case 'newest':
-                filterRequest.orderBy = 'created';
-                filterRequest.orderDirection = 'desc';
-                break;
-            case 'oldest':
-                filterRequest.orderBy = 'created';
-                filterRequest.orderDirection = 'asc';
-                break;
-            default:
-                filterRequest.orderBy = 'created';
-                filterRequest.orderDirection = 'desc';
-                break;
-        }
-
-        return filterRequest;
-    }
-
-    async loadTasks(filterType: string = this.tasksFilter){
-        try {
-            this.tasksLoading = true;
-
-            // Build filter request based on filter type
-            const filterRequest = this._buildFilterRequest(filterType);
-
-            try {
-                this.tasks = await this.DispatchData.getAllTasks(filterRequest);
-                this.filteredTasks = this.tasks;
-            } catch (serviceError) {
-                console.error("Service error getting tasks:", serviceError);
-                this.toastrService.showErrorToast("Failed to load tasks");
-
-                this.tasks = [];
-                this.filteredTasks = [];
-            }
-        } catch (error) {
-            console.error("Error loading tasks:", error);
-            this.toastrService.showErrorToast("Error loading tasks");
-        } finally {
-            this.tasksLoading = false;
-        }
-    }
-
-    async getTasks(){
-        await this.loadTasks();
-    }
-
-    async filterTasks(filterType: string): Promise<void> {
-        this.tasksFilter = filterType;
-        await this.loadTasks(filterType);
-    }
-
-    async selectTaskJobDetail(task: TaskViewModel) {
-        console.log('[selectSupportJobDetail] Starting with task:', {
-            jobId: task.jobId,
-            jobNumber: task.jobNumber,
-            taskId: task.id
-        });
-
-        this.currentSupport = task;
-
-        try {
-            const noJobMessage = "The attached job is not available on this page"
-            if (!task.jobId) {
-                this.toastrService.showWarningToast(noJobMessage);
-                console.warn('[selectSupportJobDetail] No jobId provided, returning early');
-                return;
-            }
-
-            console.log('[selectSupportJobDetail] Fetching job details for jobId:', task.jobId);
-
-            const attachedJob = this.jobList?.find((job) => job.id === task.jobId) ||
-                this.jobListPOD?.find((job) => job.id === task.jobId) ||
-                this.jobListReprice?.find((job) => job.id === task.jobId);
-
-            if (!attachedJob) {
-                this.toastrService.showWarningToast(noJobMessage);
-                return;
-            }
-
-            await this.selectJob(attachedJob);
-            console.log('[selectSupportJobDetail] Job selected successfully');
-
-            this.currentSelection = ` for Job ${attachedJob.jobNo}`;
-        }
-        catch(error) {
-            this.toastrService.showErrorToast("Error loading job information");
-            console.error('[selectSupportJobDetail] Error loading job information', error);
-        }
-    }
-
-    // Status Group Filters
     async filterNewJobsByStatus(statusGroup: string) {
         console.log('filterNewJobsByStatus called with:', statusGroup);
         this.jobFilters.order = statusGroup;
@@ -1679,6 +1207,7 @@ class NationwideControl extends BaseController {
             ]
         };
 
+        // Check if we're looking for a status group
         if (statusGroups[normalizedStatusType]) {
             return jobList.filter(job =>
                 job.statusId !== undefined &&
@@ -1686,6 +1215,7 @@ class NationwideControl extends BaseController {
             ).length;
         }
 
+        // Otherwise, check for a specific status name match
         return jobList.filter(job => {
             if (!job.statusName) {
                 return false;
@@ -1694,12 +1224,388 @@ class NationwideControl extends BaseController {
             return normalizedJobStatus === normalizedStatusType;
         }).length;
     }
+
+
+    async getJobList(dataTypes: JobDataType | JobDataType[] = JobDataType.ALL) {
+        const selectedClients = this.pickService.clients.map((a: { id: number }) => a.id);
+        const types = Array.isArray(dataTypes) ? dataTypes : [dataTypes];
+        const requestedTypes = types.includes(JobDataType.ALL) ?
+            Object.values(JobDataType).filter(type => type !== JobDataType.ALL) :
+            types;
+
+        try {
+            const loadingStates: Record<JobDataType.NEW | JobDataType.POD | JobDataType.REPRICE, () => void> = {
+                [JobDataType.NEW]: () => {
+                    this.jobListLoading = true;
+
+                    this.jobListPromise = this.nationwideService.getNationwideJobsNew(
+                        this.jobFilters || {},
+                        selectedClients,
+                        ClientInternal,
+                        this.selectedViews
+                    );
+                },
+                [JobDataType.POD]: () => {
+                    this.podListLoading = true;
+
+                    this.podListPromise = this.nationwideService.getNationwideJobsPOD(
+                        this.jobPodFilters || {},
+                        selectedClients,
+                        ClientInternal,
+                        this.selectedViews
+                    );
+                },
+                [JobDataType.REPRICE]: () => {
+                    this.repriceListLoading = true;
+
+                    this.repriceListPromise = this.nationwideService.getNationwideJobsReprice(
+                        this.jobRepriceFilters || {},
+                        selectedClients,
+                        ClientInternal,
+                        this.selectedViews
+                    );
+                }
+            };
+            requestedTypes.forEach((type) => {
+                if (type === JobDataType.NEW || type === JobDataType.POD || type === JobDataType.REPRICE) {
+                    loadingStates[type]?.();
+                }
+            });
+
+            const fetchMap: Record<Exclude<JobDataType, JobDataType.ALL>, {
+                fetch: () => Promise<IDispatchJob[]>;
+                updateScope: (result: IDispatchJob[]) => void;
+            }> = {
+                [JobDataType.NEW]: {
+                    fetch: () => {
+                        if (!this.jobListPromise) {
+                            throw new Error('Job list promise not initialized');
+                        }
+                        return this.jobListPromise;
+                    },
+                    updateScope: (result: IDispatchJob[]) => {
+                        this.jobList = result || [];
+                        this.totalJobCount = result.length | 0;
+
+                        this.jobListLoading = false;
+                    }
+                },
+                [JobDataType.POD]: {
+                    fetch: () => {
+                        if (!this.podListPromise) {
+                            throw new Error('Job pod list promise not initialized');
+                        }
+                        return this.podListPromise;
+                    },
+                    updateScope: (result: IDispatchJob[]) => {
+                        this.jobListPOD = result || [];
+                        this.totalPodCount = result.length | 0;
+
+                        this.podListLoading = false;
+                    }
+                },
+                [JobDataType.REPRICE]: {
+                    fetch: () => {
+                        if (!this.repriceListPromise) {
+                            throw new Error('Job reprice list promise not initialized');
+                        }
+                        return this.repriceListPromise;
+                    },
+                    updateScope: (result: IDispatchJob[]) => {
+                        this.jobListReprice = result || [];
+                        this.totalRepriceCount = result.length;
+
+                        this.repriceListLoading = false;
+                    }
+                }
+            };
+
+            const promises = requestedTypes.map(async (type: JobDataType) => {
+                if (type !== JobDataType.ALL) {
+                    return {type, data: await fetchMap[type].fetch()};
+                }
+                return null;
+            }).filter((promise): promise is Promise<{
+                type: Exclude<JobDataType, JobDataType.ALL>;
+                data: IDispatchJob[]
+            }> => promise !== null);
+
+            const tasksPromise = this.loadTasks();
+            const results = await Promise.all(promises);
+
+            results.forEach(({type, data}) => {
+                fetchMap[type].updateScope(data);
+            });
+
+            await tasksPromise;
+        } catch (error) {
+            console.error("Error fetching job data:", error);
+
+            // Reset loading states
+            requestedTypes.forEach(type => {
+                switch (type) {
+                    case JobDataType.NEW:
+                        this.jobListLoading = false;
+                        break;
+
+                    case JobDataType.POD:
+                        this.podListLoading = false;
+                        break;
+                    case JobDataType.REPRICE:
+                        this.repriceListLoading = false;
+                        break;
+                }
+            });
+        }
+    }
+
+    async openFileAttachmentDialog($event: MouseEvent, job: IDispatchJob) {
+        await this.jobFileUploadDialogService.openJobFileUploadDialog($event, job);
+    }
+
+    async showAdditionalServicesMenu($event: MouseEvent, job: IDispatchJob) {
+        await this.additionalServicesDialogService.showAdditionalServicesDialog($event, job);
+    }
+
+    async getClientContacts() {
+        try {
+            this.pickClients = await this.DispatchData.getClientContacts(ContactID);
+        } catch (error) {
+            console.error("Error fetching client contacts:", error);
+        }
+    }
+
+    async getData() {
+        // Clear data once
+        this.jobList = [];
+        this.jobListPOD = [];
+        this.currentJob = undefined;
+
+        try {
+            await this.getJobList(JobDataType.ALL);
+        } catch (error) {
+            console.error("Error in getData:", error);
+        }
+    }
+
+    jobClass(job: IDispatchJob): string {
+        if (!job || !job.followupTime) {
+            return '';
+        }
+
+        // Add time-based status class
+        const followupTime = moment(job.followupTime);
+        const now = moment();
+        const diffMinutes = followupTime.diff(now, 'minutes');
+
+        if (diffMinutes > 30) {
+            return 'status-future';
+        } else if (diffMinutes < -30) {
+            return 'status-past';
+        } else {
+            return 'status-current';
+        }
+    }
+
+    async showJobContextMenu($event: MouseEvent, job: IDispatchJob) {
+        try {
+            await this.selectJob(job);
+
+            const contextMenuElement = angular.element('context-menu');
+            const contextMenuCtrl = contextMenuElement.controller('contextMenu');
+
+            if (contextMenuCtrl) {
+                return contextMenuCtrl.showJobContextMenu($event, job);
+            } else {
+                console.error('Context menu controller not found');
+            }
+        } catch (error) {
+            console.error('Error selecting job:', error);
+        }
+    }
+
+    private _handleError(error: any) {
+        if (!error) {
+            console.log('User canceled!');
+        } else {
+            console.error('Error assigning flight to job:', error);
+        }
+    }
+
+    async createEvent($event: MouseEvent, job: IDispatchJob) {
+        await this.addEventDialogService.openAddEventDialog($event, job);
+    }
+
+    getContextMenuOptions(job: IDispatchJob) {
+        if (!job) return [];
+
+        const callbacks = {
+            onRefresh: () => this.getData(),
+            onSplitJob: (params: { job: IDispatchJob }) => this.handleSplitJob(params.job),
+            onRefreshCourierJobs: (params: { courierId: number }) => {
+                console.log('Refreshing courier jobs:', params.courierId);
+            }
+        };
+
+        return this.jobContextMenuService.getMenuOptions(job, callbacks);
+    }
+
+    async handleSplitJob(job: IDispatchJob) {
+        if (!job) return;
+
+        try {
+            console.log("Split job requested for:", job.id);
+
+            await this.getData();
+        } catch (error: any) {
+            console.error("Error handling split job:", error);
+        }
+    }
+
+    // Tasks
+    private _buildFilterRequest(filterType: string): TaskTableFiltersRequest {
+        const filterRequest: TaskTableFiltersRequest = {};
+
+        switch (filterType) {
+            case 'mine':
+                filterRequest.staffId = ContactID;
+                filterRequest.orderBy = 'assignedTo';
+                filterRequest.orderDirection = 'desc';
+                break;
+            case 'unassigned':
+                filterRequest.staffId = -1;
+                filterRequest.orderBy = 'assignedTo';
+                filterRequest.orderDirection = 'desc';
+                break;
+            case 'newest':
+                filterRequest.orderBy = 'created';
+                filterRequest.orderDirection = 'desc';
+                break;
+            case 'oldest':
+                filterRequest.orderBy = 'created';
+                filterRequest.orderDirection = 'asc';
+                break;
+            default:
+                filterRequest.orderBy = 'created';
+                filterRequest.orderDirection = 'desc';
+                break;
+        }
+
+        return filterRequest;
+    }
+
+    getTasksStatusCount(statusType: string): number {
+        if (!this.tasks || !Array.isArray(this.tasks)) {
+            return 0;
+        }
+
+        switch (statusType) {
+            case 'mine':
+                return this.tasks.filter(task => task.assignee.id === ContactID).length;
+            case 'unassigned':
+                return this.tasks.filter(task => !task.assignee.id).length;
+            case 'newest':
+                // For newest/oldest filters, we return the total count since they're
+                // sorting options rather than filtering options
+                return this.tasks.length;
+            case 'oldest':
+                return this.tasks.length;
+            default:
+                return this.tasks.length;
+        }
+    }
+
+    async filterTasksByStatus(statusType: string): Promise<void> {
+        this.tasksFilter = statusType;
+        await this.loadTasks(statusType);
+    }
+
+    async loadTasks(filterType: string = this.tasksFilter) {
+        try {
+            this.tasksLoading = true;
+
+            // Build filter request based on filter type
+            const filterRequest = this._buildFilterRequest(filterType);
+
+            try {
+                this.tasks = await this.DispatchData.getAllTasks(filterRequest);
+                this.filteredTasks = this.tasks;
+
+                // Apply additional client-side filtering if needed
+                if (filterType === 'mine') {
+                    this.filteredTasks = this.tasks.filter(task => task.assignee.id === ContactID);
+                } else if (filterType === 'unassigned') {
+                    this.filteredTasks = this.tasks.filter(task => !task.assignee.id);
+                }
+
+            } catch (serviceError) {
+                console.error("Service error getting tasks:", serviceError);
+                this.toastrService.showErrorToast("Failed to load tasks");
+
+                this.tasks = [];
+                this.filteredTasks = [];
+            }
+
+            this.tasksLoading = false;
+        } catch (error) {
+            console.error("Error loading tasks:", error);
+            this.toastrService.showErrorToast("Error loading tasks");
+            this.tasksLoading = false;
+        }
+    }
+
+    async getTasks(){
+        await this.loadTasks();
+    }
+
+    async filterTasks(filterType: string): Promise<void> {
+        this.tasksFilter = filterType;
+        await this.loadTasks(filterType);
+    }
+
+    async selectTaskJobDetail(task: TaskViewModel) {
+        console.log('[selectSupportJobDetail] Starting with task:', {
+            jobId: task.jobId,
+            jobNumber: task.jobNumber,
+            taskId: task.id
+        });
+
+        this.currentSupport = task;
+
+        try {
+            const noJobMessage = "The attached job is not available on this page"
+            if (!task.jobId) {
+                this.toastrService.showWarningToast(noJobMessage);
+                console.warn('[selectSupportJobDetail] No jobId provided, returning early');
+                return;
+            }
+
+            console.log('[selectSupportJobDetail] Fetching job details for jobId:', task.jobId);
+
+            const attachedJob = this.jobList?.find((job) => job.id === task.jobId) ||
+                this.jobListPOD?.find((job) => job.id === task.jobId) ||
+                this.jobListReprice?.find((job) => job.id === task.jobId);
+
+            if (!attachedJob) {
+                this.toastrService.showWarningToast(noJobMessage);
+                return;
+            }
+
+            await this.selectJob(attachedJob);
+            console.log('[selectSupportJobDetail] Job selected successfully');
+
+            this.currentSelection = ` for Job ${attachedJob.jobNo}`;
+        }
+        catch(error) {
+            this.toastrService.showErrorToast("Error loading job information");
+            console.error('[selectSupportJobDetail] Error loading job information', error);
+        }
+    }
 }
 
 const NationwideComponent: angular.IComponentOptions = {
     template: require('./nationwide.template.html'),
     controller: NationwideControl,
     controllerAs: "ctrl"
-};
-
+}
 export default NationwideComponent;
