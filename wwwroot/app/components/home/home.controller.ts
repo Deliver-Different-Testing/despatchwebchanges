@@ -12,6 +12,7 @@ import {
     IDispatchJob,
     JobQueryParams,
     Suggestion, IJobNote,
+    ILateCallRequest,
 } from "../../interfaces/job.interface";
 import {ActiveCourierViewModel, TruckCourierStatusViewModel} from "../../interfaces/courier.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
@@ -30,6 +31,8 @@ import InterCourierChargeDialogService
     from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
 import {Coordinates} from "../overview/overview.interfaces";
 import JobContextMenuService from "../../services/job-context-menu.service";
+import {LateEventType} from "../../enums/late-event-type.enum";
+import {FirstName, ContactID} from "../../contants";
 
 interface ResendJobsRequest {
     call: string;
@@ -62,7 +65,7 @@ class HomeController extends BaseController {
         'noteService',
         'interCourierChargeDialogService',
         'jobContextMenuService',
-        '$mdSticky'
+        '$mdEditDialog'
     ];
 
     private readonly DOM_SELECTORS = {
@@ -178,7 +181,7 @@ class HomeController extends BaseController {
         private noteService: NoteService,
         private interCourierChargeDialogService: InterCourierChargeDialogService,
         private jobContextMenuService: JobContextMenuService,
-        private $mdSticky: angular.material.IStickyService,
+        private $mdEditDialog: any
     ) {
         super();
 
@@ -487,7 +490,7 @@ class HomeController extends BaseController {
                     await this.getData();
 
                     const job = this.jobList.find((j) => j.id === jobId);
-                    if(!job) return;
+                    if (!job) return;
 
                     return this.selectJob(job);
                 } catch (error) {
@@ -1151,46 +1154,44 @@ class HomeController extends BaseController {
         ($event.target as HTMLInputElement)?.select();
     }
 
-    async lateOperation(minsAway: Date, job: IDispatchJob, obj: any, isPickup: boolean) {
+    async latePickup(minsAway: number, job: IDispatchJob, obj: any): Promise<void> {
+        return await this.handleLateOperation(minsAway, job, obj, LateEventType.Pickup);
+    }
+
+    async lateDelivery(minsAway: number, job: IDispatchJob, obj: any): Promise<void> {
+        return await this.handleLateOperation(minsAway, job, obj, LateEventType.Delivery);
+    }
+
+    private async handleLateOperation(minsAway: number, job: IDispatchJob, obj: any, lateType: LateEventType): Promise<void> {
+        const isPickup = lateType === LateEventType.Pickup;
         const operationType = isPickup ? "pickup" : "delivery";
         const currentValue = isPickup ? job.lp : job.ld;
-        const lateType = isPickup ? 1 : 2;
 
         console.log(`Current ${operationType} = ${currentValue}`);
         console.log(`Param minsAway = ${minsAway}`);
         console.log(obj);
 
         try {
-            await this.lateCall(minsAway.getTime(), lateType, job, true);
+            const lateCallRequest: ILateCallRequest = {
+                jobId: job.id,
+                lateType,
+                lateTime: minsAway,
+                calculationRequired: true,
+                staffId: ContactID,
+                despatcherName: FirstName
+            };
+
+            await this.DispatchData.lateCall(lateCallRequest);
+
+            await this.getData();
+            this.toastrService.showSuccessToast("Late call applied successfully");
+
             console.log(`Late ${operationType} call completed successfully`);
         } catch (error) {
             console.error(`Error in late ${operationType} call:`, error);
         }
     }
 
-    latePickup(minsAway: Date, job: IDispatchJob, obj: any) {
-        return this.lateOperation(minsAway, job, obj, true);
-    }
-
-    lateDelivery(minsAway: Date, job: IDispatchJob, obj: any) {
-        return this.lateOperation(minsAway, job, obj, false);
-    }
-
-    async lateCall(lateTime: number, lateType: number, job: IDispatchJob, calc: boolean): Promise<any> {
-        try {
-            if (!job.clientId) return;
-            if (!job.jobType) return;
-            const response = await this.DispatchData.lateCall(lateType, lateTime, job.minutes ?? 0, job.pickupTime ?? 0,
-                job.alertLatePickup ?? 0, job.deliveryTime ?? 0, job.alertLateDelivery ?? 0, job.jobNo, job.clientId, job.contactName,
-                ContactID, job.time ?? new Date(), job.id, job.jobType, job.speed ?? '', (job.notify || job.speed) ?? '', FirstName, calc);
-
-            await this.getData();
-            this.toastrService.showSuccessToast("Late call applied successfully");
-            return response;
-        } catch (error: any) {
-            console.error("Error applying late call:", error);
-        }
-    }
 
     jobClass(job: IDispatchJob): string {
         if (!job) return "";
@@ -1973,8 +1974,7 @@ class HomeController extends BaseController {
             console.log('[selectSupportJobDetail] Job selected successfully');
 
             this.currentSelection = ` for Job ${attachedJob.jobNo}`;
-        }
-        catch(error) {
+        } catch (error) {
             this.toastrService.showErrorToast("Error loading job information");
             console.error('[selectSupportJobDetail] Error loading job information', error);
         }
@@ -2340,7 +2340,7 @@ class HomeController extends BaseController {
 
     async setSplitJobMeetingPoint($event: MouseEvent, currentJob: IDispatchJob) {
         try {
-            if(!currentJob.deliveryAddress) return;
+            if (!currentJob.deliveryAddress) return;
 
             const newAddress = await this.editAddressDialogService.openEditAddressDialog($event, currentJob.deliveryAddress)
             if (!newAddress) return;
@@ -2431,7 +2431,7 @@ class HomeController extends BaseController {
         await this.getData();
 
         const job = this.jobList.find(j => j.id === newJobId);
-        if(!job) return;
+        if (!job) return;
 
         await this.selectJob(job);
         this.toastrService.showSuccessToast("New Job Created Successfully");
@@ -2646,7 +2646,7 @@ class HomeController extends BaseController {
     }
 
     async getSupports(): Promise<void> {
-            await this.loadSupports();
+        await this.loadSupports();
     }
 
     async filterSupports(filterType: string): Promise<void> {
@@ -2681,8 +2681,44 @@ class HomeController extends BaseController {
         }
     }
 
-    makeHeaderSticky(headerElement: JQLite) {
-        this.$mdSticky(this.$scope, headerElement)
+    openEditDialog($event: MouseEvent, job: IDispatchJob, field: 'lp' | 'ld', fieldName: string) {
+        $event.stopPropagation(); // Prevent row selection
+
+        const isLatePickup = field === 'lp';
+
+        try {
+            this.$mdEditDialog.small({
+                modelValue: job[field] || '',
+                placeholder: fieldName,
+                save: (input: any) => {
+                    const minutes = input.$modelValue;
+                    if (!minutes) return;
+
+                    try {
+                        // Convert to a Date object if it's a string
+                        const minAway: number = typeof minutes === 'string' ? parseInt(minutes) : minutes;
+
+                        // Call the appropriate late call function
+                        if (isLatePickup) {
+                            return this.latePickup(minAway, job, null);
+                        } else {
+                            return this.lateDelivery(minAway, job, null);
+                        }
+                    } catch (error) {
+                        console.error(`Error saving ${fieldName}:`, error);
+                        this.toastrService.showErrorToast(`Failed to save ${fieldName}`);
+                    }
+                },
+                targetEvent: $event,
+                validators: {
+                    'pattern': '[0-9]*'
+                },
+                type: 'number'
+            });
+        } catch (error) {
+            console.error('Error opening edit dialog:', error);
+            this.toastrService.showErrorToast(`Failed to open ${fieldName} dialog`);
+        }
     }
 }
 

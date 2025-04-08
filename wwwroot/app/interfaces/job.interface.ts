@@ -1,4 +1,5 @@
 import {JobStatus} from "../enums/job-status.enum";
+import {LateEventType} from "../enums/late-event-type.enum";
 
 export interface IJob {
     id: number;
@@ -471,4 +472,13 @@ export interface IClearListEnvelope {
     maximumLatitude: number;
     minimumLongitude: number;
     maximumLongitude: number;
+}
+
+export interface ILateCallRequest {
+    jobId: number;
+    lateType: LateEventType;
+    lateTime: number;
+    staffId: number;
+    despatcherName: string;
+    calculationRequired: boolean;
 }

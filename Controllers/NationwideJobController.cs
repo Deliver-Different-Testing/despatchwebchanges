@@ -109,18 +109,7 @@ public class NationwideJobController(
     {
         try
         {
-            var (toAirport, fromAirport) = await repository.GetAirportCodesByJobIdAsync(jobId);
-            var activeAirlines = await repository.GetActiveAirlineCodesAsync();
-
-            if (string.IsNullOrEmpty(toAirport) || string.IsNullOrEmpty(fromAirport))
-                return BadRequest("Invalid airport ID(s) provided.");
-
-            var flightOptions =
-                await flightService.GetFlightsAsync(jobId, fromAirport, toAirport, departureDate, activeAirlines);
-
-            if(flightOptions == null || flightOptions.Count == 0)
-                return Ok(new List<ScheduledFlight>());
-
+            var flightOptions = await flightService.GetFlightsAsync(jobId: jobId, departureDateTime: departureDate);
             return Json(flightOptions);
         }
         catch (Exception e)

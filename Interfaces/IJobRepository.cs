@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 
@@ -98,14 +99,14 @@ public interface IJobRepository
         int size
     );
 
-    Task ResetLateEvent(int jobId, int eventType);
+    Task ResetLateEvent(int jobId, int lateEventType);
 
     Task LatePickup(
         int jobId,
         string bookedSpeed,
         string notifiedSpeed,
         int late,
-        string despatcher,
+        int staffId,
         bool calculationRequired
     );
 
@@ -114,7 +115,7 @@ public interface IJobRepository
         string bookedSpeed,
         string notifiedSpeed,
         int late,
-        string despatcher,
+        int staffId,
         bool calculationRequired
     );
 
@@ -410,4 +411,5 @@ public interface IJobRepository
     Task<List<Suggestion>> GetNoteTypesAsync();
     Task<List<TucNoteViewModel>> GetNotesByJobId(int jobId);
     Task<bool> IsJobParentAsync(int jobId);
+    Task<JobLateCallDto> GetJobForLateCallAsync(int jobId);
 }

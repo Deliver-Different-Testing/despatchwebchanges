@@ -64,7 +64,7 @@
         <md-divider></md-divider>
 
         <table md-dense md-progress="ctrl.jobListPromise" md-table ng-model="ctrl.selectedJob">
-            <thead md-head md-on-reorder="ctrl.getJobList" md-order="ctrl.queryParams.order" md-sticky-init="ctrl.makeHeaderSticky($element)">
+            <thead md-head md-on-reorder="ctrl.getJobList" md-order="ctrl.queryParams.order">
             <tr md-row>
                 <th md-column md-order-by="time">Time</th>
                 <th md-column md-order-by="speed">Speed</th>
@@ -149,30 +149,13 @@
                     </md-chip>
                 </td>
 
-                <td md-cell>
-                    <input class="lateCallField no-spinners"
-                           inputmode="numeric"
-                           ng-focus="ctrl.selectAllContent($event)"
-                           ng-keydown="$event.keyCode === 13 && ctrl.latePickup(job.lp, job, this)"
-                           ng-model="job.lp"
-                           placeholder="LP"
-                           ng-mouseup="$event.preventDefault();"
-                           oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                           pattern="[0-9]*"
-                           type="text"/>
+                <td md-cell class="late-call-cell" ng-click="ctrl.openEditDialog($event, job, 'lp', 'Late Pickup')" title="Click to edit Late Pickup">
+                    {{job.lp ? job.lp : 'LP'}}
                 </td>
-                <td md-cell>
-                    <input class="lateCallField no-spinners"
-                           ng-focus="ctrl.selectAllContent($event)"
-                           inputmode="numeric"
-                           pattern="[0-9]*"
-                           ng-model="job.ld"
-                           ng-keydown="$event.keyCode === 13 && ctrl.lateDelivery(job.ld, job, this)"
-                           oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                           ng-mouseup="$event.preventDefault();"
-                           placeholder="LD"
-                           type="text"/>
+                <td md-cell class="late-call-cell" ng-click="ctrl.openEditDialog($event, job, 'ld', 'Late Delivery')" title="Click to edit Late Delivery">
+                    {{job.ld ? job.ld : 'LD'}}
                 </td>
+
                 <td class="actions" md-cell>
                     <span class="action-icon" ng-click="job.courier == null || ctrl.restoreJob(job);">
                         <md-icon md-font-set="material-symbols-outlined" ng-if="job.courier !== null">undo</md-icon>
