@@ -353,6 +353,7 @@
     <TypeScriptCompile Include="wwwroot\app\enums\event-type.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\job-note-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\job-status.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\late-event-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
     <TypeScriptCompile Include="wwwroot\app\bindAllMethods.ts" />
     <TypeScriptCompile Include="wwwroot\app\index.ts" />

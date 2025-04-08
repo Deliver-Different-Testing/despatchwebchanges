@@ -13,6 +13,7 @@ using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using DespatchWebContextExtensions;
@@ -1174,13 +1175,21 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         return (decimal)outputMaxParam.Value;
     }
 
-    public async Task ResetLateEvent(int jobId, int eventType)
+    public async Task ResetLateEvent(int jobId, int lateEventType)
     {
-        await Context
-            .LoadStoredProc("DESWEB_qdfLateCall_Reset")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@Type", eventType)
-            .ExecuteStoredNonQueryAsync();
+        var job = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
+
+        switch (lateEventType)
+        {
+            case (int)LateEventType.Pickup:
+                job.LatePickupNotificationHasBeenSent = false;
+                break;
+            case (int)LateEventType.Delivery:
+                job.LateDeliveryNotificationHasBeenSent = false;
+                break;
+        }
+
+        await Context.SaveChangesAsync();
     }
 
     public async Task LatePickup(
@@ -1188,19 +1197,49 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         string bookedSpeed,
         string notifiedSpeed,
         int late,
-        string despatcher,
+        int staffId,
         bool calculationRequired
     )
     {
-        await Context
-            .LoadStoredProc("DESWEB_stpUpdateJobPickupLateCall")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@BookedSpeed", bookedSpeed)
-            .WithSqlParam("@NotifiedSpeed", notifiedSpeed)
-            .WithSqlParam("@Late", late)
-            .WithSqlParam("@Despatcher", despatcher)
-            .WithSqlParam("@CalculationRequired", calculationRequired)
-            .ExecuteStoredNonQueryAsync();
+        var time = await Context.TucJobTypes
+            .Where(jt => jt.ShortName == bookedSpeed || jt.ShortName == notifiedSpeed)
+            .MaxAsync(jt => jt.PickupTime);
+
+        // Get job information
+        var job = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
+        ArgumentNullException.ThrowIfNull(job);
+
+            if(!job.UcjbTime.HasValue) return;
+
+            var jobDateTime = job.UcjbDate.Add(job.UcjbTime.Value.TimeOfDay);
+            var windowValue = job.UcjbLatePick ?? time;
+
+            if(!windowValue.HasValue) return;
+
+            var dueMins = (jobDateTime.AddMinutes((double)windowValue) - DateTime.Now).TotalMinutes;
+            var latePick = job.UcjbLatePick;
+
+            // Perform calculation if required
+            if (calculationRequired)
+            {
+                var pickupEtaValue = late;
+                late = (int)(pickupEtaValue - (int)dueMins + windowValue);
+
+                // Return if latePick is already equal to late
+                if (latePick.GetValueOrDefault(0) == late) return;
+            }
+
+            // Format pickup time
+            var minsOver = late - time;
+
+            await SaveNoteAsync(jobId: jobId, noteText: $"Late Pickup: {minsOver} mins over ETA", staffId: staffId);
+
+            // Update job
+        job.UcjbStatus = (int)JobStatus.LatePickup;
+        job.UcjbLatePick = late;
+        job.LatePickupNotificationHasBeenSent = false;
+
+        await Context.SaveChangesAsync();
     }
 
     public async Task LateDelivery(
@@ -1208,19 +1247,51 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         string bookedSpeed,
         string notifiedSpeed,
         int late,
-        string despatcher,
+        int staffId,
         bool calculationRequired
     )
     {
-        await Context
-            .LoadStoredProc("DESWEB_stpUpdateJobDeliveryLateCall")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@BookedSpeed", bookedSpeed)
-            .WithSqlParam("@NotifiedSpeed", notifiedSpeed)
-            .WithSqlParam("@Late", late)
-            .WithSqlParam("@Despatcher", despatcher)
-            .WithSqlParam("@CalculationRequired", calculationRequired)
-            .ExecuteStoredNonQueryAsync();
+        // Get the maximum delivery time for the specified speeds
+        var time = await Context.TucJobTypes
+            .Where(predicate: jt => jt.ShortName == bookedSpeed || jt.ShortName == notifiedSpeed)
+            .MaxAsync(selector: jt => jt.DeliveryTime);
+
+        // Get job information
+        var job = Context.TucJobs.FirstOrDefault(predicate: j => j.UcjbId == jobId);
+        ArgumentNullException.ThrowIfNull(argument: job);
+
+        if(!job.UcjbTime.HasValue) return;
+
+        // Calculate DueMins, LateDel, and Window
+        var jobDateTime = job.UcjbDate.Add(value: job.UcjbTime.Value.TimeOfDay);
+        var windowValue = job.UcjbLateDel ?? time;
+
+        if(!windowValue.HasValue) return;
+
+        var dueMins = (jobDateTime.AddMinutes(value: (double)windowValue) - DateTime.Now).TotalMinutes;
+        var lateDel = job.UcjbLateDel;
+
+        // Perform calculation if required
+        if (calculationRequired)
+        {
+            var deliveryEtaValue = late;
+            late = (int)(deliveryEtaValue - (int)dueMins + windowValue);
+
+            // Return if lateDel is already equal to late
+            if (lateDel.GetValueOrDefault(defaultValue: 0) == late) return;
+        }
+
+        // Format delivery time
+        var minsOver = late - time;
+
+       await SaveNoteAsync(jobId: jobId, noteText: $"Late Delivery: {minsOver} mins over ETA", staffId: staffId);
+
+        // Update job
+        job.UcjbStatus = (int)JobStatus.LateDelivery;
+        job.UcjbLateDel = late;
+        job.LateDeliveryNotificationHasBeenSent = false;
+
+        await Context.SaveChangesAsync();
     }
 
     public async Task RestoreSplitJobs(List<int> jobIds)
@@ -3298,5 +3369,15 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         );
 
         return jobNumberOutput.Value;
+    }
+
+    public async Task<JobLateCallDto> GetJobForLateCallAsync(int jobId)
+    {
+        var job = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(JobMappings.JobLateCallMapping)
+            .FirstOrDefaultAsync();
+
+        return job;
     }
 }

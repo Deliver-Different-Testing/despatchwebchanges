@@ -4,6 +4,7 @@ using System.Linq.Expressions;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Dto;
 using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Helpers;
@@ -683,7 +684,23 @@ public static class JobMappings
                         Depth = p.Depth,
                         Length = p.Length
                     })
-                    .ToList(),
+                    .ToList()
+        };
+
+    public static readonly Expression<Func<TucJob, JobLateCallDto>> JobLateCallMapping =
+        j => new JobLateCallDto
+        {
+            Id = j.UcjbId,
+            ClientId = j.UcjbClientId ?? 0,
+            MinutesRemaining = CalculateRemainTime(j, j.UcjbSpeedNavigation) ?? 0,
+            PickupTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.PickupTime ?? 0 : 0,
+            DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime ?? 0 : 0,
+            AlertLatePickup = j.UcjbClient.AlertLatePickUp,
+            AlertLateDelivery = j.UcjbClient.AlertLateDelivery,
+            JobTime = CombineDateAndTime(j.UcjbDate, j.UcjbTime),
+            BookedSpeed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : string.Empty,
+            NotifiedSpeed = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName :
+                j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : string.Empty
         };
 
     private static int? CalculateRemainTime(TucJob job, TucJobType jobType)

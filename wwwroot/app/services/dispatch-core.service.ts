@@ -7,6 +7,7 @@ import {
     ParcelDimensions, PriceBreakdown, SuburbLookup,
     Suggestion,
     ClearListViewModel, IDispatchJob, IClearListEnvelope,
+    ILateCallRequest,
 } from "../interfaces/job.interface";
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {DateField, JobField} from "../interfaces/job-field.types";
@@ -309,47 +310,15 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async lateCall(lateType: number, lateTime: number, minutes: number, pickupTime: number, alertLatePickup: number,
-                   deliveryTime: number, alertLateDelivery: number, jobNo: string, clientId: number, contact: string, staffId: number,
-                   jobTime: Date, jobId: number, jobType: number, bookedSpeed: string, notifiedSpeed: string,
-                   despatcherName: string, calculationRequired: boolean) {
+    async lateCall(lateCallRequest: ILateCallRequest) {
         const url = "job/LateCall";
-        const data = {
-            lateType,
-            lateTime,
-            minutes,
-            pickupTime,
-            alertLatePickup,
-            deliveryTime,
-            alertLateDelivery,
-            jobNo,
-            clientId,
-            contact,
-            staffId,
-            jobTime,
-            jobId,
-            jobType,
-            bookedSpeed,
-            notifiedSpeed,
-            despatcherName,
-            calculationRequired
-        };
 
         try {
-            const response = await this.$http.post(url, data, {headers: {'Content-Type': "application/json"}});
-            return response.data;
+            await this.$http.post(url, lateCallRequest, {headers: {'Content-Type': "application/json"}});
         } catch (error) {
             console.error("Error in lateCall:", error);
             throw error;
         }
-    }
-
-
-    async rateTruckJob(clientId: number, fromId: number, toId: number, weight: number, size: number, speed: number, qty: number, bookedDate: Date, pickUp: number, dropOff: number, privateRes: boolean, oversizeItems: number, overWeightItems: number, dGClass: number, truckStartTime: Date, truckHours: number) {
-        const response = await this.$http.get(`job/RateTruckJob?clientId=${clientId}&fromId=${fromId}&toId=${toId}&weight=${weight}&size=${size}&speed=${speed}&qty=${qty}&bookedDate=${bookedDate
-        }&pickup=${pickUp}&dropOff=${dropOff}&privateRes=${privateRes}&oversizeItems=${oversizeItems}&overWeightItems=${overWeightItems}&dgClass=${dGClass}&truckStartTime=${truckStartTime
-        }&truckHours=${truckHours}`);
-        return response.data;
     }
 
     async rateJob(clientId: number, fromId: number, toId: number, speed: number, pedal: boolean, van: boolean, returnJob: boolean, weight: number, size: number, includeFuelSurcharge: boolean, direct: boolean, acceptedJobTypeId: number, ourRef: string, refA: string, refB: string, quantity: number, booked: Date) {

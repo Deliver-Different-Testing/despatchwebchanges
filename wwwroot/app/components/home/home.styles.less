@@ -255,4 +255,37 @@
     margin-left: auto;
     font-size: 18px !important;
   }
+
+  .late-call-cell {
+    padding: 4px 8px !important;
+    height: 80% !important;
+    width: 80% !important;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.03);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    text-align: center !important;
+    min-width: 40px;
+    align-items: center;
+    justify-content: center;
+    .no-select();
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.08);
+    }
+  }
+
+  // Edit dialog customizations
+  .md-editdialog-small {
+    min-width: 100px !important;
+
+    md-input-container {
+      margin: 0;
+      width: 100%;
+    }
+
+    input {
+      text-align: center;
+    }
+  }
 }
