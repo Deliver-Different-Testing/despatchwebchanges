@@ -1833,8 +1833,10 @@ body > .angular-bootstrap-contextmenu.dropdown {
 .md-table-footer {
   background-color: @background-color;
   border-top: 1px solid @border-color;
-  height: 48px;
+  height: auto;
+  min-height: 48px;
   font-size: 13px;
+
 
   &-container {
     padding: 0 8px;
@@ -1844,10 +1846,25 @@ body > .angular-bootstrap-contextmenu.dropdown {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 50px;
-    padding: 0 16px;
+    min-height: 50px;
+    padding: 8px 16px;
     background-color: @background-color;
     border-bottom: 1px solid @border-color;
+    flex-wrap: wrap;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 8px;
+
+      > * {
+        margin-bottom: 8px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
   }
 }
 
@@ -1945,8 +1962,7 @@ body > .angular-bootstrap-contextmenu.dropdown {
   display: flex;
   gap: 8px;
 }
-
-// Status chip common styles
+// Status chip common styles (existing styles)
 .status-chip {
   &.md-button {
     display: flex;
@@ -1999,7 +2015,7 @@ body > .angular-bootstrap-contextmenu.dropdown {
     }
   }
 
-  // Color variations with material design colors
+  // Color variations with material design colors (existing)
   &.total {
     &.md-button {
       background-color: #E0E0E0 !important;
@@ -2054,4 +2070,57 @@ body > .angular-bootstrap-contextmenu.dropdown {
       }
     }
   }
+
+  // Task-specific color variations (new)
+  &.mine {
+    &.md-button {
+      background-color: #e8f0fe !important;
+      color: #174ea6 !important;
+
+      md-icon {
+        color: #1a73e8 !important;
+      }
+    }
+  }
+
+  &.unassigned {
+    &.md-button {
+      background-color: #fff8e1 !important;
+      color: #b06000 !important;
+
+      md-icon {
+        color: #f9ab00 !important;
+      }
+    }
+  }
+
+  &.newest {
+    &.md-button {
+      background-color: #e6f4ea !important;
+      color: #137333 !important;
+
+      md-icon {
+        color: #0f9d58 !important;
+      }
+    }
+  }
+
+  &.oldest {
+    &.md-button {
+      background-color: #f1f3f4 !important;
+      color: #5f6368 !important;
+
+      md-icon {
+        color: #5f6368 !important;
+      }
+    }
+  }
+}
+
+// Tasks Status Summary container
+.tasks-status-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
 }

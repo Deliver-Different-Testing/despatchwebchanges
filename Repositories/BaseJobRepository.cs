@@ -150,168 +150,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         string order,
         string orderDirection,
         bool isUsTenant
-    )
-    {
-        if (string.IsNullOrEmpty(order))
-            return query;
-
-        var isAscending = orderDirection?.Equals("asc", StringComparison.OrdinalIgnoreCase) == true;
-
-        return order.ToLowerInvariant() switch
-        {
-            // Status group ordering cases
-            "group-pending" => query.OrderBy(j =>
-                j.UcjbStatus == (int)JobStatus.New ? 1 :
-                j.UcjbStatus == (int)JobStatus.Dispatched ? 2 :
-                j.UcjbStatus == (int)JobStatus.ReadyForPacking ? 3 :
-                j.UcjbStatus == (int)JobStatus.ReadyToPickup ? 4 :
-                j.UcjbStatus == (int)JobStatus.AwaitingProcessing ? 5 :
-                j.UcjbStatus == (int)JobStatus.Preassigned ? 6 : 99
-            ).ThenBy(j => j.UcjbTime),
-
-            "group-in-transit" => query.OrderBy(j =>
-                j.UcjbStatus == (int)JobStatus.Accepted ? 1 :
-                j.UcjbStatus == (int)JobStatus.PickedUp ? 2 :
-                j.UcjbStatus == (int)JobStatus.InTransit ? 3 :
-                j.UcjbStatus == (int)JobStatus.OutForDelivery ? 4 : 99
-            ).ThenBy(j => j.UcjbTime),
-
-            "group-completed" => query.OrderBy(j =>
-                j.UcjbStatus == (int)JobStatus.Completed ? 1 :
-                j.UcjbStatus == (int)JobStatus.AssumingCompleted ? 2 : 99
-            ).ThenByDescending(j => j.UcjbTime),
-
-            "group-problem" => query.OrderBy(j =>
-                j.UcjbStatus == (int)JobStatus.Rejected ? 1 :
-                j.UcjbStatus == (int)JobStatus.LatePickup ? 2 :
-                j.UcjbStatus == (int)JobStatus.Warning ? 3 :
-                j.UcjbStatus == (int)JobStatus.LateDelivery ? 4 :
-                j.UcjbStatus == (int)JobStatus.AwaitingPod ? 5 :
-                j.UcjbStatus == (int)JobStatus.Undeliverable ? 6 : 99
-            ).ThenBy(j => j.UcjbTime),
-
-            "group-all" => isAscending
-                ? query.OrderBy(j => j.UcjbTime)
-                : query.OrderByDescending(j => j.UcjbTime),
-
-            "remain" => isAscending
-                ? query.OrderBy(j => j.UcjbDispTime).ThenBy(j => j.UcjbTime)
-                : query.OrderByDescending(j => j.UcjbDispTime).ThenByDescending(j => j.UcjbTime),
-
-            "to" => isAscending
-                ? query
-                    .OrderBy(j => isUsTenant ? j.DeliveryAddressLine5 : j.UcjbToNavigation.UcsuName)
-                    .ThenBy(j => j.UcjbTime)
-                    .ThenBy(j => isUsTenant ? j.PickupAddressLine5 : j.UcjbFromNavigation.UcsuName)
-                    .ThenBy(j => j.UcjbCourier.Code)
-                : query
-                    .OrderByDescending(j =>
-                        isUsTenant ? j.DeliveryAddressLine5 : j.UcjbToNavigation.UcsuName
-                    )
-                    .ThenByDescending(j => j.UcjbTime)
-                    .ThenByDescending(j =>
-                        isUsTenant ? j.PickupAddressLine5 : j.UcjbFromNavigation.UcsuName
-                    )
-                    .ThenByDescending(j => j.UcjbCourier.Code),
-
-            "from" => isAscending
-                ? query
-                    .OrderBy(j => isUsTenant ? j.DeliveryAddressLine5 : j.UcjbToNavigation.UcsuName)
-                    .ThenBy(j => j.UcjbTime)
-                    .ThenBy(j => isUsTenant ? j.DeliveryAddressLine5 : j.UcjbToNavigation.UcsuName)
-                    .ThenBy(j => j.UcjbCourier.Code)
-                : query
-                    .OrderByDescending(j =>
-                        isUsTenant ? j.DeliveryAddressLine5 : j.UcjbToNavigation.UcsuName
-                    )
-                    .ThenByDescending(j => j.UcjbTime)
-                    .ThenByDescending(j =>
-                        isUsTenant ? j.DeliveryAddressLine5 : j.UcjbToNavigation.UcsuName
-                    )
-                    .ThenByDescending(j => j.UcjbCourier.Code),
-
-            "client" => isAscending
-                ? query
-                    .OrderBy(j => j.UcjbClientCode)
-                    .ThenBy(j => j.UcjbTime)
-                    .ThenBy(j => j.UcjbCourier.Code)
-                : query
-                    .OrderByDescending(j => j.UcjbClientCode)
-                    .ThenByDescending(j => j.UcjbTime)
-                    .ThenByDescending(j => j.UcjbCourier.Code),
-
-            "jobno" => isAscending
-                ? query
-                    .OrderBy(j => j.UcjbNumber)
-                    .ThenBy(j => j.UcjbTime)
-                    .ThenBy(j => j.UcjbCourier.Code)
-                : query
-                    .OrderByDescending(j => j.UcjbNumber)
-                    .ThenByDescending(j => j.UcjbTime)
-                    .ThenByDescending(j => j.UcjbCourier.Code),
-
-            "status" => isAscending
-                ? query.OrderBy(j => j.UcjbStatus == (int)JobStatus.New ? 1 :
-                    j.UcjbStatus == (int)JobStatus.Preassigned ? 2 :
-                    j.UcjbStatus == (int)JobStatus.Dispatched ? 3 :
-                    j.UcjbStatus == (int)JobStatus.Accepted ? 4 :
-                    j.UcjbStatus == (int)JobStatus.PickedUp ? 5 :
-                    j.UcjbStatus == (int)JobStatus.InTransit ? 6 :
-                    j.UcjbStatus == (int)JobStatus.OutForDelivery ? 7 :
-                    j.UcjbStatus == (int)JobStatus.Rejected ? 8 :
-                    j.UcjbStatus == (int)JobStatus.LatePickup ? 9 :
-                    j.UcjbStatus == (int)JobStatus.LateDelivery ? 10 :
-                    j.UcjbStatus == (int)JobStatus.Warning ? 11 :
-                    j.UcjbStatus == (int)JobStatus.Undeliverable ? 12 :
-                    j.UcjbStatus == (int)JobStatus.Completed ? 13 :
-                    j.UcjbStatus == (int)JobStatus.AwaitingPod ? 14 :
-                    j.UcjbStatus == (int)JobStatus.AssumingCompleted ? 15 : 99)
-                : query.OrderByDescending(j => j.UcjbStatus == (int)JobStatus.New ? 1 :
-                    j.UcjbStatus == (int)JobStatus.Preassigned ? 2 :
-                    j.UcjbStatus == (int)JobStatus.Dispatched ? 3 :
-                    j.UcjbStatus == (int)JobStatus.Accepted ? 4 :
-                    j.UcjbStatus == (int)JobStatus.PickedUp ? 5 :
-                    j.UcjbStatus == (int)JobStatus.InTransit ? 6 :
-                    j.UcjbStatus == (int)JobStatus.OutForDelivery ? 7 :
-                    j.UcjbStatus == (int)JobStatus.Rejected ? 8 :
-                    j.UcjbStatus == (int)JobStatus.LatePickup ? 9 :
-                    j.UcjbStatus == (int)JobStatus.LateDelivery ? 10 :
-                    j.UcjbStatus == (int)JobStatus.Warning ? 11 :
-                    j.UcjbStatus == (int)JobStatus.Undeliverable ? 12 :
-                    j.UcjbStatus == (int)JobStatus.Completed ? 13 :
-                    j.UcjbStatus == (int)JobStatus.AwaitingPod ? 14 :
-                    j.UcjbStatus == (int)JobStatus.AssumingCompleted ? 15 : 99),
-
-            "speed" => isAscending
-                ? query.OrderBy(j => j.UcjbSpeedNavigation.ShortName)
-                : query.OrderByDescending(j => j.UcjbSpeedNavigation.ShortName),
-
-            "notify" => isAscending
-                ? query.OrderBy(j => j.NotifiedJobType.UcjtName)
-                : query.OrderByDescending(j => j.NotifiedJobType.UcjtName),
-
-            "lp" => isAscending
-                ? query.OrderBy(j => j.UcjbLatePick)
-                : query.OrderByDescending(j => j.UcjbLatePick),
-
-            "ld" => isAscending
-                ? query.OrderBy(j => j.UcjbLateDel)
-                : query.OrderByDescending(j => j.UcjbLateDel),
-
-            "time" => isAscending
-                ? query.OrderBy(j => j.UcjbTime)
-                : query.OrderByDescending(j => j.UcjbTime),
-
-            "courier" => isAscending
-                ? query.OrderBy(j => j.UcjbCourier.UccrName)
-                : query.OrderByDescending(j => j.UcjbCourier.UccrName),
-
-            // Default to time
-            _ => isAscending
-                ? query.OrderBy(j => j.UcjbTime)
-                : query.OrderByDescending(j => j.UcjbTime),
-        };
-    }
+    ) => ApplyOrdering(query, order, orderDirection, isUsTenant, false);
 
     private static IQueryable<TucJob> ApplyNationwideSpecificFilters(
         IQueryable<TucJob> query,
@@ -366,99 +205,107 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         IQueryable<TucJob> query,
         string order,
         string orderDirection
-    )
+    ) => ApplyOrdering(query, order, orderDirection, false, true);
+
+    private static IQueryable<TucJob> ApplyStatusGroupOrdering(
+        IQueryable<TucJob> query,
+        string groupType)
+    {
+        return groupType switch
+        {
+            "group-pending" => query.OrderBy(j =>
+                j.UcjbStatus == (int)JobStatus.New ? 1 :
+                j.UcjbStatus == (int)JobStatus.Dispatched ? 2 :
+                j.UcjbStatus == (int)JobStatus.ReadyForPacking ? 3 :
+                j.UcjbStatus == (int)JobStatus.ReadyToPickup ? 4 :
+                j.UcjbStatus == (int)JobStatus.AwaitingProcessing ? 5 :
+                j.UcjbStatus == (int)JobStatus.Preassigned ? 6 : 99
+            ).ThenBy(j => j.UcjbTime),
+
+            "group-in-transit" => query.OrderBy(j =>
+                j.UcjbStatus == (int)JobStatus.Accepted ? 1 :
+                j.UcjbStatus == (int)JobStatus.PickedUp ? 2 :
+                j.UcjbStatus == (int)JobStatus.InTransit ? 3 :
+                j.UcjbStatus == (int)JobStatus.OutForDelivery ? 4 : 99
+            ).ThenBy(j => j.UcjbTime),
+
+            "group-completed" => query.OrderBy(j =>
+                j.UcjbStatus == (int)JobStatus.Completed ? 1 :
+                j.UcjbStatus == (int)JobStatus.AssumingCompleted ? 2 : 99
+            ).ThenByDescending(j => j.UcjbTime),
+
+            "group-problem" => query.OrderBy(j =>
+                j.UcjbStatus == (int)JobStatus.Rejected ? 1 :
+                j.UcjbStatus == (int)JobStatus.LatePickup ? 2 :
+                j.UcjbStatus == (int)JobStatus.Warning ? 3 :
+                j.UcjbStatus == (int)JobStatus.LateDelivery ? 4 :
+                j.UcjbStatus == (int)JobStatus.AwaitingPod ? 5 :
+                j.UcjbStatus == (int)JobStatus.Undeliverable ? 6 : 99
+            ).ThenBy(j => j.UcjbTime),
+
+            _ => query
+        };
+    }
+
+    private static IQueryable<TucJob> ApplyStatusOrdering(
+        IQueryable<TucJob> query,
+        bool isAscending)
+    {
+        var orderedQuery = query.OrderBy(j => j.UcjbStatus == (int)JobStatus.New ? 1 :
+            j.UcjbStatus == (int)JobStatus.Preassigned ? 2 :
+            j.UcjbStatus == (int)JobStatus.Dispatched ? 3 :
+            j.UcjbStatus == (int)JobStatus.Accepted ? 4 :
+            j.UcjbStatus == (int)JobStatus.PickedUp ? 5 :
+            j.UcjbStatus == (int)JobStatus.InTransit ? 6 :
+            j.UcjbStatus == (int)JobStatus.OutForDelivery ? 7 :
+            j.UcjbStatus == (int)JobStatus.Rejected ? 8 :
+            j.UcjbStatus == (int)JobStatus.LatePickup ? 9 :
+            j.UcjbStatus == (int)JobStatus.LateDelivery ? 10 :
+            j.UcjbStatus == (int)JobStatus.Warning ? 11 :
+            j.UcjbStatus == (int)JobStatus.Undeliverable ? 12 :
+            j.UcjbStatus == (int)JobStatus.Completed ? 13 :
+            j.UcjbStatus == (int)JobStatus.AwaitingPod ? 14 :
+            j.UcjbStatus == (int)JobStatus.AssumingCompleted ? 15 : 99);
+
+        return isAscending ? orderedQuery : orderedQuery.Reverse();
+    }
+
+
+    private static IQueryable<TucJob> ApplyOrdering(
+        IQueryable<TucJob> query,
+        string order,
+        string orderDirection,
+        bool isUsTenant = false,
+        bool isNationwide = false)
     {
         if (string.IsNullOrEmpty(order))
             return query;
+
+        // Check if this is a status group ordering
+        if (order.StartsWith("group-"))
+        {
+            return ApplyStatusGroupOrdering(query, order);
+        }
 
         var isAscending = orderDirection?.Equals("asc", StringComparison.OrdinalIgnoreCase) == true;
 
         return order.ToLowerInvariant() switch
         {
-            "courier" => isAscending
-                ? query.OrderBy(j => j.UcjbCourier.Code)
-                    .ThenBy(j => j.UcjbTime)
-                : query
-                    .OrderByDescending(j => j.UcjbCourier.Code)
-                    .ThenByDescending(j => j.UcjbTime),
+            "group-all" => isAscending
+                ? query.OrderBy(j => j.UcjbTime)
+                : query.OrderByDescending(j => j.UcjbTime),
 
-            "remain" => isAscending
-                ? query
-                    .OrderBy(j => j.FollowupTime)
-                    .ThenBy(j => j.UcjbDispTime)
-                    .ThenBy(j => j.UcjbTime)
-                : query
-                    .OrderByDescending(j => j.FollowupTime)
-                    .ThenByDescending(j => j.UcjbDispTime)
-                    .ThenByDescending(j => j.UcjbTime),
+            "remain" => ApplyRemainOrdering(query, isAscending, isNationwide),
 
-            "to" => isAscending
-                ? query
-                    .OrderBy(j => j.UcjbToNavigation.UcsuName)
-                    .ThenBy(j => j.UcjbTime)
-                    .ThenBy(j => j.UcjbFromNavigation.UcsuName)
-                : query
-                    .OrderByDescending(j => j.UcjbToNavigation.UcsuName)
-                    .ThenByDescending(j => j.UcjbTime)
-                    .ThenByDescending(j => j.UcjbFromNavigation.UcsuName),
+            "to" => ApplyToOrdering(query, isAscending, isUsTenant),
 
-            "from" => isAscending
-                ? query
-                    .OrderBy(j => j.UcjbFromNavigation.UcsuName)
-                    .ThenBy(j => j.UcjbToNavigation.UcsuName)
-                    .ThenBy(j => j.UcjbTime)
-                : query
-                    .OrderByDescending(j => j.UcjbFromNavigation.UcsuName)
-                    .ThenByDescending(j => j.UcjbToNavigation.UcsuName)
-                    .ThenByDescending(j => j.UcjbTime),
+            "from" => ApplyFromOrdering(query, isAscending, isUsTenant),
 
-            "client" => isAscending
-                ? query
-                    .OrderBy(j => j.UcjbClient.UcclCode)
-                    .ThenBy(j => j.UcjbTime)
-                : query
-                    .OrderByDescending(j => j.UcjbClient.UcclCode)
-                    .ThenByDescending(j => j.UcjbTime),
+            "client" => ApplyClientOrdering(query, isAscending, isNationwide),
 
-            "jobno" => isAscending
-                ? query
-                    .OrderBy(j => j.UcjbNumber)
-                    .ThenBy(j => j.UcjbTime)
-                : query
-                    .OrderByDescending(j => j.UcjbNumber)
-                    .ThenByDescending(j => j.UcjbTime),
+            "jobno" => ApplyJobNumberOrdering(query, isAscending, isNationwide),
 
-            "status" => isAscending
-                ? query.OrderBy(j => j.UcjbStatus == (int)JobStatus.New ? 1 :
-                    j.UcjbStatus == (int)JobStatus.Preassigned ? 2 :
-                    j.UcjbStatus == (int)JobStatus.Dispatched ? 3 :
-                    j.UcjbStatus == (int)JobStatus.Accepted ? 4 :
-                    j.UcjbStatus == (int)JobStatus.PickedUp ? 5 :
-                    j.UcjbStatus == (int)JobStatus.InTransit ? 6 :
-                    j.UcjbStatus == (int)JobStatus.OutForDelivery ? 7 :
-                    j.UcjbStatus == (int)JobStatus.Rejected ? 8 :
-                    j.UcjbStatus == (int)JobStatus.LatePickup ? 9 :
-                    j.UcjbStatus == (int)JobStatus.LateDelivery ? 10 :
-                    j.UcjbStatus == (int)JobStatus.Warning ? 11 :
-                    j.UcjbStatus == (int)JobStatus.Undeliverable ? 12 :
-                    j.UcjbStatus == (int)JobStatus.Completed ? 13 :
-                    j.UcjbStatus == (int)JobStatus.AwaitingPod ? 14 :
-                    j.UcjbStatus == (int)JobStatus.AssumingCompleted ? 15 : 99)
-                : query.OrderByDescending(j => j.UcjbStatus == (int)JobStatus.New ? 1 :
-                    j.UcjbStatus == (int)JobStatus.Preassigned ? 2 :
-                    j.UcjbStatus == (int)JobStatus.Dispatched ? 3 :
-                    j.UcjbStatus == (int)JobStatus.Accepted ? 4 :
-                    j.UcjbStatus == (int)JobStatus.PickedUp ? 5 :
-                    j.UcjbStatus == (int)JobStatus.InTransit ? 6 :
-                    j.UcjbStatus == (int)JobStatus.OutForDelivery ? 7 :
-                    j.UcjbStatus == (int)JobStatus.Rejected ? 8 :
-                    j.UcjbStatus == (int)JobStatus.LatePickup ? 9 :
-                    j.UcjbStatus == (int)JobStatus.LateDelivery ? 10 :
-                    j.UcjbStatus == (int)JobStatus.Warning ? 11 :
-                    j.UcjbStatus == (int)JobStatus.Undeliverable ? 12 :
-                    j.UcjbStatus == (int)JobStatus.Completed ? 13 :
-                    j.UcjbStatus == (int)JobStatus.AwaitingPod ? 14 :
-                    j.UcjbStatus == (int)JobStatus.AssumingCompleted ? 15 : 99),
+            "status" => ApplyStatusOrdering(query, isAscending),
 
             "speed" => isAscending
                 ? query.OrderBy(j => j.UcjbSpeedNavigation.ShortName)
@@ -476,26 +323,198 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 ? query.OrderBy(j => j.UcjbLateDel)
                 : query.OrderByDescending(j => j.UcjbLateDel),
 
-            "time" => isAscending
-                ? query.OrderBy(j => j.UcjbDate)
-                    .ThenBy(j => j.UcjbTime)
-                : query
-                    .OrderByDescending(j => j.UcjbDate)
-                    .ThenByDescending(j => j.UcjbTime),
+            "time" => ApplyTimeOrdering(query, isAscending, isNationwide),
 
-            "pod" => isAscending
+            "courier" => ApplyCourierOrdering(query, isAscending, isNationwide),
+
+            "pod" when isNationwide => isAscending
                 ? query.OrderBy(j => j.UcjbPodname)
-                : query
-                    .OrderByDescending(j => j.UcjbPodname),
+                : query.OrderByDescending(j => j.UcjbPodname),
 
             // Default to time
-            _ => isAscending
-                ? query.OrderBy(j => j.UcjbDate)
+            _ => ApplyTimeOrdering(query, isAscending, isNationwide)
+        };
+    }
+
+    private static IQueryable<TucJob> ApplyRemainOrdering(
+        IQueryable<TucJob> query,
+        bool isAscending,
+        bool isNationwide)
+    {
+        if (isNationwide)
+        {
+            return isAscending
+                ? query
+                    .OrderBy(j => j.FollowupTime)
+                    .ThenBy(j => j.UcjbDispTime)
+                    .ThenBy(j => j.UcjbTime)
+                : query
+                    .OrderByDescending(j => j.FollowupTime)
+                    .ThenByDescending(j => j.UcjbDispTime)
+                    .ThenByDescending(j => j.UcjbTime);
+        }
+
+        return isAscending
+            ? query.OrderBy(j => j.UcjbDispTime).ThenBy(j => j.UcjbTime)
+            : query.OrderByDescending(j => j.UcjbDispTime).ThenByDescending(j => j.UcjbTime);
+    }
+
+    private static IQueryable<TucJob> ApplyToOrdering(
+        IQueryable<TucJob> query,
+        bool isAscending,
+        bool isUsTenant)
+    {
+        if (isUsTenant)
+        {
+            return isAscending
+                ? query
+                    .OrderBy(j => j.DeliveryAddressLine5)
+                    .ThenBy(j => j.UcjbTime)
+                    .ThenBy(j => j.PickupAddressLine5)
+                    .ThenBy(j => j.UcjbCourier.Code)
+                : query
+                    .OrderByDescending(j => j.DeliveryAddressLine5)
+                    .ThenByDescending(j => j.UcjbTime)
+                    .ThenByDescending(j => j.PickupAddressLine5)
+                    .ThenByDescending(j => j.UcjbCourier.Code);
+        }
+
+        return isAscending
+            ? query
+                .OrderBy(j => j.UcjbToNavigation.UcsuName)
+                .ThenBy(j => j.UcjbTime)
+                .ThenBy(j => j.UcjbFromNavigation.UcsuName)
+            : query
+                .OrderByDescending(j => j.UcjbToNavigation.UcsuName)
+                .ThenByDescending(j => j.UcjbTime)
+                .ThenByDescending(j => j.UcjbFromNavigation.UcsuName);
+    }
+
+    private static IQueryable<TucJob> ApplyFromOrdering(
+        IQueryable<TucJob> query,
+        bool isAscending,
+        bool isUsTenant)
+    {
+        if (isUsTenant)
+        {
+            return isAscending
+                ? query
+                    .OrderBy(j => j.DeliveryAddressLine5)
+                    .ThenBy(j => j.UcjbTime)
+                    .ThenBy(j => j.DeliveryAddressLine5)
+                    .ThenBy(j => j.UcjbCourier.Code)
+                : query
+                    .OrderByDescending(j => j.DeliveryAddressLine5)
+                    .ThenByDescending(j => j.UcjbTime)
+                    .ThenByDescending(j => j.DeliveryAddressLine5)
+                    .ThenByDescending(j => j.UcjbCourier.Code);
+        }
+
+        return isAscending
+            ? query
+                .OrderBy(j => j.UcjbFromNavigation.UcsuName)
+                .ThenBy(j => j.UcjbToNavigation.UcsuName)
+                .ThenBy(j => j.UcjbTime)
+            : query
+                .OrderByDescending(j => j.UcjbFromNavigation.UcsuName)
+                .ThenByDescending(j => j.UcjbToNavigation.UcsuName)
+                .ThenByDescending(j => j.UcjbTime);
+    }
+
+    private static IQueryable<TucJob> ApplyClientOrdering(
+        IQueryable<TucJob> query,
+        bool isAscending,
+        bool isNationwide)
+    {
+        if (isNationwide)
+        {
+            return isAscending
+                ? query
+                    .OrderBy(j => j.UcjbClient.UcclCode)
+                    .ThenBy(j => j.UcjbTime)
+                : query
+                    .OrderByDescending(j => j.UcjbClient.UcclCode)
+                    .ThenByDescending(j => j.UcjbTime);
+        }
+
+        return isAscending
+            ? query
+                .OrderBy(j => j.UcjbClientCode)
+                .ThenBy(j => j.UcjbTime)
+                .ThenBy(j => j.UcjbCourier.Code)
+            : query
+                .OrderByDescending(j => j.UcjbClientCode)
+                .ThenByDescending(j => j.UcjbTime)
+                .ThenByDescending(j => j.UcjbCourier.Code);
+    }
+
+    private static IQueryable<TucJob> ApplyJobNumberOrdering(
+        IQueryable<TucJob> query,
+        bool isAscending,
+        bool isNationwide)
+    {
+        if (isNationwide)
+        {
+            return isAscending
+                ? query
+                    .OrderBy(j => j.UcjbNumber)
+                    .ThenBy(j => j.UcjbTime)
+                : query
+                    .OrderByDescending(j => j.UcjbNumber)
+                    .ThenByDescending(j => j.UcjbTime);
+        }
+
+        return isAscending
+            ? query
+                .OrderBy(j => j.UcjbNumber)
+                .ThenBy(j => j.UcjbTime)
+                .ThenBy(j => j.UcjbCourier.Code)
+            : query
+                .OrderByDescending(j => j.UcjbNumber)
+                .ThenByDescending(j => j.UcjbTime)
+                .ThenByDescending(j => j.UcjbCourier.Code);
+    }
+
+    private static IQueryable<TucJob> ApplyTimeOrdering(
+        IQueryable<TucJob> query,
+        bool isAscending,
+        bool isNationwide)
+    {
+        if (isNationwide)
+        {
+            return isAscending
+                ? query
+                    .OrderBy(j => j.UcjbDate)
                     .ThenBy(j => j.UcjbTime)
                 : query
                     .OrderByDescending(j => j.UcjbDate)
-                    .ThenByDescending(j => j.UcjbTime),
-        };
+                    .ThenByDescending(j => j.UcjbTime);
+        }
+
+        return isAscending
+            ? query.OrderBy(j => j.UcjbTime)
+            : query.OrderByDescending(j => j.UcjbTime);
+    }
+
+    private static IQueryable<TucJob> ApplyCourierOrdering(
+        IQueryable<TucJob> query,
+        bool isAscending,
+        bool isNationwide)
+    {
+        if (isNationwide)
+        {
+            return isAscending
+                ? query
+                    .OrderBy(j => j.UcjbCourier.Code)
+                    .ThenBy(j => j.UcjbTime)
+                : query
+                    .OrderByDescending(j => j.UcjbCourier.Code)
+                    .ThenByDescending(j => j.UcjbTime);
+        }
+
+        return isAscending
+            ? query.OrderBy(j => j.UcjbCourier.UccrName)
+            : query.OrderByDescending(j => j.UcjbCourier.UccrName);
     }
 
 
