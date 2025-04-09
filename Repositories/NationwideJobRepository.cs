@@ -8,6 +8,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.FlightStats;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -28,7 +29,8 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             ArgumentException.ThrowIfNullOrWhiteSpace(flight.FlightNumber);
 
             var job = await Context.TucJobs
-                .Include(j => j.Parent).ThenInclude(tucJob => tucJob.InverseParent)
+                .Include(j => j.Parent)
+                .ThenInclude(tucJob => tucJob.InverseParent)
                 .Where(j => j.UcjbId == jobId)
                 .FirstOrDefaultAsync();
 
@@ -93,7 +95,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
     public async Task<List<AgentViewModel>> GetAgentsAsync(int jobId)
     {
         var job = await GetJobDetailsAsync(jobId);
-        if (job == null) return [];
+        ArgumentNullException.ThrowIfNull(job);
 
         Log.Information(
             "Job details retrieved for {JobId}: AirportId={AirportId}, VehicleSizeId={VehicleSizeId}",
@@ -149,11 +151,11 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             windowPane);
     }
 
-    private async Task<JobDetails> GetJobDetailsAsync(int jobId)
+    private async Task<NationwideJobDetail> GetJobDetailsAsync(int jobId)
     {
         return await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
-            .Select(j => new JobDetails
+            .Select(j => new NationwideJobDetail
             {
                 AirPortId = j.FromAirportId ?? j.ToAirportId,
                 VehicleSizeId = j.UcjbSize,
@@ -183,11 +185,11 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .FirstOrDefaultAsync();
     }
 
-    private async Task<List<AgentInfo>> GetEligibleAgentsAsync(int? airportId, int? vehicleSizeId)
+    private async Task<List<AgentDto>> GetEligibleAgentsAsync(int? airportId, int? vehicleSizeId)
     {
         return await Context.AgentVehicles
             .Where(av => av.AirportId == airportId && av.VehicleSizeId == vehicleSizeId)
-            .Select(a => new AgentInfo
+            .Select(a => new AgentDto
             {
                 AgentId = a.AgentId.Value,
                 AgentName = a.Agent.UcagName,
@@ -197,8 +199,8 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .ToListAsync();
     }
 
-    private async Task<List<AgentViewModel>> ProcessAgentsInParallelAsync(JobDetails job,
-        List<AgentInfo> agents)
+    private async Task<List<AgentViewModel>> ProcessAgentsInParallelAsync(NationwideJobDetail nationwideJob,
+        List<AgentDto> agents)
     {
         const int batchSize = 100;
         var agentResults = new ConcurrentBag<AgentViewModel>();
@@ -210,13 +212,14 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             {
                 foreach (var agent in batch)
                 {
-                    var agentRate = await GetAgentRatesAsync(job, agent, ct);
+                    var agentRate = await GetAgentRatesAsync(nationwideJob, agent, ct);
                     var viewModel = new AgentViewModel
                     {
                         AgentId = agent.AgentId,
                         AgentName = agent.AgentName,
                         AgentRanking = agent.AgentRanking,
-                        AgentRate = agentRate ?? 0
+                        AgentRate = agentRate ?? 0,
+                        AgentNotes = agent.AgentNotes
                     };
 
                     agentResults.Add(viewModel);
@@ -226,26 +229,26 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         return agentResults.ToList();
     }
 
-    private async Task<decimal?> GetAgentRatesAsync(JobDetails job,
-        AgentInfo agent, CancellationToken ct)
+    private async Task<decimal?> GetAgentRatesAsync(NationwideJobDetail nationwideJob,
+        AgentDto agent, CancellationToken ct)
     {
         var rates = await Context.Procedures.DD_stpGetAgentDistanceRateAsync(
-            job.ClientId,
-            int.Parse(job.FromZipCode),
-            job.FromState,
-            int.Parse(job.ToZipCode),
-            job.ToState,
-            job.TotalMiles,
-            job.TotalWeight,
-            job.Quantity, // Added missing parameter
-            job.Cubic, // Added missing parameter
-            job.TotalPallets,
-            job.ExtraStopOffs ? 1 : 0,
-            job.BookTime,
-            job.VehicleSizeId,
-            job.DangerousGoods,
-            job.DryIceWeight,
-            job.WaitTime,
+            nationwideJob.ClientId,
+            int.Parse(nationwideJob.FromZipCode),
+            nationwideJob.FromState,
+            int.Parse(nationwideJob.ToZipCode),
+            nationwideJob.ToState,
+            nationwideJob.TotalMiles,
+            nationwideJob.TotalWeight,
+            nationwideJob.Quantity, // Added missing parameter
+            nationwideJob.Cubic, // Added missing parameter
+            nationwideJob.TotalPallets,
+            nationwideJob.ExtraStopOffs ? 1 : 0,
+            nationwideJob.BookTime,
+            nationwideJob.VehicleSizeId,
+            nationwideJob.DangerousGoods,
+            nationwideJob.DryIceWeight,
+            nationwideJob.WaitTime,
             agent.DistanceRateId,
             cancellationToken: ct
         );
@@ -286,10 +289,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 throw new NullReferenceException(
                     $"Failed to retrieve carrier rates. Return value: {returnValue.Value}");
 
-            if (results != null && results.Count != 0)
-            {
-                return results.Select(r => r.Rate ?? 0).FirstOrDefault();
-            }
+            if (results.Count != 0) return results.Select(r => r.Rate ?? 0).FirstOrDefault();
 
             Log.Warning("No carrier flight rates found for job {JobId}", jobId);
             return 0;
@@ -300,37 +300,4 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             return 0;
         }
     }
-
-    #region Private Classes
-
-    private class JobDetails
-    {
-        public int? AirPortId { get; init; }
-        public int? VehicleSizeId { get; init; }
-        public int? ClientId { get; init; }
-        public string FromState { get; init; }
-        public string ToState { get; init; }
-        public string FromZipCode { get; init; }
-        public string ToZipCode { get; init; }
-        public int? TotalMiles { get; init; }
-        public decimal? TotalWeight { get; init; }
-        public DateTime? BookTime { get; init; }
-        public bool? DangerousGoods { get; init; }
-        public decimal? DryIceWeight { get; init; }
-        public int? Quantity { get; init; }
-        public decimal? Cubic { get; init; }
-        public int? TotalPallets { get; init; }
-        public bool ExtraStopOffs { get; init; }
-        public int? WaitTime { get; init; }
-    }
-
-    private class AgentInfo
-    {
-        public int AgentId { get; init; }
-        public string AgentName { get; init; }
-        public string AgentRanking { get; init; }
-        public int? DistanceRateId { get; init; }
-    }
-
-    #endregion
 }

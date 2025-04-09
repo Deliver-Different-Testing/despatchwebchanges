@@ -6,9 +6,9 @@ import DispatchCoreService from "../../services/dispatch-core.service";
 import {AppPages} from "../../enums/app-pages.enum";
 import {AppConfig} from "../../interfaces/app-config.interface";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
-import {AgentViewModel, IDispatchJob, JobQueryParams} from "../../interfaces/job.interface";
+import {IAgent, IDispatchJob, JobQueryParams} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
-import {FlightViewModel, HereMapsConfig, StatusChangeEvent, StatusToListMap} from "./nationwide.interfaces";
+import {IFlightViewModel, HereMapsConfig, StatusChangeEvent, StatusToListMap} from "./nationwide.interfaces";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
@@ -64,10 +64,10 @@ class NationwideControl extends BaseController {
     mapZoom: number = 4;
     currentSearchTime?: Date = new Date();
     sort: Record<string, string> = {};
-    flightOptions?: FlightViewModel[] = [];
+    flightOptions?: IFlightViewModel[] = [];
     flightMessage?: string;
     flightsLoading?: boolean = false;
-    agentOptions?: AgentViewModel[] = [];
+    agentOptions?: IAgent[] = [];
     agentMessage?: string;
     views: DfrntPageViewModel[] = [];
     selectedViews: DfrntPageViewModel[] = [];
@@ -99,8 +99,8 @@ class NationwideControl extends BaseController {
     mapConfig?: HereMapsConfig;
     currentSelection?: string;
     agentsLoading: boolean = false;
-    agentListPromise?: Promise<{ agents: AgentViewModel[], message: string | null }>;
-    flightListPromise?: Promise<{ flights: FlightViewModel[], message: string | null }>;
+    agentListPromise?: Promise<{ agents: IAgent[], message: string | null }>;
+    flightListPromise?: Promise<{ flights: IFlightViewModel[], message: string | null }>;
     jobListPromise?: Promise<IDispatchJob[]>;
     podListPromise?: Promise<IDispatchJob[]>;
     repriceListPromise?: Promise<IDispatchJob[]>;
@@ -860,7 +860,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async sendQuoteRequest($event: MouseEvent, agent: AgentViewModel, job: IDispatchJob) {
+    async sendQuoteRequest($event: MouseEvent, agent: IAgent, job: IDispatchJob) {
         try {
             // Show confirmation dialog
             const confirm = this.$mdDialog.confirm()
@@ -1061,7 +1061,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async addFlightToJob($event: MouseEvent, flight: FlightViewModel, job: IDispatchJob) {
+    async addFlightToJob($event: MouseEvent, flight: IFlightViewModel, job: IDispatchJob) {
         try {
             const confirm = this.$mdDialog.confirm()
                 .title('Assign Flight')
@@ -1098,7 +1098,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async addAgentToJob($event: MouseEvent, agent: AgentViewModel, job: IDispatchJob) {
+    async addAgentToJob($event: MouseEvent, agent: IAgent, job: IDispatchJob) {
         try {
             const confirm = this.$mdDialog.confirm()
                 .title('Assign Agent')

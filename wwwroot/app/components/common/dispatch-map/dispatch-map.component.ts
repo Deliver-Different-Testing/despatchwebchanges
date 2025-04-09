@@ -230,7 +230,6 @@ class DispatchMapController extends BaseController {
     }
 
     private _setupEventListeners() {
-        // Setup event listeners that were previously in _setupWatchers
         this.refreshCouriersMarkerListener = this.$rootScope.$on('refreshCourierMarkers',
             (_: angular.IAngularEvent, newPositions: any) => {
                 if (newPositions && this.mapInstance) {
@@ -249,9 +248,7 @@ class DispatchMapController extends BaseController {
     }
 
     private _removeEventListeners() {
-        // Clean up event listeners
         if (this.refreshCouriersMarkerListener) {
-            // TypeScript doesn't recognize that the listener has an unbind method
             (this.refreshCouriersMarkerListener as any)();
             this.refreshCouriersMarkerListener = null;
         }
@@ -353,7 +350,6 @@ class DispatchMapController extends BaseController {
 
     private async _updateDisplayedJobs() {
         if (this.isUpdating) {
-            // Only allow multiple updates during initialization
             if (this.markers.length === 0) {
                 console.log('[DispatchMapController] Initial update, allowing even though update is in progress');
             } else {
@@ -371,13 +367,9 @@ class DispatchMapController extends BaseController {
         console.log('[DispatchMapController] Starting to update displayed jobs...');
 
         try {
-            // Count markers added for better debugging
             let markersAdded = 0;
-
-            // Keep track of the current job ID if there is one
             const currentJobId = this.currentJob?.id;
 
-            // Check if we're in courier's job mode
             const isShowingCourierJobs = Boolean(
                 this.currentJob &&
                 (this.currentJob.courier || this.currentJob.assignedCourier) &&
@@ -386,7 +378,6 @@ class DispatchMapController extends BaseController {
 
             console.log(`[DispatchMapController] Map mode: ${isShowingCourierJobs ? 'Courier jobs view' : 'Normal view'}`);
 
-            // First, add the current job if it exists
             if (this.currentJob) {
                 console.log(`[DispatchMapController] Adding current job to map: ${this.currentJob.jobNo}`);
 
@@ -407,17 +398,14 @@ class DispatchMapController extends BaseController {
                 }
             }
 
-            // Then add all other jobs
             if (this.jobs?.length) {
                 console.log(`[DispatchMapController] Adding ${this.jobs.length} jobs to map`);
 
                 this.jobs.forEach((job: IJob) => {
-                    // Skip if this is the current job (already added)
                     if (currentJobId && job.id === currentJobId) {
                         return;
                     }
 
-                    // Only use the alternate colors if we're in courier jobs mode
                     const useAlternateColor = isShowingCourierJobs;
 
                     if (this._isValidCoordinates(
@@ -531,7 +519,6 @@ class DispatchMapController extends BaseController {
             job.deliveryAddress.longitude
         );
 
-        // Choose the appropriate icon based on the same logic as pickup markers
         let icon, hoverIcon;
 
         if (isCurrentJob) {
@@ -619,18 +606,14 @@ class DispatchMapController extends BaseController {
     private _addCourierMarker(courier: AvailableCourierPosition) {
         const position = new this.$window.google.maps.LatLng(courier.latitude, courier.longitude);
 
-        // Choose color based on overdue jobs
         const flagColor = courier.overDueJobs > 0 ? '#E53935' : '#43A047';
 
-        // Create a label with both total and overdue jobs
         const labelText = courier.overDueJobs > 0
             ? `${courier.totalJobs}/${courier.overDueJobs}`
             : `${courier.totalJobs}`;
 
-        // Create custom flag icon with the specific color for this courier
         const courierFlagIcon = this._createFlagMarkerIcon(flagColor);
 
-        // Create the courier marker
         const marker = new this.$window.google.maps.Marker({
             position: position,
             map: this.mapInstance,

@@ -80,10 +80,10 @@
                             </div>
                         </md-list-item>
 
-                        <md-list-item md-ink-ripple ng-click="!this.job.locked && ctrl.editLogTime($event, ctrl.job)">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="Log time">timer</md-icon>
+                        <md-list-item md-ink-ripple ng-click="!this.job.locked && ctrl.editStartTime($event, ctrl.job)">
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="start time">timer</md-icon>
                             <div class="timing-detail">
-                                <span class="timing-label">Log Time:</span>
+                                <span class="timing-label">Start Time:</span>
                                 <span class="timing-value">{{ctrl.job.time ? (ctrl.job.time | date:'h:mm a') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
@@ -95,6 +95,15 @@
                 <!-- Middle Column -->
                 <div flex="33" flex-xs="100" class="timing-column">
                     <md-list class="timing-list">
+                        <md-list-item md-ink-ripple ng-click="!this.job.locked && ctrl.editDeliverBy($event, ctrl.job)">
+                            <md-icon md-font-set="material-symbols-outlined" aria-label="delivery by time">alarm
+                            </md-icon>
+                            <div class="timing-detail">
+                                <span class="timing-label">Deliver By:</span>
+                                <span class="timing-value">{{ctrl.job.deliverByTime ? (ctrl.job.deliverByTime | date:'MM/dd h:mm a') : 'N/A'}}</span>
+                            </div>
+                        </md-list-item>
+
                         <md-list-item md-ink-ripple
                                       ng-click="!this.job.locked && ctrl.editPuDate($event, ctrl.job)">
                             <md-icon md-font-set="material-symbols-outlined" aria-label="Pickup time">schedule
@@ -114,7 +123,14 @@
                                 <span class="timing-value">{{ctrl.job.dispatchTime ? (ctrl.job.dispatchTime | date:'MM/dd h:mm a') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
+                    </md-list>
+                </div>
 
+                <md-divider vertical></md-divider>
+
+                <!-- Right Column -->
+                <div flex="33" flex-xs="100" class="timing-column">
+                    <md-list class="timing-list">
                         <md-list-item md-ink-ripple
                                       ng-click="!ctrl.job.locked && ctrl.editPodName($event, ctrl.job)">
                             <md-icon md-font-set="material-symbols-outlined" aria-label="POD name">verified_user
@@ -124,14 +140,7 @@
                                 <span class="timing-value">{{ctrl.job.podName || 'N/A'}}</span>
                             </div>
                         </md-list-item>
-                    </md-list>
-                </div>
 
-                <md-divider vertical></md-divider>
-
-                <!-- Right Column -->
-                <div flex="33" flex-xs="100" class="timing-column">
-                    <md-list class="timing-list">
                         <md-list-item md-ink-ripple
                                       ng-click="!this.job.locked && ctrl.editCompletedTime($event, ctrl.job)">
                             <md-icon md-font-set="material-symbols-outlined" aria-label="POD time">verified</md-icon>
@@ -150,15 +159,6 @@
                                 <span class="timing-value">{{ctrl.job.followupTime ? (ctrl.job.followupTime | date:'MM/dd h:mm a') : 'N/A'}}</span>
                             </div>
                         </md-list-item>
-
-                        <md-list-item md-ink-ripple ng-click="!this.job.locked && ctrl.editDeliverBy($event, ctrl.job)">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="delivery by time">alarm
-                            </md-icon>
-                            <div class="timing-detail">
-                                <span class="timing-label">Deliver By:</span>
-                                <span class="timing-value">{{ctrl.job.deliverByTime ? (ctrl.job.deliverByTime | date:'MM/dd h:mm a') : 'N/A'}}</span>
-                            </div>
-                        </md-list-item>
                     </md-list>
                 </div>
             </div>
@@ -175,9 +175,8 @@
                         <md-toolbar class="md-primary">
                             <div class="md-toolbar-tools-m3">
                                 <div class="section section-start">
-                                    <span class="material-symbols-outlined">   {{ctrl.getJobAddressIcon()}}</span>
-                                    <span class="md-headline-title" flex
-                                          style="margin-left: 8px;">Pickup Location</span>
+                                    <span class="material-symbols-outlined">{{ctrl.getJobAddressIcon()}}</span>
+                                    <span class="md-headline-title" flex style="margin-left: 8px;">Pickup Location</span>
                                 </div>
                             </div>
                         </md-toolbar>
@@ -217,9 +216,8 @@
                         <md-toolbar class="md-primary">
                             <div class="md-toolbar-tools-m3">
                                 <div class="section section-start">
-                                    <span class="material-symbols-outlined">   {{ctrl.getJobAddressIcon()}}</span>
-                                    <span class="md-headline-title" flex
-                                          style="margin-left: 8px;">Delivery Location</span>
+                                    <span class="material-symbols-outlined">{{ctrl.getJobAddressIcon()}}</span>
+                                    <span class="md-headline-title" flex style="margin-left: 8px;">Delivery Location</span>
                                 </div>
                             </div>
                         </md-toolbar>
@@ -251,6 +249,14 @@
                                 </md-list-item>
                             </md-list>
                         </md-card-content>
+                    </div>
+                </div>
+
+                <!-- Total Miles Section -->
+                <div class="total-miles-section md-whiteframe-z1" style="margin-top: -16px; margin-bottom: 16px; background-color: #f5f5f5; border-radius: 0 0 2px 2px; padding: 8px 16px; text-align: center;">
+                    <div style="display: inline-flex; align-items: center; justify-content: center;">
+                        <md-icon md-font-set="material-symbols-outlined" style="margin-right: 8px; color: rgba(0, 0, 0, 0.54);">route</md-icon>
+                        <span style="color: rgba(0, 0, 0, 0.87); font-size: 14px; font-weight: 500;">Total {{ctrl.isUsCustomer ? 'Miles' : 'KMs'}}: {{ctrl.job.distance || '0'}} {{ctrl.isUsCustomer ? 'miles' : 'km'}}</span>
                     </div>
                 </div>
 

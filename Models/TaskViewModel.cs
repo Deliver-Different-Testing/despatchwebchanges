@@ -25,4 +25,6 @@ public class TaskViewModel
     public string Icon { get; set; }
 
     public bool IsOverdue { get; set; }
+
+    public string JobNumber { get; set; }
 }

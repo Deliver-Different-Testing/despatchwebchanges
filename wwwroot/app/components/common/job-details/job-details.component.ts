@@ -50,6 +50,7 @@ class JobDetailController extends BaseController {
     selectedStatusText?: string;
     isLoading: boolean = false;
     showStageDropdown: boolean = false;
+    distance?: number;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -148,7 +149,6 @@ class JobDetailController extends BaseController {
 
         try {
             const jobData = await this.DispatchData.getJobDetail(jobId);
-            this.job = jobData;
             this.job = jobData;
 
             this._initializeJobData();
@@ -281,7 +281,7 @@ class JobDetailController extends BaseController {
     async showEditDateDialog($event: MouseEvent, job: IJob,
                              title: string, fieldName: string, dateTime?: Date) {
         try {
-            const result = await this.editDateTimeDialogService.showEditTimeDialog($event, title, fieldName, dateTime);
+            const result = await this.editDateTimeDialogService.showEditDateDialog($event, title, fieldName, dateTime);
             await this._processDateTimeUpdateResult(job, result)
         } catch (error) {
             this._handleError(error);
@@ -388,8 +388,8 @@ class JobDetailController extends BaseController {
         await this._refreshJobDetails(job.id);
     }
 
-    async editLogTime($event: MouseEvent, job: IJob) {
-        await this.showEditTimeDialog($event, job, "Log Time", "Time", job.time);
+    async editStartTime($event: MouseEvent, job: IJob) {
+        await this.showEditTimeDialog($event, job, "Start Time", "Time", job.time);
     }
 
     async editCompletedTime($event: MouseEvent, job: IJob) {
@@ -414,7 +414,7 @@ class JobDetailController extends BaseController {
     }
 
     async editBookedDate($event: MouseEvent, job: IJob) {
-        await this.showEditDateDialog($event, job, "Booked Time", "BookedTime", job.createdDate);
+        await this.showEditDateDialog($event, job, "Booked Date", "BookedTime", job.createdDate);
     }
 
     async updateAddress($event: MouseEvent, job: IJob, field: string) {
@@ -1008,7 +1008,6 @@ class JobDetailController extends BaseController {
                 });
             }
 
-            // Refresh label to show new status
             this._getSelectedStatusText();
         } catch (error) {
             console.error("Error updating internal status:", error);

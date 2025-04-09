@@ -1,7 +1,7 @@
 import {Coordinates} from "../overview/overview.interfaces";
 import JobDataType from "./enums/JobDataType";
 
-export interface FlightViewModel {
+export interface IFlightViewModel {
     airline: string;
     flightNumber: string;
     departureTime: Date;
@@ -15,13 +15,6 @@ export interface FlightViewModel {
     isCodeShare: boolean;
     amount: number;
     codeShareAirline: string;
-}
-
-export interface AgentViewModel {
-    agentId: number;
-    agentName: string;
-    agentRate: number;
-    agentRanking: string;
 }
 
 export interface Filter {

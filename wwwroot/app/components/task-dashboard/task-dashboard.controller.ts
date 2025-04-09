@@ -2,7 +2,6 @@ import {ExtendedTask, TaskViewModel, TaskTableFiltersRequest} from "./task-dashb
 import "./task-dashboard.styles.less";
 import GreetingService from "../../services/greeting.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
-import {ActiveCourierViewModel} from "../../interfaces/courier.interface";
 import {Suggestion} from "../../interfaces/job.interface";
 import {StatusFilter} from "./enums/status-filter";
 import {ViewMode} from "./enums/view-mode";

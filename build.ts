@@ -6,77 +6,82 @@ import {lessLoader} from "esbuild-plugin-less";
 import esbuildPluginTsc from 'esbuild-plugin-tsc';
 import {es5Plugin} from "esbuild-plugin-es5";
 
-const isDev = process.argv.includes('--dev') || process.env.NODE_ENV === 'development';
-const rootDir = __dirname;
-const distPath = path.join(rootDir, "wwwroot/dist");
+class Bundler {
+    private readonly isDev: boolean;
+    private readonly rootDir: string;
+    private readonly distPath: string;
 
-function generateHash(content: string | Uint8Array): string {
-    return crypto.createHash('md5').update(content).digest('hex').slice(0, 8);
-}
-
-async function cleanDistFolder(): Promise<void> {
-    if (fs.existsSync(distPath)) {
-        const files = fs.readdirSync(distPath);
-        for (const file of files) {
-            fs.unlinkSync(path.join(distPath, file));
-        }
-    } else {
-        fs.mkdirSync(distPath, {recursive: true});
+    constructor() {
+        this.isDev = process.argv.includes('--dev') || process.env.NODE_ENV === 'development';
+        this.rootDir = __dirname;
+        this.distPath = path.join(this.rootDir, "wwwroot/dist");
     }
-}
 
-function toRelativePath(filePath: string): string {
-    return path.relative(rootDir, filePath);
-}
+    private generateHash(content: string | Uint8Array): string {
+        return crypto.createHash('md5').update(content).digest('hex').slice(0, 8);
+    }
 
-// Error reporting plugin
-const errorReportingPlugin = {
-    name: 'error-reporting',
-    setup(build: esbuild.PluginBuild) {
-        build.onEnd(result => {
-            if (result.errors.length > 0) {
-                console.error('\n[ERROR] Build errors:');
-                result.errors.forEach(error => {
-                    const file = error.location?.file ? toRelativePath(error.location.file) : 'unknown';
-                    console.error(`  ${file}:${error.location?.line || 0}: ${error.text}`);
+    private async cleanDistFolder(): Promise<void> {
+        if (fs.existsSync(this.distPath)) {
+            const files = fs.readdirSync(this.distPath);
+            for (const file of files) {
+                fs.unlinkSync(path.join(this.distPath, file));
+            }
+        } else {
+            fs.mkdirSync(this.distPath, {recursive: true});
+        }
+    }
+
+    private toRelativePath(filePath: string): string {
+        return path.relative(this.rootDir, filePath);
+    }
+
+    private get errorReportingPlugin(): esbuild.Plugin {
+        const toRelativePath = this.toRelativePath.bind(this);
+
+        return {
+            name: 'error-reporting',
+            setup(build: esbuild.PluginBuild) {
+                build.onEnd(result => {
+                    if (result.errors.length > 0) {
+                        console.error('\n[ERROR] Build errors:');
+                        result.errors.forEach(error => {
+                            const file = error.location?.file ? toRelativePath(error.location.file) : 'unknown';
+                            console.error(`  ${file}:${error.location?.line || 0}: ${error.text}`);
+                        });
+                    }
                 });
             }
-        });
+        };
     }
-};
 
-async function build(): Promise<void> {
-    const startTime = Date.now();
-
-    try {
-        await cleanDistFolder();
-
-        const commonConfig: esbuild.BuildOptions = {
-            entryPoints: [path.join(rootDir, "wwwroot/app/index.ts")],
+    private getCommonConfig(): esbuild.BuildOptions {
+        return {
+            entryPoints: [path.join(this.rootDir, "wwwroot/app/index.ts")],
             bundle: true,
-            sourcemap: isDev,
-            minify: !isDev,
-            minifyWhitespace: !isDev,
-            minifyIdentifiers: !isDev,
-            minifySyntax: !isDev,
+            sourcemap: this.isDev,
+            minify: !this.isDev,
+            minifyWhitespace: !this.isDev,
+            minifyIdentifiers: !this.isDev,
+            minifySyntax: !this.isDev,
             target: ["es5"],
-            metafile: !isDev,
-            treeShaking: !isDev,
-            legalComments: isDev ? "inline" : "none",
+            metafile: !this.isDev,
+            treeShaking: !this.isDev,
+            legalComments: this.isDev ? "inline" : "none",
             format: "iife",
             mainFields: ["browser", "module", "main"],
             logLevel: 'info',
-            drop: isDev ? [] : ['debugger', 'console'],
+            drop: this.isDev ? [] : ['debugger', 'console'],
             plugins: [
                 esbuildPluginTsc(),
                 es5Plugin(),
                 lessLoader({
                     math: 'always'
                 }),
-                errorReportingPlugin
+                this.errorReportingPlugin
             ],
             define: {
-                'process.env.NODE_ENV': isDev ? '"development"' : '"production"',
+                'process.env.NODE_ENV': this.isDev ? '"development"' : '"production"',
                 'global': "window",
                 'angular': "window.angular",
                 '$': "window.jQuery",
@@ -86,12 +91,9 @@ async function build(): Promise<void> {
                 "leaflet",
                 "angularResizable",
                 "ui.sortable",
-                "ui.bootstrap",
                 "ui.timepicker",
                 "pickadate",
                 "ngMapAutocomplete",
-                "heremaps",
-                "angularPromiseButtons",
             ],
             loader: {
                 '.js': "js",
@@ -103,102 +105,122 @@ async function build(): Promise<void> {
                 '@swc/helpers': path.dirname(require.resolve("@swc/helpers/package.json")),
             }
         };
+    }
 
-        if (isDev) {
-            const devConfig: esbuild.BuildOptions = {
-                ...commonConfig,
-                outfile: path.join(distPath, 'bundle.js')
-            };
+    private async buildDev(): Promise<void> {
+        const devConfig: esbuild.BuildOptions = {
+            ...this.getCommonConfig(),
+            outfile: path.join(this.distPath, 'bundle.js')
+        };
 
-            const ctx = await esbuild.context(devConfig);
+        const ctx = await esbuild.context(devConfig);
 
-            await ctx.watch();
-            console.log("[DEV] Watching for changes...");
+        await ctx.watch();
+        console.log("[DEV] Watching for changes...");
 
-            const {host, port} = await ctx.serve({
-                servedir: path.join(rootDir, "wwwroot"),
-                host: 'localhost',
-                port: 3000
-            });
+        const {host, port} = await ctx.serve({
+            servedir: path.join(this.rootDir, "wwwroot"),
+            host: 'localhost',
+            port: 3000
+        });
 
-            const manifest = {
-                'bundle.js': 'bundle.js',
-                'styles.css': 'bundle.css'
-            };
+        const manifest = {
+            'bundle.js': 'bundle.js',
+            'styles.css': 'bundle.css'
+        };
 
-            fs.writeFileSync(
-                path.join(distPath, "manifest.json"),
-                JSON.stringify(manifest, null, 2)
-            );
+        fs.writeFileSync(
+            path.join(this.distPath, "manifest.json"),
+            JSON.stringify(manifest, null, 2)
+        );
 
-            console.log(`[DEV] Server running at http://${host}:${port}`);
-            await new Promise(() => {
-            });
-        } else {
-            console.log("[PROD] Building production bundle...");
+        console.log(`[DEV] Server running at http://${host}:${port}`);
 
-            const tempResult = await esbuild.build({
-                ...commonConfig,
-                write: false,
-                outfile: path.join(distPath, 'bundle.js')
-            });
+        // Keep the process running
+        await new Promise(() => {});
+    }
 
-            const outputFiles = tempResult.outputFiles!;
-            const jsContent = outputFiles.find(f => f.path.endsWith('.js'))!.contents;
-            const contentHash = generateHash(jsContent);
+    private async buildProd(): Promise<void> {
+        console.log("[PROD] Building production bundle...");
 
-            const jsFilename = `bundle.${contentHash}.js`;
-            const cssFilename = `bundle.${contentHash}.css`;
+        const tempResult = await esbuild.build({
+            ...this.getCommonConfig(),
+            write: false,
+            outfile: path.join(this.distPath, 'bundle.js')
+        });
 
-            await esbuild.build({
-                ...commonConfig,
-                outfile: path.join(distPath, jsFilename),
-                write: true,
-                plugins: [
-                    ...commonConfig.plugins!,
-                    {
-                        name: 'css-output',
-                        setup(build: esbuild.PluginBuild) {
-                            build.onEnd(result => {
-                                if (result.outputFiles) {
-                                    const cssContent = result.outputFiles
-                                        .filter(file => file.path.endsWith('.css'))
-                                        .map(file => file.text)
-                                        .join('\n');
+        const outputFiles = tempResult.outputFiles!;
+        const jsContent = outputFiles.find(f => f.path.endsWith('.js'))!.contents;
+        const contentHash = this.generateHash(jsContent);
 
-                                    if (cssContent) {
-                                        fs.writeFileSync(
-                                            path.join(distPath, cssFilename),
-                                            cssContent
-                                        );
-                                    }
+        const jsFilename = `bundle.${contentHash}.js`;
+        const cssFilename = `bundle.${contentHash}.css`;
+
+        const distributionPath = this.distPath;
+
+        await esbuild.build({
+            ...this.getCommonConfig(),
+            outfile: path.join(this.distPath, jsFilename),
+            write: true,
+            plugins: [
+                ...this.getCommonConfig().plugins!,
+                {
+                    name: 'css-output',
+                    setup(build: esbuild.PluginBuild) {
+                        build.onEnd(result => {
+                            if (result.outputFiles) {
+                                const cssContent = result.outputFiles
+                                    .filter(file => file.path.endsWith('.css'))
+                                    .map(file => file.text)
+                                    .join('\n');
+
+                                if (cssContent) {
+                                    fs.writeFileSync(
+                                        path.join(distributionPath, cssFilename),
+                                        cssContent
+                                    );
                                 }
-                            });
-                        }
+                            }
+                        });
                     }
-                ]
-            });
+                }
+            ]
+        });
 
-            const manifest = {
-                'bundle.js': jsFilename,
-                'styles.css': cssFilename
-            };
+        const manifest = {
+            'bundle.js': jsFilename,
+            'styles.css': cssFilename
+        };
 
-            fs.writeFileSync(
-                path.join(distPath, "manifest.json"),
-                JSON.stringify(manifest, null, 2)
-            );
+        fs.writeFileSync(
+            path.join(this.distPath, "manifest.json"),
+            JSON.stringify(manifest, null, 2)
+        );
 
-            const buildTime = ((Date.now() - startTime) / 1000).toFixed(2);
-            console.log(`[PROD] Build completed in ${buildTime}s`);
-            console.log(`[PROD] Output: ${jsFilename}, ${cssFilename}`);
+        console.log(`[PROD] Output: ${jsFilename}, ${cssFilename}`);
+    }
+
+    public async build(): Promise<void> {
+        const startTime = Date.now();
+
+        try {
+            await this.cleanDistFolder();
+
+            if (this.isDev) {
+                await this.buildDev();
+            } else {
+                await this.buildProd();
+                const buildTime = ((Date.now() - startTime) / 1000).toFixed(2);
+                console.log(`[PROD] Build completed in ${buildTime}s`);
+            }
+        } catch (error) {
+            console.error("[ERROR] Build failed:", error);
+            process.exit(1);
         }
-    } catch (error) {
-        console.error("[ERROR] Build failed:", error);
-        process.exit(1);
     }
 }
 
-// Execute the build
-build()
-    .then(_ => console.log("Build completed"));
+// Create and run the bundler
+const bundler = new Bundler();
+bundler.build()
+    .then(() => console.log("Build process initialized"));

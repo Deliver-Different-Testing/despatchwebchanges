@@ -6,7 +6,7 @@
             <div class="status-summary" ng-if="ctrl.jobList && ctrl.jobList.length > 0">
                 <md-button class="md-button status-chip total" ng-click="ctrl.filterPodJobsByStatus('group-all')">
                     <md-icon md-font-set="material-symbols-outlined">article</md-icon>
-                    <span>{{ctrl.jobList.length || 0}}</span>
+                    <span>{{ctrl.jobListPOD.length || 0}}</span>
                     <span class="status-label">Total</span>
                 </md-button>
                 <md-button class="md-button status-chip pending" ng-click="ctrl.filterPodJobsByStatus('group-pending')">
