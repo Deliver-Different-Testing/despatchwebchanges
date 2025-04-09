@@ -2,7 +2,7 @@
     <md-toolbar>
         <div class="md-toolbar-tools">
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">event</md-icon>
-            <h2>Add Event</h2>
+            <h2>Add Task</h2>
             <span flex></span>
             <md-button class="md-icon-button" ng-click="ctrl.cancel()">
                 <md-tooltip md-direction="bottom">Cancel</md-tooltip>
@@ -30,27 +30,27 @@
 
                 <div layout-gt-sm="row">
                     <md-input-container class="md-block" flex-gt-sm>
-                        <label for="EventDate">Event Date</label>
+                        <label for="EventDate">Task Date</label>
                         <input disabled id="EventDate" ng-model="ctrl.event.eventDate" type="date">
                     </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
-                        <label>Event</label>
+                        <label>Task Type</label>
                         <md-select name="eventTypes" ng-model="ctrl.selectedEvent" required>
                             <md-option ng-repeat="eventType in ctrl.eventTypes" ng-value="eventType">
                                 {{ eventType.text }}
                             </md-option>
                         </md-select>
                         <div class="errors" ng-messages="ctrl.eventForm.eventTypes.$error">
-                            <div ng-message="required">Event Required</div>
+                            <div ng-message="required">Task Required</div>
                         </div>
                     </md-input-container>
                 </div>
 
                 <div layout-gt-sm="row">
                     <md-input-container class="md-block" flex-gt-sm>
-                        <label for="eventTime">Event Time</label>
-                        <input disabled id="eventTime" ng-value="ctrl.event.eventTime | date:'MM/dd/yyyy h:mma'"
+                        <label for="eventTime">Task Time</label>
+                        <input disabled id="eventTime" ng-value="ctrl.event.eventTime | date:'h:mma'"
                                type="text">
                     </md-input-container>
 

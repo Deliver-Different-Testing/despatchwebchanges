@@ -2,7 +2,7 @@
     <form ng-cloak>
         <md-toolbar>
             <div class="md-toolbar-tools">
-                <h2>Event Groups Table</h2>
+                <h2>Task Groups Table</h2>
                 <span flex></span>
                 <md-button class="md-icon-button" ng-click="ctrl.cancel()">
                     <md-icon md-font-set="material-symbols-outlined">close</md-icon>
@@ -16,7 +16,7 @@
                     <table md-table>
                         <thead md-head>
                         <tr md-row>
-                            <th md-column>Event Type</th>
+                            <th md-column>Task Type</th>
                             <th md-column>Group</th>
                             <th md-column>Sequence</th>
                             <th md-column>Due Time (mins)</th>
@@ -64,8 +64,8 @@
 
                 <div ng-if="!ctrl.events || ctrl.events.length === 0" class="md-padding" layout="column" layout-align="center center">
                     <md-icon md-font-set="material-symbols-outlined" style="font-size: 30px; color: #9E9E9E;">event_busy</md-icon>
-                    <h4 style="padding-top: 5px;">No event job types found</h4>
-                    <p>Please add event job types in the Admin Manager</p>
+                    <h4 style="padding-top: 5px;">No task job types found</h4>
+                    <p>Please add task types in the Admin Manager</p>
                     <md-button class="md-primary md-raised" ng-click="ctrl.goToAdminManager()" ng-disable="true">
                         <md-icon md-font-set="material-symbols-outlined">admin_panel_settings</md-icon>
                         Open Admin Manager
