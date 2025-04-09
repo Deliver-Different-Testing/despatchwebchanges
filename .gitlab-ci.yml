@@ -77,6 +77,11 @@ stages:
   - cleanup
   - .post
 
+production_manual:
+  needs:
+    - job: build
+    - job: staging
+
 otgcargo-staging:
   extends: staging
   stage: tenants-staging
