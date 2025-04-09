@@ -2,6 +2,34 @@
   background-color: #f5f7fa;
   color: #333;
 
+  .main-row {
+    display: flex;
+  }
+
+  .main-column {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+
+    .dashboard-header-card,
+    .filters-container {
+      flex: 0 0 auto;
+    }
+
+    /* Make task list or calendar view take remaining space */
+    .task-list-card,
+    .calendar-view {
+      flex: 1 1 auto;
+      margin-bottom: 0;
+    }
+
+    // Responsive behavior for mobile devices
+    @media (max-width: 768px) {
+      width: 100%;
+    }
+  }
+
   .md-list-item-inner {
     padding: 10px 16px;
   }
@@ -94,16 +122,73 @@
     }
   }
 
+  .job-detail-card {
+    height: calc(100vh - 200px);
+    overflow-y: auto;
+  }
+
+  .job-detail-card-content {
+    height: 100% !important;
+    padding: 0;
+  }
+
   .task-list-card {
     min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 450px);
 
     md-card-header {
       padding: 16px;
       border-bottom: 1px solid #f0f0f0;
+      flex: 0 0 auto;
     }
 
     md-card-content {
       padding: 0;
+      flex: 1 1 auto;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    md-list {
+      overflow-y: auto;
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      margin: 0;
+      padding: 0;
+    }
+  }
+
+  /* Style for scrollbar to make it more visible */
+  md-list::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  md-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  md-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+
+  md-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+
+  /* Calendar view adjustments */
+  .calendar-view {
+    .calendar-column {
+      max-height: calc(100vh - 240px);
+      overflow-y: auto;
     }
   }
 

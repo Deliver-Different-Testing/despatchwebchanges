@@ -47,6 +47,9 @@ export class EventGroupDialogController implements angular.IController {
 
             const taskCount = activeEvents.length;
             this.toastrService.showSuccessToast(`${taskCount} task${taskCount !== 1 ? 's' : ''} added successfully`);
+
+            // Close dialog
+            this.$mdDialog.hide();
         } catch (error) {
             console.error('EventGroupDialogController: Error in save', error);
             this.toastrService.showErrorToast();

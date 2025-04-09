@@ -9,22 +9,26 @@
                     <span>{{ctrl.jobListReprice.length || 0}}</span>
                     <span class="status-label">Total</span>
                 </md-button>
-                <md-button class="md-button status-chip pending" ng-click="ctrl.filterRepriceJobsByStatus('group-pending')">
+                <md-button class="md-button status-chip pending"
+                           ng-click="ctrl.filterRepriceJobsByStatus('group-pending')">
                     <md-icon md-font-set="material-symbols-outlined">hourglass_top</md-icon>
                     <span>{{ctrl.getRepriceJobsStatusCount('pending')}}</span>
                     <span class="status-label">Pending</span>
                 </md-button>
-                <md-button class="md-button status-chip in-transit" ng-click="ctrl.filterRepriceJobsByStatus('group-in-transit')">
+                <md-button class="md-button status-chip in-transit"
+                           ng-click="ctrl.filterRepriceJobsByStatus('group-in-transit')">
                     <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
                     <span>{{ctrl.getRepriceJobsStatusCount('in-transit')}}</span>
                     <span class="status-label">In&nbsp;Transit</span>
                 </md-button>
-                <md-button class="md-button status-chip completed" ng-click="ctrl.filterRepriceJobsByStatus('group-completed')">
+                <md-button class="md-button status-chip completed"
+                           ng-click="ctrl.filterRepriceJobsByStatus('group-completed')">
                     <md-icon md-font-set="material-symbols-outlined">done_all</md-icon>
                     <span>{{ctrl.getRepriceJobsStatusCount('completed')}}</span>
                     <span class="status-label">Completed</span>
                 </md-button>
-                <md-button class="md-button status-chip problem" ng-click="ctrl.filterRepriceJobsByStatus('group-problem')"
+                <md-button class="md-button status-chip problem"
+                           ng-click="ctrl.filterRepriceJobsByStatus('group-problem')"
                            ng-if="ctrl.getRepriceJobsStatusCount('problem') > 0">
                     <md-icon md-font-set="material-symbols-outlined">error_outline</md-icon>
                     <span>{{ctrl.getRepriceJobsStatusCount('problem')}}</span>
@@ -118,7 +122,8 @@
                         <md-icon md-font-set="material-symbols-outlined">calendar_add_on</md-icon>
                         <md-tooltip md-direction="bottom">Create Event</md-tooltip>
                     </span>
-                    <span class="action-icon" ng-click="job.courier == null || ctrl.restoreJob(job); $event.stopPropagation();">
+                    <span class="action-icon"
+                          ng-click="job.courier == null || ctrl.restoreJob(job); $event.stopPropagation();">
                         <md-icon md-font-set="material-symbols-outlined" ng-if="job.courier !== null">undo</md-icon>
                         <md-tooltip md-direction="bottom" ng-if="job.courier !== null">Restore</md-tooltip>
                     </span>

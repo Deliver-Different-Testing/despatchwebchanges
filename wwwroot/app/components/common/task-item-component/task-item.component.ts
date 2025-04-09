@@ -8,16 +8,8 @@ import {ITaskListItemConfig} from "./task-item.interfaces";
 import ToastrService from "../../../services/toastr.service";
 import "./task-item.styles.less";
 
-export interface TaskListItemBindings {
-    task: ExtendedTask;
-    config: ITaskListItemConfig;
-    onTaskUpdated: () => void;
-    onTaskClick?: (params: { task: ExtendedTask }) => void;
-}
-
 export class TaskListItemController extends BaseController {
     static $inject = [
-        '$filter',
         'selectDialogService',
         'editDateTimeDialogService',
         'toastrService',
@@ -32,7 +24,6 @@ export class TaskListItemController extends BaseController {
     onTaskClick?: (params: { task: ExtendedTask }) => void;
 
     constructor(
-        private $filter: angular.IFilterService,
         private selectDialogService: SelectDialogService,
         private editDateTimeDialogService: EditDateTimeDialogService,
         private toastrService: ToastrService,
@@ -40,10 +31,6 @@ export class TaskListItemController extends BaseController {
         private $http: angular.IHttpService
     ) {
         super();
-    }
-
-    $onInit() {
-        if (this.config) return;
 
         // Default configuration
         this.config = {
@@ -51,12 +38,10 @@ export class TaskListItemController extends BaseController {
             showAssignee: true,
             showJobType: true,
             showDateTime: true,
-            customClass: '',
             showStatusIndicators: true,
             allowCompletion: true,
             showOverdueWarning: true,
-            dateFormat: 'MMM d, yyyy',
-            timeFormat: 'h:mm a'
+            onTaskClick: true
         };
     }
 
@@ -142,16 +127,6 @@ export class TaskListItemController extends BaseController {
     isTaskOverdue(task: TaskViewModel): boolean {
         if (task.closed) return false;
         return new Date(task.dueDate) < new Date();
-    }
-
-    formatDate(date: string): string {
-        const format = this.config?.dateFormat || 'MMM d, yyyy';
-        return this.$filter('date')(date, format);
-    }
-
-    formatTime(date: string): string {
-        const format = this.config?.timeFormat || 'h:mm a';
-        return this.$filter('date')(date, format);
     }
 
     private async _updateTaskDate(eventId: number, date: string) {
