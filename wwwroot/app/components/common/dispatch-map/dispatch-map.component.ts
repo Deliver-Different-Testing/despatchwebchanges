@@ -120,7 +120,6 @@ class DispatchMapController extends BaseController {
         if (!this.mapInstance) {
             console.log('[DispatchMapController] Map instance not ready yet, storing changes for later');
 
-            // Store the changes to apply after map is initialized
             if ('jobs' in changes && changes.jobs.currentValue) {
                 console.log(`[DispatchMapController] Storing jobs array with ${changes.jobs.currentValue.length} jobs`);
                 this.pendingChanges.jobs = changes.jobs.currentValue;
@@ -288,7 +287,7 @@ class DispatchMapController extends BaseController {
 
         try {
             const coordinates = await this.getSearchCoordinates();
-            const couriers: AvailableCourierPosition[]  = await this.fetchCourierData(coordinates);
+            const couriers  = await this.fetchCourierData(coordinates);
             this._updateCourierMarkers(couriers);
 
             console.log('[DispatchMapController] Successfully updated courier positions', {
