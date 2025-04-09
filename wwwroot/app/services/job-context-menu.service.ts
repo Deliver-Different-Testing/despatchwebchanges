@@ -72,18 +72,18 @@ export default class JobContextMenuService implements angular.IServiceProvider {
                 hasBottomDivider: true
             },
 
-            // Add Event - Other
+            // Add Task - Other
             {
-                text: 'Add Event - Other',
+                text: 'Add Task - Other',
                 icon: 'add',
                 click: ($itemScope: any, $event: MouseEvent) => this.addEventOtherAction($event, job, callbacks.onRefresh),
                 hasBottomDivider: true
             }
         ];
 
-        // Add event groups submenu using cached data or function that will fetch it
+        // Add Task groups submenu using cached data or function that will fetch it
         menuOptions.push({
-            text: 'Event Groups',
+            text: 'Task Groups',
             icon: 'event',
             hasBottomDivider: true,
             children: this.getEventGroupsMenuItems(job.id, callbacks.onRefresh)
@@ -130,7 +130,7 @@ export default class JobContextMenuService implements angular.IServiceProvider {
                     }));
                 })
                 .catch(error => {
-                    console.error('Error loading event groups:', error);
+                    console.error('Error loading task groups:', error);
                     return []; // Return empty array on error
                 });
         };
