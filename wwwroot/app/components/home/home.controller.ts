@@ -2720,6 +2720,32 @@ class HomeController extends BaseController {
             this.toastrService.showErrorToast(`Failed to open ${fieldName} dialog`);
         }
     }
+
+    getTasksStatusCount(statusType: string): number {
+        if (!this.tasks || !Array.isArray(this.tasks)) {
+            return 0;
+        }
+
+        switch (statusType) {
+            case 'mine':
+                return this.tasks.filter(task => task.assignee.id === ContactID).length;
+            case 'unassigned':
+                return this.tasks.filter(task => !task.assignee.id).length;
+            case 'newest':
+                // For newest/oldest filters, we return the total count since they're
+                // sorting options rather than filtering options
+                return this.tasks.length;
+            case 'oldest':
+                return this.tasks.length;
+            default:
+                return this.tasks.length;
+        }
+    }
+
+    async filterTasks(filterType: string): Promise<void> {
+        this.tasksFilter = filterType;
+        await this.loadSupports(filterType);
+    }
 }
 
 const HomeComponent: angular.IComponentOptions = {

@@ -138,7 +138,7 @@ export interface IJob {
     toAirportId?: number;
     fromAirportId?: number;
     assignedFlight: AssignedFlight;
-    assignedAgent: AgentViewModel;
+    assignedAgent: IAgent;
     assignedCourier: Suggestion;
     parcelDimensions: ParcelDimensions[];
     deliverToLeaveId?: number;
@@ -147,6 +147,7 @@ export interface IJob {
     clientColor?: string;
     searchText?: string;
     deliverByTime?: Date;
+    distance: number;
 }
 
 export interface ParcelDimensions {
@@ -253,11 +254,12 @@ export interface Destination {
     label: string;
 }
 
-export interface AgentViewModel {
+export interface IAgent {
     agentId: number;
     agentName: string;
     agentRate: number;
     agentRanking: string;
+    agentNotes: string;
 }
 
 export interface Pallet {

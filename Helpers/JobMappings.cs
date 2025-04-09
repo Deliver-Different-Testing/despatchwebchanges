@@ -383,7 +383,24 @@ public static class JobMappings
             IsArchived = false,
             PreBook = false,
             DeliverByTime = j.DeliverByTime,
-            Attention = j.UcjbAttention
+            Attention = j.UcjbAttention,
+
+            Distance =
+                j.PickUpLatitude.HasValue
+                && j.PickUpLongitude.HasValue
+                && j.DeliveryLatitude.HasValue
+                && j.DeliveryLongitude.HasValue
+                    ? DistanceCalculator.CalculateDistance(
+                        new AddressCoordinates(
+                            j.PickUpLatitude.Value,
+                            j.PickUpLongitude.Value
+                        ),
+                        new AddressCoordinates(
+                            j.DeliveryLatitude.Value,
+                            j.DeliveryLongitude.Value
+                        )
+                    )
+                    : 0
         };
 
     public static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping =
@@ -535,7 +552,24 @@ public static class JobMappings
             IsArchived = true,
             PreBook = false,
             DeliverByTime = j.DeliverByTime,
-            Attention = j.UcjbAttention
+            Attention = j.UcjbAttention,
+
+            Distance =
+                j.PickUpLatitude.HasValue
+                && j.PickUpLongitude.HasValue
+                && j.DeliveryLatitude.HasValue
+                && j.DeliveryLongitude.HasValue
+                    ? DistanceCalculator.CalculateDistance(
+                        new AddressCoordinates(
+                            j.PickUpLatitude.Value,
+                            j.PickUpLongitude.Value
+                        ),
+                        new AddressCoordinates(
+                            j.DeliveryLatitude.Value,
+                            j.DeliveryLongitude.Value
+                        )
+                    )
+                    : 0
         };
 
     public static readonly Expression<Func<TucJobBooking, JobViewModel>> JobPrebookMapping =
@@ -684,7 +718,24 @@ public static class JobMappings
                         Depth = p.Depth,
                         Length = p.Length
                     })
-                    .ToList()
+                    .ToList(),
+
+            Distance =
+                j.PickUpLatitude.HasValue
+                && j.PickUpLongitude.HasValue
+                && j.DeliveryLatitude.HasValue
+                && j.DeliveryLongitude.HasValue
+                    ? DistanceCalculator.CalculateDistance(
+                        new AddressCoordinates(
+                            j.PickUpLatitude.Value,
+                            j.PickUpLongitude.Value
+                        ),
+                        new AddressCoordinates(
+                            j.DeliveryLatitude.Value,
+                            j.DeliveryLongitude.Value
+                        )
+                    )
+                    : 0
         };
 
     public static readonly Expression<Func<TucJob, JobLateCallDto>> JobLateCallMapping =

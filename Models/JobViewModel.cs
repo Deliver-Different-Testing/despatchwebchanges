@@ -202,6 +202,8 @@ public class JobViewModel
     public DateTime? DeliverByTime { get; set; }
 
     public List<TucNoteViewModel> Notes { get; set; }
+
+    public double Distance { get; set; }
 }
 
 public class Vehicle

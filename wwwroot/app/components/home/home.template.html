@@ -309,52 +309,6 @@
                                         </md-autocomplete>
                                     </div>
 
-                                    <md-menu ng-if="box.name === 'supports'">
-                                        <md-button aria-label="Filter supports" class="md-icon-button" ng-click="$mdMenu.open($event)">
-                                            <md-icon md-font-set="material-symbols-outlined">filter_list</md-icon>
-                                            <md-tooltip md-direction="bottom">Filter Supports</md-tooltip>
-                                        </md-button>
-
-                                        <md-menu-content>
-                                            <md-menu-item>
-                                                <md-button ng-click="ctrl.filterSupports('all')" ng-class="{'selected-filter': ctrl.supportsFilter === 'all'}">
-                                                    <md-icon md-font-set="material-symbols-outlined" ng-class="{'md-accent': ctrl.supportsFilter === 'all'}">list</md-icon>
-                                                    <span ng-class="{'active-filter-text': ctrl.supportsFilter === 'all'}">All Supports</span>
-                                                    <md-icon md-font-set="material-symbols-outlined" class="md-secondary active-check" ng-if="ctrl.supportsFilter === 'all'">check</md-icon>
-                                                </md-button>
-                                            </md-menu-item>
-                                            <md-menu-item>
-                                                <md-button ng-click="ctrl.filterSupports('mine')" ng-class="{'selected-filter': ctrl.supportsFilter === 'mine'}">
-                                                    <md-icon md-font-set="material-symbols-outlined" ng-class="{'md-accent': ctrl.supportsFilter === 'mine'}">person</md-icon>
-                                                    <span ng-class="{'active-filter-text': ctrl.supportsFilter === 'mine'}">My Supports</span>
-                                                    <md-icon md-font-set="material-symbols-outlined" class="md-secondary active-check" ng-if="ctrl.supportsFilter === 'mine'">check</md-icon>
-                                                </md-button>
-                                            </md-menu-item>
-                                            <md-menu-item>
-                                                <md-button ng-click="ctrl.filterSupports('unassigned')" ng-class="{'selected-filter': ctrl.supportsFilter === 'unassigned'}">
-                                                    <md-icon md-font-set="material-symbols-outlined" ng-class="{'md-accent': ctrl.supportsFilter === 'unassigned'}">person_off</md-icon>
-                                                    <span ng-class="{'active-filter-text': ctrl.supportsFilter === 'unassigned'}">Unassigned</span>
-                                                    <md-icon md-font-set="material-symbols-outlined" class="md-secondary active-check" ng-if="ctrl.supportsFilter === 'unassigned'">check</md-icon>
-                                                </md-button>
-                                            </md-menu-item>
-                                            <md-divider></md-divider>
-                                            <md-menu-item>
-                                                <md-button ng-click="ctrl.filterSupports('newest')" ng-class="{'selected-filter': ctrl.supportsFilter === 'newest'}">
-                                                    <md-icon md-font-set="material-symbols-outlined" ng-class="{'md-accent': ctrl.supportsFilter === 'newest'}">arrow_downward</md-icon>
-                                                    <span ng-class="{'active-filter-text': ctrl.supportsFilter === 'newest'}">Newest First</span>
-                                                    <md-icon md-font-set="material-symbols-outlined" class="md-secondary active-check" ng-if="ctrl.supportsFilter === 'newest'">check</md-icon>
-                                                </md-button>
-                                            </md-menu-item>
-                                            <md-menu-item>
-                                                <md-button ng-click="ctrl.filterSupports('oldest')" ng-class="{'selected-filter': ctrl.supportsFilter === 'oldest'}">
-                                                    <md-icon md-font-set="material-symbols-outlined" ng-class="{'md-accent': ctrl.supportsFilter === 'oldest'}">arrow_upward</md-icon>
-                                                    <span ng-class="{'active-filter-text': ctrl.supportsFilter === 'oldest'}">Oldest First</span>
-                                                    <md-icon md-font-set="material-symbols-outlined" class="md-secondary active-check" ng-if="ctrl.supportsFilter === 'oldest'">check</md-icon>
-                                                </md-button>
-                                            </md-menu-item>
-                                        </md-menu-content>
-                                    </md-menu>
-
                                     <div class="box-handle md-icon-button">
                                         <md-icon class="md-drag-button" md-font-set="material-symbols-outlined">
                                             drag_indicator

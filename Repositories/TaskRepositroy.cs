@@ -50,8 +50,9 @@ public class TaskRepository(
                         x.UcevTime.Value.Second,
                         x.UcevTime.Value.Millisecond)
                     : DateTime.MinValue,
-                Title = x.UcevTypeNavigation.UcetGroup,
-                EventType = x.UcevTypeNavigation.UcetGroup
+                Title = x.UcevTypeNavigation.UcetName,
+                EventType = x.UcevTypeNavigation.UcetGroup,
+                JobNumber = x.UcevJob.UcjbNumber
             })
             .AsNoTracking()
             .ToListAsync();

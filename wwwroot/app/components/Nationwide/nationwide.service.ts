@@ -1,5 +1,5 @@
-import {IDispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
-import {AgentViewModel, FlightViewModel} from "./nationwide.interfaces";
+import {IAgent, IDispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
+import {IFlightViewModel} from "./nationwide.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import moment from "moment";
 
@@ -75,7 +75,7 @@ class NationwideService implements angular.IServiceProvider {
 
 
     async getFlightOptions(jobId: number, departureDate: string | Date): Promise<{
-        flights: FlightViewModel[];
+        flights: IFlightViewModel[];
         message: "Sorry, we couldn't find any flights between these airports on the selected date. Please try different dates or airports." | null
     }> {
         const formattedDate = moment(departureDate, moment.ISO_8601, true)
@@ -83,7 +83,7 @@ class NationwideService implements angular.IServiceProvider {
 
         console.log(formattedDate);
 
-        const response = await this.$http.get<FlightViewModel[]>("nationwideJob/GetScheduledFlightOptions", {
+        const response = await this.$http.get<IFlightViewModel[]>("nationwideJob/GetScheduledFlightOptions", {
             params: {
                 departureDate: formattedDate,
                 jobId,
@@ -113,10 +113,10 @@ class NationwideService implements angular.IServiceProvider {
     }
 
     async getAgentOptions(jobId: number): Promise<{
-        agents: AgentViewModel[];
+        agents: IAgent[];
         message: "Sorry, we couldn't find any agents that applied to this specific job. Please check the job information is correct and try again." | null
     }> {
-        const response = await this.$http.get<AgentViewModel[]>("nationwideJob/GetAgentsForJob", {
+        const response = await this.$http.get<IAgent[]>("nationwideJob/GetAgentsForJob", {
             params: {
                 jobId,
             }
