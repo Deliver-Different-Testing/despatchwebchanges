@@ -1,52 +1,59 @@
 <div class="droppable-box nationwide-job-list">
-    <div class="md-table-footer-content">
-        <div flex></div>
+    <div ng-if="!ctrl.tasksLoading && ctrl.filteredTasks && ctrl.filteredTasks.length > 0">
+        <div class="md-table-footer-content">
+            <div flex></div>
 
-        <div class="tasks-status-summary">
-            <md-button class="md-button status-chip total" ng-click="ctrl.filterTasks('all')" ng-disabled="ctrl.tasks.length === 0">
-                <md-icon md-font-set="material-symbols-outlined">article</md-icon>
-                <span>{{ctrl.tasks.length || 0}}</span>
-                <span class="status-label">Total</span>
-            </md-button>
-            <md-button class="md-button status-chip mine" ng-click="ctrl.filterTasks('mine')" ng-disabled="ctrl.getTasksStatusCount('mine') === 0">
-                <md-icon md-font-set="material-symbols-outlined">person</md-icon>
-                <span>{{ctrl.getTasksStatusCount('mine')}}</span>
-                <span class="status-label optional-label">Mine</span>
-            </md-button>
-            <md-button class="md-button status-chip unassigned" ng-click="ctrl.filterTasks('unassigned')" ng-disabled="ctrl.getTasksStatusCount('unassigned') === 0">
-                <md-icon md-font-set="material-symbols-outlined">person_off</md-icon>
-                <span>{{ctrl.getTasksStatusCount('unassigned')}}</span>
-                <span class="status-label optional-label">Unassigned</span>
-            </md-button>
-            <md-button class="md-button status-chip newest" ng-click="ctrl.filterTasks('newest')" ng-disabled="ctrl.tasks.length === 0">
-                <md-icon md-font-set="material-symbols-outlined">arrow_downward</md-icon>
-                <span>{{ctrl.tasks.length || 0}}</span>
-                <span class="status-label optional-label">Newest</span>
-            </md-button>
-            <md-button class="md-button status-chip oldest" ng-click="ctrl.filterTasks('oldest')" ng-disabled="ctrl.tasks.length === 0">
-                <md-icon md-font-set="material-symbols-outlined">arrow_upward</md-icon>
-                <span>{{ctrl.tasks.length || 0}}</span>
-                <span class="status-label optional-label">Oldest</span>
-            </md-button>
+            <div class="tasks-status-summary">
+                <md-button class="md-button status-chip total" ng-click="ctrl.filterTasks('all')"
+                           ng-disabled="ctrl.tasks.length === 0">
+                    <md-icon md-font-set="material-symbols-outlined">article</md-icon>
+                    <span>{{ctrl.tasks.length || 0}}</span>
+                    <span class="status-label">Total</span>
+                </md-button>
+                <md-button class="md-button status-chip mine" ng-click="ctrl.filterTasks('mine')"
+                           ng-disabled="ctrl.getTasksStatusCount('mine') === 0">
+                    <md-icon md-font-set="material-symbols-outlined">person</md-icon>
+                    <span>{{ctrl.getTasksStatusCount('mine')}}</span>
+                    <span class="status-label optional-label">Mine</span>
+                </md-button>
+                <md-button class="md-button status-chip unassigned" ng-click="ctrl.filterTasks('unassigned')"
+                           ng-disabled="ctrl.getTasksStatusCount('unassigned') === 0">
+                    <md-icon md-font-set="material-symbols-outlined">person_off</md-icon>
+                    <span>{{ctrl.getTasksStatusCount('unassigned')}}</span>
+                    <span class="status-label optional-label">Unassigned</span>
+                </md-button>
+                <md-button class="md-button status-chip newest" ng-click="ctrl.filterTasks('newest')"
+                           ng-disabled="ctrl.tasks.length === 0">
+                    <md-icon md-font-set="material-symbols-outlined">arrow_downward</md-icon>
+                    <span>{{ctrl.tasks.length || 0}}</span>
+                    <span class="status-label optional-label">Newest</span>
+                </md-button>
+                <md-button class="md-button status-chip oldest" ng-click="ctrl.filterTasks('oldest')"
+                           ng-disabled="ctrl.tasks.length === 0">
+                    <md-icon md-font-set="material-symbols-outlined">arrow_upward</md-icon>
+                    <span>{{ctrl.tasks.length || 0}}</span>
+                    <span class="status-label optional-label">Oldest</span>
+                </md-button>
+            </div>
         </div>
-    </div>
 
-    <md-divider></md-divider>
+        <md-divider></md-divider>
+
+        <md-list ng-if="!ctrl.tasksLoading && ctrl.filteredTasks && ctrl.filteredTasks.length > 0">
+            <task-item-component
+                    ng-repeat="task in ctrl.filteredTasks | filter: box.searchBox"
+                    task="task"
+                    config="ctrl.taskItemConfig"
+                    on-task-updated="ctrl.getTasks()"
+                    on-task-click="ctrl.selectTaskJobDetail(task)">
+            </task-item-component>
+        </md-list>
+    </div>
 
     <dfrnt-loader
             is-loading="ctrl.tasksLoading"
             icon-name="'support'">
     </dfrnt-loader>
-
-    <md-list ng-if="!ctrl.tasksLoading && ctrl.filteredTasks && ctrl.filteredTasks.length > 0">
-        <task-item-component
-                ng-repeat="task in ctrl.filteredTasks | filter: box.searchBox"
-                task="task"
-                config="ctrl.taskItemConfig"
-                on-task-updated="ctrl.getTasks()"
-                on-task-click="ctrl.selectTaskJobDetail(task)">
-        </task-item-component>
-    </md-list>
 
     <no-data
             ng-if="!ctrl.tasksLoading && (!ctrl.filteredTasks || ctrl.filteredTasks.length === 0)"

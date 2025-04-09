@@ -1,11 +1,5 @@
 <div class="droppable-box nationwide-job-list">
-    <context-menu
-            on-refresh="ctrl.refreshData(true)"
-            on-split-job="ctrl.handleSplitJob(job)"
-            on-refresh-courier-jobs="ctrl.refreshCourierJobs(courierId)">
-    </context-menu>
-
-    <md-table-container>
+    <md-table-container ng-if="ctrl.jobsCurrentList && ctrl.jobsCurrentList.length > 0">
         <table md-dense md-progress="ctrl.currentListLoading" md-table>
             <thead md-head>
             <tr md-row>
@@ -125,7 +119,7 @@
 
     <!-- No Data Message -->
     <no-data
-            ng-if="!ctrl.currentListLoading && (!ctrl.jobsCurrentList || ctrl.jobsCurrentList.length === 0)"
+            ng-if="!ctrl.currentListLoading && ctrl.jobsCurrentList && ctrl.jobsCurrentList.length === 0"
             title="No Available Work"
             message="This Courier Does Not Have Any Available Work"
             icon="local_shipping"

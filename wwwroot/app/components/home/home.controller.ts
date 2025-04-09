@@ -1964,9 +1964,16 @@ class HomeController extends BaseController {
 
             console.log('[selectSupportJobDetail] Fetching job details for jobId:', task.jobId);
 
-            const attachedJob = this.jobList.find((job) => job.id === task.jobId);
+            let attachedJob = this.jobList.find((job) => job.id === task.jobId);
+
+            // If not found locally, fetch from database
             if (!attachedJob) {
-                this.toastrService.showWarningToast("No job is attached to this support.");
+                attachedJob = await this.DispatchData.getJobDetail(task.jobId) as IDispatchJob;
+            }
+
+            if (!attachedJob) {
+                this.toastrService.showWarningToast("This task has no job attached");
+                console.warn('[selectTaskJobDetail] No job found for jobId:', task.jobId);
                 return;
             }
 
@@ -2722,28 +2729,28 @@ class HomeController extends BaseController {
     }
 
     getTasksStatusCount(statusType: string): number {
-        if (!this.tasks || !Array.isArray(this.tasks)) {
+        if (!this.supports || !Array.isArray(this.supports)) {
             return 0;
         }
 
         switch (statusType) {
             case 'mine':
-                return this.tasks.filter(task => task.assignee.id === ContactID).length;
+                return this.supports.filter(support => support.assignee.id === ContactID).length;
             case 'unassigned':
-                return this.tasks.filter(task => !task.assignee.id).length;
+                return this.supports.filter(support => !support.assignee.id).length;
             case 'newest':
                 // For newest/oldest filters, we return the total count since they're
                 // sorting options rather than filtering options
-                return this.tasks.length;
+                return this.supports.length;
             case 'oldest':
-                return this.tasks.length;
+                return this.supports.length;
             default:
-                return this.tasks.length;
+                return this.supports.length;
         }
     }
 
     async filterTasks(filterType: string): Promise<void> {
-        this.tasksFilter = filterType;
+        this.supportsFilter = filterType;
         await this.loadSupports(filterType);
     }
 }

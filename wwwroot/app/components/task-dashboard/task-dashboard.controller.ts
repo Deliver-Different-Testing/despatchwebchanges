@@ -55,7 +55,8 @@ class TaskDashboardController extends BaseController {
         customClass: '',
         allowCompletion: true,
         showStatusIndicators: true,
-        showOverdueWarning: true
+        showOverdueWarning: true,
+        onTaskClick: true
     };
 
     calendarTaskConfig: ITaskListItemConfig = {
@@ -66,8 +67,12 @@ class TaskDashboardController extends BaseController {
         customClass: 'calendar-task-item',
         allowCompletion: true,
         showStatusIndicators: false,
-        showOverdueWarning: false
+        showOverdueWarning: false,
+        onTaskClick: true
     };
+
+    currentJobId?: number;
+    currentJobNumber?: string;
 
     constructor(
         greetingService: GreetingService,
@@ -291,6 +296,11 @@ class TaskDashboardController extends BaseController {
     async refreshDashboard() {
         this.initializeDates();
         await this.getTasks();
+    }
+
+    selectTaskJobDetail(task: ExtendedTask) {
+        this.currentJobId = task.jobId;
+        this.currentJobNumber = task.jobNumber;
     }
 }
 

@@ -149,10 +149,12 @@
                     </md-chip>
                 </td>
 
-                <td md-cell class="late-call-cell" ng-click="ctrl.openEditDialog($event, job, 'lp', 'Late Pickup')" title="Click to edit Late Pickup">
+                <td md-cell class="late-call-cell" ng-click="ctrl.openEditDialog($event, job, 'lp', 'Late Pickup')"
+                    title="Click to edit Late Pickup">
                     {{job.lp ? job.lp : 'LP'}}
                 </td>
-                <td md-cell class="late-call-cell" ng-click="ctrl.openEditDialog($event, job, 'ld', 'Late Delivery')" title="Click to edit Late Delivery">
+                <td md-cell class="late-call-cell" ng-click="ctrl.openEditDialog($event, job, 'ld', 'Late Delivery')"
+                    title="Click to edit Late Delivery">
                     {{job.ld ? job.ld : 'LD'}}
                 </td>
 
@@ -173,7 +175,7 @@
 
     <!-- No Data Message -->
     <no-data
-            ng-if="!ctrl.jobList || ctrl.jobList.length === 0"
+            ng-if="!ctrl.jobList &&ctrl.jobList.length === 0"
             title="No Jobs Available"
             message="There are currently no jobs that match your criteria."
             icon="list_alt"

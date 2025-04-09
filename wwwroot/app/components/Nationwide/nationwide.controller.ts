@@ -6,7 +6,7 @@ import DispatchCoreService from "../../services/dispatch-core.service";
 import {AppPages} from "../../enums/app-pages.enum";
 import {AppConfig} from "../../interfaces/app-config.interface";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
-import {IAgent, IDispatchJob, JobQueryParams} from "../../interfaces/job.interface";
+import {IAgent, IDispatchJob, IJob, JobQueryParams} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
 import {IFlightViewModel, HereMapsConfig, StatusChangeEvent, StatusToListMap} from "./nationwide.interfaces";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
@@ -831,7 +831,7 @@ class NationwideControl extends BaseController {
 
     async restoreJob(job: IDispatchJob) {
         try {
-            const result = await this.DispatchJobService.restoreJob(job);
+           await this.DispatchJobService.restoreJob(job);
             await this.getData();
         } catch (error) {
             console.error('Error restoring job:', error);
@@ -1563,43 +1563,66 @@ class NationwideControl extends BaseController {
         await this.loadTasks(filterType);
     }
 
-    async selectTaskJobDetail(task: TaskViewModel) {
-        console.log('[selectSupportJobDetail] Starting with task:', {
-            jobId: task.jobId,
-            jobNumber: task.jobNumber,
-            taskId: task.id
-        });
-
+    async selectTaskJobDetail(task: TaskViewModel): Promise<void> {
+        this._logTaskInfo(task);
         this.currentSupport = task;
 
+        if (!this._validateJobId(task)) {
+            return;
+        }
+
         try {
-            const noJobMessage = "The attached job is not available on this page"
-            if (!task.jobId) {
-                this.toastrService.showWarningToast(noJobMessage);
-                console.warn('[selectSupportJobDetail] No jobId provided, returning early');
-                return;
+            // First try to find the job in local lists
+            let attachedJob = this._findJobInLocalLists(task.jobId);
+
+            // If not found locally, fetch from database
+            if (!attachedJob) {
+                attachedJob = await this.DispatchData.getJobDetail(task.jobId) as IDispatchJob;
             }
 
-            console.log('[selectSupportJobDetail] Fetching job details for jobId:', task.jobId);
-
-            const attachedJob = this.jobList?.find((job) => job.id === task.jobId) ||
-                this.jobListPOD?.find((job) => job.id === task.jobId) ||
-                this.jobListReprice?.find((job) => job.id === task.jobId);
-
             if (!attachedJob) {
-                this.toastrService.showWarningToast(noJobMessage);
+                this.toastrService.showWarningToast("This task has no job attached");
+                console.warn('[selectTaskJobDetail] No job found for jobId:', task.jobId);
                 return;
             }
 
             await this.selectJob(attachedJob);
-            console.log('[selectSupportJobDetail] Job selected successfully');
+            console.log('[selectTaskJobDetail] Job selected successfully');
 
-            this.currentSelection = ` for Job ${attachedJob.jobNo}`;
+            this._updateCurrentSelection(attachedJob.jobNo);
+        } catch (error) {
+            this._handleError(error);
         }
-        catch(error) {
-            this.toastrService.showErrorToast("Error loading job information");
-            console.error('[selectSupportJobDetail] Error loading job information', error);
+    }
+
+    private _logTaskInfo(task: TaskViewModel): void {
+        console.log('[selectTaskJobDetail] Starting with task:', {
+            jobId: task.jobId,
+            jobNumber: task.jobNumber,
+            taskId: task.id
+        });
+    }
+
+    private _validateJobId(task: TaskViewModel): boolean {
+        const hasJobId = !!task.jobId;
+        if (!hasJobId) {
+            const message = "This task has no job attached";
+            this.toastrService.showWarningToast(message);
+            console.warn('[selectTaskJobDetail] No jobId provided, returning early');
         }
+        return hasJobId;
+    }
+
+    private _findJobInLocalLists(jobId: number) {
+        console.log('[selectTaskJobDetail] Fetching job details for jobId:', jobId);
+
+        return this.jobList?.find((job) => job.id === jobId) ||
+            this.jobListPOD?.find((job) => job.id === jobId) ||
+            this.jobListReprice?.find((job) => job.id === jobId);
+    }
+
+    private _updateCurrentSelection(jobNo: string): void {
+        this.currentSelection = ` for Job ${jobNo}`;
     }
 }
 

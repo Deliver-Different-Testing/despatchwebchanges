@@ -52,7 +52,8 @@
                 <td md-cell>
                     {{isUsCustomer ? job.deliveryAddress.addressLine5 + ' ' + job.deliveryAddress.addressLine6 : job.to}}
                     <md-tooltip md-direction="bottom">{{ job.deliveryAddress.fullAddress }}</md-tooltip>
-                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning
+                    </md-icon>
                 </td>
                 <td md-cell>{{job.courier}}</td>
                 <td md-cell>
@@ -71,6 +72,7 @@
     </md-table-container>
 
     <md-table-pagination
+            ng-if="pbList && pbList.length > 0"
             md-limit="preBookQuery.limit"
             md-limit-options="[5, 10, 25, 50]"
             md-on-paginate="preBookPageChanged"

@@ -35,12 +35,15 @@
 
         <!-- Task metadata -->
         <div class="task-meta" layout="row" layout-wrap>
-            <button class="assignee-button"
+            <md-button
                     ng-if="ctrl.config.showAssignee !== false"
-                    ng-click="$event.stopPropagation(); ctrl.reassignTask($event, ctrl.task)">
-                <md-icon class="icon" md-font-set="material-symbols-outlined">person</md-icon>
-                <span>{{ctrl.task.assignee.text || 'Unassigned'}}</span>
-            </button>
+                    class="assignee-button"
+                    layout="row"
+                    layout-align="start center"
+                    ng-click="ctrl.reassignTask($event, ctrl.task)">
+                <md-icon md-font-set="material-symbols-outlined">person</md-icon>
+                {{ctrl.task.assignee.text || 'Unassigned'}}
+            </md-button>
 
             <div ng-if="ctrl.config.showJobId !== false"
                  class="job-id-chip">
@@ -71,7 +74,7 @@
                 ng-class="{'overdue-button': ctrl.isTaskOverdue(ctrl.task)}"
                 ng-click="$event.stopPropagation(); ctrl.openDateDialog($event, ctrl.task)">
             <md-icon class="icon" md-font-set="material-symbols-outlined">calendar_today</md-icon>
-            <span>{{ctrl.formatDate(ctrl.task.dueDate)}}</span>
+            <span>{{ctrl.isUsCustomer ? (ctrl.task.dueDate | date:'MM/dd/yyyy') : (ctrl.task.dueDate | date:'dd/MM/yyyy')}}</span>
         </button>
 
         <!-- Time button -->
@@ -79,7 +82,7 @@
                 ng-class="{'overdue-button': ctrl.isTaskOverdue(ctrl.task)}"
                 ng-click="$event.stopPropagation(); ctrl.openTimeDialog($event, ctrl.task)">
             <md-icon class="icon" md-font-set="material-symbols-outlined">schedule</md-icon>
-            <span>{{ctrl.formatTime(ctrl.task.dueDate)}}</span>
+            <span>{{ctrl.task.dueDate | date:'h:mm a'}}</span>
         </button>
     </div>
 
