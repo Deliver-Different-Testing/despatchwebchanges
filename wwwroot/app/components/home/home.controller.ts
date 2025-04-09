@@ -78,7 +78,6 @@ class HomeController extends BaseController {
     currentJob?: IDispatchJob;
     currentJobId?: number;
     jobList: IDispatchJob[];
-    allCouriers: any;
     mapZoom?: number;
     options: any;
     truckMode: string;
