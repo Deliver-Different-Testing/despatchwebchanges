@@ -14,7 +14,8 @@ class TaskDashboardController extends BaseController {
         "$mdSidenav",
         "$filter",
         "DispatchData",
-        "$timeout"
+        "$timeout",
+        "$scope",
     ];
 
     // Properties
@@ -79,7 +80,8 @@ class TaskDashboardController extends BaseController {
         private $mdSidenav: angular.material.ISidenavService,
         private $filter: angular.IFilterService,
         private DispatchService: DispatchCoreService,
-        private $timeout: angular.ITimeoutService
+        private $timeout: angular.ITimeoutService,
+        $scope: angular.IScope,
     ) {
         super();
         this.greeting = greetingService.greetUser(FirstName);
@@ -94,6 +96,10 @@ class TaskDashboardController extends BaseController {
             .catch(error => {
                 console.error('Initialization error:', error);
             });
+
+        $scope.$on('jobChanged', (_, newLabel) => {
+            this.currentJobNumber = newLabel;
+        });
     }
 
     private async _loadLists() {
@@ -300,7 +306,7 @@ class TaskDashboardController extends BaseController {
 
     selectTaskJobDetail(task: ExtendedTask) {
         this.currentJobId = task.jobId;
-        this.currentJobNumber = task.jobNumber;
+        this.currentJobNumber = "for Job " + task.jobNumber;
     }
 }
 

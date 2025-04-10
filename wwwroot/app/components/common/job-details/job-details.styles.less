@@ -34,7 +34,7 @@
 
   // Common section styles
   .info-section {
-    margin-bottom: @spacing-unit*2;
+    margin-bottom: 2px;
     .section-transition();
 
     &:last-child {
@@ -184,7 +184,7 @@
 
     // Responsive adjustments
     @media (max-width: 599px) {
-      margin-bottom: 8px;
+      margin-bottom: 2px;
 
       .md-card-content {
         padding: 8px 12px;
@@ -259,7 +259,7 @@
             min-width: auto;
 
             &.md-active {
-              color: @primary-color;
+              color: black;
               font-weight: 500;
             }
           }
@@ -282,38 +282,11 @@
     // Timing Section
     .timing-section {
       background: rgba(62, 175, 194, 0.08);
-      border-radius: @spacing-unit/2;
+      border-radius: 6px;
       margin: 0 8px;
 
       .timing-list {
         padding: 0 !important;
-
-        md-list-item {
-          min-height: @spacing-unit*5 !important;
-
-          &._md-button-wrap {
-            .md-button.md-no-style {
-              text-align: left;
-              width: 100%;
-            }
-          }
-
-          &.md-no-proxy {
-            padding: 0 16px;
-          }
-
-          .md-button.md-no-style {
-            text-align: left;
-          }
-
-          .md-list-item-inner {
-            justify-content: flex-start;
-          }
-        }
-      }
-
-      .timing-column {
-        padding: @spacing-unit 0;
       }
 
       md-icon {
@@ -351,6 +324,24 @@
 
         .timing-label {
           min-width: 75px;
+        }
+      }
+
+      .checkbox-column {
+        display: flex;
+        align-items: center;
+        padding: 0 !important; /* Remove default padding */
+
+        .compact-checkbox {
+          margin: 2px 8px;
+
+          .md-container {
+            margin-right: 4px;
+          }
+
+          .md-label {
+            font-size: 14px;
+          }
         }
       }
     }
@@ -399,7 +390,7 @@
             }
 
             .address-lines {
-              margin-bottom: @spacing-unit*2;
+              margin-bottom: 2px;
 
               p {
                 margin: @spacing-unit 0;
@@ -458,7 +449,7 @@
       @media (max-width: 599px) {
         .address-section {
           .address-block {
-            margin-bottom: @spacing-unit*2;
+            margin-bottom: 2px;
 
             &:last-child {
               margin-bottom: 0;
@@ -488,81 +479,72 @@
       }
     }
 
-    .footer-section {
-      background: #f5f5f5;
-      padding: @spacing-unit*2;
+    .footer-timing-section {
+      margin-top: 16px;
+      margin-bottom: 0;
+      background-color: rgba(63, 81, 181, 0.05);
+      padding: 0; /* Remove default padding to control it better */
 
-      .info-section {
-        md-list {
-          padding: 0;
+      .timing-row {
+        padding: 12px 16px;
+      }
 
-          md-list-item {
-            min-height: @spacing-unit*6 !important;
-            padding: 0;
+      /* Divider between contact info and options */
+      > md-divider {
+        margin: 0;
+      }
 
-            &._md-button-wrap {
-              .md-button.md-no-style {
-                text-align: left;
-                width: 100%;
-              }
-            }
+      /* Styles for the checkboxes row */
+      .options-row {
+        padding: 8px 16px;
+        background-color: rgba(63, 81, 181, 0.08); /* Slightly darker than the top section */
 
-            &.md-no-proxy {
-              padding: 0 16px;
-            }
-
-            .md-button.md-no-style {
-              text-align: left;
-            }
-
-            .md-list-item-inner {
-              justify-content: flex-start;
-            }
-
-            md-icon {
-              margin-right: @spacing-unit*2;
-              color: @text-medium;
-            }
-
-            .info-detail {
-              .flex-center();
-              gap: @spacing-unit;
-              justify-content: flex-start;
-              margin-left: 0;
-
-              .label {
-                color: @text-medium;
-                font-size: 14px;
-                min-width: 100px;
-                font-weight: normal;
-              }
-
-              .value {
-                color: @text-dark;
-                font-size: 14px;
-
-                &:empty::before {
-                  content: "Not available";
-                  color: @text-light;
-                }
-              }
-            }
-
-            &:hover {
-              background-color: rgba(0, 0, 0, 0.04);
-            }
-
-            .md-button {
-              margin: 0;
-            }
+        md-checkbox {
+          margin: 8px 0;
+          .md-label {
+            margin-left: 28px; /* Better alignment with checkbox */
           }
         }
       }
 
-      // Maintain existing checkbox group styles
-      .checkbox-group {
-        .checkboxes-container {
-          padding: @spacing-unit*2;
+      /* Make sure icons align with the top section */
+      md-icon {
+        color: @text-medium;
+        margin-right: 16px !important;
+      }
+
+      /* Label and value styles to match top timing section */
+      .info-detail {
+        .label {
+          color: @text-medium;
+          font-size: 14px;
+          min-width: 75px;
+          font-weight: 500;
+        }
+
+        .value {
+          color: @text-dark;
+          font-size: 14px;
+        }
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: @mobile-breakpoint) {
+        .timing-row {
+          flex-direction: column;
+        }
+
+        .options-row > div {
+          flex-wrap: wrap;
+
+          md-checkbox {
+            margin: 4px 12px 4px 0;
+            min-width: 100px;
+          }
+        }
+
+        md-divider[vertical] {
+          display: none;
         }
       }
     }
@@ -717,6 +699,33 @@
   @media (max-width: 599px) {
     .pod-main-photo {
       height: 200px;
+    }
+  }
+}
+
+.sticky-note-container {
+  max-height: 500px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+
+  // Nested scrollbar styles
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+
+    &:hover {
+      background: #a8a8a8;
     }
   }
 }
