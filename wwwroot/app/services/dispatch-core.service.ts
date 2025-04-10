@@ -95,15 +95,13 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async addRestoreEvent(jobId: number) {
-        const response = await this.$http.post("job/AddRestoreEvent", null, {
+       await this.$http.post("job/AddRestoreEvent", null, {
             params: {
                 jobId,
-                ContactID,
-                FirstName
+                staffId: ContactID,
+                despatcherName: FirstName
             }
         });
-
-        return response.data;
     }
 
     async addFollowupEvent(jobId: number) {

@@ -1,8 +1,7 @@
 enum ToastType {
     SUCCESS = 'success',
     ERROR = 'error',
-    WARNING = 'warning',
-    INFO = 'info'
+    WARNING = 'warning'
 }
 
 class ToastrService implements angular.IServiceProvider {
@@ -39,9 +38,9 @@ class ToastrService implements angular.IServiceProvider {
     private showToast(message: string, type: ToastType) {
         const preset = this.$mdToast.simple()
             .textContent(message)
-            .position("bottom")
+            .position("top right")
+            .toastClass(`md-${type}-toast md-toast-custom`)
             .hideDelay(5000)
-            .toastClass(`md-${type}-toast md-toast-custom md-center-toast`)
             .parent(this.$document.parent())
             .theme(`${type}-toast`);
 

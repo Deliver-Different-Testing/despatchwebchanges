@@ -32,6 +32,7 @@ class JobDetailController extends BaseController {
         "$document",
         "APP_CONFIG",
         "editParcelDimensionsDialogService",
+        "$rootScope"
     ];
 
     readonly appPage: AppPages = AppPages.Dispatch;
@@ -67,6 +68,7 @@ class JobDetailController extends BaseController {
         private $document: angular.IDocumentService,
         APP_CONFIG: AppConfig,
         private editParcelDimensionsDialogService: EditParcelDimensionsDialogService,
+        private $rootScope: angular.IRootScopeService,
     ) {
         super();
 
@@ -171,6 +173,7 @@ class JobDetailController extends BaseController {
             }
         } finally {
             this.processingTabChange = false;
+            this.$rootScope.$broadcast('jobChanged', ` for Job ${this.job?.jobNo}`);
         }
     }
 

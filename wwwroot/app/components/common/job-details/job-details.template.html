@@ -73,7 +73,7 @@
         </div>
 
         <!-- Timing Section -->
-        <div class="timing-section md-whiteframe-1dp">
+        <div class="timing-section md-dense md-whiteframe-1dp">
             <div layout="row" layout-align="space-between center">
                 <!-- Left Column -->
                 <div flex="33" flex-xs="100" class="timing-column">
@@ -373,7 +373,9 @@
                 </div>
 
                 <!-- Notes Section with sticky note design -->
-                <sticky-note job-id="ctrl.job.id"></sticky-note>
+                <div class="sticky-note-container md-whiteframe-1dp">
+                    <sticky-note job-id="ctrl.job.id"></sticky-note>
+                </div>
 
                 <!-- Package Details -->
                 <div layout="row" layout-xs="column" class="info-sections-container md-whiteframe-1dp">
@@ -676,41 +678,17 @@
             </div>
         </div>
 
-        <!-- Footer -->
-        <div class="footer-section md-whiteframe-1dp">
-            <div layout="row">
-                <!-- Left side -->
-                <div flex="33" class="info-section">
-                    <md-list>
-                        <md-list-item class="info-row"
-                                      ng-click="!ctrl.job.locked && ctrl.trackingMethodClick($event, ctrl.job)">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="tracking method">
-                                location_searching
-                            </md-icon>
-                            <div class="info-detail">
-                                <span class="label">Tracking Method:</span>
-                                <span class="value">{{ctrl.getTrackingMethod(ctrl.job.trackingMethod)}}</span>
-                            </div>
-                        </md-list-item>
-
-                        <md-list-item class="info-row"
-                                      ng-click="!ctrl.job.locked && ctrl.editTrackingMobile($event, ctrl.job)">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="tracking mobile">
-                                smartphone
-                            </md-icon>
-                            <div class="info-detail">
-                                <span class="label">Tracking Mobile:</span>
-                                <span class="value">{{ctrl.job.trackingMobile || 'N/A'}}</span>
-                            </div>
-                        </md-list-item>
-
-                        <md-list-item class="info-row"
-                                      ng-click="!ctrl.job.locked && ctrl.editTrackingEmail($event, ctrl.job)">
-                            <md-icon md-font-set="material-symbols-outlined" aria-label="tracking email">mail
-                            </md-icon>
-                            <div class="info-detail">
-                                <span class="label">Tracking Email:</span>
-                                <span class="value">{{ctrl.job.trackingEmail || 'N/A'}}</span>
+        <!-- Footer Section -->
+        <div class="timing-section" style="margin: 0 8px;">
+            <div layout="row" layout-align="space-between center">
+                <!-- Left Column -->
+                <div flex="33" flex-xs="100" class="timing-column">
+                    <md-list class="timing-list">
+                        <md-list-item md-ink-ripple ng-click="!ctrl.job.locked && ctrl.trackingMethodClick($event, ctrl.job)">
+                            <md-icon md-font-set="material-symbols-outlined">track_changes</md-icon>
+                            <div class="timing-detail">
+                                <span class="timing-label">Tracking:</span>
+                                <span class="timing-value">{{ctrl.getTrackingMethod(ctrl.job.trackingMethod) || 'N/A'}}</span>
                             </div>
                         </md-list-item>
                     </md-list>
@@ -718,55 +696,51 @@
 
                 <md-divider vertical></md-divider>
 
-                <!-- Right side - Checkbox group -->
-                <div flex="60" flex-offset="5" class="checkbox-group">
-                    <div class="checkboxes-container">
-                        <div class="checkbox-grid">
-                            <div layout="row" layout-wrap>
-                                <div flex="20" ng-if="!ctrl.isUsCustomer">
-                                    <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'van')"
-                                                 ng-model="ctrl.job.van" class="compact">Van
-                                    </md-checkbox>
-                                </div>
-                                <div flex="20" ng-if="!ctrl.isUsCustomer">
-                                    <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'truck')"
-                                                 ng-model="ctrl.job.truck" class="compact">Truck
-                                    </md-checkbox>
-                                </div>
-                                <div flex="20" ng-if="!ctrl.isUsCustomer">
-                                    <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'pedal')"
-                                                 ng-model="ctrl.job.ped" class="compact">Pedal (CBD)
-                                    </md-checkbox>
-                                </div>
-                                <div flex="20" ng-if="!ctrl.isUsCustomer">
-                                    <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'attention')"
-                                                 ng-model="ctrl.job.attention" class="compact">Attention
-                                    </md-checkbox>
-                                </div>
-                                <div flex="20" ng-if="!ctrl.isUsCustomer">
-                                    <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'vanOK')"
-                                                 ng-model="ctrl.job.vanOk" class="compact">Van OK?
-                                    </md-checkbox>
-                                </div>
+                <!-- Middle Column -->
+                <div flex="33" flex-xs="100" class="timing-column">
+                    <md-list class="timing-list">
+                        <md-list-item md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editTrackingMobile($event, ctrl.job)">
+                            <md-icon md-font-set="material-symbols-outlined">smartphone</md-icon>
+                            <div class="timing-detail">
+                                <span class="timing-label">Mobile:</span>
+                                <span class="timing-value">{{ctrl.job.trackingMobile || 'N/A'}}</span>
                             </div>
+                        </md-list-item>
 
-                            <div layout="row" layout-wrap>
-                                <div flex="20">
-                                    <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'reprice')"
-                                                 ng-model="ctrl.job.reprice" class="compact">Reprice
-                                    </md-checkbox>
-                                </div>
-                                <div flex="20">
-                                    <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'void')"
-                                                 ng-model="ctrl.job.void" class="compact">Void
-                                    </md-checkbox>
-                                </div>
-                                <div flex="20">
-                                    <md-checkbox ng-click="ctrl.markJobAsDone($event, ctrl.job)"
-                                                 ng-model="ctrl.job.done" class="compact">Done
-                                    </md-checkbox>
-                                </div>
+                        <md-list-item md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editTrackingEmail($event, ctrl.job)">
+                            <md-icon md-font-set="material-symbols-outlined">mail</md-icon>
+                            <div class="timing-detail">
+                                <span class="timing-label">Email:</span>
+                                <span class="timing-value">{{ctrl.job.trackingEmail || 'N/A'}}</span>
                             </div>
+                        </md-list-item>
+                    </md-list>
+                </div>
+
+                <md-divider vertical></md-divider>
+
+                <!-- Right Column -->
+                <div flex="33" flex-xs="100" class="timing-column checkbox-column">
+                    <div layout="row" layout-wrap layout-align="start center">
+                        <div flex="50" ng-if="!ctrl.isUsCustomer">
+                            <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'van')"
+                                         ng-model="ctrl.job.van" class="compact-checkbox">Van</md-checkbox>
+                        </div>
+                        <div flex="50" ng-if="!ctrl.isUsCustomer">
+                            <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'truck')"
+                                         ng-model="ctrl.job.truck" class="compact-checkbox">Truck</md-checkbox>
+                        </div>
+                        <div flex="50">
+                            <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'reprice')"
+                                         ng-model="ctrl.job.reprice" class="compact-checkbox">Reprice</md-checkbox>
+                        </div>
+                        <div flex="50">
+                            <md-checkbox ng-click="ctrl.toggleProperty(ctrl.job, 'void')"
+                                         ng-model="ctrl.job.void" class="compact-checkbox">Void</md-checkbox>
+                        </div>
+                        <div flex="50">
+                            <md-checkbox ng-click="ctrl.markJobAsDone($event, ctrl.job)"
+                                         ng-model="ctrl.job.done" class="compact-checkbox">Done</md-checkbox>
                         </div>
                     </div>
                 </div>

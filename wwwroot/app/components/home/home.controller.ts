@@ -122,7 +122,7 @@ class HomeController extends BaseController {
     jobFilters: any;
     currentSupport: any;
     potentialCouriersSelection: any;
-    currentSelection: any;
+    currentSelection?: string;
     selectedJobs: any;
     boxSortableOptions: {
         handle: string;
@@ -187,6 +187,10 @@ class HomeController extends BaseController {
                 this.updateMapForSelectedViews();
             }
         }, true);
+
+        $scope.$on('jobChanged', (_, newLabel) => {
+            this.currentSelection = newLabel;
+        });
 
         this.JobDetailService.setSelectJobDetail(async () => {
             const currentJob = this.currentJob;
@@ -362,9 +366,6 @@ class HomeController extends BaseController {
         this.selected = [];
         this.jobList = [];
         this.supports = [];
-
-        this.driverLocations = undefined;
-        this.truckCourierStatus = undefined;
 
         this.boxes = {
             jobsList: {
@@ -692,17 +693,12 @@ class HomeController extends BaseController {
             });
     }
 
-    saveFilterToStorage(filter: any) {
-        if (Modernizr.localstorage) {
-            localStorage.setItem(`selectedFilter-${ContactID}`, filter);
-        }
-    }
-
     loadFilterFromStorage() {
         if (Modernizr.localstorage) {
             const savedFilter = localStorage.getItem(`selectedFilter-${ContactID}`);
             return savedFilter ? parseInt(savedFilter) : 2; // Default to 2 if not found
         }
+
         return 2; // Default value if localStorage not available
     }
 
@@ -1561,7 +1557,7 @@ class HomeController extends BaseController {
         });
 
         (angular.element(".droppable-row") as any).droppable({
-            classes: {"ui-droppable-hover": "active"}, drop: async function (event: MouseEvent, ui: any) {
+            classes: {"ui-droppable-hover": "active"}, drop: async (event: MouseEvent, ui: any) => {
                 await self.handleDroppedJob(self);
             },
         });
@@ -1694,7 +1690,7 @@ class HomeController extends BaseController {
         try {
             const foundCourier = await this.DispatchData.getCourierById(this.courier.gpsCourier);
             if (!foundCourier) {
-                await this.showAlert("Attention", "Courier not found.");
+                this.toastrService.showWarningToast("Courier not found");
                 return;
             }
 

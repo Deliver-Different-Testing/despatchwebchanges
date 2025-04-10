@@ -1,6 +1,8 @@
 <md-list-item class="task-item"
-              ng-class="{'completed': ctrl.task.closed, 'calendar-task-item': ctrl.config.customClass === 'calendar-task-item', 'clickable': ctrl.config.onTaskClick, 'compact': ctrl.config.compactView}"
+              ng-class="{'completed': ctrl.task.closed, 'clickable': ctrl.config.onTaskClick, 'compact': ctrl.config.compactView}"
               ng-click="ctrl.config.onTaskClick && ctrl.handleTaskClick($event)">
+
+    <!-- Priority indicator -->
     <div class="priority-indicator" ng-class="ctrl.task.priority"></div>
 
     <!-- Task checkbox -->
@@ -9,49 +11,46 @@
                  ng-model="ctrl.task.closed"
                  ng-change="ctrl.handleTaskCompletion(ctrl.task)"
                  ng-click="$event.stopPropagation()"
-                 aria-label="Mark as completed">
+                 aria-label="Complete task">
     </md-checkbox>
 
     <div class="md-list-item-text task-content" flex>
         <!-- Task title -->
-        <h3 class="task-title" ng-class="{'completed-text': ctrl.task.closed}">
+        <h2 class="task-title" ng-class="{'completed-text': ctrl.task.closed}">
             {{ctrl.task.title}}
-            <!-- Status indicators -->
+            <!-- Status chips -->
             <span ng-if="ctrl.config.showStatusIndicators !== false && ctrl.task.closed"
                   class="status-chip done">Done</span>
-            <span ng-if="ctrl.config.showStatusIndicators !== false && ctrl.isTaskOverdue(ctrl.task) && !ctrl.task.closed"
+            <span ng-if="ctrl.config.showStatusIndicators !== false && !ctrl.task.closed && ctrl.isTaskOverdue(ctrl.task)"
                   class="status-chip overdue">Overdue</span>
-            <span ng-if="ctrl.config.showStatusIndicators !== false && !ctrl.isTaskOverdue(ctrl.task) && !ctrl.task.closed"
+            <span ng-if="ctrl.config.showStatusIndicators !== false && !ctrl.task.closed && !ctrl.isTaskOverdue(ctrl.task)"
                   class="status-chip todo">To do</span>
-        </h3>
+        </h2>
 
         <!-- Task description -->
         <p class="task-description"
            ng-if="ctrl.config.showDescription !== false"
-           ng-class="{'completed-text': ctrl.task.closed}"
-           ng-attr-style="{{ctrl.config.maxDescriptionLength ? '-webkit-line-clamp:' + ctrl.config.maxDescriptionLength : ''}}">
+           ng-class="{'completed-text': ctrl.task.closed}">
             {{ctrl.task.description}}
         </p>
 
         <!-- Task metadata -->
-        <div class="task-meta" layout="row" layout-wrap>
-            <md-button
-                    ng-if="ctrl.config.showAssignee !== false"
-                    class="assignee-button"
-                    layout="row"
-                    layout-align="start center"
-                    ng-click="ctrl.reassignTask($event, ctrl.task)">
-                <md-icon md-font-set="material-symbols-outlined">person</md-icon>
-                {{ctrl.task.assignee.text || 'Unassigned'}}
+        <div class="task-meta">
+            <!-- Assignee -->
+            <md-button ng-if="ctrl.config.showAssignee !== false"
+                       class="assignee-button"
+                       ng-click="$event.stopPropagation(); ctrl.reassignTask($event, ctrl.task)">
+                <md-icon md-font-set="material-symbols-outlined" style="margin-right: 6px;">person</md-icon>
+                <span>{{ctrl.task.assignee.text || 'Unassigned'}}</span>
             </md-button>
 
-            <div ng-if="ctrl.config.showJobId !== false"
-                 class="job-id-chip">
+            <!-- Job ID -->
+            <div ng-if="ctrl.config.showJobId !== false" class="job-id-chip">
                 Job #{{ctrl.task.jobNumber}}
             </div>
 
-            <div ng-if="ctrl.config.showJobType !== false"
-                 class="meta-item job-type">
+            <!-- Job type -->
+            <div ng-if="ctrl.config.showJobType !== false" class="meta-item job-type">
                 <md-icon class="icon" md-font-set="material-symbols-outlined">label</md-icon>
                 <span>{{ctrl.task.eventType.charAt(0).toUpperCase() + ctrl.task.eventType.slice(1)}}</span>
             </div>
@@ -60,14 +59,7 @@
 
     <!-- Date/time section -->
     <div ng-if="ctrl.config.showDateTime !== false"
-         class="task-date-compact"
-         layout="column"
-         layout-align="center end">
-        <md-icon ng-if="ctrl.config.showOverdueWarning !== false && ctrl.isTaskOverdue(ctrl.task)"
-                 md-font-set="material-symbols-outlined"
-                 class="warning-icon icon">
-            warning
-        </md-icon>
+         class="task-date-compact">
 
         <!-- Date button -->
         <button class="date-time-button date-button"
