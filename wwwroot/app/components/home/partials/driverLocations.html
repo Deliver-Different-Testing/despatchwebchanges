@@ -1,7 +1,8 @@
-<dfrnt-loader
-        is-loading="ctrl.driverLocationsLoading"
-        icon-name="'person_pin_circle'">
-</dfrnt-loader>
+<md-progress-linear
+        md-mode="indeterminate"
+        ng-show="ctrl.driverLocationsLoading"
+        class="md-primary">
+</md-progress-linear>
 
 <div class="scrollable-container">
     <div id="driverLocations" ng-if="!ctrl.driverLocationsLoading && ctrl.driverLocations && ctrl.driverLocations.areas.length > 0">

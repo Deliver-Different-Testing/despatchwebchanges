@@ -141,6 +141,11 @@ class NationwideService implements angular.IServiceProvider {
         }
     }
 
+    async getActiveAirlines(): Promise<Suggestion[]> {
+        const response = await this.$http.get<Suggestion[]>("nationwideJob/GetActiveAirlines");
+        return response.data;
+    }
+
     private _prepareViewIdsForRequest(selectedAreas: DfrntPageViewModel[] | Suggestion[]): number[] {
         return selectedAreas.map(area => {
             return typeof area === "object" && area.id ? area.id : 0;

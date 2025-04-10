@@ -186,9 +186,9 @@ public interface IJobRepository
 
     Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId);
 
-    Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel);
-    Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel);
-    Task DeleteJobPriceBreakdownAsync(int chargeId);
+    Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel, int staffId);
+    Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel, int staffId);
+    Task DeleteJobPriceBreakdownAsync(int chargeId, int staffId);
 
     Task<string> RateJobDescription(
         int clientId,

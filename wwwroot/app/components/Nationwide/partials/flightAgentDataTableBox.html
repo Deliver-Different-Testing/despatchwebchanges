@@ -1,3 +1,17 @@
+<!-- Flights Loader-->
+<md-progress-linear
+        md-mode="indeterminate"
+        ng-show="ctrl.flightsLoading"
+        class="md-primary">
+</md-progress-linear>
+
+<!-- Agents Loading-->
+<md-progress-linear
+        md-mode="indeterminate"
+        ng-show="ctrl.agentsLoading"
+        class="md-primary">
+</md-progress-linear>
+
 <div class="box-content nationwide-job-list" ng-if="!ctrl.isDeliveryJob()">
     <!-- No Current Job Selected -->
     <no-data
@@ -26,13 +40,6 @@
             show-action="false">
     </no-data>
 
-    <!-- Loading Flights -->
-    <dfrnt-loader
-            ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId"
-            is-loading="ctrl.flightsLoading"
-            icon-name="'flight'">
-    </dfrnt-loader>
-
     <!-- No Flights Available -->
     <no-data
             ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading && ctrl.flightOptions.length === 0"
@@ -47,6 +54,29 @@
     <!-- Flight List -->
     <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading && ctrl.flightOptions.length > 0">
         <md-table-container>
+            <div class="md-table-footer-content">
+                <div flex></div>
+
+                <div class="airline-filter-summary" ng-if="ctrl.flightList && ctrl.flightList.length > 0">
+                    <md-button class="md-button airline-chip total" ng-click="ctrl.filterFlightsByAirline(null)">
+                        <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
+                        <span>{{ctrl.flightOptions.length || 0}}</span>
+                        <span class="airline-label">All Airlines</span>
+                    </md-button>
+
+                    <!-- Loop through all available airlines -->
+                    <md-button ng-repeat="airline in ctrl.activeAirlineOptions"
+                               class="md-button airline-chip {{airline.text | lowercase}}"
+                               ng-click="ctrl.filterFlightsByAirline(airline.id)">
+                        <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
+                        <span>{{ctrl.getFlightCountByAirline(airline.id)}}</span>
+                        <span class="airline-label">{{airline.text}}</span>
+                    </md-button>
+                </div>
+            </div>
+
+            <md-divider></md-divider>
+
             <table md-dense md-progress="ctrl.flightListPromise" md-table ng-model="ctrl.selectedFlight">
                 <thead md-head md-order="ctrl.flightTableQuery.order">
                 <tr md-row>
@@ -126,13 +156,6 @@
             icon="engineering"
             show-action="false">
     </no-data>
-
-    <!-- Loading Agents -->
-    <dfrnt-loader
-            ng-if="ctrl.currentJob && !ctrl.currentJob.assignedAgent && ctrl.isDeliveryJob()"
-            is-loading="ctrl.agentsLoading"
-            icon-name="'handyman'">
-    </dfrnt-loader>
 
     <!-- No Agents Available -->
     <no-data

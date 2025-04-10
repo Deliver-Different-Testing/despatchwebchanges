@@ -17,10 +17,11 @@
             </div>
         </md-toolbar>
 
-        <dfrnt-loader
-                is-loading="ctrl.loading"
-                icon-name="'note'">
-        </dfrnt-loader>
+        <md-progress-linear
+                md-mode="indeterminate"
+                ng-show="ctrl.loading"
+                class="md-primary">
+        </md-progress-linear>
 
         <div class="sticky-notes-container">
             <div ng-repeat="note in ctrl.notes"

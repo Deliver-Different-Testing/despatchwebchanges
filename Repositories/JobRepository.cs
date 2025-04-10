@@ -25,6 +25,8 @@ namespace DespatchWeb.Repositories;
 public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> contextFactory, ITenantTimeService timeService)
     : BaseJobRepository(contextFactory, timeService), IJobRepository
 {
+    private readonly ITenantTimeService _timeService = timeService;
+
     public async Task<List<Suggestion>> RelatedJobs(int parentId, int clientId)
     {
         return await Context
@@ -603,12 +605,12 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .Select(j => j.ParentId.Value)
             .ToList();
 
-        if (parentIds.Any())
+        if (parentIds.Count != 0)
             ids.AddRange(parentIds);
 
         ids = ids.Distinct().ToList();
 
-        if (!ids.Any())
+        if (ids.Count == 0)
             return [];
 
         var query =
@@ -621,7 +623,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 ParentId = j.ParentId,
                 JobNumber = j.Number,
                 BookDate = DateTime.Parse(
-                    $"{j.Date.Value.ToString("yyyy-MM-dd")} {j.Time.Value.ToString("HH:mm:ss")}"
+                    $"{j.Date.Value:yyyy-MM-dd} {j.Time.Value:HH:mm:ss}"
                 ),
                 Amount = j.Amount,
                 Fuel = j.FuelSurchargeAmount,
@@ -1649,22 +1651,32 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .ToListAsync();
     }
 
-
-    public async Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel)
+    public async Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel, int staffId)
     {
+        if(viewModel.JobId is null && viewModel.PrebookJobId is null)
+            return 0;
+
+        var effectiveJobId = await GetJobRelationshipInfoAsync(viewModel.JobId ?? viewModel.PrebookJobId ?? 0);
+        var isPrebook = viewModel.PrebookJobId.HasValue;
+
         var item = new PricingBreakdown
         {
             ChargeAmount = viewModel.Amount,
             ChargeName = viewModel.Name,
-            JobId = viewModel.JobId,
-            PrebookJobId = viewModel.PrebookJobId
+            JobId = !isPrebook ? effectiveJobId : null,
+            PrebookJobId = isPrebook ? effectiveJobId : null
         };
 
         var note = $"Added price component: {viewModel.Name} for ${viewModel.Amount:F2}";
-        var isPrebook = viewModel.PrebookJobId.HasValue;
-        if (isPrebook)
-            await SetPrebookJobAsManuallyPriceAsync(viewModel.PrebookJobId.Value, note);
-        else if (viewModel.JobId != null) await SetJobAsManuallyPriceAsync(viewModel.JobId.Value, note);
+        switch (isPrebook)
+        {
+            case true:
+                await SetPrebookJobAsManuallyPriceAsync(viewModel.PrebookJobId.Value, note, staffId);
+                break;
+            default:
+                if (viewModel.JobId != null) await SetJobAsManuallyPriceAsync(viewModel.JobId.Value, note, staffId);
+                break;
+        }
 
         await Context.PricingBreakdowns.AddAsync(item);
         await Context.SaveChangesAsync();
@@ -1672,8 +1684,10 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         return item.PricingBreakdownId;
     }
 
-    public async Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel)
+    public async Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel, int staffId)
     {
+        if(viewModel.JobId is null && viewModel.PrebookJobId is null) return;
+
         var breakdown = Context.PricingBreakdowns.FirstOrDefault(p => p.PricingBreakdownId == viewModel.ChargeId);
         if (breakdown == null) return;
 
@@ -1683,15 +1697,21 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         var note = $"Updated price breakdown: {viewModel.Name} charge amount changed to {viewModel.Amount:C}";
 
         var isPrebook = breakdown.PrebookJobId.HasValue;
-        if (isPrebook)
-            await SetPrebookJobAsManuallyPriceAsync(breakdown.PrebookJobId.Value, note);
-        else if (breakdown.JobId != null) await SetJobAsManuallyPriceAsync(breakdown.JobId.Value, note);
+        switch (isPrebook)
+        {
+            case true:
+                if (viewModel.PrebookJobId != null) await SetPrebookJobAsManuallyPriceAsync(viewModel.PrebookJobId.Value, note, staffId);
+                break;
+            default:
+                if (viewModel.JobId != null) await SetJobAsManuallyPriceAsync(viewModel.JobId.Value, note, staffId);
+                break;
+        }
 
         Context.Update(breakdown);
         await Context.SaveChangesAsync();
     }
 
-    public async Task DeleteJobPriceBreakdownAsync(int chargeId)
+    public async Task DeleteJobPriceBreakdownAsync(int chargeId, int staffId)
     {
         var breakdown = await Context.PricingBreakdowns
             .FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
@@ -1700,33 +1720,35 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         var note = $"Deleted {chargeId} - {breakdown.ChargeName} - {breakdown.ChargeAmount}";
 
         var isPrebook = breakdown.PrebookJobId.HasValue;
-        if (isPrebook)
-            await SetPrebookJobAsManuallyPriceAsync(breakdown.PrebookJobId.Value, note);
-        else if (breakdown.JobId != null) await SetJobAsManuallyPriceAsync(breakdown.JobId.Value, note);
+        switch (isPrebook)
+        {
+            case true:
+                if (breakdown.PrebookJobId != null) await SetPrebookJobAsManuallyPriceAsync(breakdown.PrebookJobId.Value, note, staffId);
+                break;
+            default:
+                if (breakdown.JobId != null) await SetJobAsManuallyPriceAsync(breakdown.JobId.Value, note, staffId);
+                break;
+        }
 
         Context.PricingBreakdowns.Remove(breakdown);
         await Context.SaveChangesAsync();
     }
 
-    private async Task SetJobAsManuallyPriceAsync(int jobId, string note)
+    private async Task SetJobAsManuallyPriceAsync(int jobId, string note, int? staffId)
     {
         var job = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
         job.RatedManually = true;
 
-        // Add note of pricing changes
-        job.InternalNotes += $"\n{note}";
-
+        await SaveNoteAsync(jobId, note, staffId ?? 0);
         Context.Update(job);
     }
 
-    private async Task SetPrebookJobAsManuallyPriceAsync(int prebookJobId, string note)
+    private async Task SetPrebookJobAsManuallyPriceAsync(int prebookJobId, string note, int staffId)
     {
         var job = await Context.TucJobBookings.FirstOrDefaultAsync(j => j.UcbkId == prebookJobId);
         job.RatedManually = true;
 
-        // Add note of pricing changes
-        job.InternalNotes += $"\n{note}";
-
+        await SaveNoteAsync(prebookJobId, note, staffId);
         Context.Update(job);
     }
 
@@ -2256,7 +2278,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         try
         {
             var note = $"From # {viewModel.FromCourierId} To # {viewModel.ToCourierId}";
-            var currentTime = timeService.GetCurrentTenantTime();
+            var currentTime = _timeService.GetCurrentTenantTime();
 
             var fromJobNumber = await GenerateJobNumberAsync(viewModel.StaffId, (int)JobType.AllServices);
             var toJobNumber = await GenerateJobNumberAsync(viewModel.StaffId, (int)JobType.AllServices);
@@ -2475,7 +2497,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     CompletedToday = d.TucJobUcjbCouriers.Count(j =>
                         j.UcjbStatus == (int)JobStatus.Completed
                         && j.UcjbComplTime.HasValue
-                        && j.UcjbComplTime.Value.Date == timeService.GetCurrentTenantTime()
+                        && j.UcjbComplTime.Value.Date == _timeService.GetCurrentTenantTime()
                     ),
                     LastCompleted = d
                         .TucJobUcjbCouriers.Where(j =>
@@ -2630,7 +2652,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 {
                     // Safely handle DefaultMinutes when InternalStatusNavigation is null
                     var defaultMinutes = job.InternalStatusNavigation?.DefaultMinutes ?? 0;
-                    job.FollowupTime = timeService.GetCurrentTenantTime().AddMinutes(defaultMinutes);
+                    job.FollowupTime = _timeService.GetCurrentTenantTime().AddMinutes(defaultMinutes);
                 }
                 else
                 {
@@ -2685,7 +2707,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 job.UndeliverableLocationId = int.Parse(value);
                 job.UcjbStatus = (int)JobStatus.Undeliverable;
                 job.UcjbJobDone = true;
-                job.UcjbComplTime = timeService.GetCurrentTenantTime();
+                job.UcjbComplTime = _timeService.GetCurrentTenantTime();
                 job.UcjbPodname =
                     job.UndeliverableLocation != null
                         ? job.UndeliverableLocation.Podname
@@ -2698,7 +2720,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 if (delivered)
                 {
                     job.UcjbStatus = (int)JobStatus.Completed;
-                    job.UcjbComplTime = timeService.GetCurrentTenantTime();
+                    job.UcjbComplTime = _timeService.GetCurrentTenantTime();
                 }
 
                 break;
@@ -3064,7 +3086,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                         (int)InternalJobStatus.Reprice
                     }.Contains(internalStatusId)
                 )
-                    archive.Job.FollowupTime = timeService.GetCurrentTenantTime().AddMinutes(
+                    archive.Job.FollowupTime = _timeService.GetCurrentTenantTime().AddMinutes(
                         archive.InternalStatusNavigation.DefaultMinutes ?? 0
                     );
                 else
@@ -3115,7 +3137,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 archive.Job.UndeliverableLocationId = int.Parse(value);
                 archive.Job.UcjbStatus = (int)JobStatus.Undeliverable;
                 archive.Job.UcjbJobDone = true;
-                archive.Job.UcjbComplTime = timeService.GetCurrentTenantTime();
+                archive.Job.UcjbComplTime = _timeService.GetCurrentTenantTime();
                 archive.Job.UcjbPodname =
                     archive.UndeliverableLocation != null
                         ? archive.UndeliverableLocation.Podname
@@ -3129,7 +3151,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 if (delivered)
                 {
                     archive.Job.UcjbStatus = 6;
-                    archive.Job.UcjbComplTime = timeService.GetCurrentTenantTime();
+                    archive.Job.UcjbComplTime = _timeService.GetCurrentTenantTime();
                 }
 
                 break;

@@ -31,12 +31,12 @@
                 <div layout-gt-sm="row">
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="EventDate">Task Date</label>
-                        <input disabled id="EventDate" ng-model="ctrl.event.eventDate" type="date">
+                        <input id="EventDate" ng-model="ctrl.event.eventDate" type="date">
                     </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
-                        <label>Task Type</label>
-                        <md-select name="eventTypes" ng-model="ctrl.selectedEvent" required>
+                        <label for="eventTypes">Task Type</label>
+                        <md-select id="eventTypes" ng-model="ctrl.selectedEvent" required>
                             <md-option ng-repeat="eventType in ctrl.eventTypes" ng-value="eventType">
                                 {{ eventType.text }}
                             </md-option>
@@ -50,8 +50,8 @@
                 <div layout-gt-sm="row">
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="eventTime">Task Time</label>
-                        <input disabled id="eventTime" ng-value="ctrl.event.eventTime | date:'h:mma'"
-                               type="text">
+                        <input id="eventTime" ng-value="ctrl.event.eventTime | date:'h:mma'"
+                               type="time">
                     </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>

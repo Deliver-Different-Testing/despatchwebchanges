@@ -259,4 +259,19 @@ public class NationwideJobController(
             return StatusCode(500, "An unexpected error occurred while processing your request");
         }
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetActiveAirlines()
+    {
+        try
+        {
+            var activeAirlines = await repository.GetActiveAirlineOptionsAsync();
+            return Json(activeAirlines);
+        }
+        catch (Exception e)
+        {
+           Log.Error(e, "An error occured getting the active airlines");
+           return StatusCode(500, "An unexpected error occurred while retrieving the active airlines");
+        }
+    }
 }

@@ -234,7 +234,7 @@ public class JobController(
 
             Log.Information(messageTemplate: "Adding price breakdown for job {JobId}", propertyValue: jobId);
 
-            var chargeId = await jobRepository.AddJobPriceBreakdownAsync(viewModel: breakdown);
+            var chargeId = await jobRepository.AddJobPriceBreakdownAsync(viewModel: breakdown, staffId: staffId);
 
             await taskRepository.AddEventAsync(
                 jobId: jobId ?? 0,
@@ -264,7 +264,7 @@ public class JobController(
             Log.Information(messageTemplate: "Updating price breakdown for job {JobId}",
                 propertyValue: breakdown.JobId ?? breakdown.PrebookJobId);
 
-            await jobRepository.UpdateJobPriceBreakdownAsync(viewModel: breakdown);
+            await jobRepository.UpdateJobPriceBreakdownAsync(viewModel: breakdown, staffId: staffId);
 
             await taskRepository.AddEventAsync(
                 jobId: jobId ?? 0,
@@ -289,7 +289,7 @@ public class JobController(
         {
             Log.Information(messageTemplate: "Deleting price breakdown for charge {chargeId}", propertyValue: chargeId);
 
-            await jobRepository.DeleteJobPriceBreakdownAsync(chargeId: chargeId);
+            await jobRepository.DeleteJobPriceBreakdownAsync(chargeId: chargeId, staffId: staffId);
 
             await taskRepository.AddEventAsync(
                 jobId: jobId,
@@ -302,7 +302,7 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(exception: ex, messageTemplate: "Error delting price breakdown for charge {chargeId}",
+            Log.Error(exception: ex, messageTemplate: "Error deleting price breakdown for charge {chargeId}",
                 propertyValue: chargeId);
             return StatusCode(statusCode: 500, value: "An error occurred while adding the deleting breakdown");
         }

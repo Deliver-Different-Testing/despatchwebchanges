@@ -124,9 +124,12 @@
                                     Cancel
                                 </md-button>
                                 <md-button class="md-raised md-primary" ng-click="ctrl.saveItem()"
-                                           ng-disabled="ctrl.priceBreakdownForm.$invalid">
-                                    <md-icon md-font-set="material-symbols-outlined">save</md-icon>
-                                    Save Item
+                                           ng-disabled="ctrl.priceBreakdownForm.$invalid || ctrl.isSaving">
+                                    <div layout="row" layout-align="center center">
+                                        <md-progress-circular ng-if="ctrl.isSaving" md-mode="indeterminate" md-diameter="18" style="margin-right: 8px;" class="md-accent"></md-progress-circular>
+                                        <md-icon ng-if="!ctrl.isSaving" md-font-set="material-symbols-outlined">save</md-icon>
+                                        <span>Save Item</span>
+                                    </div>
                                 </md-button>
                             </div>
                         </div>
@@ -136,9 +139,12 @@
 
             <md-dialog-actions layout="row" ng-if="!ctrl.isEditing">
                 <span flex></span>
-                <md-button class="md-raised" ng-click="ctrl.save()">
-                    <md-icon md-font-set="material-symbols-outlined">check</md-icon>
-                    Done
+                <md-button class="md-raised" ng-click="ctrl.save()" ng-disabled="ctrl.isLoading">
+                    <div layout="row" layout-align="center center">
+                        <md-progress-circular ng-if="ctrl.isLoading" md-mode="indeterminate" md-diameter="18" style="margin-right: 8px;" class="md-accent"></md-progress-circular>
+                        <md-icon ng-if="!ctrl.isLoading" md-font-set="material-symbols-outlined">check</md-icon>
+                        <span>Done</span>
+                    </div>
                 </md-button>
             </md-dialog-actions>
         </form>

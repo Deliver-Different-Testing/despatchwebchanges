@@ -26,4 +26,6 @@ public interface INationwideJobRepository
 
     Task<decimal> GetCarrierFlightRateByJobIdAsync(int jobId, string carrierName, bool extraStopOffs,
         DateTime? bookTime);
+
+    Task<List<Suggestion>> GetActiveAirlineOptionsAsync();
 }
