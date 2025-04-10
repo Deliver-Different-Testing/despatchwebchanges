@@ -84,10 +84,11 @@
                                 </div>
                             </md-toolbar>
 
-                        <dfrnt-loader
-                                is-loading="ctrl.regionsLoading"
-                                icon-name="'public_off'">
-                        </dfrnt-loader>
+                        <md-progress-linear
+                                md-mode="indeterminate"
+                                ng-show="ctrl.regionsLoading"
+                                class="md-primary">
+                        </md-progress-linear>
 
                         <div class="md-padding" ng-if="!ctrl.regionsLoading">
                             <div class="empty-state" layout="column" layout-align="center center"
@@ -128,10 +129,11 @@
                             </div>
                         </md-toolbar>
 
-                        <dfrnt-loader
-                                is-loading="ctrl.speedsLoading"
-                                icon-name="'speed'">
-                        </dfrnt-loader>
+                        <md-progress-linear
+                                md-mode="indeterminate"
+                                ng-show="ctrl.speedsLoading"
+                                class="md-primary">
+                        </md-progress-linear>
 
                         <div class="md-padding" ng-if="!ctrl.speedsLoading">
                             <div class="empty-state" layout="column" layout-align="center center"

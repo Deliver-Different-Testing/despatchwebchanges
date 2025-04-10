@@ -69,11 +69,9 @@
         <md-dialog-actions layout="row">
             <span flex></span>
             <md-button class="md-primary md-raised" type="submit" ng-disabled="noteForm.$invalid || ctrl.isSubmitting">
-                <span ng-if="!ctrl.isSubmitting">Save</span>
-                <dfrnt-loader
-                        is-loading="ctrl.isSubmitting"
-                        icon-name="'sticky_note_2'">
-                </dfrnt-loader>
+                <md-progress-circular ng-if="ctrl.isSubmitting" md-mode="indeterminate" md-diameter="18" style="margin-right: 8px;" class="md-accent"></md-progress-circular>
+                <md-icon ng-if="!ctrl.isSubmitting" md-font-set="material-symbols-outlined">check</md-icon>
+                <span>Save</span>
             </md-button>
         </md-dialog-actions>
     </form>

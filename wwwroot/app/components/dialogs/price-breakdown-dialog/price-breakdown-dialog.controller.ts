@@ -5,20 +5,6 @@ import {PriceBreakdown} from "../../../interfaces/job.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 
 export class PriceBreakdownDialogController extends BaseController {
-    selectedPriceBreakdown?: PriceBreakdown;
-    isEditing: boolean = false;
-    isNew: boolean = false;
-    priceBreakdownForm: any;
-    isParentJob: boolean = false;
-
-    get totalAmount(): number {
-        if (!this.priceBreakdown || this.priceBreakdown.length === 0) {
-            return 0;
-        }
-
-        return this.priceBreakdown.reduce((sum, item) => sum + (item.amount || 0), 0);
-    }
-
     static $inject = [
         '$mdDialog',
         'toastrService',
@@ -27,6 +13,22 @@ export class PriceBreakdownDialogController extends BaseController {
         'jobId',
         'isPrebook'
     ];
+
+    selectedPriceBreakdown?: PriceBreakdown;
+    isEditing: boolean = false;
+    isNew: boolean = false;
+    priceBreakdownForm: any;
+    isParentJob: boolean = false;
+    isLoading: boolean = false;
+    isSaving: boolean = false;
+
+    get totalAmount(): number {
+        if (!this.priceBreakdown || this.priceBreakdown.length === 0) {
+            return 0;
+        }
+
+        return this.priceBreakdown.reduce((sum, item) => sum + (item.amount || 0), 0);
+    }
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -90,6 +92,8 @@ export class PriceBreakdownDialogController extends BaseController {
         }
 
         try {
+            this.isSaving = true;
+
             if (this.isNew) {
                 const newBreakdown: PriceBreakdown = {
                     chargeId: 0,
@@ -120,12 +124,16 @@ export class PriceBreakdownDialogController extends BaseController {
         } catch (error) {
             console.error('PriceBreakdownDialogController: Error in save', error);
             this.toastrService.showErrorToast('An error occurred while saving the price breakdown');
+        } finally {
+            this.isSaving = false;
         }
     }
 
     async deleteItem(item: PriceBreakdown) {
         if (confirm('Are you sure you want to delete this price breakdown?')) {
             try {
+                this.isLoading = true;
+
                 await this.deletePriceBreakdown(item.chargeId);
 
                 // Remove from the local array
@@ -137,6 +145,8 @@ export class PriceBreakdownDialogController extends BaseController {
             } catch (error) {
                 console.error('PriceBreakdownDialogController: Error in delete', error);
                 this.toastrService.showErrorToast('An error occurred while deleting the price breakdown');
+            } finally {
+                this.isLoading = false;
             }
         }
     }
@@ -157,7 +167,16 @@ export class PriceBreakdownDialogController extends BaseController {
         this.$mdDialog.cancel();
     }
 
-    save() {
-        this.$mdDialog.hide(this.priceBreakdown);
+    async save() {
+        try {
+            this.isLoading = true;
+            await new Promise(resolve => setTimeout(resolve, 500));
+            this.$mdDialog.hide(this.priceBreakdown);
+        } catch (error) {
+            console.error('PriceBreakdownDialogController: Error in save', error);
+            this.toastrService.showErrorToast('An error occurred while saving');
+        } finally {
+            this.isLoading = false;
+        }
     }
 }

@@ -329,6 +329,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\send-message-dialog\send-message-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\home.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\home\home.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\index.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\enums\JobDataType.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.interfaces.ts" />

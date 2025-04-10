@@ -1,3 +1,9 @@
+<md-progress-linear
+        md-mode="indeterminate"
+        ng-show="ctrl.tasksLoading"
+        class="md-primary">
+</md-progress-linear>
+
 <div class="droppable-box nationwide-job-list">
     <div ng-if="!ctrl.tasksLoading && ctrl.filteredTasks && ctrl.filteredTasks.length > 0">
         <div class="md-table-footer-content">
@@ -49,11 +55,6 @@
             </task-item-component>
         </md-list>
     </div>
-
-    <dfrnt-loader
-            is-loading="ctrl.tasksLoading"
-            icon-name="'support'">
-    </dfrnt-loader>
 
     <no-data
             ng-if="!ctrl.tasksLoading && (!ctrl.filteredTasks || ctrl.filteredTasks.length === 0)"

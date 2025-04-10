@@ -6,7 +6,7 @@ import DispatchCoreService from "../../services/dispatch-core.service";
 import {AppPages} from "../../enums/app-pages.enum";
 import {AppConfig} from "../../interfaces/app-config.interface";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
-import {IAgent, IDispatchJob, IJob, JobQueryParams} from "../../interfaces/job.interface";
+import {IAgent, IDispatchJob, IJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
 import {IFlightViewModel, HereMapsConfig, StatusChangeEvent, StatusToListMap} from "./nationwide.interfaces";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
@@ -26,7 +26,6 @@ class NationwideControl extends BaseController {
         '$scope',
         'JobDetailService',
         'NWData',
-        '$filter',
         '$timeout',
         'greetingService',
         '$mdDialog',
@@ -39,11 +38,13 @@ class NationwideControl extends BaseController {
         'jobFileUploadDialogService',
         'addEventDialogService',
         'additionalServicesDialogService',
-        'jobContextMenuService'
+        'jobContextMenuService',
+        '$interval',
     ];
 
     readonly nationwidePageId: number = AppPages.Domestic;
     readonly isUsCustomer: boolean = false;
+    private refreshInterval?: angular.IPromise<any>;
 
     layouts: ILayout[] = [];
     defaultLayout?: ILayout;
@@ -115,12 +116,12 @@ class NationwideControl extends BaseController {
         onTaskClick: true
     };
     currentSupport: any;
+    activeAirlineOptions?: Suggestion[];
 
     constructor(
         private $scope: angular.IScope,
         private jdSvc: any,
         private nationwideService: NationwideService,
-        private $filter: angular.IFilterService,
         private $timeout: angular.ITimeoutService,
         private greetingService: GreetingService,
         private $mdDialog: angular.material.IDialogService,
@@ -133,7 +134,8 @@ class NationwideControl extends BaseController {
         private jobFileUploadDialogService: JobFileUploadDialogService,
         private addEventDialogService: AddEventDialogService,
         private additionalServicesDialogService: AdditionalServicesDialogService,
-        private jobContextMenuService: JobContextMenuService
+        private jobContextMenuService: JobContextMenuService,
+        private $interval: angular.IIntervalService,
     ) {
         super();
 
@@ -174,9 +176,26 @@ class NationwideControl extends BaseController {
             3: [JobDataType.POD],
             4: [JobDataType.REPRICE]
         };
+
+        this.nationwideService.getActiveAirlines().then((response) => {
+            this.activeAirlineOptions = response;
+        })
     }
 
-    initLayoutSystem(contactID: number) {
+    $onInit() {
+        this.refreshInterval = this.$interval(async () => {
+            console.log("[HomeRefresh] - Refreshing get data")
+            await this.getData();
+        }, 60000);
+    }
+
+    $onDestroy() {
+        if (this.refreshInterval) {
+            this.$interval.cancel(this.refreshInterval);
+        }
+    }
+
+        initLayoutSystem(contactID: number) {
         const jobsListBox: IBox = {name: "jobsList", height: "60%"};
         const jobsListPODBox: IBox = {name: "jobsListPOD", height: "40%"};
         const tasksListBox: IBox = {name: "tasksList", height: "50%"};
@@ -1407,23 +1426,6 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async showJobContextMenu($event: MouseEvent, job: IDispatchJob) {
-        try {
-            await this.selectJob(job);
-
-            const contextMenuElement = angular.element('context-menu');
-            const contextMenuCtrl = contextMenuElement.controller('contextMenu');
-
-            if (contextMenuCtrl) {
-                return contextMenuCtrl.showJobContextMenu($event, job);
-            } else {
-                console.error('Context menu controller not found');
-            }
-        } catch (error) {
-            console.error('Error selecting job:', error);
-        }
-    }
-
     private _handleError(error: any) {
         if (!error) {
             console.log('User canceled!');
@@ -1623,6 +1625,69 @@ class NationwideControl extends BaseController {
 
     private _updateCurrentSelection(jobNo: string): void {
         this.currentSelection = ` for Job ${jobNo}`;
+    }
+
+    async filterFlightsByAirline(airlineId: number | null): Promise<void> {
+        if (!this.currentJob) {
+            return;
+        }
+
+        this.flightsLoading = true;
+
+        try {
+            // Get flights regardless of filter to ensure we have the latest data
+            const result = await this.nationwideService.getFlightOptions(this.currentJob.id, this.currentJob.booked);
+
+            if (airlineId === null) {
+                // Show all flights when no airline filter is applied
+                this.flightOptions = result.flights;
+                this.flightMessage = result.message ?? "";
+            } else {
+                // Find the airline code from the activeAirlineOptions
+                const airlineOption = this.activeAirlineOptions?.find(option => option.id === airlineId);
+                const airlineCode = airlineOption?.text;
+
+                if (!airlineCode) {
+                    // If we can't find the airline code, show all flights
+                    this.flightOptions = result.flights;
+                    this.flightMessage = result.message ?? "";
+                } else {
+                    // Filter flights by the selected airline code
+                    this.flightOptions = result.flights.filter(flight =>
+                        flight.airline === airlineCode || flight.codeShareAirline === airlineCode
+                    );
+
+                    // Update message if no flights match the filter
+                    if (this.flightOptions.length === 0 && result.flights.length > 0) {
+                        this.flightMessage = `No flights available for ${airlineCode}.`;
+                    } else {
+                        this.flightMessage = result.message ?? "";
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching flights:", error);
+            this.toastrService.showErrorToast("Failed to load flight options");
+        } finally {
+            this.flightsLoading = false;
+        }
+    }
+
+    getFlightCountByAirline(airlineId: number): number {
+        if (!this.flightOptions || !Array.isArray(this.flightOptions)) {
+            return 0;
+        }
+
+        const airlineOption = this.activeAirlineOptions?.find(option => option.id === airlineId);
+        const airlineCode = airlineOption?.text;
+
+        if (airlineId === null || !airlineCode) {
+            return this.flightOptions.length;
+        }
+
+        return this.flightOptions.filter(flight =>
+            flight.airline === airlineCode || flight.codeShareAirline === airlineCode
+        ).length;
     }
 }
 

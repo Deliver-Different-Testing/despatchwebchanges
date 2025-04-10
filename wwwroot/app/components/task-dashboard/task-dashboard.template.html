@@ -143,11 +143,11 @@
                     </div>
                 </md-toolbar>
                 <md-card-content>
-                    <!-- Loading Indicator -->
-                    <dfrnt-loader
-                            is-loading="ctrl.tasksLoading"
-                            icon-name="'task_alt'">
-                    </dfrnt-loader>
+                    <md-progress-linear
+                            md-mode="indeterminate"
+                            ng-show="ctrl.tasksLoading"
+                            class="md-primary">
+                    </md-progress-linear>
 
                     <!-- Empty state -->
                     <div ng-if="ctrl.filteredTasks.length === 0 && !ctrl.tasksLoading" class="empty-list-state"
@@ -192,10 +192,11 @@
                     <div ng-if="ctrl.tasksLoading" class="calendar-loader" layout="row"
                          layout-align="center center"
                          style="width: 100%; padding: 24px;">
-                        <dfrnt-loader
-                                is-loading="ctrl.tasksLoading"
-                                icon-name="'calendar_today'">
-                        </dfrnt-loader>
+                        <md-progress-linear
+                                md-mode="indeterminate"
+                                ng-show="ctrl.tasksLoading"
+                                class="md-primary">
+                        </md-progress-linear>
                     </div>
 
                     <!-- Calendar Content (only show when not loading) -->

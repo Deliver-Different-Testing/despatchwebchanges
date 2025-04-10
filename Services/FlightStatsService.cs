@@ -160,7 +160,8 @@ public class FlightStatsService(
         if (flightStatusResponse?.Connections == null) return [];
 
         var flightOptions = await Task.WhenAll(flightStatusResponse.Connections
-            .Where(conn => conn.ScheduledFlight.Count != 0)
+            .Where(conn => conn.ScheduledFlight.Count != 0 &&
+                           conn.ScheduledFlight.Exists(x => includeAirlines.Contains(x.CarrierFsCode)))
             .Select(async conn =>
             {
                 var firstFlight = conn.ScheduledFlight.First();
@@ -193,7 +194,7 @@ public class FlightStatsService(
                     Amount = amount,
                     CodeShareAirline = firstFlight.IsCodeShare ? firstFlight.CarrierFsCode : null
                 };
-            }));
+            }).Take(100));
 
         return flightOptions.OrderBy(flight => flight.DepartureTime).ToList();
     }

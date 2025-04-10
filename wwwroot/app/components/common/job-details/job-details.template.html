@@ -1,10 +1,10 @@
-<div class="job-detail-page" ng-if="ctrl.job">
-    <md-progress-linear
-            md-mode="indeterminate"
-            ng-show="ctrl.isLoading"
-            class="md-primary">
-    </md-progress-linear>
+<md-progress-linear
+        md-mode="indeterminate"
+        ng-show="ctrl.isLoading"
+        class="md-primary">
+</md-progress-linear>
 
+<div class="job-detail-page" ng-if="ctrl.job">
     <md-card class="warning-section md-whiteframe-1dp" ng-if="ctrl.job.isArchived || ctrl.job.prebook">
         <md-card-content>
             <div layout="row" layout-align="start center">
@@ -17,8 +17,25 @@
     </md-card>
 
     <md-card class="job-detail-widget">
-        <!-- Top Bar -->
         <div class="header-bar">
+            <div class="job-ids-container" ng-if="ctrl.job.relatedJobs && ctrl.job.relatedJobs.length > 0">
+                <md-tabs
+                        md-center-tabs="true"
+                        md-border-bottom
+                        md-swipe-content
+                        md-selected="ctrl.selectedTabIndex"
+                        md-no-pagination="ctrl.job.relatedJobs.length <= 5">
+                    <md-tab ng-repeat="relatedJob in ctrl.job.relatedJobs track by relatedJob.id">
+                        <md-tab-label>
+                            <div ng-click="ctrl.switchToRelatedJob($index)">
+                                Job #{{relatedJob.text}}
+                            </div>
+                        </md-tab-label>
+                    </md-tab>
+                </md-tabs>
+            </div>
+
+            <!-- Rest of the header bar content remains the same -->
             <md-menu ng-if="ctrl.showStageDropdown">
                 <md-button aria-label="internal stage"
                            ng-click="$mdMenu.open($event)">
@@ -38,8 +55,8 @@
             <div flex></div>
 
             <md-button ng-click="!ctrl.job.locked && ctrl.job.internalStatusId !=1
-                             && ctrl.job.internalStatusId !=4
-                             && ctrl.editFollowUpTime($event, ctrl.job)">
+                     && ctrl.job.internalStatusId !=4
+                     && ctrl.editFollowUpTime($event, ctrl.job)">
                 <md-icon style="margin-right: 5px;" md-font-set="material-symbols-outlined">schedule</md-icon>
                 <span>Follow Up</span>
             </md-button>
@@ -176,7 +193,8 @@
                             <div class="md-toolbar-tools-m3">
                                 <div class="section section-start">
                                     <span class="material-symbols-outlined">{{ctrl.getJobAddressIcon()}}</span>
-                                    <span class="md-headline-title" flex style="margin-left: 8px;">Pickup Location</span>
+                                    <span class="md-headline-title" flex
+                                          style="margin-left: 8px;">Pickup Location</span>
                                 </div>
                             </div>
                         </md-toolbar>
@@ -217,7 +235,8 @@
                             <div class="md-toolbar-tools-m3">
                                 <div class="section section-start">
                                     <span class="material-symbols-outlined">{{ctrl.getJobAddressIcon()}}</span>
-                                    <span class="md-headline-title" flex style="margin-left: 8px;">Delivery Location</span>
+                                    <span class="md-headline-title" flex
+                                          style="margin-left: 8px;">Delivery Location</span>
                                 </div>
                             </div>
                         </md-toolbar>
@@ -253,9 +272,12 @@
                 </div>
 
                 <!-- Total Miles Section -->
-                <div class="total-miles-section md-whiteframe-z1" style="margin-top: -16px; margin-bottom: 16px; background-color: #f5f5f5; border-radius: 0 0 2px 2px; padding: 8px 16px; text-align: center;">
+                <div class="total-miles-section md-whiteframe-z1"
+                     style="margin-top: -16px; margin-bottom: 16px; background-color: #f5f5f5; border-radius: 0 0 2px 2px; padding: 8px 16px; text-align: center;">
                     <div style="display: inline-flex; align-items: center; justify-content: center;">
-                        <md-icon md-font-set="material-symbols-outlined" style="margin-right: 8px; color: rgba(0, 0, 0, 0.54);">route</md-icon>
+                        <md-icon md-font-set="material-symbols-outlined"
+                                 style="margin-right: 8px; color: rgba(0, 0, 0, 0.54);">route
+                        </md-icon>
                         <span style="color: rgba(0, 0, 0, 0.87); font-size: 14px; font-weight: 500;">Total {{ctrl.isUsCustomer ? 'Miles' : 'KMs'}}: {{ctrl.job.distance || '0'}} {{ctrl.isUsCustomer ? 'miles' : 'km'}}</span>
                     </div>
                 </div>
@@ -754,13 +776,12 @@
 </div>
 
 <no-data
-        ng-if="!ctrl.job"
+        ng-if="!ctrl.job && !isLoading"
         title="No Job Selected"
         message="Please select a job or courier to view details."
         icon="assignment"
         show-action="false">
 </no-data>
-
 
 <div class="pod-photo-section md-whiteframe-1dp"
      ng-if="ctrl.job && ctrl.job.done && ctrl.formattedPodPhotos.length > 0">

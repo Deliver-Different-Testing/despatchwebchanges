@@ -31,7 +31,7 @@ class JobDetailController extends BaseController {
         "priceBreakdownDialogService",
         "$document",
         "APP_CONFIG",
-        "editParcelDimensionsDialogService"
+        "editParcelDimensionsDialogService",
     ];
 
     readonly appPage: AppPages = AppPages.Dispatch;
@@ -51,6 +51,8 @@ class JobDetailController extends BaseController {
     isLoading: boolean = false;
     showStageDropdown: boolean = false;
     distance?: number;
+    selectedTabIndex: number = 0;
+    processingTabChange: boolean = false;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -64,7 +66,7 @@ class JobDetailController extends BaseController {
         private priceBreakdownDialogService: PriceBreakdownDialogService,
         private $document: angular.IDocumentService,
         APP_CONFIG: AppConfig,
-        private editParcelDimensionsDialogService: EditParcelDimensionsDialogService
+        private editParcelDimensionsDialogService: EditParcelDimensionsDialogService,
     ) {
         super();
 
@@ -124,7 +126,6 @@ class JobDetailController extends BaseController {
                 return this._loadJobData(changes['jobId'].currentValue);
             } else {
                 this.job = undefined;
-                this.job = undefined;
             }
         }
 
@@ -142,6 +143,37 @@ class JobDetailController extends BaseController {
         }
     }
 
+    async switchToRelatedJob(index: number) {
+        if (this.processingTabChange) {
+            return;
+        }
+
+        this.processingTabChange = true;
+        console.log(`[JobDetailController] Switching to tab ${index}`);
+
+        try {
+            if (!this.job || !this.job.relatedJobs || this.job.relatedJobs.length <= index) {
+                console.warn(`[JobDetailController] Invalid related job data for index ${index}`);
+                return;
+            }
+
+            const targetJob = this.job.relatedJobs[index];
+
+            if (targetJob && targetJob.id && targetJob.id !== this.jobId) {
+                console.log(`[JobDetailController] Loading related job: ${targetJob.id} (${targetJob.text})`);
+
+                this.selectedTabIndex = index;
+
+                this.jobId = targetJob.id;
+                await this._loadJobData(targetJob.id);
+            } else {
+                console.log(`[JobDetailController] Already on the selected job or invalid job data`);
+            }
+        } finally {
+            this.processingTabChange = false;
+        }
+    }
+
     private async _loadJobData(jobId: number) {
         if (!jobId) return;
 
@@ -152,6 +184,17 @@ class JobDetailController extends BaseController {
             this.job = jobData;
 
             this._initializeJobData();
+
+            if (this.job.relatedJobs && this.job.relatedJobs.length > 0) {
+                const currentJobIndex = this.job.relatedJobs.findIndex(
+                    relatedJob => relatedJob.id === jobId
+                );
+
+                if (currentJobIndex !== -1) {
+                    console.log(`[JobDetailController] Setting selectedTabIndex to ${currentJobIndex}`);
+                    this.selectedTabIndex = currentJobIndex;
+                }
+            }
 
             if (jobData.completedTime) {
                 this._loadPodPhotos();
@@ -397,7 +440,7 @@ class JobDetailController extends BaseController {
 
         // Begin job done process
         const refreshedJob = this.job;
-        if(!refreshedJob) return;
+        if (!refreshedJob) return;
         await this.markJobAsDone($event, refreshedJob);
     }
 
@@ -537,7 +580,7 @@ class JobDetailController extends BaseController {
 
         // Begin job done process
         const refreshedJob = this.job;
-        if(!refreshedJob) return;
+        if (!refreshedJob) return;
         await this.markJobAsDone($event, refreshedJob);
     }
 
@@ -815,7 +858,7 @@ class JobDetailController extends BaseController {
                 job.completedTime = result.value;
             }
 
-            if(!job.podName) {
+            if (!job.podName) {
                 const prompt = this.$mdDialog.prompt()
                     .title("POD Name")
                     .placeholder("POD Name..")
@@ -1017,6 +1060,7 @@ class JobDetailController extends BaseController {
     async showPricingBreakdown($event: MouseEvent, job: IJob) {
         try {
             await this.priceBreakdownDialogService.openPriceBreakdownDialog($event, job.id, job.preBook);
+            await this._refreshJobDetails(job.id);
         } catch (error) {
             console.error("Error in displayPriceBreakdown:", error);
             this.toastrService.showErrorToast("An error occurred while fetching the price breakdown. Please try again.");

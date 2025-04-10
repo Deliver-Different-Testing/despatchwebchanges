@@ -33,14 +33,7 @@ import {Coordinates} from "../overview/overview.interfaces";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {LateEventType} from "../../enums/late-event-type.enum";
 import {FirstName, ContactID} from "../../contants";
-
-interface ResendJobsRequest {
-    call: string;
-    jobs: number[];
-    splitJobs: number[];
-    jobNos: string[];
-    courierId: number;
-}
+import {ResendJobsRequest} from "./home.interfaces";
 
 class HomeController extends BaseController {
     static $inject = [
@@ -65,13 +58,16 @@ class HomeController extends BaseController {
         'noteService',
         'interCourierChargeDialogService',
         'jobContextMenuService',
-        '$mdEditDialog'
+        '$mdEditDialog',
+        '$interval',
     ];
 
     private readonly DOM_SELECTORS = {
         areaGroup: "#area-group .btn",
         driverLocations: "#driverLocations .listActive"
     } as const;
+
+    private refreshInterval?: angular.IPromise<any>;
 
     mapJobList: IDispatchJob[] = []
     initialViewSet: any;
@@ -81,7 +77,6 @@ class HomeController extends BaseController {
     mapZoom?: number;
     options: any;
     truckMode: string;
-    supportChannel: any;
     showInput: any;
     queryParams: JobQueryParams;
     isUsCustomer: boolean;
@@ -120,10 +115,7 @@ class HomeController extends BaseController {
     inputWidth: Record<string, number> = {};
     jobListPromise: any;
     currentCourier: any;
-    pickCouriers: any;
-    pickAllCouriers?: ActiveCourierViewModel[];
     courier: any;
-    lastjob: any;
     jobsCurrentList?: IDispatchJob[];
     potentialCouriers: any;
     currentWorkSelection: any;
@@ -180,7 +172,8 @@ class HomeController extends BaseController {
         private noteService: NoteService,
         private interCourierChargeDialogService: InterCourierChargeDialogService,
         private jobContextMenuService: JobContextMenuService,
-        private $mdEditDialog: any
+        private $mdEditDialog: any,
+        private $interval: angular.IIntervalService,
     ) {
         super();
 
@@ -307,8 +300,6 @@ class HomeController extends BaseController {
         };
 
         this.truckMode = "On";
-        this.supportChannel = JSON.parse(localStorage.getItem("support-channel-" + ContactID) ?? "null") || "All";
-
         this.showInput = {};
 
         if (!ClientInternal) {
@@ -426,7 +417,7 @@ class HomeController extends BaseController {
                 showSearch: 0,
                 showRefresh: 0,
             }, supports: {
-                title: "Supports",
+                title: "Tasks",
                 icon: "support",
                 templateUrl: "app/components/home/partials/supports.html",
                 showSearch: 0,
@@ -501,6 +492,11 @@ class HomeController extends BaseController {
             }
         });
 
+        this.refreshInterval = this.$interval(async () => {
+            console.log("[HomeRefresh] - Refreshing get data")
+            await this.getData();
+        }, 60000);
+
         // Set up a watch to apply dimensions when layout changes
         this.$scope.$watch(() => this.layout, () => {
             this.$timeout(() => this._applyLayoutDimensions());
@@ -511,9 +507,18 @@ class HomeController extends BaseController {
             angular.element('body').append('<div id="draggingItems"></div>');
         }
 
-        this.initWidgetLoadingStates();
+        this.driverLocationsLoading = true;
+        this.supportsLoading = false;
+        this.potentialCouriersLoading = false;
+        this.currentListLoading = false;
 
         this.filteredSupports = this.supports;
+    }
+
+    $onDestroy() {
+        if (this.refreshInterval) {
+            this.$interval.cancel(this.refreshInterval);
+        }
     }
 
     private _updateBoxMetrics() {
@@ -553,13 +558,6 @@ class HomeController extends BaseController {
                 localStorage.setItem(`layouts-${ContactID}`, JSON.stringify(this.layouts));
             }
         }
-    }
-
-    initWidgetLoadingStates() {
-        this.driverLocationsLoading = true;
-        this.supportsLoading = false;
-        this.potentialCouriersLoading = false;
-        this.currentListLoading = false;
     }
 
     // Layouts
@@ -1191,7 +1189,6 @@ class HomeController extends BaseController {
         }
     }
 
-
     jobClass(job: IDispatchJob): string {
         if (!job) return "";
 
@@ -1214,32 +1211,6 @@ class HomeController extends BaseController {
         }
 
         return classes.join(" ");
-    }
-
-    async handleRowClick($event: MouseEvent, job: IDispatchJob) {
-        if (!($event.target as HTMLElement)?.closest("md-autocomplete")) {
-            try {
-                await this.$timeout(async () => {
-                    await this.selectJob(job);
-
-                    const autocompleteContainer = angular.element(`#input_${job.id}`);
-                    const inputElement = autocompleteContainer[0].querySelector("input");
-
-                    if (inputElement) {
-                        inputElement.focus();
-
-                        const focusEvent = new Event("focus");
-                        inputElement.dispatchEvent(focusEvent);
-
-                        if (inputElement.value) {
-                            inputElement.select();
-                        }
-                    }
-                });
-            } catch (error: any) {
-                console.error("Error in handleRowClick:", error);
-            }
-        }
     }
 
     async dispatchJobs(courierId: number) {
@@ -1358,8 +1329,6 @@ class HomeController extends BaseController {
             if (this.searchCourier) {
                 await this.searchCourier();
             }
-
-
         } catch (error: any) {
             console.error("Error restoring job:", error);
         }
@@ -1511,37 +1480,6 @@ class HomeController extends BaseController {
         });
     }
 
-    async restoreJobsFromCurrentWindow() {
-        const callData = {
-            call: "restoreJobs",
-            jobs: [] as number[],
-            splitJobs: [] as number[],
-            jobNos: [] as string[],
-            courierId: 0,
-        };
-
-        try {
-            const activeJobs = this.jobsCurrentList?.filter(job => job.isActive);
-            if (!activeJobs) return;
-
-            for (let job of activeJobs) {
-                await this.addRestoreEvent(job);
-                this.updateCallData(callData, job, null);
-            }
-
-            const foundCourier = callData.courierId ? await this.DispatchData.getCourierById(callData.courierId) : null;
-            if (!foundCourier) {
-                await this.restoreJobs(callData);
-            }
-
-            await this.getData();
-            this.courier = {gpsCourier: foundCourier?.id};
-            await this.searchCourier();
-        } catch (error: any) {
-            console.log("Error in restoreJobsFromCurrentWindow:", error);
-        }
-    }
-
     async addRestoreEvent(job: IDispatchJob) {
         try {
             await this.DispatchData.addRestoreEvent(job.id);
@@ -1571,25 +1509,6 @@ class HomeController extends BaseController {
         }
     }
 
-    async setFirstJob(job: IDispatchJob) {
-        try {
-            await this.$mdDialog.show(this.$mdDialog
-                .confirm()
-                .title("Set First Job?")
-                .textContent("Are you sure you wish to set this as the First Job?")
-                .ok("Yes")
-                .cancel("No"));
-            await this.DispatchData.setFirstJob(job.id, this.currentCourier.courierId);
-            await this.getCurrentJobs(this.currentCourier.courierId);
-            this.toastrService.showSuccessToast("Job set as first job successfully");
-        } catch (error: any) {
-            console.log("Action cancelled or error occurred:", error);
-        }
-    }
-
-    //////////////////////////////
-    //  SPLIT JOB //
-    /////////////////////////////
     async splitJob($event: MouseEvent, job: IDispatchJob) {
         if (!job.allowSplit) {
             await this.showAlert("Unable to split job", `Can not split ${job.jobNo}.`);
@@ -1825,38 +1744,6 @@ class HomeController extends BaseController {
         }
     }
 
-    async refreshTruckCourierStatus() {
-        try {
-            this.truckCourierStatus = await this.DispatchData.truckCourierStatus(this.currentCourier.courierId);
-        } catch (error: any) {
-            console.error("Error refreshing truck courier status:", error);
-        }
-    }
-
-    async selectMapCourier(courier: ActiveCourierViewModel) {
-        try {
-            const foundCourier = await this.DispatchData.getCourierById(courier.courierId);
-            this.currentCourier = {
-                courierId: foundCourier?.courierId, courier: foundCourier?.label,
-            };
-
-            await this.getCurrentJobs(courier.courierId)
-            await this.updateUIAfterCourierSelection(courier);
-        } catch (error: any) {
-            console.error("An error occurred:", error);
-        }
-    }
-
-    clearCourierSearch() {
-        this.jobsCurrentList = [];
-        this.courier.gpsCourier = "";
-        this.currentWorkSelection = "";
-        this.currentCourier = null;
-
-        // When clearing courier search, show all jobs again
-        this.mapJobList = [...this.jobList];
-    }
-
     async selectPotentialCourier(courier: CourierData) {
         try {
             this.updateCourierInfo(courier);
@@ -1868,15 +1755,17 @@ class HomeController extends BaseController {
     }
 
     updateCourierInfo(courier: CourierData) {
-        if (courier.courier === undefined) {
+        if (!courier.courier) {
             courier.courier = `${courier.courier} ${courier.courierName}`;
         }
     }
 
     async displayJobsForCourier(courier: CourierData) {
-        const foundCourier = this.pickCouriers.find((x: ActiveCourierViewModel) => x.courierId === courier.courierId);
+        if(!courier.courierId) return;
+
+        const foundCourier = await this.DispatchData.getCourierById(courier.courierId);
         const code = foundCourier?.id ?? '';
-        if (courier.courierId === undefined) {
+        if (!courier.courierId) {
             throw new Error('Courier ID is required');
         }
         const data = await this.DispatchData.getJobsCurrent(courier.courierId, this.jobFilters.status === "done");
@@ -2002,12 +1891,6 @@ class HomeController extends BaseController {
 
             await this.JobDetailService.setJob(this.currentJob);
             await this.checkForAttachments(job.id);
-
-            try {
-                this.pickCouriers = await this.DispatchData.getActiveCouriers();
-            } catch (error: any) {
-                console.error("Error getting active couriers:", error);
-            }
 
             if (job.rootParentId) {
                 try {
@@ -2300,14 +2183,6 @@ class HomeController extends BaseController {
             if (!this.courier) {
                 this.currentCourier = null;
             }
-
-            const [activeCouriers, allCouriers] = await Promise.all([
-                this.DispatchData.getActiveCouriers(),
-                this.DispatchData.getAllCouriers(),
-            ]);
-
-            this.pickCouriers = activeCouriers;
-            this.pickAllCouriers = allCouriers;
 
             await this.getSupports();
             await this.getJobList();

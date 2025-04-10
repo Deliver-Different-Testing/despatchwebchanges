@@ -300,4 +300,18 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             return 0;
         }
     }
+
+    public async Task<List<Suggestion>> GetActiveAirlineOptionsAsync()
+    {
+        var airlines = await Context.FlightCarriers
+            .Where(fc => fc.IsActive == true)
+            .Select(x => new Suggestion
+            {
+                Id = x.FlightCarrierId,
+                Text = x.FlightCarrierName
+            })
+            .ToListAsync();
+
+        return airlines;
+    }
 }

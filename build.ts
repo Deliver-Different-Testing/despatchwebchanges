@@ -71,7 +71,6 @@ class Bundler {
             format: "iife",
             mainFields: ["browser", "module", "main"],
             logLevel: 'info',
-            drop: this.isDev ? [] : ['debugger', 'console'],
             plugins: [
                 esbuildPluginTsc(),
                 es5Plugin(),
