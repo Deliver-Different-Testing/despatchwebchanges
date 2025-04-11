@@ -602,10 +602,20 @@ class DispatchMapController extends BaseController {
         });
     }
 
+    private _getFlagColor(courier: AvailableCourierPosition) {
+        if (courier.overDueJobs > 0) {
+            return '#FF1493';
+        } else if (courier.totalJobs === 0) {
+            return '#00FFFF';
+        } else {
+            return '#000000';
+        }
+    }
+
     private _addCourierMarker(courier: AvailableCourierPosition) {
         const position = new this.$window.google.maps.LatLng(courier.latitude, courier.longitude);
 
-        const flagColor = courier.overDueJobs > 0 ? '#E53935' : '#43A047';
+        const flagColor = this._getFlagColor(courier);
 
         const labelText = courier.overDueJobs > 0
             ? `${courier.totalJobs}/${courier.overDueJobs}`

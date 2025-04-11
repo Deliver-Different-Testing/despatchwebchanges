@@ -20,6 +20,7 @@ import AdditionalServicesDialogService from "../dialogs/additional-services-dial
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {ExtendedTask, TaskTableFiltersRequest, TaskViewModel} from "../task-dashboard/task-dashboard.interfaces";
 import {JobStatus} from "../../enums/job-status.enum";
+import {IJobReadChanged} from "../../interfaces/event-interfaces";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -154,6 +155,10 @@ class NationwideControl extends BaseController {
             }
         });
 
+        this.$scope.$on('jobReadChanged', (_, data: IJobReadChanged) => {
+            this._markJobReadStatus(data.jobId, data.isRead);
+        });
+
         this.$scope.$watch(() => this.layout, () => {
             this.$timeout(() => this._applyLayoutDimensions());
         }, true);
@@ -195,7 +200,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-        initLayoutSystem(contactID: number) {
+    initLayoutSystem(contactID: number) {
         const jobsListBox: IBox = {name: "jobsList", height: "60%"};
         const jobsListPODBox: IBox = {name: "jobsListPOD", height: "40%"};
         const tasksListBox: IBox = {name: "tasksList", height: "50%"};
@@ -850,7 +855,7 @@ class NationwideControl extends BaseController {
 
     async restoreJob(job: IDispatchJob) {
         try {
-           await this.DispatchJobService.restoreJob(job);
+            await this.DispatchJobService.restoreJob(job);
             await this.getData();
         } catch (error) {
             console.error('Error restoring job:', error);
@@ -896,7 +901,7 @@ class NationwideControl extends BaseController {
 
             this.toastrService.showSuccessToast(`Quote request sent to ${agent.agentName}`);
         } catch (error) {
-            if (error !== undefined) {
+            if (error) {
                 console.error('Error sending quote request:', error);
                 this.toastrService.showErrorToast('Failed to send quote request');
             }
@@ -905,6 +910,10 @@ class NationwideControl extends BaseController {
 
     async selectJob(job: IDispatchJob) {
         try {
+            if(!job) return;
+
+            this._markJobReadStatus(job.id, true);
+
             this.currentJob = job;
             this.currentJobId = job.id;
 
@@ -1556,7 +1565,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async getTasks(){
+    async getTasks() {
         await this.loadTasks();
     }
 
@@ -1688,6 +1697,56 @@ class NationwideControl extends BaseController {
         return this.flightOptions.filter(flight =>
             flight.airline === airlineCode || flight.codeShareAirline === airlineCode
         ).length;
+    }
+
+    private _markJobReadStatus(jobId: number, isRead: boolean) {
+        // Check the main jobList
+        if (this.jobList) {
+            const jobIndex = this.jobList.findIndex((job) => job.id === jobId);
+            if (jobIndex !== -1) {
+                this.jobList[jobIndex] = {
+                    ...this.jobList[jobIndex],
+                    hasBeenRead: isRead
+                };
+            }
+        }
+
+        // Check the POD job list
+        if (this.jobListPOD) {
+            const jobIndexPOD = this.jobListPOD?.findIndex((job) => job.id === jobId);
+            if (jobIndexPOD !== -1 && this.jobListPOD) {
+                this.jobListPOD[jobIndexPOD] = {
+                    ...this.jobListPOD[jobIndexPOD],
+                    hasBeenRead: isRead
+                };
+            }
+        }
+
+        // Check the Reprice job list
+        if (this.jobListReprice) {
+            const jobIndexReprice = this.jobListReprice?.findIndex((job) => job.id === jobId);
+            if (jobIndexReprice !== -1 && this.jobListReprice) {
+                this.jobListReprice[jobIndexReprice] = {
+                    ...this.jobListReprice[jobIndexReprice],
+                    hasBeenRead: isRead
+                };
+            }
+        }
+    }
+
+    getUnreadNewCount() {
+        if(!this.jobList) return;
+        return this.jobList.filter(job => !job.hasBeenRead).length;
+    }
+
+    getUnreadPodCount() {
+        if(!this.jobListPOD) return;
+        return this.jobListPOD.filter(job => !job.hasBeenRead).length;
+    }
+
+    getUnreadRepriceCount() {
+        if(!this.jobListReprice) return;
+        return this.jobListReprice.filter(job => !job.hasBeenRead).length;
     }
 }
 

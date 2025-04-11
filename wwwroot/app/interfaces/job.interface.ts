@@ -4,6 +4,7 @@ import {LateEventType} from "../enums/late-event-type.enum";
 export interface IJob {
     id: number;
     rootParentId?: number;
+    hasBeenRead: boolean;
     time?: Date;
     bookedDate?: Date;
     direct?: boolean;
@@ -148,6 +149,7 @@ export interface IJob {
     searchText?: string;
     deliverByTime?: Date;
     distance: number;
+    readTrackerInfo: IReadTrackerInfoViewModel;
 }
 
 export interface ParcelDimensions {
@@ -395,6 +397,7 @@ export interface IDispatchJob {
     // Core identifiers
     id: number;
     jobNo: string;
+    hasBeenRead: boolean;
 
     // Status and timing information
     statusId?: JobStatus;
@@ -483,4 +486,10 @@ export interface ILateCallRequest {
     staffId: number;
     despatcherName: string;
     calculationRequired: boolean;
+}
+
+export interface IReadTrackerInfoViewModel {
+    hasBeenRead: boolean;
+    readBy: string;
+    readDate: Date | null;
 }

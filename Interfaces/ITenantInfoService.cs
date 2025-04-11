@@ -2,7 +2,8 @@ using System;
 
 namespace DespatchWeb.Interfaces;
 
-public interface ITenantTimeService
+public interface ITenantInfoService
 {
     DateTime GetCurrentTenantTime();
+    int GetStaffId();
 }

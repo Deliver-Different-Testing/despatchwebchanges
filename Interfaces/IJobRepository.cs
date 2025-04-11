@@ -212,7 +212,6 @@ public interface IJobRepository
 
     Task<DirectToASAPViewModel> DirectToAsap(int jobId);
     Task<UpdateFirstAvailableSpeedResult> UpdateFirstAvailableSpeed(int jobId);
-    Task<SettingsViewModel> SettingsAsync();
     Task AddPalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
     Task EditPalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
     Task DeletePalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
@@ -403,13 +402,13 @@ public interface IJobRepository
         string clientIds,
         List<int> selectedViewIds);
 
-    Task<int> SaveNoteAsync(TucNoteViewModel viewModel, int staffId);
-    Task<int> SaveNoteAsync(int jobId, string noteText, string despatcherName, bool isImportant = false);
-    Task<int> SaveNoteAsync(int jobId, string noteText, int staffId, bool isImportant = false);
+    Task<int> SaveNoteAsync(TucNoteViewModel viewModel);
+    Task<int> SaveNoteAsync(int jobId, string noteText, bool isImportant = false);
     Task<TucNoteViewModel> GetNoteByIdAsync(int noteId);
     Task DeleteNoteAsync(int noteId);
     Task<List<Suggestion>> GetNoteTypesAsync();
     Task<List<TucNoteViewModel>> GetNotesByJobId(int jobId);
     Task<bool> IsJobParentAsync(int jobId);
     Task<JobLateCallDto> GetJobForLateCallAsync(int jobId);
+    Task UpdateJobReadStatusAsync(int jobId, bool hasBeenRead);
 }

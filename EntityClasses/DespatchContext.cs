@@ -131,6 +131,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TucJobNationwide> TucJobNationwides { get; set; }
 
+    public virtual DbSet<TucJobReadTracker> TucJobReadTrackers { get; set; }
+
     public virtual DbSet<TucJobStatus> TucJobStatuses { get; set; }
 
     public virtual DbSet<TucJobType> TucJobTypes { get; set; }
@@ -4892,6 +4894,25 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.UcnwJob).WithMany(p => p.TucJobNationwides)
                 .HasForeignKey(d => d.UcnwJobId)
                 .HasConstraintName("FK_tucJobNationwide_tucJob");
+        });
+
+        modelBuilder.Entity<TucJobReadTracker>(entity =>
+        {
+            entity.HasKey(e => e.JobId);
+
+            entity.ToTable("tucJobReadTracker");
+
+            entity.Property(e => e.JobId).ValueGeneratedNever();
+            entity.Property(e => e.ReadTimestamp).HasColumnType("datetime");
+
+            entity.HasOne(d => d.Job).WithOne(p => p.TucJobReadTracker)
+                .HasForeignKey<TucJobReadTracker>(d => d.JobId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_tucJobReadTracker_tucJob");
+
+            entity.HasOne(d => d.ReadByStaff).WithMany(p => p.TucJobReadTrackers)
+                .HasForeignKey(d => d.ReadByStaffId)
+                .HasConstraintName("FK_tucJobReadTracker_tucStaff");
         });
 
         modelBuilder.Entity<TucJobStatus>(entity =>

@@ -219,6 +219,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucJobReadTracker]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucJobStatus]",
          "ObjectType": 0
       },

@@ -15,11 +15,9 @@ class NoteService {
         return this;
     }
 
-    async createNote(staffId: number, noteViewModel: IJobNote): Promise<IJobNote> {
+    async createNote(noteViewModel: IJobNote): Promise<IJobNote> {
         try {
-            const response = await this.$http.post<IJobNote>('note/CreateNote', noteViewModel, {
-                params: { staffId }
-            });
+            const response = await this.$http.post<IJobNote>('note/CreateNote', noteViewModel);
             return response.data;
         } catch (error) {
             console.error('Error creating note:', error);

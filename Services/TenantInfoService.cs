@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace DespatchWeb.Services;
 
-public class TenantTimeService(IHttpContextAccessor contextAccessor) : ITenantTimeService
+public class TenantInfoService(IHttpContextAccessor contextAccessor) : ITenantInfoService
 {
     public DateTime GetCurrentTenantTime()
     {
@@ -14,5 +14,11 @@ public class TenantTimeService(IHttpContextAccessor contextAccessor) : ITenantTi
         var utcDateTime = DateTime.UtcNow;
 
         return TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tenantTimeZoneInfo);
+    }
+
+    public int GetStaffId()
+    {
+        var staffId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "StaffID")?.Value;
+        return int.Parse(staffId ?? string.Empty);
     }
 }

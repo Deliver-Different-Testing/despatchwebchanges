@@ -726,11 +726,6 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
     }
 
-    async getAllJobTypes() {
-        const response = await this.$http.get<Suggestion[]>(`job/GetJobTypes`);
-        return response.data;
-    }
-
     async getPriceBreakdown(jobId: number): Promise<PriceBreakdown[]> {
         const response = await this.$http.get<PriceBreakdown[]>(`job/GetPricingBreakdown?jobId=${jobId}`);
         return response.data;
@@ -833,6 +828,20 @@ class DispatchCoreService implements angular.IServiceProvider {
         } catch (error) {
             console.error('Error fetching tasks:', error);
             return [];
+        }
+    }
+
+    async updateJobReadStatus(jobId: number, hasBeenRead: boolean) {
+        try {
+            const queryParams = new URLSearchParams({
+                jobId: String(jobId),
+                hasBeenRead: String(hasBeenRead)
+            }).toString();
+
+            await this.$http.post(`job/UpdateJobReadStatus?${queryParams}`, null);
+        } catch (error) {
+            console.error('Error updating job read status:', error);
+            throw error;
         }
     }
 

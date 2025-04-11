@@ -17,6 +17,7 @@ import {AppConfig} from "../../../interfaces/app-config.interface";
 import {JobStatus} from "../../../enums/job-status.enum";
 import EditParcelDimensionsDialogService
     from "../../dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
+import {IJobReadChanged} from "../../../interfaces/event-interfaces";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -1068,6 +1069,64 @@ class JobDetailController extends BaseController {
             console.error("Error in displayPriceBreakdown:", error);
             this.toastrService.showErrorToast("An error occurred while fetching the price breakdown. Please try again.");
         }
+    }
+
+    async toggleReadStatus(job: IJob): Promise<void> {
+        if (!job || !job.id) {
+            this.toastrService.showErrorToast("Cannot update job: Invalid job data");
+            return;
+        }
+
+        // Determine the new status (opposite of current)
+        const newReadStatus = !job.readTrackerInfo?.hasBeenRead;
+        const actionText = newReadStatus ? "read" : "unread";
+
+        console.log(`[JobDetailController] Marking job ${job.jobNo} as ${actionText}`);
+
+        try {
+            this._showLoading();
+
+            // Update the job's read status in the database
+            await this.DispatchData.updateJobReadStatus(job.id, newReadStatus);
+
+            // Update the local job object
+            if (!job.readTrackerInfo) {
+                job.readTrackerInfo = {
+                    hasBeenRead: newReadStatus,
+                    readBy: newReadStatus ? FirstName : "",
+                    readDate: newReadStatus ? new Date() : null
+                };
+            } else {
+                job.readTrackerInfo.hasBeenRead = newReadStatus;
+
+                if (newReadStatus) {
+                    // Update reader info when marking as read
+                    job.readTrackerInfo.readBy = FirstName;
+                    job.readTrackerInfo.readDate = new Date();
+                } else {
+                    // Clear reader info when marking as unread
+                    job.readTrackerInfo.readBy = "";
+                    job.readTrackerInfo.readDate = null;
+                }
+            }
+
+            this.toastrService.showSuccessToast(`Job ${job.jobNo} marked as ${actionText}`);
+        } catch (error) {
+            console.error(`Error marking job as ${actionText}:`, error);
+            this.toastrService.showErrorToast(`Failed to mark job as ${actionText}. Please try again.`);
+        } finally {
+            const data: IJobReadChanged = {
+                jobId: job?.id ?? 0,
+                isRead: job.readTrackerInfo.hasBeenRead
+            };
+
+            this.$rootScope.$broadcast('jobReadChanged', data);
+            this._hideLoading();
+        }
+    }
+
+    isJobRead(job: IJob): boolean {
+        return job?.readTrackerInfo?.hasBeenRead || false;
     }
 }
 

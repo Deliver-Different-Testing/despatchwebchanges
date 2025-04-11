@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoMapper;
 using DespatchWeb.Controllers;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -22,10 +21,10 @@ using Serilog;
 
 namespace DespatchWeb.Repositories;
 
-public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> contextFactory, ITenantTimeService timeService)
-    : BaseJobRepository(contextFactory, timeService), IJobRepository
+public class JobRepository(IDbContextFactory<DespatchContext> contextFactory, ITenantInfoService infoService)
+    : BaseJobRepository(contextFactory, infoService), IJobRepository
 {
-    private readonly ITenantTimeService _timeService = timeService;
+    private readonly ITenantInfoService _infoService = infoService;
 
     public async Task<List<Suggestion>> RelatedJobs(int parentId, int clientId)
     {
@@ -762,9 +761,14 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         var jobList = jobs.Select(j => new JobViewModel
             {
                 Id = j.Id,
-                Booked = DateTime.Parse(
-                    j.Booked.ToString("yyyy-MM-dd") + " " + j.Time.Value.ToString("HH:mm:ss")
-                ),
+                Booked = j.BookedDate.HasValue && j.Time.HasValue ? new DateTime(
+                            j.BookedDate.Value.Year,
+                            j.BookedDate.Value.Month,
+                            j.BookedDate.Value.Day,
+                            j.Time.Value.Hour,
+                            j.Time.Value.Minute,
+                            j.Time.Value.Second
+                        ): null,
                 Client = j.Client,
                 FromAddress = j.FromAddress,
                 ToAddress = j.ToAddress,
@@ -1234,7 +1238,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             // Format pickup time
             var minsOver = late - time;
 
-            await SaveNoteAsync(jobId: jobId, noteText: $"Late Pickup: {minsOver} mins over ETA", staffId: staffId);
+            await SaveNoteAsync(jobId: jobId, noteText: $"Late Pickup: {minsOver} mins over ETA");
 
             // Update job
         job.UcjbStatus = (int)JobStatus.LatePickup;
@@ -1286,7 +1290,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         // Format delivery time
         var minsOver = late - time;
 
-       await SaveNoteAsync(jobId: jobId, noteText: $"Late Delivery: {minsOver} mins over ETA", staffId: staffId);
+       await SaveNoteAsync(jobId: jobId, noteText: $"Late Delivery: {minsOver} mins over ETA");
 
         // Update job
         job.UcjbStatus = (int)JobStatus.LateDelivery;
@@ -1739,7 +1743,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         var job = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
         job.RatedManually = true;
 
-        await SaveNoteAsync(jobId, note, staffId ?? 0);
+        await SaveNoteAsync(jobId, note);
         Context.Update(job);
     }
 
@@ -1748,7 +1752,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         var job = await Context.TucJobBookings.FirstOrDefaultAsync(j => j.UcbkId == prebookJobId);
         job.RatedManually = true;
 
-        await SaveNoteAsync(prebookJobId, note, staffId);
+        await SaveNoteAsync(prebookJobId, note);
         Context.Update(job);
     }
 
@@ -1819,16 +1823,6 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             Name = (string)nameOutput.Value
         };
         return updateReturn;
-    }
-
-    public async Task<SettingsViewModel> SettingsAsync()
-    {
-        var result = await Context.Procedures.DES_stpSettingsAsync();
-        var settingsResult = result.FirstOrDefault();
-
-        return settingsResult == null
-            ? new SettingsViewModel()
-            : mapper.Map<SettingsViewModel>(settingsResult);
     }
 
     public async Task AddPalletInfoAsync(PalletInfo p, bool preBook, string despatcher)
@@ -1925,7 +1919,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
             // Record change in note
             var note = $" Changed Delivery Address to {request.Address}";
-            await SaveNoteAsync(request.JobId, note, request.DespatcherName);
+            await SaveNoteAsync(request.JobId, note);
         }
         catch (Exception e)
         {
@@ -1961,7 +1955,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
             // Record change in note
             var note = $" Changed Delivery Address to {request.Address.FullAddress}";
-            await SaveNoteAsync(request.JobId, note, request.DespatcherName);
+            await SaveNoteAsync(request.JobId, note);
         }
         catch (Exception e)
         {
@@ -2009,7 +2003,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
             // Record change in note
             var note = $" Changed Pickup Address to {request.Address}";
-            await SaveNoteAsync(request.JobId, note, request.DespatcherName);
+            await SaveNoteAsync(request.JobId, note);
         }
         catch (Exception e)
         {
@@ -2045,7 +2039,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
             // Record change in note
             var note = $" Changed Pickup Address to {request.Address.FullAddress}";
-            await SaveNoteAsync(request.JobId, note, request.DespatcherName);
+            await SaveNoteAsync(request.JobId, note);
         }
         catch (Exception e)
         {
@@ -2278,7 +2272,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         try
         {
             var note = $"From # {viewModel.FromCourierId} To # {viewModel.ToCourierId}";
-            var currentTime = _timeService.GetCurrentTenantTime();
+            var currentTime = _infoService.GetCurrentTenantTime();
 
             var fromJobNumber = await GenerateJobNumberAsync(viewModel.StaffId, (int)JobType.AllServices);
             var toJobNumber = await GenerateJobNumberAsync(viewModel.StaffId, (int)JobType.AllServices);
@@ -2497,7 +2491,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     CompletedToday = d.TucJobUcjbCouriers.Count(j =>
                         j.UcjbStatus == (int)JobStatus.Completed
                         && j.UcjbComplTime.HasValue
-                        && j.UcjbComplTime.Value.Date == _timeService.GetCurrentTenantTime()
+                        && j.UcjbComplTime.Value.Date == _infoService.GetCurrentTenantTime()
                     ),
                     LastCompleted = d
                         .TucJobUcjbCouriers.Where(j =>
@@ -2652,7 +2646,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 {
                     // Safely handle DefaultMinutes when InternalStatusNavigation is null
                     var defaultMinutes = job.InternalStatusNavigation?.DefaultMinutes ?? 0;
-                    job.FollowupTime = _timeService.GetCurrentTenantTime().AddMinutes(defaultMinutes);
+                    job.FollowupTime = _infoService.GetCurrentTenantTime().AddMinutes(defaultMinutes);
                 }
                 else
                 {
@@ -2707,7 +2701,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 job.UndeliverableLocationId = int.Parse(value);
                 job.UcjbStatus = (int)JobStatus.Undeliverable;
                 job.UcjbJobDone = true;
-                job.UcjbComplTime = _timeService.GetCurrentTenantTime();
+                job.UcjbComplTime = _infoService.GetCurrentTenantTime();
                 job.UcjbPodname =
                     job.UndeliverableLocation != null
                         ? job.UndeliverableLocation.Podname
@@ -2720,7 +2714,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 if (delivered)
                 {
                     job.UcjbStatus = (int)JobStatus.Completed;
-                    job.UcjbComplTime = _timeService.GetCurrentTenantTime();
+                    job.UcjbComplTime = _infoService.GetCurrentTenantTime();
                 }
 
                 break;
@@ -2798,11 +2792,11 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         }
 
         if (!string.IsNullOrEmpty(updateNote))
-            await SaveNoteAsync(jobId, updateNote, staffId);
+            await SaveNoteAsync(jobId, updateNote);
 
         // Add additional notes for undeliverable location
         if (field == "UndeliverableLocationID" && job.UndeliverableLocation?.Message != null)
-            await SaveNoteAsync(jobId, job.UndeliverableLocation.Message, staffId);
+            await SaveNoteAsync(jobId, job.UndeliverableLocation.Message);
 
         Context.TucJobs.Update(job);
         await Context.SaveChangesAsync();
@@ -3086,7 +3080,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                         (int)InternalJobStatus.Reprice
                     }.Contains(internalStatusId)
                 )
-                    archive.Job.FollowupTime = _timeService.GetCurrentTenantTime().AddMinutes(
+                    archive.Job.FollowupTime = _infoService.GetCurrentTenantTime().AddMinutes(
                         archive.InternalStatusNavigation.DefaultMinutes ?? 0
                     );
                 else
@@ -3137,7 +3131,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 archive.Job.UndeliverableLocationId = int.Parse(value);
                 archive.Job.UcjbStatus = (int)JobStatus.Undeliverable;
                 archive.Job.UcjbJobDone = true;
-                archive.Job.UcjbComplTime = _timeService.GetCurrentTenantTime();
+                archive.Job.UcjbComplTime = _infoService.GetCurrentTenantTime();
                 archive.Job.UcjbPodname =
                     archive.UndeliverableLocation != null
                         ? archive.UndeliverableLocation.Podname
@@ -3151,7 +3145,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 if (delivered)
                 {
                     archive.Job.UcjbStatus = 6;
-                    archive.Job.UcjbComplTime = _timeService.GetCurrentTenantTime();
+                    archive.Job.UcjbComplTime = _infoService.GetCurrentTenantTime();
                 }
 
                 break;
@@ -3230,11 +3224,11 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 break;
         }
 
-        if (!string.IsNullOrEmpty(updateNote)) await SaveNoteAsync(jobId, updateNote, staffId);
+        if (!string.IsNullOrEmpty(updateNote)) await SaveNoteAsync(jobId, updateNote);
 
         // Add additional notes for undeliverable location
         if (field == "UndeliverableLocationID" && archive.UndeliverableLocation?.Message != null)
-            await SaveNoteAsync(jobId, archive.UndeliverableLocation.Message, staffId);
+            await SaveNoteAsync(jobId, archive.UndeliverableLocation.Message);
 
         Context.Update(archive.Job);
         await Context.SaveChangesAsync();

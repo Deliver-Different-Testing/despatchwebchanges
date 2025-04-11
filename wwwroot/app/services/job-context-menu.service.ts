@@ -18,7 +18,6 @@ interface IContextMenuOption {
     icon?: string;
 }
 
-
 export default class JobContextMenuService implements angular.IServiceProvider {
     static $inject = [
         "$mdDialog",
@@ -64,6 +63,14 @@ export default class JobContextMenuService implements angular.IServiceProvider {
         if (!job) return [];
 
         const menuOptions: IContextMenuOption[] = [
+            // Read/Unread Job
+            {
+                text: job.hasBeenRead ? 'Mark as Unread' : 'Mark as Read',
+                icon: job.hasBeenRead ? 'mark_email_unread' : 'mark_email_read',
+                click: () => this.markJobReadOrUnread(job, callbacks.onRefresh),
+                hasBottomDivider: true
+            },
+
             // Void Job
             {
                 text: 'Void Job',
@@ -136,6 +143,22 @@ export default class JobContextMenuService implements angular.IServiceProvider {
         };
     }
 
+    async markJobReadOrUnread(job: IDispatchJob, onRefresh: () => void) {
+        if (!job) return;
+
+        try {
+            await this.DispatchData.updateJobReadStatus(job.id, !job.hasBeenRead);
+            this.toastrService.showSuccessToast(job.hasBeenRead ? "Job marked as unread" : "Job marked as read");
+
+            if (onRefresh) {
+                onRefresh();
+            }
+        } catch (error) {
+            console.error("Job void error:", error);
+            this.toastrService.showErrorToast("Error marking job as read/unread");
+        }
+    }
+
     async voidJobAction(job: IDispatchJob, onRefresh: () => void) {
         if (!job) return;
 
@@ -162,7 +185,7 @@ export default class JobContextMenuService implements angular.IServiceProvider {
                 createdDate: new Date(),
             }
 
-            await this.noteService.createNote(ContactID, jobNote);
+            await this.noteService.createNote(jobNote);
             await this.DispatchData.voidJob(job.id);
 
             this.toastrService.showSuccessToast("Job voided successfully");

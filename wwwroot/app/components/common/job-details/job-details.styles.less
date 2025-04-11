@@ -161,6 +161,77 @@
 }
 
 .job-detail-page {
+  .read-tracker-bar {
+    background-color: #f5f5f5;
+    padding: 8px 16px;
+    margin: 16px 8px 8px 8px;
+    border-radius: 4px;
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+
+    .read-status {
+      display: flex;
+      align-items: center;
+
+      md-icon {
+        margin-right: 8px;
+        font-size: 20px;
+      }
+
+      span {
+        font-weight: 500;
+        font-size: 14px;
+      }
+
+      &.read {
+        color: @primary-color;
+
+        md-icon {
+          color: @primary-color;
+        }
+      }
+
+      &.unread {
+        color: rgba(0, 0, 0, 0.54);
+
+        md-icon {
+          color: rgba(0, 0, 0, 0.54);
+        }
+      }
+    }
+
+    .read-details {
+      display: flex;
+      align-items: center;
+
+      span {
+        font-size: 14px;
+        color: rgba(0, 0, 0, 0.87);
+
+        &.read-date {
+          margin-left: 8px;
+          color: rgba(0, 0, 0, 0.54);
+        }
+      }
+    }
+
+    .md-button {
+      margin: 0;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: @mobile-breakpoint) {
+      flex-direction: column;
+
+      .read-details {
+        margin-top: 8px;
+      }
+
+      .md-button {
+        margin-top: 8px;
+      }
+    }
+  }
+
   .warning-section {
     margin: 0 0 12px 0;
     background-color: #FFF8E1;

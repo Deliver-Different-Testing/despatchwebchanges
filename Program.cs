@@ -3,7 +3,6 @@ using Amazon.Runtime;
 using Amazon.Runtime.CredentialManagement;
 using Amazon.S3;
 using DespatchWeb;
-using DespatchWeb.Automapper;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
@@ -145,11 +144,7 @@ builder.Services.AddScoped<IFlightStatsService, FlightStatsService>();
 builder.Services.AddScoped<IClientAccessValidatorService, ClientAccessValidatorService>();
 builder.Services.AddScoped<IRateJobService, RateJobService>();
 builder.Services.AddScoped<ICountryService, CountryService>();
-builder.Services.AddScoped<ITenantTimeService, TenantTimeService>();
-
-// Automapper
-builder.Services.AddAutoMapper(typeof(GenericMapperProfiles));
-
+builder.Services.AddScoped<ITenantInfoService, TenantInfoService>();
 
 // Register DespatchContext with a dummy connection string
 builder.Services.AddDbContextFactory<DespatchContext>(options =>
