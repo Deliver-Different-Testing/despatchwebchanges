@@ -37,6 +37,11 @@
                     <span>{{ctrl.jobList.length || 0}}</span>
                     <span class="status-label">Total</span>
                 </md-button>
+                <md-button class="md-button status-chip unread" ng-click="ctrl.filterByStatus('unread')">
+                    <md-icon md-font-set="material-symbols-outlined">mark_email_unread</md-icon>
+                    <span>{{ctrl.getUnreadCount()}}</span>
+                    <span class="status-label">Unread</span>
+                </md-button>
                 <md-button class="md-button status-chip pending" ng-click="ctrl.filterByStatus('group-pending')">
                     <md-icon md-font-set="material-symbols-outlined">hourglass_top</md-icon>
                     <span>{{ctrl.getStatusCount('pending')}}</span>
@@ -92,20 +97,20 @@
                 ng-click="ctrl.selectJob(job)"
                 ng-repeat="job in ctrl.jobList">
 
-                <td md-cell>{{job.time | date: "HH:mm"}}</td>
-                <td md-cell>{{job.speed}}</td>
-                <td md-cell>{{job.notify}}</td>
+                <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">{{job.time | date: "HH:mm"}}</td>
+                <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">{{job.speed}}</td>
+                <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">{{job.notify}}</td>
                 <td md-cell>
                     <div class="attention-cell" title="{{ctrl.attention(job)}}">{{ctrl.attention(job)}}</div>
                 </td>
-                <td md-cell>{{job.jobNo}}</td>
-                <td md-cell>{{job.client}}</td>
-                <td md-cell>
+                <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">{{job.jobNo}}</td>
+                <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">{{job.client}}</td>
+                <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">
                     {{ctrl.isUsCustomer ? job.pickupAddress.addressLine5 + ', ' + job.pickupAddress.addressLine6 : job.from}}
                     <md-tooltip md-direction="bottom">{{ job.pickupAddress.fullAddress }}</md-tooltip>
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
                 </td>
-                <td md-cell md-truncate>
+                <td md-cell md-truncate ng-class="{'font-bold': !job.hasBeenRead}">
                     <span md-truncate> {{ctrl.isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}</span>
                     <md-tooltip md-direction="bottom">{{ job.deliveryAddress.fullAddress }}</md-tooltip>
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>

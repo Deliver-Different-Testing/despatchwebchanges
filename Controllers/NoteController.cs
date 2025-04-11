@@ -28,7 +28,7 @@ public class NoteController(IJobRepository jobRepository) : Controller
     }
 
     [HttpPost]
-    public async Task<ActionResult<TucNoteViewModel>> CreateNote(int staffId, [FromBody] TucNoteViewModel noteViewModel)
+    public async Task<ActionResult<TucNoteViewModel>> CreateNote([FromBody] TucNoteViewModel noteViewModel)
     {
         try
         {
@@ -38,7 +38,7 @@ public class NoteController(IJobRepository jobRepository) : Controller
             if (noteViewModel.NoteId != 0)
                 return BadRequest("Note ID should not be provided for new notes.");
 
-            var savedNoteId = await jobRepository.SaveNoteAsync(noteViewModel, staffId);
+            var savedNoteId = await jobRepository.SaveNoteAsync(noteViewModel);
 
             var savedViewModel = await jobRepository.GetNoteByIdAsync(savedNoteId);
             return savedViewModel;
@@ -62,7 +62,7 @@ public class NoteController(IJobRepository jobRepository) : Controller
             if (existingNote == null)
                 return NotFound($"Note with ID {noteViewModel.NoteId} not found.");
 
-            await jobRepository.SaveNoteAsync(noteViewModel, staffId);
+            await jobRepository.SaveNoteAsync(noteViewModel);
 
             return Ok();
         }

@@ -264,14 +264,11 @@
     <PackageReference Include="AWSSDK.S3" Version="3.7.404.7" />
     <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.400.35" />
     <PackageReference Include="AWSSDK.SSO" Version="3.7.400.35" />
-    <PackageReference Include="AutoMapper" Version="13.0.1" />
-    <PackageReference Include="BuildBundlerMinifier" Version="3.2.449" />
-    <PackageReference Include="EntityFrameworkCore.UseRowNumberForPaging" Version="0.5.0" />
     <PackageReference Include="ExcelDataReader" Version="3.7.0" />
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.7.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.10" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.10" />
-    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.0.2" />
@@ -364,6 +361,7 @@
     <TypeScriptCompile Include="wwwroot\app\interfaces\dfrnt-page-view-model.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\dialog-result.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\event-group-view-model.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\event-interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\job-field.types.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\job-list-response.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\job.interface.ts" />

@@ -12,14 +12,14 @@ namespace DespatchWeb.Repositories;
 
 public class TaskRepository(
     IDbContextFactory<DespatchContext> contextFactory,
-    ITenantTimeService timeService
+    ITenantInfoService infoService
 )
     : BaseRepository(contextFactory),
         ITaskRepository
 {
     public async Task<List<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters)
     {
-        var today = filters?.Date ?? timeService.GetCurrentTenantTime();
+        var today = filters?.Date ?? infoService.GetCurrentTenantTime();
 
         var query = Context.TucEvents
             .Where(e => e.UcevDate.Value.Date > today.Date ||

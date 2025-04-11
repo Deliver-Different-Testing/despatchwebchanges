@@ -18,6 +18,7 @@ public static class JobMappings
         {
             Id = j.UcjbId,
             JobNo = j.UcjbNumber,
+            HasBeenRead = j.TucJobReadTracker != null && j.TucJobReadTracker.HasBeenRead,
 
             SpeedId = j.UcjbSpeed,
             StatusId = j.UcjbStatus,
@@ -400,7 +401,20 @@ public static class JobMappings
                             j.DeliveryLongitude.Value
                         )
                     )
-                    : 0
+                    : 0,
+
+            ReadTrackerInfo = j.TucJobReadTracker != null ?
+                new ReadTrackerInfoViewModel
+            {
+                HasBeenRead = j.TucJobReadTracker.HasBeenRead,
+                ReadBy = j.TucJobReadTracker.ReadByStaff != null
+                    ? FormatFullName(j.TucJobReadTracker.ReadByStaff)
+                    : string.Empty,
+                ReadDate = j.TucJobReadTracker.ReadTimestamp
+            } : new ReadTrackerInfoViewModel
+                {
+                    HasBeenRead = false
+                }
         };
 
     public static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping =
@@ -735,7 +749,7 @@ public static class JobMappings
                             j.DeliveryLongitude.Value
                         )
                     )
-                    : 0
+                    : 0,
         };
 
     public static readonly Expression<Func<TucJob, JobLateCallDto>> JobLateCallMapping =
@@ -800,4 +814,7 @@ public static class JobMappings
             time.Value.Second
         );
     }
+
+    private static string FormatFullName(TucStaff staff) =>
+        $"{staff.UcstFirstName} {staff.UcstLastName}".Trim();
 }

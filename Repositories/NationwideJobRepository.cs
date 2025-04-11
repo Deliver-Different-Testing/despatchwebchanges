@@ -15,8 +15,8 @@ using Serilog;
 
 namespace DespatchWeb.Repositories;
 
-public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextFactory, ITenantTimeService timeService)
-    : BaseJobRepository(contextFactory, timeService), INationwideJobRepository
+public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextFactory, ITenantInfoService infoService)
+    : BaseJobRepository(contextFactory, infoService), INationwideJobRepository
 {
     public async Task AddJobNationwideAsync(int jobId, ScheduledFlight flight, string webhookAlertId)
     {

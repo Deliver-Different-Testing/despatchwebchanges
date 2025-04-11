@@ -73,7 +73,7 @@ class NoteManagementDialogController {
                 this.model.createdDate = new Date();
                 this.model.createdBy = this.staffId;
 
-                await this.noteService.createNote(this.staffId, this.model);
+                await this.noteService.createNote(this.model);
                 this.toastrService.showSuccessToast('Note created successfully');
                 this.$mdDialog.hide();
             } else {

@@ -10,16 +10,17 @@ import {
     ClearListViewModel,
     CourierData,
     IDispatchJob,
-    JobQueryParams,
-    Suggestion, IJobNote,
+    IJobNote,
     ILateCallRequest,
+    JobQueryParams,
+    Suggestion,
 } from "../../interfaces/job.interface";
 import {ActiveCourierViewModel, TruckCourierStatusViewModel} from "../../interfaces/courier.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {JobStatus} from "../../enums/job-status.enum";
 import BaseController from "../base-controller";
-import {ExtendedTask, TaskViewModel, TaskTableFiltersRequest} from "../task-dashboard/task-dashboard.interfaces";
+import {ExtendedTask, TaskTableFiltersRequest, TaskViewModel} from "../task-dashboard/task-dashboard.interfaces";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 import {EditAddressDialogService} from "../dialogs/edit-address-dialog/edit-address-dialog.service";
 import {AppPages} from "../../enums/app-pages.enum";
@@ -32,8 +33,9 @@ import InterCourierChargeDialogService
 import {Coordinates} from "../overview/overview.interfaces";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {LateEventType} from "../../enums/late-event-type.enum";
-import {FirstName, ContactID} from "../../contants";
+import {ContactID, FirstName} from "../../contants";
 import {ResendJobsRequest} from "./home.interfaces";
+import {IJobReadChanged} from "../../interfaces/event-interfaces";
 
 class HomeController extends BaseController {
     static $inject = [
@@ -188,8 +190,12 @@ class HomeController extends BaseController {
             }
         }, true);
 
-        $scope.$on('jobChanged', (_, newLabel) => {
+        $scope.$on('jobChanged', (_, newLabel: string) => {
             this.currentSelection = newLabel;
+        });
+
+        $scope.$on('jobReadChanged', (_, data: IJobReadChanged) => {
+            this._markJobReadStatus(data.jobId, data.isRead);
         });
 
         this.JobDetailService.setSelectJobDetail(async () => {
@@ -1108,7 +1114,7 @@ class HomeController extends BaseController {
                 isImportant: false
             };
 
-            await this.noteService.createNote(ContactID, jobNote);
+            await this.noteService.createNote(jobNote);
             await this.DispatchData.voidJob(jobId);
             this.toastrService.showSuccessToast("Job voided successfully");
             return await this.getData();
@@ -1757,7 +1763,7 @@ class HomeController extends BaseController {
     }
 
     async displayJobsForCourier(courier: CourierData) {
-        if(!courier.courierId) return;
+        if (!courier.courierId) return;
 
         const foundCourier = await this.DispatchData.getCourierById(courier.courierId);
         const code = foundCourier?.id ?? '';
@@ -1876,6 +1882,8 @@ class HomeController extends BaseController {
         console.log(job);
 
         if (!job) return;
+
+        this._markJobReadStatus(job.id, true);
 
         await this.$timeout(async () => {
             this.selectedJobs = [];
@@ -2423,6 +2431,10 @@ class HomeController extends BaseController {
         }).length;
     }
 
+    getUnreadCount() {
+        return this.jobList.filter(job => !job.hasBeenRead).length;
+    }
+
     async filterByStatus(statusGroup: string) {
         console.log('filterByStatus called with:', statusGroup);
         this.queryParams.order = statusGroup;
@@ -2622,6 +2634,16 @@ class HomeController extends BaseController {
     async filterTasks(filterType: string): Promise<void> {
         this.supportsFilter = filterType;
         await this.loadSupports(filterType);
+    }
+
+    private _markJobReadStatus(jobId: number, isRead: boolean) {
+        const jobIndex = this.jobList.findIndex((job) => job.id === jobId);
+        if (jobIndex !== -1) {
+            this.jobList[jobIndex] = {
+                ...this.jobList[jobIndex],
+                hasBeenRead: isRead
+            };
+        }
     }
 }
 

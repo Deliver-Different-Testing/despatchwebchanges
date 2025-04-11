@@ -746,6 +746,36 @@
                 </div>
             </div>
         </div>
+
+        <!-- Read Tracker Bar - Add this just before the closing </div> of class="job-detail-page" -->
+        <div class="read-tracker-bar md-whiteframe-1dp" ng-if="ctrl.job">
+            <div layout="row" layout-align="space-between center">
+                <div class="read-status" ng-class="{'read': ctrl.job.readTrackerInfo.hasBeenRead, 'unread': !ctrl.job.readTrackerInfo.hasBeenRead}">
+                    <md-icon md-font-set="material-symbols-outlined">
+                        {{ctrl.job.readTrackerInfo.hasBeenRead ? 'visibility' : 'visibility_off'}}
+                    </md-icon>
+                    <span>{{ctrl.job.readTrackerInfo.hasBeenRead ? 'Read' : 'Unread'}}</span>
+                </div>
+
+                <div class="read-details" ng-if="ctrl.job.readTrackerInfo.hasBeenRead">
+                    <span>Read by: <strong>{{ctrl.job.readTrackerInfo.readBy || 'Unknown'}}</strong></span>
+                    <span class="read-date">on {{ctrl.job.readTrackerInfo.readDate | date:'MM/dd/yyyy HH:mm'}}</span>
+                </div>
+
+                <div class="spacer" flex ng-if="!ctrl.job.readTrackerInfo.hasBeenRead"></div>
+
+                <md-button class="md-raised md-primary" ng-if="!ctrl.job.readTrackerInfo.hasBeenRead"
+                           ng-click="ctrl.toggleReadStatus(ctrl.job)">
+                    Mark as Read
+                </md-button>
+
+                <md-button class="md-raised" ng-if="ctrl.job.readTrackerInfo.hasBeenRead"
+                           ng-click="ctrl.toggleReadStatus(ctrl.job)">
+                    Mark as Unread
+                </md-button>
+            </div>
+        </div>
+
     </md-card>
 </div>
 

@@ -119,7 +119,7 @@ class AddEventDialogController extends BaseController {
                     createdDate: new Date(),
                 };
 
-                await this.noteService.createNote(this.contactId, jobNote);
+                await this.noteService.createNote(jobNote);
             }
 
             await this.NWData.addEvent(

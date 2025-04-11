@@ -9,6 +9,8 @@ public class DispatchJobViewModel
     public int Id { get; set; }
     public string JobNo { get; set; }
 
+    public bool HasBeenRead { get; set; }
+
     // Status and timing information
     public int? SpeedId { get; set; }
     public int? StatusId { get; set; }
@@ -64,7 +66,7 @@ public class DispatchJobViewModel
     public bool? PreBook { get; set; }
 
     // Special delivery options
-    public Size Size { get; set; }
+    public Suggestion Size { get; set; }
     public bool? Return { get; set; }
     public int? DgClass { get; set; }
     public bool? SaturdayDelivery { get; set; }

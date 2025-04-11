@@ -16,7 +16,7 @@ using CourierLocation = DespatchWeb.Models.Response.CourierLocation;
 
 namespace DespatchWeb.Repositories;
 
-public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory, ITenantTimeService timeService)
+public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory, ITenantInfoService infoService)
     : BaseRepository(contextFactory)
 {
     public async Task<T> Add<T>(T entity)
@@ -150,7 +150,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         string order,
         string orderDirection,
         bool isUsTenant
-    ) => ApplyOrdering(query, order, orderDirection, isUsTenant, false);
+    ) => ApplyOrdering(query, order, orderDirection, isUsTenant);
 
     private static IQueryable<TucJob> ApplyNationwideSpecificFilters(
         IQueryable<TucJob> query,
@@ -291,6 +291,10 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
         return order.ToLowerInvariant() switch
         {
+            "unread" => isAscending
+                ? query.OrderBy(j => j.TucJobReadTracker.HasBeenRead)
+                : query.OrderByDescending(j => j.TucJobReadTracker.HasBeenRead),
+
             "group-all" => isAscending
                 ? query.OrderBy(j => j.UcjbTime)
                 : query.OrderByDescending(j => j.UcjbTime),
@@ -522,6 +526,9 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     {
         try
         {
+            // Mark job as ready
+                            await MarkJobAsReadAsync(jobId);
+
             // Check for live job first
             var liveJob = await Context.TucJobs
                 .Where(j => j.UcjbId == jobId)
@@ -529,7 +536,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
 
-            if (liveJob != null) return liveJob;
+            if (liveJob != null)
+               return liveJob;
 
             // Check for archived job
             var archivedJob = await Context.TucJobArchives
@@ -568,6 +576,66 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             Log.Error(e, "Error occurred getting job {JobId}. Please see exception.", jobId);
             throw;
         }
+    }
+
+    private async Task MarkJobAsReadAsync(int jobId)
+    {
+        var isLiveJob = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
+        if(!isLiveJob) return;
+
+        var staffId = infoService.GetStaffId();
+        var currentTenantTime = infoService.GetCurrentTenantTime();
+
+        var data = await Context.TucJobReadTrackers.FirstOrDefaultAsync(x => x.JobId == jobId);
+
+        if (data is null)
+        {
+            data = new TucJobReadTracker
+            {
+                JobId = jobId,
+                HasBeenRead = true,
+                ReadByStaffId = staffId,
+                ReadTimestamp = currentTenantTime
+            };
+
+            await Context.TucJobReadTrackers.AddAsync(data);
+        }
+        else
+        {
+            data.HasBeenRead = true;
+            data.ReadByStaffId = staffId;
+            data.ReadTimestamp = currentTenantTime;
+        }
+
+        await Context.SaveChangesAsync();
+    }
+
+    public async Task UpdateJobReadStatusAsync(int jobId, bool hasBeenRead)
+    {
+        var data = await Context.TucJobReadTrackers.FirstOrDefaultAsync(x => x.JobId == jobId);
+        var staffId = infoService.GetStaffId();
+        var currentTenantTime = infoService.GetCurrentTenantTime();
+
+        if (data is null)
+        {
+            data = new TucJobReadTracker
+            {
+                JobId = jobId,
+                HasBeenRead = hasBeenRead,
+                ReadByStaffId = staffId,
+                ReadTimestamp = currentTenantTime
+            };
+
+            await Context.TucJobReadTrackers.AddAsync(data);
+        }
+        else
+        {
+            data.HasBeenRead = hasBeenRead;
+            data.ReadByStaffId = staffId;
+            data.ReadTimestamp = currentTenantTime;
+        }
+
+        await Context.SaveChangesAsync();
     }
 
     public async Task UpdateJobNoteAsync(int jobId, string note)
@@ -1377,34 +1445,22 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         return note ?? await GetArchivedNoteByIdAsync(noteId);
     }
 
-    public async Task<int> SaveNoteAsync(TucNoteViewModel viewModel, int staffId)
+    public async Task<int> SaveNoteAsync(TucNoteViewModel viewModel)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
-        ArgumentNullException.ThrowIfNull(staffId);
+
+        var staffId = infoService.GetStaffId();
 
         return viewModel.NoteId == 0
             ? await CreateNoteAsync(viewModel, staffId)
             : await UpdateNoteAsync(viewModel, staffId);
     }
 
-    public async Task<int> SaveNoteAsync(int jobId, string noteText, string despatcherName, bool isImportant = false)
+    public async Task<int> SaveNoteAsync(int jobId, string noteText, bool isImportant = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(noteText, nameof(noteText));
-        ArgumentException.ThrowIfNullOrWhiteSpace(despatcherName, nameof(despatcherName));
+        var staffId = infoService.GetStaffId();
 
-        var staffId = await Context.TucStaffs
-            .Where(s => s.UcstFirstName + " " + s.UcstLastName == despatcherName)
-            .Select(s => s.UcstId)
-            .FirstOrDefaultAsync();
-
-        ArgumentNullException.ThrowIfNull(staffId);
-
-        return await CreateBasicNoteAsync(jobId, noteText, staffId, isImportant);
-    }
-
-    public async Task<int> SaveNoteAsync(int jobId, string noteText, int staffId, bool isImportant = false)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(noteText, nameof(noteText));
         return await CreateBasicNoteAsync(jobId, noteText, staffId, isImportant);
     }
 
@@ -1524,7 +1580,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(viewModel.JobId);
 
-        var currentTime = timeService.GetCurrentTenantTime();
+        var currentTime = infoService.GetCurrentTenantTime();
         int noteId;
 
         if (await IsJobArchived(viewModel.JobId.Value))
@@ -1563,7 +1619,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(viewModel.JobId);
 
-        var currentTime = timeService.GetCurrentTenantTime();
+        var currentTime = infoService.GetCurrentTenantTime();
         int noteId;
 
         if (await IsJobArchived(viewModel.JobId.Value))
@@ -1625,7 +1681,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         bool isImportant,
         CancellationToken cancellationToken = default)
     {
-        var currentTime = timeService.GetCurrentTenantTime();
+        var currentTime = infoService.GetCurrentTenantTime();
         const int internalNoteTypeId = (int)NoteType.InternalNote;
         int noteId;
 

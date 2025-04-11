@@ -105,6 +105,8 @@ public partial class TucStaff
 
     public virtual ICollection<TucEvent> TucEventUcevStaffIdoutNavigations { get; set; } = new List<TucEvent>();
 
+    public virtual ICollection<TucJobReadTracker> TucJobReadTrackers { get; set; } = new List<TucJobReadTracker>();
+
     public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
 
     public virtual ICollection<TucNote> TucNoteCreatedByNavigations { get; set; } = new List<TucNote>();

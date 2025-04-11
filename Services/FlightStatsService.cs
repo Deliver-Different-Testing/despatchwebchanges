@@ -19,7 +19,7 @@ public class FlightStatsService(
     HttpClient httpClient,
     IHttpContextAccessor contextAccessor,
     INationwideJobRepository repository,
-    ITenantTimeService timeService
+    ITenantInfoService infoService
 ) : IFlightStatsService
 {
     private const string ConnectionsBaseUrl = "https://api.flightstats.com/flex/connections/rest/v3/";
@@ -102,7 +102,7 @@ public class FlightStatsService(
         ArgumentException.ThrowIfNullOrEmpty(departureAirportCode);
         ArgumentException.ThrowIfNullOrEmpty(destinationAirportCode);
 
-        var tenantTime = timeService.GetCurrentTenantTime();
+        var tenantTime = infoService.GetCurrentTenantTime();
 
         var flightsFrom = departureDateTime == null || departureDateTime < tenantTime
             ? tenantTime
