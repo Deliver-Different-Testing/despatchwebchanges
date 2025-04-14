@@ -5,7 +5,6 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
-using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Helpers;
 
@@ -586,8 +585,8 @@ public static class JobMappings
                     : 0
         };
 
-    public static readonly Expression<Func<TucJobBooking, JobViewModel>> JobPrebookMapping =
-        j => new JobViewModel
+    public static readonly Expression<Func<TucJobBooking, JobRecurringViewModel>> JobRecurringMapping =
+        j => new JobRecurringViewModel
         {
             ClientId = j.UcbkClientId,
             Id = j.UcbkId,
@@ -604,10 +603,10 @@ public static class JobMappings
 
             Courier = null,
             CourierData = j.CourierId.HasValue
-                ? new CourierData { CourierId = j.CourierId }
+                ? new CourierData { CourierId = j.CourierId, CourierName = j.Courier.UccrName}
                 : null,
             AssignedCourier = j.CourierId.HasValue
-                ? new Suggestion { Id = j.CourierId.Value }
+                ? new Suggestion { Id = j.CourierId.Value, Text = j.Courier.UccrName }
                 : null,
 
             // Address information - directly available in archive
@@ -674,7 +673,7 @@ public static class JobMappings
             // Job characteristics
             Weight = j.UcbkWeight,
             ToAddress = j.UcbkToAddr,
-            JobType = (int)(j.UcbkType ?? 0),
+            JobType = j.UcbkType ?? 0,
             Direct = j.Direct,
             Van = j.UcbkVan,
             VanOk = j.VanOk,
@@ -750,6 +749,23 @@ public static class JobMappings
                         )
                     )
                     : 0,
+
+ // Added recurring job fields
+            InActiveBy = j.UcbkInActiveBy != null
+                ? new Suggestion { Id = j.UcbkInActiveBy.Value, Text = FormatFullName(j.UcbkInActiveByNavigation) }
+                : null,
+            InActiveDate = j.UcbkInActiveDate,
+            FirstDue = j.UcbkFirstDue,
+            NextDue = j.UcbkNextDue,
+            LastDone = j.UcbkDateDone,
+            StopDate = j.StopDate,
+            RestartDate = j.RestartDate,
+            RunName = j.RunName,
+            Active = j.UcbkActive,
+
+            // Added new fields for scheduling
+            DaysOfWeek = (DaysOfWeek)j.UcbkDaysInt,
+            Frequency = (Frequency)(j.UcbkFrequency ?? 0)
         };
 
     public static readonly Expression<Func<TucJob, JobLateCallDto>> JobLateCallMapping =

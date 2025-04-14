@@ -1,5 +1,5 @@
 import ToastrService from "../../../services/toastr.service";
-import {EditAddressDialogViewModel, IJob, InternalStatus} from "../../../interfaces/job.interface";
+import {EditAddressDialogViewModel, IJob, InternalStatus, Suggestion} from "../../../interfaces/job.interface";
 import {ContactID, FirstName} from "../../../contants";
 import {JobNote, JobOptions, TabItem} from "./job-details.interfaces";
 import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
@@ -18,6 +18,8 @@ import {JobStatus} from "../../../enums/job-status.enum";
 import EditParcelDimensionsDialogService
     from "../../dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
 import {IJobReadChanged} from "../../../interfaces/event-interfaces";
+import {JobProperty} from "../../../enums/job-property.enum";
+import { DaysOfWeek } from "../../../enums/days-of-week.enum";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -326,9 +328,9 @@ class JobDetailController extends BaseController {
     }
 
     async showEditDateDialog($event: MouseEvent, job: IJob,
-                             title: string, fieldName: string, dateTime?: Date) {
+                             title: string, field: JobProperty, dateTime?: Date) {
         try {
-            const result = await this.editDateTimeDialogService.showEditDateDialog($event, title, fieldName, dateTime);
+            const result = await this.editDateTimeDialogService.showEditDateDialog($event, title, field, dateTime);
             await this._processDateTimeUpdateResult(job, result)
         } catch (error) {
             this._handleError(error);
@@ -336,7 +338,7 @@ class JobDetailController extends BaseController {
     }
 
     async showEditDateAndTimeDialog($event: MouseEvent, job: IJob,
-                                    title: string, fieldName: string, dateTime?: Date) {
+                                    title: string, fieldName: JobProperty, dateTime?: Date) {
         try {
             const result = await this.editDateTimeDialogService.showEditDateAndTimeDialog($event, title, fieldName, dateTime);
             await this._processDateTimeUpdateResult(job, result)
@@ -372,18 +374,18 @@ class JobDetailController extends BaseController {
     }
 
     async showSelectDialog($event: MouseEvent, job: IJob, data: Array<any>,
-                           fieldName: string, title: string, initialValue: string | null | number = null,
+                           fieldName: JobProperty, title: string, initialValue: string | null | number = null,
                            showCheckbox: boolean = false, checkboxLabel: string = "") {
         try {
             const result = await this.selectDialogService.showSelectDialog($event, data,
                 fieldName, title, initialValue, showCheckbox, checkboxLabel);
 
             if (result) {
-                if (fieldName === "DGClass") {
+                if (fieldName === JobProperty.DGClass) {
                     await this.DispatchData.updateJobDetail(job.id, fieldName, result.value, job.charge, job.preBook);
 
                     if (job.dgDocumentation !== result.checkboxValue) {
-                        await this.DispatchData.updateJobDetail(job.id, "DGDocumentation", result?.checkboxValue ?? false, job.charge, job.preBook);
+                        await this.DispatchData.updateJobDetail(job.id, JobProperty.DGDocumentation, result?.checkboxValue ?? false, job.charge, job.preBook);
                     }
                 } else {
                     if (job.bulkJob) {
@@ -402,7 +404,7 @@ class JobDetailController extends BaseController {
     }
 
     async showEditDialog($event: MouseEvent, job: IJob, title: string,
-                         placeholder: string, ariaLabel: string, initialValue: string | number | undefined, field: string) {
+                         placeholder: string, ariaLabel: string, initialValue: string | number | undefined, field: JobProperty) {
         const formatedValue = initialValue ? initialValue.toString() : "";
 
         const prompt = this.$mdDialog.prompt()
@@ -440,7 +442,7 @@ class JobDetailController extends BaseController {
     }
 
     async editCompletedTime($event: MouseEvent, job: IJob) {
-        await this.showEditDateAndTimeDialog($event, job, "POD Time", "CompletedTime", job.completedTime);
+        await this.showEditDateAndTimeDialog($event, job, "POD Time", JobProperty.CompletedTime, job.completedTime);
 
         // Begin job done process
         const refreshedJob = this.job;
@@ -453,15 +455,27 @@ class JobDetailController extends BaseController {
     }
 
     async editPuDate($event: MouseEvent, job: IJob) {
-        await this.showEditDateAndTimeDialog($event, job, "Pick Up Time", "PuTime", job.puTime);
+        await this.showEditDateAndTimeDialog($event, job, "Pick Up Time", JobProperty.PuTime, job.puTime);
     }
 
     async editDeliverBy($event: MouseEvent, job: IJob) {
-        await this.showEditDateAndTimeDialog($event, job, "Deliver By", "DeliverBy", job.deliverByTime);
+        await this.showEditDateAndTimeDialog($event, job, "Deliver By", JobProperty.DeliverBy, job.deliverByTime);
     }
 
     async editBookedDate($event: MouseEvent, job: IJob) {
-        await this.showEditDateDialog($event, job, "Booked Date", "BookedTime", job.createdDate);
+        await this.showEditDateDialog($event, job, "Booked Date", JobProperty.BookedTime, job.createdDate);
+    }
+
+    async editFirstDueDate($event: MouseEvent, job: IJob) {
+        await this.showEditDateDialog($event, job, "First Due", JobProperty.FirstDue, job.firstDue);
+    }
+
+    async editStopDate($event: MouseEvent, job: IJob) {
+        await this.showEditDateDialog($event, job, "Stop Date", JobProperty.StopDate, job.stopDate);
+    }
+
+   async editRestartDate($event: MouseEvent, job: IJob) {
+        await this.showEditDateDialog($event, job, "Restart Date", JobProperty.RestartDate, job.restartDate);
     }
 
     async updateAddress($event: MouseEvent, job: IJob, field: string) {
@@ -534,13 +548,13 @@ class JobDetailController extends BaseController {
                 placeholder: "From Contact Name...",
                 fieldLabel: "from contact name",
                 contactValue: job.fromContactName,
-                contactProperty: "FromContactName"
+                contactProperty: JobProperty.FromContactName
             }, to: {
                 title: "Edit To Contact Name",
                 placeholder: "To Contact Name...",
                 fieldLabel: "to contact name",
                 contactValue: job.deliverToContact,
-                contactProperty: "DeliverToContact"
+                contactProperty: JobProperty.DeliverToContact
             }
         };
 
@@ -560,13 +574,13 @@ class JobDetailController extends BaseController {
                 placeholder: "From Contact Phone...",
                 fieldLabel: "from contact phone",
                 phoneValue: job.fromContactNumber,
-                phoneProperty: "FromContactPhone"
+                phoneProperty: JobProperty.FromContactPhone
             }, to: {
                 title: "Edit To Contact Phone",
                 placeholder: "To Contact Phone...",
                 fieldLabel: "to contact phone",
                 phoneValue: job.toContactPhone,
-                phoneProperty: "ToContactPhone"
+                phoneProperty: JobProperty.ToContactPhone
             }
         };
 
@@ -580,7 +594,7 @@ class JobDetailController extends BaseController {
     }
 
     async editPodName($event: MouseEvent, job: IJob) {
-        await this.showEditDialog($event, job, "Edit POD Name", "POD Name...", "pod name", job.podName, "PodName");
+        await this.showEditDialog($event, job, "Edit POD Name", "POD Name...", "pod name", job.podName, JobProperty.PodName);
 
         // Begin job done process
         const refreshedJob = this.job;
@@ -590,26 +604,26 @@ class JobDetailController extends BaseController {
 
     async editRef($event: MouseEvent, job: IJob, isRefA: boolean) {
         if (isRefA) {
-            await this.showEditDialog($event, job, "Edit RefA", "RefA...", "refa", job.refA, "RefA");
+            await this.showEditDialog($event, job, "Edit RefA", "RefA...", "refa", job.refA, JobProperty.RefA);
         } else {
-            await this.showEditDialog($event, job, "Edit RefA", "RefB...", "refb", job.refB, "RefB");
+            await this.showEditDialog($event, job, "Edit RefA", "RefB...", "refb", job.refB, JobProperty.RefB);
         }
     }
 
     async editOurRef($event: MouseEvent, job: IJob) {
-        await this.showEditDialog($event, job, "Edit Our Reference", "Our Reference...", "our reference", job.ourRef, "OurRef");
+        await this.showEditDialog($event, job, "Edit Our Reference", "Our Reference...", "our reference", job.ourRef, JobProperty.OurRef);
     }
 
     async editJobWeight($event: MouseEvent, job: IJob) {
-        await this.showEditDialog($event, job, "Edit Weight", "Job Weight...", "job weight", job.weight, "Weight");
+        await this.showEditDialog($event, job, "Edit Weight", "Job Weight...", "job weight", job.weight, JobProperty.Weight);
     }
 
     async editTrackingMobile($event: MouseEvent, job: IJob) {
-        await this.showEditDialog($event, job, "Edit Tracking Mobile", "Tracking Mobile...", "tracking mobile", job.trackingMobile, "TrackingMobile");
+        await this.showEditDialog($event, job, "Edit Tracking Mobile", "Tracking Mobile...", "tracking mobile", job.trackingMobile, JobProperty.TrackingMobile);
     }
 
     async editTrackingEmail($event: MouseEvent, job: IJob) {
-        await this.showEditDialog($event, job, "Edit Tracking Email", "Tracking Email...", "tracking email", job.trackingEmail, "TrackingEmail");
+        await this.showEditDialog($event, job, "Edit Tracking Email", "Tracking Email...", "tracking email", job.trackingEmail, JobProperty.TrackingEmail);
     }
 
     async clientClick($event: MouseEvent, job: IJob) {
@@ -634,14 +648,18 @@ class JobDetailController extends BaseController {
         if (job.clientId === undefined) return;
 
         const pickContacts = await this.DispatchData.getContactList(job.clientId);
-        await this.showSelectDialog($event, job, pickContacts, "ContactID", "Contact", job.contactName);
+        await this.showSelectDialog($event, job, pickContacts, JobProperty.ContactID, "Contact", job.contactName);
     }
 
     async speedClick($event: MouseEvent, job: IJob) {
         const pickSpeeds = await this.DispatchData.getSpeedList();
-        await this.showSelectDialog($event, job, pickSpeeds, "SpeedID", "Speed", job.speedName);
+        await this.showSelectDialog($event, job, pickSpeeds, JobProperty.SpeedID, "Speed", job.speedName);
     }
 
+    async inActiveByClick($event: MouseEvent, job: IJob) {
+        const activeStaff = await this.DispatchData.getActiveStaff();
+        await this.showSelectDialog($event, job, activeStaff, JobProperty.InActiveDate, "InActive By", job.inActiveBy?.text ?? '');
+    }
 
     async jobTypeClick($event: MouseEvent, job: IJob) {
         console.log('jobTypeClick initiated', {
@@ -662,7 +680,7 @@ class JobDetailController extends BaseController {
         });
 
         try {
-            await this.showSelectDialog($event, job, data, "JobTypeID", "Job Type", jobTypeDes);
+            await this.showSelectDialog($event, job, data, JobProperty.AcceptedJobTypeID, "Job Type", jobTypeDes);
             console.log('Select dialog completed}');
         } catch (error) {
             console.error('Error showing select dialog:', error);
@@ -672,7 +690,7 @@ class JobDetailController extends BaseController {
 
     async sizeClick($event: MouseEvent, job: IJob) {
         const pickVehicleSizes = await this.DispatchData.getVehicleSizes();
-        await this.showSelectDialog($event, job, pickVehicleSizes, "Size", "Size", job.size.text);
+        await this.showSelectDialog($event, job, pickVehicleSizes, JobProperty.Size, "Size", job.size.text);
     }
 
 
@@ -684,30 +702,30 @@ class JobDetailController extends BaseController {
 
         const initialValue = !job.dgClass ? null : job.dgClass;
 
-        await this.showSelectDialog($event, job, dgClassOptions, "DGClass", "DG Class", initialValue, true, "Has Documentation?");
+        await this.showSelectDialog($event, job, dgClassOptions, JobProperty.DGClass, "DG Class", initialValue, true, "Has Documentation?");
     }
 
 
     async leaveClick($event: MouseEvent, job: IJob) {
         const pickLeaveList = await this.DispatchData.getLeaveList();
-        await this.showSelectDialog($event, job, pickLeaveList, "DeliverToLeaveID", "Leave Parcel", job.sigNotRequired || "Signature Required");
+        await this.showSelectDialog($event, job, pickLeaveList, JobProperty.DeliverToLeaveID, "Leave Parcel", job.sigNotRequired || "Signature Required");
     }
 
 
     async trackingMethodClick($event: MouseEvent, job: IJob) {
-        const trackingArray = this.options.detail.tracking.map(item => {
+        const trackingArray: Suggestion[] = this.options.detail.tracking.map(item => {
             return {
                 id: item.id, text: item.label
             };
         });
         const trackingMethod = this.getTrackingMethod(job.trackingMethod);
 
-        await this.showSelectDialog($event, job, trackingArray, "TrackingMethod", "Tracking Method", trackingMethod);
+        await this.showSelectDialog($event, job, trackingArray, JobProperty.TrackingMethod, "Tracking Method", trackingMethod);
     }
 
     async statusClick($event: MouseEvent, job: IJob) {
         const statusList = await this.DispatchData.getStatusList();
-        await this.showSelectDialog($event, job, statusList, "Status", "Status", job.statusName);
+        await this.showSelectDialog($event, job, statusList, JobProperty.Status, "Status", job.statusName);
     }
 
     private _showLoading() {
@@ -720,7 +738,7 @@ class JobDetailController extends BaseController {
 
     async updateField(reRate: boolean, job: IJob, callData: {
         call?: string;
-        field: string;
+        field: JobProperty;
         value: any;
         jobID: number;
     }) {
@@ -729,7 +747,6 @@ class JobDetailController extends BaseController {
         try {
             if (reRate && !job.bulkJob) {
                 const rate = job.charge;
-                // await this.rateJobService.rateJob(job);
 
                 // Ensure rate is decimal
                 const numericRate = parseFloat(rate.replace(/[^\d.-]/g, ""));
@@ -788,7 +805,7 @@ class JobDetailController extends BaseController {
         }
     }
 
-    async toggleJobProperty(job: IJob, property: string, useCharge: boolean = true) {
+    async toggleJobProperty(job: IJob, property: JobProperty, value: boolean, useCharge: boolean = true) {
         console.log(`[JobDetailsComponentController] Start toggleJobProperty - property: ${property}, useCharge: ${useCharge}`);
 
         if (!job || !job.id) {
@@ -798,13 +815,12 @@ class JobDetailController extends BaseController {
         }
 
         try {
-            const newValue = !(property in job && job[property as keyof typeof job]);
+            const newValue = !value;
             console.log(`[JobDetailsComponentController] Toggling ${property} for job ${job.jobNo || job.id} from ${!newValue} to ${newValue}`);
 
-            const capitalizedProperty = property.charAt(0).toUpperCase() + property.slice(1);
             const callData = {
                 call: "updateDetailField",
-                field: capitalizedProperty,
+                field: property,
                 value: newValue,
                 jobID: job.id
             };
@@ -813,10 +829,10 @@ class JobDetailController extends BaseController {
 
             await this.updateField(useCharge, job, callData);
 
-            if (property === "reprice" && newValue) {
+            if (property === JobProperty.Reprice && newValue) {
                 console.log(`[JobDetailsComponentController] Special handling for reprice - updating internal status`);
                 const repriceStatusId = 4;
-                await this.DispatchData.updateJobDetail(job.id, "InternalStatusID", repriceStatusId,
+                await this.DispatchData.updateJobDetail(job.id, JobProperty.InternalStatusID, repriceStatusId,
                     this._extractNumericRate(job.charge), job.preBook);
             }
 
@@ -833,7 +849,7 @@ class JobDetailController extends BaseController {
         }
     }
 
-    async toggleProperty(job: IJob, property: string) {
+    async toggleProperty(job: IJob, property: JobProperty, value: boolean) {
         console.log(`[JobDetailsComponentController] Toggling property '${property}' for job ${job?.jobNo || job?.id || 'unknown'}`);
 
         const propertiesUsingDefaultCharge = [
@@ -845,7 +861,7 @@ class JobDetailController extends BaseController {
         const useCharge = propertiesUsingDefaultCharge.includes(property);
         console.log(`[JobDetailsComponentController] Using default charge: ${useCharge}`);
 
-        await this.toggleJobProperty(job, property, useCharge);
+        await this.toggleJobProperty(job, property, value, useCharge);
 
         console.log(`[JobDetailsComponentController] Property '${property}' toggle completed`);
     }
@@ -1039,7 +1055,7 @@ class JobDetailController extends BaseController {
         try {
             await this.DispatchData.updateJobDetail(
                 job.id,
-                "InternalStatusID",
+                JobProperty.InternalStatusID,
                 internalStatusId,
                 job.charge,
                 false

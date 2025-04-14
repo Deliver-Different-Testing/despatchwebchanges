@@ -17,6 +17,7 @@ public class JobViewModel : DispatchJobViewModel
     public bool? Reprice { get; set; }
     public bool? Attention { get; set; }
     public string SpeedName { get; set; }
+    public string RunName { get; set; }
 
     public string Source { get; set; }
     public string NotifiedName { get; set; }
@@ -97,17 +98,7 @@ public class JobViewModel : DispatchJobViewModel
     public string FromContactNumber { get; set; }
     public bool? RatedManually { get; set; }
     public int? SizeId { get; set; }
-    public bool? Active { get; set; }
     public bool? OneOff { get; set; }
-    public string InActiveBy { get; set; }
-    public DateTime? InActiveDate { get; set; }
-    public DateTime? FirstDue { get; set; }
-    public DateTime? NextDue { get; set; }
-    public DateTime? LastDone { get; set; }
-    public DateTime? StopDate { get; set; }
-    public DateTime? RestartDate { get; set; }
-    public string Days { get; set; }
-    public string RunName { get; set; }
 
     public string ScheduleName { get; set; }
     public bool? AirportOnly { get; set; }

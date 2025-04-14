@@ -1,5 +1,7 @@
 import {JobStatus} from "../enums/job-status.enum";
 import {LateEventType} from "../enums/late-event-type.enum";
+import {DaysOfWeek} from "../enums/days-of-week.enum";
+import {Frequency} from "../enums/frequency.enum";
 
 export interface IJob {
     id: number;
@@ -115,16 +117,7 @@ export interface IJob {
     fromContactNumber: string;
     ratedManually?: boolean;
     sizeId?: number;
-    active?: boolean;
     oneOff?: boolean;
-    inActiveBy: string;
-    inActiveDate?: Date;
-    firstDue?: Date;
-    nextDue?: Date;
-    lastDone?: Date;
-    stopDate?: Date;
-    restartDate?: Date;
-    days: string;
     preBook: boolean;
     bulkJob: boolean;
     runName: string;
@@ -150,6 +143,16 @@ export interface IJob {
     deliverByTime?: Date;
     distance: number;
     readTrackerInfo: IReadTrackerInfoViewModel;
+    inActiveBy?: Suggestion;
+    inActiveDate?: Date;
+    firstDue?: Date;
+    nextDue?: Date;
+    lastDone?: Date;
+    stopDate?: Date;
+    restartDate?: Date;
+    active?: boolean;
+    daysOfWeek?: DaysOfWeek
+    frequency?: Frequency;
 }
 
 export interface ParcelDimensions {

@@ -1,17 +1,20 @@
 @import "../../../../css/variables.less";
 @import "../../../../css/status.less";
 
+// Color variables
 @text-dark: rgba(0, 0, 0, 0.87);
 @text-medium: rgba(0, 0, 0, 0.54);
 @text-light: rgba(0, 0, 0, 0.38);
+@text-primary: @text-dark;
+@text-secondary: @text-medium;
 @background-color: #FFFFFF;
-@mobile-breakpoint: 599px;
+@divider-color: rgba(0, 0, 0, 0.12);
+
+// Layout variables
 @spacing-unit: 8px;
 @card-radius: 4px;
 @transition-speed: 200ms;
-@divider-color: rgba(0, 0, 0, 0.12);
-@text-primary: rgba(0, 0, 0, 0.87);
-@text-secondary: rgba(0, 0, 0, 0.54);
+@mobile-breakpoint: 599px;
 
 // Mixins
 .flex-center() {
@@ -20,9 +23,30 @@
   justify-content: flex-start;
 }
 
-
 .section-transition() {
   transition: all @transition-speed cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.md-list-item-base() {
+  min-height: @spacing-unit*6 !important;
+
+  &._md-button-wrap .md-button.md-no-style {
+    text-align: left;
+    width: 100%;
+  }
+
+  &.md-no-proxy {
+    padding: 0 16px;
+  }
+
+  .md-button.md-no-style {
+    text-align: left;
+  }
+
+  .md-list-item-inner {
+    justify-content: space-between;
+    width: 100%;
+  }
 }
 
 // Reusable Info Sections Container Component
@@ -60,27 +84,7 @@
       padding: 0;
 
       md-list-item {
-        min-height: @spacing-unit*6 !important;
-
-        &._md-button-wrap {
-          .md-button.md-no-style {
-            text-align: left;
-            width: 100%;
-          }
-        }
-
-        &.md-no-proxy {
-          padding: 0 16px;
-        }
-
-        .md-button.md-no-style {
-          text-align: left;
-        }
-
-        .md-list-item-inner {
-          justify-content: flex-start;
-          width: 100%;
-        }
+        .md-list-item-base();
 
         md-icon {
           margin-right: @spacing-unit*2;
@@ -88,8 +92,16 @@
         }
 
         .info-detail {
-          .flex-center();
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
           width: 100%;
+          padding: 4px 0;
+
+          .left-content {
+            display: flex;
+            align-items: center;
+          }
 
           .label {
             color: @text-secondary;
@@ -101,7 +113,8 @@
           .value {
             color: @text-primary;
             font-size: 14px;
-            text-align: left;
+            text-align: right;
+            margin-left: auto;
 
             &:empty::before {
               content: "Not available";
@@ -114,6 +127,10 @@
           color: @text-primary;
           font-size: 14px;
           margin: 0;
+        }
+
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.04);
         }
       }
     }
@@ -130,26 +147,6 @@
 
       md-list-item {
         padding: 0 @spacing-unit;
-
-        &._md-button-wrap {
-          .md-button.md-no-style {
-            text-align: left;
-            width: 100%;
-          }
-        }
-
-        &.md-no-proxy {
-          padding: 0 16px;
-        }
-
-        .md-button.md-no-style {
-          text-align: left;
-        }
-
-        .md-list-item-inner {
-          justify-content: flex-start;
-          width: 100%; // Ensure inner content takes full width
-        }
       }
 
       .info-row {
@@ -160,78 +157,9 @@
   }
 }
 
+// Job Detail Page Styles
 .job-detail-page {
-  .read-tracker-bar {
-    background-color: #f5f5f5;
-    padding: 8px 16px;
-    margin: 16px 8px 8px 8px;
-    border-radius: 4px;
-    border-top: 1px solid rgba(0, 0, 0, 0.12);
-
-    .read-status {
-      display: flex;
-      align-items: center;
-
-      md-icon {
-        margin-right: 8px;
-        font-size: 20px;
-      }
-
-      span {
-        font-weight: 500;
-        font-size: 14px;
-      }
-
-      &.read {
-        color: @primary-color;
-
-        md-icon {
-          color: @primary-color;
-        }
-      }
-
-      &.unread {
-        color: rgba(0, 0, 0, 0.54);
-
-        md-icon {
-          color: rgba(0, 0, 0, 0.54);
-        }
-      }
-    }
-
-    .read-details {
-      display: flex;
-      align-items: center;
-
-      span {
-        font-size: 14px;
-        color: rgba(0, 0, 0, 0.87);
-
-        &.read-date {
-          margin-left: 8px;
-          color: rgba(0, 0, 0, 0.54);
-        }
-      }
-    }
-
-    .md-button {
-      margin: 0;
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: @mobile-breakpoint) {
-      flex-direction: column;
-
-      .read-details {
-        margin-top: 8px;
-      }
-
-      .md-button {
-        margin-top: 8px;
-      }
-    }
-  }
-
+  // Warning Section
   .warning-section {
     margin: 0 0 12px 0;
     background-color: #FFF8E1;
@@ -248,13 +176,12 @@
     }
 
     .warning-text {
-      color: rgba(0, 0, 0, 0.87);
+      color: @text-primary;
       font-weight: 500;
       font-size: 14px;
     }
 
-    // Responsive adjustments
-    @media (max-width: 599px) {
+    @media (max-width: @mobile-breakpoint) {
       margin-bottom: 2px;
 
       .md-card-content {
@@ -268,6 +195,7 @@
     }
   }
 
+  // Job Detail Widget
   .job-detail-widget {
     background: white;
     margin: 0;
@@ -287,26 +215,6 @@
         margin-right: 16px;
       }
 
-      .navigation-group {
-        display: flex;
-        align-items: center;
-        padding-left: 8px;
-
-        .nav-button {
-          margin: 0;
-          padding: 0;
-          width: 32px;
-          height: 32px;
-          min-height: 0;
-          line-height: 32px;
-
-          md-icon {
-            color: rgba(0, 0, 0, 0.54);
-            font-size: 20px;
-          }
-        }
-      }
-
       .job-ids-container {
         flex: 1;
         display: flex;
@@ -321,7 +229,7 @@
 
           .md-tab {
             padding: 12px 16px;
-            color: rgba(0, 0, 0, 0.54);
+            color: @text-secondary;
             font-size: 13px;
             text-transform: none;
             font-weight: 400;
@@ -339,11 +247,7 @@
             background-color: @primary-color;
           }
 
-          md-pagination-wrapper {
-            height: 48px;
-          }
-
-          md-tabs-canvas {
+          md-pagination-wrapper, md-tabs-canvas {
             height: 48px;
           }
         }
@@ -366,9 +270,10 @@
       }
 
       .timing-detail {
-        .flex-center();
-        gap: @spacing-unit*1.5;
-        flex: 1;
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        align-items: center;
       }
 
       .timing-label {
@@ -381,16 +286,14 @@
       .timing-value {
         color: @text-dark;
         font-size: 14px;
+        margin-left: auto;
       }
 
-      // Mobile styles
       @media (max-width: @mobile-breakpoint) {
         padding: @spacing-unit*1.5 @spacing-unit*2;
 
-        .timing-column {
-          &:not(:first-child) {
-            margin-top: @spacing-unit;
-          }
+        .timing-column:not(:first-child) {
+          margin-top: @spacing-unit;
         }
 
         .timing-label {
@@ -401,7 +304,7 @@
       .checkbox-column {
         display: flex;
         align-items: center;
-        padding: 0 !important; /* Remove default padding */
+        padding: 0 !important;
 
         .compact-checkbox {
           margin: 2px 8px;
@@ -460,17 +363,13 @@
               margin: 0 0 @spacing-unit*2 0;
             }
 
-            .address-lines {
-              margin-bottom: 2px;
+            .address-lines p {
+              margin: @spacing-unit 0;
+              color: @text-primary;
+              line-height: 1.5;
 
-              p {
-                margin: @spacing-unit 0;
-                color: @text-primary;
-                line-height: 1.5;
-
-                &:empty {
-                  display: none;
-                }
+              &:empty {
+                display: none;
               }
             }
 
@@ -480,21 +379,6 @@
 
               md-list-item {
                 min-height: @spacing-unit*4 !important;
-
-                &._md-button-wrap {
-                  .md-button.md-no-style {
-                    text-align: left;
-                    width: 100%;
-                  }
-                }
-
-                &.md-no-proxy {
-                  padding: 0 16px;
-                }
-
-                .md-button.md-no-style {
-                  text-align: left;
-                }
 
                 .md-list-item-inner {
                   justify-content: flex-start;
@@ -516,23 +400,16 @@
         }
       }
 
-      // Mobile styles
-      @media (max-width: 599px) {
-        .address-section {
-          .address-block {
-            margin-bottom: 2px;
+      @media (max-width: @mobile-breakpoint) {
+        .address-section .address-block {
+          margin-bottom: 2px;
 
-            &:last-child {
-              margin-bottom: 0;
-            }
+          &:last-child {
+            margin-bottom: 0;
+          }
 
-            .address-header {
-              padding: 8px;
-            }
-
-            .address-content {
-              padding: 8px;
-            }
+          .address-header, .address-content {
+            padding: 8px;
           }
         }
       }
@@ -543,49 +420,52 @@
       padding-left: 8px;
       border-left: 1px solid #e0e0e0;
 
-      .client-section {
-        .info-section {
-          background: #f5f5f5;
-        }
+      .client-section .info-section {
+        background: #f5f5f5;
       }
     }
 
+    // Footer Timing Section
     .footer-timing-section {
-      margin-top: 16px;
-      margin-bottom: 0;
+      margin: 16px 8px 0;
       background-color: rgba(63, 81, 181, 0.05);
-      padding: 0; /* Remove default padding to control it better */
+      padding: 0;
 
       .timing-row {
         padding: 12px 16px;
       }
 
-      /* Divider between contact info and options */
+      // Divider between sections
       > md-divider {
         margin: 0;
       }
 
-      /* Styles for the checkboxes row */
+      // Options row
       .options-row {
         padding: 8px 16px;
-        background-color: rgba(63, 81, 181, 0.08); /* Slightly darker than the top section */
+        background-color: rgba(63, 81, 181, 0.08);
 
         md-checkbox {
           margin: 8px 0;
           .md-label {
-            margin-left: 28px; /* Better alignment with checkbox */
+            margin-left: 28px;
           }
         }
       }
 
-      /* Make sure icons align with the top section */
+      // Icon alignment
       md-icon {
         color: @text-medium;
         margin-right: 16px !important;
       }
 
-      /* Label and value styles to match top timing section */
+      // Label and value styles
       .info-detail {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        align-items: center;
+
         .label {
           color: @text-medium;
           font-size: 14px;
@@ -596,10 +476,10 @@
         .value {
           color: @text-dark;
           font-size: 14px;
+          margin-left: auto;
         }
       }
 
-      /* Responsive adjustments */
       @media (max-width: @mobile-breakpoint) {
         .timing-row {
           flex-direction: column;
@@ -620,8 +500,80 @@
       }
     }
   }
+
+  // Read Tracker Bar
+  .read-tracker-bar {
+    background-color: #f5f5f5;
+    padding: 8px 16px;
+    margin: 16px 8px 8px 8px;
+    border-radius: 4px;
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+
+    .read-status {
+      display: flex;
+      align-items: center;
+
+      md-icon {
+        margin-right: 8px;
+        font-size: 20px;
+      }
+
+      span {
+        font-weight: 500;
+        font-size: 14px;
+      }
+
+      &.read {
+        color: @primary-color;
+
+        md-icon {
+          color: @primary-color;
+        }
+      }
+
+      &.unread {
+        color: @text-medium;
+
+        md-icon {
+          color: @text-medium;
+        }
+      }
+    }
+
+    .read-details {
+      display: flex;
+      align-items: center;
+
+      span {
+        font-size: 14px;
+        color: @text-primary;
+
+        &.read-date {
+          margin-left: 8px;
+          color: @text-medium;
+        }
+      }
+    }
+
+    .md-button {
+      margin: 0;
+    }
+
+    @media (max-width: @mobile-breakpoint) {
+      flex-direction: column;
+
+      .read-details {
+        margin-top: 8px;
+      }
+
+      .md-button {
+        margin-top: 8px;
+      }
+    }
+  }
 }
 
+// POD Photo Section
 .pod-photo-section {
   background: white;
   margin: 16px 8px;
@@ -633,13 +585,13 @@
     border-bottom: 1px solid #e0e0e0;
 
     span {
-      color: rgba(0, 0, 0, 0.87);
+      color: @text-primary;
       font-size: 14px;
       font-weight: 500;
     }
 
     .photo-count {
-      color: rgba(0, 0, 0, 0.54);
+      color: @text-secondary;
       font-size: 12px;
       margin-left: 8px;
     }
@@ -766,14 +718,14 @@
     }
   }
 
-  /* Responsive adjustments */
-  @media (max-width: 599px) {
+  @media (max-width: @mobile-breakpoint) {
     .pod-main-photo {
       height: 200px;
     }
   }
 }
 
+// Sticky Note Container
 .sticky-note-container {
   max-height: 500px;
   overflow-y: auto;
@@ -781,7 +733,7 @@
   border-radius: 4px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 
-  // Nested scrollbar styles
+  // Scrollbar styles
   &::-webkit-scrollbar {
     width: 6px;
   }

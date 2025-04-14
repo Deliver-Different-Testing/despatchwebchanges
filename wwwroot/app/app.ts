@@ -86,6 +86,7 @@ import EditParcelDimensionsDialogService
     from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
 import ParcelVisualizationComponent
     from "./components/dialogs/edit-parcel-dimensions-dialog/parcel-visuailzation/parcel-visualization.component";
+import PrebookComponent from "./components/prebooks/prebook.controller";
 
 const app = angular.module("uDispatch", [
     "ui.router",
@@ -235,6 +236,7 @@ app.component("noData", NoDataComponent);
 app.component("parcelVisualization", ParcelVisualizationComponent);
 app.component("nationwideComponent", NationwideComponent);
 app.component("stickyNote", StickyNoteComponent);
+app.component("prebooksComponent", PrebookComponent);
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);

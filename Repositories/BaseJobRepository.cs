@@ -527,7 +527,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         try
         {
             // Mark job as ready
-                            await MarkJobAsReadAsync(jobId);
+            await MarkJobAsReadAsync(jobId);
 
             // Check for live job first
             var liveJob = await Context.TucJobs
@@ -537,7 +537,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 .FirstOrDefaultAsync();
 
             if (liveJob != null)
-               return liveJob;
+                return liveJob;
 
             // Check for archived job
             var archivedJob = await Context.TucJobArchives
@@ -550,7 +550,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             {
                 return await Context.TucJobBookings
                     .Where(j => j.UcbkId == jobId)
-                    .Select(JobMappings.JobPrebookMapping)
+                    .Select(JobMappings.JobRecurringMapping)
                     .AsNoTracking()
                     .FirstOrDefaultAsync();
             }
@@ -580,33 +580,24 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
     private async Task MarkJobAsReadAsync(int jobId)
     {
+        var alreadyOpened = await Context.TucJobReadTrackers.AnyAsync(x => x.JobId == jobId);
+        if (alreadyOpened) return;
+
         var isLiveJob = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
-        if(!isLiveJob) return;
+        if (!isLiveJob) return;
 
         var staffId = infoService.GetStaffId();
         var currentTenantTime = infoService.GetCurrentTenantTime();
 
-        var data = await Context.TucJobReadTrackers.FirstOrDefaultAsync(x => x.JobId == jobId);
-
-        if (data is null)
+        var readTracker = new TucJobReadTracker
         {
-            data = new TucJobReadTracker
-            {
-                JobId = jobId,
-                HasBeenRead = true,
-                ReadByStaffId = staffId,
-                ReadTimestamp = currentTenantTime
-            };
+            JobId = jobId,
+            HasBeenRead = true,
+            ReadByStaffId = staffId,
+            ReadTimestamp = currentTenantTime
+        };
 
-            await Context.TucJobReadTrackers.AddAsync(data);
-        }
-        else
-        {
-            data.HasBeenRead = true;
-            data.ReadByStaffId = staffId;
-            data.ReadTimestamp = currentTenantTime;
-        }
-
+        await Context.TucJobReadTrackers.AddAsync(readTracker);
         await Context.SaveChangesAsync();
     }
 

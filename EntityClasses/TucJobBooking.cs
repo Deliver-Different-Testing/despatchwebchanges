@@ -21,7 +21,7 @@ public partial class TucJobBooking
 
     public DateTime? UcbkDate { get; set; }
 
-    public double? UcbkType { get; set; }
+    public int? UcbkType { get; set; }
 
     public int? UcbkClientId { get; set; }
 
@@ -61,15 +61,16 @@ public partial class TucJobBooking
 
     public bool? UcbkActive { get; set; }
 
-    public string UcbkInActiveBy { get; set; }
+    /// <summary>
+    /// Indicates who or what marked the job as inactive (User, System, Schedule, etc.)
+    /// </summary>
+    public int? UcbkInActiveBy { get; set; }
 
     public DateTime? UcbkInActiveDate { get; set; }
 
     public DateTime? UcbkFirstDue { get; set; }
 
     public DateTime? UcbkNextDue { get; set; }
-
-    public string UcbkDays { get; set; }
 
     public string UcbkClientRefa { get; set; }
 
@@ -343,6 +344,15 @@ public partial class TucJobBooking
 
     public decimal? CourierFuel { get; set; }
 
+    public string UcbkDays { get; set; }
+
+    /// <summary>
+    /// Frequency of job recurrence (Weekly=1, Fortnightly=2, FirstOfMonth=4, etc.)
+    /// </summary>
+    public int? UcbkFrequency { get; set; }
+
+    public int UcbkDaysInt { get; set; }
+
     public virtual TucJobBooking BookingParent { get; set; }
 
     public virtual TucCourier Courier { get; set; }
@@ -369,7 +379,11 @@ public partial class TucJobBooking
 
     public virtual TucClient UcbkClient { get; set; }
 
+    public virtual TucStaff UcbkInActiveByNavigation { get; set; }
+
     public virtual VehicleSize UcbkSizeNavigation { get; set; }
 
     public virtual TucJobType UcbkSpeedNavigation { get; set; }
+
+    public virtual TucJobType UcbkTypeNavigation { get; set; }
 }

@@ -308,13 +308,13 @@ public class JobController(
     public async Task<IActionResult> SendPrebookJob(int jobId)
     {
         await jobRepository.SendPrebookJobAsync(jobId);
-        return Ok("OK");
+        return Ok();
     }
 
     public async Task<IActionResult> VoidPrebookJob(int jobId, string despatcher, int staffId)
     {
         await jobRepository.VoidPrebookJobAsync(jobId, despatcher, staffId);
-        return Ok("OK");
+        return Ok();
     }
 
     public async Task<IActionResult> Current(int courierId, bool done)
