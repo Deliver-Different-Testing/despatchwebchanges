@@ -4664,12 +4664,7 @@ public partial class DespatchContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("ucbkDateDone");
             entity.Property(e => e.UcbkDay).HasColumnName("ucbkDay");
-            entity.Property(e => e.UcbkDays)
-                .HasMaxLength(9)
-                .IsUnicode(false)
-                .HasDefaultValueSql("((0))")
-                .IsFixedLength()
-                .HasColumnName("ucbkDays");
+            entity.Property(e => e.UcbkDays).HasDefaultValueSql("((0))");
             entity.Property(e => e.UcbkDone)
                 .HasDefaultValue(false)
                 .HasColumnName("ucbkDone");
@@ -4677,14 +4672,16 @@ public partial class DespatchContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("ucbkFirstDue");
             entity.Property(e => e.UcbkFortnight).HasColumnName("ucbkFortnight");
+            entity.Property(e => e.UcbkFrequency)
+                .HasDefaultValue(0)
+                .HasComment("Frequency of job recurrence (Weekly=1, Fortnightly=2, FirstOfMonth=4, etc.)");
             entity.Property(e => e.UcbkFrom).HasColumnName("ucbkFrom");
             entity.Property(e => e.UcbkFromAddr)
                 .HasMaxLength(150)
                 .IsUnicode(false)
                 .HasColumnName("ucbkFromAddr");
             entity.Property(e => e.UcbkInActiveBy)
-                .HasMaxLength(50)
-                .IsUnicode(false)
+                .HasComment("Indicates who or what marked the job as inactive (User, System, Schedule, etc.)")
                 .HasColumnName("ucbkInActiveBy");
             entity.Property(e => e.UcbkInActiveDate)
                 .HasColumnType("datetime")
@@ -4771,11 +4768,19 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.UcbkClientId)
                 .HasConstraintName("FK_TucJobBooking_tucClient");
 
+            entity.HasOne(d => d.UcbkInActiveByNavigation).WithMany(p => p.TucJobBookings)
+                .HasForeignKey(d => d.UcbkInActiveBy)
+                .HasConstraintName("FK_tucJobBooking_tucStaff");
+
             entity.HasOne(d => d.UcbkSizeNavigation).WithMany(p => p.TucJobBookings).HasForeignKey(d => d.UcbkSize);
 
-            entity.HasOne(d => d.UcbkSpeedNavigation).WithMany(p => p.TucJobBookings)
+            entity.HasOne(d => d.UcbkSpeedNavigation).WithMany(p => p.TucJobBookingUcbkSpeedNavigations)
                 .HasForeignKey(d => d.UcbkSpeed)
                 .HasConstraintName("FK_TucJobBooking_TucJobTypes");
+
+            entity.HasOne(d => d.UcbkTypeNavigation).WithMany(p => p.TucJobBookingUcbkTypeNavigations)
+                .HasForeignKey(d => d.UcbkType)
+                .HasConstraintName("FK_tucJobBooking_tucJobType");
         });
 
         modelBuilder.Entity<TucJobBookingItem>(entity =>

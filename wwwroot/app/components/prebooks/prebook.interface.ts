@@ -1,13 +1,16 @@
 import {AddressViewModel} from "../../interfaces/job.interface";
 
-export interface PrebookListViewModel {
+export interface IPrebookListModel {
     id: number;
     booked: Date;
     client: string;
-    /** @deprecated Use pickupAddress/deliveryAddress properties instead */
+
+    /** @deprecated Use pickup/delivery address properties instead */
     fromAddress: string;
-    /** @deprecated Use pickupAddress/deliveryAddress properties instead */
+
+    /** @deprecated Use pickup/delivery address properties instead */
     toAddress: string;
+
     jobNo: string;
     clientId: number | null;
     courier: string;

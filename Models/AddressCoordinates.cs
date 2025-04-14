@@ -1,15 +1,9 @@
 namespace DespatchWeb.Models;
 
-public class AddressCoordinates
+public class AddressCoordinates(decimal latitudePercentage, decimal longitudePercentage)
 {
-    public AddressCoordinates(decimal latitudePercentage, decimal longitudePercentage)
-    {
-        LatitudePercentage = latitudePercentage;
-        LongitudePercentage = longitudePercentage;
-    }
-
-    private decimal LatitudePercentage { get; }
-    private decimal LongitudePercentage { get; }
+    private decimal LatitudePercentage { get; } = latitudePercentage;
+    private decimal LongitudePercentage { get; } = longitudePercentage;
 
     // Convert percentage to actual coordinates for calculations
     internal double GetActualLatitude() => (double)(LatitudePercentage * 0.9M);

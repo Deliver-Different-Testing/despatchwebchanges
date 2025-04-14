@@ -55,9 +55,7 @@ class RouterConfig {
     private configurePrebooksState(): this {
         this.$stateProvider.state("prebooks", {
             url: "/prebooks",
-            template: require("./components/prebooks/prebookView.html"),
-            controller: "PBControl",
-            reloadOnSearch: false
+            component: "prebooksComponent",
         });
         return this;
     }

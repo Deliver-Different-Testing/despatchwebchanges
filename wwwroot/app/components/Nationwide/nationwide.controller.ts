@@ -189,8 +189,8 @@ class NationwideControl extends BaseController {
 
     $onInit() {
         this.refreshInterval = this.$interval(async () => {
-            console.log("[HomeRefresh] - Refreshing get data")
-            await this.getData();
+            console.log("[NationwideController] - Refreshing tasks")
+            await this.getTasks();
         }, 60000);
     }
 

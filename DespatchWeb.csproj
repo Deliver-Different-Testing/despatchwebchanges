@@ -258,19 +258,19 @@
     <None Include="wwwroot\lib\ng-material-floating-button\src\mfb-directive.min.js" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Amazon.AspNetCore.DataProtection.SSM" Version="3.2.1" />
+    <PackageReference Include="Amazon.AspNetCore.DataProtection.SSM" Version="3.5.0" />
     <PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="8.0.2" />
-    <PackageReference Include="Azure.Identity" Version="1.13.1" />
-    <PackageReference Include="AWSSDK.S3" Version="3.7.404.7" />
-    <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.400.35" />
-    <PackageReference Include="AWSSDK.SSO" Version="3.7.400.35" />
+    <PackageReference Include="Azure.Identity" Version="1.13.2" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.416.9" />
+    <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.401.82" />
+    <PackageReference Include="AWSSDK.SSO" Version="3.7.400.133" />
     <PackageReference Include="ExcelDataReader" Version="3.7.0" />
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.7.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.10" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.10" />
     <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.0.2" />
     <PackageReference Include="System.Formats.Asn1" Version="8.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Certificate" Version="8.0.10" />
@@ -339,8 +339,9 @@
     <TypeScriptCompile Include="wwwroot\app\components\overview\overview.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\overview.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\services\overview-filters.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\prebooks\prebook.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\prebooks\prebook.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\prebooks\prebook.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\prebooks\prebooks.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\enums\status-filter.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\enums\view-mode.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\task-dashboard.controller.ts" />
@@ -348,8 +349,11 @@
     <TypeScriptCompile Include="wwwroot\app\contants.ts" />
     <TypeScriptCompile Include="wwwroot\app\directives.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\app-pages.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\days-of-week.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\event-type.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\frequency.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\job-note-type.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\job-property.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\job-status.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\late-event-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />

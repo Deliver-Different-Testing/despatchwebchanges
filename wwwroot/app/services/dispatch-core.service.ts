@@ -1,16 +1,22 @@
 import {AppConfig} from "../interfaces/app-config.interface";
 import {
-    AddressViewModel, ClientItemsViewModel, InternalStatus,
+    AddressViewModel,
+    ClearListViewModel,
+    ClientItemsViewModel,
+    IClearListEnvelope,
+    IDispatchJob,
     IJob,
-    JobQueryParams, JobRateDetails,
-    Pallet,
-    ParcelDimensions, PriceBreakdown, SuburbLookup,
-    Suggestion,
-    ClearListViewModel, IDispatchJob, IClearListEnvelope,
     ILateCallRequest,
+    InternalStatus,
+    JobQueryParams,
+    JobRateDetails,
+    Pallet,
+    ParcelDimensions,
+    PriceBreakdown,
+    SuburbLookup,
+    Suggestion,
 } from "../interfaces/job.interface";
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
-import {DateField, JobField} from "../interfaces/job-field.types";
 import {
     ActiveCourierViewModel,
     AvailableCourierPosition,
@@ -19,8 +25,9 @@ import {
 import {EventGroupViewModel} from "../interfaces/event-group-view-model.interface";
 import {ClearListEnvelopeViewModel, DfrntPageViewModel} from "../interfaces/dfrnt-page-view-model.interface";
 import {bindAllMethods} from "../bindAllMethods";
-import {TaskViewModel, TaskTableFiltersRequest} from "../components/task-dashboard/task-dashboard.interfaces";
+import {TaskTableFiltersRequest, TaskViewModel} from "../components/task-dashboard/task-dashboard.interfaces";
 import moment from "moment";
+import {JobProperty} from "../enums/job-property.enum";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [
@@ -495,7 +502,7 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async updateJobDetail(
         jobId: number,
-        field: JobField,
+        field: JobProperty,
         value: string | Date | number | boolean,
         rate: number | string,
         preBook: boolean
@@ -509,7 +516,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         let processedField = field;
 
         // Format time fields
-        if (field === "Time" || field === "CompletedTime") {
+        if (field === JobProperty.Time || field === JobProperty.CompletedTime) {
             const currentDate = moment().format("YYYY-MM-DD");
             const timeValue = moment(value.toString()).format("HH:mm:ss");
             processedValue = `${currentDate} ${timeValue}`;
@@ -517,7 +524,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
 
         // Format followup time
-        if (field === "FollowupTime") {
+        if (field === JobProperty.FollowupTime) {
             const dateValue = moment(value.toString()).format("YYYY-MM-DD");
             const timeValue = moment(value.toString()).format("HH:mm:ss");
             processedValue = `${dateValue} ${timeValue}`;
@@ -525,15 +532,27 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
 
         // Format date fields
-        const dateFields: DateField[] = ["Date", "StopDate", "RestartDate", "InActiveDate", "FirstDue", "LastDone", "NextDue", "DeliverBy", "PuTime", "BookedTime"];
-        if (dateFields.includes(field as DateField)) {
+        const dateFields: JobProperty[] = [
+            JobProperty.Date,
+            JobProperty.DeliverBy,
+            JobProperty.PuTime,
+            JobProperty.BookedTime,
+            JobProperty.StopDate,
+            JobProperty.RestartDate,
+            JobProperty.InActiveDate,
+            JobProperty.FirstDue,
+            JobProperty.LastDone,
+            JobProperty.NextDue
+        ];
+
+        if (dateFields.includes(field)) {
             processedValue = moment(value.toString()).format("YYYY-MM-DD");
             console.log("Formatted date field:", {field, originalValue, formattedValue: processedValue});
         }
 
         // Handle field rename
-        if (field === "DeliverToContact") {
-            processedField = "ToContactName";
+        if (field === JobProperty.DeliverToContact) {
+            processedField = JobProperty.ToContactName;
             console.log("Renamed field:", {oldField: field, newField: processedField});
         }
 
@@ -548,7 +567,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         // Create URL parameters with proper encoding
         const params = new URLSearchParams({
             jobId: String(jobId),
-            field: processedField,
+            field: String(processedField),
             value: String(processedValue ?? ''),
             rate: String(processedRate ?? ''),
             despatcherName: String(FirstName),

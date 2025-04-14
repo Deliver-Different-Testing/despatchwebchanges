@@ -198,20 +198,6 @@ class HomeController extends BaseController {
             this._markJobReadStatus(data.jobId, data.isRead);
         });
 
-        this.JobDetailService.setSelectJobDetail(async () => {
-            const currentJob = this.currentJob;
-            await this.JobDetailService.setJob(this.currentJob);
-
-            await this.getData();
-            if (!currentJob) {
-                return;
-            }
-
-            const refreshedJob = this.jobList.find((jo) => jo.id === currentJob.id);
-            if (!refreshedJob) return;
-            await this.selectJob(refreshedJob);
-        });
-
         this.boxSortableOptions = {
             handle: '.box-handle',
             connectWith: '.column-sortable',
@@ -500,8 +486,8 @@ class HomeController extends BaseController {
         });
 
         this.refreshInterval = this.$interval(async () => {
-            console.log("[HomeRefresh] - Refreshing get data")
-            await this.getData();
+            console.log("[HomeRefresh] - Refreshing tasks")
+            await this.loadSupports();
         }, 60000);
 
         // Set up a watch to apply dimensions when layout changes
