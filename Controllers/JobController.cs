@@ -34,7 +34,8 @@ public class JobController(
     IAmazonS3 s3Client,
     HttpClient httpClient,
     IRateJobService rateJobService,
-    ICountryService countryService
+    ICountryService countryService,
+    IRecurringJobRepository recurringJobRepository
 ) : Controller
 {
     [HttpGet]
@@ -453,16 +454,26 @@ public class JobController(
         return Json(all);
     }
 
+    public async Task<IActionResult> RecurringJobDetail(int jobId)
+    {
+        try
+        {
+            var job = await recurringJobRepository.GetRecurringJobById(jobId);
+            return Json(job);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An unexpected error occured");
+            return StatusCode(500, "An error occurred while processing your request.");
+        }
+    }
+
     public async Task<IActionResult> Detail(int jobId)
     {
         try
         {
             var job = await jobRepository.GetJobByIdAsync(jobId);
             return Json(job);
-        }
-        catch (OperationCanceledException)
-        {
-            return StatusCode(408); // Request Timeout
         }
         catch (Exception ex)
         {
@@ -498,7 +509,7 @@ public class JobController(
 
     public async Task<IActionResult> PreBookJobs()
     {
-        var result = await jobRepository.PreBookJobListAsync();
+        var result = await recurringJobRepository.PreBookJobListAsync();
         return Json(result);
     }
 
@@ -807,7 +818,7 @@ public class JobController(
         int pageSize
     )
     {
-        var result = await jobRepository.PreBookSearchAsync(
+        var result = await recurringJobRepository.PreBookSearchAsync(
             courierId,
             wild ?? "",
             job ?? "",
@@ -1845,19 +1856,37 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdateJob(
+    public async Task<IActionResult> UpdateRecurringJob(
         int jobId,
         string field,
-        string value,
-        decimal? rate,
-        string despatcherName,
-        int staffId
+        string value
     )
     {
         try
         {
-            await jobRepository.UpdateJobAsync(jobId, field, value, rate,
-                despatcherName, staffId);
+            await recurringJobRepository.UpdateTucJobRecurring(jobId, field, value);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            Log.Error(
+                e,
+                $"An error occured updating field {field} with value {value} for job {jobId}"
+            );
+            return StatusCode(StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> UpdateJob(
+        int jobId,
+        string field,
+        string value
+    )
+    {
+        try
+        {
+            await jobRepository.UpdateJobAsync(jobId, field, value);
             return Ok();
         }
         catch (Exception e)
@@ -1893,26 +1922,6 @@ public class JobController(
     public async Task<IActionResult> ReleaseBulkJob(string jobNumber, DateTime bookDate)
     {
         await jobRepository.ReleaseBulkJobAsync(jobNumber, bookDate);
-        return Ok();
-    }
-
-    public async Task<IActionResult> UpdateJobBooking(
-        int jobId,
-        string field,
-        string value,
-        decimal? rate,
-        string despatcherName,
-        int staffId
-    )
-    {
-        await jobRepository.UpdateJobBookingAsync(
-            jobId,
-            field,
-            value,
-            rate,
-            despatcherName,
-            staffId
-        );
         return Ok();
     }
 

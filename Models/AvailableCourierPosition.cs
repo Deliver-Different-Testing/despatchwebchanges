@@ -5,6 +5,7 @@ namespace DespatchWeb.Models;
 public class AvailableCourierPosition
 {
     public int CourierId { get; set; }
+    public string CourierName { get; set; }
     public int ChannelId { get; set; }
     public string VehicleType { get; set; }
     public string Code { get; set; }

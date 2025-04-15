@@ -521,7 +521,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             : query.OrderByDescending(j => j.UcjbCourier.UccrName);
     }
 
-
     public async Task<JobViewModel> GetJobByIdAsync(int jobId)
     {
         try
@@ -539,18 +538,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                                 .AsNoTracking()
                                 .FirstOrDefaultAsync();
                 return liveJob;
-            }
-
-            var isRecurringJob = await Context.TucJobBookings.AnyAsync(j => j.UcbkId == jobId);
-            if (isRecurringJob)
-            {
-                var recurringJob =  await Context.TucJobBookings
-                    .Where(j => j.UcbkId == jobId)
-                    .Select(JobMappings.JobRecurringMapping)
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync();
-
-                return recurringJob;
             }
 
             // Check for archived job
@@ -1474,15 +1461,17 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     private async Task<bool> IsJobArchived(int jobId) =>
         await Context.TucJobArchives.AnyAsync(j => j.UcjbId == jobId);
 
-    private async Task<List<TucNoteViewModel>> GetActiveNotesByJobIdAsync(int jobId) =>
-        await Context.TucNotes
+    private async Task<List<TucNoteViewModel>> GetActiveNotesByJobIdAsync(int jobId)
+    {
+        return await Context.TucNotes
             .Include(x => x.NoteType)
             .Include(x => x.CreatedByNavigation)
             .Include(x => x.UpdatedByNavigation)
-            .Where(x => x.JobId == jobId || x.JobBookingId == jobId)
+            .Where(x => x.JobId == jobId)
             .AsNoTracking()
             .Select(x => new TucNoteViewModel(x))
             .ToListAsync();
+    }
 
     private async Task<List<TucNoteViewModel>> GetArchivedNotesByJobIdAsync(int jobId)
     {
@@ -1810,4 +1799,15 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
         return bookingInfo?.EffectiveJobId ?? jobId;
     }
+
+      protected static string GetTrackingName(int trackingMethodId)
+        {
+            return trackingMethodId switch
+            {
+                1 => "Email",
+                2 => "Mobile",
+                3 => "Email & Mobile",
+                _ => string.Empty
+            };
+        }
 }

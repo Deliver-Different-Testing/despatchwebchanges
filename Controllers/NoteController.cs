@@ -8,7 +8,10 @@ using Serilog;
 
 namespace DespatchWeb.Controllers;
 
-public class NoteController(IJobRepository jobRepository) : Controller
+public class NoteController(
+    IJobRepository jobRepository,
+    IRecurringJobRepository recurringJobRepository
+    ) : Controller
 {
     [HttpGet]
     public async Task<IActionResult> GetNotes(int jobId)
@@ -18,6 +21,23 @@ public class NoteController(IJobRepository jobRepository) : Controller
             ArgumentNullException.ThrowIfNull(jobId);
 
             var notes = await jobRepository.GetNotesByJobId(jobId);
+            return Json(notes);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error getting notes");
+            return StatusCode(500, "An error occurred while getting the notes.");
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetRecurringNotes(int jobId)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(jobId);
+
+            var notes = await recurringJobRepository.GetRecurringNotesByJobIdAsync(jobId);
             return Json(notes);
         }
         catch (Exception ex)

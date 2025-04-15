@@ -56,12 +56,12 @@ namespace DespatchWeb.Models;
             IsImportant = note.IsImportant;
             CreatedDate = note.CreatedDate;
             CreatedBy = note.CreatedBy;
-            CreatedByName = note.CreatedBy.HasValue
-                ? FormatName(note.CreatedByNavigation.UcstFirstName, note.CreatedByNavigation.UcstLastName)
-                : string.Empty;
+          CreatedByName = note.CreatedBy.HasValue && note.CreatedByNavigation != null
+              ? FormatName(note.CreatedByNavigation.UcstFirstName, note.CreatedByNavigation.UcstLastName)
+              : string.Empty;
             UpdatedDate = note.UpdatedDate;
             UpdatedBy = note.UpdatedBy;
-            UpdatedByName = note.UpdatedBy.HasValue
+            UpdatedByName = note.UpdatedBy.HasValue && note.UpdatedByNavigation != null
                 ? FormatName(note.UpdatedByNavigation.UcstFirstName, note.UpdatedByNavigation.UcstLastName)
                 : string.Empty;
         }

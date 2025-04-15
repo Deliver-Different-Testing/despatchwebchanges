@@ -209,6 +209,11 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
+  async getRecurringJobDetail(jobId: number) {
+        const response = await this.$http.get<IJob>(`/Job/RecurringJobDetail?jobId=${jobId}`);
+        return response.data;
+    }
+
     async getRelatedJobs(parentId: number, clientId: number) {
         const response = await this.$http.get<Suggestion[]>(`/Job/Related?parentId=${parentId}&clientId=${clientId}`);
         return response.data;
@@ -505,10 +510,10 @@ class DispatchCoreService implements angular.IServiceProvider {
         field: JobProperty,
         value: string | Date | number | boolean,
         rate: number | string,
-        preBook: boolean
+        isRecurring: boolean
     ) {
         console.log("Starting updateJobDetail:", {
-            jobId, field, initialValue: value, rate, preBook
+            jobId, field, initialValue: value, rate, preBook: isRecurring
         });
 
         const originalValue = value;
@@ -562,16 +567,13 @@ class DispatchCoreService implements angular.IServiceProvider {
             console.log("Formatted rate:", {originalRate: rate, formattedRate: processedRate});
         }
 
-        const method: string = preBook ? "job/UpdateJobBooking" : "job/UpdateJob";
+        const method: string = isRecurring ? "job/UpdateRecurringJob" : "job/UpdateJob";
 
         // Create URL parameters with proper encoding
         const params = new URLSearchParams({
             jobId: String(jobId),
             field: String(processedField),
-            value: String(processedValue ?? ''),
-            rate: String(processedRate ?? ''),
-            despatcherName: String(FirstName),
-            staffId: String(ContactID)
+            value: String(processedValue ?? '')
         });
 
         const url = `${method}?${params.toString()}`;

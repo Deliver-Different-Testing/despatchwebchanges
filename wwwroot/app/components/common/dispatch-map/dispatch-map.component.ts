@@ -50,7 +50,6 @@ class DispatchMapController extends BaseController {
     onMarkerClick?: (params: { job: IJob }) => void;
     showAvailableCouriers: boolean = false;
     autoZoomEnabled: boolean = true;
-    polylines: any[] = [];
     markers: google.maps.Marker[] = [];
     flags: any[] = [];
     labels: google.maps.Marker[] = [];
@@ -287,7 +286,7 @@ class DispatchMapController extends BaseController {
 
         try {
             const coordinates = await this.getSearchCoordinates();
-            const couriers  = await this.fetchCourierData(coordinates);
+            const couriers = await this.fetchCourierData(coordinates);
             this._updateCourierMarkers(couriers);
 
             console.log('[DispatchMapController] Successfully updated courier positions', {
@@ -602,7 +601,7 @@ class DispatchMapController extends BaseController {
         });
     }
 
-    private _getFlagColor(courier: AvailableCourierPosition) {
+    private _getFlagColor(courier: AvailableCourierPosition): string {
         if (courier.overDueJobs > 0) {
             return '#FF1493';
         } else if (courier.totalJobs === 0) {
@@ -612,10 +611,20 @@ class DispatchMapController extends BaseController {
         }
     }
 
+    private _getFlagTextColor(courier: AvailableCourierPosition): string {
+        if (courier.totalJobs === 0) {
+            return '#000000';
+        }
+
+        // All others white
+        return '#FFFFFF';
+    }
+
     private _addCourierMarker(courier: AvailableCourierPosition) {
         const position = new this.$window.google.maps.LatLng(courier.latitude, courier.longitude);
 
         const flagColor = this._getFlagColor(courier);
+        const flagTextColor = this._getFlagTextColor(courier);
 
         const labelText = courier.overDueJobs > 0
             ? `${courier.totalJobs}/${courier.overDueJobs}`
@@ -630,7 +639,7 @@ class DispatchMapController extends BaseController {
             title: `Courier ${courier.code}`,
             label: {
                 text: labelText,
-                color: '#FFFFFF',
+                color: flagTextColor,
                 fontWeight: 'bold',
                 fontSize: '10px'
             },
@@ -642,8 +651,6 @@ class DispatchMapController extends BaseController {
             this._fadeInMarker(marker);
         }, Math.random() * 200);
 
-        const courierName = courier.code || "Courier";
-
         marker.addListener("mouseover", () => {
             const overdueJobsText = courier.overDueJobs > 0
                 ? `<span style="color: #E53935; font-weight: bold;">Overdue Jobs: ${courier.overDueJobs}</span><br>`
@@ -651,7 +658,7 @@ class DispatchMapController extends BaseController {
 
             const content = `
         <div style="padding: 8px;">
-            <strong>Courier: ${courierName}</strong><br>
+            <strong>${courier.courierName}</strong><br>
             ${courier.fleetCode ? `Fleet: ${courier.fleetCode}<br>` : ''}
             ${courier.vehicleType ? `Vehicle: ${courier.vehicleType}<br>` : ''}
             <strong>Total Jobs: ${courier.totalJobs}</strong><br>
