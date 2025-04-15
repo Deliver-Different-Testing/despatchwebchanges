@@ -308,7 +308,6 @@ public partial class JobRepository
         await Context.SaveChangesAsync();
     }
 
-
     private async Task UpdateTucJobRecurring(int jobId, string fieldName, string value)
     {
         if (Enum.TryParse<JobProperty>(fieldName, out var property))
@@ -472,18 +471,27 @@ public partial class JobRepository
             case JobProperty.BookedTime:
                 job.UcbkDate = DateTime.Parse(value);
                 break;
+            case JobProperty.DaysOfWeek:
+                job.UcbkDaysInt = int.Parse(value);
+                var daysEnum = (DaysOfWeek)job.UcbkDaysInt;
+                updateNote = $"Days of recurring jobs set to: {daysEnum.ToDisplayString()}";
+                break;
+            case JobProperty.Frequency:
+                job.UcbkFrequency = int.Parse(value);
+                var frequencyEnum = (Frequency)job.UcbkFrequency;
+                updateNote = $"Frequency of recurring job set to: {frequencyEnum.ToDisplayString()}";
+                break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
         }
 
         if (!string.IsNullOrEmpty(updateNote))
-            await SaveNoteAsync(jobId, updateNote);
+            await SaveNoteAsync(jobId, updateNote, false, true);
 
         Context.TucJobBookings.Update(job);
         await Context.SaveChangesAsync();
     }
 
-// Old function to keep compatibility
     private async Task UpdateTucJobArchive(int jobId, string field, string value)
     {
         if (Enum.TryParse<JobProperty>(field, out var property))

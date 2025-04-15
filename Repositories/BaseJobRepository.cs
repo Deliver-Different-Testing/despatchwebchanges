@@ -530,14 +530,28 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             await MarkJobAsReadAsync(jobId);
 
             // Check for live job first
-            var liveJob = await Context.TucJobs
-                .Where(j => j.UcjbId == jobId)
-                .Select(JobMappings.JobMapping)
-                .AsNoTracking()
-                .FirstOrDefaultAsync();
-
-            if (liveJob != null)
+            var isLiveJob = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
+            if (isLiveJob)
+            {
+                var liveJob = await Context.TucJobs
+                                .Where(j => j.UcjbId == jobId)
+                                .Select(JobMappings.JobMapping)
+                                .AsNoTracking()
+                                .FirstOrDefaultAsync();
                 return liveJob;
+            }
+
+            var isRecurringJob = await Context.TucJobBookings.AnyAsync(j => j.UcbkId == jobId);
+            if (isRecurringJob)
+            {
+                var recurringJob =  await Context.TucJobBookings
+                    .Where(j => j.UcbkId == jobId)
+                    .Select(JobMappings.JobRecurringMapping)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync();
+
+                return recurringJob;
+            }
 
             // Check for archived job
             var archivedJob = await Context.TucJobArchives
@@ -545,15 +559,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 .Select(JobMappings.JobArchiveMapping)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
-
-            if (archivedJob == null)
-            {
-                return await Context.TucJobBookings
-                    .Where(j => j.UcbkId == jobId)
-                    .Select(JobMappings.JobRecurringMapping)
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync();
-            }
+            ArgumentNullException.ThrowIfNull(archivedJob);
 
             // Get charge here
             var totalCharge = await Context.PricingBreakdowns
@@ -1447,12 +1453,12 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             : await UpdateNoteAsync(viewModel, staffId);
     }
 
-    public async Task<int> SaveNoteAsync(int jobId, string noteText, bool isImportant = false)
+    public async Task<int> SaveNoteAsync(int jobId, string noteText, bool isImportant = false, bool isRecurringJob = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(noteText, nameof(noteText));
         var staffId = infoService.GetStaffId();
 
-        return await CreateBasicNoteAsync(jobId, noteText, staffId, isImportant);
+        return await CreateBasicNoteAsync(jobId, noteText, staffId, isImportant, isRecurringJob);
     }
 
     public async Task DeleteNoteAsync(int noteId)
@@ -1670,6 +1676,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         string noteText,
         int staffId,
         bool isImportant,
+        bool isRecurringJob,
         CancellationToken cancellationToken = default)
     {
         var currentTime = infoService.GetCurrentTenantTime();
@@ -1696,7 +1703,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         {
             var activeNote = new TucNote
             {
-                JobId = jobId,
+                JobId = !isRecurringJob ? jobId : null,
+                JobBookingId = isRecurringJob ? jobId : null,
                 NoteTypeId = internalNoteTypeId,
                 NoteText = noteText,
                 IsImportant = isImportant,

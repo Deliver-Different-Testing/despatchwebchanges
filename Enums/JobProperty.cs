@@ -56,5 +56,6 @@ public enum JobProperty
     FirstDue,
     LastDone,
     NextDue,
-    DaysOfWeek
+    DaysOfWeek,
+    Frequency
 }

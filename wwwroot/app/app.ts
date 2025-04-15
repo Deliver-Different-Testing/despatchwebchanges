@@ -21,7 +21,6 @@ import {openJobsComponent} from "./components/overview/open-jobs/open-jobs.contr
 import OverviewFiltersService from "./components/overview/services/overview-filters.service";
 import OverviewComponent from "./components/overview/overview.controller";
 import OverviewService from "./components/overview/overview.service";
-import PrebookService from "./components/prebooks/prebook.service";
 import {
     FeatureInDevelopmentDialogService
 } from "./components/dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
@@ -86,7 +85,8 @@ import EditParcelDimensionsDialogService
     from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
 import ParcelVisualizationComponent
     from "./components/dialogs/edit-parcel-dimensions-dialog/parcel-visuailzation/parcel-visualization.component";
-import PrebookComponent from "./components/prebooks/prebook.controller";
+import RecurringJobsComponent from "./components/recurringJobs/recurringJobs.controller";
+import RecurringJobsService from "./components/recurringJobs/recurringJobs.service";
 
 const app = angular.module("uDispatch", [
     "ui.router",
@@ -236,7 +236,7 @@ app.component("noData", NoDataComponent);
 app.component("parcelVisualization", ParcelVisualizationComponent);
 app.component("nationwideComponent", NationwideComponent);
 app.component("stickyNote", StickyNoteComponent);
-app.component("prebooksComponent", PrebookComponent);
+app.component("recurringJobsComponent", RecurringJobsComponent);
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);
@@ -269,7 +269,7 @@ app.service("toastrService", ToastrService);
 app.service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService);
 app.service("overviewFiltersService", OverviewFiltersService);
 app.service("overviewService", OverviewService);
-app.service("uPBData", PrebookService);
+app.service("uPBData", RecurringJobsService);
 app.service('selectDialogService', SelectDialogService);
 app.service('eventGroupDialogService', EventGroupDialogService);
 app.service("editDateTimeDialogService", EditDateTimeDialogService);

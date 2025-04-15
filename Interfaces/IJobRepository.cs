@@ -403,7 +403,7 @@ public interface IJobRepository
         List<int> selectedViewIds);
 
     Task<int> SaveNoteAsync(TucNoteViewModel viewModel);
-    Task<int> SaveNoteAsync(int jobId, string noteText, bool isImportant = false);
+    Task<int> SaveNoteAsync(int jobId, string noteText, bool isImportant = false, bool isRecurringJob = false);
     Task<TucNoteViewModel> GetNoteByIdAsync(int noteId);
     Task DeleteNoteAsync(int noteId);
     Task<List<Suggestion>> GetNoteTypesAsync();

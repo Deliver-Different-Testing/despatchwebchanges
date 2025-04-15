@@ -229,6 +229,8 @@
     <_ContentIncludedByDefault Remove="wwwroot\app\components\Nationwide\services\nationwide-layout.service.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\add-notes-dialog\add-notes-dialog.controller.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\add-notes-dialog\add-notes-dialog.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\prebooks\partials\preBookDetail.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\prebooks\prebook.service.ts" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
@@ -339,9 +341,8 @@
     <TypeScriptCompile Include="wwwroot\app\components\overview\overview.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\overview.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\services\overview-filters.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\prebooks\prebook.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\prebooks\prebook.interface.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\prebooks\prebook.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\recurringJobs\recurringJobs.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\recurringJobs\recurringJobs.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\enums\status-filter.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\enums\view-mode.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\task-dashboard.controller.ts" />

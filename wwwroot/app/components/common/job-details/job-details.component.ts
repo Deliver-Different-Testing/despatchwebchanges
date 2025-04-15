@@ -19,7 +19,6 @@ import EditParcelDimensionsDialogService
     from "../../dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
 import {IJobReadChanged} from "../../../interfaces/event-interfaces";
 import {JobProperty} from "../../../enums/job-property.enum";
-import { DaysOfWeek } from "../../../enums/days-of-week.enum";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -523,7 +522,7 @@ class JobDetailController extends BaseController {
             job.charge = await this.rateJobService.rateJob(job);
 
             let rate = 0;
-            if (job.charge && typeof job.charge === 'string') {
+            if (job.charge) {
                 rate = Number(job.charge.replace(/[^0-9.-]+/g, ""));
                 console.log(`Job Rate: ${rate}`);
             } else {
@@ -1143,6 +1142,59 @@ class JobDetailController extends BaseController {
 
     isJobRead(job: IJob): boolean {
         return job?.readTrackerInfo?.hasBeenRead || false;
+    }
+
+    async updateDaysOfWeek(job: IJob) {
+        console.log('Updating days of week:', job.daysOfWeek);
+
+        // Calculate bitmask value from the array of selected days
+        let daysValue = 0;
+        if (Array.isArray(job.daysOfWeek)) {
+            job.daysOfWeek.forEach(day => {
+                daysValue |= day;
+            });
+        } else if (typeof job.daysOfWeek === 'number') {
+            daysValue = job.daysOfWeek;
+        }
+
+        console.log('Days bitmask value:', daysValue);
+
+        try {
+            await this.DispatchData.updateJobDetail(
+                job.id,
+                JobProperty.DaysOfWeek,
+                daysValue.toString(),
+                job.charge,
+                job.preBook
+            );
+
+            this.toastrService.showSuccessToast(`${job.jobNo} days updated`);
+            await this._refreshJobDetails(job.id);
+        } catch (error) {
+            console.error('Error updating days of week:', error);
+            this._handleError(error);
+        }
+    }
+
+    async updateFrequency(job: IJob) {
+        if(!job.frequency) return;
+        console.log('Updating frequency:', job.frequency);
+
+        try {
+            await this.DispatchData.updateJobDetail(
+                job.id,
+                JobProperty.Frequency,
+                job.frequency?.toString(),
+                job.charge,
+                job.preBook
+            );
+
+            this.toastrService.showSuccessToast(`${job.jobNo} frequency updated`);
+            await this._refreshJobDetails(job.id);
+        } catch (error) {
+            console.error('Error updating frequency:', error);
+            this._handleError(error);
+        }
     }
 }
 
