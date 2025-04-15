@@ -12,10 +12,10 @@
     {
         // Fallback to non-hashed filenames if manifest cannot be read
         manifest = new Dictionary<string, string>
-                {
-                    ["bundle.js"] = "bundle.js",
-                    ["styles.css"] = "styles.css"
-                };
+        {
+            ["bundle.js"] = "bundle.js",
+            ["styles.css"] = "styles.css"
+        };
         // Log the error for debugging
         await Console.Error.WriteLineAsync($"Error reading manifest: {ex.Message}");
     }
@@ -32,6 +32,59 @@
     <title>Deliver Different - Dispatch</title>
     <link id="favicon" rel="shortcut icon" type="image/x-icon" href="dispmain.ico">
 
+    <!-- Loader Styles -->
+    <style>
+        .app-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .app-loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 6px solid rgba(0, 123, 255, 0.1);
+            border-top-color: #3EAFC2;
+            animation: spin 1s infinite linear;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .loader-icon {
+            position: absolute;
+            font-size: 30px;
+            color: #3EAFC2;
+            z-index: 1;
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            font-family: 'Inter Semi Bold', Arial, sans-serif;
+            font-size: 16px;
+            color: #6c757d;
+        }
+
+        @@keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 
     <script>
         @{
@@ -75,52 +128,108 @@
 </head>
 
 <body ng-app="uDispatch">
+<!-- Full Screen Loader -->
+<div class="app-loader" id="appLoader">
+    <div class="loader-content">
+        <div class="spinner">
+            <span class="material-symbols-outlined loader-icon">update</span>
+        </div>
+        <div class="loading-text">Loading Dispatch...</div>
+    </div>
+</div>
 
-    @RenderBody()
+@RenderBody()
 
-    @* Jquery *@
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"
-            integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg=="
-            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"
-            integrity="sha512-uto9mlQzrs59VwILcLiRYeLKPPbS/bT71da/OEBYEwcdNUk8jYIy+D176RYoop1Da+f9mvkYrmj5MCLZWEtQuA=="
-            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+@* Jquery *@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"
+        integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"
+        integrity="sha512-uto9mlQzrs59VwILcLiRYeLKPPbS/bT71da/OEBYEwcdNUk8jYIy+D176RYoop1Da+f9mvkYrmj5MCLZWEtQuA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-    @* Angular Scripts *@
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-animate.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-aria.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-messages.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-sanitize.min.js"></script>
+@* Angular Scripts *@
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-animate.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-aria.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-messages.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-sanitize.min.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-router/1.1.1/angular-ui-router.min.js"
-            integrity="sha512-0vPleLQxEEFEiEOIRlWI+VHbFbmt01edOW0mTtysyfL9joHZjt87eH7Di6eQI2xFUESgdTXSQjqJM/iHNUiB4Q=="
-            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js"
-            integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd"
-            crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-router/1.1.1/angular-ui-router.min.js"
+        integrity="sha512-0vPleLQxEEFEiEOIRlWI+VHbFbmt01edOW0mTtysyfL9joHZjt87eH7Di6eQI2xFUESgdTXSQjqJM/iHNUiB4Q=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js"
+        integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd"
+        crossorigin="anonymous"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.js" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/datejs/1.0/date.min.js" crossorigin="anonymous"></script>
-    <script src="lib/angularjs-dropdown-multiselect.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"
-            integrity="sha512-2ImtlRlf2VVmiGZsjm9bEyhjGW4dU7B6TNwh/hx/iSByxNENtj3WVE6o/9Lj4TJeVXPi4bnOIMXFIJJAeufa0A=="
-            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/OverlappingMarkerSpiderfier/1.0.3/oms.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/datejs/1.0/date.min.js" crossorigin="anonymous"></script>
+<script src="lib/angularjs-dropdown-multiselect.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"
+        integrity="sha512-2ImtlRlf2VVmiGZsjm9bEyhjGW4dU7B6TNwh/hx/iSByxNENtj3WVE6o/9Lj4TJeVXPi4bnOIMXFIJJAeufa0A=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/OverlappingMarkerSpiderfier/1.0.3/oms.min.js"></script>
 
-    <!--Here Maps-->
-    <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
-    <script src="https://js.api.here.com/v3/3.1/mapsjs-core-legacy.js"></script>
-    <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
-    <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
-    <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
-    <script src="https://js.api.here.com/v3/3.1/mapsjs-harp.js"></script>
+<!--Here Maps-->
+<script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-core-legacy.js"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-harp.js"></script>
 
-    <script src="lib/ng-map-autocomplete.js"></script>
+<script src="lib/ng-map-autocomplete.js"></script>
 
-    @* Bundled Scripts*@
-    <script src="/dist/@bundleFile"></script>
+@* Bundled Scripts*@
+<script src="/dist/@bundleFile"></script>
 
+<!-- Loader Hide Script -->
+<script>
+    (function() {
+        // Track all resources that need to load
+        var resourcesLoaded = false;
+        var angularReady = false;
+
+        // Set a timeout to hide the loader after a maximum time
+        // in case some resources fail to load
+        setTimeout(function() {
+            hideLoader();
+        }, 15000); // 15 seconds maximum waiting time
+
+        // Function to hide the loader
+        function hideLoader() {
+            var loaderElement = document.getElementById('appLoader');
+            if (loaderElement && !loaderElement.classList.contains('hidden')) {
+                loaderElement.classList.add('hidden');
+
+                // Remove the loader from DOM after transition completes
+                setTimeout(function() {
+                    if (loaderElement.parentNode) {
+                        loaderElement.parentNode.removeChild(loaderElement);
+                    }
+                }, 500);
+            }
+        }
+
+        // Listen for window load event (all resources loaded)
+        window.addEventListener('load', function() {
+            resourcesLoaded = true;
+            if (angularReady) {
+                hideLoader();
+            }
+        });
+
+        // Create an Angular module to run when Angular is ready
+        angular.module('uDispatch').run(['$timeout', function($timeout) {
+            $timeout(function() {
+                angularReady = true;
+                if (resourcesLoaded) {
+                    hideLoader();
+                }
+            });
+        }]);
+    })();
+</script>
 </body>
 </html>

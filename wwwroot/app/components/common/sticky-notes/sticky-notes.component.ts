@@ -8,6 +8,7 @@ import {IComponentOptions, IOnChangesObject, material} from "angular";
 
 class StickyNoteController extends BaseController {
     private previousJobId?: number;
+    private readonly isRecurringJob: boolean = false;
 
     notes?: IJobNote[] = [];
     jobId?: number;
@@ -61,7 +62,7 @@ class StickyNoteController extends BaseController {
         if (!this.jobId) return;
 
         this.loading = true;
-        this.noteService.getJobNotes(this.jobId)
+        this.noteService.getJobNotes(this.jobId, this.isRecurringJob)
             .then(notes => {
                 this.notes = notes;
             })
@@ -162,7 +163,8 @@ const StickyNoteComponent: IComponentOptions = {
     controller: StickyNoteController,
     controllerAs: 'ctrl',
     bindings: {
-        jobId: '<'
+        jobId: '<',
+        isRecurringJob: "<"
     }
 };
 

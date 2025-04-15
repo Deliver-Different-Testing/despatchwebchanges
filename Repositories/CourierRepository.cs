@@ -147,7 +147,8 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
                         UcjbTime = j.UcjbTime,
                         Minutes = j.AcceptedJobType.Minutes
                     })
-                    .ToList()
+                    .ToList(),
+                CourierName = c.UccrName
             })
             .AsNoTracking()
             .ToListAsync();
@@ -158,6 +159,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         return couriers.Select(dto => new AvailableCourierPosition
         {
             CourierId = dto.CourierId,
+            CourierName = dto.CourierName,
             Latitude = dto.Latitude,
             Longitude = dto.Longitude,
             ChannelId = dto.ChannelId,
@@ -171,7 +173,6 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
                 j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes ?? 0) < DateTime.Now)
         }).ToList();
     }
-
 
     private async Task<List<AvailableCourierPosition>> GetNzAvailableCourierPositions(
         decimal minimumLongitude,
@@ -187,6 +188,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             .Select(c => new CourierDto
             {
                 CourierId = c.UccrId,
+                CourierName = c.UccrName,
                 Latitude = c.CourierGps.Latitude ?? 0,
                 Longitude = c.CourierGps.Longitude ?? 0,
                 ChannelId = c.UccrChannelId ?? 0,
@@ -215,6 +217,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         return couriers.Select(dto => new AvailableCourierPosition
         {
             CourierId = dto.CourierId,
+            CourierName = dto.CourierName,
             Latitude = dto.Latitude,
             Longitude = dto.Longitude,
             ChannelId = dto.ChannelId,

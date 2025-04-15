@@ -15,6 +15,7 @@ public class CourierDto
     public int? FleetId { get; set; }
     public int TotalJobs { get; set; }
     public List<JobDto> Jobs { get; set; }
+    public string CourierName { get; set; }
 }
 
 public class JobDto

@@ -41,6 +41,7 @@ export interface TruckCourierStatusViewModel {
 
 export interface AvailableCourierPosition {
     courierId: number;
+    courierName: string;
     channelId: number;
     vehicleType: string;
     code: string;

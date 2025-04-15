@@ -38,10 +38,10 @@ class JobDetailController extends BaseController {
     ];
 
     readonly appPage: AppPages = AppPages.Dispatch;
+    readonly isRecurringJob: boolean = false;
     readonly isUsCustomer: boolean = false;
     jobId?: number;
     job?: IJob;
-    notes: JobNote[];
     selectedTab: number;
     allTabs: TabItem[];
     options: JobOptions;
@@ -76,7 +76,6 @@ class JobDetailController extends BaseController {
 
         this.isUsCustomer = APP_CONFIG.US_Customer;
 
-        this.notes = [];
         this.selectedTab = 0;
         this.allTabs = [];
 
@@ -185,7 +184,9 @@ class JobDetailController extends BaseController {
         this.isLoading = true;
 
         try {
-            const jobData = await this.DispatchData.getJobDetail(jobId);
+            const jobData = this.isRecurringJob
+                ? await this.DispatchData.getRecurringJobDetail(jobId)
+                : await this.DispatchData.getJobDetail(jobId);
             this.job = jobData;
 
             this._initializeJobData();
@@ -1203,7 +1204,8 @@ const JobDetailComponent: angular.IComponentOptions = {
     bindings: {
         jobId: "<",
         appPage: "<",
-        onStatusChange: "&"
+        onStatusChange: "&",
+        isRecurringJob: "<"
     },
     controller: JobDetailController,
     controllerAs: "ctrl"
