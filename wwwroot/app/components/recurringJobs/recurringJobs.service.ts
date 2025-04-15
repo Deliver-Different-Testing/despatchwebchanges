@@ -1,6 +1,6 @@
-import {IPrebookListModel} from "./prebook.interface";
+import {IPrebookListModel} from "./recurringJobs.interface";
 
-class PrebookService {
+class RecurringJobsService {
     static $inject = [
         "$http"
     ];
@@ -27,4 +27,4 @@ class PrebookService {
     }
 }
 
-export default PrebookService;
+export default RecurringJobsService;

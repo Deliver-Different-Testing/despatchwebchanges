@@ -4,9 +4,9 @@ import {IJob} from "../../interfaces/job.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import {ClientInternal, ContactID} from "../../contants";
-import PrebookService from "./prebook.service";
+import RecurringJobsService from "./recurringJobs.service";
 
-class PrebookController extends BaseController {
+class RecurringJobsController extends BaseController {
     static $inject = [
         '$document',
         'greetingService',
@@ -53,14 +53,14 @@ class PrebookController extends BaseController {
         jobList: {
             title: "Recurring Jobs List",
             icon: "list_alt",
-            templateUrl: "app/components/prebooks/partials/pbList.html",
+            templateUrl: "app/components/recurringJobs/partials/jobList.html",
             showSearch: 1,
             showRefresh: 1,
         },
         jobDetail: {
             title: "Detail",
             icon: "assignment",
-            templateUrl: "app/components/prebooks/partials/preBookDetail.html",
+            templateUrl: "app/components/recurringJobs/partials/jobDetail.html",
             showSearch: 0,
             showDetailButtons: 1
         },
@@ -119,7 +119,7 @@ class PrebookController extends BaseController {
         private $filter: angular.IFilterService,
         private $timeout: angular.ITimeoutService,
         private $mdSidenav: angular.material.ISidenavService,
-        private uPBData: PrebookService,
+        private uPBData: RecurringJobsService,
         APP_CONFIG: AppConfig,
     ) {
         super();
@@ -576,10 +576,10 @@ class PrebookController extends BaseController {
     }
 }
 
-const PrebookComponent: angular.IComponentOptions = {
-    template: require('./prebook.template.html'),
-    controller: PrebookController,
+const RecurringJobsComponent: angular.IComponentOptions = {
+    template: require('./recurringJobs.template.html'),
+    controller: RecurringJobsController,
     controllerAs: 'ctrl'
 };
 
-export default PrebookComponent;
+export default RecurringJobsComponent;

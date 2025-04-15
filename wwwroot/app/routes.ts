@@ -53,9 +53,9 @@ class RouterConfig {
     }
 
     private configurePrebooksState(): this {
-        this.$stateProvider.state("prebooks", {
-            url: "/prebooks",
-            component: "prebooksComponent",
+        this.$stateProvider.state("recurringJobs", {
+            url: "/recurringJobs",
+            component: "recurringJobsComponent",
         });
         return this;
     }

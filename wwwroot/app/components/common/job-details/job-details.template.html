@@ -10,8 +10,7 @@
             <div layout="row" layout-align="start center">
                 <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
                 <span class="warning-text" ng-if="ctrl.job.isArchived">Job archived. Some fields can't be edited</span>
-                <span class="warning-text"
-                      ng-if="ctrl.job.prebook">Recurring job. Some fields may require confirmation</span>
+                <span class="warning-text" ng-if="ctrl.job.prebook">Recurring job. Some fields may require confirmation</span>
             </div>
         </md-card-content>
     </md-card>
@@ -585,8 +584,8 @@
                                             <span class="label">Days:</span>
                                         </div>
                                         <div class="value">
-                                            <md-select ng-model="ctrl.job.daysOfWeek" multiple
-                                                       aria-label="Days of Week">
+                                            <md-select ng-model="ctrl.job.ucbkDays" multiple aria-label="Days of Week"
+                                                       ng-change="ctrl.updateDaysOfWeek(ctrl.job)">
                                                 <md-option ng-value="1">Monday</md-option>
                                                 <md-option ng-value="2">Tuesday</md-option>
                                                 <md-option ng-value="4">Wednesday</md-option>
@@ -610,8 +609,8 @@
                                             <span class="label">Frequency:</span>
                                         </div>
                                         <div class="value">
-                                            <md-select ng-model="ctrl.job.frequency" aria-label="Frequency">
-                                                <md-option ng-value="0">None</md-option>
+                                            <md-select ng-model="ctrl.job.ucbkFrequency" aria-label="Frequency"
+                                                       ng-change="ctrl.updateFrequency(ctrl.job)">                                                <md-option ng-value="0">None</md-option>
                                                 <md-option ng-value="1">Weekly</md-option>
                                                 <md-option ng-value="2">Fortnightly</md-option>
                                                 <md-option ng-value="4">First of the Month</md-option>

@@ -5,6 +5,3 @@ import "./dialogs/index";
 import "./CS/services/cs-layout.service";
 import "./CS/csService";
 import "./CS/csControl";
-
-// Prebooks
-import "./prebooks/prebook.controller";
