@@ -71,7 +71,7 @@ public class NoteController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdateNote(int staffId, [FromBody] TucNoteViewModel noteViewModel)
+    public async Task<IActionResult> UpdateNote([FromBody] TucNoteViewModel noteViewModel)
     {
         try
         {

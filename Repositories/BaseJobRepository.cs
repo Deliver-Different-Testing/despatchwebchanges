@@ -1563,18 +1563,20 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
     private async Task<int> CreateNoteAsync(TucNoteViewModel viewModel, int staffId)
     {
-        ArgumentNullException.ThrowIfNull(viewModel);
-        ArgumentNullException.ThrowIfNull(viewModel.JobId);
-
         var currentTime = infoService.GetCurrentTenantTime();
         int noteId;
 
-        if (await IsJobArchived(viewModel.JobId.Value))
+        var isArchived = viewModel.JobId.HasValue && await IsJobArchived(viewModel.JobId.Value) && !viewModel.JobBookingId.HasValue;
+        if (isArchived)
             noteId = await CreateArchivedNoteAsync(viewModel, staffId, currentTime);
         else
             noteId = await CreateActiveNoteAsync(viewModel, staffId, currentTime);
 
-        await UpdateJobNotesIfPublicAsync(viewModel.NoteTypeId, viewModel.JobId.Value, viewModel.NoteText);
+        if(viewModel.JobBookingId.HasValue)
+            await UpdateRecurringJobNotesIfPublicAsync(viewModel.NoteTypeId, viewModel.JobBookingId.Value, viewModel.NoteText);
+        else if(viewModel.JobId.HasValue)
+            await UpdateJobNotesIfPublicAsync(viewModel.NoteTypeId, viewModel.JobId.Value, viewModel.NoteText);
+
         return noteId;
     }
 
@@ -1712,25 +1714,25 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         return noteId;
     }
 
+    public async Task<bool> IsNoteTypePublicAsync(int noteTypeId, CancellationToken cancellationToken = default)
+    {
+        var isNoteTypePublic = await Context.TucNoteTypes
+            .Where(nt => nt.NoteTypeId == noteTypeId)
+            .Select(nt => nt.IsPublic)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return isNoteTypePublic;
+    }
+
     private async Task UpdateJobNotesIfPublicAsync(
         int noteTypeId,
         int jobId,
         string noteText,
         CancellationToken cancellationToken = default)
     {
-        var noteType = await Context.TucNoteTypes
-            .FirstOrDefaultAsync(nt => nt.NoteTypeId == noteTypeId, cancellationToken);
+        var isNoteTypePublic = await IsNoteTypePublicAsync(noteTypeId, cancellationToken);
+        if (isNoteTypePublic == false) return;
 
-        if (noteType?.IsPublic == false) return;
-
-        await UpdateJobNotesAsync(jobId, noteText, cancellationToken);
-    }
-
-    private async Task UpdateJobNotesAsync(
-        int jobId,
-        string noteText,
-        CancellationToken cancellationToken = default)
-    {
         const string noteSeparator = "\n ";
         var job = await Context.TucJobs.FindAsync([jobId], cancellationToken);
 
@@ -1740,6 +1742,24 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             Context.TucJobs.Update(job);
             await Context.SaveChangesAsync(cancellationToken);
         }
+    }
+
+    private async Task UpdateRecurringJobNotesIfPublicAsync(
+        int noteTypeId,
+        int jobBookingId,
+        string noteText,
+        CancellationToken cancellationToken = default)
+    {
+        var isNoteTypePublic = await IsNoteTypePublicAsync(noteTypeId, cancellationToken);
+        if (isNoteTypePublic == false) return;
+
+        const string noteSeparator = "\n ";
+        var job = await Context.TucJobBookings.FindAsync([jobBookingId], cancellationToken);
+        if(job == null) return;
+
+        // Update the old notes field
+        job.UcbkNotes = job.UcbkNotes + noteSeparator + noteText;
+        await Context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<List<Suggestion>> GetNoteTypesAsync()

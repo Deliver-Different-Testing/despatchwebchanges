@@ -16,16 +16,14 @@ class CSLayoutService implements angular.IServiceProvider {
 
     // Box height options
     readonly BOX_HEIGHT_XLARGE: string = "100%";
-    readonly BOX_HEIGHT_LARGE: string = "60%";
     readonly BOX_HEIGHT_MEDIUM: string = "50%";
     readonly BOX_HEIGHT_SMALL: string = "40%";
     readonly BOX_HEIGHT_XSMALL: string = "30%";
 
     // Define individual boxes
     private searchBox: IBox = {name: "pickDate", height: this.BOX_HEIGHT_XLARGE};
-    private jobListBox: IBox = {name: "jobList", height: this.BOX_HEIGHT_SMALL};
+    private jobListBox: IBox = {name: "jobList", height: this.BOX_HEIGHT_MEDIUM};
     private bulkJobListBox: IBox = {name: "bulkJobList", height: this.BOX_HEIGHT_MEDIUM};
-    private pbListBox: IBox = {name: "pbList", height: this.BOX_HEIGHT_MEDIUM};
     private mapBox: IBox = {name: "map", height: this.BOX_HEIGHT_XSMALL};
     private jobDetailBox: IBox = {name: "jobDetail", height: this.BOX_HEIGHT_SMALL};
     private scanListBox: IBox = {name: "scanList", height: this.BOX_HEIGHT_XSMALL};
@@ -40,7 +38,7 @@ class CSLayoutService implements angular.IServiceProvider {
     private column2: IColumn = {
         id: "col2",
         width: this.COL_WIDTH_LARGE,
-        boxes: [this.jobListBox, this.bulkJobListBox, this.pbListBox],
+        boxes: [this.jobListBox, this.bulkJobListBox],
     };
 
     private column3: IColumn = {
@@ -62,7 +60,8 @@ class CSLayoutService implements angular.IServiceProvider {
     private mapZoom: { display: boolean } = {display: true};
     private currentLayoutName: string = "default";
 
-    constructor(private $window: angular.IWindowService,
+    constructor(
+        private $window: angular.IWindowService,
                 private $mdDialog: angular.material.IDialogService) {
         this.initialize();
     }
@@ -96,7 +95,7 @@ class CSLayoutService implements angular.IServiceProvider {
         try {
             this.currentLayouts = JSON.parse(storedLayouts) as ILayout[];
             if (!Array.isArray(this.currentLayouts) || this.currentLayouts.length === 0) {
-                throw Error('Invalid stored layouts');
+                throw new Error('Invalid stored layouts');
             }
             this.currentLayouts[0] = this.defaultLayout[0];
         } catch (error) {

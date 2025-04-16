@@ -448,7 +448,6 @@ class JobDetailController extends BaseController {
             .ok("Save")
             .cancel("Cancel");
 
-        try {
             const result = await this.$mdDialog.show(prompt);
 
             const callData = {
@@ -458,9 +457,6 @@ class JobDetailController extends BaseController {
 
             this.toastrService.showSuccessToast(`${job.jobNo} updated`);
             await this._refreshJobDetails(job.id);
-        } catch (error) {
-            this._handleError(error);
-        }
     }
 
     async showJobDimensionsDialog($event: MouseEvent, job: IJob) {
@@ -482,7 +478,7 @@ class JobDetailController extends BaseController {
     }
 
     async editFollowUpTime($event: MouseEvent, job: IJob) {
-        await this.showEditTimeDialog($event, job, "Follow Up Time", "FollowupTime", job.followupTime);
+        await this.showEditDateAndTimeDialog($event, job, "Follow Up Time", JobProperty.FollowupTime, job.followupTime);
     }
 
     async editPuDate($event: MouseEvent, job: IJob) {
@@ -585,7 +581,7 @@ class JobDetailController extends BaseController {
                 placeholder: "To Contact Name...",
                 fieldLabel: "to contact name",
                 contactValue: job.deliverToContact,
-                contactProperty: JobProperty.DeliverToContact
+                contactProperty: JobProperty.ToContactName
             }
         };
 
@@ -595,7 +591,11 @@ class JobDetailController extends BaseController {
             throw new Error(`[editJobContact] Invalid contact type: ${contactType}`);
         }
 
-        await this.showEditDialog($event, job, contactDetails.title, contactDetails.placeholder, contactDetails.fieldLabel, contactDetails.contactValue, contactDetails.contactProperty);
+        try {
+            await this.showEditDialog($event, job, contactDetails.title, contactDetails.placeholder, contactDetails.fieldLabel, contactDetails.contactValue, contactDetails.contactProperty);
+        } catch (error) {
+            this._handleError(error);
+        }
     }
 
     async editJobContactPhone($event: MouseEvent, job: IJob, contactType: 'from' | 'to') {
@@ -621,40 +621,68 @@ class JobDetailController extends BaseController {
             throw new Error(`[editJobContactPhone] Invalid contact type: ${contactType}`);
         }
 
-        await this.showEditDialog($event, job, phoneDetails.title, phoneDetails.placeholder, phoneDetails.fieldLabel, phoneDetails.phoneValue, phoneDetails.phoneProperty);
+        try {
+            await this.showEditDialog($event, job, phoneDetails.title, phoneDetails.placeholder, phoneDetails.fieldLabel, phoneDetails.phoneValue, phoneDetails.phoneProperty);
+        } catch (error) {
+            this._handleError(error);
+        }
     }
 
     async editPodName($event: MouseEvent, job: IJob) {
-        await this.showEditDialog($event, job, "Edit POD Name", "POD Name...", "pod name", job.podName, JobProperty.PodName);
+        try {
+            await this.showEditDialog($event, job, "Edit POD Name", "POD Name...", "pod name", job.podName, JobProperty.PodName);
 
-        // Begin job done process
-        const refreshedJob = this.job;
-        if (!refreshedJob) return;
-        await this.markJobAsDone($event, refreshedJob);
+            // Begin job done process
+            const refreshedJob = this.job;
+            if (!refreshedJob) return;
+            await this.markJobAsDone($event, refreshedJob);
+        } catch (error) {
+            this._handleError(error);
+        }
     }
 
     async editRef($event: MouseEvent, job: IJob, isRefA: boolean) {
-        if (isRefA) {
-            await this.showEditDialog($event, job, "Edit RefA", "RefA...", "refa", job.refA, JobProperty.RefA);
-        } else {
-            await this.showEditDialog($event, job, "Edit RefA", "RefB...", "refb", job.refB, JobProperty.RefB);
+        try {
+            if (isRefA) {
+                await this.showEditDialog($event, job, "Edit RefA", "RefA...", "refa", job.refA, JobProperty.RefA);
+            } else {
+                await this.showEditDialog($event, job, "Edit RefA", "RefB...", "refb", job.refB, JobProperty.RefB);
+            }
+        } catch (error) {
+            this._handleError(error);
         }
     }
 
     async editOurRef($event: MouseEvent, job: IJob) {
-        await this.showEditDialog($event, job, "Edit Our Reference", "Our Reference...", "our reference", job.ourRef, JobProperty.OurRef);
+        try {
+            await this.showEditDialog($event, job, "Edit Our Reference", "Our Reference...", "our reference", job.ourRef, JobProperty.OurRef);
+        } catch (error) {
+            this._handleError(error);
+        }
     }
 
     async editJobWeight($event: MouseEvent, job: IJob) {
-        await this.showEditDialog($event, job, "Edit Weight", "Job Weight...", "job weight", job.weight, JobProperty.Weight);
+        try {
+            await this.showEditDialog($event, job, "Edit Weight", "Job Weight...", "job weight", job.weight, JobProperty.Weight);
+        } catch (error) {
+            this._handleError(error);
+        }
     }
 
     async editTrackingMobile($event: MouseEvent, job: IJob) {
-        await this.showEditDialog($event, job, "Edit Tracking Mobile", "Tracking Mobile...", "tracking mobile", job.trackingMobile, JobProperty.TrackingMobile);
+        try {
+            await this.showEditDialog($event, job, "Edit Tracking Mobile", "Tracking Mobile...", "tracking mobile", job.trackingMobile, JobProperty.TrackingMobile);
+        } catch (error) {
+            this._handleError(error);
+        }
     }
 
     async editTrackingEmail($event: MouseEvent, job: IJob) {
-        await this.showEditDialog($event, job, "Edit Tracking Email", "Tracking Email...", "tracking email", job.trackingEmail, JobProperty.TrackingEmail);
+        try {
+            await this.showEditDialog($event, job, "Edit Tracking Email", "Tracking Email...", "tracking email", job.trackingEmail, JobProperty.TrackingEmail);
+        } catch (error) {
+            this._handleError(error);
+        }
     }
 
     async clientClick($event: MouseEvent, job: IJob) {
@@ -903,9 +931,10 @@ class JobDetailController extends BaseController {
                 const result = await this.editDateTimeDialogService.showEditDateAndTimeDialog(
                     $event,
                     "Completed Time",
-                    "CompletedTime",
+                    JobProperty.CompletedTime,
                     job.completedTime);
 
+                if(!result.value) return;
                 job.completedTime = result.value;
             }
 
@@ -921,6 +950,7 @@ class JobDetailController extends BaseController {
                     .cancel("Cancel");
 
                 job.podName = await this.$mdDialog.show(prompt);
+                if(!job.podName) return;
             }
 
             console.log("[JobDetailsComponentController] Marking job as done]")
@@ -929,8 +959,7 @@ class JobDetailController extends BaseController {
             this.toastrService.showSuccessToast(`${job.jobNo} Completed`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
-            console.error("Error marking job as done:", error);
-            this.toastrService.showErrorToast("Failed to mark job as done. Please try again.");
+            this._handleError(error);
         }
     }
 
@@ -949,7 +978,7 @@ class JobDetailController extends BaseController {
     }
 
     private _handleError(error: any) {
-        if (error === undefined) {
+        if (!error) {
             console.log("User closed dialog");
         } else {
             this.toastrService.showErrorToast();

@@ -4,7 +4,6 @@ import ToastrService from "../../../services/toastr.service";
 import {IJobNote} from "../../../interfaces/job.interface";
 import "./sticky-notes.styles.less";
 import BaseController from "../../base-controller";
-import {IComponentOptions, IOnChangesObject, material} from "angular";
 
 class StickyNoteController extends BaseController {
     private previousJobId?: number;
@@ -25,7 +24,7 @@ class StickyNoteController extends BaseController {
         private noteService: NoteService,
         private noteManagementDialogService: NoteManagementDialogService,
         private toastrService: ToastrService,
-        private $mdDialog: material.IDialogService
+        private $mdDialog: angular.material.IDialogService
     ) {
         super();
     }
@@ -36,7 +35,7 @@ class StickyNoteController extends BaseController {
         }
     }
 
-    $onChanges(changes: IOnChangesObject) {
+    $onChanges(changes: angular.IOnChangesObject) {
         console.log('StickyNoteController - $onChanges called with changes:', JSON.stringify(changes));
 
         if (changes['jobId']) {
@@ -81,7 +80,8 @@ class StickyNoteController extends BaseController {
             noteTypeId: 0,
             noteText: '',
             isImportant: false,
-            jobId: this.jobId,
+            jobId: !this.isRecurringJob ? this.jobId : undefined,
+            jobBookingId: this.isRecurringJob ? this.jobId : undefined,
             createdDate: new Date(),
             createdBy: ContactID
         };
@@ -91,8 +91,8 @@ class StickyNoteController extends BaseController {
             this.loadNotes();
             this.toastrService.showSuccessToast('Note added successfully');
         } catch (error) {
-            if(!error) return;
-          console.error("An error occured!")
+            if (!error) return;
+            console.error("An error occured!")
         }
     }
 
@@ -102,7 +102,7 @@ class StickyNoteController extends BaseController {
             this.loadNotes();
             this.toastrService.showSuccessToast('Note updated successfully');
         } catch (error) {
-            if(!error) return;
+            if (!error) return;
             console.error("An error occured!")
         }
     }
@@ -127,7 +127,7 @@ class StickyNoteController extends BaseController {
                 this.toastrService.showSuccessToast('Note deleted successfully');
             }
         } catch (error) {
-            if(!error) return;
+            if (!error) return;
 
             console.error('Error deleting note:', error);
             this.toastrService.showErrorToast('Failed to delete note');
@@ -158,7 +158,7 @@ class StickyNoteController extends BaseController {
     }
 }
 
-const StickyNoteComponent: IComponentOptions = {
+const StickyNoteComponent: angular.IComponentOptions = {
     template: require('./sticky-notes.template.html'),
     controller: StickyNoteController,
     controllerAs: 'ctrl',
