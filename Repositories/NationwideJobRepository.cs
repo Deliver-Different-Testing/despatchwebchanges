@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
@@ -11,6 +12,7 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.FlightStats;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualBasic;
 using Serilog;
 
 namespace DespatchWeb.Repositories;
@@ -315,18 +317,89 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         return airlines;
     }
 
-    /*public async Task SendAgentRequestMessageAsync(int agentId, int jobId, string message)
+    public async Task SendAgentRequestMessageAsync(int agentId, int jobId)
     {
-        // Get the template here?
+        var agentEmail = await Context.TucAgents
+            .Where(a => a.UcagId == agentId)
+            .Select(a => a.UcagFax)
+            .FirstOrDefaultAsync();
+
+        var smppSetting = await Context.TblSmppsettings.FirstOrDefaultAsync();
+
+        var staffId = infoService.GetStaffId();
+        var currentTenantTime = infoService.GetCurrentTenantTime();
+
+        // Create object
+        var agentQuoteTemplateDto = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new AgentQuoteTemplateDto
+            {
+                DeliveryAddressLine5 = j.DeliveryAddressLine5,
+                JobNo = j.UcjbNumber,
+                ReferenceA = j.UcjbClientRefa,
+                ReferenceB = j.UcjbClientRefb,
+                JobDate = j.UcjbDate,
+                SuburbFrom = j.DeliveryAddressLine6,
+                ToAddress = new AddressViewModel(
+                    j.DeliveryAddressLine1,
+                    j.DeliveryAddressLine2,
+                    j.DeliveryAddressLine3,
+                    j.DeliveryAddressLine4,
+                    j.DeliveryAddressLine5,
+                    j.DeliveryAddressLine6,
+                    j.DeliveryAddressLine7,
+                    j.DeliveryAddressLine8).FullAddress,
+                CompletedTime = j.UcjbComplTime ?? DateTime.MinValue,
+                PodName = j.UcjbPodname,
+                SuburbTo = j.DeliveryAddressLine6,
+            })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        var subject = FormatDelimMessage(smppSetting.AgentEmailSubject, "[", "]", agentQuoteTemplateDto);
+        var body = FormatDelimMessage(smppSetting.AgentEmailMessage, "[", "]", agentQuoteTemplateDto);
 
         var request = new TucManualMessage
         {
             JobId = jobId,
-            Read = false,
-
+            Subject = subject,
+            ReplyToEmailAddress = smppSetting.AgentEmailReplyAddress,
+            UcmmMessage = body,
+            UcmmStaffId = staffId,
+            UcmmTimeSent = currentTenantTime,
+            SendToEmailAddress = agentEmail
         };
 
-            Context.TucManualMessages.Add(request);
-            await Context.SaveChangesAsync();
-    }*/
+        // ToDo: Add mobile sending
+
+        Context.TucManualMessages.Add(request);
+        await Context.SaveChangesAsync();
+    }
+
+    private static string FormatDelimMessage<T>(string format, string startDelim, string endDelim, T data)
+    {
+        var message = string.Empty;
+        while (format?.Length > 0)
+        {
+            var c = Strings.Left(format, 1);
+            format = Strings.Mid(format, 2);
+            if (c == startDelim)
+            {
+                var fieldName = Strings.Left(format, Strings.InStr(format, endDelim) - 1);
+                format = Strings.Mid(format, Strings.InStr(format, endDelim) + 1);
+                var props = typeof(T).GetRuntimeProperties();
+                var p = props.First(x => string.Equals(x.Name, fieldName, StringComparison.CurrentCultureIgnoreCase));
+
+                message += p.GetValue(data)?.ToString();
+            }
+            else
+            {
+                message += c;
+            }
+        }
+
+        message = message.Replace("  ", " ");
+        message = Strings.Trim(message);
+        return message;
+    }
 }

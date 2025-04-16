@@ -28,4 +28,5 @@ public interface INationwideJobRepository
         DateTime? bookTime);
 
     Task<List<Suggestion>> GetActiveAirlineOptionsAsync();
+    Task SendAgentRequestMessageAsync(int agentId, int jobId);
 }

@@ -93,6 +93,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TblPolygonSuburb> TblPolygonSuburbs { get; set; }
 
+    public virtual DbSet<TblSmppsetting> TblSmppsettings { get; set; }
+
     public virtual DbSet<TblUndeliverableLocation> TblUndeliverableLocations { get; set; }
 
     public virtual DbSet<TucAgent> TucAgents { get; set; }
@@ -2514,6 +2516,218 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.SuburbId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_tblPolygonSuburb_tucSuburb");
+        });
+
+        modelBuilder.Entity<TblSmppsetting>(entity =>
+        {
+            entity.HasKey(e => e.SettingId)
+                .IsClustered(false)
+                .HasAnnotation("SqlServer:FillFactor", 80);
+
+            entity.ToTable("tblSMPPSettings");
+
+            entity.Property(e => e.SettingId).HasColumnName("SettingID");
+            entity.Property(e => e.AgentEmailMessage).HasColumnType("ntext");
+            entity.Property(e => e.AgentEmailReplyAddress).HasColumnType("ntext");
+            entity.Property(e => e.AgentEmailReplyAddressName).HasColumnType("ntext");
+            entity.Property(e => e.AgentEmailSubject).HasColumnType("ntext");
+            entity.Property(e => e.AgentFilePath).HasColumnType("ntext");
+            entity.Property(e => e.AgentSmsmessage)
+                .HasColumnType("ntext")
+                .HasColumnName("AgentSMSMessage");
+            entity.Property(e => e.BusySpeedoEmailAddress)
+                .IsRequired()
+                .HasMaxLength(500);
+            entity.Property(e => e.BusySpeedoEmailMessage)
+                .IsRequired()
+                .HasMaxLength(500);
+            entity.Property(e => e.BusySpeedoEmailSubject)
+                .IsRequired()
+                .HasMaxLength(500);
+            entity.Property(e => e.ContactAdhocMessage).HasColumnType("ntext");
+            entity.Property(e => e.ContactAdhocSubject).HasMaxLength(50);
+            entity.Property(e => e.ContactForgotPasswordResetPasswordMessage)
+                .IsRequired()
+                .HasColumnType("ntext");
+            entity.Property(e => e.ContactForgotPasswordResetPasswordSubject)
+                .IsRequired()
+                .HasMaxLength(500);
+            entity.Property(e => e.ContactValidateEmailMessage)
+                .IsRequired()
+                .HasColumnType("ntext");
+            entity.Property(e => e.ContactValidateEmailReminderMessage)
+                .IsRequired()
+                .HasColumnType("ntext");
+            entity.Property(e => e.ContactValidateEmailReminderSubject)
+                .IsRequired()
+                .HasMaxLength(500);
+            entity.Property(e => e.ContactValidateEmailSubject)
+                .IsRequired()
+                .HasMaxLength(500);
+            entity.Property(e => e.ContactValidateEmailValidatedMessage)
+                .IsRequired()
+                .HasColumnType("ntext");
+            entity.Property(e => e.ContactValidateEmailValidatedSubject)
+                .IsRequired()
+                .HasMaxLength(500);
+            entity.Property(e => e.ErrorEmail)
+                .IsRequired()
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            entity.Property(e => e.JobItemNotReadyEmailMessage).HasColumnType("ntext");
+            entity.Property(e => e.JobItemNotReadyEmailSubject).HasColumnType("ntext");
+            entity.Property(e => e.JobTrackingEmailMessage).HasColumnType("ntext");
+            entity.Property(e => e.JobTrackingEmailReplyAddress).HasColumnType("ntext");
+            entity.Property(e => e.JobTrackingEmailReplyAddressName).HasColumnType("ntext");
+            entity.Property(e => e.JobTrackingEmailSubject).HasColumnType("ntext");
+            entity.Property(e => e.JobTrackingSmsmessage)
+                .HasColumnType("ntext")
+                .HasColumnName("JobTrackingSMSMessage");
+            entity.Property(e => e.JobUpdateEmailReplyAddress)
+                .IsRequired()
+                .HasMaxLength(500);
+            entity.Property(e => e.JobUpdateEmailReplyAddressName)
+                .IsRequired()
+                .HasMaxLength(500);
+            entity.Property(e => e.JobUpdateLateDeliveryEmaiDirectSubject)
+                .IsRequired()
+                .HasColumnType("ntext");
+            entity.Property(e => e.JobUpdateLateDeliveryEmailAsapmessage)
+                .IsRequired()
+                .HasColumnType("ntext")
+                .HasColumnName("JobUpdateLateDeliveryEmailASAPMessage");
+            entity.Property(e => e.JobUpdateLateDeliveryEmailAsapsubject)
+                .IsRequired()
+                .HasColumnType("ntext")
+                .HasColumnName("JobUpdateLateDeliveryEmailASAPSubject");
+            entity.Property(e => e.JobUpdateLateDeliveryEmailAsapupdateMessage)
+                .IsRequired()
+                .HasColumnType("ntext")
+                .HasColumnName("JobUpdateLateDeliveryEmailASAPUpdateMessage");
+            entity.Property(e => e.JobUpdateLateDeliveryEmailDirectMessage)
+                .IsRequired()
+                .HasColumnType("ntext");
+            entity.Property(e => e.JobUpdateLateDeliveryEmailDirectUpdateMessage)
+                .IsRequired()
+                .HasColumnType("ntext");
+            entity.Property(e => e.JobUpdateLateDeliveryEmailMessage)
+                .IsRequired()
+                .HasColumnType("ntext");
+            entity.Property(e => e.JobUpdateLateDeliveryEmailSubject)
+                .IsRequired()
+                .HasMaxLength(500);
+            entity.Property(e => e.JobUpdateLateDeliveryEmailUpdateMessage)
+                .IsRequired()
+                .HasColumnType("ntext");
+            entity.Property(e => e.JobUpdateLateDeliverySmsasapmessage)
+                .IsRequired()
+                .HasColumnType("ntext")
+                .HasColumnName("JobUpdateLateDeliverySMSASAPMessage");
+            entity.Property(e => e.JobUpdateLateDeliverySmsasapupdateMessage)
+                .IsRequired()
+                .HasColumnType("ntext")
+                .HasColumnName("JobUpdateLateDeliverySMSASAPUpdateMessage");
+            entity.Property(e => e.JobUpdateLateDeliverySmsdirectMessage)
+                .IsRequired()
+                .HasColumnType("ntext")
+                .HasColumnName("JobUpdateLateDeliverySMSDirectMessage");
+            entity.Property(e => e.JobUpdateLateDeliverySmsdirectUpdateMessage)
+                .IsRequired()
+                .HasColumnType("ntext")
+                .HasColumnName("JobUpdateLateDeliverySMSDirectUpdateMessage");
+            entity.Property(e => e.JobUpdateLateDeliverySmsmessage)
+                .IsRequired()
+                .HasColumnType("ntext")
+                .HasColumnName("JobUpdateLateDeliverySMSMessage");
+            entity.Property(e => e.JobUpdateLateDeliverySmsupdateMessage)
+                .IsRequired()
+                .HasColumnType("ntext")
+                .HasColumnName("JobUpdateLateDeliverySMSUpdateMessage");
+            entity.Property(e => e.JobUpdateLatePickupEmailMessage)
+                .IsRequired()
+                .HasColumnType("ntext");
+            entity.Property(e => e.JobUpdateLatePickupEmailSubject)
+                .IsRequired()
+                .HasMaxLength(500);
+            entity.Property(e => e.JobUpdateLatePickupEmailUpdateMessage)
+                .IsRequired()
+                .HasColumnType("ntext");
+            entity.Property(e => e.JobUpdateLatePickupSmsmessage)
+                .IsRequired()
+                .HasColumnType("ntext")
+                .HasColumnName("JobUpdateLatePickupSMSMessage");
+            entity.Property(e => e.JobUpdateLatePickupSmsupdateMessage)
+                .IsRequired()
+                .HasColumnType("ntext")
+                .HasColumnName("JobUpdateLatePickupSMSUpdateMessage");
+            entity.Property(e => e.JobUpdateSpeedChangeEmailMessage).HasColumnType("ntext");
+            entity.Property(e => e.JobUpdateSpeedChangeEmailSubject).HasMaxLength(500);
+            entity.Property(e => e.JobUpdateSpeedChangeSmsmessage)
+                .HasColumnType("ntext")
+                .HasColumnName("JobUpdateSpeedChangeSMSMessage");
+            entity.Property(e => e.MessageEmail)
+                .IsRequired()
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            entity.Property(e => e.MessageFormat)
+                .IsRequired()
+                .HasMaxLength(500)
+                .IsUnicode(false);
+            entity.Property(e => e.Npi).HasColumnName("NPI");
+            entity.Property(e => e.Npi2).HasColumnName("NPI2");
+            entity.Property(e => e.PodemailMessage)
+                .IsRequired()
+                .HasColumnType("ntext")
+                .HasColumnName("PODEmailMessage");
+            entity.Property(e => e.PodemailReplyAddress)
+                .IsRequired()
+                .HasMaxLength(500)
+                .HasColumnName("PODEmailReplyAddress");
+            entity.Property(e => e.PodemailReplyAddressName)
+                .IsRequired()
+                .HasMaxLength(500)
+                .HasColumnName("PODEmailReplyAddressName");
+            entity.Property(e => e.PodemailSubject)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasColumnName("PODEmailSubject");
+            entity.Property(e => e.Podsmsmessage)
+                .IsRequired()
+                .HasColumnType("ntext")
+                .HasColumnName("PODSMSMessage");
+            entity.Property(e => e.Smscaddress)
+                .IsRequired()
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("SMSCAddress");
+            entity.Property(e => e.Smscaddress2)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("SMSCAddress2");
+            entity.Property(e => e.Smscpassword)
+                .IsRequired()
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("SMSCPassword");
+            entity.Property(e => e.Smscpassword2)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("SMSCPassword2");
+            entity.Property(e => e.Smscusername)
+                .IsRequired()
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("SMSCUsername");
+            entity.Property(e => e.Smscusername2)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("SMSCUsername2");
+            entity.Property(e => e.SourcePrefix)
+                .IsRequired()
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.Ton).HasColumnName("TON");
+            entity.Property(e => e.Ton2).HasColumnName("TON2");
         });
 
         modelBuilder.Entity<TblUndeliverableLocation>(entity =>

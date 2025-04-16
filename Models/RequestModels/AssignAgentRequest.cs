@@ -1,10 +1,8 @@
-using System.Text.Json.Serialization;
-
 namespace DespatchWeb.Models.RequestModels;
 
-public class AssignAgentModel
+public class AgentJobRequestModel
 {
-    [JsonPropertyName("agentId")] public int? AgentId { get; set; }
+    public int? AgentId { get; set; }
 
-    [JsonPropertyName("jobId")] public int? JobId { get; set; }
+    public int? JobId { get; set; }
 }
