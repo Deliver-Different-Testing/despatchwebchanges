@@ -146,6 +146,13 @@ class NationwideService implements angular.IServiceProvider {
         return response.data;
     }
 
+    async sendAgentQuote(jobId: number, agentId: number) {
+        await this.$http.post("nationwideJob/SendAgentQuote", {
+            jobId,
+            agentId,
+        });
+    }
+
     private _prepareViewIdsForRequest(selectedAreas: DfrntPageViewModel[] | Suggestion[]): number[] {
         return selectedAreas.map(area => {
             return typeof area === "object" && area.id ? area.id : 0;

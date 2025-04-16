@@ -897,8 +897,7 @@ class NationwideControl extends BaseController {
 
             await this.$mdDialog.show(confirm);
 
-            // TODO: Call API to send quote request await this.NWData.sendQuoteRequest(job.id, agent.agentId);
-
+            await this.nationwideService.sendAgentQuote(job.id, agent.agentId);
             this.toastrService.showSuccessToast(`Quote request sent to ${agent.agentName}`);
         } catch (error) {
             if (error) {
@@ -910,7 +909,7 @@ class NationwideControl extends BaseController {
 
     async selectJob(job: IDispatchJob) {
         try {
-            if(!job) return;
+            if (!job) return;
 
             this._markJobReadStatus(job.id, true);
 
@@ -1735,17 +1734,17 @@ class NationwideControl extends BaseController {
     }
 
     getUnreadNewCount() {
-        if(!this.jobList) return;
+        if (!this.jobList) return;
         return this.jobList.filter(job => !job.hasBeenRead).length;
     }
 
     getUnreadPodCount() {
-        if(!this.jobListPOD) return;
+        if (!this.jobListPOD) return;
         return this.jobListPOD.filter(job => !job.hasBeenRead).length;
     }
 
     getUnreadRepriceCount() {
-        if(!this.jobListReprice) return;
+        if (!this.jobListReprice) return;
         return this.jobListReprice.filter(job => !job.hasBeenRead).length;
     }
 }

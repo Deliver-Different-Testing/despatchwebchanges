@@ -36,7 +36,7 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting the new Nationwide job list");
-            return StatusCode(500, "An unexpected error occurred while retrieving the job list");
+            return StatusCode(500, e.Message);
         }
     }
 
@@ -57,7 +57,7 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting the pod Nationwide job list");
-            return StatusCode(500, "An unexpected error occurred while retrieving the job list");
+            return StatusCode(500, e.Message);
         }
     }
 
@@ -79,7 +79,7 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting the delivery Nationwide job list");
-            return StatusCode(500, "An unexpected error occurred while retrieving the job list");
+            return StatusCode(500, e.Message);
         }
     }
 
@@ -100,7 +100,7 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting the reprice Nationwide job list");
-            return StatusCode(500, "An unexpected error occurred while retrieving the job list");
+            return StatusCode(500, e.Message);
         }
     }
 
@@ -115,7 +115,7 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting scheduled flight options");
-            return StatusCode(500, "An unexpected error occurred while retrieving the job list");
+            return StatusCode(500, e.Message);
         }
     }
 
@@ -145,7 +145,7 @@ public class NationwideJobController(
             catch (Exception ex)
             {
                 Log.Error(ex, "Error retrieving flight details for flight {FlightNumber}", request.FlightNumber);
-                return StatusCode(500, "Unable to retrieve flight information");
+                return StatusCode(500, ex.Message);
             }
 
             // Get airport codes
@@ -174,7 +174,7 @@ public class NationwideJobController(
             {
                 Log.Error(ex, "Error creating flight rule webhook for flight {FlightNumber}",
                     request.FlightNumber);
-                return StatusCode(500, "Unable to set up flight tracking");
+                return StatusCode(500, ex.Message);
             }
 
             // Add job
@@ -199,7 +199,7 @@ public class NationwideJobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Unexpected error in AssignFlightToJob");
-            return StatusCode(500, "An unexpected error occurred while processing your request");
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -220,21 +220,21 @@ public class NationwideJobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error retrieving agents for JobId: {JobId}", jobId);
-            return StatusCode(500, "An error occurred while retrieving agent information");
+            return StatusCode(500, ex.Message);
         }
     }
 
     [HttpPost]
-    public async Task<IActionResult> AssignAgentToJob([FromBody] AssignAgentModel model)
+    public async Task<IActionResult> AssignAgentToJob([FromBody] AgentJobRequestModel jobRequestModel)
     {
         try
         {
-            if (model?.AgentId == null || model.JobId == null)
+            if (jobRequestModel?.AgentId == null || jobRequestModel.JobId == null)
                 return BadRequest("Oops, no agent data was provided. Unable to assign to job.");
 
             try
             {
-                var addToDb = await repository.AddAgentToJobAsync(model.AgentId.Value, model.JobId.Value);
+                var addToDb = await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value, jobRequestModel.JobId.Value);
                 if (!addToDb)
                     return BadRequest("An error occurred while assigning the agent to the job.");
 
@@ -243,20 +243,20 @@ public class NationwideJobController(
             catch (DbUpdateException ex)
             {
                 Log.Error(ex, "Database error while assigning agent {AgentId} to job {JobId}",
-                    model.AgentId, model.JobId);
+                    jobRequestModel.AgentId, jobRequestModel.JobId);
                 return StatusCode(500, "Unable to save agent assignment");
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Error assigning agent {AgentId} to job {JobId}",
-                    model.AgentId, model.JobId);
+                    jobRequestModel.AgentId, jobRequestModel.JobId);
                 return StatusCode(500, "Unable to complete agent assignment");
             }
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Unexpected error in AssignAgentToJob");
-            return StatusCode(500, "An unexpected error occurred while processing your request");
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -271,7 +271,22 @@ public class NationwideJobController(
         catch (Exception e)
         {
            Log.Error(e, "An error occured getting the active airlines");
-           return StatusCode(500, "An unexpected error occurred while retrieving the active airlines");
+           return StatusCode(500, e.Message);
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SendAgentQuote(int agentId, int jobId)
+    {
+        try
+        {
+            await repository.SendAgentRequestMessageAsync(agentId, jobId);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An error occured getting the active airlines");
+            return StatusCode(500, e.Message);
         }
     }
 }
