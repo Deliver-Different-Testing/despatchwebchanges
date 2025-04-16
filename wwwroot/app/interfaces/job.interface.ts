@@ -2,6 +2,7 @@ import {JobStatus} from "../enums/job-status.enum";
 import {LateEventType} from "../enums/late-event-type.enum";
 import {DaysOfWeek} from "../enums/days-of-week.enum";
 import {Frequency} from "../enums/frequency.enum";
+import {HolidayDeliveryOptions} from "../enums/holiday-delivery-options.enum";
 
 export interface IJob {
     id: number;
@@ -153,6 +154,7 @@ export interface IJob {
     active?: boolean;
     daysOfWeek?: DaysOfWeek
     frequency?: Frequency;
+    holidayDeliveryOption: HolidayDeliveryOptions
 }
 
 export interface ParcelDimensions {

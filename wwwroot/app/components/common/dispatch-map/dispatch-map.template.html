@@ -33,20 +33,6 @@
                     <traffic-layer></traffic-layer>
                 </ng-map>
             </div>
-
-            <!-- Map Controls -->
-            <div class="map-controls">
-                <md-button aria-label="Toggle Auto Zoom"
-                           class="md-fab md-mini"
-                           ng-class="{'md-primary': ctrl.autoZoomEnabled, 'md-warn': !ctrl.autoZoomEnabled}" ng-click="ctrl.toggleAutoZoom()">
-                    <md-tooltip md-direction="right">
-                        {{ctrl.autoZoomEnabled ? 'Auto Zoom Enabled' : 'Auto Zoom Disabled'}}
-                    </md-tooltip>
-                    <md-icon md-font-set="material-symbols-outlined">
-                        {{ctrl.autoZoomEnabled ? 'fit_screen' : 'zoom_out_map'}}
-                    </md-icon>
-                </md-button>
-            </div>
         </div>
     </div>
 </div>

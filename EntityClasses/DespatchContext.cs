@@ -139,6 +139,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TucJobTypeGrouping> TucJobTypeGroupings { get; set; }
 
+    public virtual DbSet<TucManualMessage> TucManualMessages { get; set; }
+
     public virtual DbSet<TucNote> TucNotes { get; set; }
 
     public virtual DbSet<TucNoteArchive> TucNoteArchives { get; set; }
@@ -1260,6 +1262,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.InternetRebate).HasColumnType("money");
             entity.Property(e => e.InvoiceEmail).HasMaxLength(500);
             entity.Property(e => e.InvoiceGroupBy).HasMaxLength(50);
+            entity.Property(e => e.InvoiceMemo).HasMaxLength(100);
             entity.Property(e => e.InvoiceMethod).HasMaxLength(50);
             entity.Property(e => e.JobPrefix).HasMaxLength(3);
             entity.Property(e => e.LastModified).HasColumnType("datetime");
@@ -1319,6 +1322,7 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("PPDRate");
             entity.Property(e => e.PrivateAddressSurchargeRateCodeId).HasColumnName("PrivateAddressSurchargeRateCodeID");
             entity.Property(e => e.PromoCode).HasMaxLength(50);
+            entity.Property(e => e.PurchaseOrderNumber).HasMaxLength(100);
             entity.Property(e => e.RateRr).HasColumnName("RateRR");
             entity.Property(e => e.RateShortRr).HasColumnName("RateShortRR");
             entity.Property(e => e.ReferenceAdefineList).HasColumnName("ReferenceADefineList");
@@ -2667,6 +2671,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.InvoiceTemplateId, "IX_InvoiceTemplateId");
 
+            entity.HasIndex(e => e.PaymentTermId, "IX_PaymentTermId");
+
             entity.HasIndex(e => e.XeroId, "IX_XeroId");
 
             entity.HasIndex(e => e.UcclName, "Name").IsUnique();
@@ -2785,6 +2791,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Invoice).HasDefaultValue(true);
             entity.Property(e => e.InvoiceEmail).HasMaxLength(500);
             entity.Property(e => e.InvoiceGroupBy).HasMaxLength(50);
+            entity.Property(e => e.InvoiceMemo).HasMaxLength(100);
             entity.Property(e => e.InvoiceMethod).HasMaxLength(50);
             entity.Property(e => e.JobPrefix).HasMaxLength(3);
             entity.Property(e => e.LastModified).HasColumnType("datetime");
@@ -2820,6 +2827,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PrivateAddressSurchargeRateCodeId).HasColumnName("PrivateAddressSurchargeRateCodeID");
             entity.Property(e => e.PromoCode).HasMaxLength(50);
             entity.Property(e => e.PromptForEmailAddress).HasDefaultValue(true);
+            entity.Property(e => e.PurchaseOrderNumber).HasMaxLength(100);
             entity.Property(e => e.RateRr).HasColumnName("RateRR");
             entity.Property(e => e.RateShortRr)
                 .HasDefaultValue(52)
@@ -4552,6 +4560,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Gssconnote)
                 .HasMaxLength(50)
                 .HasColumnName("GSSConnote");
+            entity.Property(e => e.HolidayDeliveryOption).HasComment("0 = Don't Book (default), 1 = Deliver Next Day");
             entity.Property(e => e.InformationParentId).HasColumnName("InformationParentID");
             entity.Property(e => e.InternalNotes).HasMaxLength(500);
             entity.Property(e => e.JobRelationshipTypeId).HasColumnName("JobRelationshipTypeID");
@@ -5019,6 +5028,52 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.GroupingName)
                 .IsRequired()
                 .HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<TucManualMessage>(entity =>
+        {
+            entity.HasKey(e => e.UcmmId)
+                .IsClustered(false)
+                .HasAnnotation("SqlServer:FillFactor", 80);
+
+            entity.ToTable("tucManualMessage", tb => tb.HasTrigger("tucManualMessage_Insert"));
+
+            entity.HasIndex(e => new { e.UcmmSendTo, e.UcmmSent }, "SendToAndSent");
+
+            entity.HasIndex(e => e.UcmmSendTo, "ucmmSendTo");
+
+            entity.HasIndex(e => e.UcmmTimeSent, "ucmmTimeSent");
+
+            entity.Property(e => e.UcmmId).HasColumnName("ucmmID");
+            entity.Property(e => e.JobId).HasColumnName("JobID");
+            entity.Property(e => e.ReplyToEmailAddress).HasMaxLength(500);
+            entity.Property(e => e.SendToEmailAddress).HasMaxLength(500);
+            entity.Property(e => e.SendToMobile).HasMaxLength(500);
+            entity.Property(e => e.Subject).HasMaxLength(500);
+            entity.Property(e => e.TimeRead).HasColumnType("datetime");
+            entity.Property(e => e.UcmmAttempts)
+                .HasDefaultValue(0)
+                .HasColumnName("ucmmAttempts");
+            entity.Property(e => e.UcmmDate)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("ucmmDate");
+            entity.Property(e => e.UcmmMessage)
+                .IsRequired()
+                .HasColumnType("ntext")
+                .HasColumnName("ucmmMessage");
+            entity.Property(e => e.UcmmSendTo).HasColumnName("ucmmSendTo");
+            entity.Property(e => e.UcmmSent).HasColumnName("ucmmSent");
+            entity.Property(e => e.UcmmStaffId)
+                .HasDefaultValue(0)
+                .HasColumnName("ucmmStaffID");
+            entity.Property(e => e.UcmmTimeSent)
+                .HasColumnType("datetime")
+                .HasColumnName("ucmmTimeSent");
+            entity.Property(e => e.UcmmWindowsUser)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("ucmmWindowsUser");
         });
 
         modelBuilder.Entity<TucNote>(entity =>

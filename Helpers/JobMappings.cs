@@ -765,7 +765,8 @@ public static class JobMappings
 
             // Added new fields for scheduling
             DaysOfWeek = (DaysOfWeek)j.UcbkDaysInt,
-            Frequency = (Frequency)(j.UcbkFrequency ?? 0)
+            Frequency = (Frequency)(j.UcbkFrequency ?? 0),
+            HolidayDeliveryOption = (HolidayDeliveryOptions)j.HolidayDeliveryOption
         };
 
     public static readonly Expression<Func<TucJob, JobLateCallDto>> JobLateCallMapping =

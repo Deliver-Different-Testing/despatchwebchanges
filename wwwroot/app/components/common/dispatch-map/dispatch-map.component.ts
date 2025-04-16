@@ -91,6 +91,10 @@ class DispatchMapController extends BaseController {
                     disableAutoPan: true
                 });
 
+                this.$window.google.maps.event.addListenerOnce(this.mapInstance, 'idle', () => {
+                    this._addAutoZoomButton();
+                });
+
                 this._setupEventListeners();
                 this._startLocationRefreshInterval();
 
@@ -455,8 +459,37 @@ class DispatchMapController extends BaseController {
             bounds.extend(marker.getPosition() as google.maps.LatLng);
         });
 
-        const center = bounds.getCenter();
-        this.mapInstance!.setCenter(center);
+        // Calculate the span/distance of the bounds
+        const ne = bounds.getNorthEast();
+        const sw = bounds.getSouthWest();
+        const distanceInKm = this._calculateDistance(ne.lat(), ne.lng(), sw.lat(), sw.lng());
+
+        // Only center if markers are within a reasonable distance (e.g., 50km)
+        if (distanceInKm < 50) {
+            const center = bounds.getCenter();
+            this.mapInstance!.setCenter(center);
+        } else {
+            // Instead of centering, focus on a pickup point
+            if (this.markers.length > 0) {
+                this.mapInstance!.setCenter(this.markers[0].getPosition() as google.maps.LatLng);
+            }
+        }
+    }
+
+    private _calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+        const R = 6371; // Radius of the earth in km
+        const dLat = this._deg2rad(lat2 - lat1);
+        const dLon = this._deg2rad(lon2 - lon1);
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(this._deg2rad(lat1)) * Math.cos(this._deg2rad(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;          // Distance in km
+    }
+
+    private _deg2rad(deg: number): number {
+        return deg * (Math.PI / 180);
     }
 
     private _updateCourierMarkers(couriers: AvailableCourierPosition[]) {
@@ -801,6 +834,88 @@ class DispatchMapController extends BaseController {
                 this.autoZoomEnabled = true; // Default to true if any error occurs
             }
         }
+    }
+
+    private _addAutoZoomButton() {
+        const mapControlsDiv = document.createElement('div');
+        mapControlsDiv.className = 'map-controls';
+        mapControlsDiv.style.margin = '10px'; // Add some margin instead
+        mapControlsDiv.style.zIndex = '1';
+
+        // Create the button HTML content to match your Angular Material design
+        mapControlsDiv.innerHTML = `
+        <button class="md-fab md-mini ${this.autoZoomEnabled ? 'md-primary' : 'md-warn'}" 
+                aria-label="Toggle Auto Zoom"
+                style="width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer; 
+                       box-shadow: 0 2px 5px rgba(0,0,0,0.3); outline: none; display: flex; 
+                       justify-content: center; align-items: center;
+                       background-color: ${this.autoZoomEnabled ? '#3f51b5' : '#f44336'};">
+            <span class="material-symbols-outlined" 
+                  style="color: white; font-size: 20px;">
+                ${this.autoZoomEnabled ? 'fit_screen' : 'zoom_out_map'}
+            </span>
+            <div class="md-tooltip" 
+                 style="position: absolute; left: 45px; 
+                        background-color: rgba(97,97,97,0.9); color: white;
+                        padding: 4px 8px; border-radius: 2px; font-size: 10px;
+                        white-space: nowrap; opacity: 0; transition: opacity 0.3s;
+                        pointer-events: none;">
+                ${this.autoZoomEnabled ? 'Auto Zoom Enabled' : 'Auto Zoom Disabled'}
+            </div>
+        </button>
+    `;
+
+        // Get the button element
+        const button = mapControlsDiv.querySelector('button');
+
+        // Add hover effect for tooltip
+        if (button) {
+            button.addEventListener('mouseenter', () => {
+                const tooltip: any = button.querySelector('.md-tooltip');
+                if (tooltip) {
+                    tooltip.style.opacity = '1';
+                }
+            });
+
+            button.addEventListener('mouseleave', () => {
+                const tooltip: any = button.querySelector('.md-tooltip');
+                if (tooltip) {
+                    tooltip.style.opacity = '0';
+                }
+            });
+
+            // Add click event listener
+            button.addEventListener('click', () => {
+                this.toggleAutoZoom();
+
+                // Update button appearance
+                button.style.backgroundColor = this.autoZoomEnabled ? '#3f51b5' : '#f44336';
+
+                // Update the icon
+                const iconSpan = button.querySelector('.material-symbols-outlined');
+                if (iconSpan) {
+                    iconSpan.textContent = this.autoZoomEnabled ? 'fit_screen' : 'zoom_out_map';
+                }
+
+                // Update the tooltip text
+                const tooltip = button.querySelector('.md-tooltip');
+                if (tooltip) {
+                    tooltip.textContent = this.autoZoomEnabled ? 'Auto Zoom Enabled' : 'Auto Zoom Disabled';
+                }
+            });
+        }
+
+        // Add the Material Icons font if not already loaded
+        if (!document.getElementById('material-icons-font')) {
+            const link = document.createElement('link');
+            link.id = 'material-icons-font';
+            link.rel = 'stylesheet';
+            link.href = 'https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined';
+            document.head.appendChild(link);
+        }
+
+        // Add the control to the map
+        this.mapInstance!.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(mapControlsDiv);
     }
 }
 

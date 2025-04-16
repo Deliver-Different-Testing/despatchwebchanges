@@ -18,3 +18,9 @@ export interface IPrebookListModel {
     pickupAddress: AddressViewModel;
     deliveryAddress: AddressViewModel;
 }
+
+export interface IRecurringJobQuery {
+    order: string;
+    limit: number;
+    page: number;
+}

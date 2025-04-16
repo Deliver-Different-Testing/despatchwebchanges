@@ -353,6 +353,11 @@ public partial class TucJobBooking
 
     public int UcbkDaysInt { get; set; }
 
+    /// <summary>
+    /// 0 = Don&apos;t Book (default), 1 = Deliver Next Day
+    /// </summary>
+    public int HolidayDeliveryOption { get; set; }
+
     public virtual TucJobBooking BookingParent { get; set; }
 
     public virtual TucCourier Courier { get; set; }

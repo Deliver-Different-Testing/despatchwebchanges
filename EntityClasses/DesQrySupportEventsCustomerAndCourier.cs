@@ -35,17 +35,17 @@ public partial class DesQrySupportEventsCustomerAndCourier
 
     public DateTime? UcevTime { get; set; }
 
-    public double? UcevType { get; set; }
+    public int? UcevType { get; set; }
 
     public double? UcevLateTime { get; set; }
 
     public DateTime? UcevEtatime { get; set; }
 
-    public double? UcevStaffIdin { get; set; }
+    public int? UcevStaffIdin { get; set; }
 
     public string UcstWindowsLogonName { get; set; }
 
-    public double? UcevStaffIdout { get; set; }
+    public int? UcevStaffIdout { get; set; }
 
     public DateTime? UcevResponseTime { get; set; }
 

@@ -235,6 +235,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucManualMessage]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucNote]",
          "ObjectType": 0
       },

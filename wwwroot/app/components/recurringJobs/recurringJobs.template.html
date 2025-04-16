@@ -8,6 +8,38 @@
 
                 <span flex></span>
 
+                <md-menu>
+                    <md-button aria-label="Open layout options menu" class="md-icon-button"
+                               ng-click="$mdMenu.open($event)">
+                        <md-icon md-font-set="material-symbols-outlined">grid_view</md-icon>
+                        <md-tooltip md-direction="bottom">Layouts</md-tooltip>
+                    </md-button>
+                    <md-menu-content width="2">
+                        <md-menu-item>
+                            <md-button ng-click="ctrl.saveLayout()">
+                                <md-icon md-font-set="material-symbols-outlined">save</md-icon>
+                                Save Layout
+                            </md-button>
+                        </md-menu-item>
+                        <md-divider></md-divider>
+                        <md-menu-item ng-repeat="lo in ctrl.layouts track by $index">
+                            <md-button>
+                                <md-icon md-font-set="material-symbols-outlined" ng-click="ctrl.deleteLayout($index)"
+                                         ng-if="lo.name != 'Default'">
+                                    delete
+                                </md-icon>
+                                <md-icon md-font-set="material-symbols-outlined" ng-if="lo.name == 'Default'">
+                                    tune
+                                </md-icon>
+                                <span ng-click="ctrl.loadLayout($index)"
+                                      ng-style="lo.name == ctrl.currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
+                            </md-button>
+                        </md-menu-item>
+                    </md-menu-content>
+                </md-menu>
+
+                <md-divider class="vertical-divider"></md-divider>
+
                 <span style="font-size: medium;">{{ctrl.greetUser()}}</span>
 
                 <md-button aria-label="Menu" class="md-icon-button" ng-click="ctrl.toggleSidenav()"
@@ -36,7 +68,7 @@
 
                                 <span class="md-headline-title" flex style="margin-left: 8px;">
                                     {{ctrl.boxes[box.name].title}}
-                                    <span ng-if="box.name == 'jobDetail'">{{ctrl.currentSelection}}</span>
+                                    <span ng-if="box.name == 'jobDetail'">Detail {{ctrl.currentSelection}}</span>
                                 </span>
 
                                 <!--Send all-->
@@ -137,12 +169,6 @@
                                                type="text">
                                     </md-input-container>
                                 </div>
-
-                                <div class="box-handle md-icon-button">
-                                    <md-icon class="md-drag-button" md-font-set="material-symbols-outlined">
-                                        drag_indicator
-                                    </md-icon>
-                                </div>
                             </div>
                         </md-toolbar>
 
@@ -152,6 +178,4 @@
             </div>
         </div>
     </div>
-
-    <div id='draggingItems'></div>
 </div>

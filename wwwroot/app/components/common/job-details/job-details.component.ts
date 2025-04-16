@@ -1,7 +1,7 @@
 import ToastrService from "../../../services/toastr.service";
 import {EditAddressDialogViewModel, IJob, InternalStatus, Suggestion} from "../../../interfaces/job.interface";
 import {ContactID, FirstName} from "../../../contants";
-import {JobNote, JobOptions, TabItem} from "./job-details.interfaces";
+import {JobOptions, TabItem} from "./job-details.interfaces";
 import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import "./job-details.styles.less";
@@ -34,7 +34,8 @@ class JobDetailController extends BaseController {
         "$document",
         "APP_CONFIG",
         "editParcelDimensionsDialogService",
-        "$rootScope"
+        "$rootScope",
+        "$timeout"
     ];
 
     readonly appPage: AppPages = AppPages.Dispatch;
@@ -71,6 +72,7 @@ class JobDetailController extends BaseController {
         APP_CONFIG: AppConfig,
         private editParcelDimensionsDialogService: EditParcelDimensionsDialogService,
         private $rootScope: angular.IRootScopeService,
+        private $timeout: angular.ITimeoutService,
     ) {
         super();
 
@@ -184,10 +186,9 @@ class JobDetailController extends BaseController {
         this.isLoading = true;
 
         try {
-            const jobData = this.isRecurringJob
+            this.job = this.isRecurringJob
                 ? await this.DispatchData.getRecurringJobDetail(jobId)
                 : await this.DispatchData.getJobDetail(jobId);
-            this.job = jobData;
 
             this._initializeJobData();
 
@@ -202,11 +203,13 @@ class JobDetailController extends BaseController {
                 }
             }
 
-            if (jobData.completedTime) {
+            this.isLoading = false;
+
+            this._triggerDigestCycle();
+
+            if (this.job.completedTime && !this.isRecurringJob) {
                 this._loadPodPhotos();
             }
-
-            this.isLoading = false;
         } catch (error) {
             console.error("Error loading job data:", error);
             this.toastrService.showErrorToast("Failed to load job details");
@@ -280,6 +283,34 @@ class JobDetailController extends BaseController {
         if (!this.job) return;
 
         console.log('Initializing job data:', this.job.id);
+
+        if (typeof this.job.daysOfWeek === 'number' && this.job.daysOfWeek > 0) {
+            console.log('Original daysOfWeek bitmap value:', this.job.daysOfWeek);
+
+            const daysArray = [];
+            if (this.job.daysOfWeek && 1) daysArray.push(1);      // Monday
+            if (this.job.daysOfWeek && 2) daysArray.push(2);      // Tuesday
+            if (this.job.daysOfWeek && 4) daysArray.push(4);      // Wednesday
+            if (this.job.daysOfWeek && 8) daysArray.push(8);      // Thursday
+            if (this.job.daysOfWeek && 16) daysArray.push(16);    // Friday
+            if (this.job.daysOfWeek && 32) daysArray.push(32);    // Saturday
+            if (this.job.daysOfWeek && 64) daysArray.push(64);    // Sunday
+
+            console.log('Converted daysOfWeek to array:', daysArray);
+
+            this.job.daysOfWeek = daysArray as any;
+        }
+
+        if (this.job.holidayDeliveryOption) {
+            this.job.holidayDeliveryOption = Number(this.job.holidayDeliveryOption);
+            console.log('Set holiday delivery option to:', this.job.holidayDeliveryOption);
+        }
+
+        if (this.job.frequency) {
+            this.job.frequency = Number(this.job.frequency);
+            console.log('Set frequency to:', this.job.frequency);
+        }
+
         this._getSelectedStatusText();
     }
 
@@ -474,7 +505,7 @@ class JobDetailController extends BaseController {
         await this.showEditDateDialog($event, job, "Stop Date", JobProperty.StopDate, job.stopDate);
     }
 
-   async editRestartDate($event: MouseEvent, job: IJob) {
+    async editRestartDate($event: MouseEvent, job: IJob) {
         await this.showEditDateDialog($event, job, "Restart Date", JobProperty.RestartDate, job.restartDate);
     }
 
@@ -1146,25 +1177,24 @@ class JobDetailController extends BaseController {
     }
 
     async updateDaysOfWeek(job: IJob) {
-        console.log('Updating days of week:', job.daysOfWeek);
+        console.log('Updating days of week from array:', job.daysOfWeek);
 
-        // Calculate bitmask value from the array of selected days
         let daysValue = 0;
         if (Array.isArray(job.daysOfWeek)) {
-            job.daysOfWeek.forEach(day => {
+            job.daysOfWeek.forEach((day: number) => {
                 daysValue |= day;
             });
         } else if (typeof job.daysOfWeek === 'number') {
             daysValue = job.daysOfWeek;
         }
 
-        console.log('Days bitmask value:', daysValue);
+        console.log('Days bitmask value calculated:', daysValue);
 
         try {
             await this.DispatchData.updateJobDetail(
                 job.id,
                 JobProperty.DaysOfWeek,
-                daysValue.toString(),
+                daysValue,
                 job.charge,
                 job.preBook
             );
@@ -1178,14 +1208,16 @@ class JobDetailController extends BaseController {
     }
 
     async updateFrequency(job: IJob) {
-        if(!job.frequency) return;
-        console.log('Updating frequency:', job.frequency);
+        if (job.frequency === undefined || job.frequency === null) return;
+
+        const frequencyValue = Number(job.frequency);
+        console.log('Updating frequency to:', frequencyValue);
 
         try {
             await this.DispatchData.updateJobDetail(
                 job.id,
                 JobProperty.Frequency,
-                job.frequency?.toString(),
+                frequencyValue,
                 job.charge,
                 job.preBook
             );
@@ -1194,6 +1226,46 @@ class JobDetailController extends BaseController {
             await this._refreshJobDetails(job.id);
         } catch (error) {
             console.error('Error updating frequency:', error);
+            this._handleError(error);
+        }
+    }
+
+    private _triggerDigestCycle() {
+        console.log('[_triggerDigestCycle] Forcing UI update');
+        try {
+            if (!this.$rootScope.$$phase) {
+                this.$rootScope.$apply();
+            } else {
+                this.$timeout(() => {
+                    if (!this.$rootScope.$$phase) {
+                        this.$rootScope.$apply();
+                    }
+                }, 0);
+            }
+        } catch (e) {
+            console.error('[_triggerDigestCycle] Error triggering digest cycle:', e);
+        }
+    }
+
+    async updateHolidayDeliveryOption(job: IJob) {
+        if (!job.holidayDeliveryOption) return;
+
+        const holidayOptionValue = Number(job.holidayDeliveryOption);
+        console.log('Updating holiday delivery option to:', holidayOptionValue);
+
+        try {
+            await this.DispatchData.updateJobDetail(
+                job.id,
+                JobProperty.HolidayDelivery,
+                holidayOptionValue,
+                job.charge,
+                job.preBook
+            );
+
+            this.toastrService.showSuccessToast(`${job.jobNo} holiday delivery option updated`);
+            await this._refreshJobDetails(job.id);
+        } catch (error) {
+            console.error('Error updating holiday delivery option:', error);
             this._handleError(error);
         }
     }

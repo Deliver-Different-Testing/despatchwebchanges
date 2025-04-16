@@ -50,7 +50,6 @@ import AdditionalServicesDialogService
     from "./components/dialogs/additional-services-dialog/additional-services-dialog.service";
 import AdditionalServicesDialogController
     from "./components/dialogs/additional-services-dialog/additional-services-dialog.controller";
-import DfrntLoaderComponent from "./components/common/dfrnt-loader/dfrnt-loader.component";
 import JobDetailComponent from "./components/common/job-details/job-details.component";
 import NoDataComponent from "./components/common/no-data/no-data.component";
 import JobFileUploadController from "./components/dialogs/job-file-upload-dialog/job-file-upload.controller";
@@ -221,7 +220,6 @@ app.directive('mdAutocompleteEnterSelect', mdAutocompleteEnterSelectDirective);
 app.directive("rightClick", rightClickDirective);
 
 // Components
-app.component('dfrntLoader', DfrntLoaderComponent);
 app.component("jobDetailWidget", JobDetailComponent);
 app.component("materialSidenav", MaterialSidenavComponent);
 app.component("podPhotoViewer", PodPhotoViewerComponent);

@@ -561,6 +561,12 @@ public partial class TblClient
 
     public int? InvoiceTemplateId { get; set; }
 
+    public string InvoiceMemo { get; set; }
+
+    public int? PaymentTermId { get; set; }
+
+    public string PurchaseOrderNumber { get; set; }
+
     public int ClientId { get; set; }
 
     public string Name { get; set; }

@@ -1672,7 +1672,9 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         const int internalNoteTypeId = (int)NoteType.InternalNote;
         int noteId;
 
-        if (await IsJobArchived(jobId))
+        var isJobArchived = await IsJobArchived(jobId) && !isRecurringJob;
+
+        if (isJobArchived)
         {
             var archivedNote = new TucNoteArchive
             {
