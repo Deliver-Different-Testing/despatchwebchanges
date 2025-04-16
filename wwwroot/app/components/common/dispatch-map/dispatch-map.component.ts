@@ -435,9 +435,6 @@ class DispatchMapController extends BaseController {
                     if (this.autoZoomEnabled) {
                         console.log('[DispatchMapController] Auto-zoom enabled, fitting map to markers');
                         this._fitMapToMarkers();
-                    } else {
-                        console.log('[DispatchMapController] Auto-zoom disabled, centering map on markers');
-                        this._centerMapOnMarkers();
                     }
                 }, 200);
             } else {
@@ -448,48 +445,6 @@ class DispatchMapController extends BaseController {
         } finally {
             this.isUpdating = false;
         }
-    }
-
-    private _centerMapOnMarkers() {
-        if (this.markers.length === 0) return;
-
-        const bounds = new this.$window.google.maps.LatLngBounds();
-
-        this.markers.forEach((marker: google.maps.Marker) => {
-            bounds.extend(marker.getPosition() as google.maps.LatLng);
-        });
-
-        // Calculate the span/distance of the bounds
-        const ne = bounds.getNorthEast();
-        const sw = bounds.getSouthWest();
-        const distanceInKm = this._calculateDistance(ne.lat(), ne.lng(), sw.lat(), sw.lng());
-
-        // Only center if markers are within a reasonable distance (e.g., 50km)
-        if (distanceInKm < 50) {
-            const center = bounds.getCenter();
-            this.mapInstance!.setCenter(center);
-        } else {
-            // Instead of centering, focus on a pickup point
-            if (this.markers.length > 0) {
-                this.mapInstance!.setCenter(this.markers[0].getPosition() as google.maps.LatLng);
-            }
-        }
-    }
-
-    private _calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-        const R = 6371; // Radius of the earth in km
-        const dLat = this._deg2rad(lat2 - lat1);
-        const dLon = this._deg2rad(lon2 - lon1);
-        const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(this._deg2rad(lat1)) * Math.cos(this._deg2rad(lat2)) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;          // Distance in km
-    }
-
-    private _deg2rad(deg: number): number {
-        return deg * (Math.PI / 180);
     }
 
     private _updateCourierMarkers(couriers: AvailableCourierPosition[]) {
@@ -804,8 +759,6 @@ class DispatchMapController extends BaseController {
 
         if (this.autoZoomEnabled && this.markers.length > 0) {
             this._fitMapToMarkers();
-        } else if (!this.autoZoomEnabled && this.markers.length > 0) {
-            this._centerMapOnMarkers();
         }
     }
 

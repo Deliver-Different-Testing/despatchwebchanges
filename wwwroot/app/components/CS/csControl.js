@@ -113,13 +113,8 @@ function CSControl($scope, jdSvc, uCSData, $state, $filter, $mdDialog, greetingS
             order: 'booked', limit: 50, page: 1
         };
 
-        $scope.preBookQuery = {
-            order: 'booked', limit: 50, page: 1
-        };
-
         $scope.jobPromise = null;
         $scope.bulkJobPromise = null;
-        $scope.preBookPromise = null;
         $scope.scanPromise = null;
 
         $scope.jobHeaders = [{ key: 'booked', label: 'Booked' }, { key: 'status', label: 'Status' }, {
@@ -210,13 +205,6 @@ function CSControl($scope, jdSvc, uCSData, $state, $filter, $mdDialog, greetingS
                 "icon": "format_list_bulleted",
                 "templateUrl": "app/components/CS/partials/bulkJobList.html",
                 "showSearch": 1,
-            },
-            "pbList": {
-                "title": "PreBook Data",
-                "icon": "event_note",
-                "templateUrl": "app/components/CS/partials/pbList.html",
-                "showSearch": 1,
-                "showRefresh": 1,
             },
             "jobDetail": {
                 "title": "Detail",
@@ -524,7 +512,7 @@ function CSControl($scope, jdSvc, uCSData, $state, $filter, $mdDialog, greetingS
      */
     $scope.JobRecordSelected = selectedJobId => {
         const selectedJob = $scope.jobList.find(job => job.id === selectedJobId);
-        $scope.selectJob(selectedJob);
+        return $scope.selectJob(selectedJob);
     }
 
 
@@ -533,7 +521,7 @@ function CSControl($scope, jdSvc, uCSData, $state, $filter, $mdDialog, greetingS
             const sr = $scope.pickRegions.find(obj => obj.id === region.id);
             $scope.pickDateService.regions = [sr];
 
-            await Promise.all([$scope.refreshData(true), $scope.refreshBulkData(true), $scope.refreshPreBookData(true)]);
+            await Promise.all([$scope.refreshData(true), $scope.refreshBulkData(true)]);
         } catch (error) {
             console.log('Error in filterRegion:', error);
         }
@@ -723,7 +711,7 @@ function CSControl($scope, jdSvc, uCSData, $state, $filter, $mdDialog, greetingS
     };
 
     $scope.refreshAllData = async () => {
-        await Promise.all([$scope.refreshData(), $scope.refreshBulkData(), $scope.refreshPreBookData()]);
+        await Promise.all([$scope.refreshData(), $scope.refreshBulkData()]);
     };
 
     $scope.refreshData = async () => {
@@ -756,18 +744,6 @@ function CSControl($scope, jdSvc, uCSData, $state, $filter, $mdDialog, greetingS
             $scope.bulkTotalCount = data.item1;
         } catch (error) {
             console.error('Error in refreshBulkData:', error);
-        }
-    };
-
-    $scope.refreshPreBookData = async () => {
-        try {
-            $scope.preBookPromise = uCSData.searchPreBookJobs($scope.pickDateService.courier, $scope.pickDateService.client, ($scope.pickDateService.wild || ""), ($scope.pickDateService.job || ""), moment($scope.pickDateService.from_date), moment($scope.pickDateService.to_date), $scope.preBookQuery.page, $scope.preBookQuery.limit);
-
-            const data = await $scope.preBookPromise;
-            $scope.pbList = data.item2;
-            $scope.pbTotalCount = data.item1;
-        } catch (error) {
-            console.error('Error in refreshPreBookData:', error);
         }
     };
 
@@ -918,64 +894,6 @@ function CSControl($scope, jdSvc, uCSData, $state, $filter, $mdDialog, greetingS
         }
     };
 
-    $scope.selectPreBookDetail = async (prebookJobId) => {
-        try {
-            console.log("select pre book Job  " + prebookJobId);
-
-            const jobDetailLoading = angular.element("#box-jobDetail").find(".loading");
-            jobDetailLoading.show();
-
-            const data = await uCSData.getPreBookDetail(prebookJobId);
-            $scope.currentJob = data;
-            await jdSvc.setJob($scope.currentJob);
-            jobDetailLoading.hide();
-            $scope.currentSelection = " for Job " + data.jobNo;
-
-            // Update map with just this job
-            if ($scope.currentJob.pickupAddress?.latitude && $scope.currentJob.pickupAddress?.longitude) {
-                $scope.mapCenter = {
-                    lat: $scope.currentJob.pickupAddress.latitude,
-                    lng: $scope.currentJob.pickupAddress.longitude
-                };
-                $scope.jobs = [$scope.currentJob];
-            }
-
-            console.log($scope.currentJob.days);
-
-            // Process frequency
-            const freq = $scope.currentJob.days.slice(8, 9).trim() || "0";
-            console.log(freq);
-            jdSvc.combos.frequency = [jdSvc.pickFrequency[freq]];
-            console.log(jdSvc.combos.frequency);
-
-            // Process holidays
-            const hol = $scope.currentJob.days.slice(9, 10).trim() || "0";
-            console.log(hol);
-            jdSvc.combos.holidays = [jdSvc.pickHolidays[hol]];
-            console.log(jdSvc.combos.holidays);
-
-            // Process selected days
-            const days = $scope.currentJob.days.slice(0, 7);
-            const selectedDays = days.split('').reduce((acc, day, index) => {
-                if (day === '1') {
-                    acc.push(jdSvc.pickDays[index]);
-                }
-                return acc;
-            }, []);
-            console.log(selectedDays);
-            jdSvc.combos.days = selectedDays;
-
-            $scope.scanPromise = uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo);
-            $scope.scanList = await $scope.scanPromise;
-
-            if (!$scope.$$phase) {
-                $scope.$apply();
-            }
-        } catch (error) {
-            console.error('Error in selectPreBookDetail:', error);
-        }
-    };
-
     $scope.selectBulkJobDetail = async (bulkJobId) => {
         try {
             console.log("select Bulk Job  " + bulkJobId);
@@ -1037,16 +955,6 @@ function CSControl($scope, jdSvc, uCSData, $state, $filter, $mdDialog, greetingS
     };
 
     /**
-     * @param {number} page
-     * @param {number} limit
-     */
-    $scope.preBookPageChanged = async (page, limit) => {
-        $scope.preBookQuery.page = page;
-        $scope.preBookQuery.limit = limit;
-        await $scope.refreshPreBookData();
-    };
-
-    /**
      * @param {number} index
      */
     $scope.changeBulkPageSize = async (index) => {
@@ -1060,7 +968,6 @@ function CSControl($scope, jdSvc, uCSData, $state, $filter, $mdDialog, greetingS
      */
     $scope.pbPageChanged = async (index) => {
         $scope.pbPageIndex = index;
-        await $scope.refreshPreBookData();
     };
 
     /**
@@ -1069,7 +976,6 @@ function CSControl($scope, jdSvc, uCSData, $state, $filter, $mdDialog, greetingS
     $scope.changePBPageSize = async (index) => {
         $scope.pbPageIndex = index;
         $scope.pbPageSizeSelected = index;
-        await $scope.refreshPreBookData();
     };
 
     /**

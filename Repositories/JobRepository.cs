@@ -1957,7 +1957,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
     public async Task UpdateJobAsync(
         int jobId,
-        string field,
+        JobProperty field,
         string value
     )
     {
@@ -1973,6 +1973,34 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
             // Job will be archived
             await UpdateTucJobArchive(jobId, field, value);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An error occured updating Job {jobId}", jobId);
+            throw;
+        }
+    }
+
+    public async Task UpdateJobAsync(
+        int jobId,
+        string field,
+        string value
+    )
+    {
+        try
+        {
+            // Try to parse the string field to JobProperty enum
+            if (Enum.TryParse(field, out JobProperty jobProperty))
+            {
+                // Call the enum-based method
+                await UpdateJobAsync(jobId, jobProperty, value);
+            }
+            else
+            {
+                // Handle invalid field name
+                Log.Warning("Invalid job property name: {field}", field);
+                throw new ArgumentException($"Invalid job property name: {field}", nameof(field));
+            }
         }
         catch (Exception e)
         {

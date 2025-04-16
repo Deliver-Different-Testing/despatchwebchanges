@@ -1881,7 +1881,7 @@ public class JobController(
     [HttpPost]
     public async Task<IActionResult> UpdateJob(
         int jobId,
-        string field,
+        JobProperty field,
         string value
     )
     {
@@ -1896,6 +1896,7 @@ public class JobController(
                 e,
                 $"An error occured updating field {field} with value {value} for job {jobId}"
             );
+
             return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }

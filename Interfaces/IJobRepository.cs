@@ -259,6 +259,12 @@ public interface IJobRepository
 
     Task UpdateJobAsync(
         int jobId,
+        JobProperty field,
+        string value
+    );
+
+    Task UpdateJobAsync(
+        int jobId,
         string field,
         string value
     );

@@ -8,19 +8,6 @@ namespace DespatchWeb.Repositories;
 
 public partial class JobRepository
 {
-    // Old function to keep compatibility
-    private async Task UpdateTucJob(int jobId, string fieldName, string value)
-    {
-        if (Enum.TryParse<JobProperty>(fieldName, out var property))
-        {
-            await UpdateTucJob(jobId, property, value);
-        }
-        else
-        {
-            throw new ArgumentException($"Unknown job property: {fieldName}");
-        }
-    }
-
     private async Task UpdateTucJob(int jobId, JobProperty property, string value)
     {
         var job = await Context
@@ -243,6 +230,7 @@ public partial class JobRepository
                 break;
             case JobProperty.Void:
                 job.UcjbVoid = bool.Parse(value);
+                updateNote = "Job marked as void";
                 break;
             case JobProperty.TrackingMobile:
                 job.TrackingMobile = value[..Math.Min(value.Length, 100)];
@@ -293,6 +281,10 @@ public partial class JobRepository
             case JobProperty.BookedTime:
                 job.UcjbDate = DateTime.Parse(value);
                 break;
+            case JobProperty.FollowupTime:
+                job.FollowupTime = DateTime.Parse(value);
+                updateNote = $"Followup Time updated to {job.FollowupTime:dd/MM/yyyy HH:mm}";
+                break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
         }
@@ -306,18 +298,6 @@ public partial class JobRepository
 
         Context.TucJobs.Update(job);
         await Context.SaveChangesAsync();
-    }
-
-    private async Task UpdateTucJobArchive(int jobId, string field, string value)
-    {
-        if (Enum.TryParse<JobProperty>(field, out var property))
-        {
-            await UpdateTucJobArchive(jobId, property, value);
-        }
-        else
-        {
-            throw new ArgumentException($"Unknown job property: {field}");
-        }
     }
 
     private async Task UpdateTucJobArchive(int jobId, JobProperty property, string value)

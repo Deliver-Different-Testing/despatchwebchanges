@@ -46,7 +46,6 @@ export enum JobProperty {
     DeliverBy = 'DeliverBy',
     BookedTime = 'BookedTime',
     FollowupTime = 'FollowupTime',
-    DeliverToContact = 'DeliverToContact',
     StopDate = 'StopDate',
     RestartDate = 'RestartDate',
     InActiveDate = 'InActiveDate',

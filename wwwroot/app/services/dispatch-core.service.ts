@@ -516,51 +516,6 @@ class DispatchCoreService implements angular.IServiceProvider {
             jobId, field, initialValue: value, rate, preBook: isRecurring
         });
 
-        const originalValue = value;
-        let processedValue = value;
-        let processedField = field;
-
-        // Format time fields
-        if (field === JobProperty.Time || field === JobProperty.CompletedTime) {
-            const currentDate = moment().format("YYYY-MM-DD");
-            const timeValue = moment(value.toString()).format("HH:mm:ss");
-            processedValue = `${currentDate} ${timeValue}`;
-            console.log("Formatted time field:", {field, originalValue, formattedValue: processedValue});
-        }
-
-        // Format followup time
-        if (field === JobProperty.FollowupTime) {
-            const dateValue = moment(value.toString()).format("YYYY-MM-DD");
-            const timeValue = moment(value.toString()).format("HH:mm:ss");
-            processedValue = `${dateValue} ${timeValue}`;
-            console.log("Formatted followup time:", {field, originalValue, formattedValue: processedValue});
-        }
-
-        // Format date fields
-        const dateFields: JobProperty[] = [
-            JobProperty.Date,
-            JobProperty.DeliverBy,
-            JobProperty.PuTime,
-            JobProperty.BookedTime,
-            JobProperty.StopDate,
-            JobProperty.RestartDate,
-            JobProperty.InActiveDate,
-            JobProperty.FirstDue,
-            JobProperty.LastDone,
-            JobProperty.NextDue
-        ];
-
-        if (dateFields.includes(field)) {
-            processedValue = moment(value.toString()).format("YYYY-MM-DD");
-            console.log("Formatted date field:", {field, originalValue, formattedValue: processedValue});
-        }
-
-        // Handle field rename
-        if (field === JobProperty.DeliverToContact) {
-            processedField = JobProperty.ToContactName;
-            console.log("Renamed field:", {oldField: field, newField: processedField});
-        }
-
         // Format rate
         const processedRate = typeof rate === "string" ? rate.replace(/[$]/g, "") : rate;
         if (typeof rate === "string") {
@@ -569,11 +524,10 @@ class DispatchCoreService implements angular.IServiceProvider {
 
         const method: string = isRecurring ? "job/UpdateRecurringJob" : "job/UpdateJob";
 
-        // Create URL parameters with proper encoding
         const params = new URLSearchParams({
             jobId: String(jobId),
-            field: String(processedField),
-            value: String(processedValue ?? '')
+            field: String(field),
+            value: String(value ?? '')
         });
 
         const url = `${method}?${params.toString()}`;
@@ -587,7 +541,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         } catch (error) {
             console.error("API request failed:", {
                 error: error instanceof Error ? error.message : 'Unknown error',
-                parameters: {jobId, field: processedField, value: processedValue, rate: processedRate}
+                parameters: {jobId, field: field, value: value, rate: processedRate}
             });
             throw error;
         }
