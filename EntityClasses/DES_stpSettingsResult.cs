@@ -226,5 +226,14 @@ namespace DespatchWeb.EntityClasses
         [StringLength(200)]
         public string StatementSubject { get; set; }
         public DateTime? CourierServiceProcessed { get; set; }
+        [StringLength(100)]
+        public string InvoiceMemo { get; set; }
+        public int? PaymentTermId { get; set; }
+        public bool? InvoiceUseCalendarMonth { get; set; }
+        [StringLength(50)]
+        public string PpdItemCode { get; set; }
+        public double? DefaultCourierPercentage { get; set; }
+        [Column("DefaultCourierWithholdingTaxPercentage", TypeName = "decimal(8,2)")]
+        public decimal? DefaultCourierWithholdingTaxPercentage { get; set; }
     }
 }

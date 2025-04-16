@@ -205,12 +205,12 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getJobDetail(jobId: number) {
-        const response = await this.$http.get<IJob>(`/Job/Detail?jobId=${jobId}`);
+        const response = await this.$http.get<IJob>(`job/Detail?jobId=${jobId}`);
         return response.data;
     }
 
   async getRecurringJobDetail(jobId: number) {
-        const response = await this.$http.get<IJob>(`/Job/RecurringJobDetail?jobId=${jobId}`);
+        const response = await this.$http.get<IJob>(`job/RecurringJobDetail?jobId=${jobId}`);
         return response.data;
     }
 

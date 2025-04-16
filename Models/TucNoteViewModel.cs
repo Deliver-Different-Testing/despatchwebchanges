@@ -29,17 +29,6 @@ namespace DespatchWeb.Models;
         public int? UpdatedBy { get; set; }
         public string UpdatedByName { get; set; }
 
-        public string NoteTextSummary
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(NoteText))
-                    return string.Empty;
-
-                return NoteText.Length <= 100 ? NoteText : string.Concat(NoteText.AsSpan(0, 97), "...");
-            }
-        }
-
         public TucNoteViewModel() { }
 
         public TucNoteViewModel(TucNote note)

@@ -281,7 +281,6 @@
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="wwwroot\app\components\base-controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\common\dfrnt-loader\dfrnt-loader.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\no-data\no-data.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\pod-photo-viewer\pod-photo-viewer.interfaces.ts" />
@@ -353,6 +352,7 @@
     <TypeScriptCompile Include="wwwroot\app\enums\days-of-week.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\event-type.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\frequency.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\holiday-delivery-options.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\job-note-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\job-property.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\job-status.enum.ts" />

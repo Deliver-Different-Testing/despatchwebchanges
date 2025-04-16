@@ -561,6 +561,12 @@ public partial class TucClient
 
     public int? InvoiceTemplateId { get; set; }
 
+    public string InvoiceMemo { get; set; }
+
+    public int? PaymentTermId { get; set; }
+
+    public string PurchaseOrderNumber { get; set; }
+
     public virtual ICollection<TblBulkRunSchedule> TblBulkRunSchedules { get; set; } = new List<TblBulkRunSchedule>();
 
     public virtual ICollection<TblClientAvailableSpeed> TblClientAvailableSpeeds { get; set; } = new List<TblClientAvailableSpeed>();

@@ -17,6 +17,8 @@ public class JobRecurringViewModel : JobViewModel
     public DaysOfWeek DaysOfWeek { get; set; }
     public Frequency Frequency { get; set; }
 
+    public HolidayDeliveryOptions HolidayDeliveryOption { get; set; }
+
     public string DaysDisplay => DaysOfWeek.ToDisplayString();
     public string FrequencyDisplay => Frequency.ToDisplayString();
 

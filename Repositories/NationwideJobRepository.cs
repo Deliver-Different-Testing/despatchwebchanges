@@ -314,4 +314,19 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
         return airlines;
     }
+
+    /*public async Task SendAgentRequestMessageAsync(int agentId, int jobId, string message)
+    {
+        // Get the template here?
+
+        var request = new TucManualMessage
+        {
+            JobId = jobId,
+            Read = false,
+
+        };
+
+            Context.TucManualMessages.Add(request);
+            await Context.SaveChangesAsync();
+    }*/
 }

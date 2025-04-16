@@ -33,7 +33,7 @@ public partial class UvwBookingToday
 
     public int? UcbkClientId { get; set; }
 
-    public double? UcbkType { get; set; }
+    public int? UcbkType { get; set; }
 
     public string Code { get; set; }
 }

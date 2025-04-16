@@ -1,14 +1,15 @@
 import GreetingService from "../../services/greeting.service";
 import {AppConfig} from "../../interfaces/app-config.interface";
-import {IJob} from "../../interfaces/job.interface";
+import {IJob, JobQueryParams} from "../../interfaces/job.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import {ClientInternal, ContactID} from "../../contants";
 import RecurringJobsService from "./recurringJobs.service";
+import {IRecurringJobQuery} from "./recurringJobs.interface";
+import ToastrService from "../../services/toastr.service";
 
 class RecurringJobsController extends BaseController {
     static $inject = [
-        '$document',
         'greetingService',
         '$mdDialog',
         '$scope',
@@ -17,6 +18,7 @@ class RecurringJobsController extends BaseController {
         '$timeout',
         '$mdSidenav',
         'uPBData',
+        'toastrService',
         'APP_CONFIG'
     ];
 
@@ -71,7 +73,7 @@ class RecurringJobsController extends BaseController {
     currentJobId?: number;
     jobs: IJob[] = [];
     isAdmin: boolean = false;
-    jobQuery: { order: string; limit: number; page: number } = {
+    jobQuery: IRecurringJobQuery = {
         order: "booked",
         limit: 50,
         page: 1
@@ -83,35 +85,17 @@ class RecurringJobsController extends BaseController {
     pagedData: IJob[] = [];
     searchText: string = "";
     promise: angular.IPromise<any> | null = null;
-    currentJob?: IJob;
     currentSelection?: string;
     showInput: Record<string, boolean> = {};
     jobRecordSearchText: string = "";
-    selectedJobRecord: any;
     cancelledSelected?: boolean;
     layouts: ILayout[] = [];
+    defaultLayout?: ILayout;
     layout?: { columns: IColumn[] };
     sort: Record<string, string> = {};
     currentLayoutName?: string;
-    boxSortableOptions: {
-        handle: string;
-        connectWith: string;
-        placeholder: string;
-        tolerance: string;
-        cursor: string;
-        opacity: number;
-        scroll: boolean;
-        revert: number;
-        delay: number;
-        forcePlaceholderSize: boolean;
-        start: (e: JQueryEventObject, ui: any) => void;
-        over: (e: JQueryEventObject, ui: any) => void;
-        out: (e: JQueryEventObject, ui: any) => void;
-        stop: (e: JQueryEventObject, ui: any) => void
-    };
 
     constructor(
-        private $document: angular.IDocumentService,
         private greetingService: GreetingService,
         private $mdDialog: angular.material.IDialogService,
         private $scope: angular.IScope,
@@ -120,68 +104,19 @@ class RecurringJobsController extends BaseController {
         private $timeout: angular.ITimeoutService,
         private $mdSidenav: angular.material.ISidenavService,
         private uPBData: RecurringJobsService,
+        private toastrService: ToastrService,
         APP_CONFIG: AppConfig,
     ) {
         super();
 
         this.isUsCustomer = APP_CONFIG.US_Customer;
         this.isAdmin = ClientInternal;
-        // Initialize layouts
+
+        this.$scope.$on('jobChanged', (_, newLabel) => {
+            this.currentSelection = newLabel;
+        });
+
         this._initializeLayout();
-
-        this.boxSortableOptions = {
-            handle: '.box-handle',
-            connectWith: '.column-sortable',
-            placeholder: 'box-placeholder',
-            tolerance: 'pointer',
-            cursor: 'move',
-            opacity: 0.8,
-            scroll: true,
-            revert: 200,
-            delay: 150,
-            forcePlaceholderSize: true,
-
-            start: (e: JQueryEventObject, ui: any) => {
-                ui.item.addClass('dragging');
-
-                const dragInfo = angular.element('#draggingItems');
-                dragInfo.html(`Moving: ${ui.item.find('.md-headline-title').text().trim()}`);
-                dragInfo.css({
-                    display: 'block',
-                    top: e.pageY + 20 + 'px',
-                    left: e.pageX + 10 + 'px'
-                });
-
-                this.$document.on('mousemove.sortable', (event) => {
-                    dragInfo.css({
-                        top: event.pageY + 20 + 'px',
-                        left: event.pageX + 10 + 'px'
-                    });
-                });
-            },
-
-            over: (e: JQueryEventObject, _: any) => {
-                angular.element(e.target).addClass('ui-sortable-active');
-            },
-
-            out: (e: JQueryEventObject, _: any) => {
-                angular.element(e.target).removeClass('ui-sortable-active');
-            },
-
-            // When drag operation stops
-            stop: (_: JQueryEventObject, ui: any) => {
-                angular.element(this.$document[0]).off('mousemove.sortable');
-                angular.element('#draggingItems').css('display', 'none');
-                ui.item.removeClass('dragging');
-                angular.element('.column-sortable').removeClass('ui-sortable-active');
-
-                // Update box metrics and save layout
-                this.$timeout(() => {
-                    this._updateBoxMetrics();
-                    this._saveCurrentLayout();
-                }, 100);
-            }
-        }
     }
 
     $onInit(): void {
@@ -195,69 +130,107 @@ class RecurringJobsController extends BaseController {
         this.refreshData().then(() => console.log("Data Refreshed"));
     }
 
-    private _updateBoxMetrics() {
-        if (!this.layout || !this.layout.columns) return;
+    saveLayout() {
+        this.$mdDialog
+            .show(this.$mdDialog
+                .prompt()
+                .title("Save Layout")
+                .textContent("Please enter a name for this layout.")
+                .required(true)
+                .ok("Save")
+                .cancel("Cancel"))
+            .then((name) => {
+                if (!name) return;
 
-        this.layout.columns.forEach((column: IColumn) => {
-            // Get column width from DOM
-            const columnEl = angular.element(`#co-${column.id}`);
-            if (columnEl.length) {
-                column.width = columnEl.css('flex-basis');
+                const currentLayout: ILayout = {
+                    name: name,
+                    layout: {
+                        columns: this.layout?.columns?.map((col: IColumn) => ({
+                            ...col,
+                            width: angular.element(`#co-${col.id}`).css("flex-basis"),
+                            boxes: col.boxes.map((box: IBox) => ({
+                                ...box, height: angular
+                                    .element(`#box-${box.name}`)
+                                    .css("flex-basis"),
+                            })),
+                        })) || [],
+                    },
+                };
 
-                // Update heights for all boxes in this column
-                column.boxes.forEach((box: IBox) => {
-                    const boxEl = angular.element(`#box-${box.name}`);
-                    if (boxEl.length) {
-                        box.height = boxEl.css('flex-basis');
-                    }
-                });
-            }
-        });
+                this.layouts.push(currentLayout);
+
+                if (Modernizr.localstorage) {
+                    localStorage.setItem(`layouts-recurring-${ContactID}`, JSON.stringify(this.layouts));
+                    localStorage.setItem(`lastActiveLayout-recurring-${ContactID}`, name);
+                }
+            });
     }
 
-    private _saveCurrentLayout() {
-        if (!this.currentLayoutName || this.currentLayoutName === 'Default') {
-            return;
-        }
+    deleteLayout(index: number) {
+        if (index === 0) return; // Prevent deleting default layout
 
-        this._updateBoxMetrics();
-
-        const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
-        if (index !== -1) {
-            if (this.layout) {
-                this.layouts[index].layout = angular.copy(this.layout);
-            }
-
-            if (Modernizr.localstorage) {
-                localStorage.setItem(`layouts-${ContactID}`, JSON.stringify(this.layouts));
-            }
-        }
+        this.$mdDialog
+            .show(this.$mdDialog
+                .confirm()
+                .title("Delete Layout?")
+                .textContent("Are you sure you want to delete this layout?")
+                .ok("Delete")
+                .cancel("Cancel"))
+            .then(() => {
+                this.layouts.splice(index, 1);
+                if (Modernizr.localstorage) {
+                    localStorage.setItem(`layouts-${ContactID}`, JSON.stringify(this.layouts));
+                }
+                this.loadLayout(0);
+                this.toastrService.showSuccessToast("Layout deleted successfully");
+            });
     }
 
     private _initializeLayout(): void {
-        this.layouts = [{
+        this.layouts = []
+
+            this.defaultLayout = {
             name: "Default",
             layout: {
                 columns: [
                     {
                         id: "col1",
-                        width: "65%",
+                        width: "55%",
                         boxes: [{
                             name: "jobList"
                         }]
                     },
                     {
                         id: "col2",
-                        width: "35%",
+                        width: "45%",
                         boxes: [{
                             name: "jobDetail",
                         }]
                     }
-                ]
-            }
-        }];
+                ],
+            },
+            };
 
-        this.layout = angular.copy(this.layouts[0].layout);
+        // Load saved layouts or use default
+        if (Modernizr.localstorage) {
+            try {
+                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(`layouts-recurring-${ContactID}`) || '[]');
+                const lastActiveLayout = localStorage.getItem(`lastActiveLayout-recurring-${ContactID}`);
+
+                this.layouts = storedLayouts || [this.defaultLayout];
+                this.layouts[0] = this.defaultLayout; // Ensure default is always up-to-date
+
+                // Load last active layout or default
+                const layoutToLoad = lastActiveLayout ? this.layouts.findIndex((l: ILayout) => l.name === lastActiveLayout) : 0;
+                this.loadLayout(layoutToLoad >= 0 ? layoutToLoad : 0);
+            } catch (error: any) {
+                this.layouts = [this.defaultLayout];
+                this.loadLayout(0);
+            }
+        } else {
+            this.layouts = [this.defaultLayout];
+            this.loadLayout(0);
+        }
     }
 
     greetUser(): string {
@@ -294,7 +267,6 @@ class RecurringJobsController extends BaseController {
 
         if (!this.showInput[boxID]) {
             this.jobRecordSearchText = "";
-            this.selectedJobRecord = null;
         }
     }
 
@@ -317,8 +289,37 @@ class RecurringJobsController extends BaseController {
         return this.selectJobDetail(selectedJobId);
     }
 
-    loadLayout(index: number): void {
-        this.layout = angular.copy(this.layouts[index].layout);
+    loadLayout(index: number) {
+        const layout: ILayout = this.layouts[index] || this.layouts[0];
+        this.currentLayoutName = layout.name;
+        this.layout = angular.copy(layout.layout);
+
+        // Apply dimensions on next digest cycle
+        this.$timeout(() => {
+            this._applyLayoutDimensions();
+
+            if (Modernizr.localstorage) {
+                localStorage.setItem(`lastActiveLayout-recurring-${ContactID}`, layout.name);
+            }
+        });
+    }
+
+    private _applyLayoutDimensions() {
+        if (!this.layout || !this.layout.columns) return;
+
+        this.layout.columns.forEach((column: IColumn) => {
+            const columnEl = angular.element(`#co-${column.id}`);
+            if (columnEl.length) {
+                columnEl.css('flex-basis', column.width);
+
+                column.boxes.forEach((box: IBox) => {
+                    const boxEl = angular.element(`#box-${box.name}`);
+                    if (boxEl.length) {
+                        boxEl.css('flex-basis', box.height || 'auto');
+                    }
+                });
+            }
+        });
     }
 
     goToRunViewer(): void {
@@ -411,7 +412,6 @@ class RecurringJobsController extends BaseController {
 
             await Promise.all(voidJobs);
 
-            this.currentJob = undefined;
             await this.refreshData();
 
             // Optionally, show a success message
@@ -422,7 +422,7 @@ class RecurringJobsController extends BaseController {
                     .ok("OK")
             );
         } catch (error) {
-            if (error === undefined) {
+            if (!error) {
                 console.log("User Canceled");
             } else {
                 console.log("Error voiding prebook jobs:", error);
@@ -456,7 +456,6 @@ class RecurringJobsController extends BaseController {
             // User clicked 'Yes'
             await this.uPBData.voidPrebookJob(jobId, FirstName, ContactID);
 
-            this.currentJob = undefined;
             await this.refreshData();
 
             // Show a success message
@@ -504,7 +503,6 @@ class RecurringJobsController extends BaseController {
             const sendJobs = jobIds.map(jobId => this.uPBData.sendPrebookJob(jobId));
             await Promise.all(sendJobs);
 
-            this.currentJob = undefined;
             await this.refreshData();
 
             // Show a success message
@@ -548,7 +546,6 @@ class RecurringJobsController extends BaseController {
             // User clicked 'Yes'
             await this.uPBData.sendPrebookJob(jobId);
 
-            this.currentJob = undefined;
             await this.refreshData();
 
             // Show a success message

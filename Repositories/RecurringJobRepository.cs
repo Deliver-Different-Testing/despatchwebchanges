@@ -376,13 +376,18 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
                     var frequencyEnum = (Frequency)job.UcbkFrequency;
                     updateNote = $"Frequency of recurring job set to: {frequencyEnum.ToDisplayString()}";
                     break;
+                case JobProperty.HolidayDelivery:
+                    job.HolidayDeliveryOption = int.Parse(value);
+                    var holidayEnum = (HolidayDeliveryOptions)job.HolidayDeliveryOption;
+                    updateNote = $"Holiday Delivery Option set to: {holidayEnum.ToDisplayString()}";
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(property), property, null);
             }
 
             Context.TucJobBookings.Update(job);
             await Context.SaveChangesAsync();
-            
+
             if (!string.IsNullOrEmpty(updateNote))
                 await SaveNoteAsync(jobId, updateNote, false, true);
         }
@@ -398,5 +403,4 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
                 .Select(x => new TucNoteViewModel(x))
                 .ToListAsync();
         }
-
 }

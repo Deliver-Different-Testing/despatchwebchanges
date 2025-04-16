@@ -54,5 +54,6 @@ export enum JobProperty {
     LastDone = 'LastDone',
     NextDue = 'NextDue',
     DaysOfWeek = 'DaysOfWeek',
-    Frequency = 'Frequency'
+    Frequency = 'Frequency',
+    HolidayDelivery = 'HolidayDelivery'
 }

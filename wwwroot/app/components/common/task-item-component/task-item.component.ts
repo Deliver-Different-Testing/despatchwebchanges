@@ -7,14 +7,17 @@ import {IDialogDateTimeResult, ISelectDialogResult} from "../../../interfaces/di
 import {ITaskListItemConfig} from "./task-item.interfaces";
 import ToastrService from "../../../services/toastr.service";
 import "./task-item.styles.less";
+import {AppConfig} from "../../../interfaces/app-config.interface";
 
 export class TaskListItemController extends BaseController {
+    readonly isUsCustomer: boolean = false;
     static $inject = [
         'selectDialogService',
         'editDateTimeDialogService',
         'toastrService',
         'DispatchData',
-        '$http'
+        '$http',
+        'APP_CONFIG'
     ];
 
     task?: ExtendedTask;
@@ -28,9 +31,12 @@ export class TaskListItemController extends BaseController {
         private editDateTimeDialogService: EditDateTimeDialogService,
         private toastrService: ToastrService,
         private DispatchService: DispatchCoreService,
-        private $http: angular.IHttpService
+        private $http: angular.IHttpService,
+        AppConfig: AppConfig
     ) {
         super();
+
+        this.isUsCustomer = AppConfig.US_Customer;
 
         // Default configuration
         this.config = {

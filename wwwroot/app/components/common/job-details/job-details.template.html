@@ -612,7 +612,8 @@
                                         </div>
                                         <div class="value">
                                             <md-select ng-model="ctrl.job.frequency" aria-label="Frequency"
-                                                       ng-change="ctrl.updateFrequency(ctrl.job)">                                                <md-option ng-value="0">None</md-option>
+                                                       ng-change="ctrl.updateFrequency(ctrl.job)">
+                                                <md-option ng-value="0">None</md-option>
                                                 <md-option ng-value="1">Weekly</md-option>
                                                 <md-option ng-value="2">Fortnightly</md-option>
                                                 <md-option ng-value="4">First of the Month</md-option>
@@ -628,16 +629,16 @@
                                 <md-divider></md-divider>
 
                                 <md-list-item class="info-row">
-                                    <md-icon md-font-set="material-symbols-outlined" aria-label="schedule name">celebration
-                                    </md-icon>
+                                    <md-icon md-font-set="material-symbols-outlined" aria-label="schedule name">celebration</md-icon>
                                     <div class="info-detail">
                                         <div class="left-content">
                                             <span class="label">Holidays:</span>
                                         </div>
                                         <div class="value">
-                                            <md-select ng-model="ctrl.job.holidays" aria-label="Holidays" disabled>
+                                            <md-select ng-model="ctrl.job.holidayDeliveryOption" aria-label="Holiday Delivery Options"
+                                                       ng-change="ctrl.updateHolidayDeliveryOption(ctrl.job)">
                                                 <md-option ng-value="0">Don't Book</md-option>
-                                                <md-option ng-value="1">Next Business Day</md-option>
+                                                <md-option ng-value="1">Deliver Next Day</md-option>
                                             </md-select>
                                         </div>
                                     </div>
