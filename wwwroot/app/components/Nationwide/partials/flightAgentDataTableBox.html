@@ -54,25 +54,25 @@
     <!-- Flight List -->
     <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading && ctrl.flightOptions.length > 0">
         <md-table-container>
-            <div class="md-table-footer-content">
-                <div flex></div>
+            <!-- Airline Filter Chips -->
+            <div class="airline-filter-container">
+                <!-- All Airlines Filter Chip -->
+                <md-button class="md-button airline-chip total" ng-click="ctrl.filterFlightsByAirline(null)"
+                           aria-label="Filter all airlines">
+                    <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
+                    <span class="airline-count">{{ctrl.flightOptions.length || 0}}</span>
+                    <span class="airline-label">All</span>
+                </md-button>
 
-                <div class="airline-filter-summary" ng-if="ctrl.flightList && ctrl.flightList.length > 0">
-                    <md-button class="md-button airline-chip total" ng-click="ctrl.filterFlightsByAirline(null)">
-                        <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
-                        <span>{{ctrl.flightOptions.length || 0}}</span>
-                        <span class="airline-label">All Airlines</span>
-                    </md-button>
-
-                    <!-- Loop through all available airlines -->
-                    <md-button ng-repeat="airline in ctrl.activeAirlineOptions"
-                               class="md-button airline-chip {{airline.text | lowercase}}"
-                               ng-click="ctrl.filterFlightsByAirline(airline.id)">
-                        <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
-                        <span>{{ctrl.getFlightCountByAirline(airline.id)}}</span>
-                        <span class="airline-label">{{airline.text}}</span>
-                    </md-button>
-                </div>
+                <!-- Individual Airline Filter Chips -->
+                <md-button ng-repeat="airline in ctrl.activeAirlineOptions"
+                           class="md-button airline-chip {{airline.text | lowercase}}"
+                           ng-click="ctrl.filterFlightsByAirline(airline.id)"
+                           aria-label="Filter by {{airline.text}}">
+                    <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
+                    <span class="airline-count">{{ctrl.getFlightCountByAirline(airline.id)}}</span>
+                    <span class="airline-label">{{airline.text}}</span>
+                </md-button>
             </div>
 
             <md-divider></md-divider>
@@ -97,7 +97,9 @@
                 <tr md-row
                     md-dense
                     ng-repeat="flight in ctrl.flightOptions | filter: box.searchBox | orderBy: ctrl.flightTableQuery.order">
-                    <td md-cell>{{flight.airline}}</td>
+                    <td md-cell>
+                        <span class="airline-code {{flight.airline | lowercase}}">{{flight.airline}}</span>
+                    </td>
                     <td md-cell>{{flight.flightNumber}}</td>
                     <td md-cell>{{flight.departureTime | date: "MM/dd/yyyy"}}</td>
                     <td md-cell>{{flight.departureTime | date: "HH:mm"}}</td>
@@ -118,7 +120,7 @@
         </md-table-container>
 
         <!-- Flight Table Footer Actions -->
-        <div class="table-footer-actions" layout="row" layout-align="end center" layout-padding>
+        <div class="table-footer-actions md-padding" layout="row" layout-align="end center">
             <md-button class="md-raised md-primary" ng-click="ctrl.loadNextFlights()">
                 Load More Flights
             </md-button>

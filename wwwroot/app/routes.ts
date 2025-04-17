@@ -45,9 +45,7 @@ class RouterConfig {
     private configureCSState(): this {
         this.$stateProvider.state("cs", {
             url: "/CS",
-            template: require("./components/CS/csView.html"),
-            controller: "CSControl",
-            reloadOnSearch: false
+            component: "jobSearchComponent",
         });
         return this;
     }

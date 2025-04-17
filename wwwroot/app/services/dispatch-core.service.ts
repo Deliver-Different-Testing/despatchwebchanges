@@ -39,9 +39,9 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     constructor(
         private $http: angular.IHttpService,
-        appConfig: AppConfig
+        private appConfig: AppConfig
     ) {
-        this.isUsCustomer = appConfig.US_Customer;
+        this.isUsCustomer = this.appConfig.US_Customer;
         bindAllMethods(this);
     }
 
@@ -331,10 +331,37 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
     }
 
-    async rateJob(clientId: number, fromId: number, toId: number, speed: number, pedal: boolean, van: boolean, returnJob: boolean, weight: number, size: number, includeFuelSurcharge: boolean, direct: boolean, acceptedJobTypeId: number, ourRef: string, refA: string, refB: string, quantity: number, booked: Date) {
-        const response = await this.$http.get(`job/RateJob?clientId=${clientId}&fromId=${fromId}&toId=${toId}&speed=${speed}&pedal=${pedal}&van=${van}&returnJob=${returnJob}&weight=${weight}&size=${size
-        }&includeFuelSurcharge=${includeFuelSurcharge}&direct=${direct}&acceptedJobTypeId=${acceptedJobTypeId}&ourRef=${ourRef}&refA=${refA}&refB=${refB}&quantity=${quantity
-        }&booked=${booked}`);
+    async rateJob(
+        clientId: number,
+        fromId: number,
+        toId: number,
+        speed: number,
+        pedal: boolean,
+        van: boolean,
+        returnJob: boolean,
+        weight: number,
+        size: number,
+        includeFuelSurcharge: boolean,
+        direct: boolean,
+        acceptedJobTypeId: number,
+        ourRef: string,
+        refA: string,
+        refB: string,
+        quantity: number,
+        booked: Date
+    ) {
+        const bookedIso = moment(booked).format(this.appConfig.Time_Format);
+
+        const response = await this.$http.get(
+            `job/RateJob?clientId=${clientId}&fromId=${fromId}&toId=${toId}` +
+            `&speed=${speed}&pedal=${pedal}&van=${van}&returnJob=${returnJob}` +
+            `&weight=${weight}&size=${size}&includeFuelSurcharge=${includeFuelSurcharge}` +
+            `&direct=${direct}&acceptedJobTypeId=${acceptedJobTypeId}` +
+            `&ourRef=${encodeURIComponent(ourRef)}&refA=${encodeURIComponent(refA)}` +
+            `&refB=${encodeURIComponent(refB)}&quantity=${quantity}` +
+            `&booked=${encodeURIComponent(bookedIso)}`
+        );
+
         return response.data;
     }
 
@@ -343,7 +370,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             return Object.entries(params)
                 .map(([key, value]) => {
                     if (value instanceof Date) {
-                        value = value.toISOString();
+                        value = moment(value).format(this.appConfig.Time_Format);
                     }
                     // Handle boolean values
                     if (typeof value === 'boolean') {
@@ -390,9 +417,18 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async updatePODDetail(jobId: number, jobStatus: number, podName: string, podTime: Date) {
-        console.log(`[DispatchCoreService] Updating POD details - Job: ${jobId}, Status: ${jobStatus}, POD Name: ${podName}, POD Time: ${podTime.toString()}`);
+        const podTimeIso = moment(podTime).format(this.appConfig.Time_Format);
+        console.log(`[DispatchCoreService] Updating POD details - Job: ${jobId}, Status: ${jobStatus}, POD Name: ${podName}, POD Time: ${podTimeIso}`);
+
         try {
-            await this.$http.post(`job/UpdatePODDetails?jobId=${jobId}&jobStatus=${jobStatus}&podName=${podName}&podTime=${podTime.toString()}`, null);
+            await this.$http.post(
+                `job/UpdatePODDetails?jobId=${jobId}` +
+                `&jobStatus=${jobStatus}` +
+                `&podName=${encodeURIComponent(podName)}` +
+                `&podTime=${encodeURIComponent(podTimeIso)}`,
+                null
+            );
+
             console.log(`[DispatchCoreService] Successfully updated POD details for job ${jobId}`);
         } catch (error) {
             console.error(`[DispatchCoreService] Error updating POD details for job ${jobId}:`, error);
@@ -455,11 +491,6 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
     }
 
-    async updateBulkDeliveryAddress(bulkJobId: number, toSuburb: number, toPostCode: string | number, address: string, lat: number, lng: number, despatcherName: string) {
-        await this.$http.post(`job/UpdateBulkDeliveryAddress?bulkJobId=${bulkJobId}&toSuburb=${toSuburb}&toPostCode=${toPostCode}&address=${address}&deliveryLat=${lat}&deliveryLng=${
-            lng}&despatcherName=${despatcherName}`, null);
-    }
-
     async updatePickupAddress(jobId: number, rate: number, despatcherName: string, prebook: boolean, addressData: AddressViewModel) {
         try {
             let endpoint = prebook ? "job/UpdateBookingPickupAddress" : "job/UpdatePickupAddress";
@@ -501,8 +532,13 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async releaseBulkJob(jobNumber: string, bookDate: Date) {
-        const formattedBookDate = moment(bookDate).format("YYYY-MM-DD");
-        await this.$http.post(`job/ReleaseBulkJob?jobNumber=${jobNumber}&bookDate=${formattedBookDate}`, null);
+        const bookDateIso = moment(bookDate).format(this.appConfig.Time_Format);
+
+        await this.$http.post(
+            `job/ReleaseBulkJob?jobNumber=${encodeURIComponent(jobNumber)}` +
+            `&bookDate=${encodeURIComponent(bookDateIso)}`,
+            null
+        );
     }
 
     async updateJobDetail(
@@ -520,6 +556,10 @@ class DispatchCoreService implements angular.IServiceProvider {
         const processedRate = typeof rate === "string" ? rate.replace(/[$]/g, "") : rate;
         if (typeof rate === "string") {
             console.log("Formatted rate:", {originalRate: rate, formattedRate: processedRate});
+        }
+
+        if(value instanceof Date) {
+            value = moment(value).format(this.appConfig.Time_Format);
         }
 
         const method: string = isRecurring ? "job/UpdateRecurringJob" : "job/UpdateJob";
@@ -548,13 +588,46 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async updateBulkJobDetail(bulkJobId: number, field: string, value: string | number | Date, rate: number | string, despatcherName: string, staffId: number) {
+        // Handle time fields
         if (field === "Time" || field === "CompletedTime") {
-            value = moment().format("YYYY-MM-DD") + " " + moment(value).format("HH:mm:ss");
+            if (value instanceof Date) {
+                // Format as YYYY-MM-DD HH:mm:ss using current date and time from value
+                const today = new Date();
+                const timeDate = value as Date;
+
+                // Create a new date with today's date and the time from the value
+                const combined = new Date(
+                    today.getFullYear(),
+                    today.getMonth(),
+                    today.getDate(),
+                    timeDate.getHours(),
+                    timeDate.getMinutes(),
+                    timeDate.getSeconds()
+                );
+
+                // Format to YYYY-MM-DD HH:mm:ss
+                value = combined.toISOString().split('T')[0] + ' ' +
+                    moment(combined).format(this.appConfig.Time_Format);
+            }
         }
-        if (field === "Date" || field === "StopDate" || field === "RestartDate" || field === "InActiveDate" || field === "FirstDue" || field === "LastDone" || field === "NextDue") {
-            value = moment(value).format("YYYY-MM-DD");
+
+        // Handle date fields
+        if (field === "Date" || field === "StopDate" || field === "RestartDate" || field === "InActiveDate" ||
+            field === "FirstDue" || field === "LastDone" || field === "NextDue") {
+            if (value instanceof Date) {
+                value = moment(value).format(this.appConfig.Time_Format);
+            }
         }
-        await this.$http.post(`job/UpdateBulkJob?bulkJobId=${bulkJobId}&field=${field}&value=${value}&rate=${rate}&despatcherName=${despatcherName}&staffId=${staffId}`, null);
+
+        await this.$http.post(
+            `job/UpdateBulkJob?bulkJobId=${bulkJobId}` +
+            `&field=${encodeURIComponent(field)}` +
+            `&value=${encodeURIComponent(String(value))}` +
+            `&rate=${encodeURIComponent(String(rate))}` +
+            `&despatcherName=${encodeURIComponent(despatcherName)}` +
+            `&staffId=${staffId}`,
+            null
+        );
     }
 
     async getJobsWithFilters(
@@ -568,7 +641,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         const paramObject = {
             order: String(queryParams.order ?? "time"),
             orderDirection: String(queryParams.orderDirection ?? "asc"),
-            dateCutoff: String(queryParams.dateCutoff?.toISOString() ?? new Date().toISOString()),
+            dateCutoff: String(queryParams.dateCutoff ? moment(queryParams.dateCutoff).format(this.appConfig.Time_Format) : moment().format(this.appConfig.Time_Format)),
             isInternal: String(internal),
             cid: String(ContactID),
             clientIds: selectedClients.length ? selectedClients.join(',') : ''

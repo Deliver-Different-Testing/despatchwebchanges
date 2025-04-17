@@ -46,4 +46,4 @@ import "./app";
 
 // Service imports
 import "./services";
-import "./components";
+import "./components/dialogs/index";
