@@ -63,7 +63,6 @@ class NationwideControl extends BaseController {
     totalRepriceCount: number = 0;
     jobRecordSearchText?: string;
     mapCenter?: Coordinates;
-    mapZoom: number = 4;
     currentSearchTime?: Date = new Date();
     sort: Record<string, string> = {};
     flightOptions?: IFlightViewModel[] = [];
@@ -91,8 +90,6 @@ class NationwideControl extends BaseController {
         order: 'time',
         orderDirection: 'asc',
     };
-    flightTableQuery: { order: string } = {order: 'departureTime'};
-    agentTableQuery: { order: string } = {order: 'agentName'};
     boxes?: Record<string, IBox>;
     pickService: any;
     pickClients: any;
