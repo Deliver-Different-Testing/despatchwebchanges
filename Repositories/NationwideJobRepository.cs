@@ -310,7 +310,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .Select(x => new Suggestion
             {
                 Id = x.FlightCarrierId,
-                Text = x.FlightCarrierName
+                Text = x.CarrierCode
             })
             .ToListAsync();
 

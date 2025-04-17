@@ -183,6 +183,7 @@ class NationwideControl extends BaseController {
         };
 
         this.nationwideService.getActiveAirlines().then((response) => {
+            console.log("[NationwideController] - Active Airlines:", response);
             this.activeAirlineOptions = response;
         })
     }

@@ -498,3 +498,10 @@ export interface IReadTrackerInfoViewModel {
     readBy: string;
     readDate: Date | null;
 }
+
+export interface BulkScanDetail {
+    bulkScanId: number;
+    scanDateTime: Date;
+    scanDetail: string;
+    courier: string;
+}

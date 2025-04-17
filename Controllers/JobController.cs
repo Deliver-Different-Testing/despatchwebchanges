@@ -1119,8 +1119,16 @@ public class JobController(
         DateTime podTime
     )
     {
-        await jobRepository.UpdatePodDetails(jobId, jobStatus, podName, podTime);
-        return Ok();
+        try
+        {
+            await jobRepository.UpdatePodDetails(jobId, jobStatus, podName, podTime);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     public async Task<IActionResult> ReRateSplitJob(int jobId)
@@ -2434,20 +2442,19 @@ public class JobController(
         }
     }
 
-#region Single use Api models
+    #region Single use Api models
 
-public class ClientItemsModel
-{
-    public List<int> ServiceIds { get; init; }
-    public decimal TotalCost { get; init; }
-}
+    public class ClientItemsModel
+    {
+        public List<int> ServiceIds { get; init; }
+        public decimal TotalCost { get; init; }
+    }
 
-public class UpdateJobPackagesRequest
-{
-    public int JobId { get; init; }
-    public List<ParcelDimensions> Parcels { get; init; }
-}
+    public class UpdateJobPackagesRequest
+    {
+        public int JobId { get; init; }
+        public List<ParcelDimensions> Parcels { get; init; }
+    }
 
-#endregion
-
+    #endregion
 }

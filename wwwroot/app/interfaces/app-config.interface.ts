@@ -4,4 +4,5 @@ export interface AppConfig {
     US_Customer: boolean;
     US_Coordinates_Center: Coordinates;
     NZ_Coordinates_Center: Coordinates;
+    Time_Format: string;
 }

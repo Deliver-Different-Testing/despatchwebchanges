@@ -19,6 +19,7 @@ import EditParcelDimensionsDialogService
     from "../../dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
 import {IJobReadChanged} from "../../../interfaces/event-interfaces";
 import {JobProperty} from "../../../enums/job-property.enum";
+import {DaysOfWeek} from "../../../enums/days-of-week.enum";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -288,13 +289,21 @@ class JobDetailController extends BaseController {
             console.log('Original daysOfWeek bitmap value:', this.job.daysOfWeek);
 
             const daysArray = [];
-            if (this.job.daysOfWeek && 1) daysArray.push(1);      // Monday
-            if (this.job.daysOfWeek && 2) daysArray.push(2);      // Tuesday
-            if (this.job.daysOfWeek && 4) daysArray.push(4);      // Wednesday
-            if (this.job.daysOfWeek && 8) daysArray.push(8);      // Thursday
-            if (this.job.daysOfWeek && 16) daysArray.push(16);    // Friday
-            if (this.job.daysOfWeek && 32) daysArray.push(32);    // Saturday
-            if (this.job.daysOfWeek && 64) daysArray.push(64);    // Sunday
+            const dayValues = [
+                DaysOfWeek.Monday,
+                DaysOfWeek.Tuesday,
+                DaysOfWeek.Wednesday,
+                DaysOfWeek.Thursday,
+                DaysOfWeek.Friday,
+                DaysOfWeek.Saturday,
+                DaysOfWeek.Sunday
+            ];
+
+            for (const dayValue of dayValues) {
+                if (this.job.daysOfWeek & dayValue) {
+                    daysArray.push(dayValue);
+                }
+            }
 
             console.log('Converted daysOfWeek to array:', daysArray);
 
@@ -1237,7 +1246,7 @@ class JobDetailController extends BaseController {
     }
 
     async updateFrequency(job: IJob) {
-        if (job.frequency === undefined || job.frequency === null) return;
+        if (!job.frequency) return;
 
         const frequencyValue = Number(job.frequency);
         console.log('Updating frequency to:', frequencyValue);

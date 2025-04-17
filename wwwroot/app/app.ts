@@ -86,6 +86,8 @@ import ParcelVisualizationComponent
     from "./components/dialogs/edit-parcel-dimensions-dialog/parcel-visuailzation/parcel-visualization.component";
 import RecurringJobsComponent from "./components/recurringJobs/recurringJobs.controller";
 import RecurringJobsService from "./components/recurringJobs/recurringJobs.service";
+import JobSearchService from "./components/jobSearch/jobSearch.service";
+import JobSearchComponent from "./components/jobSearch/jobSearch.controller";
 
 const app = angular.module("uDispatch", [
     "ui.router",
@@ -126,7 +128,8 @@ app
         NZ_Coordinates_Center: {
             lat: -36.8485,
             lng: 174.7633
-        }
+        },
+        Time_Format: 'YYYY-MM-DDTHH:mm:ss.SSSZ'
     } as AppConfig)
     .constant("AppPages", AppPages);
 
@@ -235,6 +238,7 @@ app.component("parcelVisualization", ParcelVisualizationComponent);
 app.component("nationwideComponent", NationwideComponent);
 app.component("stickyNote", StickyNoteComponent);
 app.component("recurringJobsComponent", RecurringJobsComponent);
+app.component("jobSearchComponent", JobSearchComponent);
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);
@@ -282,5 +286,6 @@ app.service("addEventDialogService", AddEventDialogService);
 app.service("interCourierChargeDialogService", InterCourierChargeDialogService);
 app.service("jobContextMenuService", JobContextMenuService);
 app.service("editParcelDimensionsDialogService", EditParcelDimensionsDialogService);
+app.service("uCSData", JobSearchService);
 
 export default app;
