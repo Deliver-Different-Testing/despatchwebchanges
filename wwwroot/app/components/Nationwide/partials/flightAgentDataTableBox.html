@@ -70,7 +70,7 @@
                            ng-click="ctrl.filterFlightsByAirline(airline.id)"
                            aria-label="Filter by {{airline.text}}">
                     <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
-                    <span class="airline-count">{{ctrl.getFlightCountByAirline(airline.id)}}</span>
+                    <span class="airline-count">{{ctrl.getFlightCountByAirline(airline)}}</span>
                     <span class="airline-label">{{airline.text}}</span>
                 </md-button>
             </div>

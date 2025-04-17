@@ -11,6 +11,7 @@ public interface IFlightStatsService
     Task<List<FlightViewModel>> GetFlightsAsync(
         int jobId,
         DateTime? departureDateTime = null,
+        int? airlineId = null,
         int flightBuffer = 0,
         string codeType = null,
         List<string> extendedOptions = null);

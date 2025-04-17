@@ -74,7 +74,7 @@ class NationwideService implements angular.IServiceProvider {
     }
 
 
-    async getFlightOptions(jobId: number, departureDate: string | Date): Promise<{
+    async getFlightOptions(jobId: number, departureDate: string | Date, airlineId?: number): Promise<{
         flights: IFlightViewModel[];
         message: "Sorry, we couldn't find any flights between these airports on the selected date. Please try different dates or airports." | null
     }> {
@@ -87,6 +87,7 @@ class NationwideService implements angular.IServiceProvider {
             params: {
                 departureDate: formattedDate,
                 jobId,
+                airlineId,
             }
         });
 

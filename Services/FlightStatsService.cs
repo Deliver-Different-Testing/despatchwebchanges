@@ -89,15 +89,17 @@ public class FlightStatsService(
         return createAlertResponse.Rule?.Id;
     }
 
-    public async Task<List<FlightViewModel>> GetFlightsAsync(
+public async Task<List<FlightViewModel>> GetFlightsAsync(
         int jobId,
         DateTime? departureDateTime = null,
+        int? airlineId = null,
         int flightBuffer = 0,
         string codeType = null,
         List<string> extendedOptions = null)
     {
         var (destinationAirportCode, departureAirportCode) = await repository.GetAirportCodesByJobIdAsync(jobId);
-        var includeAirlines = await repository.GetActiveAirlineCodesAsync();
+        var activeAirlines = await repository.GetActiveAirlineOptionsAsync();
+        var activeAirlineCodes = activeAirlines.Select(x => x.Text).ToList();
 
         ArgumentException.ThrowIfNullOrEmpty(departureAirportCode);
         ArgumentException.ThrowIfNullOrEmpty(destinationAirportCode);
@@ -121,9 +123,21 @@ public class FlightStatsService(
         query["maxResults"] = "100";
         query["includeCodeshares"] = "false";
 
-        if (includeAirlines.Count != 0)
+        // Filter by specific airline if airlineId is provided
+        string selectedAirlineCode = null;
+        if (airlineId.HasValue && airlineId.Value > 0)
         {
-            var combinedAirlines = string.Join(",", includeAirlines);
+            var selectedAirline = activeAirlines.FirstOrDefault(a => a.Id == airlineId.Value);
+            if (selectedAirline != null)
+            {
+                selectedAirlineCode = selectedAirline.Text;
+                Log.Debug("Filtering by specific airline: {Carrier}", selectedAirlineCode);
+                query["includeAirlines"] = selectedAirlineCode;
+            }
+        }
+        else if (activeAirlines.Count != 0)
+        {
+            var combinedAirlines = string.Join(",", activeAirlineCodes);
             Log.Debug("Adding carrier filters: {Carriers}", combinedAirlines);
             query["includeAirlines"] = combinedAirlines;
         }
@@ -161,7 +175,10 @@ public class FlightStatsService(
 
         var flightOptions = await Task.WhenAll(flightStatusResponse.Connections
             .Where(conn => conn.ScheduledFlight.Count != 0 &&
-                           conn.ScheduledFlight.Exists(x => includeAirlines.Contains(x.CarrierFsCode)))
+                           conn.ScheduledFlight.Exists(x => activeAirlineCodes.Contains(x.CarrierFsCode)) &&
+                           // Additional filter for specific airline if airlineId is provided
+                           (airlineId is not > 0 ||
+                            conn.ScheduledFlight.Exists(x => x.CarrierFsCode == selectedAirlineCode)))
             .Select(async conn =>
             {
                 var firstFlight = conn.ScheduledFlight.First();
@@ -192,7 +209,8 @@ public class FlightStatsService(
                     ServiceClasses = firstFlight.ServiceClasses,
                     IsCodeShare = firstFlight.IsCodeShare,
                     Amount = amount,
-                    CodeShareAirline = firstFlight.IsCodeShare ? firstFlight.CarrierFsCode : null
+                    CodeShareAirline = firstFlight.IsCodeShare ? firstFlight.CarrierFsCode : null,
+                    AirlineId = activeAirlines.FirstOrDefault(x => x.Text == firstFlight.CarrierFsCode)?.Id ?? 0
                 };
             }).Take(100));
 

@@ -15,6 +15,7 @@ export interface IFlightViewModel {
     isCodeShare: boolean;
     amount: number;
     codeShareAirline: string;
+    airlineId: number;
 }
 
 export interface Filter {
