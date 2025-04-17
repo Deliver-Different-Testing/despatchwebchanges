@@ -105,11 +105,11 @@ public class NationwideJobController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetScheduledFlightOptions(DateTime departureDate, int jobId)
+    public async Task<IActionResult> GetScheduledFlightOptions(DateTime departureDate, int jobId, int? airlineId)
     {
         try
         {
-            var flightOptions = await flightService.GetFlightsAsync(jobId: jobId, departureDateTime: departureDate);
+            var flightOptions = await flightService.GetFlightsAsync(jobId, departureDate, airlineId);
             return Json(flightOptions);
         }
         catch (Exception e)

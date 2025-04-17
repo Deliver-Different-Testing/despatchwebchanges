@@ -18,4 +18,5 @@ public class FlightViewModel
     public bool IsCodeShare { get; set; }
     public decimal Amount { get; set; }
     public string CodeShareAirline { get; set; }
+    public int AirlineId {get;set;}
 }

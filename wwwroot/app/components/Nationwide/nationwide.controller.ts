@@ -1633,7 +1633,7 @@ class NationwideControl extends BaseController {
         this.currentSelection = ` for Job ${jobNo}`;
     }
 
-    async filterFlightsByAirline(airlineId: number | null): Promise<void> {
+    async filterFlightsByAirline(airlineId?: number): Promise<void> {
         if (!this.currentJob) {
             return;
         }
@@ -1641,36 +1641,10 @@ class NationwideControl extends BaseController {
         this.flightsLoading = true;
 
         try {
-            // Get flights regardless of filter to ensure we have the latest data
-            const result = await this.nationwideService.getFlightOptions(this.currentJob.id, this.currentJob.booked);
+            const result = await this.nationwideService.getFlightOptions(this.currentJob.id, this.currentJob.booked, airlineId);
 
-            if (airlineId === null) {
-                // Show all flights when no airline filter is applied
-                this.flightOptions = result.flights;
-                this.flightMessage = result.message ?? "";
-            } else {
-                // Find the airline code from the activeAirlineOptions
-                const airlineOption = this.activeAirlineOptions?.find(option => option.id === airlineId);
-                const airlineCode = airlineOption?.text;
-
-                if (!airlineCode) {
-                    // If we can't find the airline code, show all flights
-                    this.flightOptions = result.flights;
-                    this.flightMessage = result.message ?? "";
-                } else {
-                    // Filter flights by the selected airline code
-                    this.flightOptions = result.flights.filter(flight =>
-                        flight.airline === airlineCode || flight.codeShareAirline === airlineCode
-                    );
-
-                    // Update message if no flights match the filter
-                    if (this.flightOptions.length === 0 && result.flights.length > 0) {
-                        this.flightMessage = `No flights available for ${airlineCode}.`;
-                    } else {
-                        this.flightMessage = result.message ?? "";
-                    }
-                }
-            }
+            this.flightOptions = result.flights;
+            this.flightMessage = result.message ?? "";
         } catch (error) {
             console.error("Error fetching flights:", error);
             this.toastrService.showErrorToast("Failed to load flight options");
@@ -1680,19 +1654,12 @@ class NationwideControl extends BaseController {
     }
 
     getFlightCountByAirline(airlineId: number): number {
-        if (!this.flightOptions || !Array.isArray(this.flightOptions)) {
-            return 0;
-        }
+        if (!airlineId) return 0;
 
-        const airlineOption = this.activeAirlineOptions?.find(option => option.id === airlineId);
-        const airlineCode = airlineOption?.text;
-
-        if (airlineId === null || !airlineCode) {
-            return this.flightOptions.length;
-        }
+        if (!this.flightOptions || !Array.isArray(this.flightOptions)) return 0;
 
         return this.flightOptions.filter(flight =>
-            flight.airline === airlineCode || flight.codeShareAirline === airlineCode
+            flight.airlineId === airlineId
         ).length;
     }
 
