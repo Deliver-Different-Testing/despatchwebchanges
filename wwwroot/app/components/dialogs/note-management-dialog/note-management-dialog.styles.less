@@ -34,4 +34,98 @@
   md-checkbox {
     margin-bottom: 16px;
   }
+
+  /* New styles for note type creator */
+  .note-type-creator {
+    margin: 8px 0 24px 0;
+
+    md-card {
+      margin: 0;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    md-card-title {
+      padding-bottom: 0;
+    }
+
+    md-card-content {
+      padding-top: 8px;
+    }
+  }
+
+  /* Public note warning */
+  .public-note-warning {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    margin: 8px 0;
+    border-radius: 4px;
+    background-color: rgba(255, 152, 0, 0.12);
+
+    &.md-warn {
+      background-color: rgba(244, 67, 54, 0.08);
+    }
+
+    md-icon {
+      margin-right: 8px;
+      color: #F44336;
+    }
+
+    span {
+      font-size: 14px;
+      color: rgba(0, 0, 0, 0.87);
+    }
+  }
+
+  /* Note type description styles */
+  .note-type-description-container {
+    margin: 0 0 16px 0;
+
+    .description-toggle {
+      display: flex;
+      align-items: center;
+      height: 36px;
+      margin: 4px 0;
+      padding: 0 8px;
+      border-radius: 4px;
+      background-color: rgba(0, 0, 0, 0.03);
+
+      md-icon {
+        margin-right: 8px;
+        color: rgba(0, 0, 0, 0.54);
+      }
+
+      span {
+        font-size: 14px;
+        color: rgba(0, 0, 0, 0.87);
+      }
+    }
+
+    .note-type-description-card {
+      margin-top: 8px;
+
+      md-card {
+        margin: 0;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.14);
+      }
+
+      md-card-content {
+        padding: 12px 16px;
+
+        p {
+          margin: 0;
+          font-size: 14px;
+          line-height: 1.4;
+          color: rgba(0, 0, 0, 0.75);
+        }
+      }
+    }
+  }
+
+  /* Hint text for form fields */
+  .hint {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.54);
+    margin-top: 4px;
+  }
 }

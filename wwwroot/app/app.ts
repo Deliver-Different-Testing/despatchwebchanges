@@ -76,7 +76,8 @@ import InterCourierChargeDialogService
     from "./components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
 import {
     bytesFilter, getByAttrFilter, jobStatusIconFilter,
-    replaceFilter, selectedToTopFilter, switchFilter, uniqueFilter, urlFixFilter
+    momentFormatFilter,
+    replaceFilter, selectedToTopFilter, switchFilter, timezoneShortFilter, uniqueFilter, urlFixFilter
 } from "./filters";
 import JobContextMenuService from "./services/job-context-menu.service";
 import StickyNoteComponent from "./components/common/sticky-notes/sticky-notes.component";
@@ -215,6 +216,8 @@ app.filter("selectedToTop", () => selectedToTopFilter);
 app.filter("bytes", () => bytesFilter);
 app.filter("jobStatusIcon", () => jobStatusIconFilter);
 app.filter("replace", () => replaceFilter);
+app.filter('momentFormat', () => momentFormatFilter);
+app.filter('timezoneShort', () => timezoneShortFilter);
 
 // Directives
 app.directive('ngRightClick', ngRightClickDirective);

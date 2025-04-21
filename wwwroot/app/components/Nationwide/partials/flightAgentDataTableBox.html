@@ -68,6 +68,7 @@
                 <md-button ng-repeat="airline in ctrl.activeAirlineOptions"
                            class="md-button airline-chip {{airline.text | lowercase}}"
                            ng-click="ctrl.filterFlightsByAirline(airline.id)"
+                           ng-disabled="ctrl.getFlightCountByAirline(airline) === 0"
                            aria-label="Filter by {{airline.text}}">
                     <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
                     <span class="airline-count">{{ctrl.getFlightCountByAirline(airline)}}</span>
@@ -94,14 +95,13 @@
 
                 <tbody md-body>
                 <tr md-row
-                    md-dense
                     ng-repeat="flight in ctrl.flightOptions | filter: box.searchBox | orderBy: ctrl.flightTableQuery.order">
                     <td md-cell>
                         <span class="airline-code {{flight.airline | lowercase}}">{{flight.airline}}</span>
                     </td>
                     <td md-cell>{{flight.flightNumber}}</td>
-                    <td md-cell>{{flight.departureTime | date: "MM/dd/yyyy HH:mm"}} ({{flight.departureTimeZone}})</td>
-                    <td md-cell>{{flight.arrivalTime | date: "HH:mm"}} ({{flight.arrivalTimeZone}})</td>
+                    <td md-cell>{{flight.departureTime | momentFormat: "MM/DD/YYYY HH:mm"}} ({{flight.departureTimeZone | timezoneShort}})</td>
+                    <td md-cell>{{flight.arrivalTime | momentFormat: "HH:mm"}} ({{flight.arrivalTimeZone | timezoneShort}})</td>
                     <td md-cell>{{flight.duration | date: "H:mm"}}</td>
                     <td md-cell>{{flight.stops === 0 ? 'D' : flight.stops}}</td>
                     <td md-cell>{{flight.amount}}</td>

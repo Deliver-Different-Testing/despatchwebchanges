@@ -24,6 +24,11 @@ public interface INationwideJobRepository
 
     Task<bool> AddAgentToJobAsync(int agentId, int jobId);
 
+    Task<Dictionary<string, decimal>> GetBatchCarrierFlightRatesByJobIdAsync(
+        int jobId,
+        List<string> carrierCodes,
+        DateTime? bookTime);
+
     Task<decimal> GetCarrierFlightRateByJobIdAsync(int jobId, string carrierName, bool extraStopOffs,
         DateTime? bookTime);
 

@@ -105,16 +105,35 @@ public class NationwideJobController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetScheduledFlightOptions(DateTime departureDate, int jobId, int? airlineId)
+    public async Task<IActionResult> GetScheduledFlightOptions(DateTime departureDate, int jobId, int? airlineId, int pageSize = 25)
     {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
         try
         {
-            var flightOptions = await flightService.GetFlightsAsync(jobId, departureDate, airlineId);
+            Log.Information("Flight search requested for job {JobId} with departure {DepartureDate}, airline {AirlineId}, pageSize {PageSize}",
+                jobId, departureDate, airlineId, pageSize);
+
+            // Cap page size to prevent excessive resource usage
+            if (pageSize > 100) pageSize = 100;
+
+            var flightOptions = await flightService.GetFlightsAsync(
+                jobId,
+                departureDate,
+                airlineId,
+                maxResults: pageSize);
+
+            stopwatch.Stop();
+            Log.Information("Flight search API completed in {ElapsedMs}ms for job {JobId}, returned {FlightCount} flights",
+                stopwatch.ElapsedMilliseconds, jobId, flightOptions.Count);
+
             return Json(flightOptions);
         }
         catch (Exception e)
         {
-            Log.Error(e, "An error occured getting scheduled flight options");
+            stopwatch.Stop();
+            Log.Error(e, "An error occurred getting scheduled flight options for job {JobId} after {ElapsedMs}ms",
+                jobId, stopwatch.ElapsedMilliseconds);
             return StatusCode(500, e.Message);
         }
     }

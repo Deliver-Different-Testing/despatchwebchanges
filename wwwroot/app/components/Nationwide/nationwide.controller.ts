@@ -6,9 +6,9 @@ import DispatchCoreService from "../../services/dispatch-core.service";
 import {AppPages} from "../../enums/app-pages.enum";
 import {AppConfig} from "../../interfaces/app-config.interface";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
-import {IAgent, IDispatchJob, IJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
+import {IAgent, IDispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
-import {IFlightViewModel, HereMapsConfig, StatusChangeEvent, StatusToListMap} from "./nationwide.interfaces";
+import {IFlightViewModel, HereMapsConfig, StatusChangeEvent} from "./nationwide.interfaces";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
@@ -57,7 +57,7 @@ class NationwideControl extends BaseController {
     jobList?: IDispatchJob[] = [];
     jobListPOD?: IDispatchJob[] = [];
     jobListReprice?: IDispatchJob[] = [];
-    STATUS_TO_LIST_MAP: StatusToListMap;
+    STATUS_TO_LIST_MAP: any;
     totalJobCount: number = 0;
     totalPodCount: number = 0;
     totalRepriceCount: number = 0;
@@ -115,6 +115,10 @@ class NationwideControl extends BaseController {
     };
     currentSupport: any;
     activeAirlineOptions?: Suggestion[];
+    flightPage: number = 1;
+    flightPageSize: number = 25;
+    allFlightsLoaded: boolean = false;
+    flightLoadingMore: boolean = false;
 
     constructor(
         private $scope: angular.IScope,
@@ -980,13 +984,39 @@ class NationwideControl extends BaseController {
         console.log('Getting flights');
 
         this.flightsLoading = true;
+        this.flightPage = 1;
+        this.allFlightsLoaded = false;
 
-        const result = await this.nationwideService.getFlightOptions(job.id, job.booked);
-        this.flightOptions = result.flights;
-        console.log("Flight options:", result.flights);
-        this.flightMessage = result.message ?? "";
+        try {
+            const result = await this.nationwideService.getFlightOptions(
+                job.id,
+                job.booked,
+                undefined,
+                this.flightPageSize
+            );
 
-        this.flightsLoading = false;
+            this.$timeout(() => {
+                this.flightOptions = result.flights;
+                this.flightMessage = result.message ?? "";
+
+                // Check if all flights are loaded
+                this.allFlightsLoaded = !result.flights || result.flights.length < this.flightPageSize;
+
+                console.log(`Loaded ${this.flightOptions?.length || 0} flight options`);
+            });
+        } catch (error) {
+            console.error("Error fetching flights:", error);
+
+            this.$timeout(() => {
+                this.toastrService.showErrorToast("Failed to load flight options");
+                this.flightOptions = [];
+                this.flightMessage = "An error occurred while loading flights. Please try again.";
+            });
+        } finally {
+            this.$timeout(() => {
+                this.flightsLoading = false;
+            });
+        }
     }
 
     isDeliveryJob(): boolean {
@@ -1037,52 +1067,106 @@ class NationwideControl extends BaseController {
     }
 
     async loadNextFlights() {
-        if (!this.currentJob) {
-            console.error('No current job selected');
+        if (!this.currentJob || this.allFlightsLoaded || this.flightLoadingMore) {
             return;
         }
-        this.flightsLoading = true;
-        this.flightListPromise = this.nationwideService.getFlightOptions(this.currentJob.id, this.currentSearchTime ?? new Date());
+
+        this.flightLoadingMore = true;
 
         try {
+            let nextSearchTime;
             if (this.flightOptions && this.flightOptions.length > 0) {
                 let lastFlight = this.flightOptions[this.flightOptions.length - 1];
-                this.currentSearchTime = lastFlight.departureTime;
+                nextSearchTime = lastFlight.departureTime;
+                this.currentSearchTime = nextSearchTime;
+            } else {
+                nextSearchTime = this.currentJob.booked || new Date();
             }
 
-            const result = await this.flightListPromise;
+            this.flightPage += 1;
 
-            this.flightOptions = result.flights;
-            console.log("Flight options:", result.flights);
-            this.flightMessage = result.message ?? '';
+            const result = await this.nationwideService.getFlightOptions(
+                this.currentJob.id,
+                nextSearchTime,
+                undefined,
+                this.flightPageSize
+            );
+
+            this.$timeout(() => {
+                if (this.flightOptions && this.flightOptions.length > 0) {
+                    const newFlights = result.flights.filter(newFlight =>
+                        !this.flightOptions?.some(existingFlight =>
+                            existingFlight.flightNumber === newFlight.flightNumber &&
+                            existingFlight.departureTime.toString() === newFlight.departureTime.toString()
+                        )
+                    );
+                    this.flightOptions = [...this.flightOptions, ...newFlights];
+                } else {
+                    this.flightOptions = result.flights;
+                }
+
+                this.flightMessage = result.flights.length === 0
+                    ? "No more flights available for this route and date."
+                    : "";
+
+                this.allFlightsLoaded = result.flights.length < this.flightPageSize;
+
+                console.log(`Loaded additional ${result.flights.length} flight options, total: ${this.flightOptions?.length || 0}`);
+            });
         } catch (error) {
-            console.error(error);
-            this.toastrService.showErrorToast("An unexpected error occurred retrieving flights");
+            console.error("Error fetching additional flights:", error);
+            this.$timeout(() => {
+                this.toastrService.showErrorToast("Failed to load more flights");
+            });
         } finally {
-            this.flightsLoading = false;
+            this.$timeout(() => {
+                this.flightLoadingMore = false;
+            });
         }
     }
 
     async loadNextDayFlights() {
+        if (!this.currentJob) {
+            return;
+        }
+
         this.flightsLoading = true;
+        this.flightPage = 1;
+        this.allFlightsLoaded = false;
 
         try {
             let newDate = this.currentSearchTime ? new Date(this.currentSearchTime) : new Date();
             newDate.setDate(newDate.getDate() + 1);
             newDate.setHours(0, 0, 0, 0);
 
-            if (!this.currentJob?.id) return;
-            const result = await this.nationwideService.getFlightOptions(this.currentJob.id, newDate);
-
             this.currentSearchTime = newDate;
-            this.flightOptions = result.flights;
-            console.log("Flight options:", result.flights);
-            this.flightMessage = result.message ?? "Sorry, we couldn't find any flights between these airports on the selected date. Please try different dates or airports.";
+
+            const result = await this.nationwideService.getFlightOptions(
+                this.currentJob.id,
+                newDate,
+                undefined,
+                this.flightPageSize
+            );
+
+            this.$timeout(() => {
+                this.flightOptions = result.flights;
+                this.flightMessage = result.flights.length === 0
+                    ? "No flights found for the selected date. Please try a different date."
+                    : undefined;
+                this.allFlightsLoaded = result.flights.length < this.flightPageSize;
+                console.log(`Loaded ${result.flights.length} flight options for next day`);
+            });
         } catch (error) {
-            console.error(error);
-            this.toastrService.showErrorToast("An unexpected error occured retrieving flights");
+            console.error("Error fetching next day flights:", error);
+            this.$timeout(() => {
+                this.toastrService.showErrorToast("Failed to load flights for the next day");
+                this.flightOptions = [];
+                this.flightMessage = "An error occurred while loading flights. Please try again.";
+            });
         } finally {
-            this.flightsLoading = false;
+            this.$timeout(() => {
+                this.flightsLoading = false;
+            });
         }
     }
 
@@ -1638,27 +1722,42 @@ class NationwideControl extends BaseController {
         }
 
         this.flightsLoading = true;
+        this.flightPage = 1;
+        this.allFlightsLoaded = false;
 
         try {
-            const result = await this.nationwideService.getFlightOptions(this.currentJob.id, this.currentJob.booked, airlineId);
+            const result = await this.nationwideService.getFlightOptions(
+                this.currentJob.id,
+                this.currentJob.booked || new Date(),
+                airlineId,
+                this.flightPageSize
+            );
 
             this.flightOptions = result.flights;
-            this.flightMessage = result.message ?? "";
+            this.flightMessage = result.flights.length === 0
+                ? "No flights found with the selected airline. Please try a different airline."
+                : undefined;
+
+            this.allFlightsLoaded = result.flights.length < this.flightPageSize;
+
+            console.log(`Loaded ${result.flights.length} flight options for airline ${airlineId || 'all'}`);
         } catch (error) {
-            console.error("Error fetching flights:", error);
+            console.error("Error fetching flights by airline:", error);
             this.toastrService.showErrorToast("Failed to load flight options");
+            this.flightOptions = [];
+            this.flightMessage = "An error occurred while loading flights. Please try again.";
         } finally {
             this.flightsLoading = false;
         }
     }
 
-    getFlightCountByAirline(airlineId: number): number {
-        if (!airlineId) return 0;
+    getFlightCountByAirline(airline: Suggestion): number {
+        if (!airline) return 0;
 
         if (!this.flightOptions || !Array.isArray(this.flightOptions)) return 0;
 
         return this.flightOptions.filter(flight =>
-            flight.airlineId === airlineId
+            flight.airlineId === airline.id
         ).length;
     }
 

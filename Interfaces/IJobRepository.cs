@@ -397,9 +397,10 @@ public interface IJobRepository
     Task<int> SaveNoteAsync(int jobId, string noteText, bool isImportant = false, bool isRecurringJob = false);
     Task<TucNoteViewModel> GetNoteByIdAsync(int noteId);
     Task DeleteNoteAsync(int noteId);
-    Task<List<Suggestion>> GetNoteTypesAsync();
+    Task<List<NoteTypeViewModel>> GetNoteTypesAsync();
     Task<List<TucNoteViewModel>> GetNotesByJobId(int jobId);
     Task<bool> IsJobParentAsync(int jobId);
     Task<JobLateCallDto> GetJobForLateCallAsync(int jobId);
     Task UpdateJobReadStatusAsync(int jobId, bool hasBeenRead);
+    Task AddNewTucNoteType(NoteTypeViewModel noteType);
 }

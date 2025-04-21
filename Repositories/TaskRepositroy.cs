@@ -63,18 +63,12 @@ public class TaskRepository(
     private static IQueryable<TucEvent> ApplyOrdering(IQueryable<TucEvent> query, TaskTableFiltersRequest filters,
         DateTime today)
     {
-        if (filters == null) return query;
-
-        if (string.IsNullOrWhiteSpace(filters.OrderBy))
-            return query;
+        if (filters == null || string.IsNullOrWhiteSpace(filters.OrderBy)) return query;
 
         var isDescending = string.Equals(filters.OrderDirection, "desc", StringComparison.OrdinalIgnoreCase);
 
         return filters.OrderBy.ToLowerInvariant() switch
         {
-            "created" =>
-                ApplyDateTimeOrder(query, isDescending, today),
-
             _ =>
                 ApplyDateTimeOrder(query, isDescending, today)
         };
