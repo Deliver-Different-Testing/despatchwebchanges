@@ -1,15 +1,27 @@
-import {Suggestion, IJobNote} from "../../../interfaces/job.interface";
+import {IJobNote, INoteType} from "../../../interfaces/job.interface";
 import "./note-management-dialog.styles.less";
 import NoteService from "../../../services/notes.service";
 import ToastrService from "../../../services/toastr.service";
-import {material} from "angular";
 
 class NoteManagementDialogController {
-    noteTypes: Suggestion[] = [];
+    noteTypes: INoteType[] = [];
     title: string = '';
     isNew: boolean = false;
     model: IJobNote;
     isSubmitting: boolean = false;
+
+    // New note type creation
+    showNoteTypeCreator: boolean = false;
+    newNoteType: INoteType = {
+        id: 0,
+        text: '',
+        isPublic: false,
+        description: ''
+    };
+    isCreatingNoteType: boolean = false;
+
+    // For viewing note type descriptions
+    showDescriptionFor: number | null = null;
 
     static $inject = [
         '$mdDialog',
@@ -20,7 +32,7 @@ class NoteManagementDialogController {
     ];
 
     constructor(
-        private $mdDialog: material.IDialogService,
+        private $mdDialog: angular.material.IDialogService,
         private noteService: NoteService,
         private toastrService: ToastrService,
         model: IJobNote,
@@ -44,20 +56,17 @@ class NoteManagementDialogController {
         };
     }
 
-    loadNoteTypes(): void {
-        this.noteService.getNoteTypes()
-            .then((noteTypes) => {
-                this.noteTypes = noteTypes;
+    async loadNoteTypes(): Promise<void> {
+        try {
+            this.noteTypes = await this.noteService.getNoteTypes();
 
-                // Set default note type for new notes if none is selected
-                if (this.isNew && this.model.noteTypeId === 0 && this.noteTypes.length > 0) {
-                    this.model.noteTypeId = this.noteTypes[0].id;
-                }
-            })
-            .catch((error) => {
-                console.error('Error loading note types:', error);
-                this.toastrService.showErrorToast('Failed to load note types');
-            });
+            if (this.isNew && this.model.noteTypeId === 0 && this.noteTypes.length > 0) {
+                this.model.noteTypeId = this.noteTypes[0].id;
+            }
+        } catch (error) {
+            console.error('Error loading note types:', error);
+            this.toastrService.showErrorToast('Failed to load note types');
+        }
     }
 
     async save(): Promise<void> {
@@ -110,5 +119,72 @@ class NoteManagementDialogController {
     cancel(): void {
         this.$mdDialog.cancel();
     }
+
+    // New methods for note type creation
+    toggleNoteTypeCreator(): void {
+        this.showNoteTypeCreator = !this.showNoteTypeCreator;
+        if (this.showNoteTypeCreator) {
+            this.newNoteType = {
+                id: 0,
+                text: '',
+                isPublic: false,
+                description: ''
+            };
+        }
+    }
+
+    validateNewNoteType(): boolean {
+        if (!this.newNoteType.text || this.newNoteType.text.trim() === '') {
+            this.toastrService.showErrorToast('Note type name is required');
+            return false;
+        }
+        return true;
+    }
+
+    async createNoteType(): Promise<void> {
+        if (!this.validateNewNoteType()) {
+            return;
+        }
+
+        try {
+            this.isCreatingNoteType = true;
+            const newNoteTypeName = this.newNoteType.text;
+
+            // Create the note type
+            await this.noteService.createNoteType(this.newNoteType);
+            this.toastrService.showSuccessToast('Note type created successfully');
+
+            // Refresh note types from the backend
+            await this.loadNoteTypes();
+
+            // Find and select the newly created note type by name
+            const createdNoteType = this.noteTypes.find(type => type.text === newNoteTypeName);
+            if (createdNoteType) {
+                this.model.noteTypeId = createdNoteType.id;
+            }
+
+            // Close the note type creator
+            this.showNoteTypeCreator = false;
+        } catch (error) {
+            console.error('Error creating note type:', error);
+            this.toastrService.showErrorToast('Failed to create note type');
+        } finally {
+            this.isCreatingNoteType = false;
+        }
+    }
+
+    isSelectedNoteTypePublic(): boolean {
+        const selectedType = this.noteTypes.find(type => type.id === this.model.noteTypeId);
+        return (selectedType && selectedType.hasOwnProperty('isPublic') && selectedType.isPublic) ?? false;
+    }
+
+    toggleDescription(noteTypeId: number): void {
+        this.showDescriptionFor = this.showDescriptionFor === noteTypeId ? null : noteTypeId;
+    }
+
+    getSelectedNoteType(): INoteType | null {
+        return this.noteTypes.find(type => type.id === this.model.noteTypeId) || null;
+    }
 }
+
 export default NoteManagementDialogController;

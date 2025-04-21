@@ -1,8 +1,8 @@
 <md-dialog aria-label="Edit Dimensions" id="edit-dimensions-dialog" class="parcel-dimensions-dialog-component md-whiteframe-z2">
-    <!-- Enhanced toolbar with Material Design 3 style -->
+    <!-- Toolbar with Material Design styling -->
     <md-toolbar class="md-primary">
         <div class="md-toolbar-tools">
-            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">inventory_2</md-icon>
+            <md-icon md-font-set="material-symbols-outlined">inventory_2</md-icon>
             <h2>Edit Dimensions</h2>
             <span flex></span>
             <md-button class="md-icon-button" ng-click="ctrl.cancel()" aria-label="Close dialog">
@@ -12,54 +12,56 @@
         </div>
     </md-toolbar>
 
-    <!-- Parent Job Info Banner with improved accessibility and visuals -->
-    <div ng-if="ctrl.isParentJob" class="parent-job-info" md-colors="{background: 'primary-50'}">
-        <md-icon md-font-set="material-symbols-outlined" class="info-icon" md-colors="{color: 'primary'}">info</md-icon>
-        <span class="info-text">This is a child job. Parcel information has been inherited from the parent job.</span>
+    <!-- Parent Job Info Banner using md-colors and layout directives -->
+    <div ng-if="ctrl.isParentJob" md-colors="{background: 'primary-50'}" class="md-padding" layout="row" layout-align="start center">
+        <md-icon md-font-set="material-symbols-outlined" md-colors="{color: 'primary'}" class="md-margin">info</md-icon>
+        <span class="md-body-1">This is a child job. Parcel information has been inherited from the parent job.</span>
     </div>
 
-    <!-- Empty State with improved visuals -->
-    <div ng-if="!ctrl.hasCurrentParcel()" class="empty-state" layout="column" layout-align="center center">
-        <div class="empty-state-container">
-            <md-icon md-font-set="material-symbols-outlined" class="empty-state-icon">inventory_2</md-icon>
-            <h3>No Parcels Added</h3>
-            <p>Add a parcel to begin entering dimensions</p>
-            <md-button class="md-raised md-primary" ng-click="ctrl.addNewParcel()">
-                <md-icon md-font-set="material-symbols-outlined">add</md-icon>
-                Add Parcel
-            </md-button>
-        </div>
+    <!-- Empty State using Material Design layout -->
+    <div ng-if="!ctrl.hasCurrentParcel()" class="md-padding" layout="column" layout-align="center center">
+        <md-card class="md-padding" style="max-width: 400px; text-align: center;">
+            <md-card-content layout="column" layout-align="center center">
+                <md-icon md-font-set="material-symbols-outlined" style="font-size: 64px;" md-colors="{color: 'primary-700'}">inventory_2</md-icon>
+                <h3 class="md-headline">No Parcels Added</h3>
+                <p class="md-body-1">Add a parcel to begin entering dimensions</p>
+                <md-button class="md-raised md-primary" ng-click="ctrl.addNewParcel()">
+                    <md-icon md-font-set="material-symbols-outlined">add</md-icon>
+                    Add Parcel
+                </md-button>
+            </md-card-content>
+        </md-card>
     </div>
 
     <!-- Parcel Content - Only show when there are parcels -->
     <div ng-if="ctrl.hasCurrentParcel()">
         <md-dialog-content>
             <div class="md-dialog-content">
-                <!-- Top mini card showing selected parcel name -->
-                <div class="selected-parcel-card" md-colors="{background: 'primary-50'}" layout="row" layout-align="start center">
+                <!-- Selected parcel card using Material colors and layout -->
+                <md-card md-colors="{background: 'primary-50'}" class="md-padding" layout="row" layout-align="start center">
                     <md-icon md-font-set="material-symbols-outlined" md-colors="{color: 'primary'}">inventory_2</md-icon>
-                    <span class="selected-parcel-name">{{ctrl.getCurrentParcel().itemName || 'Parcel ' + (ctrl.selectedParcelIndex + 1)}}</span>
+                    <span class="md-subhead">{{ctrl.getCurrentParcel().itemName || 'Parcel ' + (ctrl.selectedParcelIndex + 1)}}</span>
                     <span flex></span>
                     <md-button class="md-icon-button" ng-click="ctrl.addNewParcel()" aria-label="Add new parcel">
                         <md-tooltip md-direction="bottom">Add New Parcel</md-tooltip>
                         <md-icon md-font-set="material-symbols-outlined" md-colors="{color: 'primary'}">add</md-icon>
                     </md-button>
-                </div>
+                </md-card>
 
                 <!-- Main content with form and visualization -->
-                <div layout="row" layout-wrap layout-align="space-between start">
+                <div layout="row" layout-wrap layout-align="space-between start" class="md-padding">
                     <!-- Left side - Form -->
                     <div flex-gt-sm="45" flex="100">
-                        <form ng-submit="ctrl.submit()" class="dimension-form">
+                        <form ng-submit="ctrl.submit()">
                             <!-- Item Name -->
                             <md-input-container class="md-block">
                                 <label for="itemName">Item Name</label>
                                 <input id="itemName" ng-model="ctrl.getCurrentParcel().itemName" type="text" placeholder="Enter item name">
                             </md-input-container>
 
-                            <!-- Dimensions Input Group with improved layout -->
-                            <div class="dimensions-group">
-                                <h4 class="dimension-section-title">Dimensions</h4>
+                            <!-- Dimensions Input Group -->
+                            <md-card class="md-padding" md-colors="{background: 'background-hue-1'}">
+                                <h4 class="md-subhead">Dimensions</h4>
 
                                 <div layout-gt-sm="row">
                                     <md-input-container class="md-block" flex-gt-sm>
@@ -80,69 +82,71 @@
                                         <div class="md-caption dimension-unit">inches</div>
                                     </md-input-container>
                                 </div>
-                            </div>
+                            </md-card>
                         </form>
                     </div>
 
-                    <!-- Right side - Visual representation with improved visualization -->
-                    <div class="dimension-visualization" flex-gt-sm="50" flex="100">
+                    <!-- Right side - Visual representation -->
+                    <md-card class="md-padding" flex-gt-sm="50" flex="100" md-colors="{background: 'background-hue-1'}">
                         <parcel-visualization
                                 height="{{ctrl.getCurrentParcel().height}}"
                                 length="{{ctrl.getCurrentParcel().length}}"
                                 width="{{ctrl.getCurrentParcel().depth}}">
                         </parcel-visualization>
-                    </div>
+                    </md-card>
                 </div>
             </div>
         </md-dialog-content>
 
-        <!-- Parcel Timeline with improved visuals and interaction -->
-        <div class="parcel-timeline" layout="column" layout-align="center center">
+        <!-- Parcel Timeline -->
+        <md-card class="md-padding" md-colors="{background: 'background-hue-1'}">
             <div class="timeline-container" layout="row" layout-align="center center">
                 <div layout="row" layout-align="center center" ng-repeat="parcel in ctrl.parcels">
                     <!-- Parcel Step -->
                     <div class="timeline-step"
-                         ng-class="{'active': ctrl.selectedParcelIndex === $index}"
+                         ng-class="{'md-accent': ctrl.selectedParcelIndex === $index}"
                          ng-click="ctrl.switchParcel($index)">
-                        <div class="step-circle"
-                             md-colors="{background: ctrl.selectedParcelIndex === $index ? 'primary' : 'background-200'}">
+                        <div class="step-circle md-whiteframe-1dp"
+                             md-colors="{background: ctrl.selectedParcelIndex === $index ? 'primary' : 'background-50', color: ctrl.selectedParcelIndex === $index ? 'primary-contrast' : 'background-900'}">
                             {{$index + 1}}
-                            <md-button class="md-icon-button delete-button"
+                            <md-button class="md-icon-button delete-button md-mini md-whiteframe-1dp"
                                        ng-click="ctrl.deleteParcel($index, $event)"
                                        ng-show="ctrl.parcels.length > 1"
-                                       aria-label="Delete parcel">
-                                <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+                                       md-colors="{background: 'background-900-0.7', color: 'background-50'}"
+                                       aria-label="Delete parcel"
+                                       style="display: flex; align-items: center; justify-content: center;">
+                                <md-icon md-font-set="material-symbols-outlined" style="margin: 0; display: block;">close</md-icon>
                                 <md-tooltip md-direction="top">Delete Parcel</md-tooltip>
                             </md-button>
                         </div>
-                        <div class="step-label" ng-class="{'bold': ctrl.selectedParcelIndex === $index}">
+                        <div class="step-label md-caption" ng-class="{'md-body-2': ctrl.selectedParcelIndex === $index, 'md-body-1': ctrl.selectedParcelIndex !== $index}">
                             {{parcel.itemName || 'Parcel ' + ($index + 1)}}
                         </div>
                     </div>
                     <!-- Connector Line (don't show after last item) -->
                     <div class="timeline-connector"
-                         md-colors="{background: 'background-200'}"
+                         md-colors="{background: 'background-400'}"
                          ng-if="!$last">
                     </div>
                 </div>
                 <!-- Add Parcel Button -->
                 <div layout="row" layout-align="center center" ng-if="ctrl.parcels.length < 10">
                     <div class="timeline-connector"
-                         md-colors="{background: 'background-200'}"
+                         md-colors="{background: 'background-400'}"
                          ng-if="ctrl.parcels.length > 0">
                     </div>
                     <div class="timeline-step">
-                        <div class="step-circle add-button" ng-click="ctrl.addNewParcel()">
+                        <div class="step-circle add-button" ng-click="ctrl.addNewParcel()" md-colors="{color: 'background-700'}">
                             <md-icon md-font-set="material-symbols-outlined">add</md-icon>
                         </div>
-                        <div class="step-label">Add Parcel</div>
+                        <div class="step-label md-caption">Add Parcel</div>
                     </div>
                 </div>
             </div>
-        </div>
+        </md-card>
 
         <md-dialog-actions layout="row" layout-align="end center">
-            <md-button ng-click="ctrl.cancel()" class="md-button">Cancel</md-button>
+            <md-button ng-click="ctrl.cancel()">Cancel</md-button>
             <md-progress-circular
                     class="md-primary"
                     md-diameter="20"

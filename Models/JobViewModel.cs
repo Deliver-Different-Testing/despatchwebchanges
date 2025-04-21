@@ -237,6 +237,12 @@ public class Suggestion
     public string Text { get; set; }
 }
 
+public class NoteTypeViewModel : Suggestion
+{
+    public bool IsPublic { get; set; }
+    public string Description { get; set; }
+}
+
 public class ReadTrackerInfoViewModel
 {
     public bool HasBeenRead { get; set; }

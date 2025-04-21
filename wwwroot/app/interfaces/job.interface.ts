@@ -345,6 +345,11 @@ export interface ClientItemsViewModel {
 export interface SelectOption extends Suggestion {
 }
 
+export interface INoteType extends Suggestion {
+    isPublic: boolean;
+    description?: string;
+}
+
 export interface JobCreateViewModel {
     clientId: number;
     deliverToContact: string;

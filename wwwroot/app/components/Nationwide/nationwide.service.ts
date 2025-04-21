@@ -8,6 +8,9 @@ class NationwideService implements angular.IServiceProvider {
         "$http"
     ];
 
+    private flightCache: Map<string, {timestamp: number, data: any}> = new Map();
+    private CACHE_DURATION = 5 * 60 * 1000;
+
     constructor(
         private $http: angular.IHttpService
     ) {
@@ -74,30 +77,62 @@ class NationwideService implements angular.IServiceProvider {
         return await this.getNationwideJobs("nationwideJobListReprice", queryParams, selectedClients, internal, selectedAreas);
     }
 
-
-    async getFlightOptions(jobId: number, departureDate: string | Date, airlineId?: number): Promise<{
+    async getFlightOptions(
+        jobId: number,
+        departureDate: string | Date,
+        airlineId?: number,
+        pageSize: number = 25
+    ): Promise<{
         flights: IFlightViewModel[];
-        message: "Sorry, we couldn't find any flights between these airports on the selected date. Please try different dates or airports." | null
+        message: string | null
     }> {
-        const formattedDate = moment(departureDate, moment.ISO_8601, true)
-            .format("YYYY-MM-DDTHH:mm:ss");
+        const startTime = performance.now();
+        const formattedDate = moment(departureDate).format();
 
-        console.log(formattedDate);
+        // Create a cache key based on the parameters
+        const cacheKey = `flights_${jobId}_${formattedDate}_${airlineId || 'all'}_${pageSize}`;
+        const cachedData = this.flightCache.get(cacheKey);
 
-        const response = await this.$http.get<IFlightViewModel[]>("nationwideJob/GetScheduledFlightOptions", {
-            params: {
-                departureDate: formattedDate,
-                jobId,
-                airlineId,
-            }
-        });
+        // Return cached data if it's still valid
+        if (cachedData && (Date.now() - cachedData.timestamp < this.CACHE_DURATION)) {
+            console.log('Retrieved flight data from cache for job', jobId);
+            return cachedData.data;
+        }
 
-        return {
-            flights: response.data,
-            message: response.data.length === 0
-                ? "Sorry, we couldn't find any flights between these airports on the selected date. Please try different dates or airports."
-                : null
-        };
+        console.log(`Fetching flight data for job ${jobId} with departure ${formattedDate}`);
+
+        try {
+            const response = await this.$http.get<IFlightViewModel[]>("nationwideJob/GetScheduledFlightOptions", {
+                params: {
+                    departureDate: formattedDate,
+                    jobId,
+                    airlineId,
+                    pageSize
+                }
+            });
+
+            const result = {
+                flights: response.data,
+                message: response.data.length === 0
+                    ? "Sorry, we couldn't find any flights between these airports on the selected date. Please try different dates or airports."
+                    : null
+            };
+
+            // Store in cache
+            this.flightCache.set(cacheKey, {
+                timestamp: Date.now(),
+                data: result
+            });
+
+            const endTime = performance.now();
+            console.log(`Flight request completed in ${(endTime - startTime).toFixed(2)}ms for job ${jobId}, received ${response.data.length} flights`);
+
+            return result;
+        } catch (error) {
+            const endTime = performance.now();
+            console.error(`Flight request failed after ${(endTime - startTime).toFixed(2)}ms`, error);
+            throw error;
+        }
     }
 
     async assignFlightToJob(jobId: number, flightNumber: string, departureDate: Date) {

@@ -1,384 +1,75 @@
-// Variables (Material Design 3 inspired colors and metrics)
-@text-primary: rgba(0, 0, 0, 0.87);
-@text-secondary: rgba(0, 0, 0, 0.6);
-@text-hint: rgba(0, 0, 0, 0.38);
-@background-light: #f5f7fa;
-@background-card: #ffffff;
-@surface-border: rgba(0, 0, 0, 0.12);
-
-// Spacing variables based on 8px grid
-@spacing-2: 4px;
-@spacing-4: 8px;
-@spacing-8: 16px;
-@spacing-12: 24px;
-@spacing-16: 32px;
-@spacing-24: 48px;
-
-// Elevations and radii
-@border-radius-sm: 4px;
-@border-radius-md: 8px;
-@border-radius-lg: 16px;
-
-// Font sizes
-@font-small: 12px;
-@font-body: 14px;
-@font-title: 16px;
-@font-headline: 20px;
-
-// Animations
-@transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
+// Minimized custom styles - leveraging AngularJS Material
 .parcel-dimensions-dialog-component {
-    // Improve dialog appearance
-    &.md-dialog-container,
-    &#edit-dimensions-dialog {
-        z-index: 999;
-        border-radius: @border-radius-md;
-        overflow: hidden;
+    // Keep only essential custom styling
+    .timeline-container {
+        max-width: 100%;
+        overflow-x: auto;
+        min-height: 80px;
     }
 
-    #edit-dimensions-dialog {
-        max-width: 900px;
-        width: 90%;
-        background-color: @background-card;
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.14), 0 4px 8px rgba(0, 0, 0, 0.12);
-
-        .md-toolbar-tools {
-            padding: @spacing-8 @spacing-12;
-
-            .popup-icon {
-                margin-right: @spacing-8;
-                font-size: 24px;
-            }
-
-            h2 {
-                font-size: @font-headline;
-                font-weight: 500;
-                line-height: 1.2;
-            }
-        }
-
-        .md-dialog-content {
-            padding: @spacing-12;
-            margin-bottom: 0;
-        }
-    }
-
-    // Parent Job Info Banner
-    .parent-job-info {
-        padding: @spacing-8 @spacing-12;
+    .timeline-step {
         display: flex;
+        flex-direction: column;
         align-items: center;
-        border-radius: 0;
-        margin-bottom: @spacing-8;
-
-        .info-icon {
-            margin-right: @spacing-8;
-            font-size: 20px;
-        }
-
-        .info-text {
-            font-size: @font-body;
-            line-height: 1.5;
-        }
-    }
-
-    // Selected parcel card
-    .selected-parcel-card {
-        padding: @spacing-8 @spacing-12;
-        border-radius: @border-radius-md;
-        margin-bottom: @spacing-12;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-
-        md-icon {
-            margin-right: @spacing-8;
-            font-size: 20px;
-        }
-
-        .selected-parcel-name {
-            font-size: @font-title;
-            font-weight: 500;
-        }
-    }
-
-    // Empty state styling
-    .empty-state {
-        padding: @spacing-24 @spacing-12;
-        text-align: center;
-
-        .empty-state-container {
-            max-width: 400px;
-            margin: 0 auto;
-            padding: @spacing-24;
-            border-radius: @border-radius-md;
-            background-color: @background-light;
-        }
-
-        .empty-state-icon {
-            font-size: 64px;
-            height: 64px;
-            width: 64px;
-            color: #5C6BC0; // Indigo 400
-            margin-bottom: @spacing-12;
-        }
-
-        h3 {
-            margin: 0 0 @spacing-4;
-            font-weight: 500;
-            font-size: @font-headline;
-            color: @text-primary;
-        }
-
-        p {
-            margin: 0 0 @spacing-16;
-            color: @text-secondary;
-            font-size: @font-body;
-        }
-
-        .md-button {
-            margin: @spacing-8 0 0;
-            padding: @spacing-4 @spacing-12;
-            height: 36px;
-            line-height: 36px;
-            border-radius: @border-radius-sm;
-
-            md-icon {
-                margin-right: @spacing-4;
-                font-size: 18px;
-            }
-        }
-    }
-
-    // Dimension section improvements
-    .dimension-section-title {
-        font-size: @font-title;
-        font-weight: 500;
-        color: @text-primary;
-        margin: @spacing-8 0 @spacing-4;
-        padding-bottom: @spacing-4;
-    }
-
-    // Timeline styling - updated for Material Design 3
-    .parcel-timeline {
+        cursor: pointer;
+        padding: 0 8px;
         position: relative;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: @background-card;
-        padding: @spacing-8 @spacing-12;
-        border-top: 1px solid @surface-border;
 
-        .timeline-container {
-            max-width: 100%;
-            overflow-x: auto;
-            padding: @spacing-8;
+        .step-circle {
+            position: relative;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 80px;
-        }
 
-        .timeline-step {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            padding: 0 @spacing-8;
-            transition: @transition-standard;
-            position: relative;
-
-            &:hover {
-                transform: translateY(-2px);
+            &.add-button {
+                border: 1px dashed rgba(0, 0, 0, 0.6);
             }
 
-            .step-circle {
-                position: relative;
-                width: 36px;
-                height: 36px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-weight: 500;
-                font-size: 14px;
-                transition: @transition-standard;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            .delete-button {
+                position: absolute;
+                top: -4px;
+                right: -4px;
+                width: 18px;
+                height: 18px;
+                min-height: 18px;
 
-                &.add-button {
-                    background-color: white !important;
-                    border: 1px dashed @text-secondary;
-                    color: @text-secondary;
-                    box-shadow: none;
-
-                    &:hover {
-                        background-color: rgba(0, 0, 0, 0.04) !important;
-                        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                    }
-
-                    md-icon {
-                        font-size: 20px;
-                        width: 20px;
-                        height: 20px;
-                    }
-                }
-
-                .delete-button {
-                    position: absolute;
-                    top: -4px;
-                    right: -4px;
-                    width: 18px;
-                    height: 18px;
-                    min-height: 18px;
-                    line-height: 18px;
-                    padding: 0;
-                    margin: 0;
-                    background-color: rgba(0, 0, 0, 0.7) !important;
-                    border-radius: 50%;
-                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-                    transition: @transition-standard;
-
-                    md-icon {
-                        color: white;
-                        font-size: 12px;
-                        width: 12px;
-                        height: 12px;
-                        min-width: 12px;
-                        min-height: 12px;
-                        line-height: 12px;
-                    }
-
-                    &:hover {
-                        background-color: rgba(0, 0, 0, 0.87) !important;
-                        transform: scale(1.1);
-                    }
-                }
-            }
-
-            .step-label {
-                margin-top: @spacing-4;
-                font-size: @font-small;
-                color: @text-secondary;
-                text-align: center;
-                max-width: 100px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                transition: @transition-standard;
-
-                &.bold {
-                    color: @text-primary;
-                    font-weight: 500;
-                }
-            }
-
-            &.active {
-                .step-circle {
-                    box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
-                }
-
-                .step-label {
-                    color: @text-primary;
-                    font-weight: 500;
+                md-icon {
+                    font-size: 12px;
+                    width: 12px;
+                    height: 12px;
+                    min-width: 12px;
+                    min-height: 12px;
                 }
             }
         }
 
-        .timeline-connector {
-            height: 2px;
-            width: 32px;
-            margin: 0 @spacing-2;
-            position: relative;
-            top: -10px;
+        .step-label {
+            margin-top: 4px;
+            text-align: center;
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
     }
 
-    // Form elements
-    .dimension-form {
-        margin-top: @spacing-8;
+    .timeline-connector {
+        height: 2px;
+        width: 32px;
+        margin: 0 4px;
+        position: relative;
+        top: -10px;
     }
 
-    .dimensions-group {
-        padding: @spacing-8;
-        border-radius: @border-radius-md;
-        background-color: @background-light;
-    }
-
+    // Dimension input styling
     .dimension-unit {
-        color: @text-secondary;
-        font-size: @font-small;
         position: absolute;
         right: 0;
         top: 0;
         line-height: 36px;
-        padding-right: @spacing-8;
-    }
-
-    md-input-container {
-        margin: @spacing-8 0;
-        padding-bottom: 18px;
-
-        &.md-block {
-            margin: @spacing-8 0;
-        }
-
-        label {
-            color: @text-secondary;
-            font-size: @font-body;
-        }
-
-        .md-input {
-            border-color: @surface-border;
-            height: 36px;
-            padding: 0 @spacing-8;
-            font-size: @font-body;
-            border-radius: @border-radius-sm;
-            background-color: rgba(255, 255, 255, 0.8);
-
-            &:focus {
-                border-color: #2196F3;
-                background-color: white;
-            }
-        }
-    }
-
-    // Visualization container
-    .dimension-visualization {
-        padding: @spacing-12;
-        background-color: @background-light;
-        border-radius: @border-radius-md;
-        min-height: 300px;
-        align-items: center;
-        justify-content: center;
-        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-
-    // Dialog actions
-    md-dialog-actions {
-        border-top: 1px solid @surface-border;
-        padding: @spacing-8 @spacing-12;
-        margin: 0;
-        background: white;
-
-        .md-button {
-            margin: 0 @spacing-2;
-            min-width: 88px;
-            height: 36px;
-            line-height: 36px;
-            border-radius: @border-radius-sm;
-            text-transform: uppercase;
-            font-weight: 500;
-            font-size: 14px;
-            transition: @transition-standard;
-
-            &.md-primary {
-                margin-left: @spacing-8;
-            }
-
-            &[disabled] {
-                background-color: rgba(0, 0, 0, 0.12) !important;
-                color: rgba(0, 0, 0, 0.38) !important;
-            }
-        }
+        padding-right: 8px;
     }
 }

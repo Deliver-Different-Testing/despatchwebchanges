@@ -125,4 +125,19 @@ public class NoteController(
             return StatusCode(500, "An error occurred getting note types.");
         }
     }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateNoteType([FromBody] NoteTypeViewModel noteType)
+    {
+        try
+        {
+            await jobRepository.AddNewTucNoteType(noteType);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error occured getting note types");
+            return StatusCode(500, ex.Message);
+        }
+    }
 }

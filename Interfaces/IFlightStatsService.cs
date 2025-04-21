@@ -14,7 +14,8 @@ public interface IFlightStatsService
         int? airlineId = null,
         int flightBuffer = 0,
         string codeType = null,
-        List<string> extendedOptions = null);
+        List<string> extendedOptions = null,
+        int maxResults = 25);
 
     Task<ScheduledFlight> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,
         DateTime departureTime);

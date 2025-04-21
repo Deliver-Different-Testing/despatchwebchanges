@@ -1,12 +1,12 @@
-<div class="parcel-visualization-container">
-    <!-- Empty state with improved styling -->
-    <div ng-if="!ctrl.hasValidDimensions" class="empty-visualization">
-        <md-icon md-font-set="material-symbols-outlined">view_in_ar</md-icon>
-        <p>Enter dimensions to see visualization</p>
+<div class="parcel-visualization-container md-whiteframe-1dp" layout="column" layout-align="center center">
+    <!-- Empty state using Angular Material -->
+    <div ng-if="!ctrl.hasValidDimensions" layout="column" layout-align="center center" layout-padding class="md-padding" flex>
+        <md-icon md-font-set="material-symbols-outlined" class="md-primary md-hue-1" style="font-size: 48px; height: 48px; width: 48px;">view_in_ar</md-icon>
+        <p class="md-caption md-text-muted">Enter dimensions to see visualization</p>
     </div>
 
     <!-- Responsive SVG container with better sizing -->
-    <div ng-if="ctrl.hasValidDimensions" class="svg-container">
+    <div ng-if="ctrl.hasValidDimensions" class="svg-container" flex layout="row" layout-align="center center">
         <svg width="100%" height="100%" viewBox="0 0 400 280" preserveAspectRatio="xMidYMid meet" class="parcel-svg">
             <!-- Drop shadow filter for 3D effect -->
             <defs>
@@ -98,7 +98,7 @@
                         text-anchor="middle"
                         font-size="12"
                         fill="#1976D2"
-                        class="dimension-label">
+                        class="dimension-label md-body-1">
                     W: {{ width }}"
                 </text>
 
@@ -108,7 +108,7 @@
                         text-anchor="start"
                         font-size="12"
                         fill="#1976D2"
-                        class="dimension-label">
+                        class="dimension-label md-body-1">
                     H: {{ height }}"
                 </text>
 
@@ -118,22 +118,22 @@
                         text-anchor="middle"
                         font-size="12"
                         fill="#1976D2"
-                        class="dimension-label">
+                        class="dimension-label md-body-1">
                     L: {{ length }}"
                 </text>
             </g>
         </svg>
     </div>
 
-    <!-- Compact dimensions summary -->
-    <div ng-if="ctrl.hasValidDimensions" class="dimensions-summary">
-        <div class="dimension-chip">
-            <md-icon md-font-set="material-symbols-outlined" class="dimension-icon">straighten</md-icon>
-            <span>{{ length }}" × {{ width }}" × {{ height }}"</span>
-        </div>
-        <div class="dimension-chip volume">
-            <md-icon md-font-set="material-symbols-outlined" class="dimension-icon">view_in_ar</md-icon>
-            <span>{{ (width * height * length) | number:1 }} in³</span>
-        </div>
+    <!-- Dimensions summary using Material chips -->
+    <div ng-if="ctrl.hasValidDimensions" class="md-whiteframe-1dp" style="background: white;" layout="row" layout-align="center center" layout-padding layout-wrap>
+        <md-chip class="md-primary md-hue-1">
+            <md-icon md-font-set="material-symbols-outlined">straighten</md-icon>
+            {{ length }}" × {{ width }}" × {{ height }}"
+        </md-chip>
+        <md-chip class="md-accent md-hue-1">
+            <md-icon md-font-set="material-symbols-outlined">view_in_ar</md-icon>
+            {{ (width * height * length) | number:1 }} in³
+        </md-chip>
     </div>
 </div>

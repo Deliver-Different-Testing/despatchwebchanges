@@ -1,4 +1,4 @@
-<md-dialog aria-label="{{ctrl.title}}" class="note-dialog">
+<md-dialog aria-label="{{ctrl.title}}" class="job-note-editor-dialog">
     <form name="noteForm" ng-submit="ctrl.save()" novalidate>
         <md-toolbar>
             <div class="md-toolbar-tools">
@@ -13,22 +13,93 @@
         </md-toolbar>
 
         <md-dialog-content>
-            <div class="md-dialog-content md-padding">
-                <!-- Note Type -->
-                <md-input-container class="md-block">
-                    <label>Note Type</label>
-                    <md-select ng-model="ctrl.model.noteTypeId" required>
-                        <md-option ng-repeat="type in ctrl.noteTypes" ng-value="type.id">
-                            {{type.text}}
-                        </md-option>
-                    </md-select>
-                    <div ng-messages="noteForm.noteTypeId.$error">
-                        <div ng-message="required">Note type is required</div>
+            <div class="md-dialog-content">
+                <!-- Note Type Selector -->
+                <div layout="row" layout-align="space-between center">
+                    <md-input-container class="md-block" flex>
+                        <label>Note Type</label>
+                        <md-select ng-model="ctrl.model.noteTypeId" required>
+                            <md-option ng-repeat="type in ctrl.noteTypes" ng-value="type.id">
+                                {{type.text}}
+                            </md-option>
+                        </md-select>
+                        <div ng-messages="noteForm.noteTypeId.$error">
+                            <div ng-message="required">Note type is required</div>
+                        </div>
+                    </md-input-container>
+
+                    <md-button class="md-icon-button" ng-click="ctrl.toggleNoteTypeCreator()" aria-label="Add New Note Type">
+                        <md-icon md-font-set="material-symbols-outlined">add_circle</md-icon>
+                        <md-tooltip md-direction="bottom">Add New Note Type</md-tooltip>
+                    </md-button>
+                </div>
+
+                <!-- Note Type Description Button & Card -->
+                <div ng-if="ctrl.getSelectedNoteType() && ctrl.getSelectedNoteType().description" class="note-type-description-container">
+                    <md-button class="md-icon-button description-toggle" ng-click="ctrl.toggleDescription(ctrl.model.noteTypeId)" aria-label="Show Description">
+                        <md-icon md-font-set="material-symbols-outlined">{{ctrl.showDescriptionFor === ctrl.model.noteTypeId ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}}</md-icon>
+                        <span>Description</span>
+                    </md-button>
+
+                    <div ng-if="ctrl.showDescriptionFor === ctrl.model.noteTypeId" class="note-type-description-card">
+                        <md-card>
+                            <md-card-content>
+                                <p>{{ctrl.getSelectedNoteType().description}}</p>
+                            </md-card-content>
+                        </md-card>
                     </div>
-                </md-input-container>
+                </div>
+
+                <!-- Note Type Creator -->
+                <div ng-if="ctrl.showNoteTypeCreator" class="note-type-creator">
+                    <md-card class="md-whiteframe-1dp">
+                        <md-card-title>
+                            <md-card-title-text>
+                                <span class="md-headline">Create New Note Type</span>
+                                <md-divider></md-divider>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content>
+                            <div layout="column">
+                                <md-input-container class="md-block">
+                                    <label>Note Type Name</label>
+                                    <input ng-model="ctrl.newNoteType.text" required>
+                                </md-input-container>
+
+                                <md-input-container class="md-block">
+                                    <label>Description (Optional)</label>
+                                    <textarea ng-model="ctrl.newNoteType.description" md-maxlength="500" rows="2"></textarea>
+                                    <div class="hint">Provide a brief explanation of when to use this note type</div>
+                                </md-input-container>
+
+                                <md-checkbox ng-model="ctrl.newNoteType.isPublic" aria-label="Public Note Type">
+                                    Is Public Note Type
+                                </md-checkbox>
+
+                                <div ng-if="ctrl.newNoteType.isPublic" class="public-note-warning">
+                                    <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
+                                    <span>Public note types are visible to clients</span>
+                                </div>
+                            </div>
+                        </md-card-content>
+                        <md-card-actions layout="row" layout-align="end center">
+                            <md-button ng-click="ctrl.toggleNoteTypeCreator()">Cancel</md-button>
+                            <md-button class="md-primary md-raised" ng-click="ctrl.createNoteType()" ng-disabled="ctrl.isCreatingNoteType">
+                                <md-progress-circular ng-if="ctrl.isCreatingNoteType" md-mode="indeterminate" md-diameter="18" style="margin-right: 8px;" class="md-accent"></md-progress-circular>
+                                <span>Create</span>
+                            </md-button>
+                        </md-card-actions>
+                    </md-card>
+                </div>
+
+                <!-- Public Note Warning -->
+                <div ng-if="ctrl.isSelectedNoteTypePublic()" class="public-note-warning">
+                    <md-icon md-font-set="material-symbols-outlined">visibility</md-icon>
+                    <span>This is a public note that will be visible to clients</span>
+                </div>
 
                 <!-- Note Text -->
-                <md-input-container class="md-block" style="margin-top: 50px;">
+                <md-input-container class="md-block" style="margin-top: 40px;">
                     <label for="note-content">Note</label>
                     <textarea id="note-content" ng-model="ctrl.model.noteText" required md-maxlength="1000" rows="5"></textarea>
                     <div ng-messages="noteForm.noteText.$error">
@@ -61,7 +132,7 @@
                     <md-list-item ng-if="ctrl.model.updatedDate">
                         <md-icon md-font-set="material-symbols-outlined">update</md-icon>
                         <p>Last updated by <strong>{{ctrl.model.updatedByName}}</strong> on <strong>{{ctrl.model.updatedDate | date: 'MMM d, y HH:mm:ss'}}</strong></p>
-                     </md-list-item>
+                    </md-list-item>
                 </md-list>
             </div>
         </md-dialog-content>

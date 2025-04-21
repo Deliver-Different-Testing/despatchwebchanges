@@ -1572,11 +1572,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         else
             noteId = await CreateActiveNoteAsync(viewModel, staffId, currentTime);
 
-        if(viewModel.JobBookingId.HasValue)
-            await UpdateRecurringJobNotesIfPublicAsync(viewModel.NoteTypeId, viewModel.JobBookingId.Value, viewModel.NoteText);
-        else if(viewModel.JobId.HasValue)
-            await UpdateJobNotesIfPublicAsync(viewModel.NoteTypeId, viewModel.JobId.Value, viewModel.NoteText);
-
         return noteId;
     }
 
@@ -1614,9 +1609,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             noteId = await UpdateArchivedNoteAsync(viewModel, staffId, currentTime);
         else
             noteId = await UpdateActiveNoteAsync(viewModel, staffId, currentTime);
-
-        if (viewModel.JobId.HasValue)
-            await UpdateJobNotesIfPublicAsync(viewModel.NoteTypeId, viewModel.JobId.Value, viewModel.NoteText);
 
         return noteId;
     }
@@ -1710,66 +1702,18 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             noteId = activeNote.NoteId;
         }
 
-        await UpdateJobNotesIfPublicAsync(internalNoteTypeId, jobId, noteText, cancellationToken);
         return noteId;
     }
 
-    public async Task<bool> IsNoteTypePublicAsync(int noteTypeId, CancellationToken cancellationToken = default)
-    {
-        var isNoteTypePublic = await Context.TucNoteTypes
-            .Where(nt => nt.NoteTypeId == noteTypeId)
-            .Select(nt => nt.IsPublic)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        return isNoteTypePublic;
-    }
-
-    private async Task UpdateJobNotesIfPublicAsync(
-        int noteTypeId,
-        int jobId,
-        string noteText,
-        CancellationToken cancellationToken = default)
-    {
-        var isNoteTypePublic = await IsNoteTypePublicAsync(noteTypeId, cancellationToken);
-        if (isNoteTypePublic == false) return;
-
-        const string noteSeparator = "\n ";
-        var job = await Context.TucJobs.FindAsync([jobId], cancellationToken);
-
-        if (job != null)
-        {
-            job.UcjbNotes = job.UcjbNotes + noteSeparator + noteText;
-            Context.TucJobs.Update(job);
-            await Context.SaveChangesAsync(cancellationToken);
-        }
-    }
-
-    private async Task UpdateRecurringJobNotesIfPublicAsync(
-        int noteTypeId,
-        int jobBookingId,
-        string noteText,
-        CancellationToken cancellationToken = default)
-    {
-        var isNoteTypePublic = await IsNoteTypePublicAsync(noteTypeId, cancellationToken);
-        if (isNoteTypePublic == false) return;
-
-        const string noteSeparator = "\n ";
-        var job = await Context.TucJobBookings.FindAsync([jobBookingId], cancellationToken);
-        if(job == null) return;
-
-        // Update the old notes field
-        job.UcbkNotes = job.UcbkNotes + noteSeparator + noteText;
-        await Context.SaveChangesAsync(cancellationToken);
-    }
-
-    public async Task<List<Suggestion>> GetNoteTypesAsync()
+    public async Task<List<NoteTypeViewModel>> GetNoteTypesAsync()
     {
         var noteTypes = await Context.TucNoteTypes
             .Where(x => x.IsActive)
-            .Select(x => new Suggestion
+            .Select(x => new NoteTypeViewModel
             {
                 Id = x.NoteTypeId,
-                Text = x.NoteTypeName
+                Text = x.NoteTypeName,
+                IsPublic = x.IsPublic
             })
             .AsNoTracking()
             .ToListAsync();
@@ -1832,4 +1776,18 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 _ => string.Empty
             };
         }
+
+      public async Task AddNewTucNoteType(NoteTypeViewModel noteType)
+      {
+          var newType = new TucNoteType
+          {
+              IsActive = true,
+              IsPublic = noteType.IsPublic,
+              NoteTypeName = noteType.Text,
+              Description = noteType.Description
+          };
+
+          await Context.TucNoteTypes.AddAsync(newType);
+          await Context.SaveChangesAsync();
+      }
 }

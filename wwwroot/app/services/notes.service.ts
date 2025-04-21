@@ -1,4 +1,4 @@
-import {Suggestion, IJobNote} from "../interfaces/job.interface";
+import {IJobNote, INoteType} from "../interfaces/job.interface";
 
 class NoteService {
     static $inject = [
@@ -68,13 +68,23 @@ class NoteService {
         }
     }
 
-    async getNoteTypes(): Promise<Suggestion[]> {
+    async getNoteTypes(): Promise<INoteType[]> {
         try {
-            const response = await this.$http.get<Suggestion[]>('note/GetNoteTypes');
+            const response = await this.$http.get<INoteType[]>('note/GetNoteTypes');
             return response.data;
         } catch (error) {
             console.error('Error getting note types:', error);
             return [];
+        }
+    }
+
+    async createNoteType(noteType: INoteType): Promise<INoteType> {
+        try {
+            const response = await this.$http.post<INoteType>('note/CreateNoteType', noteType);
+            return response.data;
+        } catch (error) {
+            console.error('Error creating note type:', error);
+            throw error;
         }
     }
 }

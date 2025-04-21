@@ -3,7 +3,7 @@
         <div class="md-toolbar-tools">
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">event</md-icon>
             <h2>Add Task</h2>
-            <span flex></span>
+            <div flex></div>
             <md-button class="md-icon-button" ng-click="ctrl.cancel()">
                 <md-tooltip md-direction="bottom">Cancel</md-tooltip>
                 <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
@@ -16,6 +16,7 @@
     <form name="ctrl.eventForm" ng-submit="ctrl.submit(ctrl.event)" novalidate>
         <md-dialog-content ng-cloak>
             <div class="md-dialog-content">
+                <!-- Job/Client Information -->
                 <div layout-gt-sm="row">
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="jobNumber">Job Number</label>
@@ -28,14 +29,10 @@
                     </md-input-container>
                 </div>
 
+                <!-- Task Type Selection -->
                 <div layout-gt-sm="row">
                     <md-input-container class="md-block" flex-gt-sm>
-                        <label for="EventDate">Task Date</label>
-                        <input id="EventDate" ng-model="ctrl.event.eventDate" type="date">
-                    </md-input-container>
-
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="eventTypes">Task Type</label>
+                        <label>Task Type</label>
                         <md-select id="eventTypes" ng-model="ctrl.selectedEvent" required>
                             <md-option ng-repeat="eventType in ctrl.eventTypes" ng-value="eventType">
                                 {{ eventType.text }}
@@ -45,20 +42,52 @@
                             <div ng-message="required">Task Required</div>
                         </div>
                     </md-input-container>
-                </div>
-
-                <div layout-gt-sm="row">
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="eventTime">Task Time</label>
-                        <input id="eventTime" ng-value="ctrl.event.eventTime | date:'HH:mm'" type="time">
-                    </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="notes">Notes</label>
                         <textarea id="notes" md-maxlength="150" md-select-on-focus ng-model="ctrl.event.notes"
-                                  rows="5"></textarea>
+                                  rows="3"></textarea>
                     </md-input-container>
                 </div>
+
+                <md-card>
+                    <md-toolbar>
+                        <div class="md-toolbar-tools">
+                            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">schedule</md-icon>
+                            <h2>Task Schedule</h2>
+                            <div flex></div>
+                        </div>
+                    </md-toolbar>
+                    <md-card-content class="md-padding">
+                        <div layout-gt-sm="row">
+                            <div flex-gt-sm class="md-block layout-padding layout-align-center-center layout-column">
+                                <span class="md-body-1 text-center">Task Date</span>
+                                <div class="layout-row layout-align-center-center">
+                                    <md-datepicker
+                                            id="TaskDate"
+                                            ng-model="ctrl.event.eventDate"
+                                            md-placeholder="MM/DD/YYYY"
+                                            md-date-locale="ctrl.dateLocale">
+                                    </md-datepicker>
+                                </div>
+                            </div>
+
+                            <md-divider vertical></md-divider>
+
+                            <div flex-gt-sm class="md-block layout-padding layout-align-center-center layout-column">
+                                <span class="md-body-1 text-center">Task Time</span>
+                                <div class="layout-row layout-align-center-center">
+                                    <md-time-picker
+                                            id="TaskTime"
+                                            ng-model="ctrl.event.eventTime"
+                                            no-meridiem
+                                            no-auto-switch>
+                                    </md-time-picker>
+                                </div>
+                            </div>
+                        </div>
+                    </md-card-content>
+                </md-card>
             </div>
         </md-dialog-content>
 

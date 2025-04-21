@@ -1,3 +1,5 @@
+import moment from "moment";
+
 /**
  * Returns a unique list of items based on a key property
  */
@@ -108,4 +110,29 @@ export function jobStatusIconFilter(status: string): string {
 export function replaceFilter(input: string, search: string, replacement: string): string {
     if (!input) return input;
     return input.replace(new RegExp(search, "g"), replacement);
+}
+
+/**
+ * Formats a date using moment.js
+ */
+export function momentFormatFilter(dateString: string | Date, format: string): string {
+    if (!dateString) return '';
+    return moment(dateString).format(format);
+}
+
+/**
+ * Converts a timezone to its abbreviation using moment-timezone
+ */
+export function timezoneShortFilter(timezone: string): string {
+    if (!timezone) return '';
+
+    try {
+        // Use moment-timezone to get the abbreviation
+        // Get current date to account for DST
+        const now = new Date();
+        return moment.tz(now, timezone).format('z');
+    } catch (error) {
+        console.error('Error formatting timezone:', error);
+        return timezone;
+    }
 }

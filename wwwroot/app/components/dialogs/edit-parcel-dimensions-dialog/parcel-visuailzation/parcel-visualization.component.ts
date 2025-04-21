@@ -16,8 +16,8 @@ class ParcelVisualizationController extends BaseController {
     constructor() {
         super();
         // Adjusted base size to better fit in dialog
-        this.baseSize = 100;
-        this.maxDimension = 200;
+        this.baseSize = 50;
+        this.maxDimension = 100;
     }
 
     $onInit(): void {
