@@ -213,7 +213,9 @@ public static class JobMappings
                 .TucJobNationwides.Select(nj => new AssignedFlight
                 {
                     ExpectedArrival = nj.UcnwEta,
+                    ArrivalTimeZone = j.ToAirport.Timezone,
                     ExpectedDeparture = nj.UcnwEtd,
+                    DepartureTimeZone = j.FromAirport.Timezone,
                     FlightNumber = nj.UcnwFlightNo,
                     Notes = nj.UcnwNotes
                 })
@@ -413,7 +415,10 @@ public static class JobMappings
             } : new ReadTrackerInfoViewModel
                 {
                     HasBeenRead = false
-                }
+                },
+
+            PickUpWindowMins = j.PickUpWindowMins,
+            DeliverByWindowMins = j.DeliverByWindowMins
         };
 
     public static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping =
@@ -582,7 +587,10 @@ public static class JobMappings
                             j.DeliveryLongitude.Value
                         )
                     )
-                    : 0
+                    : 0,
+
+            PickUpWindowMins = j.PickUpWindowMins,
+            DeliverByWindowMins = j.DeliverByWindowMins
         };
 
     public static readonly Expression<Func<TucJobBooking, JobRecurringViewModel>> JobRecurringMapping =
@@ -766,7 +774,10 @@ public static class JobMappings
             // Added new fields for scheduling
             DaysOfWeek = (DaysOfWeek)j.UcbkDaysInt,
             Frequency = (Frequency)(j.UcbkFrequency ?? 0),
-            HolidayDeliveryOption = (HolidayDeliveryOptions)j.HolidayDeliveryOption
+            HolidayDeliveryOption = (HolidayDeliveryOptions)j.HolidayDeliveryOption,
+
+            PickUpWindowMins = j.PickUpWindowMins,
+            DeliverByWindowMins = j.DeliverByWindowMins
         };
 
     public static readonly Expression<Func<TucJob, JobLateCallDto>> JobLateCallMapping =

@@ -58,7 +58,6 @@ public class FlightStatsService(
 
         var query = HttpUtility.ParseQueryString(string.Empty);
         query["appId"] = _appId;
-        ;
         query["appKey"] = _appKey;
         query["name"] = uniqueWebhookId.ToString();
         query["type"] = "JSON";
@@ -73,23 +72,23 @@ public class FlightStatsService(
         };
 
         var uri = uriBuilder.Uri;
-        Log.Debug($"DeliverTo: {_webhookUrl}");
-        Log.Debug($"r: {uri}");
+        Log.Debug("DeliverTo: {WebhookUrl}", _webhookUrl);
+        Log.Debug("r: {Uri}", uri);
 
         var response = await httpClient.GetAsync(uri);
 
-        Log.Debug($"FlightService StatusCode: {response.StatusCode}");
+        Log.Debug("FlightService StatusCode: {ResponseStatusCode}", response.StatusCode);
         if (!response.IsSuccessStatusCode)
             throw new Exception($"Failed to retrieve alert information: {response.ReasonPhrase}");
 
         var content = await response.Content.ReadAsStringAsync();
-        Log.Debug($"CreateRule content response string: {content}");
+        Log.Debug("CreateRule content response string: {Content}", content);
 
         var createAlertResponse = JsonSerializer.Deserialize<CreateAlertResponse>(content);
         return createAlertResponse.Rule?.Id;
     }
 
-public async Task<List<FlightViewModel>> GetFlightsAsync(
+    public async Task<List<FlightViewModel>> GetFlightsAsync(
         int jobId,
         DateTime? departureDateTime = null,
         int? airlineId = null,
@@ -125,7 +124,7 @@ public async Task<List<FlightViewModel>> GetFlightsAsync(
 
         // Filter by specific airline if airlineId is provided
         string selectedAirlineCode = null;
-        if (airlineId.HasValue && airlineId.Value > 0)
+        if (airlineId is > 0)
         {
             var selectedAirline = activeAirlines.FirstOrDefault(a => a.Id == airlineId.Value);
             if (selectedAirline != null)
@@ -162,11 +161,11 @@ public async Task<List<FlightViewModel>> GetFlightsAsync(
         };
 
         var uri = uriBuilder.Uri;
-        Log.Debug($"FlightRequest: {uri}");
+        Log.Debug("FlightRequest: {Uri}", uri);
 
         var response = await httpClient.GetAsync(uri);
 
-        Log.Debug($"FlightService StatusCode: {response.StatusCode}");
+        Log.Debug("FlightService StatusCode: {ResponseStatusCode}", response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
         var flightStatusResponse = JsonSerializer.Deserialize<FlightConnectionsResponse>(content);
@@ -175,8 +174,8 @@ public async Task<List<FlightViewModel>> GetFlightsAsync(
 
         var flightOptions = await Task.WhenAll(flightStatusResponse.Connections
             .Where(conn => conn.ScheduledFlight.Count != 0 &&
+                           conn.ScheduledFlight.Count <= 2 &&
                            conn.ScheduledFlight.Exists(x => activeAirlineCodes.Contains(x.CarrierFsCode)) &&
-                           // Additional filter for specific airline if airlineId is provided
                            (airlineId is not > 0 ||
                             conn.ScheduledFlight.Exists(x => x.CarrierFsCode == selectedAirlineCode)))
             .Select(async conn =>
@@ -190,6 +189,14 @@ public async Task<List<FlightViewModel>> GetFlightsAsync(
                     firstFlight.CarrierFsCode,
                     conn.ScheduledFlight.Count != 0,
                     firstFlight.DepartureTime);
+
+                // Get departure airport timezone from appendix
+                var departureAirport = flightStatusResponse.Appendix?.Airports
+                    .FirstOrDefault(a => a.Fs == firstFlight.DepartureAirportFsCode);
+
+                // Get arrival airport timezone from appendix
+                var arrivalAirport = flightStatusResponse.Appendix?.Airports
+                    .FirstOrDefault(a => a.Fs == lastFlight.ArrivalAirportFsCode);
 
                 return new FlightViewModel
                 {
@@ -210,7 +217,11 @@ public async Task<List<FlightViewModel>> GetFlightsAsync(
                     IsCodeShare = firstFlight.IsCodeShare,
                     Amount = amount,
                     CodeShareAirline = firstFlight.IsCodeShare ? firstFlight.CarrierFsCode : null,
-                    AirlineId = activeAirlines.FirstOrDefault(x => x.Text == firstFlight.CarrierFsCode)?.Id ?? 0
+                    AirlineId = activeAirlines.FirstOrDefault(x => x.Text == firstFlight.CarrierFsCode)?.Id ?? 0,
+
+                    // Add timezone information
+                    DepartureTimeZone = departureAirport?.TimeZoneRegionName,
+                    ArrivalTimeZone = arrivalAirport?.TimeZoneRegionName
                 };
             }).Take(100));
 
@@ -242,14 +253,14 @@ public async Task<List<FlightViewModel>> GetFlightsAsync(
         };
 
         var uri = uriBuilder.Uri;
-        Log.Debug($"FlightRequest: {uri}");
+        Log.Debug("FlightRequest: {Uri}", uri);
 
         var response = await httpClient.GetAsync(uri);
 
         if (!response.IsSuccessStatusCode)
             throw new Exception($"Failed to retrieve flight information: {response.ReasonPhrase}");
 
-        Log.Debug($"FlightService StatusCode: {response.StatusCode}");
+        Log.Debug("FlightService StatusCode: {ResponseStatusCode}", response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
         var flightStatusResponse = JsonSerializer.Deserialize<FlightSchedulesResponse>(content);

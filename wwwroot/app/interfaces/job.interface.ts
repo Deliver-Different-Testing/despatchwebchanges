@@ -154,7 +154,9 @@ export interface IJob {
     active?: boolean;
     daysOfWeek?: DaysOfWeek
     frequency?: Frequency;
-    holidayDeliveryOption: HolidayDeliveryOptions
+    holidayDeliveryOption: HolidayDeliveryOptions,
+    pickUpWindowMins?: number;
+    deliverByWindowMins?: number;
 }
 
 export interface ParcelDimensions {
@@ -169,7 +171,9 @@ export interface ParcelDimensions {
 export interface AssignedFlight {
     flightNumber: string;
     expectedDeparture?: Date;
+    departureTimeZone: string;
     expectedArrival?: Date;
+    arrivalTimeZone: string;
     notes: string;
 }
 

@@ -19,4 +19,7 @@ public class FlightViewModel
     public decimal Amount { get; set; }
     public string CodeShareAirline { get; set; }
     public int AirlineId {get;set;}
+
+    public string DepartureTimeZone { get; set; }
+    public string ArrivalTimeZone { get; set; }
 }

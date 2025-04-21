@@ -427,6 +427,10 @@ public partial class TucJob
 
     public string Connote { get; set; }
 
+    public int? PickUpWindowMins { get; set; }
+
+    public int? DeliverByWindowMins { get; set; }
+
     public virtual TucJobType AcceptedJobType { get; set; }
 
     public virtual TucAgent Agent { get; set; }

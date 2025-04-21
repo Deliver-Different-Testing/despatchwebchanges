@@ -1418,7 +1418,6 @@ class NationwideControl extends BaseController {
             return '';
         }
 
-        // Add time-based status class
         const followupTime = moment(job.followupTime);
         const now = moment();
         const diffMinutes = followupTime.diff(now, 'minutes');

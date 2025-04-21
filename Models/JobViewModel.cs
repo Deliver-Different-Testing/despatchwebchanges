@@ -118,6 +118,10 @@ public class JobViewModel : DispatchJobViewModel
     public double Distance { get; set; }
 
     public ReadTrackerInfoViewModel ReadTrackerInfo { get; set; }
+
+    public int? PickUpWindowMins { get; set; }
+
+    public int? DeliverByWindowMins { get; set; }
 }
 
 public class Vehicle
@@ -160,7 +164,9 @@ public class AssignedFlight
 {
     public string FlightNumber { get; set; }
     public DateTime? ExpectedDeparture { get; set; }
+    public string DepartureTimeZone {get;set;}
     public DateTime? ExpectedArrival { get; set; }
+    public string ArrivalTimeZone { get; set; }
     public string Notes { get; set; }
 }
 

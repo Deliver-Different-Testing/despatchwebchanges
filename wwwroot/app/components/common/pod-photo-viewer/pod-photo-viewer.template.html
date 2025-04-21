@@ -39,7 +39,7 @@
         </div>
 
         <div class="photo-info">
-            <p class="timestamp">{{ctrl.photos[ctrl.currentIndex].timestamp}}</p>
+            <p class="timestamp">{{ctrl.photos[ctrl.currentIndex].timestamp | date:'MM/dd/yyyy HH:mm'}}</p>
             <p class="uploader">Delivered by {{ctrl.photos[ctrl.currentIndex].uploadedBy}}</p>
             <p class="coordinates" ng-if="ctrl.photos[ctrl.currentIndex].coordinates">
                 Location: {{ctrl.photos[ctrl.currentIndex].coordinates.lat}},

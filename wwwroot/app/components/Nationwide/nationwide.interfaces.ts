@@ -16,6 +16,8 @@ export interface IFlightViewModel {
     amount: number;
     codeShareAirline: string;
     airlineId: number;
+    departureTimeZone: string;
+    arrivalTimeZone: string;
 }
 
 export interface Filter {
@@ -36,5 +38,3 @@ export interface StatusChangeEvent {
     previousStatusId: number;
     newStatusId: number;
 }
-
-export type StatusToListMap = Record<number, JobDataType[]>;

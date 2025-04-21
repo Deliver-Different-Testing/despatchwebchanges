@@ -358,6 +358,10 @@ public partial class TucJobBooking
     /// </summary>
     public int HolidayDeliveryOption { get; set; }
 
+    public int? PickUpWindowMins { get; set; }
+
+    public int? DeliverByWindowMins { get; set; }
+
     public virtual TucJobBooking BookingParent { get; set; }
 
     public virtual TucCourier Courier { get; set; }

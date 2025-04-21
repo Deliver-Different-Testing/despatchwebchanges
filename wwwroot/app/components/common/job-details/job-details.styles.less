@@ -159,6 +159,38 @@
 
 // Job Detail Page Styles
 .job-detail-page {
+  .timing-value {
+    &.has-window {
+      position: relative;
+
+      .window-indicator {
+        display: inline-block;
+        font-size: 12px;
+        color: rgba(0, 0, 0, 0.54);
+        margin-left: 4px;
+
+        .window-time {
+          font-weight: 500;
+        }
+      }
+    }
+  }
+
+  /* Tooltip for time windows */
+  .time-window-tooltip {
+    max-width: 300px;
+
+    .tooltip-title {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .tooltip-content {
+      font-size: 12px;
+      line-height: 1.4;
+    }
+  }
+
   // Warning Section
   .warning-section {
     margin: 0 0 12px 0;

@@ -9,7 +9,6 @@ import "../lib/pickdate/angular-pickadate.css";
 import "angular-hotkeys/build/hotkeys.css";
 import "angular-resizable/angular-resizable.min.css";
 import "angular-material-data-table/dist/md-data-table.css";
-import "angular-material-time-picker/dist/md-time-picker.css";
 
 // Npm packages
 import "moment";
@@ -24,7 +23,6 @@ import "ng-file-upload";
 import "angular-ui-sortable/dist/sortable";
 import "angular-resizable/angular-resizable.min";
 import "angular-material-data-table/dist/md-data-table";
-import "angular-material-time-picker";
 
 // Local libs
 import "../lib/ModernizerLocalStorage";

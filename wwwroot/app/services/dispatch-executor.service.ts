@@ -21,6 +21,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
    ) {
+        console.log("DispatchExecutorService initialized");
         bindAllMethods(this);
     }
 

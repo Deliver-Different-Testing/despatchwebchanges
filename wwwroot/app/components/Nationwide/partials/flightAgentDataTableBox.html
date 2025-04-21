@@ -82,7 +82,6 @@
                 <tr md-row>
                     <th md-column md-order-by="airline">Airline</th>
                     <th md-column md-order-by="flightNumber">Flight No</th>
-                    <th md-column md-order-by="departureTime">Date</th>
                     <th md-column md-order-by="departureTime">D</th>
                     <th md-column md-order-by="arrivalTime">A</th>
                     <th md-column md-order-by="duration">Duration</th>
@@ -101,9 +100,8 @@
                         <span class="airline-code {{flight.airline | lowercase}}">{{flight.airline}}</span>
                     </td>
                     <td md-cell>{{flight.flightNumber}}</td>
-                    <td md-cell>{{flight.departureTime | date: "MM/dd/yyyy"}}</td>
-                    <td md-cell>{{flight.departureTime | date: "HH:mm"}}</td>
-                    <td md-cell>{{flight.arrivalTime | date: "HH:mm"}}</td>
+                    <td md-cell>{{flight.departureTime | date: "MM/dd/yyyy HH:mm"}} ({{flight.departureTimeZone}})</td>
+                    <td md-cell>{{flight.arrivalTime | date: "HH:mm"}} ({{flight.arrivalTimeZone}})</td>
                     <td md-cell>{{flight.duration | date: "H:mm"}}</td>
                     <td md-cell>{{flight.stops === 0 ? 'D' : flight.stops}}</td>
                     <td md-cell>{{flight.amount}}</td>

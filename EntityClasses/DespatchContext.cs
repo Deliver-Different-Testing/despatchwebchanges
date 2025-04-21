@@ -854,6 +854,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.SiteId).HasColumnName("SiteID");
             entity.Property(e => e.StreetAddress).HasMaxLength(200);
             entity.Property(e => e.SuburbId).HasColumnName("SuburbID");
+            entity.Property(e => e.Timezone)
+                .HasMaxLength(50)
+                .IsUnicode(false);
             entity.Property(e => e.Type).HasMaxLength(200);
             entity.Property(e => e.UnitFlatFloorBuilding).HasMaxLength(100);
 
