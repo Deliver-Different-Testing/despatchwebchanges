@@ -307,7 +307,6 @@ class HomeController extends BaseController {
             orderDirection: "asc",
         };
 
-        // Set default date to today
         this.jobCutoffDate = new Date();
         this.isUsCustomer = this.APP_CONFIG.US_Customer;
         this.selectedCourier = null;

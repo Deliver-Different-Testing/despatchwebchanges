@@ -350,7 +350,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         quantity: number,
         booked: Date
     ) {
-        const bookedIso = moment(booked).format(this.appConfig.Time_Format);
+        const bookedIso = moment(booked).format();
 
         const response = await this.$http.get(
             `job/RateJob?clientId=${clientId}&fromId=${fromId}&toId=${toId}` +
@@ -370,7 +370,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             return Object.entries(params)
                 .map(([key, value]) => {
                     if (value instanceof Date) {
-                        value = moment(value).format(this.appConfig.Time_Format);
+                        value = moment(value).format();
                     }
                     // Handle boolean values
                     if (typeof value === 'boolean') {
@@ -417,7 +417,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async updatePODDetail(jobId: number, jobStatus: number, podName: string, podTime: Date) {
-        const podTimeIso = moment(podTime).format(this.appConfig.Time_Format);
+        const podTimeIso = moment(podTime).format();
         console.log(`[DispatchCoreService] Updating POD details - Job: ${jobId}, Status: ${jobStatus}, POD Name: ${podName}, POD Time: ${podTimeIso}`);
 
         try {
@@ -532,7 +532,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async releaseBulkJob(jobNumber: string, bookDate: Date) {
-        const bookDateIso = moment(bookDate).format(this.appConfig.Time_Format);
+        const bookDateIso = moment(bookDate).format();
 
         await this.$http.post(
             `job/ReleaseBulkJob?jobNumber=${encodeURIComponent(jobNumber)}` +
@@ -543,7 +543,7 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async updateJobDetail(
         jobId: number,
-        field: JobProperty,
+        field: JobProperty | string,
         value: string | Date | number | boolean,
         rate: number | string,
         isRecurring: boolean
@@ -559,7 +559,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
 
         if(value instanceof Date) {
-            value = moment(value).format(this.appConfig.Time_Format);
+            value = moment(value).format();
         }
 
         const method: string = isRecurring ? "job/UpdateRecurringJob" : "job/UpdateJob";
@@ -606,8 +606,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 );
 
                 // Format to YYYY-MM-DD HH:mm:ss
-                value = combined.toISOString().split('T')[0] + ' ' +
-                    moment(combined).format(this.appConfig.Time_Format);
+                value = moment(combined).format();
             }
         }
 
@@ -615,7 +614,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         if (field === "Date" || field === "StopDate" || field === "RestartDate" || field === "InActiveDate" ||
             field === "FirstDue" || field === "LastDone" || field === "NextDue") {
             if (value instanceof Date) {
-                value = moment(value).format(this.appConfig.Time_Format);
+                value = moment(value).format();
             }
         }
 
@@ -641,7 +640,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         const paramObject = {
             order: String(queryParams.order ?? "time"),
             orderDirection: String(queryParams.orderDirection ?? "asc"),
-            dateCutoff: String(queryParams.dateCutoff ? moment(queryParams.dateCutoff).format(this.appConfig.Time_Format) : moment().format(this.appConfig.Time_Format)),
+            dateCutoff: String(queryParams.dateCutoff ? moment(queryParams.dateCutoff).format() : moment().format()),
             isInternal: String(internal),
             cid: String(ContactID),
             clientIds: selectedClients.length ? selectedClients.join(',') : ''

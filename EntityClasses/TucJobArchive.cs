@@ -443,6 +443,10 @@ public partial class TucJobArchive
 
     public string Connote { get; set; }
 
+    public int? PickUpWindowMins { get; set; }
+
+    public int? DeliverByWindowMins { get; set; }
+
     public virtual TucAgent Agent { get; set; }
 
     public virtual TblAirport FromAirport { get; set; }

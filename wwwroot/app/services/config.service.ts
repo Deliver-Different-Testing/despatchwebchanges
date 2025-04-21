@@ -4,6 +4,7 @@ class ConfigService implements angular.IServiceProvider {
     static $inject = ["$http"];
 
     constructor(private $http: angular.IHttpService) {
+        console.log("Config service initialized");
     }
 
     $get() {

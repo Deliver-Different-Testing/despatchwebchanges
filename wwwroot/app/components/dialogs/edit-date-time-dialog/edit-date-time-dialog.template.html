@@ -33,7 +33,9 @@
             <div class="date-time-field" ng-if="ctrl.showTime">
                 <md-time-picker
                         message="ctrl.message"
-                        ng-model="ctrl.time">
+                        ng-model="ctrl.time"
+                        no-meridiem
+                        no-auto-switch>
                 </md-time-picker>
             </div>
         </div>

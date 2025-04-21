@@ -11,6 +11,7 @@ class NationwideService implements angular.IServiceProvider {
     constructor(
         private $http: angular.IHttpService
     ) {
+        console.log('NationwideService: Service instantiated');
     }
 
     $get(): any {

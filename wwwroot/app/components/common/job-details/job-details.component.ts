@@ -246,8 +246,7 @@ class JobDetailController extends BaseController {
                                 try {
                                     const podPhoto: PodPhoto = {
                                         url: photoData,
-                                        timestamp: this.job?.completedTime ?
-                                            new Date(this.job.completedTime).toLocaleString() : undefined,
+                                        timestamp: this.job?.completedTime ? moment(this.job.completedTime).format('MM/DD/YYYY HH:mm') : undefined,
                                         uploadedBy: this.job?.courierData.courierName ?? 'Unknown',
                                         coordinates: {
                                             lat: this.job?.deliveryAddress?.latitude ?? 0,
@@ -1306,6 +1305,34 @@ class JobDetailController extends BaseController {
             console.error('Error updating holiday delivery option:', error);
             this._handleError(error);
         }
+    }
+
+    formatTimeWindow(baseTime?: Date, windowMins?: number): string {
+        if (!baseTime) {
+            return 'N/A';
+        }
+
+        const baseTimeFormatted = moment(baseTime).format('MM/DD HH:mm');
+
+        if (!windowMins || windowMins <= 0) {
+            return baseTimeFormatted;
+        }
+
+        const endTime = moment(baseTime).add(windowMins, 'minutes');
+
+        if (moment(baseTime).format('MM/DD') === endTime.format('MM/DD')) {
+            return `${baseTimeFormatted} - ${endTime.format('HH:mm')}`;
+        } else {
+            return `${baseTimeFormatted} - ${endTime.format('MM/DD HH:mm')}`;
+        }
+    }
+
+    getPickupTimeWindow(): string {
+        return this.formatTimeWindow(this.job?.puTime, this.job?.pickUpWindowMins);
+    }
+
+    getDeliveryTimeWindow(): string {
+        return this.formatTimeWindow(this.job?.deliverByTime, this.job?.deliverByWindowMins);
     }
 }
 

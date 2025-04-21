@@ -4,6 +4,7 @@ import ToastrService from "../../../services/toastr.service";
 import {IJobNote} from "../../../interfaces/job.interface";
 import "./sticky-notes.styles.less";
 import BaseController from "../../base-controller";
+import moment from "moment";
 
 class StickyNoteController extends BaseController {
     private previousJobId?: number;
@@ -134,26 +135,21 @@ class StickyNoteController extends BaseController {
         }
     }
 
-    // Helper method to format dates in a user-friendly way
     formatDate(date: Date | string): string {
         if (!date) return '';
 
-        const dateObj = typeof date === 'string' ? new Date(date) : date;
-        const now = new Date();
-        const diffMs = now.getTime() - dateObj.getTime();
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const momentDate = moment(date);
+        const now = moment();
+        const diffDays = now.diff(momentDate, 'days');
 
         if (diffDays === 0) {
-            return 'Today ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+            return 'Today ' + momentDate.format('HH:mm');
         } else if (diffDays === 1) {
-            return 'Yesterday ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+            return 'Yesterday ' + momentDate.format('HH:mm');
         } else if (diffDays < 7) {
             return diffDays + ' days ago';
         } else {
-            return dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            return momentDate.format('MM/DD/YYYY HH:mm');
         }
     }
 }

@@ -128,8 +128,7 @@ app
         NZ_Coordinates_Center: {
             lat: -36.8485,
             lng: 174.7633
-        },
-        Time_Format: 'YYYY-MM-DDTHH:mm:ss.SSSZ'
+        }
     } as AppConfig)
     .constant("AppPages", AppPages);
 

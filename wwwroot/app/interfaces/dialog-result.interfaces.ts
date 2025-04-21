@@ -7,7 +7,7 @@ export interface ISelectDialogResult {
 }
 
 export interface IDialogDateTimeResult {
-    fieldName: JobProperty;
+    fieldName: JobProperty | string;
     value: Date;
     formattedDateTime: string;
 }
