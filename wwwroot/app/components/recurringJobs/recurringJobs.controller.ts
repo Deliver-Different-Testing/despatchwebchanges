@@ -94,6 +94,7 @@ class RecurringJobsController extends BaseController {
     layout?: { columns: IColumn[] };
     sort: Record<string, string> = {};
     currentLayoutName?: string;
+    timeZone: string = TimeZone;
 
     constructor(
         private greetingService: GreetingService,

@@ -437,7 +437,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
         var jobIds = data.Select(j => j.Id).Distinct().ToList();
 
-        if (!jobIds.Any())
+        if (jobIds.Count == 0)
             return;
 
         var idData = await Context
@@ -515,7 +515,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 ?? dbDataArchive.First(j => j.UcjbId == x.Key);
             var childJobs = x.Where(j => j.UcjbId != parentJob.UcjbId).ToList();
 
-            if (!childJobs.Any())
+            if (childJobs.Count == 0)
                 continue;
 
             parentJob.UcjbAmount = childJobs.Sum(j => j.UcjbAmount ?? 0);
@@ -1034,6 +1034,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         bool calculationRequired
     )
     {
+        var currentDate = infoService.GetCurrentTenantTime();
+
         var time = await Context.TucJobTypes
             .Where(jt => jt.ShortName == bookedSpeed || jt.ShortName == notifiedSpeed)
             .MaxAsync(jt => jt.PickupTime);
@@ -1049,7 +1051,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
         if (!windowValue.HasValue) return;
 
-        var dueMins = (jobDateTime.AddMinutes((double)windowValue) - DateTime.Now).TotalMinutes;
+        var dueMins = (jobDateTime.AddMinutes((double)windowValue) - currentDate).TotalMinutes;
         var latePick = job.UcjbLatePick;
 
         // Perform calculation if required
@@ -1084,6 +1086,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         bool calculationRequired
     )
     {
+        var currentDate = infoService.GetCurrentTenantTime();
+
         // Get the maximum delivery time for the specified speeds
         var time = await Context.TucJobTypes
             .Where(predicate: jt => jt.ShortName == bookedSpeed || jt.ShortName == notifiedSpeed)
@@ -1101,7 +1105,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
         if (!windowValue.HasValue) return;
 
-        var dueMins = (jobDateTime.AddMinutes(value: (double)windowValue) - DateTime.Now).TotalMinutes;
+        var dueMins = (jobDateTime.AddMinutes(value: (double)windowValue) - currentDate).TotalMinutes;
         var lateDel = job.UcjbLateDel;
 
         // Perform calculation if required
@@ -1729,69 +1733,59 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             .FirstOrDefault() ?? new TruckItemsSummary();
     }
 
-    public async Task UpdateDeliveryAddressNzAsync(UpdateAddressRequestNz request)
-    {
-        try
-        {
-            var job = await Get<TucJob>(request.JobId);
+   public async Task UpdateDeliveryAddressNzAsync(UpdateAddressRequestNz request)
+   {
+       try
+       {
+           var job = await Context.TucJobs.FindAsync(request.JobId);
+           ArgumentNullException.ThrowIfNull(job);
 
-            // Coordinates
-            job.DeliveryLatitude = request.Latitude;
-            job.DeliveryLongitude = request.Longitude;
+           // Update job coordinates and address details
+           job.DeliveryLatitude = request.Latitude;
+           job.DeliveryLongitude = request.Longitude;
+           job.UcjbToAddr = request.Address;
+           job.UcjbTo = request.SuburbId;
+           job.UcjbCbd = request.Cbd;
 
-            job.UcjbToAddr = request.Address;
-            job.UcjbTo = request.SuburbId;
-            job.UcjbAmount = request.Rate;
-            job.UcjbCbd = request.Cbd;
+           await Context.SaveChangesAsync();
+       }
+       catch (Exception ex)
+       {
+           Log.Error(ex, "An error occurred updating the delivery address for job {JobId}", request.JobId);
+           throw;
+       }
+   }
 
-            await Context.SaveChangesAsync();
+   public async Task UpdateDeliveryAddressUsAsync(UpdateAddressRequestUs request)
+   {
+       try
+       {
+           var address = request.Address;
+           var job = await Context.TucJobs.FindAsync(request.JobId);
+           ArgumentNullException.ThrowIfNull(job);
 
-            // Record change in note
-            var note = $" Changed Delivery Address to {request.Address}";
-            await SaveNoteAsync(request.JobId, note);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, $"An error occured updating the delivery address for job {request.JobId}");
-            throw;
-        }
-    }
+           // Update coordinates
+           job.DeliveryLatitude = address.Latitude;
+           job.DeliveryLongitude = address.Longitude;
 
-    public async Task UpdateDeliveryAddressUsAsync(UpdateAddressRequestUs request)
-    {
-        try
-        {
-            var address = request.Address;
-            var job = await Get<TucJob>(request.JobId);
+           // Update address lines
+           job.DeliveryAddressLine1 = address.AddressLine1;
+           job.DeliveryAddressLine2 = address.AddressLine2;
+           job.DeliveryAddressLine3 = address.AddressLine3;
+           job.DeliveryAddressLine4 = address.AddressLine4;
+           job.DeliveryAddressLine5 = address.AddressLine5;
+           job.DeliveryAddressLine6 = address.AddressLine6;
+           job.DeliveryAddressLine7 = address.AddressLine7;
 
-            // Coordinates
-            job.DeliveryLatitude = address.Latitude;
-            job.DeliveryLongitude = address.Longitude;
+           await Context.SaveChangesAsync();
+       }
+       catch (Exception ex)
+       {
+           Log.Error(ex, "An error occurred updating the delivery address for job {JobId}", request.JobId);
+           throw;
+       }
+   }
 
-            // Address Lines
-            job.DeliveryAddressLine1 = address.AddressLine1;
-            job.DeliveryAddressLine2 = address.AddressLine2;
-            job.DeliveryAddressLine3 = address.AddressLine3;
-            job.DeliveryAddressLine4 = address.AddressLine4;
-            job.DeliveryAddressLine5 = address.AddressLine5;
-            job.DeliveryAddressLine6 = address.AddressLine6;
-            job.DeliveryAddressLine7 = address.AddressLine7;
-
-            // Amount
-            job.UcjbAmount = request.Rate;
-
-            await Context.SaveChangesAsync();
-
-            // Record change in note
-            var note = $" Changed Delivery Address to {request.Address.FullAddress}";
-            await SaveNoteAsync(request.JobId, note);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, $"An error occured updating the delivery address for job {request.JobId}");
-            throw;
-        }
-    }
 
     public async Task UpdateBulkDeliveryAddressAsync(
         int bulkJobId,
@@ -1818,25 +1812,21 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     {
         try
         {
-            var job = await Get<TucJob>(request.JobId);
+            var job = await Context.TucJobs.FindAsync(request.JobId);
+            ArgumentNullException.ThrowIfNull(job);
 
-            // Coordinates
+            // Update coordinates
             job.PickUpLatitude = request.Latitude;
             job.PickUpLongitude = request.Longitude;
             job.UcjbFromAddr = request.Address;
             job.UcjbFrom = request.SuburbId;
-            job.UcjbAmount = request.Rate;
             job.UcjbCbd = request.Cbd;
 
             await Context.SaveChangesAsync();
-
-            // Record change in note
-            var note = $" Changed Pickup Address to {request.Address}";
-            await SaveNoteAsync(request.JobId, note);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Log.Error(e, $"An error occured updating the Pickup address for job {request.JobId}");
+            Log.Error(ex, "An error occurred updating the pickup address for job {JobId}", request.JobId);
             throw;
         }
     }
@@ -1846,13 +1836,14 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         try
         {
             var address = request.Address;
-            var job = await Get<TucJob>(request.JobId);
+            var job = await Context.TucJobs.FindAsync(request.JobId);
+            ArgumentNullException.ThrowIfNull(job);
 
-            // Coordinates
+            // Update coordinates
             job.PickUpLatitude = address.Latitude;
             job.PickUpLongitude = address.Longitude;
 
-            // Address Lines
+            // Update address lines
             job.PickupAddressLine1 = address.AddressLine1;
             job.PickupAddressLine2 = address.AddressLine2;
             job.PickupAddressLine3 = address.AddressLine3;
@@ -1861,18 +1852,11 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             job.PickupAddressLine6 = address.AddressLine6;
             job.PickupAddressLine7 = address.AddressLine7;
 
-            // Amount
-            job.UcjbAmount = request.Rate;
-
             await Context.SaveChangesAsync();
-
-            // Record change in note
-            var note = $" Changed Pickup Address to {request.Address.FullAddress}";
-            await SaveNoteAsync(request.JobId, note);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Log.Error(e, $"An error occured updating the Pickup address for job {request.JobId}");
+            Log.Error(ex, "An error occurred updating the pickup address for job {JobId}", request.JobId);
             throw;
         }
     }
@@ -2114,7 +2098,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             UcjbStatus = 6,
             UcjbJobDone = true,
             ProofOfDelivery = 0,
-            WhenPodnotificationSent = DateTime.Now,
+            WhenPodnotificationSent = infoService.GetCurrentTenantTime(),
             UcjbReturn = false,
             UcjbPaged = false
         };
@@ -2308,22 +2292,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                         .FirstOrDefault(),
                     Quantity = j.UcjbQty ?? 0,
                     PackageType = j.AcceptedJobType.UcjtName,
-                    Mileage =
-                        j.PickUpLatitude.HasValue
-                        && j.PickUpLongitude.HasValue
-                        && j.DeliveryLatitude.HasValue
-                        && j.DeliveryLongitude.HasValue
-                            ? DistanceCalculator.CalculateDistance(
-                                new AddressCoordinates(
-                                    j.PickUpLatitude.Value,
-                                    j.PickUpLongitude.Value
-                                ),
-                                new AddressCoordinates(
-                                    j.DeliveryLatitude.Value,
-                                    j.DeliveryLongitude.Value
-                                )
-                            )
-                            : 0
+                    Mileage = 0, // ToDo: Add Kerran's new field
                 })
                 .AsNoTracking()
                 .ToListAsync();

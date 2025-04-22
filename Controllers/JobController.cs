@@ -36,7 +36,8 @@ public class JobController(
     HttpClient httpClient,
     IRateJobService rateJobService,
     ICountryService countryService,
-    IRecurringJobRepository recurringJobRepository
+    IRecurringJobRepository recurringJobRepository,
+    ITenantInfoService tenantInfoService
 ) : Controller
 {
     [HttpGet]
@@ -386,7 +387,7 @@ public class JobController(
                     {
                         BucketName = bucketName,
                         Prefix = $"{folder}/{monthPrefix}{pattern}",
-                        MaxKeys = 1000,
+                        MaxKeys = 1000
                     };
 
                     var response = await s3Client.ListObjectsV2Async(request);
@@ -402,14 +403,14 @@ public class JobController(
         {
             Log.Error(
                 e,
-                $"Error encountered on server. Message:'{e.Message}' when writing an object"
+                "Error encountered on server. Message:'{EMessage}' when writing an object", e.Message
             );
         }
         catch (Exception e)
         {
             Log.Error(
                 e,
-                $"Unknown encountered on server. Message:'{e.Message}' when writing an object"
+                "Unknown encountered on server. Message:'{EMessage}' when writing an object", e.Message
             );
         }
 
@@ -427,15 +428,15 @@ public class JobController(
         {
             var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
             var key = $"{jobId}-";
-            Log.Debug($"Get S3 Object List for {key}");
+            Log.Debug("Get S3 Object List for {Key}", key);
             var s3List =
                 await SearchDeliveryFilesByPatternAsync(bucketName, key, year, month);
-            Log.Debug($"Found {s3List.Count} objects for {key}");
+            Log.Debug("Found {S3ListCount} objects for {Key}", s3List.Count, key);
             foreach (
                 var getObjectRequest in s3List.Select(s3Object => new GetObjectRequest
                 {
                     BucketName = bucketName,
-                    Key = s3Object.Key,
+                    Key = s3Object.Key
                 })
             )
             {
@@ -548,6 +549,8 @@ public class JobController(
         DateTime toDate
     )
     {
+        var currentDate = tenantInfoService.GetCurrentTenantTime();
+
         var data = await jobRepository.PodSearchDownloadAsync(
             courierId,
             wild ?? "",
@@ -556,17 +559,6 @@ public class JobController(
             toDate.ResetTimeToEndOfDay(),
             clientId
         );
-
-        var formatField = (object x) =>
-        {
-            var formatted =
-                x?.ToString()?.Replace("\"", "\"\"").Replace("\n", "\\n") ??
-                string.Empty;
-
-            return formatted.Contains("\"") || formatted.Contains(',')
-                ? $"\"{formatted}\""
-                : formatted;
-        };
 
         using var stream = new MemoryStream();
         await using (var writer = new StreamWriter(stream, Encoding.UTF8))
@@ -577,15 +569,15 @@ public class JobController(
             foreach (var x in data)
             {
                 await writer.WriteLineAsync(
-                    $"{x.Id},{formatField(x.JobNumber)},{x.BookDate:yyyy-MM-dd HH:mm:ss},{x.Amount},{x.Fuel},{x.Ppd},{x.CourierPayment},{x.CourierFuel},{x.CourierBonus},{x.Quantity},{x.Weight},{x.Size},{formatField(x.PickupAddressLine1)},{formatField(x.PickupAddressLine2)},{formatField(x.PickupAddressLine3)},{formatField(x.PickupAddressLine4)},{formatField(x.PickupAddressLine5)},{formatField(x.PickupAddressLine6)},{formatField(x.PickupAddressLine7)},{formatField(x.PickupAddressLine8)},{formatField(x.DeliveryAddressLine1)},{formatField(x.DeliveryAddressLine2)},{formatField(x.DeliveryAddressLine3)},{formatField(x.DeliveryAddressLine4)},{formatField(x.DeliveryAddressLine5)},{formatField(x.DeliveryAddressLine6)},{formatField(x.DeliveryAddressLine7)},{formatField(x.DeliveryAddressLine8)},{formatField(x.ClientReferenceA)},{formatField(x.ClientReferenceB)},{formatField(x.ClientReferenceC)}"
+                    $"{x.Id},{FormatField(x.JobNumber)},{x.BookDate:yyyy-MM-dd HH:mm:ss},{x.Amount},{x.Fuel},{x.Ppd},{x.CourierPayment},{x.CourierFuel},{x.CourierBonus},{x.Quantity},{x.Weight},{x.Size},{FormatField(x.PickupAddressLine1)},{FormatField(x.PickupAddressLine2)},{FormatField(x.PickupAddressLine3)},{FormatField(x.PickupAddressLine4)},{FormatField(x.PickupAddressLine5)},{FormatField(x.PickupAddressLine6)},{FormatField(x.PickupAddressLine7)},{FormatField(x.PickupAddressLine8)},{FormatField(x.DeliveryAddressLine1)},{FormatField(x.DeliveryAddressLine2)},{FormatField(x.DeliveryAddressLine3)},{FormatField(x.DeliveryAddressLine4)},{FormatField(x.DeliveryAddressLine5)},{FormatField(x.DeliveryAddressLine6)},{FormatField(x.DeliveryAddressLine7)},{FormatField(x.DeliveryAddressLine8)},{FormatField(x.ClientReferenceA)},{FormatField(x.ClientReferenceB)},{FormatField(x.ClientReferenceC)}"
                 );
             }
         }
 
         var bytes = stream.ToArray();
-        var filename = $"Jobs {DateTime.Now:yyyyMMddHHmmssfff}.csv";
-        var folder = DateTime.UtcNow.ToString("yyyyMM");
-        var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+        var filename = $"Jobs {currentDate:yyyyMMddHHmmssfff}.csv";
+        var folder = currentDate.ToString("yyyyMM");
+        var timestamp = currentDate.ToString("yyyyMMddHHmmss");
         var key = $"Jobs/{folder}/Jobs-{timestamp}";
 
         using var ms = new MemoryStream(bytes);
@@ -596,7 +588,7 @@ public class JobController(
                 BucketName = Environment.GetEnvironmentVariable("S3Bucket"),
                 Key = key,
                 ContentType = "text/csv",
-                InputStream = ms,
+                InputStream = ms
             };
             await s3Client.PutObjectAsync(putRequest);
         }
@@ -616,32 +608,43 @@ public class JobController(
         }
 
         return File(bytes, "text/csv", filename);
+
+        string FormatField(object x)
+        {
+            var formatted = x?.ToString()?.Replace("\"", "\"\"").Replace("\n", "\\n") ?? string.Empty;
+
+            return formatted.Contains('"') || formatted.Contains(',')
+                ? $"\"{formatted}\""
+                : formatted;
+        }
     }
 
     [HttpPost]
     public async Task<IActionResult> Upload(IFormFile file)
     {
+        var currentDate = tenantInfoService.GetCurrentTenantTime();
+
         if (
             file == null
             || string.IsNullOrWhiteSpace(file.FileName)
             || !new[] { ".xls", ".xlsx", ".csv" }.Contains(
                 file.FileName.Trim()[
-                        file.FileName.Trim().LastIndexOf(".", StringComparison.Ordinal)..].Trim()
+                        file.FileName.Trim().LastIndexOf('.')..].Trim()
                     .ToLower()
             )
         )
             return BadRequest("Invalid file format.");
 
-        var folder = DateTime.UtcNow.ToString("yyyyMM");
+        var folder = currentDate.ToString("yyyyMM");
         var fileExtension = file
             .FileName.Trim()
-            .ToLower()[file.FileName.Trim().LastIndexOf(".", StringComparison.Ordinal)..];
+            .ToLower()[file.FileName.Trim().LastIndexOf('.')..];
 
         using var memoryStream = new MemoryStream();
         await file.CopyToAsync(memoryStream);
         var byteArray = memoryStream.ToArray();
 
-        var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+        var timestamp = currentDate.ToString("yyyyMMddHHmmss");
         var key = $"Jobs/{folder}/Jobs-{timestamp}";
 
         using var ms = new MemoryStream(byteArray);
@@ -654,7 +657,7 @@ public class JobController(
                     ?.Replace("downloads", "uploads"),
                 Key = key,
                 ContentType = file.ContentType,
-                InputStream = ms,
+                InputStream = ms
             };
             putRequest.Metadata.Add("FileName", file.FileName);
             await s3Client.PutObjectAsync(putRequest);
@@ -678,11 +681,9 @@ public class JobController(
         string sResult;
 
         using (
-            var reader = (
-                fileExtension == ".csv"
-                    ? ExcelReaderFactory.CreateCsvReader(memoryStream)
-                    : ExcelReaderFactory.CreateReader(memoryStream)
-            )
+            var reader = fileExtension == ".csv"
+                ? ExcelReaderFactory.CreateCsvReader(memoryStream)
+                : ExcelReaderFactory.CreateReader(memoryStream)
         )
         {
             var output = reader
@@ -690,7 +691,7 @@ public class JobController(
                     new ExcelDataSetConfiguration
                     {
                         ConfigureDataTable = (_) =>
-                            new ExcelDataTableConfiguration { UseHeaderRow = true },
+                            new ExcelDataTableConfiguration { UseHeaderRow = true }
                     }
                 )
                 .Tables[0]; //Only ready from the first sheet
@@ -729,7 +730,7 @@ public class JobController(
                 WriteIndented = true,
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
                 NumberHandling = JsonNumberHandling.AllowReadingFromString,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
             };
 
             sResult = JsonSerializer.Serialize(rows, options);
@@ -744,7 +745,7 @@ public class JobController(
             PropertyNameCaseInsensitive = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             NumberHandling = JsonNumberHandling.AllowReadingFromString,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
 
         var result = JsonSerializer.Deserialize<List<JobManualPriceModel>>(
@@ -1180,11 +1181,13 @@ public class JobController(
     {
         try
         {
+            var currentDate = tenantInfoService.GetCurrentTenantTime();
+
             await taskRepository.AddEventAsync(
                 jobId,
                 staffId,
                 despatcherName,
-                $"Restored by {despatcherName} at {DateTime.Now.ToShortDateString()} {DateTime.Now.ToShortTimeString()}",
+                $"Restored by {despatcherName} at {currentDate.ToShortDateString()} {currentDate.ToShortTimeString()}",
                 (int)EventType.RestoreJob,
                 33
             );
@@ -1285,7 +1288,7 @@ public class JobController(
             CustomerRefCode = clientId.ToString(),
             Subject = $"Dispatch:{despatcherName} {eventName}",
             ActivityType = eventName,
-            Description = $"Job Number: {jobNumber} - {notes}",
+            Description = $"Job Number: {jobNumber} - {notes}"
         };
 
         var content = new StringContent(
@@ -1557,7 +1560,7 @@ public class JobController(
         var ppd = includeFuelSurcharge
             ? await jobRepository.PpdInclusiveAmount(clientId, amount)
             : 0;
-        finalDescription += ($"\rSPECIAL PRICE = {(amount - fs - ppd):C}");
+        finalDescription += $"\rSPECIAL PRICE = {amount - fs - ppd:C}";
         if (fs <= 0)
             return Json(finalDescription);
 
@@ -1567,115 +1570,6 @@ public class JobController(
         finalDescription += $"\rTotal (+GST) = {amount * (1 + gstRate):C}";
 
         return Json(finalDescription);
-    }
-
-    public async Task<IActionResult> RateJob(
-        int clientId,
-        int fromId,
-        int toId,
-        int speed,
-        bool pedal,
-        bool van,
-        bool returnJob,
-        int weight,
-        int size,
-        bool includeFuelSurcharge,
-        bool direct,
-        int acceptedJobTypeId,
-        string ourRef,
-        string refA,
-        string refB,
-        int quantity,
-        DateTime booked
-    )
-    {
-        var rate = await jobRepository.RateJobAsync(
-            clientId,
-            fromId,
-            toId,
-            speed,
-            pedal,
-            van,
-            returnJob,
-            weight,
-            size,
-            includeFuelSurcharge,
-            direct,
-            acceptedJobTypeId,
-            ourRef,
-            refA,
-            refB,
-            quantity,
-            booked
-        );
-        return Json($"{rate:C}");
-    }
-
-    public async Task<IActionResult> RateJobUs(
-        int jobId,
-        int clientId,
-        int speed,
-        string fromZip,
-        string toZip,
-        int weight,
-        DateTime booked,
-        int size,
-        bool dangerousGoods,
-        int totalPallets,
-        int extraStopOffs,
-        int dryIceWeight,
-        int waitTime,
-        decimal pickUpLat,
-        decimal pickUpLong,
-        decimal deliveryLat,
-        decimal deliveryLong
-    )
-    {
-        try
-        {
-            // Get distances and airport info
-            var distanceResult = await rateJobService.CalculateJobRateUs(
-                new JobRateRequest
-                {
-                    SpeedId = speed,
-                    PickupLat = pickUpLat,
-                    PickupLong = pickUpLong,
-                    DeliveryLat = deliveryLat,
-                    DeliveryLong = deliveryLong,
-                }
-            );
-
-            // Calculate final rate
-            var rate = await jobRepository.RateJobUsAsync(
-                jobId,
-                clientId,
-                speed,
-                fromZip,
-                toZip,
-                (decimal)distanceResult.TotalMiles, // Used for non-flight jobs
-                (decimal)distanceResult.FromMiles, // Used for flight jobs
-                (decimal)distanceResult.ToMiles, // Used for flight jobs
-                weight,
-                booked,
-                size,
-                dangerousGoods,
-                totalPallets,
-                extraStopOffs,
-                dryIceWeight,
-                waitTime,
-                distanceResult.FromAirport?.AgentId,
-                distanceResult.FromAirport?.AirportId,
-                distanceResult.ToAirport?.AgentId,
-                distanceResult.ToAirport?.AirportId
-            );
-
-            return Json($"{rate:C}");
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error calculating job rate");
-            return StatusCode(500, ex.Message);
-        }
     }
 
     public async Task<IActionResult> PpdExclusiveAmount(int clientId, decimal amount)
@@ -1688,128 +1582,6 @@ public class JobController(
     {
         var summary = await jobRepository.TruckJobItemsAsync(jobId, truckWeightLimit);
         return Json(summary);
-    }
-
-    public async Task<IActionResult> UpdateDeliveryAddressNz(
-        [FromBody] UpdateAddressRequestNz request
-    )
-    {
-        try
-        {
-            if (request is null)
-                return BadRequest("Request Address Data Not Provided");
-
-            await jobRepository.UpdateDeliveryAddressNzAsync(request);
-            return Ok();
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, $"An error occured updating address for job {request.JobId}");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
-    }
-
-    public async Task<IActionResult> UpdateDeliveryAddressUs(
-        [FromBody] UpdateAddressRequestUs request
-    )
-    {
-        try
-        {
-            if (request is null)
-                return BadRequest("Request Address Data Not Provided");
-
-            await jobRepository.UpdateDeliveryAddressUsAsync(request);
-            return Ok();
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, $"An error occured updating address for job {request.JobId}");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
-    }
-
-    public async Task<IActionResult> UpdateBulkDeliveryAddress(
-        int bulkJobId,
-        string toSuburb,
-        int toPostCode,
-        string address,
-        decimal deliveryLat,
-        decimal deliveryLng,
-        string despatcherName
-    )
-    {
-        await jobRepository.UpdateBulkDeliveryAddressAsync(
-            bulkJobId,
-            toSuburb,
-            toPostCode,
-            address,
-            deliveryLat,
-            deliveryLng,
-            despatcherName
-        );
-        return Ok();
-    }
-
-    public async Task<IActionResult> UpdateBookingDeliveryAddress(
-        int jobId,
-        int toSuburbId,
-        string address,
-        decimal deliveryLat,
-        decimal deliveryLng,
-        bool cbd,
-        decimal rate,
-        string despatcherName
-    )
-    {
-        await jobRepository.UpdateBookingDeliveryAddressAsync(
-            jobId,
-            toSuburbId,
-            address,
-            deliveryLat,
-            deliveryLng,
-            cbd,
-            rate,
-            despatcherName
-        );
-        return Ok();
-    }
-
-    public async Task<IActionResult> UpdatePickupAddressNz(
-        [FromBody] UpdateAddressRequestNz request
-    )
-    {
-        try
-        {
-            if (request is null)
-                return BadRequest("Request Address Data Not Provided");
-
-            await jobRepository.UpdatePickupAddressNzAsync(request);
-            return Ok();
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, $"An error occured updating address for job {request.JobId}");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
-    }
-
-    public async Task<IActionResult> UpdatePickupAddressUs(
-        [FromBody] UpdateAddressRequestUs request
-    )
-    {
-        try
-        {
-            if (request is null)
-                return BadRequest("Request Address Data Not Provided");
-
-            await jobRepository.UpdatePickupAddressUsAsync(request);
-            return Ok();
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, $"An error occured updating address for job {request.JobId}");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
     }
 
     public async Task<IActionResult> UpdateJobType(int jobId, int jobType, string despatcherName)
@@ -1880,7 +1652,7 @@ public class JobController(
         {
             Log.Error(
                 e,
-                $"An error occured updating field {field} with value {value} for job {jobId}"
+                "An error occured updating field {Field} with value {Value} for job {JobId}", field, value, jobId
             );
             return StatusCode(StatusCodes.Status500InternalServerError);
         }
@@ -1896,17 +1668,72 @@ public class JobController(
         try
         {
             await jobRepository.UpdateJobAsync(jobId, field, value);
+
+            // Reclacute job
+            var shouldRecalculateRate = ShouldRecalculateRate(field);
+            if (!shouldRecalculateRate) return Ok();
+
+            var jobDetails = await jobRepository.GetJobDetailsForRating(jobId);
+
+            var isUsTenant = tenantInfoService.IsUsTenant();
+            var newRate = isUsTenant
+                ? await rateJobService.RateJobUs(jobDetails)
+                : await rateJobService.RateJob(jobDetails);
+
+            await jobRepository.UpdateJobRateAsync(
+                jobId,
+                newRate,
+                $"Rate recalculated after {field} change → ${newRate:F2}"
+            );
+
+            var staffId = tenantInfoService.GetStaffId();
+
+            // Add price change event
+            await taskRepository.AddEventAsync(
+                jobId,
+                staffId,
+                "System",
+                "Price recalculated during job update",
+                (int)EventType.ChangePrice
+            );
+
+
             return Ok();
         }
         catch (Exception e)
         {
             Log.Error(
                 e,
-                $"An error occured updating field {field} with value {value} for job {jobId}"
+                "An error occured updating field {JobProperty} with value {Value} for job {JobId}", field, value, jobId
             );
 
             return StatusCode(StatusCodes.Status500InternalServerError);
         }
+    }
+
+    private static bool ShouldRecalculateRate(JobProperty property)
+    {
+        // Properties that affect job rating
+        return property switch
+        {
+            JobProperty.AirportOnly => true,
+            JobProperty.Date => true,
+            JobProperty.Size => true,
+            JobProperty.Items => true,
+            JobProperty.SpeedID => true,
+            JobProperty.AcceptedJobTypeID => true,
+            JobProperty.Weight => true,
+            JobProperty.ClientID => true,
+            JobProperty.Pedal => true,
+            JobProperty.Reprice => true,
+            JobProperty.Truck => true,
+            JobProperty.Van => true,
+            JobProperty.DGClass => true,
+            JobProperty.DGDocumentation => true,
+            JobProperty.Direct => true,
+            JobProperty.BookedTime => true,
+            _ => false
+        };
     }
 
     public async Task<IActionResult> UpdateBulkJob(
@@ -2077,7 +1904,7 @@ public class JobController(
         {
             BucketName = bucketName,
             Prefix = pattern,
-            MaxKeys = 1000, // Adjust if needed, but 1000 is the maximum allowed
+            MaxKeys = 1000 // Adjust if needed, but 1000 is the maximum allowed
         };
 
         var result = new List<S3Object>();
@@ -2095,11 +1922,11 @@ public class JobController(
         }
         catch (AmazonS3Exception e)
         {
-            Log.Error(e, $"{nameof(UploadFile)} Error encountered. Message:'{e.Message}'");
+            Log.Error(e, "{UploadFileName} Error encountered. Message:'{EMessage}'", nameof(UploadFile), e.Message);
         }
         catch (Exception e)
         {
-            Log.Error(e, $"{nameof(UploadFile)} Error encountered. Message:'{e.Message}'");
+            Log.Error(e, "{UploadFileName} Error encountered. Message:'{EMessage}'", nameof(UploadFile), e.Message);
         }
 
         return result;
@@ -2111,9 +1938,9 @@ public class JobController(
         var tenantId = HttpContext.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")
             ?.Value;
         var key = $"JobAttachments/{jobId}-";
-        Log.Debug($"Get S3 Object List for {key}");
+        Log.Debug("Get S3 Object List for {Key}", key);
         var s3List = await SearchFilesByPatternAsync(bucketName, key);
-        Log.Debug($"Found {s3List.Count} objects for {key}");
+        Log.Debug("Found {S3ListCount} objects for {Key}", s3List.Count, key);
 
         return Json(s3List.Count > 0);
     }
@@ -2127,14 +1954,14 @@ public class JobController(
             var tenantId = HttpContext.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")
                 ?.Value;
             var key = $"JobAttachments/{jobId}-";
-            Log.Debug($"Get S3 Object List for {key}");
+            Log.Debug("Get S3 Object List for {Key}", key);
             var s3List = await SearchFilesByPatternAsync(bucketName, key);
             foreach (var s3Object in s3List)
             {
                 var getObjectRequest = new GetObjectRequest
                 {
                     BucketName = bucketName,
-                    Key = s3Object.Key,
+                    Key = s3Object.Key
                 };
                 using var response = await s3Client.GetObjectAsync(getObjectRequest);
                 await using var responseStream = response.ResponseStream;
@@ -2147,14 +1974,14 @@ public class JobController(
                     S3Key = s3Object.Key,
                     FileName = fileName,
                     LastModified = s3Object.LastModified,
-                    Size = s3Object.Size,
+                    Size = s3Object.Size
                 };
                 s3Files.Add(s3FileInfo);
             }
         }
         catch (Exception e)
         {
-            Log.Error(e, $"Error {nameof(GetAttachedFiles)}: {e.Message}");
+            Log.Error(e, "Error {GetAttachedFilesName}: {EMessage}", nameof(GetAttachedFiles), e.Message);
             return StatusCode(500, new { message = "Error retrieving files", error = e.Message });
         }
 
@@ -2166,6 +1993,8 @@ public class JobController(
     {
         try
         {
+            var currentDate = tenantInfoService.GetCurrentTenantTime();
+
             if (request?.File == null || request.File.Length == 0)
                 return BadRequest("No file uploaded");
 
@@ -2188,7 +2017,7 @@ public class JobController(
 
             var byteArray = memoryStream.ToArray();
 
-            var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+            var timestamp = currentDate.ToString("yyyyMMddHHmmss");
             var key = $"JobAttachments/{request.JobId}-{timestamp}";
 
             using var ms = new MemoryStream(byteArray);
@@ -2199,7 +2028,7 @@ public class JobController(
                     BucketName = Environment.GetEnvironmentVariable("S3BucketMars"),
                     Key = key,
                     ContentType = request.File.ContentType,
-                    InputStream = ms,
+                    InputStream = ms
                 };
                 putRequest.Metadata.Add("FileName", request.File.FileName);
                 await s3Client.PutObjectAsync(putRequest);
@@ -2277,7 +2106,7 @@ public class JobController(
             var deleteObjectRequest = new DeleteObjectRequest
             {
                 BucketName = bucketName,
-                Key = key,
+                Key = key
             };
             await s3Client.DeleteObjectAsync(deleteObjectRequest);
         }
@@ -2285,14 +2114,14 @@ public class JobController(
         {
             Log.Error(
                 ex,
-                $"{nameof(DeleteFile)} AWS S3 error occurred while deleting object {key} from bucket {bucketName}. StatusCode: {ex.StatusCode}, ErrorCode: {ex.ErrorCode}"
+                "{DeleteFileName} AWS S3 error occurred while deleting object {Key} from bucket {BucketName}. StatusCode: {HttpStatusCode}, ErrorCode: {ExErrorCode}", nameof(DeleteFile), key, bucketName, ex.StatusCode, ex.ErrorCode
             );
         }
         catch (Exception ex)
         {
             Log.Error(
                 ex,
-                $"{nameof(DeleteFile)} An unexpected error occurred while deleting object {key} from bucket {bucketName}"
+                "{DeleteFileName} An unexpected error occurred while deleting object {Key} from bucket {BucketName}", nameof(DeleteFile), key, bucketName
             );
         }
 
@@ -2441,6 +2270,142 @@ public class JobController(
             return StatusCode(500, new { message = ex.Message });
         }
     }
+
+[HttpPost]
+public async Task<IActionResult> UpdateDeliveryAddressNz([FromBody] UpdateAddressRequestNz request)
+{
+    try
+    {
+        // First update the address
+        await jobRepository.UpdateDeliveryAddressNzAsync(request);
+
+        // Get job details for rating
+        var jobDetails = await jobRepository.GetJobDetailsForRating(request.JobId);
+
+        // Update job details with new delivery address
+        jobDetails.ToId = request.SuburbId;
+        jobDetails.DeliveryLat = request.Latitude;
+        jobDetails.DeliveryLong = request.Longitude;
+
+        // Calculate new rate
+        var rate = await rateJobService.RateJob(jobDetails);
+
+        // Create note text
+        var noteText = $"Delivery address updated to {request.Address}. Rate recalculated: {rate:C}";
+
+        // Update job rate and add note
+        await jobRepository.UpdateJobRateAsync(request.JobId, rate, noteText);
+
+        return Ok(new { message = "Delivery address updated successfully", newRate = rate });
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Error updating delivery address for job {JobId}", request.JobId);
+        return StatusCode(500, new { message = ex.Message });
+    }
+}
+
+[HttpPost]
+public async Task<IActionResult> UpdateDeliveryAddressUs([FromBody] UpdateAddressRequestUs request)
+{
+    try
+    {
+        // First update the address
+        await jobRepository.UpdateDeliveryAddressUsAsync(request);
+
+        // Get job details for rating
+        var jobDetails = await jobRepository.GetJobDetailsForRating(request.JobId);
+
+        // Update job details with new delivery address
+        jobDetails.ToZip = request.Address.AddressLine7;
+        jobDetails.DeliveryLat = request.Address.Latitude ?? 0;
+        jobDetails.DeliveryLong = request.Address.Longitude ?? 0;
+
+        // Calculate new rate
+        var rate = await rateJobService.RateJobUs(jobDetails);
+
+        // Create note text
+        var noteText = $"Changed Delivery Address to {request.Address.FullAddress}. Rate recalculated: {rate:C}";
+
+        // Update job rate and add note
+        await jobRepository.UpdateJobRateAsync(request.JobId, rate, noteText);
+
+        return Ok(new { message = "Delivery address updated successfully", newRate = rate });
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Error updating delivery address for job {JobId}", request.JobId);
+        return StatusCode(500, new { message = ex.Message });
+    }
+}
+
+[HttpPost]
+public async Task<IActionResult> UpdatePickupAddressNz([FromBody] UpdateAddressRequestNz request)
+{
+    try
+    {
+        // First update the address
+        await jobRepository.UpdatePickupAddressNzAsync(request);
+
+        // Get job details for rating
+        var jobDetails = await jobRepository.GetJobDetailsForRating(request.JobId);
+
+        // Update job details with new pickup address
+        jobDetails.FromId = request.SuburbId;
+        jobDetails.PickupLat = request.Latitude;
+        jobDetails.PickupLong = request.Longitude;
+
+        // Calculate new rate
+        var rate = await rateJobService.RateJob(jobDetails);
+
+        // Create note text
+        var noteText = $"Changed Pickup Address to {request.Address}. Rate recalculated: {rate:C}";
+
+        // Update job rate and add note
+        await jobRepository.UpdateJobRateAsync(request.JobId, rate, noteText);
+
+        return Ok(new { message = "Pickup address updated successfully", newRate = rate });
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Error updating pickup address for job {JobId}", request.JobId);
+        return StatusCode(500, new { message = ex.Message });
+    }
+}
+
+[HttpPost]
+public async Task<IActionResult> UpdatePickupAddressUs([FromBody] UpdateAddressRequestUs request)
+{
+    try
+    {
+        // First update the address
+        await jobRepository.UpdatePickupAddressUsAsync(request);
+
+        // Get job details for rating
+        var jobDetails = await jobRepository.GetJobDetailsForRating(request.JobId);
+
+        // Update job details with new pickup address
+        jobDetails.FromZip = request.Address.AddressLine7;
+        jobDetails.PickupLat = request.Address.Latitude ?? 0;
+        jobDetails.PickupLong = request.Address.Longitude ?? 0;
+
+        // Calculate new rate
+        var rate = await rateJobService.RateJobUs(jobDetails);
+
+        // Create note text
+        var noteText = $"Changed Pickup Address to {request.Address.FullAddress}. Rate recalculated: {rate:C}";
+
+        // Update job rate and add note
+        await jobRepository.UpdateJobRateAsync(request.JobId, rate, noteText);
+
+        return Ok(new { message = "Pickup address updated successfully", newRate = rate });
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Error updating pickup address for job {JobId}", request.JobId);
+        return StatusCode(500, new { message = ex.Message });
+    }
+}
 
     #region Single use Api models
 

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using Microsoft.AspNetCore.Http;
 
@@ -20,5 +21,13 @@ public class TenantInfoService(IHttpContextAccessor contextAccessor) : ITenantIn
     {
         var staffId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "StaffID")?.Value;
         return int.Parse(staffId ?? string.Empty);
+    }
+
+    public bool IsUsTenant()
+    {
+        var usa = Country.Us.GetDescription();
+        var countryCode = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CountryCode")?.Value;
+
+        return countryCode?.ToUpper().Equals(usa) ?? false;
     }
 }

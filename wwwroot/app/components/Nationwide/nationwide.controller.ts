@@ -8,7 +8,7 @@ import {AppConfig} from "../../interfaces/app-config.interface";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
 import {IAgent, IDispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
-import {IFlightViewModel, HereMapsConfig, StatusChangeEvent} from "./nationwide.interfaces";
+import {HereMapsConfig, IFlightViewModel, StatusChangeEvent} from "./nationwide.interfaces";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
@@ -21,11 +21,11 @@ import JobContextMenuService from "../../services/job-context-menu.service";
 import {ExtendedTask, TaskTableFiltersRequest, TaskViewModel} from "../task-dashboard/task-dashboard.interfaces";
 import {JobStatus} from "../../enums/job-status.enum";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
+import {JobProperty} from "../../enums/job-property.enum";
 
 class NationwideControl extends BaseController {
     static $inject = [
         '$scope',
-        'JobDetailService',
         'NWData',
         '$timeout',
         'greetingService',
@@ -119,10 +119,10 @@ class NationwideControl extends BaseController {
     flightPageSize: number = 25;
     allFlightsLoaded: boolean = false;
     flightLoadingMore: boolean = false;
+    timeZone: string;
 
     constructor(
         private $scope: angular.IScope,
-        private jdSvc: any,
         private nationwideService: NationwideService,
         private $timeout: angular.ITimeoutService,
         private greetingService: GreetingService,
@@ -132,7 +132,7 @@ class NationwideControl extends BaseController {
         private DispatchData: DispatchCoreService,
         private $mdSidenav: angular.material.ISidenavService,
         private APP_CONFIG: AppConfig,
-        private DispatchJobService: DispatchExecutorService,
+        private dispatchJobService: DispatchExecutorService,
         private jobFileUploadDialogService: JobFileUploadDialogService,
         private addEventDialogService: AddEventDialogService,
         private additionalServicesDialogService: AdditionalServicesDialogService,
@@ -142,6 +142,7 @@ class NationwideControl extends BaseController {
         super();
 
         this.isUsCustomer = this.APP_CONFIG.US_Customer;
+        this.timeZone = TimeZone;
 
         this.$scope.$on("angular-resizable.resizeEnd", (_, args) => {
             const mapContainer = angular.element(args.id ? '#' + args.id : '').find('.here-map');
@@ -847,17 +848,28 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async unlockJob(job: IDispatchJob) {
-        await this.jdSvc.unlockJob(job);
+    async unlockJob(currentJob: IDispatchJob) {
+        await this.DispatchData.updateJobDetail(currentJob.id, JobProperty.Locked, false, currentJob.preBook ?? false)
     }
 
-    async lockJob(job: IDispatchJob) {
-        await this.jdSvc.lockJob(job);
+    async lockJob(currentJob: IDispatchJob) {
+        await this.DispatchData.updateJobDetail(currentJob.id, JobProperty.Locked, true, currentJob.preBook ?? false)
     }
 
     async restoreJob(job: IDispatchJob) {
         try {
-            await this.DispatchJobService.restoreJob(job);
+            await this.dispatchJobService.restoreJob(job);
+            await this.getData();
+        } catch (error) {
+            console.error('Error restoring job:', error);
+        }
+    }
+
+    async reAllocateJobs(job: IDispatchJob) {
+        try {
+            if (!job) return;
+
+            await this.dispatchJobService.reallocateJob(job);
             await this.getData();
         } catch (error) {
             console.error('Error restoring job:', error);
@@ -1071,19 +1083,25 @@ class NationwideControl extends BaseController {
             return;
         }
 
-        this.flightLoadingMore = true;
+        this.$timeout(() => {
+            this.flightLoadingMore = true;
+        });
 
         try {
-            let nextSearchTime;
+            let nextSearchTime: Date;
             if (this.flightOptions && this.flightOptions.length > 0) {
                 let lastFlight = this.flightOptions[this.flightOptions.length - 1];
                 nextSearchTime = lastFlight.departureTime;
-                this.currentSearchTime = nextSearchTime;
+                this.$timeout(() => {
+                    this.currentSearchTime = nextSearchTime;
+                });
             } else {
                 nextSearchTime = this.currentJob.booked || new Date();
             }
 
-            this.flightPage += 1;
+            this.$timeout(() => {
+                this.flightPage += 1;
+            });
 
             const result = await this.nationwideService.getFlightOptions(
                 this.currentJob.id,
@@ -1130,16 +1148,20 @@ class NationwideControl extends BaseController {
             return;
         }
 
-        this.flightsLoading = true;
-        this.flightPage = 1;
-        this.allFlightsLoaded = false;
+        this.$timeout(() => {
+            this.flightsLoading = true;
+            this.flightPage = 1;
+            this.allFlightsLoaded = false;
+        });
 
         try {
             let newDate = this.currentSearchTime ? new Date(this.currentSearchTime) : new Date();
             newDate.setDate(newDate.getDate() + 1);
             newDate.setHours(0, 0, 0, 0);
 
-            this.currentSearchTime = newDate;
+            this.$timeout(() => {
+                this.currentSearchTime = newDate;
+            });
 
             const result = await this.nationwideService.getFlightOptions(
                 this.currentJob.id,
@@ -1749,16 +1771,6 @@ class NationwideControl extends BaseController {
         } finally {
             this.flightsLoading = false;
         }
-    }
-
-    getFlightCountByAirline(airline: Suggestion): number {
-        if (!airline) return 0;
-
-        if (!this.flightOptions || !Array.isArray(this.flightOptions)) return 0;
-
-        return this.flightOptions.filter(flight =>
-            flight.airlineId === airline.id
-        ).length;
     }
 
     private _markJobReadStatus(jobId: number, isRead: boolean) {

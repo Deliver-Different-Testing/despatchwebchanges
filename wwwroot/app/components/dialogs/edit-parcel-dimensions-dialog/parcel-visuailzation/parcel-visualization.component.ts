@@ -15,9 +15,8 @@ class ParcelVisualizationController extends BaseController {
 
     constructor() {
         super();
-        // Adjusted base size to better fit in dialog
-        this.baseSize = 50;
-        this.maxDimension = 100;
+        this.baseSize = 25;
+        this.maxDimension = 75;
     }
 
     $onInit(): void {
@@ -29,36 +28,34 @@ class ParcelVisualizationController extends BaseController {
     }
 
     updateDimensions(): void {
-        // Parse dimensions, defaulting to 0 if invalid
         const l = parseFloat(this.length) || 0;
         const w = parseFloat(this.width) || 0;
         const h = parseFloat(this.height) || 0;
 
-        // Check if we have valid dimensions (all greater than 0)
         this.hasValidDimensions = l > 0 && w > 0 && h > 0;
 
         if (!this.hasValidDimensions) {
-            // Set minimal placeholder dimensions for invalid values
             const defaultSize = 1;
             this.normalizedLength = defaultSize * this.baseSize;
             this.normalizedWidth = defaultSize * this.baseSize;
             this.normalizedHeight = defaultSize * this.baseSize;
-            this.scale = 0.5; // Reduced scale for placeholder
+            this.scale = 0.7;
             return;
         }
 
-        // Calculate appropriate scale based on largest dimension
-        // This ensures the parcel fits properly in the visualization area
         const maxInputDimension = Math.max(l, w, h);
-        this.scale = Math.min(0.9, this.maxDimension / (maxInputDimension * this.baseSize));
 
-        // Normalize dimensions relative to base size
+        if (l === w && w === h) {
+            this.scale = 0.7;
+        } else {
+            this.scale = Math.min(0.65, this.maxDimension / (maxInputDimension * this.baseSize));
+        }
+
         this.normalizedLength = l * this.baseSize;
         this.normalizedWidth = w * this.baseSize;
         this.normalizedHeight = h * this.baseSize;
     }
 
-    // Calculate volume for display
     calculateVolume(): number {
         const l = parseFloat(this.length) || 0;
         const w = parseFloat(this.width) || 0;

@@ -387,22 +387,7 @@ public static class JobMappings
             DeliverByTime = j.DeliverByTime,
             Attention = j.UcjbAttention,
 
-            Distance =
-                j.PickUpLatitude.HasValue
-                && j.PickUpLongitude.HasValue
-                && j.DeliveryLatitude.HasValue
-                && j.DeliveryLongitude.HasValue
-                    ? DistanceCalculator.CalculateDistance(
-                        new AddressCoordinates(
-                            j.PickUpLatitude.Value,
-                            j.PickUpLongitude.Value
-                        ),
-                        new AddressCoordinates(
-                            j.DeliveryLatitude.Value,
-                            j.DeliveryLongitude.Value
-                        )
-                    )
-                    : 0,
+            Distance = 0, // ToDo: Add Kerran's new field
 
             ReadTrackerInfo = j.TucJobReadTracker != null ?
                 new ReadTrackerInfoViewModel
@@ -572,22 +557,7 @@ public static class JobMappings
             DeliverByTime = j.DeliverByTime,
             Attention = j.UcjbAttention,
 
-            Distance =
-                j.PickUpLatitude.HasValue
-                && j.PickUpLongitude.HasValue
-                && j.DeliveryLatitude.HasValue
-                && j.DeliveryLongitude.HasValue
-                    ? DistanceCalculator.CalculateDistance(
-                        new AddressCoordinates(
-                            j.PickUpLatitude.Value,
-                            j.PickUpLongitude.Value
-                        ),
-                        new AddressCoordinates(
-                            j.DeliveryLatitude.Value,
-                            j.DeliveryLongitude.Value
-                        )
-                    )
-                    : 0,
+            Distance = 0, // ToDo: Add Kerran's new field
 
             PickUpWindowMins = j.PickUpWindowMins,
             DeliverByWindowMins = j.DeliverByWindowMins
@@ -741,22 +711,7 @@ public static class JobMappings
                     })
                     .ToList(),
 
-            Distance =
-                j.PickUpLatitude.HasValue
-                && j.PickUpLongitude.HasValue
-                && j.DeliveryLatitude.HasValue
-                && j.DeliveryLongitude.HasValue
-                    ? DistanceCalculator.CalculateDistance(
-                        new AddressCoordinates(
-                            j.PickUpLatitude.Value,
-                            j.PickUpLongitude.Value
-                        ),
-                        new AddressCoordinates(
-                            j.DeliveryLatitude.Value,
-                            j.DeliveryLongitude.Value
-                        )
-                    )
-                    : 0,
+            Distance = 0, // ToDo: Add Kerran's new field
 
  // Added recurring job fields
             InActiveBy = j.UcbkInActiveBy != null

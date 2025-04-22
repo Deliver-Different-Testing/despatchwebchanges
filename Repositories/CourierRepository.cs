@@ -15,7 +15,7 @@ using Serilog;
 
 namespace DespatchWeb.Repositories;
 
-public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory)
+public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory, ITenantInfoService tenantInfoService)
     : BaseRepository(contextFactory),
         ICourierRepository
 {
@@ -87,7 +87,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         }
         catch (Exception e)
         {
-            Log.Error(e, $"An error occured getting truck status for {courierId}");
+            Log.Error(e, "An error occured getting truck status for {CourierId}", courierId);
             throw;
         }
     }
@@ -122,6 +122,8 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         decimal maximumLongitude,
         decimal maximumLatitude)
     {
+        var currentDate = tenantInfoService.GetCurrentTenantTime();
+
         var couriers = await Context.TucCouriers
             .Where(c => c.CourierLogInOut.LogOutTime == null &&
                         c.CourierGps.Longitude >= minimumLongitude && c.CourierGps.Longitude <= maximumLongitude
@@ -170,7 +172,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             TotalJobs = dto.TotalJobs,
             OverDueJobs = dto.Jobs.Count(j =>
                 j.UcjbTime != null &&
-                j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes ?? 0) < DateTime.Now)
+                j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes ?? 0) < currentDate)
         }).ToList();
     }
 
@@ -211,7 +213,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
             .AsNoTracking()
             .ToListAsync();
 
-        var now = DateTime.Now;
+        var now = tenantInfoService.GetCurrentTenantTime();
         var uaFleetIds = new[] { 32, 33, 34, 35, 36, 37, 38, 64 };
 
         return couriers.Select(dto => new AvailableCourierPosition
@@ -604,6 +606,8 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
 
     private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryUs(int clearListAreaId)
     {
+        var currentDate = tenantInfoService.GetCurrentTenantTime();
+
         return Context
             .TucCouriers.SelectMany(c =>
                 c.TucJobUcjbCouriers.Where(jt => !jt.UcjbJobDone && !jt.UcjbVoid)
@@ -622,7 +626,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
                             )
                     )
             )
-            .Where(x => //x.Courier.CourierLogInOut.LogInTime.Date == DateTime.Now &&
+            .Where(x => x.Courier.CourierLogInOut.LogInTime <= currentDate &&
                 x.Courier.CourierLogInOut.LogOutTime == null
             )
             .Select(x => new EnvelopeCoordinate

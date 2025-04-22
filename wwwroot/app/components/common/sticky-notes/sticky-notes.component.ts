@@ -5,6 +5,7 @@ import {IJobNote} from "../../../interfaces/job.interface";
 import "./sticky-notes.styles.less";
 import BaseController from "../../base-controller";
 import moment from "moment";
+import {timezoneShortFilter} from "../../../filters";
 
 class StickyNoteController extends BaseController {
     private previousJobId?: number;
@@ -18,14 +19,16 @@ class StickyNoteController extends BaseController {
         'noteService',
         'noteManagementDialogService',
         'toastrService',
-        '$mdDialog'
+        '$mdDialog',
+        '$filter'
     ];
 
     constructor(
         private noteService: NoteService,
         private noteManagementDialogService: NoteManagementDialogService,
         private toastrService: ToastrService,
-        private $mdDialog: angular.material.IDialogService
+        private $mdDialog: angular.material.IDialogService,
+        private $filter: angular.IFilterService,
     ) {
         super();
     }
@@ -142,14 +145,18 @@ class StickyNoteController extends BaseController {
         const now = moment();
         const diffDays = now.diff(momentDate, 'days');
 
+        // Get the formatted timezone using the filter
+        const timezoneShort = this.$filter<(timezone: string) => string>('timezoneShort')(TimeZone);
+        const timezoneDisplay = timezoneShort ? ` (${timezoneShort})` : '';
+
         if (diffDays === 0) {
-            return 'Today ' + momentDate.format('HH:mm');
+            return 'Today ' + momentDate.format('HH:mm') + timezoneDisplay;
         } else if (diffDays === 1) {
-            return 'Yesterday ' + momentDate.format('HH:mm');
+            return 'Yesterday ' + momentDate.format('HH:mm') + timezoneDisplay;
         } else if (diffDays < 7) {
             return diffDays + ' days ago';
         } else {
-            return momentDate.format('MM/DD/YYYY HH:mm');
+            return momentDate.format('MM/DD/YYYY HH:mm') + timezoneDisplay;
         }
     }
 }

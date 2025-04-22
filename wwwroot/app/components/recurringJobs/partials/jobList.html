@@ -23,7 +23,7 @@
                 ng-click="ctrl.selectJobDetail(job.id);"
                 ng-repeat="job in ctrl.pagedData | filter: ctrl.searchText">
 
-                <td md-cell>{{job.booked | date: "HH:mm"}}</td>
+                <td md-cell>{{job.booked | momentFormat:"HH:mm"}} ({{ctrl.timeZone | timezoneShort}})</td>
                 <td md-cell>{{job.speed}}</td>
                 <td md-cell>{{job.jobNo}}</td>
                 <td md-cell>{{job.client}}</td>

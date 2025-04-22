@@ -1,8 +1,8 @@
+using System;
+using DespatchWeb.Models.Response;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
-using System;
-using DespatchWeb.Models.Response;
 
 namespace DespatchWeb.Controllers;
 

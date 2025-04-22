@@ -6,4 +6,5 @@ public interface ITenantInfoService
 {
     DateTime GetCurrentTenantTime();
     int GetStaffId();
+    bool IsUsTenant();
 }

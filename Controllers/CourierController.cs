@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Threading.Tasks;
-using DespatchWeb.Interfaces;
-using DespatchWeb.Enums;
+﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using DespatchWeb.Enums;
+using DespatchWeb.Interfaces;
+using Microsoft.AspNetCore.Mvc;
 using Serilog;
 
 namespace DespatchWeb.Controllers;

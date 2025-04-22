@@ -30,7 +30,7 @@
                 data-courier="{{job.courier}}"
                 class="clickable-row noselect md-truncate droppable-row">
 
-                <td md-cell>{{job.time | date: "HH:mm"}}</td>
+                <td md-cell>{{job.time | momentFormat:"HH:mm"}} ({{ctrl.timeZone | timezoneShort}})</td>
                 <td md-cell>{{job.speed}}</td>
                 <td md-cell>
                     {{job.notify}}

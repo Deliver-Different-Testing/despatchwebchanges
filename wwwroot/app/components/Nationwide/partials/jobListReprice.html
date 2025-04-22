@@ -75,8 +75,7 @@
                 data-allowDispatch="{{job.allowDispatch}}"
                 data-index="{{$index}}">
 
-                <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">{{job.booked | date: (ctrl.isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm")}}</td>
-                <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">
+                <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">{{job.booked | momentFormat: (ctrl.isUsCustomer ? "MM/DD/YYYY HH:mm" : "DD/MM/YYYY HH:mm")}} ({{ctrl.timeZone | timezoneShort}})</td>                <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">
                     <md-icon md-font-set="material-symbols-outlined" ng-if="job.fromAirportId || job.toAirportId">
                         {{ctrl.getFlightIcon(job.jobNo)}}
                     </md-icon>
@@ -123,14 +122,13 @@
                     </md-chip>
                 </td>
                 <td class="actions" md-cell>
-                    <span class="action-icon" ng-click="createEvent($event, job); $event.stopPropagation();">
-                        <md-icon md-font-set="material-symbols-outlined">calendar_add_on</md-icon>
-                        <md-tooltip md-direction="bottom">Create Event</md-tooltip>
-                    </span>
-                    <span class="action-icon"
-                          ng-click="job.courier == null || ctrl.restoreJob(job); $event.stopPropagation();">
+                    <span class="action-icon" ng-click="job.courier == null || ctrl.restoreJob(job);">
                         <md-icon md-font-set="material-symbols-outlined" ng-if="job.courier !== null">undo</md-icon>
-                        <md-tooltip md-direction="bottom" ng-if="job.courier !== null">Restore</md-tooltip>
+                        <md-tooltip md-direction="bottom">Restore</md-tooltip>
+                    </span>
+                    <span class="action-icon" ng-click="job.courier == null || ctrl.reAllocateJobs(job);">
+                        <md-icon md-font-set="material-symbols-outlined" ng-if="job.courier !== null">repeat</md-icon>
+                        <md-tooltip md-direction="bottom">ReDispatch</md-tooltip>
                     </span>
                 </td>
             </tr>

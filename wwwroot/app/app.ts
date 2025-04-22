@@ -3,7 +3,6 @@ import {AppPages} from "./enums/app-pages.enum";
 import {PodPhotoViewerComponent} from "./components/common/pod-photo-viewer/pod-photo-viewer.component";
 import {MaterialSidenavComponent} from "./components/common/side-nav/side-nav.component";
 import HomeComponent from "./components/home/home.controller";
-import {PalletDialogController} from "./components/dialogs/add-pallet-dialog/add-pallet-dialog.controller";
 import {AutoCompleteDialogController} from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.controller";
 import {CreateJobDialogController} from "./components/dialogs/create-job-dialog/create-job-dialog.controller";
 import {DateRangeDialogController} from "./components/dialogs/date-range-dialog/date-range-dialog.controller";
@@ -30,7 +29,6 @@ import DispatchExecutorService from "./services/dispatch-executor.service";
 import UsStatesService from "./services/getUsStates.service";
 import GreetingService from "./services/greeting.service";
 import OpenJobDispatchService from "./services/open-job-dispatch.service";
-import RateJobService from "./services/rate-job.service";
 import ToastrService from "./services/toastr.service";
 import {SelectDialogService} from "./components/dialogs/select-dialog/select-dialog.service";
 import {EventGroupDialogController} from "./components/dialogs/event-group-dialog/event-group-dialog.controller";
@@ -116,6 +114,7 @@ const app = angular.module("uDispatch", [
     "ngFileUpload",
     "hereMapTracking.services",
     "hereMapTracking.components",
+    "fixed.table.header",
 ]);
 
 // Constants
@@ -244,7 +243,6 @@ app.component("jobSearchComponent", JobSearchComponent);
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);
-app.controller("PalletDialogController", PalletDialogController);
 app.controller("AdditionalServicesDialogController", AdditionalServicesDialogController);
 app.controller("AutoCompleteDialogController", AutoCompleteDialogController);
 app.controller("CreateJobDialogController", CreateJobDialogController);
@@ -268,7 +266,6 @@ app.service("dispatchJobService", DispatchExecutorService);
 app.service("UsStatesService", UsStatesService);
 app.service("greetingService", GreetingService);
 app.service("openJobDispatchService", OpenJobDispatchService);
-app.service("rateJobService", RateJobService);
 app.service("toastrService", ToastrService);
 app.service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService);
 app.service("overviewFiltersService", OverviewFiltersService);

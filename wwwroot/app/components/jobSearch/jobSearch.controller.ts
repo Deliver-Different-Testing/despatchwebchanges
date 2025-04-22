@@ -10,6 +10,7 @@ import BaseController from "../base-controller";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {ContactID} from "../../contants";
 import JobContextMenuService from "../../services/job-context-menu.service";
+import {JobProperty} from "../../enums/job-property.enum";
 
 class JobSearchController extends BaseController {
 
@@ -71,7 +72,7 @@ class JobSearchController extends BaseController {
     currentLayoutName?: string;
     layout?: { columns: IColumn[] };
 
-
+    timeZone: string = TimeZone;
     userName: any;
     selectJob: any;
     jobList?: IDispatchJob[];
@@ -729,12 +730,12 @@ class JobSearchController extends BaseController {
         }
     }
 
-    unlockJob() {
-        // ToDo:
+    async unlockJob(currentJob: IDispatchJob) {
+        await this.DispatchData.updateJobDetail(currentJob.id, JobProperty.Locked, false, currentJob.preBook ?? false)
     }
 
-    lockJob() {
-        // ToDo:
+    async lockJob(currentJob: IDispatchJob) {
+        await this.DispatchData.updateJobDetail(currentJob.id, JobProperty.Locked, true, currentJob.preBook ?? false)
     }
 
     async unSplitJob() {

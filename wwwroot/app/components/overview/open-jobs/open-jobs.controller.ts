@@ -10,7 +10,9 @@ class OpenJobsWidgetController extends BaseController {
         "$scope",
         "overviewService",
         "APP_CONFIG",
-        "overviewFiltersService"];
+        "overviewFiltersService",
+        "$filter"
+    ];
 
     private readonly isUsCustomer: boolean;
     private readonly limitName: string = "openJobsTableViewLimit";
@@ -31,7 +33,9 @@ class OpenJobsWidgetController extends BaseController {
         $scope: angular.IScope,
         private overviewService: OverviewService,
         APP_CONFIG: AppConfig,
-        private overviewFiltersService: OverviewFiltersService) {
+        private overviewFiltersService: OverviewFiltersService,
+        private $filter: angular.IFilterService,
+    ) {
         super();
 
         this.isUsCustomer = APP_CONFIG.US_Customer;
@@ -229,7 +233,12 @@ class OpenJobsWidgetController extends BaseController {
         if (!timestamp) return "";
 
         const format = this.isUsCustomer ? "MM/DD HH:mm" : "DD/MM HH:mm";
-        return moment(timestamp).format(format);
+
+        // Get the formatted timezone using the filter
+        const timezoneShort = this.$filter<(timezone: string) => string>('timezoneShort')(TimeZone);
+        const timezoneDisplay = timezoneShort ? ` (${timezoneShort})` : '';
+
+        return moment(timestamp).format(format) + timezoneDisplay;
     }
 
     getTimeSinceLastCompleted(lastCompletedTime: string): number {

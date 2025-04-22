@@ -26,7 +26,6 @@ class JobDetailController extends BaseController {
         "$mdDialog",
         "toastrService",
         "DispatchData",
-        "rateJobService",
         "$mdMenu",
         "selectDialogService",
         "editDateTimeDialogService",
@@ -36,7 +35,8 @@ class JobDetailController extends BaseController {
         "APP_CONFIG",
         "editParcelDimensionsDialogService",
         "$rootScope",
-        "$timeout"
+        "$timeout",
+        "$filter"
     ];
 
     readonly appPage: AppPages = AppPages.Dispatch;
@@ -58,12 +58,12 @@ class JobDetailController extends BaseController {
     distance?: number;
     selectedTabIndex: number = 0;
     processingTabChange: boolean = false;
+    timeZone: string;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
-        private rateJobService: any,
         private $mdMenu: angular.material.IMenuService,
         private selectDialogService: SelectDialogService,
         private editDateTimeDialogService: EditDateTimeDialogService,
@@ -74,10 +74,12 @@ class JobDetailController extends BaseController {
         private editParcelDimensionsDialogService: EditParcelDimensionsDialogService,
         private $rootScope: angular.IRootScopeService,
         private $timeout: angular.ITimeoutService,
+        private $filter: angular.IFilterService,
     ) {
         super();
 
         this.isUsCustomer = APP_CONFIG.US_Customer;
+        this.timeZone = TimeZone;
 
         this.selectedTab = 0;
         this.allTabs = [];
@@ -402,7 +404,6 @@ class JobDetailController extends BaseController {
                     job.id,
                     result.fieldName,
                     result.formattedDateTime,
-                    job.charge,
                     job.preBook
                 );
             }
@@ -421,16 +422,16 @@ class JobDetailController extends BaseController {
 
             if (result) {
                 if (fieldName === JobProperty.DGClass) {
-                    await this.DispatchData.updateJobDetail(job.id, fieldName, result.value, job.charge, job.preBook);
+                    await this.DispatchData.updateJobDetail(job.id, fieldName, result.value, job.preBook);
 
                     if (job.dgDocumentation !== result.checkboxValue) {
-                        await this.DispatchData.updateJobDetail(job.id, JobProperty.DGDocumentation, result?.checkboxValue ?? false, job.charge, job.preBook);
+                        await this.DispatchData.updateJobDetail(job.id, JobProperty.DGDocumentation, result?.checkboxValue ?? false, job.preBook);
                     }
                 } else {
                     if (job.bulkJob) {
                         await this.DispatchData.updateBulkJobDetail(job.id, fieldName, result.value, job.charge, FirstName, ContactID);
                     } else {
-                        await this.DispatchData.updateJobDetail(job.id, fieldName, result.value, job.charge, job.preBook);
+                        await this.DispatchData.updateJobDetail(job.id, fieldName, result.value, job.preBook);
                     }
                 }
 
@@ -456,15 +457,15 @@ class JobDetailController extends BaseController {
             .ok("Save")
             .cancel("Cancel");
 
-            const result = await this.$mdDialog.show(prompt);
+        const result = await this.$mdDialog.show(prompt);
 
-            const callData = {
-                "call": "updateDetailField", "field": field, "value": result, "jobID": job.id
-            };
-            await this.updateField(false, job, callData);
+        const callData = {
+            "call": "updateDetailField", "field": field, "value": result, "jobID": job.id
+        };
+        await this.updateField(false, job, callData);
 
-            this.toastrService.showSuccessToast(`${job.jobNo} updated`);
-            await this._refreshJobDetails(job.id);
+        this.toastrService.showSuccessToast(`${job.jobNo} updated`);
+        await this._refreshJobDetails(job.id);
     }
 
     async showJobDimensionsDialog($event: MouseEvent, job: IJob) {
@@ -555,20 +556,10 @@ class JobDetailController extends BaseController {
 
     private async _updateJobRateAndAddress(job: IJob, addressResult: EditAddressDialogViewModel, isDeliveryAddress: boolean) {
         try {
-            job.charge = await this.rateJobService.rateJob(job);
-
-            let rate = 0;
-            if (job.charge) {
-                rate = Number(job.charge.replace(/[^0-9.-]+/g, ""));
-                console.log(`Job Rate: ${rate}`);
-            } else {
-                console.warn("Job charge is undefined or not a string", job.charge);
-            }
-
             if (isDeliveryAddress) {
-                await this.DispatchData.updateDeliveryAddress(job.id, rate, FirstName, job.preBook, addressResult);
+                await this.DispatchData.updateDeliveryAddress(job.id, FirstName, job.preBook, addressResult);
             } else {
-                await this.DispatchData.updatePickupAddress(job.id, rate, FirstName, job.preBook, addressResult);
+                await this.DispatchData.updatePickupAddress(job.id, FirstName, job.preBook, addressResult);
             }
         } catch (error) {
             console.error("Error updating job rate and address:", error);
@@ -803,7 +794,7 @@ class JobDetailController extends BaseController {
         this.isLoading = false;
     }
 
-    async updateField(reRate: boolean, job: IJob, callData: {
+    async updateField(_reRate: boolean, job: IJob, callData: {
         call?: string;
         field: JobProperty;
         value: any;
@@ -812,28 +803,16 @@ class JobDetailController extends BaseController {
         this._showLoading();
 
         try {
-            if (reRate && !job.bulkJob) {
-                const rate = job.charge;
+            // Ensure rate is decimal
+            const numericRate = parseFloat(job.charge.replace(/[^\d.-]/g, ""));
+            if (isNaN(numericRate)) {
+                console.error("Failed to convert rate to a number");
+            }
 
-                // Ensure rate is decimal
-                const numericRate = parseFloat(rate.replace(/[^\d.-]/g, ""));
-                if (isNaN(numericRate)) {
-                    console.error("Failed to convert rate to a number:", rate);
-                }
-
-                await this.DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, numericRate, job.preBook);
+            if (job.bulkJob) {
+                await this.DispatchData.updateBulkJobDetail(job.id, callData.field, callData.value, numericRate, FirstName, ContactID);
             } else {
-                // Ensure rate is decimal
-                const numericRate = parseFloat(job.charge.replace(/[^\d.-]/g, ""));
-                if (isNaN(numericRate)) {
-                    console.error("Failed to convert rate to a number");
-                }
-
-                if (job.bulkJob) {
-                    await this.DispatchData.updateBulkJobDetail(job.id, callData.field, callData.value, numericRate, FirstName, ContactID);
-                } else {
-                    await this.DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, numericRate, job.preBook);
-                }
+                await this.DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, job.preBook);
             }
         } catch (error) {
             console.error("Error updating job:", error);
@@ -899,8 +878,7 @@ class JobDetailController extends BaseController {
             if (property === JobProperty.Reprice && newValue) {
                 console.log(`[JobDetailsComponentController] Special handling for reprice - updating internal status`);
                 const repriceStatusId = 4;
-                await this.DispatchData.updateJobDetail(job.id, JobProperty.InternalStatusID, repriceStatusId,
-                    this._extractNumericRate(job.charge), job.preBook);
+                await this.DispatchData.updateJobDetail(job.id, JobProperty.InternalStatusID, repriceStatusId, job.preBook);
             }
 
             console.log(`[JobDetailsComponentController] Update successful for ${property}`);
@@ -942,7 +920,7 @@ class JobDetailController extends BaseController {
                     JobProperty.CompletedTime,
                     job.completedTime);
 
-                if(!result.value) return;
+                if (!result.value) return;
                 job.completedTime = result.value;
             }
 
@@ -958,7 +936,7 @@ class JobDetailController extends BaseController {
                     .cancel("Cancel");
 
                 job.podName = await this.$mdDialog.show(prompt);
-                if(!job.podName) return;
+                if (!job.podName) return;
             }
 
             console.log("[JobDetailsComponentController] Marking job as done]")
@@ -991,18 +969,6 @@ class JobDetailController extends BaseController {
         } else {
             this.toastrService.showErrorToast();
         }
-    }
-
-    private _extractNumericRate(rate: string | number | undefined | null): number {
-        if (!rate) {
-            console.log(`[JobDetailsComponentController] Warning: Rate is ${rate}, returning default 0`);
-            return 0;
-        }
-
-        if (typeof rate === 'number') return rate;
-
-        const numericString = rate.replace(/[^0-9.]/g, '');
-        return numericString ? parseFloat(numericString) : 0;
     }
 
     getTrackingMethod(trackingMethod?: number) {
@@ -1125,7 +1091,6 @@ class JobDetailController extends BaseController {
                 job.id,
                 JobProperty.InternalStatusID,
                 internalStatusId,
-                job.charge,
                 false
             );
 
@@ -1232,7 +1197,6 @@ class JobDetailController extends BaseController {
                 job.id,
                 JobProperty.DaysOfWeek,
                 daysValue,
-                job.charge,
                 job.preBook
             );
 
@@ -1255,7 +1219,6 @@ class JobDetailController extends BaseController {
                 job.id,
                 JobProperty.Frequency,
                 frequencyValue,
-                job.charge,
                 job.preBook
             );
 
@@ -1295,7 +1258,6 @@ class JobDetailController extends BaseController {
                 job.id,
                 JobProperty.HolidayDelivery,
                 holidayOptionValue,
-                job.charge,
                 job.preBook
             );
 
@@ -1312,18 +1274,22 @@ class JobDetailController extends BaseController {
             return 'N/A';
         }
 
+        // Get the formatted timezone using the filter
+        const timezoneShort = this.$filter<(timezone: string) => string>('timezoneShort')(TimeZone);
+        const timezoneDisplay = timezoneShort ? ` (${timezoneShort})` : '';
+
         const baseTimeFormatted = moment(baseTime).format('MM/DD HH:mm');
 
         if (!windowMins || windowMins <= 0) {
-            return baseTimeFormatted;
+            return baseTimeFormatted + timezoneDisplay;
         }
 
         const endTime = moment(baseTime).add(windowMins, 'minutes');
 
         if (moment(baseTime).format('MM/DD') === endTime.format('MM/DD')) {
-            return `${baseTimeFormatted} - ${endTime.format('HH:mm')}`;
+            return `${baseTimeFormatted} - ${endTime.format('HH:mm')}${timezoneDisplay}`;
         } else {
-            return `${baseTimeFormatted} - ${endTime.format('MM/DD HH:mm')}`;
+            return `${baseTimeFormatted} - ${endTime.format('MM/DD HH:mm')}${timezoneDisplay}`;
         }
     }
 

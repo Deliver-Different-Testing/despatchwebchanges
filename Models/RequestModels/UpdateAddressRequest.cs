@@ -3,7 +3,6 @@ namespace DespatchWeb.Models.RequestModels;
 public class UpdateAddressRequest
 {
     public int JobId { get; set; }
-    public decimal Rate { get; set; }
     public string DespatcherName { get; set; }
 }
 

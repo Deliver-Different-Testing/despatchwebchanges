@@ -75,6 +75,8 @@ class TaskDashboardController extends BaseController {
     currentJobId?: number;
     currentJobNumber?: string;
 
+    timeZone: string;
+
     constructor(
         greetingService: GreetingService,
         private $mdSidenav: angular.material.ISidenavService,
@@ -85,6 +87,7 @@ class TaskDashboardController extends BaseController {
     ) {
         super();
         this.greeting = greetingService.greetUser(FirstName);
+        this.timeZone = TimeZone;
 
         this.generateTimeOptions();
         this.selectedDate = new Date();

@@ -83,12 +83,11 @@ export default class JobContextMenuService implements angular.IServiceProvider {
             {
                 text: 'Add Task - Other',
                 icon: 'add',
-                click: ($itemScope: any, $event: MouseEvent) => this.addEventOtherAction($event, job, callbacks.onRefresh),
+                click: (_$itemScope: any, $event: MouseEvent) => this.addEventOtherAction($event, job, callbacks.onRefresh),
                 hasBottomDivider: true
             }
         ];
 
-        // Add Task groups submenu using cached data or function that will fetch it
         menuOptions.push({
             text: 'Task Groups',
             icon: 'event',
@@ -101,7 +100,7 @@ export default class JobContextMenuService implements angular.IServiceProvider {
             menuOptions.push({
                 text: 'Split Job',
                 icon: 'call_split',
-                click: ($itemScope: any, $event: MouseEvent) => this.splitJobAction($event, job, callbacks.onSplitJob),
+                click: (_$itemScope: any, $event: MouseEvent) => this.splitJobAction($event, job, callbacks.onSplitJob),
                 hasBottomDivider: true
             });
         }
@@ -138,7 +137,7 @@ export default class JobContextMenuService implements angular.IServiceProvider {
                 })
                 .catch(error => {
                     console.error('Error loading task groups:', error);
-                    return []; // Return empty array on error
+                    return [];
                 });
         };
     }
