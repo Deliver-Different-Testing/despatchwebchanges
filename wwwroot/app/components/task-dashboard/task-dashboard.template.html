@@ -66,8 +66,7 @@
                     </md-button>
 
                     <div layout="column" layout-align="center center">
-                        <span class="selected-date">{{ctrl.selectedDate | date:'EEEE, MMMM d, yyyy'}}</span>
-                        <md-button class="md-small today-button" ng-click="ctrl.goToToday()"
+                        <span class="selected-date">{{ctrl.selectedDate | momentFormat:'dddd, MMMM D, YYYY'}} ({{ctrl.timeZone | timezoneShort}})</span>                        <md-button class="md-small today-button" ng-click="ctrl.goToToday()"
                                    aria-label="Go to today">
                             Today
                         </md-button>

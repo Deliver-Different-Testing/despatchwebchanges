@@ -1,6 +1,8 @@
+import {Suggestion} from "../../../interfaces/job.interface";
+
 class OverviewFiltersService implements angular.IServiceProvider {
-    selectedRegions: Array<{ id: number }>;
-    selectedSpeeds: Array<{ id: number }>;
+    selectedRegions: Suggestion[];
+    selectedSpeeds: Suggestion[];
     dateRange: { start: Date | null, end: Date | null };
     filterChangeCallbacks: Array<() => void>;
 

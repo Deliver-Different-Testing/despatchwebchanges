@@ -20,6 +20,8 @@ namespace DespatchWeb.Repositories;
 public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextFactory, ITenantInfoService infoService)
     : BaseJobRepository(contextFactory, infoService), INationwideJobRepository
 {
+    private readonly ITenantInfoService _infoService = infoService;
+
     public async Task AddJobNationwideAsync(int jobId, ScheduledFlight flight, string webhookAlertId)
     {
         try
@@ -63,7 +65,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         }
         catch (Exception e)
         {
-            Log.Error(e, $"An error occured adding Flight {flight?.FlightNumber} to job {jobId}");
+            Log.Error(e, "An error occured adding Flight {FlightFlightNumber} to job {JobId}", flight?.FlightNumber, jobId);
             throw;
         }
     }
@@ -118,10 +120,16 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
     {
         try
         {
-            var job = await Context.TucJobs.Where(j => j.UcjbId == jobId).FirstOrDefaultAsync();
+            var job = await Context.TucJobs.FindAsync(jobId);
+            ArgumentNullException.ThrowIfNull(job);
+
+            var currentDate = _infoService.GetCurrentTenantTime();
+
             job.AgentId = agentId;
             job.UcjbStatus = (int)JobStatus.Dispatched;
             job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
+            job.UcjbDispDate = currentDate;
+            job.UcjbDispTime = currentDate;
 
             await Context.SaveChangesAsync();
 
@@ -129,7 +137,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         }
         catch (Exception e)
         {
-            Log.Error(e, $"An error occured adding Agent {agentId} to job {jobId}");
+            Log.Error(e, "An error occured adding Agent {AgentId} to job {JobId}", agentId, jobId);
             return false;
         }
     }
@@ -409,8 +417,8 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
         var smppSetting = await Context.TblSmppsettings.FirstOrDefaultAsync();
 
-        var staffId = infoService.GetStaffId();
-        var currentTenantTime = infoService.GetCurrentTenantTime();
+        var staffId = _infoService.GetStaffId();
+        var currentTenantTime = _infoService.GetCurrentTenantTime();
 
         // Create object
         var agentQuoteTemplateDto = await Context.TucJobs

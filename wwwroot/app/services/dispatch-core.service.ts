@@ -9,8 +9,6 @@ import {
     ILateCallRequest,
     InternalStatus,
     JobQueryParams,
-    JobRateDetails,
-    Pallet,
     ParcelDimensions,
     PriceBreakdown,
     SuburbLookup,
@@ -51,28 +49,6 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async getSelectedViews(userId: number, pageId: number) {
         const response = await this.$http.get<DfrntPageViewModel[]>(`home/GetPageViews?userid=${userId}&pageid=${pageId}`);
-        return response.data;
-    }
-
-    async addPallet(pallet: Pallet, preBook: boolean, despatcherName: string) {
-        const response = await this.$http.post("job/AddPallet", pallet, {
-            params: {
-                preBook,
-                despatcher: despatcherName
-            }
-        });
-
-        return response.data;
-    }
-
-    async editPallet(pallet: Pallet, preBook: boolean, despatcherName: string) {
-        const response = await this.$http.post("job/EditPallet", pallet, {
-            params: {
-                preBook,
-                despatcher: despatcherName
-            }
-        });
-
         return response.data;
     }
 
@@ -331,62 +307,6 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
     }
 
-    async rateJob(
-        clientId: number,
-        fromId: number,
-        toId: number,
-        speed: number,
-        pedal: boolean,
-        van: boolean,
-        returnJob: boolean,
-        weight: number,
-        size: number,
-        includeFuelSurcharge: boolean,
-        direct: boolean,
-        acceptedJobTypeId: number,
-        ourRef: string,
-        refA: string,
-        refB: string,
-        quantity: number,
-        booked: Date
-    ) {
-        const bookedIso = moment(booked).format();
-
-        const response = await this.$http.get(
-            `job/RateJob?clientId=${clientId}&fromId=${fromId}&toId=${toId}` +
-            `&speed=${speed}&pedal=${pedal}&van=${van}&returnJob=${returnJob}` +
-            `&weight=${weight}&size=${size}&includeFuelSurcharge=${includeFuelSurcharge}` +
-            `&direct=${direct}&acceptedJobTypeId=${acceptedJobTypeId}` +
-            `&ourRef=${encodeURIComponent(ourRef)}&refA=${encodeURIComponent(refA)}` +
-            `&refB=${encodeURIComponent(refB)}&quantity=${quantity}` +
-            `&booked=${encodeURIComponent(bookedIso)}`
-        );
-
-        return response.data;
-    }
-
-    async rateJobUS(jobDetails: JobRateDetails) {
-        const generateQueryString = (params: JobRateDetails): string => {
-            return Object.entries(params)
-                .map(([key, value]) => {
-                    if (value instanceof Date) {
-                        value = moment(value).format();
-                    }
-                    // Handle boolean values
-                    if (typeof value === 'boolean') {
-                        value = value.toString();
-                    }
-                    return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
-                })
-                .join("&");
-        };
-
-        const queryString = generateQueryString(jobDetails);
-
-        const response = await this.$http.get(`job/RateJobUs?${queryString}`);
-        return response.data;
-    }
-
 
     async ppdExclusiveAmount(clientId: number, amount: number): Promise<number> {
         const response = await this.$http.get<number>(`job/PPDExclusiveAmount?clientId=${clientId}&amount=${amount}`);
@@ -445,17 +365,15 @@ class DispatchCoreService implements angular.IServiceProvider {
         await this.$http.post(`job/ReRateSplitJob?jobId=${jobId}`, null);
     }
 
-    async updateDeliveryAddress(jobId: number, rate: number, despatcherName: string, prebook: boolean, addressData: AddressViewModel) {
+    async updateDeliveryAddress(jobId: number, despatcherName: string, prebook: boolean, addressData: AddressViewModel) {
         try {
             let endpoint = prebook ? "job/UpdateBookingDeliveryAddress" : "job/UpdateDeliveryAddress";
             console.log(`Using endpoint: ${endpoint}`);
 
-            // Create the appropriate request body based on country
             let requestBody;
             if (!this.isUsCustomer) {
                 requestBody = {
                     jobId: jobId,
-                    rate: rate,
                     despatcherName: despatcherName,
                     address: addressData.address,
                     suburbId: addressData.toSuburbId,
@@ -467,7 +385,6 @@ class DispatchCoreService implements angular.IServiceProvider {
             } else {
                 requestBody = {
                     jobId: jobId,
-                    rate: rate,
                     despatcherName: despatcherName,
                     address: {
                         addressLine1: addressData.addressLine1,
@@ -491,17 +408,15 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
     }
 
-    async updatePickupAddress(jobId: number, rate: number, despatcherName: string, prebook: boolean, addressData: AddressViewModel) {
+    async updatePickupAddress(jobId: number, despatcherName: string, prebook: boolean, addressData: AddressViewModel) {
         try {
             let endpoint = prebook ? "job/UpdateBookingPickupAddress" : "job/UpdatePickupAddress";
             console.log(`Using endpoint: ${endpoint}`);
 
-            // Create the appropriate request body based on country
             let requestBody;
             if (!this.isUsCustomer) {
                 requestBody = {
                     jobId: jobId,
-                    rate: rate,
                     despatcherName: despatcherName,
                     address: addressData.address,
                     suburbId: addressData.toSuburbId,
@@ -513,7 +428,6 @@ class DispatchCoreService implements angular.IServiceProvider {
             } else {
                 requestBody = {
                     jobId: jobId,
-                    rate: rate,
                     despatcherName: despatcherName,
                     address: addressData
                 };
@@ -545,18 +459,12 @@ class DispatchCoreService implements angular.IServiceProvider {
         jobId: number,
         field: JobProperty | string,
         value: string | Date | number | boolean,
-        rate: number | string,
         isRecurring: boolean
     ) {
         console.log("Starting updateJobDetail:", {
-            jobId, field, initialValue: value, rate, preBook: isRecurring
+            jobId, field, initialValue: value, preBook: isRecurring
         });
 
-        // Format rate
-        const processedRate = typeof rate === "string" ? rate.replace(/[$]/g, "") : rate;
-        if (typeof rate === "string") {
-            console.log("Formatted rate:", {originalRate: rate, formattedRate: processedRate});
-        }
 
         if(value instanceof Date) {
             value = moment(value).format();
@@ -581,7 +489,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         } catch (error) {
             console.error("API request failed:", {
                 error: error instanceof Error ? error.message : 'Unknown error',
-                parameters: {jobId, field: field, value: value, rate: processedRate}
+                parameters: {jobId, field: field, value: value}
             });
             throw error;
         }

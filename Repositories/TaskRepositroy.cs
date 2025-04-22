@@ -179,6 +179,8 @@ public class TaskRepository(
         var job = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
         ArgumentNullException.ThrowIfNull(job, nameof(job));
 
+        var currentDate = infoService.GetCurrentTenantTime();
+
         foreach (var eventGroup in eventGroupViewModels)
         {
             // Call the stored procedure for each agent
@@ -186,8 +188,8 @@ public class TaskRepository(
                 jobNo: job.UcjbNumber,
                 clientID: job.UcjbClientId,
                 contact: job.UcjbContact,
-                date: DateTime.Now,
-                time: DateTime.Now,
+                date: currentDate,
+                time: currentDate,
                 type: eventGroup.EventType.Id,
                 lateTime: null,
                 eTATime: null,
@@ -276,12 +278,14 @@ public class TaskRepository(
         var job = await Context.TucJobs.FindAsync(jobId);
         ArgumentNullException.ThrowIfNull(job, "Job not found");
 
+        var currentDate = infoService.GetCurrentTenantTime();
+
         await Context.Procedures.DES_qdfEvent_InsertAsync(
             jobNo: job.UcjbNumber,
             clientID: job.UcjbClientId,
             contact: job.UcjbContact,
-            date: DateTime.Today,
-            time: DateTime.Now,
+            date: currentDate,
+            time: currentDate,
             type: eventType,
             lateTime: lateTime,
             eTATime: etaTime,

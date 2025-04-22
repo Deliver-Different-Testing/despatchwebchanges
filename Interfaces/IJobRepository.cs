@@ -403,4 +403,6 @@ public interface IJobRepository
     Task<JobLateCallDto> GetJobForLateCallAsync(int jobId);
     Task UpdateJobReadStatusAsync(int jobId, bool hasBeenRead);
     Task AddNewTucNoteType(NoteTypeViewModel noteType);
+    Task<JobRatingDetailsDto> GetJobDetailsForRating(int jobId);
+    Task UpdateJobRateAsync(int jobId, decimal rate, string noteText);
 }

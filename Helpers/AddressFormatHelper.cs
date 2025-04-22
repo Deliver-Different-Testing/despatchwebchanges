@@ -62,7 +62,7 @@ public static class AddressFormatter
             .ToList();
 
         // If no valid lines, return empty string
-        return !validLines.Any() ? string.Empty : string.Join(Environment.NewLine, validLines);
+        return validLines.Count == 0 ? string.Empty : string.Join(Environment.NewLine, validLines);
     }
 
     /// <summary>

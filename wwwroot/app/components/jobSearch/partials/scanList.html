@@ -23,7 +23,7 @@
                 md-row
                 ng-class="{'selected': ctrl.selected.indexOf(scan) > -1}"
                 ng-repeat="scan in ctrl.scanList">
-                <td md-cell>{{scan.scanDateTime | date: "dd/MM/yyyy h:mm:a"}}</td>
+                <td md-cell>{{scan.scanDateTime | momentFormat:"DD/MM/YYYY h:mm a"}} ({{ctrl.timeZone | timezoneShort}})</td>
                 <td md-cell>{{scan.scanDetail}}</td>
                 <td md-cell>{{scan.courier}}</td>
             </tr>

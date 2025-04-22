@@ -1,22 +1,23 @@
-using DespatchWeb.Interfaces;
-using DespatchWeb.Models;
-using DespatchWeb.Models.Response;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
+using DespatchWeb.Models.Dto;
+using DespatchWeb.Models.Response;
+using Microsoft.Extensions.Logging;
 
 namespace DespatchWeb.Services;
 
 public class RateJobService(
-    IHttpClientFactory httpClientFactory,
-    IJobRepository jobRepository)
+    IJobRepository jobRepository,
+    ILogger<RateJobService> logger,
+    HttpClient httpClient)
     : IRateJobService
 {
-    private readonly HttpClient _httpClient = httpClientFactory.CreateClient("HereMaps");
-
     public async Task<JobRateResult> CalculateJobRateUs(JobRateRequest request)
     {
         var speed = await jobRepository.GetJobTypeById(request.SpeedId);
@@ -66,71 +67,194 @@ public class RateJobService(
         return result;
     }
 
-    private async Task<double> CalculateRoadDistance(decimal? fromLatitude, decimal? fromLongitude, decimal? toLatitude,
-        decimal? toLongitude)
+    public async Task<decimal> RateJob(JobRatingDetailsDto jobDetails)
     {
-        if (!AreValidCoordinates(fromLatitude, fromLongitude, toLatitude, toLongitude))
-            return 0;
-
-        var fromLatLng = $"{fromLatitude},{fromLongitude}";
-        var toLatLng = $"{toLatitude},{toLongitude}";
-
-        var routeResponse = await GetHereMapRoute(fromLatLng, toLatLng);
-        return CalculateMilesFromRoute(routeResponse);
-    }
-
-    private static bool AreValidCoordinates(decimal? fromLat, decimal? fromLong, decimal? toLat, decimal? toLong) =>
-        fromLat.HasValue && fromLat != 0 &&
-        fromLong.HasValue && fromLong != 0 &&
-        toLat.HasValue && toLat != 0 &&
-        toLong.HasValue && toLong != 0;
-
-    private async Task<HereMapRouteResponseV8> GetHereMapRoute(string fromLatLng, string toLatLng)
-    {
-        var queryParams = new Dictionary<string, string>
-        {
-            { "apiKey", Environment.GetEnvironmentVariable("HereMapsAPIKey") },
-            { "origin", fromLatLng },
-            { "destination", toLatLng },
-            { "routingMode", "fast" },
-            { "transportMode", "car" },
-            { "departureTime", "any" },
-            { "return", "summary" }
-        };
-
-        var queryString = string.Join("&", queryParams.Select(p =>
-            $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value)}"));
-
         try
         {
-            var response = await _httpClient.GetAsync($"routes?{queryString}");
-            response.EnsureSuccessStatusCode();
+            var rate = await jobRepository.RateJobAsync(
+                jobDetails.ClientId,
+                jobDetails.FromId,
+                jobDetails.ToId,
+                jobDetails.SpeedId,
+                jobDetails.IsPedal,
+                jobDetails.IsVan,
+                jobDetails.IsReturnJob,
+                (int)jobDetails.Weight,
+                jobDetails.SizeId,
+                jobDetails.IncludeFuelSurcharge,
+                jobDetails.IsDirect,
+                jobDetails.AcceptedJobTypeId,
+                jobDetails.OurRef,
+                jobDetails.RefA,
+                jobDetails.RefB,
+                jobDetails.Quantity,
+                jobDetails.BookedDate
+            );
 
-            var result = await response.Content.ReadFromJsonAsync<HereMapRouteResponseV8>();
-            if (result == null)
-                throw new ApplicationException("Failed to deserialize HERE Maps API response");
-
-            return result;
-        }
-        catch (HttpRequestException ex)
-        {
-            throw new ApplicationException("HERE Maps API request failed", ex);
+            return rate;
         }
         catch (Exception ex)
         {
-            throw new ApplicationException("Failed to get route from HERE Maps API", ex);
+            logger.LogError(ex, "Error calculating job rate for job ID {JobId}", jobDetails.JobId);
+            throw new ApplicationException($"Failed to calculate job rate for job ID {jobDetails.JobId}", ex);
         }
     }
 
-    private static double CalculateMilesFromRoute(HereMapRouteResponseV8 routeResponse)
+    // Keep the old method for backward compatibility
+
+    public async Task<decimal> RateJobUs(JobRatingDetailsDto jobDetails)
     {
-        if (routeResponse?.Routes == null || !routeResponse.Routes.Any())
-            return 0;
+        try
+        {
+            // Get distances and airport info
+            var distanceResult = await CalculateJobRateUs(
+                new JobRateRequest
+                {
+                    SpeedId = jobDetails.SpeedId,
+                    PickupLat = jobDetails.PickupLat,
+                    PickupLong = jobDetails.PickupLong,
+                    DeliveryLat = jobDetails.DeliveryLat,
+                    DeliveryLong = jobDetails.DeliveryLong,
+                }
+            );
 
-        var totalMeters = routeResponse.Routes[0].Sections
-            .Where(s => s.Transport.Mode == "car")
-            .Sum(s => s.Summary.Length);
+            // Calculate final rate
+            var rate = await jobRepository.RateJobUsAsync(
+                jobDetails.JobId,
+                jobDetails.ClientId,
+                jobDetails.SpeedId,
+                jobDetails.FromZip,
+                jobDetails.ToZip,
+                (decimal)distanceResult.TotalMiles, // Used for non-flight jobs
+                (decimal)distanceResult.FromMiles, // Used for flight jobs
+                (decimal)distanceResult.ToMiles, // Used for flight jobs
+                (int)jobDetails.Weight,
+                jobDetails.BookedDate,
+                jobDetails.SizeId,
+                jobDetails.DangerousGoods,
+                jobDetails.TotalPallets,
+                jobDetails.ExtraStopOffs,
+                (int)jobDetails.DryIceWeight,
+                jobDetails.WaitTime,
+                distanceResult.FromAirport?.AgentId ?? jobDetails.FromAgentId,
+                distanceResult.FromAirport?.AirportId ?? jobDetails.FromAirportId,
+                distanceResult.ToAirport?.AgentId ?? jobDetails.ToAgentId,
+                distanceResult.ToAirport?.AirportId ?? jobDetails.ToAirportId
+            );
 
-        return Math.Round(totalMeters / 1609.344);
+            return rate;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error calculating US job rate for job ID {JobId}", jobDetails.JobId);
+            throw new ApplicationException($"Failed to calculate US job rate for job ID {jobDetails.JobId}", ex);
+        }
     }
+
+    // Keep the old method for backward compatibility
+
+    public async Task<decimal> CalculateRateForAddressChangeUs(
+        int jobId,
+        bool isPickup,
+        string newZipCode,
+        decimal newLatitude,
+        decimal newLongitude)
+    {
+        try
+        {
+            // Get job details
+            var jobDetails = await jobRepository.GetJobDetailsForRating(jobId);
+
+            if (isPickup)
+            {
+                // Update pickup details
+                jobDetails.FromZip = newZipCode;
+                jobDetails.PickupLat = newLatitude;
+                jobDetails.PickupLong = newLongitude;
+            }
+            else
+            {
+                // Update delivery details
+                jobDetails.ToZip = newZipCode;
+                jobDetails.DeliveryLat = newLatitude;
+                jobDetails.DeliveryLong = newLongitude;
+            }
+
+            // Calculate new rate
+            return await RateJobUs(jobDetails);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error calculating rate for US address change for job ID {JobId}", jobId);
+            throw new ApplicationException($"Failed to calculate rate for US address change for job ID {jobId}", ex);
+        }
+    }
+
+    public async Task<double> CalculateRoadDistance(decimal? fromLatitude, decimal? fromLongitude, decimal? toLatitude,
+    decimal? toLongitude)
+{
+    if (!AreValidCoordinates(fromLatitude, fromLongitude, toLatitude, toLongitude))
+        return 0;
+
+    var fromLatLng = $"{fromLatitude},{fromLongitude}";
+    var toLatLng = $"{toLatitude},{toLongitude}";
+
+    var routeResponse = await GetHereMapRoute(fromLatLng, toLatLng);
+    return CalculateMilesFromRoute(routeResponse);
+}
+
+private static bool AreValidCoordinates(decimal? fromLat, decimal? fromLong, decimal? toLat, decimal? toLong) =>
+    fromLat.HasValue && fromLat != 0 &&
+    fromLong.HasValue && fromLong != 0 &&
+    toLat.HasValue && toLat != 0 &&
+    toLong.HasValue && toLong != 0;
+
+private async Task<HereMapRouteResponseV8> GetHereMapRoute(string fromLatLng, string toLatLng)
+{
+    var queryParams = new Dictionary<string, string>
+    {
+        { "apiKey", Environment.GetEnvironmentVariable("HereMapsAPIKey") },
+        { "origin", fromLatLng },
+        { "destination", toLatLng },
+        { "routingMode", "fast" },
+        { "transportMode", "car" },
+        { "departureTime", "any" },
+        { "return", "summary" }
+    };
+
+    var queryString = string.Join("&", queryParams.Select(p =>
+        $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value)}"));
+
+    try
+    {
+        var response = await httpClient.GetAsync($"routes?{queryString}");
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<HereMapRouteResponseV8>();
+        if (result == null)
+            throw new ApplicationException("Failed to deserialize HERE Maps API response");
+
+        return result;
+    }
+    catch (HttpRequestException ex)
+    {
+        throw new ApplicationException("HERE Maps API request failed", ex);
+    }
+    catch (Exception ex)
+    {
+        throw new ApplicationException("Failed to get route from HERE Maps API", ex);
+    }
+}
+
+private static double CalculateMilesFromRoute(HereMapRouteResponseV8 routeResponse)
+{
+    if (routeResponse?.Routes == null || routeResponse.Routes.Count == 0)
+        return 0;
+
+    var totalMeters = routeResponse.Routes[0].Sections
+        .Where(s => s.Transport.Mode == "car")
+        .Sum(s => s.Summary.Length);
+
+    return Math.Round(totalMeters / 1609.344);
+}
 }

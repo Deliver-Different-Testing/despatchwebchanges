@@ -1,5 +1,4 @@
 <md-dialog aria-label="Edit Dimensions" id="edit-dimensions-dialog" class="parcel-dimensions-dialog-component md-whiteframe-z2">
-    <!-- Toolbar with Material Design styling -->
     <md-toolbar class="md-primary">
         <div class="md-toolbar-tools">
             <md-icon md-font-set="material-symbols-outlined">inventory_2</md-icon>
@@ -12,13 +11,11 @@
         </div>
     </md-toolbar>
 
-    <!-- Parent Job Info Banner using md-colors and layout directives -->
     <div ng-if="ctrl.isParentJob" md-colors="{background: 'primary-50'}" class="md-padding" layout="row" layout-align="start center">
         <md-icon md-font-set="material-symbols-outlined" md-colors="{color: 'primary'}" class="md-margin">info</md-icon>
         <span class="md-body-1">This is a child job. Parcel information has been inherited from the parent job.</span>
     </div>
 
-    <!-- Empty State using Material Design layout -->
     <div ng-if="!ctrl.hasCurrentParcel()" class="md-padding" layout="column" layout-align="center center">
         <md-card class="md-padding" style="max-width: 400px; text-align: center;">
             <md-card-content layout="column" layout-align="center center">
@@ -33,13 +30,11 @@
         </md-card>
     </div>
 
-    <!-- Parcel Content - Only show when there are parcels -->
     <div ng-if="ctrl.hasCurrentParcel()">
         <md-dialog-content>
             <div class="md-dialog-content">
-                <!-- Selected parcel card using Material colors and layout -->
                 <md-card md-colors="{background: 'primary-50'}" class="md-padding" layout="row" layout-align="start center">
-                    <md-icon md-font-set="material-symbols-outlined" md-colors="{color: 'primary'}">inventory_2</md-icon>
+                    <md-icon md-font-set="material-symbols-outlined" md-colors="{color: 'primary'}" style="margin: 8px;">inventory_2</md-icon>
                     <span class="md-subhead">{{ctrl.getCurrentParcel().itemName || 'Parcel ' + (ctrl.selectedParcelIndex + 1)}}</span>
                     <span flex></span>
                     <md-button class="md-icon-button" ng-click="ctrl.addNewParcel()" aria-label="Add new parcel">
@@ -123,13 +118,13 @@
                             {{parcel.itemName || 'Parcel ' + ($index + 1)}}
                         </div>
                     </div>
-                    <!-- Connector Line (don't show after last item) -->
+
                     <div class="timeline-connector"
                          md-colors="{background: 'background-400'}"
                          ng-if="!$last">
                     </div>
                 </div>
-                <!-- Add Parcel Button -->
+
                 <div layout="row" layout-align="center center" ng-if="ctrl.parcels.length < 10">
                     <div class="timeline-connector"
                          md-colors="{background: 'background-400'}"

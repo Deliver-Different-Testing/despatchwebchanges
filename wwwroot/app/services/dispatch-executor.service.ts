@@ -5,6 +5,7 @@ import DispatchCoreService from "./dispatch-core.service";
 import {bindAllMethods} from "../bindAllMethods";
 import moment from "moment";
 import ToastrService from "./toastr.service";
+import {ContactID} from "../contants";
 
 class DispatchExecutorService implements angular.IServiceProvider {
     static $inject = [
@@ -137,6 +138,28 @@ class DispatchExecutorService implements angular.IServiceProvider {
         if (foundCourier) {
             await this._dispatchJobsContinue(foundCourier, [job]);
         }
+    }
+
+    async reallocateJob(job: IDispatchJob) {
+        const callData = {
+            call: "redespatchJobs",
+            jobs: [] as number[],
+            splitJobs: [] as number[],
+            jobNos: [] as string[],
+            courierId: null,
+        };
+
+        callData.jobs.push(job.id);
+
+        if (!job.courierData?.courierId) return;
+        const foundCourier = await this.DispatchData.getCourierById(job.courierData?.courierId);
+
+        if (callData.jobs.length > 0) {
+            await this.DispatchData.reAllocateJobs(foundCourier.courierId, ContactID, callData.jobs);
+            this.toastrService.showSuccessToast("Jobs reallocated successfully");
+        }
+
+        return {gpsCourier: foundCourier.id};
     }
 
     async restoreJob(job: IDispatchJob): Promise<{ gpsCourier: number | undefined }> {

@@ -66,7 +66,7 @@
                 ng-class="{'overdue-button': ctrl.isTaskOverdue(ctrl.task)}"
                 ng-click="$event.stopPropagation(); ctrl.openDateDialog($event, ctrl.task)">
             <md-icon class="icon" md-font-set="material-symbols-outlined">calendar_today</md-icon>
-            <span>{{ctrl.isUsCustomer ? (ctrl.task.dueDate | date:'MM/dd/yyyy') : (ctrl.task.dueDate | date:'dd/MM/yyyy')}}</span>
+            <span>{{ctrl.isUsCustomer ? (ctrl.task.dueDate | momentFormat:'MM/DD/YYYY') : (ctrl.task.dueDate | momentFormat:'DD/MM/YYYY')}} ({{ctrl.timeZone | timezoneShort}})</span>
         </button>
 
         <!-- Time button -->
@@ -74,7 +74,7 @@
                 ng-class="{'overdue-button': ctrl.isTaskOverdue(ctrl.task)}"
                 ng-click="$event.stopPropagation(); ctrl.openTimeDialog($event, ctrl.task)">
             <md-icon class="icon" md-font-set="material-symbols-outlined">schedule</md-icon>
-            <span>{{ctrl.task.dueDate | date:'HH:mm'}}</span>
+            <span>{{ctrl.task.dueDate | momentFormat:'HH:mm'}} ({{ctrl.timeZone | timezoneShort}})</span>
         </button>
     </div>
 

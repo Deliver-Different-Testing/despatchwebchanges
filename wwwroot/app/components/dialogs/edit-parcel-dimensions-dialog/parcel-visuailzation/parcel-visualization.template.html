@@ -1,30 +1,12 @@
-<div class="parcel-visualization-container md-whiteframe-1dp" layout="column" layout-align="center center">
-    <!-- Empty state using Angular Material -->
+<div class="parcel-visualization-container" layout="column" layout-align="center center">
     <div ng-if="!ctrl.hasValidDimensions" layout="column" layout-align="center center" layout-padding class="md-padding" flex>
         <md-icon md-font-set="material-symbols-outlined" class="md-primary md-hue-1" style="font-size: 48px; height: 48px; width: 48px;">view_in_ar</md-icon>
         <p class="md-caption md-text-muted">Enter dimensions to see visualization</p>
     </div>
 
-    <!-- Responsive SVG container with better sizing -->
     <div ng-if="ctrl.hasValidDimensions" class="svg-container" flex layout="row" layout-align="center center">
-        <svg width="100%" height="100%" viewBox="0 0 400 280" preserveAspectRatio="xMidYMid meet" class="parcel-svg">
-            <!-- Drop shadow filter for 3D effect -->
-            <defs>
-                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.2" />
-                </filter>
-
-                <!-- Arrowhead markers -->
-                <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="0" refY="3" orient="auto">
-                    <polygon points="0 0, 8 3, 0 6" fill="#1976D2" />
-                </marker>
-                <marker id="arrowhead-start" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto-start-reverse">
-                    <polygon points="8 0, 0 3, 8 6" fill="#1976D2" />
-                </marker>
-            </defs>
-
-            <!-- Centered and properly scaled parcel -->
-            <g ng-attr-transform="translate(200, 140) rotate(30) scale({{ ctrl.scale }})" class="parcel-group">
+        <svg width="100%" height="100%" viewBox="-100 -100 200 200" preserveAspectRatio="xMidYMid meet" class="parcel-svg">
+            <g ng-attr-transform="rotate(15) translate(-{{ ctrl.normalizedWidth * 0.3 }}, -{{ ctrl.normalizedHeight * 0.3 }}) scale({{ ctrl.scale }})" class="parcel-group">
                 <!-- Front face -->
                 <rect
                         ng-attr-width="{{ ctrl.normalizedWidth }}"
@@ -32,11 +14,8 @@
                         fill="#E3F2FD"
                         stroke="#2196F3"
                         stroke-width="2"
-                        rx="2"
-                        ry="2"
                         x="0"
-                        y="0"
-                        filter="url(#shadow)">
+                        y="0">
                 </rect>
 
                 <!-- Top face -->
@@ -44,8 +23,7 @@
                         ng-attr-d="M0,0 l{{ ctrl.normalizedLength * -0.5 }},{{ ctrl.normalizedLength * -0.3 }} h{{ ctrl.normalizedWidth }} l{{ ctrl.normalizedLength * 0.5 }},{{ ctrl.normalizedLength * 0.3 }} z"
                         fill="#BBDEFB"
                         stroke="#2196F3"
-                        stroke-width="2"
-                        filter="url(#shadow)">
+                        stroke-width="2">
                 </path>
 
                 <!-- Side face -->
@@ -53,87 +31,52 @@
                         ng-attr-d="M{{ ctrl.normalizedWidth }},0 l{{ ctrl.normalizedLength * 0.5 }},{{ ctrl.normalizedLength * -0.3 }} v{{ ctrl.normalizedHeight }} l{{ ctrl.normalizedLength * -0.5 }},{{ ctrl.normalizedLength * 0.3 }} z"
                         fill="#90CAF9"
                         stroke="#2196F3"
-                        stroke-width="2"
-                        filter="url(#shadow)">
+                        stroke-width="2">
                 </path>
 
-                <!-- Simplified grid lines -->
-                <line
-                        ng-attr-x1="0"
-                        ng-attr-y1="{{ ctrl.normalizedHeight }}"
-                        ng-attr-x2="{{ ctrl.normalizedWidth }}"
-                        ng-attr-y2="{{ ctrl.normalizedHeight }}"
-                        stroke="#2196F3"
-                        stroke-width="1"
-                        stroke-dasharray="3,3"
-                        opacity="0.5">
-                </line>
-
-                <line
-                        ng-attr-x1="{{ ctrl.normalizedWidth }}"
-                        ng-attr-y1="0"
-                        ng-attr-x2="{{ ctrl.normalizedWidth }}"
-                        ng-attr-y2="{{ ctrl.normalizedHeight }}"
-                        stroke="#2196F3"
-                        stroke-width="1"
-                        stroke-dasharray="3,3"
-                        opacity="0.5">
-                </line>
-
-                <line
-                        ng-attr-x1="{{ ctrl.normalizedWidth }}"
-                        ng-attr-y1="0"
-                        ng-attr-x2="{{ ctrl.normalizedWidth + (ctrl.normalizedLength * 0.5) }}"
-                        ng-attr-y2="{{ ctrl.normalizedLength * -0.3 }}"
-                        stroke="#2196F3"
-                        stroke-width="1"
-                        stroke-dasharray="3,3"
-                        opacity="0.5">
-                </line>
-
-                <!-- Simplified dimension labels -->
+                <!-- Basic dimension labels -->
                 <text
                         ng-attr-x="{{ ctrl.normalizedWidth / 2 }}"
-                        ng-attr-y="{{ ctrl.normalizedHeight + 20 }}"
+                        ng-attr-y="{{ ctrl.normalizedHeight + 15 }}"
                         text-anchor="middle"
-                        font-size="12"
+                        font-size="10"
                         fill="#1976D2"
                         class="dimension-label md-body-1">
-                    W: {{ width }}"
+                    W: {{ ctrl.width }}"
                 </text>
 
                 <text
-                        ng-attr-x="{{ ctrl.normalizedWidth + 15 }}"
+                        ng-attr-x="{{ ctrl.normalizedWidth + 10 }}"
                         ng-attr-y="{{ ctrl.normalizedHeight / 2 }}"
                         text-anchor="start"
-                        font-size="12"
+                        font-size="10"
                         fill="#1976D2"
                         class="dimension-label md-body-1">
-                    H: {{ height }}"
+                    H: {{ ctrl.height }}"
                 </text>
 
                 <text
-                        ng-attr-x="{{ ctrl.normalizedWidth / 2 }}"
-                        ng-attr-y="{{ ctrl.normalizedLength * -0.3 - 10 }}"
+                        ng-attr-x="{{ ctrl.normalizedWidth / 2 - (ctrl.normalizedLength * 0.25) }}"
+                        ng-attr-y="{{ ctrl.normalizedLength * -0.3 - 5 }}"
                         text-anchor="middle"
-                        font-size="12"
+                        font-size="10"
                         fill="#1976D2"
                         class="dimension-label md-body-1">
-                    L: {{ length }}"
+                    L: {{ ctrl.length }}"
                 </text>
             </g>
         </svg>
     </div>
 
-    <!-- Dimensions summary using Material chips -->
-    <div ng-if="ctrl.hasValidDimensions" class="md-whiteframe-1dp" style="background: white;" layout="row" layout-align="center center" layout-padding layout-wrap>
-        <md-chip class="md-primary md-hue-1">
+    <!-- Simple dimensions summary - centered -->
+    <div ng-if="ctrl.hasValidDimensions" class="dimensions-info" layout="row" layout-align="center center" layout-padding>
+        <md-chip class="md-primary">
             <md-icon md-font-set="material-symbols-outlined">straighten</md-icon>
-            {{ length }}" × {{ width }}" × {{ height }}"
+            {{ ctrl.length }}" × {{ ctrl.width }}" × {{ ctrl.height }}"
         </md-chip>
-        <md-chip class="md-accent md-hue-1">
+        <md-chip class="md-accent">
             <md-icon md-font-set="material-symbols-outlined">view_in_ar</md-icon>
-            {{ (width * height * length) | number:1 }} in³
+            {{ ctrl.calculateVolume() | number:1 }} in³
         </md-chip>
     </div>
 </div>

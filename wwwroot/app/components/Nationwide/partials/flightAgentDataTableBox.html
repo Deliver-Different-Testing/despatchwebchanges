@@ -60,7 +60,6 @@
                 <md-button class="md-button airline-chip total" ng-click="ctrl.filterFlightsByAirline(null)"
                            aria-label="Filter all airlines">
                     <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
-                    <span class="airline-count">{{ctrl.flightOptions.length || 0}}</span>
                     <span class="airline-label">All</span>
                 </md-button>
 
@@ -68,10 +67,8 @@
                 <md-button ng-repeat="airline in ctrl.activeAirlineOptions"
                            class="md-button airline-chip {{airline.text | lowercase}}"
                            ng-click="ctrl.filterFlightsByAirline(airline.id)"
-                           ng-disabled="ctrl.getFlightCountByAirline(airline) === 0"
                            aria-label="Filter by {{airline.text}}">
                     <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
-                    <span class="airline-count">{{ctrl.getFlightCountByAirline(airline)}}</span>
                     <span class="airline-label">{{airline.text}}</span>
                 </md-button>
             </div>
@@ -88,7 +85,7 @@
                     <th md-column md-order-by="duration">Duration</th>
                     <th md-column md-order-by="stops">Stops</th>
                     <th md-column md-order-by="amount">Rate</th>
-                    <th md-column md-order-by="aircraft">Aircraft</th>
+                    <th md-column md-order-by="aircraft">Airc  raft</th>
                     <th md-column>Actions</th>
                 </tr>
                 </thead>

@@ -206,80 +206,66 @@
                         <div class="job-list" ng-if="driver.expanded">
                             <div layout="row" layout-wrap>
                                 <div flex="50" ng-repeat="job in driver.jobs">
-                                    <md-card class="job-card md-whiteframe-1dp">
+                                    <md-card style="height: calc(100% - 16px);">
                                         <md-card-content>
                                             <!-- Job Header -->
-                                            <div class="job-header" layout="row" layout-align="space-between center">
+                                            <div layout="row" layout-align="space-between center">
                                                 <div layout="row">
-                                                    <div class="job-id">
-                                                        <div class="md-caption">Job ID</div>
-                                                        <div class="md-body-1">{{job.jobId}}</div>
+                                                    <div>
+                                                        <p class="md-caption">Job ID</p>
+                                                        <p class="md-body-1">{{job.jobId}}</p>
                                                     </div>
-                                                    <div class="job-reference" style="margin-left: 16px;">
-                                                        <div class="md-caption">Reference</div>
-                                                        <div class="md-body-1">{{job.reference}}</div>
+                                                    <div style="margin-left: 16px;">
+                                                        <p class="md-caption">Reference</p>
+                                                        <p class="md-body-1">{{job.reference}}</p>
                                                     </div>
                                                 </div>
-                                                <md-chip
-                                                        class="status-chip {{job.status | lowercase}}">
-                                                    <md-icon class="status-icon"
-                                                             md-font-set="material-symbols-outlined">
-                                                        package_2
-                                                    </md-icon>
+                                                <md-chip ng-class="job.status | lowercase">
+                                                    <md-icon md-font-set="material-symbols-outlined">package_2</md-icon>
                                                     {{job.statusName}}
                                                 </md-chip>
                                             </div>
 
-                                            <md-divider style="margin: 16px 0;"></md-divider>
+                                            <md-divider></md-divider>
 
                                             <!-- Job Details -->
-                                            <div class="job-details" layout="row" layout-align="space-between start">
+                                            <div layout="row" layout-align="space-between start" layout-margin>
                                                 <!-- Pickup Info -->
-                                                <div class="pickup-info" flex="50">
+                                                <div flex="50">
                                                     <div layout="row" layout-align="start center">
-                                                        <md-icon class="blue-icon schedule-icon"
-                                                                 md-font-set="material-symbols-outlined">
-                                                            schedule
-                                                        </md-icon>
+                                                        <md-icon class="md-primary" md-font-set="material-symbols-outlined">schedule</md-icon>
                                                         <span class="md-body-2">Pickup: {{ctrl.formatRegionalTime(job.pickup.time)}}</span>
                                                     </div>
-                                                    <div class="location-details">
-                                                        <div class="md-body-1">{{job.pickup.name}}</div>
-                                                        <div class="md-caption">{{job.pickup.address}}</div>
+                                                    <div layout="column" layout-padding>
+                                                        <span class="md-body-1">{{job.pickup.name}}</span>
+                                                        <span class="md-caption">{{job.pickup.address}}</span>
                                                     </div>
                                                 </div>
 
                                                 <!-- Delivery Info -->
-                                                <div class="delivery-info" flex="50">
+                                                <div flex="50">
                                                     <div layout="row" layout-align="start center">
-                                                        <md-icon class="green-icon schedule-icon"
-                                                                 md-font-set="material-symbols-outlined">
-                                                            schedule
-                                                        </md-icon>
+                                                        <md-icon class="md-accent" md-font-set="material-symbols-outlined">schedule</md-icon>
                                                         <span class="md-body-2">Delivery: {{ctrl.formatRegionalTime(job.delivery.time)}}</span>
                                                     </div>
-                                                    <div class="location-details">
-                                                        <div class="md-body-1">{{job.delivery.name}}</div>
-                                                        <div class="md-caption">{{job.delivery.address}}</div>
+                                                    <div layout="column" layout-padding>
+                                                        <span class="md-body-1">{{job.delivery.name}}</span>
+                                                        <span class="md-caption">{{job.delivery.address}}</span>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <md-divider style="margin: 16px 0;"></md-divider>
+                                            <md-divider></md-divider>
 
                                             <!-- Job Footer -->
-                                            <div layout="row" layout-align="space-between center">
+                                            <div layout="row" layout-align="space-between center" layout-padding>
                                                 <div layout="row" layout-align="start center">
-                                                    <md-icon md-font-set="material-symbols-outlined">directions_car
-                                                    </md-icon>
-                                                    <span class="md-caption"
-                                                          style="margin-left: 8px;">Mileage: {{job.mileage}}</span>
+                                                    <md-icon md-font-set="material-symbols-outlined">directions_car</md-icon>
+                                                    <span class="md-caption" layout-margin>Mileage: {{job.mileage}}</span>
                                                 </div>
                                                 <div layout="row" layout-align="start center">
-                                                    <md-icon md-font-set="material-symbols-outlined">inventory_2
-                                                    </md-icon>
-                                                    <span class="md-caption"
-                                                          style="margin-left: 8px;">{{job.quantity}} {{job.packageType}}</span>
+                                                    <md-icon md-font-set="material-symbols-outlined">inventory_2</md-icon>
+                                                    <span class="md-caption" layout-margin>{{job.quantity}} {{job.packageType}}</span>
                                                 </div>
                                             </div>
                                         </md-card-content>

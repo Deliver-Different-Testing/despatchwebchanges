@@ -36,12 +36,13 @@ import {LateEventType} from "../../enums/late-event-type.enum";
 import {ContactID, FirstName} from "../../contants";
 import {ResendJobsRequest} from "./home.interfaces";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
+import {JobProperty} from "../../enums/job-property.enum";
+import moment from "moment";
 
 class HomeController extends BaseController {
     static $inject = [
         '$document',
         'greetingService',
-        'JobDetailService',
         '$mdDialog',
         '$scope',
         '$window',
@@ -151,11 +152,11 @@ class HomeController extends BaseController {
         showDelete: true,
         onTaskClick: true
     };
+    timeZone: string;
 
     constructor(
         private $document: angular.IDocumentService,
         private greetingService: GreetingService,
-        private JobDetailService: any,
         private $mdDialog: angular.material.IDialogService,
         private $scope: angular.IScope,
         private $window: angular.IWindowService,
@@ -178,6 +179,8 @@ class HomeController extends BaseController {
         private $interval: angular.IIntervalService,
     ) {
         super();
+
+        this.timeZone = TimeZone;
 
         // Views and Layout
         this.initialViewSet = false;
@@ -873,12 +876,12 @@ class HomeController extends BaseController {
         }
     }
 
-    unlockJob(currentJob: IDispatchJob) {
-        return this.JobDetailService.unlockJob(currentJob);
+    async unlockJob(currentJob: IDispatchJob) {
+        await this.DispatchData.updateJobDetail(currentJob.id, JobProperty.Locked, false, currentJob.preBook ?? false)
     }
 
-    lockJob(currentJob: IDispatchJob) {
-        return this.JobDetailService.lockJob(currentJob);
+    async lockJob(currentJob: IDispatchJob) {
+        await this.DispatchData.updateJobDetail(currentJob.id, JobProperty.Locked, true, currentJob.preBook ?? false)
     }
 
     async selectClearList(selectedClearList: AreaClearList) {
@@ -1251,26 +1254,10 @@ class HomeController extends BaseController {
     async reAllocateJobs(job: IDispatchJob) {
         if (!job) return;
 
-        const callData = {
-            call: "redespatchJobs",
-            jobs: [] as number[],
-            splitJobs: [] as number[],
-            jobNos: [] as string[],
-            courierId: null,
-        };
-
-        callData.jobs.push(job.id);
-
-        if (!job.courierData?.courierId) return;
-        const foundCourier = await this.DispatchData.getCourierById(job.courierData?.courierId);
-
-        if (callData.jobs.length > 0) {
-            await this.DispatchData.reAllocateJobs(foundCourier.courierId, ContactID, callData.jobs);
-            this.toastrService.showSuccessToast("Jobs reallocated successfully");
-        }
+        const data = await this.dispatchJobService.reallocateJob(job);
 
         await this.getData();
-        this.courier = {gpsCourier: foundCourier.id};
+        this.courier = {gpsCourier: data};
         await this.searchCourier();
     }
 
@@ -1878,7 +1865,6 @@ class HomeController extends BaseController {
             this.currentJob = angular.copy(job);
             this.currentJobId = job.id;
 
-            await this.JobDetailService.setJob(this.currentJob);
             await this.checkForAttachments(job.id);
 
             if (job.rootParentId) {
@@ -2166,7 +2152,6 @@ class HomeController extends BaseController {
     async getData() {
         try {
             this.currentJob = undefined;
-            this.JobDetailService.currentJob = null;
             this.potentialCouriers = null;
 
             if (!this.courier) {

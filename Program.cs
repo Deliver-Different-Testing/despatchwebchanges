@@ -1,4 +1,8 @@
-﻿using Amazon;
+﻿using System;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using Amazon;
 using Amazon.Runtime;
 using Amazon.Runtime.CredentialManagement;
 using Amazon.S3;
@@ -22,10 +26,6 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using StackExchange.Redis;
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
 var builder = WebApplication.CreateBuilder(args);
 

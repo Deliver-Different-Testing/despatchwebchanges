@@ -1,8 +1,3 @@
-using DespatchWeb.Interfaces;
-using DespatchWeb.Models;
-using DespatchWeb.Models.FlightStats;
-using Microsoft.AspNetCore.Http;
-using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
@@ -12,6 +7,11 @@ using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web;
+using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
+using DespatchWeb.Models.FlightStats;
+using Microsoft.AspNetCore.Http;
+using Serilog;
 
 namespace DespatchWeb.Services;
 

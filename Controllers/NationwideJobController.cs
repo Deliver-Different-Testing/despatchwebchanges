@@ -233,7 +233,7 @@ public class NationwideJobController(
                 return Json(agents);
             }
 
-            Log.Information($"No agents found for job {jobId}");
+            Log.Information("No agents found for job {JobId}", jobId);
             return Json(new List<AgentViewModel>());
         }
         catch (Exception ex)

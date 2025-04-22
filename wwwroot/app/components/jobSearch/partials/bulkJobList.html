@@ -38,7 +38,7 @@
                 ng-click="ctrl.selectBulkJobDetail(job.id)"
                 ng-repeat="job in ctrl.bulkJobList | filter: box.searchBox | orderBy: ctrl.bulkJobQuery.order">
 
-                <td md-cell>{{job.booked | date: "dd/MM/yy HH:mm"}}</td>
+                <td md-cell>{{job.booked | momentFormat:"DD/MM/YY HH:mm"}} ({{ctrl.timeZone | timezoneShort}})</td>
                 <td class="status" md-cell ng-class="job.status">{{job.status}}</td>
                 <td md-cell ng-click="ctrl.speedColumnClick($event); $event.stopPropagation()">{{job.speed}}</td>
                 <td md-cell>{{job.jobNo}}</td>

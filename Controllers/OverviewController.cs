@@ -91,7 +91,7 @@ public class OverviewController(IJobRepository jobRepository, ICourierRepository
         }
         catch (Exception ex)
         {
-            Log.Error(ex, $"Error getting map coordinates for JobId: {jobId}");
+            Log.Error(ex, "Error getting map coordinates for JobId: {JobId}", jobId);
             return StatusCode(500);
         }
     }

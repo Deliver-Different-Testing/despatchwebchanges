@@ -1,4 +1,5 @@
 import {IJobNote, INoteType} from "../interfaces/job.interface";
+import moment from "moment";
 
 class NoteService {
     static $inject = [
@@ -17,7 +18,13 @@ class NoteService {
 
     async createNote(noteViewModel: IJobNote): Promise<IJobNote> {
         try {
-            const response = await this.$http.post<IJobNote>('note/CreateNote', noteViewModel);
+            const formattedViewModel = {
+                ...noteViewModel,
+                createdDate: moment(noteViewModel.createdDate).format(),
+                updatedDate: noteViewModel.updatedDate ? moment(noteViewModel.updatedDate).format() : undefined
+            };
+
+            const response = await this.$http.post<IJobNote>('note/CreateNote', formattedViewModel);
             return response.data;
         } catch (error) {
             console.error('Error creating note:', error);
@@ -27,7 +34,13 @@ class NoteService {
 
     async updateNote(staffId: number, noteViewModel: IJobNote): Promise<void> {
         try {
-            await this.$http.post('note/UpdateNote', noteViewModel, {
+            const formattedViewModel = {
+                ...noteViewModel,
+                createdDate: moment(noteViewModel.createdDate).format(),
+                updatedDate: noteViewModel.updatedDate ? moment(noteViewModel.updatedDate).format() : undefined
+            };
+
+            await this.$http.post('note/UpdateNote', formattedViewModel, {
                 params: { staffId }
             });
         } catch (error) {

@@ -94,7 +94,7 @@
                             </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Booked:</span>
-                                <span class="timing-value">{{ctrl.job.createdDate ? (ctrl.job.createdDate | date:'MM/dd') : 'N/A'}}</span>
+                                <span class="timing-value">{{ctrl.job.createdDate ? (ctrl.job.createdDate | momentFormat:'MM/DD') + ' (' + (ctrl.timeZone | timezoneShort) + ')' : 'N/A'}}</span>
                             </div>
                         </md-list-item>
 
@@ -104,7 +104,7 @@
                             <md-icon aria-label="start time" md-font-set="material-symbols-outlined">timer</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Start Time:</span>
-                                <span class="timing-value">{{ctrl.job.time ? (ctrl.job.time | date:'HH:mm') : 'N/A'}}</span>
+                                <span class="timing-value">{{ctrl.job.time ? (ctrl.job.time | momentFormat:'HH:mm') + ' (' + (ctrl.timeZone | timezoneShort) + ')' : 'N/A'}}</span>
                             </div>
                         </md-list-item>
                     </md-list>
@@ -142,7 +142,7 @@
                             </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Dispatch:</span>
-                                <span class="timing-value">{{ctrl.job.dispatchTime ? (ctrl.job.dispatchTime | date:'MM/dd HH:mm') : 'N/A'}}</span>
+                                <span class="timing-value">{{ctrl.job.dispatchTime ? (ctrl.job.dispatchTime | momentFormat:'MM/dd HH:mm') + ' (' + (ctrl.timeZone | timezoneShort) + ')' : 'N/A'}}</span>
                             </div>
                         </md-list-item>
                     </md-list>
@@ -170,7 +170,7 @@
                             <md-icon aria-label="POD time" md-font-set="material-symbols-outlined">verified</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">POD Time:</span>
-                                <span class="timing-value">{{ctrl.job.completedTime ? (ctrl.job.completedTime | date:'MM/dd HH:mm') : 'N/A'}}</span>
+                                <span class="timing-value">{{ctrl.job.completedTime ? (ctrl.job.completedTime | momentFormat:'MM/dd HH:mm') + ' (' + (ctrl.timeZone | timezoneShort) + ')' : 'N/A'}}</span>
                             </div>
                         </md-list-item>
 
@@ -182,7 +182,7 @@
                             </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Follow Up:</span>
-                                <span class="timing-value">{{ctrl.job.followupTime ? (ctrl.job.followupTime | date:'MM/dd HH:mm') : 'N/A'}}</span>
+                                <span class="timing-value">{{ctrl.job.followupTime ? (ctrl.job.followupTime | momentFormat:'MM/dd HH:mm') + ' (' + (ctrl.timeZone | timezoneShort) + ')' : 'N/A'}}</span>
                             </div>
                         </md-list-item>
                     </md-list>
@@ -1003,7 +1003,7 @@
 
                 <div class="read-details" ng-if="ctrl.job.readTrackerInfo.hasBeenRead">
                     <span>Read by: <strong>{{ctrl.job.readTrackerInfo.readBy || 'Unknown'}}</strong></span>
-                    <span class="read-date">on {{ctrl.job.readTrackerInfo.readDate | date:'MM/dd/yyyy HH:mm'}}</span>
+                    <span class="read-date">on {{ctrl.job.readTrackerInfo.readDate | momentFormat:'MM/DD/yyyy HH:mm'}} ({{ctrl.timeZone | timezoneShort}})</span>
                 </div>
 
                 <div class="spacer" flex ng-if="!ctrl.job.readTrackerInfo.hasBeenRead"></div>

@@ -236,8 +236,6 @@
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="bundleconfig.json" />
-    <None Include="compilerconfig.json" />
     <None Include="efpt.config.json.user" />
     <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.styles.less" />
     <None Include="wwwroot\app\components\common\dispatch-map\dispatch-map.template.html" />
@@ -291,7 +289,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-event-dialog\add-event-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-event-dialog\add-event-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-pallet-dialog\add-pallet-dialog.Controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\additional-services-dialog\additional-services-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\additional-services-dialog\additional-services-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\auto-complete-dialog\auto-complete-dialog.controller.ts" />

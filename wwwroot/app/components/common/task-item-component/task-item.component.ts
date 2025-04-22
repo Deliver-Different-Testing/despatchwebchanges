@@ -25,6 +25,7 @@ export class TaskListItemController extends BaseController {
     onStatusChange?: (params: { task: TaskViewModel }) => void;
     onTaskUpdated?: () => void;
     onTaskClick?: (params: { task: ExtendedTask }) => void;
+    timeZone: string;
 
     constructor(
         private selectDialogService: SelectDialogService,
@@ -37,6 +38,7 @@ export class TaskListItemController extends BaseController {
         super();
 
         this.isUsCustomer = AppConfig.US_Customer;
+        this.timeZone = TimeZone;
 
         // Default configuration
         this.config = {
