@@ -6,7 +6,7 @@
 
     <div ng-if="ctrl.hasValidDimensions" class="svg-container" flex layout="row" layout-align="center center">
         <svg width="100%" height="100%" viewBox="-100 -100 200 200" preserveAspectRatio="xMidYMid meet" class="parcel-svg">
-            <g ng-attr-transform="rotate(15) translate(-{{ ctrl.normalizedWidth * 0.3 }}, -{{ ctrl.normalizedHeight * 0.3 }}) scale({{ ctrl.scale }})" class="parcel-group">
+            <g ng-attr-transform="rotate(15) translate(-{{ ctrl.normalizedWidth * 0.3 }}, -{{ ctrl.normalizedHeight * 0.3 }}) scale({{ ctrl.fixedScale }})" class="parcel-group">
                 <!-- Front face -->
                 <rect
                         ng-attr-width="{{ ctrl.normalizedWidth }}"

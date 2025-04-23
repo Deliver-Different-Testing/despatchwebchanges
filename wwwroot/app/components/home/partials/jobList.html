@@ -67,8 +67,8 @@
 <md-divider></md-divider>
 
 <md-table-container>
-    <table md-progress="ctrl.jobListPromise" md-table ng-model="ctrl.selectedJob" style="overflow: visible !important; display: table !important;">
-    <thead  md-head md-on-reorder="ctrl.getJobList" md-order="ctrl.queryParams.order">
+    <table md-progress="ctrl.jobListPromise" md-table ng-model="ctrl.selectedJob">
+    <thead fix-head md-head md-on-reorder="ctrl.getJobList" md-order="ctrl.queryParams.order">
         <tr md-row>
             <th md-column md-order-by="time">Time</th>
             <th md-column md-order-by="speed">Speed</th>
@@ -187,4 +187,13 @@
         icon="list_alt"
         show-action="false">
 </no-data>
-</div>
+
+<style>
+    table.md-table:not(.md-row-select) td.md-cell:nth-child(n+2):nth-last-child(n+2), table.md-table:not(.md-row-select) th.md-column:nth-child(n+2):nth-last-child(n+2) {
+        padding: 0 !important;
+    }
+
+    table.md-table:not(.md-row-select) td.md-cell:first-child, table.md-table:not(.md-row-select) th.md-column:first-child {
+        padding: 0 !important;
+    }
+</style>

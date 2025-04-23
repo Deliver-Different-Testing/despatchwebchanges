@@ -13,7 +13,7 @@ public class ActiveCouriersViewModel
 
     public string Name { get; set; }
 
-    public byte DangerousGoods { get; set; }
+    public bool DangerousGoods { get; set; }
 
     public DateTime? DGLicenseExpiry { get; set; }
 

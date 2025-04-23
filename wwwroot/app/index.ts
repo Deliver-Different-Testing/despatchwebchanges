@@ -27,6 +27,7 @@ import "../lib/material-time-picker/md-time-picker";
 import "../lib/ng-material-floating-button/src/mfb-directive";
 import "../lib/ng-material-floating-button/mfb/dist/mfb";
 import "../lib/timepickerdirective.min";
+import "../lib/angular-fixed-table-header/fixed-table-header";
 
 // Custom here maps
 import "../lib/here-map-tracking/here-map-tracking.module";

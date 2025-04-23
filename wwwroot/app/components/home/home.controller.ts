@@ -488,8 +488,17 @@ class HomeController extends BaseController {
         });
 
         this.refreshInterval = this.$interval(async () => {
-            console.log("[HomeRefresh] - Refreshing tasks")
+            console.log("[HomeRefresh] - Refreshing tasks and job list");
+
+            // Store current state before refresh
+            const currentJobId = this.currentJob?.id;
+            const currentCourierId = this.currentCourier?.courierId;
+
+            // Refresh tasks
             await this.loadSupports();
+
+            // Refresh job list
+            await this.refreshJobList(currentJobId, currentCourierId);
         }, 60000);
 
         // Set up a watch to apply dimensions when layout changes
@@ -2613,6 +2622,34 @@ class HomeController extends BaseController {
                 ...this.jobList[jobIndex],
                 hasBeenRead: isRead
             };
+        }
+    }
+
+    async refreshJobList(currentJobId?: number, currentCourierId?: number) {
+        try {
+            console.log("[HomeRefresh] - Refreshing job list");
+
+            await this.getJobList();
+
+            // Restore current job selection if applicable
+            if (currentJobId) {
+                const updatedJob = this.jobList.find(job => job.id === currentJobId);
+                if (updatedJob) {
+                    // Update currentJob with fresh data while maintaining the selection
+                    this.currentJob = updatedJob;
+
+                    // Mark as read since it was previously selected
+                    this._markJobReadStatus(updatedJob.id, true);
+                }
+            }
+
+            if (currentCourierId && this.currentCourier) {
+                await this.getCurrentJobs(currentCourierId);
+            }
+
+            console.log("[HomeRefresh] - Job list refresh complete");
+        } catch (error) {
+            console.error("[HomeRefresh] - Error refreshing job list:", error);
         }
     }
 }
