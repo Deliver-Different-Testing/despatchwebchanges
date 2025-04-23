@@ -1,47 +1,47 @@
-<div class="droppable-box nationwide-job-list">
+<div class="md-table-footer-content">
+    <div flex></div>
+
+    <div class="status-summary" ng-if="ctrl.jobList && ctrl.jobList.length > 0">
+        <md-button class="md-button status-chip total" ng-click="ctrl.filterNewJobsByStatus('group-all')">
+            <md-icon md-font-set="material-symbols-outlined">article</md-icon>
+            <span>{{ctrl.jobList.length || 0}}</span>
+            <span class="status-label">Total</span>
+        </md-button>
+        <md-button class="md-button status-chip unread" ng-click="ctrl.filterByStatus('unread')">
+            <md-icon md-font-set="material-symbols-outlined">mark_email_unread</md-icon>
+            <span>{{ctrl.getUnreadNewCount()}}</span>
+            <span class="status-label">Unread</span>
+        </md-button>
+        <md-button class="md-button status-chip pending" ng-click="ctrl.filterNewJobsByStatus('group-pending')">
+            <md-icon md-font-set="material-symbols-outlined">hourglass_top</md-icon>
+            <span>{{ctrl.getNewJobsStatusCount('pending')}}</span>
+            <span class="status-label">Pending</span>
+        </md-button>
+        <md-button class="md-button status-chip in-transit" ng-click="ctrl.filterNewJobsByStatus('group-in-transit')">
+            <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
+            <span>{{ctrl.getNewJobsStatusCount('in-transit')}}</span>
+            <span class="status-label">In&nbsp;Transit</span>
+        </md-button>
+        <md-button class="md-button status-chip completed" ng-click="ctrl.filterNewJobsByStatus('group-completed')">
+            <md-icon md-font-set="material-symbols-outlined">done_all</md-icon>
+            <span>{{ctrl.getNewJobsStatusCount('completed')}}</span>
+            <span class="status-label">Completed</span>
+        </md-button>
+        <md-button class="md-button status-chip problem" ng-click="ctrl.filterNewJobsByStatus('group-problem')"
+                   ng-if="ctrl.getNewJobsStatusCount('problem') > 0">
+            <md-icon md-font-set="material-symbols-outlined">error_outline</md-icon>
+            <span>{{ctrl.getNewJobsStatusCount('problem')}}</span>
+            <span class="status-label">Problem</span>
+        </md-button>
+    </div>
+</div>
+
+<md-divider></md-divider>
+
+<div class="nationwide-job-list">
     <md-table-container>
-    <div class="md-table-footer-content">
-            <div flex></div>
-
-            <div class="status-summary" ng-if="ctrl.jobList && ctrl.jobList.length > 0">
-                <md-button class="md-button status-chip total" ng-click="ctrl.filterNewJobsByStatus('group-all')">
-                    <md-icon md-font-set="material-symbols-outlined">article</md-icon>
-                    <span>{{ctrl.jobList.length || 0}}</span>
-                    <span class="status-label">Total</span>
-                </md-button>
-                <md-button class="md-button status-chip unread" ng-click="ctrl.filterByStatus('unread')">
-                    <md-icon md-font-set="material-symbols-outlined">mark_email_unread</md-icon>
-                    <span>{{ctrl.getUnreadNewCount()}}</span>
-                    <span class="status-label">Unread</span>
-                </md-button>
-                <md-button class="md-button status-chip pending" ng-click="ctrl.filterNewJobsByStatus('group-pending')">
-                    <md-icon md-font-set="material-symbols-outlined">hourglass_top</md-icon>
-                    <span>{{ctrl.getNewJobsStatusCount('pending')}}</span>
-                    <span class="status-label">Pending</span>
-                </md-button>
-                <md-button class="md-button status-chip in-transit" ng-click="ctrl.filterNewJobsByStatus('group-in-transit')">
-                    <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
-                    <span>{{ctrl.getNewJobsStatusCount('in-transit')}}</span>
-                    <span class="status-label">In&nbsp;Transit</span>
-                </md-button>
-                <md-button class="md-button status-chip completed" ng-click="ctrl.filterNewJobsByStatus('group-completed')">
-                    <md-icon md-font-set="material-symbols-outlined">done_all</md-icon>
-                    <span>{{ctrl.getNewJobsStatusCount('completed')}}</span>
-                    <span class="status-label">Completed</span>
-                </md-button>
-                <md-button class="md-button status-chip problem" ng-click="ctrl.filterNewJobsByStatus('group-problem')"
-                           ng-if="ctrl.getNewJobsStatusCount('problem') > 0">
-                    <md-icon md-font-set="material-symbols-outlined">error_outline</md-icon>
-                    <span>{{ctrl.getNewJobsStatusCount('problem')}}</span>
-                    <span class="status-label">Problem</span>
-                </md-button>
-            </div>
-        </div>
-
-        <md-divider></md-divider>
-
-        <table md-dense md-progress="ctrl.jobListPromise" md-table ng-model="ctrl.selectedJob">
-            <thead md-head md-on-reorder="ctrl.onReorderJobList" md-order="ctrl.jobFilters.order">
+        <table md-progress="ctrl.jobListPromise" md-table ng-model="ctrl.selectedJob">
+            <thead fix-head md-head md-on-reorder="ctrl.onReorderJobList" md-order="ctrl.jobFilters.order">
             <tr md-row>
                 <th md-column md-order-by="time">Time</th>
                 <th md-column md-order-by="speed">Speed</th>
@@ -64,12 +64,7 @@
                 context-menu="ctrl.getContextMenuOptions(job)"
                 context-menu-on="contextmenu"
                 context-menu-class="job-context-menu"
-                ng-click="ctrl.selectJob(job)"
-                data-jobid="{{job.id}}"
-                data-jobno="{{job.jobNo}}"
-                data-courier="{{job.courier}}"
-                data-allowDispatch="{{job.allowDispatch}}"
-                data-index="{{$index}}">
+                ng-click="ctrl.selectJob(job)">
 
                 <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">{{job.booked | momentFormat: (ctrl.isUsCustomer ? "MM/DD/YYYY HH:mm" : "DD/MM/YYYY HH:mm")}} ({{ctrl.timeZone | timezoneShort}})</td>                <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">
                     <md-icon md-font-set="material-symbols-outlined" ng-if="job.fromAirportId || job.toAirportId">

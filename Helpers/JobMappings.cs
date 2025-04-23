@@ -387,7 +387,12 @@ public static class JobMappings
             DeliverByTime = j.DeliverByTime,
             Attention = j.UcjbAttention,
 
-            Distance = 0, // ToDo: Add Kerran's new field
+            Distance = j.ToAirportId.HasValue && j.FromAirportId.HasValue ?
+                DistanceCalculator.CalculateDistance(
+                    j.PickUpLatitude  ?? 0,
+                    j.PickUpLongitude ?? 0,
+                    j.DeliveryLatitude ?? 0,
+                    j.DeliveryLongitude ?? 0) :  0, // ToDo: Add Kerran's new field
 
             ReadTrackerInfo = j.TucJobReadTracker != null ?
                 new ReadTrackerInfoViewModel
@@ -557,7 +562,12 @@ public static class JobMappings
             DeliverByTime = j.DeliverByTime,
             Attention = j.UcjbAttention,
 
-            Distance = 0, // ToDo: Add Kerran's new field
+            Distance = j.ToAirportId.HasValue && j.FromAirportId.HasValue ?
+                DistanceCalculator.CalculateDistance(
+                    j.PickUpLatitude  ?? 0,
+                    j.PickUpLongitude ?? 0,
+                    j.DeliveryLatitude ?? 0,
+                    j.DeliveryLongitude ?? 0) :  0, // ToDo: Add Kerran's new field
 
             PickUpWindowMins = j.PickUpWindowMins,
             DeliverByWindowMins = j.DeliverByWindowMins
@@ -711,7 +721,12 @@ public static class JobMappings
                     })
                     .ToList(),
 
-            Distance = 0, // ToDo: Add Kerran's new field
+            Distance = j.ToAirportId.HasValue && j.FromAirportId.HasValue ?
+                DistanceCalculator.CalculateDistance(
+                    j.PickUpLatitude  ?? 0,
+                    j.PickUpLongitude ?? 0,
+                    j.DeliveryLatitude ?? 0,
+                    j.DeliveryLongitude ?? 0) :  0, // ToDo: Add Kerran's new field
 
  // Added recurring job fields
             InActiveBy = j.UcbkInActiveBy != null

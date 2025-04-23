@@ -24,7 +24,8 @@
                                     ng-if="((section.courierNumber.indexOf('T') >= 0 && (ctrl.truckMode=='On' || ctrl.truckMode=='Only')) || (section.courierNumber.indexOf('T') < 0 && ctrl.truckMode !== 'Only'))"
                                     ng-repeat="section in area.top">
                                     <td class="driverLocations-list-items-item-number"
-                                        ng-class="{'active': section.isActive}">{{section.courierNumber}}
+                                        ng-class="{'active': section.isActive}">
+                                        {{section.courierNumber}} ({{section.jobCount}})
                                     </td>
                                     <td>
                                         <div class="driverLocations-list-items-item-dest"

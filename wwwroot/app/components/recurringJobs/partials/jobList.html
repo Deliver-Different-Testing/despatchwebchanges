@@ -1,7 +1,6 @@
-<div class="droppable-box" style="min-height:500px">
     <md-table-container>
         <table md-progress="ctrl.promise" md-row-select md-table multiple ng-model="ctrl.selectedPrebooks">
-            <thead md-head md-order="ctrl.jobQuery.order">
+            <thead fix-head md-head md-order="ctrl.jobQuery.order">
             <tr md-row>
                 <th md-column md-order-by="booked">Booked</th>
                 <th md-column md-order-by="speed">Speed</th>
@@ -67,4 +66,3 @@
             icon="list_alt"
             show-action="false">
     </no-data>
-</div>

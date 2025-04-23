@@ -735,51 +735,24 @@ class NationwideControl extends BaseController {
 
     async onReorderJobList() {
         console.log('[onReorderJobList] Called with order:', this.jobFilters?.order);
-
-        let orderBy = (this.jobFilters?.order ?? '') || '';
-        let orderDirection = "asc";
-
-        if (orderBy && orderBy.startsWith("-")) {
-            orderBy = orderBy.substring(1);
-            orderDirection = "desc";
-        }
-
-        console.log(`[onReorderJobList] Parsed order: ${orderBy}, direction: ${orderDirection}`);
-
-        // Update jobFilters to match the parsed values
-        if (this.jobFilters) {
-            this.jobFilters.order = orderBy;
-            this.jobFilters.orderDirection = orderDirection;
-        }
-
+        this._processOrderParam(this.jobFilters?.order, this.jobFilters);
         await this.getJobList(JobDataType.NEW);
     }
 
     async onReorderPodList() {
         console.log('[onReorderPodList] Called with order:', this.jobPodFilters?.order);
-
-        let orderBy = this.jobPodFilters?.order || '';
-        let orderDirection = "asc";
-
-        if (orderBy && orderBy.startsWith("-")) {
-            orderBy = orderBy.substring(1);
-            orderDirection = "desc";
-        }
-
-        console.log(`[onReorderPodList] Parsed order: ${orderBy}, direction: ${orderDirection}`);
-
-        if (this.jobPodFilters) {
-            this.jobPodFilters.order = orderBy;
-            this.jobPodFilters.orderDirection = orderDirection;
-        }
-
+        this._processOrderParam(this.jobPodFilters?.order, this.jobPodFilters);
         await this.getJobList(JobDataType.POD);
     }
 
     async onReorderRepriceList() {
         console.log('[onReorderRepriceList] Called with order:', this.jobRepriceFilters?.order);
+        this._processOrderParam(this.jobRepriceFilters?.order, this.jobRepriceFilters);
+        await this.getJobList(JobDataType.REPRICE);
+    }
 
-        let orderBy = this.jobRepriceFilters?.order || '';
+    private _processOrderParam(orderParam: string | undefined, filtersObj: JobQueryParams): void {
+        let orderBy = orderParam || '';
         let orderDirection = "asc";
 
         if (orderBy && orderBy.startsWith("-")) {
@@ -787,14 +760,13 @@ class NationwideControl extends BaseController {
             orderDirection = "desc";
         }
 
-        console.log(`[onReorderRepriceList] Parsed order: ${orderBy}, direction: ${orderDirection}`);
+        console.log(`Parsed order: ${orderBy}, direction: ${orderDirection}`);
 
-        if (this.jobRepriceFilters) {
-            this.jobRepriceFilters.order = orderBy;
-            this.jobRepriceFilters.orderDirection = orderDirection;
+        // Update filters with parsed values
+        if (filtersObj) {
+            filtersObj.order = orderBy;
+            filtersObj.orderDirection = orderDirection;
         }
-
-        await this.getJobList(JobDataType.REPRICE);
     }
 
     attention(job: IDispatchJob) {

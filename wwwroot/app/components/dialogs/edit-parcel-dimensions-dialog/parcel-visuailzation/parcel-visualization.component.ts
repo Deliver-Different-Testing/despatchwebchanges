@@ -3,8 +3,7 @@ import "./parcel-visualization.styles.less";
 
 class ParcelVisualizationController extends BaseController {
     baseSize: number;
-    maxDimension: number;
-    scale?: number;
+    fixedScale: number;
     normalizedLength?: number;
     normalizedWidth?: number;
     normalizedHeight?: number;
@@ -16,7 +15,7 @@ class ParcelVisualizationController extends BaseController {
     constructor() {
         super();
         this.baseSize = 25;
-        this.maxDimension = 75;
+        this.fixedScale = 0.7; // Fixed scale for all parcels
     }
 
     $onInit(): void {
@@ -35,25 +34,29 @@ class ParcelVisualizationController extends BaseController {
         this.hasValidDimensions = l > 0 && w > 0 && h > 0;
 
         if (!this.hasValidDimensions) {
+            // Set default size for invalid dimensions
             const defaultSize = 1;
             this.normalizedLength = defaultSize * this.baseSize;
             this.normalizedWidth = defaultSize * this.baseSize;
             this.normalizedHeight = defaultSize * this.baseSize;
-            this.scale = 0.7;
             return;
         }
 
-        const maxInputDimension = Math.max(l, w, h);
+        // Use fixed relative proportions
+        // We'll maintain the aspect ratio between the dimensions
+        // but scale them to fit in a consistent visual space
+        const aspectRatio = {
+            length: l / Math.max(l, w, h),
+            width: w / Math.max(l, w, h),
+            height: h / Math.max(l, w, h)
+        };
 
-        if (l === w && w === h) {
-            this.scale = 0.7;
-        } else {
-            this.scale = Math.min(0.65, this.maxDimension / (maxInputDimension * this.baseSize));
-        }
-
-        this.normalizedLength = l * this.baseSize;
-        this.normalizedWidth = w * this.baseSize;
-        this.normalizedHeight = h * this.baseSize;
+        // Set normalized dimensions with fixed base size
+        // This ensures the parcel always takes up the same visual space
+        const fixedReferenceSize = 3; // Reference size for all parcels
+        this.normalizedLength = aspectRatio.length * fixedReferenceSize * this.baseSize;
+        this.normalizedWidth = aspectRatio.width * fixedReferenceSize * this.baseSize;
+        this.normalizedHeight = aspectRatio.height * fixedReferenceSize * this.baseSize;
     }
 
     calculateVolume(): number {

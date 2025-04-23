@@ -1133,10 +1133,10 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         );
 
         await Context.Procedures.DD_InsertPricingBreakdownAsync(
-            jobId,
-            null,
-            description.Value,
-            returnValue
+            jobID: jobId,
+            prebookJobID: null,
+            pricingBreakdown: description.Value,
+            returnValue: returnValue
         );
 
         return rate.Value ?? 0;
@@ -1306,38 +1306,53 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         {
             var effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
 
-            var mappedParcels = parcels
-                .Select(p => new TucJobItem
-                {
-                    ItemId = p.ItemId ?? 0,
-                    JobId = effectiveJobId,
-                    Height = p.Height ?? 0,
-                    Length = p.Length ?? 0,
-                    Depth = p.Depth ?? 0,
-                    Notes = p.ItemName
-                })
-                .ToList();
+            // Process existing and new parcels separately
+            var newParcels = new List<TucJobItem>();
+            var existingParcelIds = new List<int>();
 
-            var newParcels = mappedParcels.Where(p => p.ItemId == 0).ToList();
-            var existingParcels = mappedParcels.Where(p => p.ItemId != 0).ToList();
+            foreach (var p in parcels)
+            {
+                if (p.ItemId == null)
+                {
+                    // For new items, don't set ItemId (let DB handle it)
+                    var newItem = new TucJobItem
+                    {
+                        JobId = effectiveJobId,
+                        Height = p.Height ?? 0,
+                        Length = p.Length ?? 0,
+                        Depth = p.Depth ?? 0,
+                        Notes = p.ItemName
+                    };
+                    newParcels.Add(newItem);
+                }
+                else
+                {
+                    // Add to list of existing IDs to update
+                    existingParcelIds.Add(p.ItemId.Value);
+                }
+            }
 
             // Handle new items
-            if (newParcels.Count != 0) await Context.TucJobItems.AddRangeAsync(newParcels);
-
-            // Handle existing items
-            foreach (var parcel in existingParcels)
+            if (newParcels.Count > 0) 
             {
-                var existingItem = await Context.TucJobItems.FirstOrDefaultAsync(i =>
-                    i.ItemId == parcel.ItemId
-                );
+                await Context.TucJobItems.AddRangeAsync(newParcels);
+            }
 
-                if (existingItem == null)
-                    continue;
+            // Handle existing items - fetch them all at once
+            var existingItems = await Context.TucJobItems
+                .Where(i => existingParcelIds.Contains(i.ItemId))
+                .ToListAsync();
 
-                existingItem.Height = parcel.Height;
-                existingItem.Length = parcel.Length;
-                existingItem.Depth = parcel.Depth;
-                existingItem.Notes = parcel.Notes;
+            // Update existing items
+            foreach (var p in parcels.Where(p => p.ItemId != null))
+            {
+                var existingItem = existingItems.FirstOrDefault(i => i.ItemId == p.ItemId);
+                if (existingItem == null) continue;
+
+                existingItem.Height = p.Height ?? 0;
+                existingItem.Length = p.Length ?? 0;
+                existingItem.Depth = p.Depth ?? 0;
+                existingItem.Notes = p.ItemName;
                 Context.TucJobItems.Update(existingItem);
             }
 
@@ -1753,18 +1768,21 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             .AsNoTracking()
             .FirstOrDefaultAsync();
 
-        if (jobInfo != null) return jobInfo.EffectiveJobId;
+        return jobInfo.EffectiveJobId;
+    }
 
-        var bookingInfo = await Context.TucJobBookings
-            .Where(j => j.UcbkId == jobId)
-            .Select(j => new
-            {
-                EffectiveJobId = j.ParentId ?? j.UcbkId,
-            })
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
+    protected async Task<int> GetJobBookingRelationshipInfoAsync(int jobBookingId)
+    {
+         var bookingInfo = await Context.TucJobBookings
+                    .Where(j => j.UcbkId == jobBookingId)
+                    .Select(j => new
+                    {
+                        EffectiveJobId = j.ParentId ?? j.UcbkId,
+                    })
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync();
 
-        return bookingInfo?.EffectiveJobId ?? jobId;
+                return bookingInfo.EffectiveJobId;
     }
 
       protected static string GetTrackingName(int trackingMethodId)

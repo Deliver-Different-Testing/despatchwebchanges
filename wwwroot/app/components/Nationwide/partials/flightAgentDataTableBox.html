@@ -53,30 +53,30 @@
 
     <!-- Flight List -->
     <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading && ctrl.flightOptions.length > 0">
+        <!-- Airline Filter Chips -->
+        <div class="airline-filter-container">
+            <!-- All Airlines Filter Chip -->
+            <md-button class="md-button airline-chip total" ng-click="ctrl.filterFlightsByAirline(null)"
+                       aria-label="Filter all airlines">
+                <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
+                <span class="airline-label">All</span>
+            </md-button>
+
+            <!-- Individual Airline Filter Chips -->
+            <md-button ng-repeat="airline in ctrl.activeAirlineOptions"
+                       class="md-button airline-chip {{airline.text | lowercase}}"
+                       ng-click="ctrl.filterFlightsByAirline(airline.id)"
+                       aria-label="Filter by {{airline.text}}">
+                <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
+                <span class="airline-label">{{airline.text}}</span>
+            </md-button>
+        </div>
+
+        <md-divider></md-divider>
+
         <md-table-container>
-            <!-- Airline Filter Chips -->
-            <div class="airline-filter-container">
-                <!-- All Airlines Filter Chip -->
-                <md-button class="md-button airline-chip total" ng-click="ctrl.filterFlightsByAirline(null)"
-                           aria-label="Filter all airlines">
-                    <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
-                    <span class="airline-label">All</span>
-                </md-button>
-
-                <!-- Individual Airline Filter Chips -->
-                <md-button ng-repeat="airline in ctrl.activeAirlineOptions"
-                           class="md-button airline-chip {{airline.text | lowercase}}"
-                           ng-click="ctrl.filterFlightsByAirline(airline.id)"
-                           aria-label="Filter by {{airline.text}}">
-                    <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
-                    <span class="airline-label">{{airline.text}}</span>
-                </md-button>
-            </div>
-
-            <md-divider></md-divider>
-
-            <table md-dense md-progress="ctrl.flightListPromise" md-table ng-model="ctrl.selectedFlight">
-                <thead md-head md-order="ctrl.flightTableQuery.order">
+            <table md-progress="ctrl.flightListPromise" md-table ng-model="ctrl.selectedFlight">
+                <thead fix-head md-head md-order="ctrl.flightTableQuery.order">
                 <tr md-row>
                     <th md-column md-order-by="airline">Airline</th>
                     <th md-column md-order-by="flightNumber">Flight No</th>
@@ -85,7 +85,7 @@
                     <th md-column md-order-by="duration">Duration</th>
                     <th md-column md-order-by="stops">Stops</th>
                     <th md-column md-order-by="amount">Rate</th>
-                    <th md-column md-order-by="aircraft">Airc  raft</th>
+                    <th md-column md-order-by="aircraft">Airc raft</th>
                     <th md-column>Actions</th>
                 </tr>
                 </thead>
@@ -97,8 +97,12 @@
                         <span class="airline-code {{flight.airline | lowercase}}">{{flight.airline}}</span>
                     </td>
                     <td md-cell>{{flight.flightNumber}}</td>
-                    <td md-cell>{{flight.departureTime | momentFormat: "MM/DD/YYYY HH:mm"}} ({{flight.departureTimeZone | timezoneShort}})</td>
-                    <td md-cell>{{flight.arrivalTime | momentFormat: "HH:mm"}} ({{flight.arrivalTimeZone | timezoneShort}})</td>
+                    <td md-cell>{{flight.departureTime | momentFormat: "MM/DD/YYYY HH:mm"}}
+                        ({{flight.departureTimeZone | timezoneShort}})
+                    </td>
+                    <td md-cell>{{flight.arrivalTime | momentFormat: "HH:mm"}}
+                        ({{flight.arrivalTimeZone | timezoneShort}})
+                    </td>
                     <td md-cell>{{flight.duration | date: "H:mm"}}</td>
                     <td md-cell>{{flight.stops === 0 ? 'D' : flight.stops}}</td>
                     <td md-cell>{{flight.amount}}</td>
@@ -166,8 +170,8 @@
     <!-- Agent List -->
     <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedAgent && ctrl.isDeliveryJob() && !ctrl.agentsLoading && ctrl.agentOptions.length > 0">
         <md-table-container>
-            <table md-dense md-progress="ctrl.agentListPromise" md-table ng-model="ctrl.selectedAgent">
-                <thead md-head md-order="ctrl.agentTableQuery.order">
+            <table md-progress="ctrl.agentListPromise" md-table ng-model="ctrl.selectedAgent">
+                <thead fix-head md-head md-order="ctrl.agentTableQuery.order">
                 <tr md-row>
                     <th md-column md-order-by="agentName">Agent Name</th>
                     <th md-column md-order-by="agentRate">Rate</th>

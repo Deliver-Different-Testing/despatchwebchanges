@@ -28,7 +28,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
                 Code = c.Code,
                 Name = c.UccrName,
                 CourierId = c.UccrId,
-                DangerousGoods = c.UccrDangerousGoods,
+                DangerousGoods = c.UccrDangerousGoods == 1,
                 DGLicenseExpiry = c.DglicenseExpiry,
                 IsActive = c.Active == true && (
                     c.SendJobsViaSms == true ||
@@ -250,14 +250,14 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
     {
         try
         {
-            var results = await Context.Procedures.DES_qryCourierCombo_ActiveAsync();
+            var results = await GetActiveCouriers();
             return results.Select(x => new ActiveCouriersViewModel
             {
                 Code = x.Code,
-                CourierId = x.CourierID,
+                CourierId = x.CourierId,
                 Name = x.Name,
                 DangerousGoods = x.DangerousGoods,
-                DGLicenseExpiry = x.DGLicenseExpiry,
+                DGLicenseExpiry = x.DgLicenseExpiry
             }).ToList();
         }
         catch (DbException ex)
@@ -361,14 +361,14 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         {
             Log.Information("Retrieving all active couriers");
 
-            var results = await Context.Procedures.DESWEB_qryCourierActiveAsync();
+            var results = await GetActiveCouriers();
             var mappedResults = results.Select(x => new ActiveCouriersViewModel
             {
                 Code = x.Code,
-                CourierId = x.CourierID,
+                CourierId = x.CourierId,
                 Name = x.Name,
                 DangerousGoods = x.DangerousGoods,
-                DGLicenseExpiry = x.DGLicenseExpiry
+                DGLicenseExpiry = x.DgLicenseExpiry
             }).ToList();
 
             Log.Information("Retrieved {Count} active couriers", mappedResults.Count);
@@ -439,6 +439,29 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         };
     }
 
+    private async Task<List<ActiveCourierDto>> GetActiveCouriers()
+    {
+        return await Context.TucCouriers
+            .Where(c => c.Active)
+            .Where(c => c.SendJobsViaSms ||
+                        c.SendAlertSms ||
+                        (c.SendJobsViaSms == false &&
+                         c.CourierLogInOut != null &&
+                         c.CourierLogInOut.LogInTime.Date == DateTime.Today &&
+                         c.CourierLogInOut.LogOutTime == null))
+            .Select(c => new ActiveCourierDto
+            {
+                CourierId = c.UccrId,
+                Code = c.Code,
+                Name = c.UccrName + " " + c.UccrSurname,
+                DangerousGoods = c.UccrDangerousGoods == 1,
+                DgLicenseExpiry = c.DglicenseExpiry,
+                JobCount = c.TucJobUcjbCouriers.Count(jt => !jt.UcjbVoid && !jt.UcjbJobDone)
+            })
+            .OrderBy(c => c.Code)
+            .ToListAsync();
+    }
+
     public async Task<ClearListViewModel> GetClearListsAsync(
         List<int> despatchViewIds,
         bool isUsTenant
@@ -447,7 +470,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         try
         {
             // Get all required data upfront
-            var activeCouriers = await Context.Procedures.DES_qryCourierCombo_ActiveAsync();
+            var activeCouriers = await GetActiveCouriers();
             var query = Context.TblDespatchViews.AsQueryable();
 
             // If view(s) provided, filter to these
@@ -480,6 +503,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
                     33,
                     isUsTenant
                 );
+
                 if (areaClearList == null)
                     continue;
 
@@ -735,7 +759,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
     }
 
     private async Task<AreaClearList> BuildClearListViewModel(
-        IReadOnlyCollection<DES_qryCourierCombo_ActiveResult> activeCouriers,
+        List<ActiveCourierDto> activeCouriers,
         dynamic clearList,
         int percentHeight,
         bool isUsTenant
@@ -765,7 +789,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
 
     private static List<ClearListSection> BuildClearListSection(
         IEnumerable<DES_qdfCourier_ClearListsResult> result,
-        IReadOnlyCollection<DES_qryCourierCombo_ActiveResult> activeCouriers,
+        List<ActiveCourierDto> activeCouriers,
         int displayOrder
     )
     {
@@ -774,23 +798,28 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
 
         return result
             .Where(c => c.DisplayOrder == displayOrder)
-            .Select(x => new ClearListSection
+            .Select(x =>
             {
-                CourierNumber = x.Hash,
-                CourierData = BuildCourierData(x, activeCouriers),
-                Destinations = BuildDestinations(x.Deliver)
+                var activeCourier = activeCouriers.FirstOrDefault(c => c?.CourierId == x.CourierID);
+                return new ClearListSection
+                {
+                    CourierNumber = x.Hash,
+                    CourierData = BuildCourierData(x, activeCouriers),
+                    Destinations = BuildDestinations(x.Deliver),
+                    JobCount = activeCourier?.JobCount ?? 0
+                };
             })
             .ToList();
     }
 
     private static CourierData BuildCourierData(
         DES_qdfCourier_ClearListsResult x,
-        IReadOnlyCollection<DES_qryCourierCombo_ActiveResult> activeCouriers
+        List<ActiveCourierDto> activeCouriers
     )
     {
         if (activeCouriers == null)
             return new CourierData();
-        var activeCourier = activeCouriers.FirstOrDefault(c => c?.CourierID == x?.CourierID);
+        var activeCourier = activeCouriers.FirstOrDefault(c => c?.CourierId == x?.CourierID);
 
         return new CourierData
         {

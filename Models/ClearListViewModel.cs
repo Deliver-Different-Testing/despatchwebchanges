@@ -24,6 +24,7 @@ public class ClearListSection
     public string CourierNumber { get; set; }
     public CourierData CourierData { get; set; }
     public List<Destination> Destinations { get; set; } = new();
+    public int JobCount { get; set; }
 }
 
 public class CourierData
