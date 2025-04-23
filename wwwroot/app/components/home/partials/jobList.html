@@ -1,72 +1,74 @@
-<div class="md-table-footer-content">
-    <div class="date-selector" layout="row" layout-align="start center">
-        <md-datepicker
-                ng-model="ctrl.jobCutoffDate"
-                ng-change="ctrl.applyJobCutoffDate()"
-                md-placeholder="Select date"
-                md-hide-icons="triangle"
-                md-open-on-focus="true"
-                class="calendar-only-picker">
-        </md-datepicker>
+<div class="md-table-footer-container">
+    <div class="md-table-footer-content">
+        <div class="date-selector" layout="row" layout-align="start center">
+            <md-datepicker
+                    ng-model="ctrl.jobCutoffDate"
+                    ng-change="ctrl.applyJobCutoffDate()"
+                    md-placeholder="Select date"
+                    md-hide-icons="triangle"
+                    md-open-on-focus="true"
+                    class="calendar-only-picker">
+            </md-datepicker>
 
-        <md-button class="md-icon-button" ng-click="ctrl.changeJobCutoffDate(-1)" aria-label="Previous day">
-            <md-icon md-font-set="material-symbols-outlined">chevron_left</md-icon>
-        </md-button>
+            <md-button class="md-icon-button" ng-click="ctrl.changeJobCutoffDate(-1)" aria-label="Previous day">
+                <md-icon md-font-set="material-symbols-outlined">chevron_left</md-icon>
+            </md-button>
 
-        <div layout="column" layout-align="center center">
-            <span class="cutoff-date">{{ctrl.jobCutoffDate | momentFormat:'dddd, MMMM D, YYYY'}} ({{ctrl.timeZone | timezoneShort}})</span>
-            <md-button class="md-small today-button" ng-click="ctrl.resetJobCutoffDate()"
-                       aria-label="Reset filter">
-                Today
+            <div layout="column" layout-align="center center">
+                <span class="cutoff-date">{{ctrl.jobCutoffDate | momentFormat:'dddd, MMMM D, YYYY'}} ({{ctrl.timeZone | timezoneShort}})</span>
+                <md-button class="md-small today-button" ng-click="ctrl.resetJobCutoffDate()"
+                           aria-label="Reset filter">
+                    Today
+                </md-button>
+            </div>
+
+            <md-button class="md-icon-button" ng-click="ctrl.changeJobCutoffDate(1)" aria-label="Next day">
+                <md-icon md-font-set="material-symbols-outlined">chevron_right</md-icon>
             </md-button>
         </div>
 
-        <md-button class="md-icon-button" ng-click="ctrl.changeJobCutoffDate(1)" aria-label="Next day">
-            <md-icon md-font-set="material-symbols-outlined">chevron_right</md-icon>
-        </md-button>
-    </div>
+        <div flex></div>
 
-    <div flex></div>
-
-    <!-- Right side with status chips -->
-    <div class="status-summary" ng-if="ctrl.jobList && ctrl.jobList.length > 0">
-        <md-button class="md-button status-chip total" ng-click="ctrl.filterByStatus('group-all')">
-            <md-icon md-font-set="material-symbols-outlined">article</md-icon>
-            <span>{{ctrl.jobList.length || 0}}</span>
-            <span class="status-label">Total</span>
-        </md-button>
-        <md-button class="md-button status-chip unread" ng-click="ctrl.filterByStatus('unread')">
-            <md-icon md-font-set="material-symbols-outlined">mark_email_unread</md-icon>
-            <span>{{ctrl.getUnreadCount()}}</span>
-            <span class="status-label">Unread</span>
-        </md-button>
-        <md-button class="md-button status-chip pending" ng-click="ctrl.filterByStatus('group-pending')">
-            <md-icon md-font-set="material-symbols-outlined">hourglass_top</md-icon>
-            <span>{{ctrl.getStatusCount('pending')}}</span>
-            <span class="status-label">Pending</span>
-        </md-button>
-        <md-button class="md-button status-chip in-transit" ng-click="ctrl.filterByStatus('group-in-transit')">
-            <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
-            <span>{{ctrl.getStatusCount('in-transit')}}</span>
-            <span class="status-label">In&nbsp;Transit</span>
-        </md-button>
-        <md-button class="md-button status-chip completed" ng-click="ctrl.filterByStatus('group-completed')">
-            <md-icon md-font-set="material-symbols-outlined">done_all</md-icon>
-            <span>{{ctrl.getStatusCount('completed')}}</span>
-            <span class="status-label">Completed</span>
-        </md-button>
-        <md-button class="md-button status-chip problem" ng-click="ctrl.filterByStatus('group-problem')"
-                   ng-if="ctrl.getStatusCount('problem') > 0">
-            <md-icon md-font-set="material-symbols-outlined">error_outline</md-icon>
-            <span>{{ctrl.getStatusCount('problem')}}</span>
-            <span class="status-label">Problem</span>
-        </md-button>
+        <!-- Right side with status chips -->
+        <div class="status-summary" ng-if="ctrl.jobList && ctrl.jobList.length > 0">
+            <md-button class="md-button status-chip total" ng-click="ctrl.filterByStatus('group-all')">
+                <md-icon md-font-set="material-symbols-outlined">article</md-icon>
+                <span>{{ctrl.jobList.length || 0}}</span>
+                <span class="status-label">Total</span>
+            </md-button>
+            <md-button class="md-button status-chip unread" ng-click="ctrl.filterByStatus('unread')">
+                <md-icon md-font-set="material-symbols-outlined">mark_email_unread</md-icon>
+                <span>{{ctrl.getUnreadCount()}}</span>
+                <span class="status-label">Unread</span>
+            </md-button>
+            <md-button class="md-button status-chip pending" ng-click="ctrl.filterByStatus('group-pending')">
+                <md-icon md-font-set="material-symbols-outlined">hourglass_top</md-icon>
+                <span>{{ctrl.getStatusCount('pending')}}</span>
+                <span class="status-label">Pending</span>
+            </md-button>
+            <md-button class="md-button status-chip in-transit" ng-click="ctrl.filterByStatus('group-in-transit')">
+                <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
+                <span>{{ctrl.getStatusCount('in-transit')}}</span>
+                <span class="status-label">In&nbsp;Transit</span>
+            </md-button>
+            <md-button class="md-button status-chip completed" ng-click="ctrl.filterByStatus('group-completed')">
+                <md-icon md-font-set="material-symbols-outlined">done_all</md-icon>
+                <span>{{ctrl.getStatusCount('completed')}}</span>
+                <span class="status-label">Completed</span>
+            </md-button>
+            <md-button class="md-button status-chip problem" ng-click="ctrl.filterByStatus('group-problem')"
+                       ng-if="ctrl.getStatusCount('problem') > 0">
+                <md-icon md-font-set="material-symbols-outlined">error_outline</md-icon>
+                <span>{{ctrl.getStatusCount('problem')}}</span>
+                <span class="status-label">Problem</span>
+            </md-button>
+        </div>
     </div>
 </div>
 
 <md-divider></md-divider>
 
-<md-table-container>
+<md-table-container style="overflow: auto; height:100%; width: 100%;">
     <table md-progress="ctrl.jobListPromise" md-table ng-model="ctrl.selectedJob">
     <thead fix-head md-head md-on-reorder="ctrl.getJobList" md-order="ctrl.queryParams.order">
         <tr md-row>
@@ -187,6 +189,7 @@
         icon="list_alt"
         show-action="false">
 </no-data>
+
 
 <style>
     table.md-table:not(.md-row-select) td.md-cell:nth-child(n+2):nth-last-child(n+2), table.md-table:not(.md-row-select) th.md-column:nth-child(n+2):nth-last-child(n+2) {

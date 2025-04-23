@@ -127,12 +127,10 @@
                     </md-list-item>
                     <md-list-item ng-if="ctrl.model.createdDate">
                         <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
-                        <p>Created on <strong>{{ctrl.model.createdDate | date: 'MMM d, y HH:mm:ss'}}</strong></p>
-                    </md-list-item>
+                        <p>Created on <strong>{{ctrl.model.createdDate | momentFormat: 'MMM D, YYYY HH:mm:ss'}} ({{ctrl.timeZone | timezoneShort}})</strong></p>                    </md-list-item>
                     <md-list-item ng-if="ctrl.model.updatedDate">
                         <md-icon md-font-set="material-symbols-outlined">update</md-icon>
-                        <p>Last updated by <strong>{{ctrl.model.updatedByName}}</strong> on <strong>{{ctrl.model.updatedDate | date: 'MMM d, y HH:mm:ss'}}</strong></p>
-                    </md-list-item>
+                        <p>Last updated by <strong>{{ctrl.model.updatedByName}}</strong> on <strong>{{ctrl.model.updatedDate | momentFormat: 'MMM D, YYYY HH:mm:ss'}} ({{ctrl.timeZone | timezoneShort}})</strong></p>                    </md-list-item>
                 </md-list>
             </div>
         </md-dialog-content>

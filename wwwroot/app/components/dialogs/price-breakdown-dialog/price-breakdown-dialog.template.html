@@ -14,124 +14,126 @@
             </md-toolbar>
 
             <md-dialog-content>
-                <div class="md-dialog-content">
-                    <!-- Main content area -->
-                    <div layout="column">
-                        <!-- Parent Job Note -->
-                        <div class="parent-job-note" ng-if="ctrl.isParentJob">
-                            <md-icon md-font-set="material-symbols-outlined">work_alert</md-icon>
-                            <div class="note-content">
-                                <span class="note-title">Child Job</span>
-                                <span class="note-text">Pricing information is inherited from the parent job.</span>
-                            </div>
+                <!-- Main content area -->
+                <div layout="column">
+                    <!-- Parent Job Note -->
+                    <div class="parent-job-note" ng-if="ctrl.isParentJob">
+                        <md-icon md-font-set="material-symbols-outlined">work_alert</md-icon>
+                        <div class="note-content">
+                            <span class="note-title">Child Job</span>
+                            <span class="note-text">Pricing information is inherited from the parent job.</span>
                         </div>
+                    </div>
 
-                        <!-- Add item button -->
-                        <md-button class="md-accent" ng-click="ctrl.addNewItem()"
-                                   ng-if="!ctrl.isEditing">
-                            <md-icon md-font-set="material-symbols-outlined">add</md-icon>
-                            Add Price Item
-                        </md-button>
+                    <!-- Add item button -->
+                    <md-button class="md-accent" ng-click="ctrl.addNewItem()"
+                               ng-if="!ctrl.isEditing">
+                        <md-icon md-font-set="material-symbols-outlined">add</md-icon>
+                        Add Price Item
+                    </md-button>
 
-                        <!-- Table view -->
-                        <md-table-container ng-if="!ctrl.isEditing">
-                            <table md-table>
-                                <thead md-head>
-                                <tr md-row>
-                                    <th md-column>Item Name</th>
-                                    <th md-column>Amount</th>
-                                    <th md-column>Actions</th>
-                                </tr>
-                                </thead>
-                                <tbody md-body>
-                                <tr md-row ng-repeat="item in ctrl.priceBreakdown">
-                                    <td md-cell>{{item.name}}</td>
-                                    <td md-cell>{{item.amount | currency}}</td>
-                                    <td md-cell>
-                                        <div layout="row">
-                                            <md-button class="md-icon-button" ng-click="ctrl.editItem(item)">
-                                                <md-tooltip md-direction="bottom">Edit Item</md-tooltip>
-                                                <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
-                                            </md-button>
-                                            <md-button class="md-icon-button" ng-click="ctrl.deleteItem(item)">
-                                                <md-tooltip md-direction="bottom">Delete Item</md-tooltip>
-                                                <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
-                                            </md-button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <!-- Empty state -->
-                                <tr md-row ng-if="ctrl.priceBreakdown.length === 0">
-                                    <td md-cell colspan="3" class="empty-state">
-                                        <md-icon md-font-set="material-symbols-outlined"
-                                                 style="font-size: 48px; opacity: 0.5; margin-bottom: 30px; margin-top: 10px;">receipt_long
-                                        </md-icon>
-                                        <div>No price breakdown items available</div>
-                                        <div style="font-size: 12px; margin-top: 8px">Click "Add Price Item" to get
-                                            started
-                                        </div>
-                                    </td>
-                                </tr>
-                                <!-- Total row -->
-                                <tr md-row class="total-row" ng-if="ctrl.priceBreakdown.length > 0">
-                                    <td md-cell class="total-label"><strong>Total</strong></td>
-                                    <td md-cell class="total-amount"><strong>{{ctrl.totalAmount | currency}}</strong>
-                                    </td>
-                                    <td md-cell></td>
-                                </tr>
-                                </tbody>
-                            </table>
-                        </md-table-container>
-
-                        <!-- Edit Form -->
-                        <div ng-if="ctrl.isEditing" class="edit-form-container">
-                            <h3>
-                                <md-icon md-font-set="material-symbols-outlined"
-                                         style="vertical-align: middle; margin-right: 8px">
-                                    {{ctrl.isNew ? 'add_circle' : 'edit'}}
-                                </md-icon>
-                                {{ctrl.isNew ? 'Add New Item' : 'Edit Item'}}
-                            </h3>
-
-                            <md-divider></md-divider>
-
-                            <md-input-container class="md-block">
-                                <label for="name">Item Name</label>
-                                <md-icon md-font-set="material-symbols-outlined" style="margin-right: 8px">label
-                                </md-icon>
-                                <input id="name" name="name" type="text" ng-model="ctrl.selectedPriceBreakdown.name"
-                                       required/>
-                                <div ng-messages="ctrl.priceBreakdownForm.name.$error">
-                                    <div ng-message="required">Please enter an item name.</div>
-                                </div>
-                            </md-input-container>
-
-                            <md-input-container class="md-block" style="margin-top: 10px">
-                                <label for="amount">Amount ($)</label>
-                                <md-icon md-font-set="material-symbols-outlined" style="margin-right: 8px">
-                                    attach_money
-                                </md-icon>
-                                <input id="amount" name="amount" type="number" step="0.01" min="0"
-                                       ng-model="ctrl.selectedPriceBreakdown.amount" required/>
-                                <div ng-messages="ctrl.priceBreakdownForm.amount.$error">
-                                    <div ng-message="required">Please enter an amount.</div>
-                                    <div ng-message="min">Amount cannot be negative.</div>
-                                </div>
-                            </md-input-container>
-
-                            <div layout="row" layout-align="end center" style="margin-top: 16px">
-                                <md-button class="md-raised" ng-click="ctrl.cancelEdit()">
-                                    Cancel
-                                </md-button>
-                                <md-button class="md-raised md-primary" ng-click="ctrl.saveItem()"
-                                           ng-disabled="ctrl.priceBreakdownForm.$invalid || ctrl.isSaving">
-                                    <div layout="row" layout-align="center center">
-                                        <md-progress-circular ng-if="ctrl.isSaving" md-mode="indeterminate" md-diameter="18" style="margin-right: 8px;" class="md-accent"></md-progress-circular>
-                                        <md-icon ng-if="!ctrl.isSaving" md-font-set="material-symbols-outlined">save</md-icon>
-                                        <span>Save Item</span>
+                    <!-- Table view -->
+                    <md-table-container ng-if="!ctrl.isEditing">
+                        <table md-table>
+                            <thead md-head>
+                            <tr md-row>
+                                <th md-column>Item Name</th>
+                                <th md-column>Amount</th>
+                                <th md-column>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody md-body>
+                            <tr md-row ng-repeat="item in ctrl.priceBreakdown">
+                                <td md-cell>{{item.name}}</td>
+                                <td md-cell>{{item.amount | currency}}</td>
+                                <td md-cell>
+                                    <div layout="row">
+                                        <md-button class="md-icon-button" ng-click="ctrl.editItem(item)">
+                                            <md-tooltip md-direction="bottom">Edit Item</md-tooltip>
+                                            <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
+                                        </md-button>
+                                        <md-button class="md-icon-button" ng-click="ctrl.deleteItem(item)">
+                                            <md-tooltip md-direction="bottom">Delete Item</md-tooltip>
+                                            <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
+                                        </md-button>
                                     </div>
-                                </md-button>
+                                </td>
+                            </tr>
+                            <!-- Empty state -->
+                            <tr md-row ng-if="ctrl.priceBreakdown.length === 0">
+                                <td md-cell colspan="3" class="empty-state">
+                                    <md-icon md-font-set="material-symbols-outlined"
+                                             style="font-size: 48px; opacity: 0.5; margin-bottom: 30px; margin-top: 10px;">
+                                        receipt_long
+                                    </md-icon>
+                                    <div>No price breakdown items available</div>
+                                    <div style="font-size: 12px; margin-top: 8px">Click "Add Price Item" to get
+                                        started
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Total row -->
+                            <tr md-row class="total-row" ng-if="ctrl.priceBreakdown.length > 0">
+                                <td md-cell class="total-label"><strong>Total</strong></td>
+                                <td md-cell class="total-amount"><strong>{{ctrl.totalAmount | currency}}</strong>
+                                </td>
+                                <td md-cell></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </md-table-container>
+
+                    <!-- Edit Form -->
+                    <div ng-if="ctrl.isEditing" class="edit-form-container">
+                        <h3>
+                            <md-icon md-font-set="material-symbols-outlined"
+                                     style="vertical-align: middle; margin-right: 8px">
+                                {{ctrl.isNew ? 'add_circle' : 'edit'}}
+                            </md-icon>
+                            {{ctrl.isNew ? 'Add New Item' : 'Edit Item'}}
+                        </h3>
+
+                        <md-divider></md-divider>
+
+                        <md-input-container class="md-block">
+                            <label for="name">Item Name</label>
+                            <md-icon md-font-set="material-symbols-outlined" style="margin-right: 8px">label
+                            </md-icon>
+                            <input id="name" name="name" type="text" ng-model="ctrl.selectedPriceBreakdown.name"
+                                   required/>
+                            <div ng-messages="ctrl.priceBreakdownForm.name.$error">
+                                <div ng-message="required">Please enter an item name.</div>
                             </div>
+                        </md-input-container>
+
+                        <md-input-container class="md-block" style="margin-top: 10px">
+                            <label for="amount">Amount ($)</label>
+                            <md-icon md-font-set="material-symbols-outlined" style="margin-right: 8px">
+                                attach_money
+                            </md-icon>
+                            <input id="amount" name="amount" type="number" step="0.01" min="0"
+                                   ng-model="ctrl.selectedPriceBreakdown.amount" required/>
+                            <div ng-messages="ctrl.priceBreakdownForm.amount.$error">
+                                <div ng-message="required">Please enter an amount.</div>
+                                <div ng-message="min">Amount cannot be negative.</div>
+                            </div>
+                        </md-input-container>
+
+                        <div layout="row" layout-align="end center" style="margin-top: 16px">
+                            <md-button class="md-raised" ng-click="ctrl.cancelEdit()">
+                                Cancel
+                            </md-button>
+                            <md-button class="md-raised md-primary" ng-click="ctrl.saveItem()"
+                                       ng-disabled="ctrl.priceBreakdownForm.$invalid || ctrl.isSaving">
+                                <div layout="row" layout-align="center center">
+                                    <md-progress-circular ng-if="ctrl.isSaving" md-mode="indeterminate" md-diameter="18"
+                                                          style="margin-right: 8px;"
+                                                          class="md-accent"></md-progress-circular>
+                                    <md-icon ng-if="!ctrl.isSaving" md-font-set="material-symbols-outlined">save
+                                    </md-icon>
+                                    <span>Save Item</span>
+                                </div>
+                            </md-button>
                         </div>
                     </div>
                 </div>
@@ -141,7 +143,8 @@
                 <span flex></span>
                 <md-button class="md-raised" ng-click="ctrl.save()" ng-disabled="ctrl.isLoading">
                     <div layout="row" layout-align="center center">
-                        <md-progress-circular ng-if="ctrl.isLoading" md-mode="indeterminate" md-diameter="18" style="margin-right: 8px;" class="md-accent"></md-progress-circular>
+                        <md-progress-circular ng-if="ctrl.isLoading" md-mode="indeterminate" md-diameter="18"
+                                              style="margin-right: 8px;" class="md-accent"></md-progress-circular>
                         <md-icon ng-if="!ctrl.isLoading" md-font-set="material-symbols-outlined">check</md-icon>
                         <span>Done</span>
                     </div>

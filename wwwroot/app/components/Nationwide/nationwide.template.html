@@ -79,19 +79,12 @@
 
     <div>
         <div class="columns">
-
             <div class="column" id="co-{{column.id}}" ng-repeat="(colKey,column) in ctrl.layout.columns"
-                 r-directions="['right']"
-                 r-flex="true" resizable
-                 style="flex-basis: {{column.width}}">
-                <div class="column-sortable" ng-model="column.boxes" ui-sortable="ctrl.sortableOptions">
-                    <div class="box"
-                         id="box-{{box.name}}"
-                         ng-repeat="(boxName,box) in column.boxes"
-                         r-directions="['bottom']"
-                         r-flex="true"
-                         resizable
-                         style="flex-basis: {{box.height}}">
+                 r-directions="['right']" r-flex="true" resizable style="flex-basis: {{column.width}}">
+                <div class="column-sortable" ui-sortable="ctrl.boxSortableOptions" ng-model="column.boxes">
+                    <div class="box" id="box-{{box.name}}" ng-repeat="(boxName,box) in column.boxes"
+                         r-directions="['bottom']" r-flex="true" resizable style="flex-basis: {{box.height}}">
+
                         <md-toolbar class="md-accent">
                             <div class="md-toolbar-tools-m3">
                                 <div class="section section-start">
@@ -99,7 +92,7 @@
                                     <!--Icon-->
                                     <span class="material-symbols-outlined">{{ctrl.boxes[box.name].icon}}</span>
 
-                                    <span class="md-headline-title" flex flex style="margin-left: 8px;">
+                                    <span class="md-headline-title" flex style="margin-left: 8px;">
 
                                     {{ctrl.boxes[box.name].title}}
 
@@ -237,11 +230,11 @@
 
                         <div class="box-content" ng-include="ctrl.boxes[box.name].templateUrl"></div>
                     </div>
-
                 </div>
             </div>
-
         </div>
     </div>
+
     <div id='draggingItems'></div>
+
 </div>

@@ -353,7 +353,7 @@ public interface IJobRepository
         DateTime booked
     );
 
-    Task<decimal> RateJobUsAsync(
+    Task RateJobUsAsync(
         int jobId,
         int clientId,
         int speed,

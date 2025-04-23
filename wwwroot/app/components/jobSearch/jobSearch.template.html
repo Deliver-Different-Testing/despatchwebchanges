@@ -196,14 +196,11 @@
                             </div>
                         </md-toolbar>
 
-                        <div class="box-content"
-                             ng-class="{'related-content':box.name == 'jobDetail' && ctrl.currentJob.relatedJobs.length > 4}"
-                             ng-include="ctrl.boxes[box.name].templateUrl"></div>
-                    </div>
+                        <div class="box-content" ng-include="ctrl.boxes[box.name].templateUrl"></div>
 
+                    </div>
                 </div>
             </div>
-
         </div>
 
         <ul active-icon="close"
