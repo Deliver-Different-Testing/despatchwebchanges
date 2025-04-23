@@ -4,8 +4,8 @@
         class="md-primary">
 </md-progress-linear>
 
-<div class="droppable-box nationwide-job-list">
-    <div ng-if="!ctrl.tasksLoading && ctrl.filteredTasks && ctrl.filteredTasks.length > 0">
+<div ng-if="!ctrl.tasksLoading && ctrl.filteredTasks && ctrl.filteredTasks.length > 0">
+    <div class="md-table-footer-container">
         <div class="md-table-footer-content">
             <div flex></div>
 
@@ -42,9 +42,13 @@
                 </md-button>
             </div>
         </div>
+    </div>
 
-        <md-divider></md-divider>
+    <md-divider></md-divider>
+</div>
 
+<div class="nationwide-job-list" style="height:100%; width: 100%; overflow: auto;">
+    <div ng-if="!ctrl.tasksLoading && ctrl.filteredTasks && ctrl.filteredTasks.length > 0">
         <md-list ng-if="!ctrl.tasksLoading && ctrl.filteredTasks && ctrl.filteredTasks.length > 0">
             <task-item-component
                     ng-repeat="task in ctrl.filteredTasks | filter: box.searchBox"

@@ -74,7 +74,7 @@
 
         <md-divider></md-divider>
 
-        <md-table-container>
+        <md-table-container style="overflow: auto; height:100%; width: 100%;">
             <table md-progress="ctrl.flightListPromise" md-table ng-model="ctrl.selectedFlight">
                 <thead fix-head md-head md-order="ctrl.flightTableQuery.order">
                 <tr md-row>
@@ -169,7 +169,7 @@
 
     <!-- Agent List -->
     <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedAgent && ctrl.isDeliveryJob() && !ctrl.agentsLoading && ctrl.agentOptions.length > 0">
-        <md-table-container>
+        <md-table-container style="overflow: auto; height:100%; width: 100%;">
             <table md-progress="ctrl.agentListPromise" md-table ng-model="ctrl.selectedAgent">
                 <thead fix-head md-head md-order="ctrl.agentTableQuery.order">
                 <tr md-row>

@@ -2,12 +2,12 @@ import "./edit-date-time-dialog.less";
 import ToastrService from "../../../services/toastr.service";
 import app from "../../../app";
 import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interfaces";
+import moment from "moment";
 
 export class EditDateTimeDialogController {
     static $inject = [
         "$mdDialog",
         "toastrService",
-        "moment",
         "title",
         "fieldName",
         "dateTime",
@@ -25,7 +25,6 @@ export class EditDateTimeDialogController {
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
-        private moment: any,
         public readonly title: string,
         public readonly fieldName: string,
         dateTime: Date,
@@ -119,7 +118,7 @@ export class EditDateTimeDialogController {
             return null;
         }
 
-        return this.moment(dateTime).format("YYYY-MM-DDTHH:mm");
+        return moment(dateTime).format("YYYY-MM-DDTHH:mm");
     }
 
     cancel(): void {

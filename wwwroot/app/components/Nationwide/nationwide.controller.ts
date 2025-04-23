@@ -192,8 +192,16 @@ class NationwideControl extends BaseController {
 
     $onInit() {
         this.refreshInterval = this.$interval(async () => {
-            console.log("[NationwideController] - Refreshing tasks")
+            console.log("[NationwideController] - Refreshing tasks and job lists");
+
+            // Store current state before refresh
+            const currentJobId = this.currentJob?.id;
+
+            // Refresh tasks
             await this.getTasks();
+
+            // Refresh job lists while preserving selections
+            await this.refreshJobLists(currentJobId);
         }, 60000);
     }
 
@@ -1793,6 +1801,44 @@ class NationwideControl extends BaseController {
     getUnreadRepriceCount() {
         if (!this.jobListReprice) return;
         return this.jobListReprice.filter(job => !job.hasBeenRead).length;
+    }
+
+    async refreshJobLists(currentJobId?: number) {
+        try {
+            console.log("[NationwideRefresh] - Refreshing job lists");
+
+            // Get updated job lists
+            await this.getJobList(JobDataType.ALL);
+
+            // Restore current job selection if applicable
+            if (currentJobId) {
+                // Find the refreshed job in any of the job lists
+                const updatedJob = this._findJobInLocalLists(currentJobId);
+
+                if (updatedJob) {
+                    // Update currentJob with fresh data while maintaining the selection
+                    this.currentJob = updatedJob;
+
+                    // Mark as read since it was previously selected
+                    this._markJobReadStatus(updatedJob.id, true);
+
+                    // If the job has flight/agent data, refresh those as well
+                    if (updatedJob.toAirportId && updatedJob.fromAirportId) {
+                        await this._processFlights(updatedJob);
+                    }
+
+                    if (this.isDeliveryJob()) {
+                        await this._processAgents(updatedJob);
+                    }
+
+                    console.log("[NationwideRefresh] - Current job selection maintained");
+                }
+            }
+
+            console.log("[NationwideRefresh] - Job lists refresh complete");
+        } catch (error) {
+            console.error("[NationwideRefresh] - Error refreshing job lists:", error);
+        }
     }
 }
 

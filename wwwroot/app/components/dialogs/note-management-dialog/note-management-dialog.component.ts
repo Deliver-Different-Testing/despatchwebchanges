@@ -4,11 +4,20 @@ import NoteService from "../../../services/notes.service";
 import ToastrService from "../../../services/toastr.service";
 
 class NoteManagementDialogController {
+    static $inject = [
+        '$mdDialog',
+        'noteService',
+        'toastrService',
+        'model',
+        'staffId'
+    ];
+
     noteTypes: INoteType[] = [];
     title: string = '';
     isNew: boolean = false;
     model: IJobNote;
     isSubmitting: boolean = false;
+    timeZone: string = TimeZone;
 
     // New note type creation
     showNoteTypeCreator: boolean = false;
@@ -22,14 +31,6 @@ class NoteManagementDialogController {
 
     // For viewing note type descriptions
     showDescriptionFor: number | null = null;
-
-    static $inject = [
-        '$mdDialog',
-        'noteService',
-        'toastrService',
-        'model',
-        'staffId'
-    ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,

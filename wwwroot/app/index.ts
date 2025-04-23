@@ -38,5 +38,4 @@ import "../lib/here-map-tracking/here-map-tracking.component";
 import "./app";
 
 // Service imports
-import "./services";
 import "./components/dialogs/index";

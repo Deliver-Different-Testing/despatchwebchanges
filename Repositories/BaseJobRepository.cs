@@ -1076,7 +1076,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         return curAmount.Value ?? 0;
     }
 
-    public async Task<decimal> RateJobUsAsync(
+    public async Task RateJobUsAsync(
         int jobId,
         int clientId,
         int speed,
@@ -1104,42 +1104,47 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         var returnValue = new OutputParameter<int>();
 
         await Context.Procedures.DD_stpJob_Rate_DescribedAsync(
-            clientId,
-            speed,
-            string.IsNullOrEmpty(fromZip) ? null : int.Parse(fromZip),
-            null,
-            string.IsNullOrEmpty(toZip) ? null : int.Parse(toZip),
-            null,
-            totalMiles,
-            fromMiles,
-            toMiles,
-            weight,
-            null,
-            null,
-            totalPallets,
-            extraStopOffs,
-            booked,
-            size,
-            dangerousGoods,
-            dryIceWeight,
-            waitTime,
-            fromAgentId,
-            fromAirportId,
-            toAgentId,
-            toAirportId,
-            description,
-            rate,
-            returnValue
+            clientID: clientId,
+            speedID: speed,
+            fromZipCode: string.IsNullOrEmpty(fromZip) ? null : int.Parse(fromZip),
+            fromState: null,
+            toZipCode: string.IsNullOrEmpty(toZip) ? null : int.Parse(toZip),
+            toState: null,
+            totalDistance: totalMiles,
+            fromMiles: fromMiles,
+            toMiles: toMiles,
+            totalWeight: weight,
+            quantity: null,
+            cubic: null,
+            totalPallets: totalPallets,
+            extraStopOffs: extraStopOffs,
+            booked: booked,
+            vehicleSizeID: size,
+            dangerousGoods: dangerousGoods,
+            dryIceWeight: dryIceWeight,
+            waitTime: waitTime,
+            fromAgentId: fromAgentId,
+            fromAirportId: fromAirportId,
+            toAgentId: toAgentId,
+            toAirportId: toAirportId,
+            description: description,
+            rate: rate,
+            returnValue: returnValue
         );
 
+        Log.Information("Pricing breakdown is: {DescriptionValue}", description.Value);
+
+        var effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
+
         await Context.Procedures.DD_InsertPricingBreakdownAsync(
-            jobID: jobId,
+            jobID: effectiveJobId,
             prebookJobID: null,
             pricingBreakdown: description.Value,
             returnValue: returnValue
         );
 
-        return rate.Value ?? 0;
+        var printableRate = rate.Value ?? 0;
+        await SaveNoteAsync(jobId, $"Repriced to {printableRate}", true);
     }
 
     public async Task<TucJobType> GetJobTypeById(int speedId)
@@ -1333,7 +1338,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             }
 
             // Handle new items
-            if (newParcels.Count > 0) 
+            if (newParcels.Count > 0)
             {
                 await Context.TucJobItems.AddRangeAsync(newParcels);
             }

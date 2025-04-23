@@ -11,7 +11,6 @@ import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {ContactID} from "../../contants";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {JobProperty} from "../../enums/job-property.enum";
-
 class JobSearchController extends BaseController {
 
     static $inject = [
