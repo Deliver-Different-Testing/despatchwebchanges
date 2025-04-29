@@ -40,7 +40,7 @@
 
 <md-divider></md-divider>
 
-<md-table-container class="nationwide-job-list card-content-scroll">
+<md-table-container class="nationwide-job-list">
     <table md-progress="ctrl.jobListPromise" md-table ng-model="ctrl.selectedJob">
         <thead fix-head md-head md-on-reorder="ctrl.onReorderJobList" md-order="ctrl.jobFilters.order">
         <tr md-row>
@@ -59,7 +59,6 @@
 
         <tbody md-body>
         <tr md-row
-            md-dense
             ng-repeat="job in ctrl.jobList | filter: box.searchBox"
             context-menu="ctrl.getContextMenuOptions(job)"
             context-menu-on="contextmenu"

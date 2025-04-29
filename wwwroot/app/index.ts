@@ -12,7 +12,6 @@ import "angular-resizable/angular-resizable.min.css";
 import "moment";
 import "moment-timezone";
 import "angular-ui-bootstrap/dist/ui-bootstrap-tpls";
-import "angular-moment/angular-moment";
 import "ngmap";
 import "ng-file-upload";
 import "angular-ui-sortable/dist/sortable";

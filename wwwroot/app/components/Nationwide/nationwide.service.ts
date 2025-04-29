@@ -1,7 +1,8 @@
 import {IAgent, IDispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
-import {IFlightViewModel} from "./nationwide.interfaces";
+import {IFlightPagination, IFlightViewModel} from "./nationwide.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import moment from "moment";
+import {FlightDetailsViewModel} from "../dialogs/flight-details-dialog/flight-details-dialog.interfaces";
 
 class NationwideService implements angular.IServiceProvider {
     static $inject = [
@@ -77,20 +78,23 @@ class NationwideService implements angular.IServiceProvider {
         return await this.getNationwideJobs("nationwideJobListReprice", queryParams, selectedClients, internal, selectedAreas);
     }
 
+
     async getFlightOptions(
         jobId: number,
         departureDate: string | Date,
         airlineId?: number,
-        pageSize: number = 25
+        departureAirportId?: number,
+        pageSize: number = 25,
+        pageIndex: number = 0
     ): Promise<{
-        flights: IFlightViewModel[];
+        flightPagination: IFlightPagination;
         message: string | null
     }> {
         const startTime = performance.now();
         const formattedDate = moment(departureDate).format();
 
         // Create a cache key based on the parameters
-        const cacheKey = `flights_${jobId}_${formattedDate}_${airlineId || 'all'}_${pageSize}`;
+        const cacheKey = `flights_${jobId}_${formattedDate}_${airlineId || 'all'}_${pageSize}_${pageIndex}`;
         const cachedData = this.flightCache.get(cacheKey);
 
         // Return cached data if it's still valid
@@ -99,21 +103,23 @@ class NationwideService implements angular.IServiceProvider {
             return cachedData.data;
         }
 
-        console.log(`Fetching flight data for job ${jobId} with departure ${formattedDate}`);
+        console.log(`Fetching flight data for job ${jobId} with departure ${formattedDate}, page ${pageIndex}`);
 
         try {
-            const response = await this.$http.get<IFlightViewModel[]>("nationwideJob/GetScheduledFlightOptions", {
+            const response = await this.$http.get<IFlightPagination>("nationwideJob/GetScheduledFlightOptions", {
                 params: {
                     departureDate: formattedDate,
                     jobId,
                     airlineId,
-                    pageSize
+                    departureAirportId,
+                    pageSize,
+                    pageIndex
                 }
             });
 
             const result = {
-                flights: response.data,
-                message: response.data.length === 0
+                flightPagination: response.data,
+                message: response.data.items.length === 0
                     ? "Sorry, we couldn't find any flights between these airports on the selected date. Please try different dates or airports."
                     : null
             };
@@ -125,7 +131,7 @@ class NationwideService implements angular.IServiceProvider {
             });
 
             const endTime = performance.now();
-            console.log(`Flight request completed in ${(endTime - startTime).toFixed(2)}ms for job ${jobId}, received ${response.data.length} flights`);
+            console.log(`Flight request completed in ${(endTime - startTime).toFixed(2)}ms for job ${jobId}, received ${response.data.items.length} flights`);
 
             return result;
         } catch (error) {
@@ -180,6 +186,24 @@ class NationwideService implements angular.IServiceProvider {
 
     async getActiveAirlines(): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>("nationwideJob/GetActiveAirlines");
+        return response.data;
+    }
+
+    async getActiveAirports(): Promise<Suggestion[]> {
+        const response = await this.$http.get<Suggestion[]>("nationwideJob/GetAirportOptions");
+        return response.data;
+    }
+
+    async getFlightInfoForDialog(flightNumber: string, departureDate: Date): Promise<FlightDetailsViewModel> {
+        const formattedDate = moment(departureDate).format();
+
+        const response = await this.$http.get<FlightDetailsViewModel>("nationwideJob/GetFlightInfo", {
+            params: {
+                flightNumber: flightNumber,
+                departureDate: formattedDate
+            }
+        });
+
         return response.data;
     }
 

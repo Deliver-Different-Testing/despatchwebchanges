@@ -6,10 +6,6 @@ interface IMdAutocompleteController extends angular.IController {
     index: number;
 }
 
-interface JQuery {
-    outerWidth(includeMargin?: boolean): number;
-}
-
 export const ngRightClickDirective = ['$parse', ($parse: angular.IParseService): angular.IDirective => ({
     restrict: 'A',
     link: (scope: angular.IScope, element: angular.IAugmentedJQuery, attrs: angular.IAttributes): void => {

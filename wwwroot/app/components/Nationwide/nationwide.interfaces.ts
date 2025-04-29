@@ -20,6 +20,14 @@ export interface IFlightViewModel {
     arrivalTimeZone: string;
 }
 
+export interface IFlightPagination {
+    items: IFlightViewModel[];
+    totalCount: number;
+    pageIndex: number;
+    pageSize: number;
+    lastDepartureTime: Date | null;
+}
+
 export interface Filter {
     value: number;
     label: string;

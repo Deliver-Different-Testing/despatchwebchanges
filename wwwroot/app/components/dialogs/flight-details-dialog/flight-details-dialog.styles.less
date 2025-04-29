@@ -1,0 +1,192 @@
+.flight-details-dialog {
+  min-width: 80%;
+  max-width: 900px;
+
+  .loading-container {
+    padding: 32px;
+
+    .loading-text {
+      margin-left: 16px;
+      color: rgba(0, 0, 0, 0.54);
+    }
+  }
+
+  .error-container, .no-data-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    text-align: center;
+    color: rgba(0, 0, 0, 0.54);
+
+    md-icon {
+      font-size: 48px;
+      height: 48px;
+      width: 48px;
+      margin-bottom: 16px;
+    }
+  }
+
+  .error-container {
+    md-icon {
+      color: #F44336;
+    }
+  }
+
+  .popup-icon {
+    margin-right: 8px;
+  }
+
+  .flight-header, .flight-route-card, .flight-details-card, .codeshare-card, .airport-info-section {
+    margin-bottom: 16px;
+  }
+
+  .airline-info {
+    .flight-number-container {
+      display: flex;
+      flex-direction: column;
+
+      .airline-name {
+        font-size: 16px;
+        font-weight: 500;
+      }
+
+      .flight-number {
+        font-size: 20px;
+        font-weight: bold;
+      }
+    }
+
+    .service-type {
+      margin-top: 8px;
+    }
+  }
+
+  .flight-status {
+    .non-stop {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .with-stops {
+      background-color: #FF9800;
+      color: white;
+    }
+  }
+
+  .flight-route {
+    padding: 16px 0;
+
+    .airport-section-title {
+      margin-top: 0;
+      color: rgba(0, 0, 0, 0.54);
+      font-weight: 500;
+    }
+
+    .airport-name {
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    .airport-location, .time {
+      margin-top: 4px;
+      color: rgba(0, 0, 0, 0.87);
+    }
+
+    .terminal {
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+
+      md-icon {
+        margin-right: 4px;
+        font-size: 18px;
+        height: 18px;
+        width: 18px;
+      }
+    }
+  }
+
+  .flight-divider {
+    position: relative;
+
+    .duration-badge {
+      background-color: #E0E0E0;
+      padding: 4px 8px;
+      border-radius: 16px;
+      font-size: 12px;
+      margin-bottom: 8px;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+
+      md-icon {
+        font-size: 14px;
+        height: 14px;
+        width: 14px;
+        margin-right: 4px;
+      }
+    }
+
+    .flight-line {
+      position: relative;
+      height: 2px;
+      background-color: #1976D2;
+      width: 100%;
+
+      .flight-icon {
+        position: absolute;
+        font-size: 24px;
+        height: 24px;
+        width: 24px;
+        top: -11px;
+        left: calc(50% - 12px);
+        color: #1976D2;
+        transform: rotate(90deg);
+      }
+    }
+  }
+
+  .flight-details-list, .codeshare-list {
+    md-icon {
+      margin-right: 16px;
+      color: rgba(0, 0, 0, 0.54);
+    }
+
+    p {
+      margin: 0;
+    }
+  }
+
+  .codeshare-list {
+    .codeshare-service-type {
+      margin-left: 8px;
+      color: rgba(0, 0, 0, 0.54);
+    }
+
+    .codeshare-service-classes {
+      margin-left: 8px;
+      font-size: 12px;
+      color: rgba(0, 0, 0, 0.54);
+    }
+  }
+
+  .airport-tab-content {
+    h3 {
+      margin-top: 0;
+      margin-bottom: 16px;
+    }
+
+    .airport-info-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+
+      md-icon {
+        margin-right: 8px;
+        color: rgba(0, 0, 0, 0.54);
+      }
+    }
+  }
+}

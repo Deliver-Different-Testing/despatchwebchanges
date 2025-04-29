@@ -9,13 +9,6 @@
 </dispatch-map>
 
 <style>
-    .box-content {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-    }
-
     dispatch-map {
         display: block;
         flex: 1;
@@ -42,21 +35,12 @@
         height: 100% !important;
     }
 
-    .box-content.related-content {
-        max-height: none !important; /* Override any max-height that might cause scrolling */
-    }
-
     /* Fix for the Google Map container */
     .map-wrapper,
     ng-map,
     .gm-style {
         height: 100% !important;
         width: 100% !important;
-    }
-
-    /* Ensure Angular Material elements don't cause excessive height */
-    md-toolbar.md-accent {
-        min-height: 40px; /* Adjust as needed to reduce toolbar height */
     }
 
     /* Handle resize in progress */

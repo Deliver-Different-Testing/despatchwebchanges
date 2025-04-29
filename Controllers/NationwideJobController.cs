@@ -105,29 +105,41 @@ public class NationwideJobController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetScheduledFlightOptions(DateTime departureDate, int jobId, int? airlineId, int pageSize = 25)
+    public async Task<IActionResult> GetScheduledFlightOptions(
+        DateTime departureDate,
+        int jobId,
+        int? airlineId,
+        int? departureAirportId,
+        int pageSize = 25,
+        int pageIndex = 0)
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
         try
         {
-            Log.Information("Flight search requested for job {JobId} with departure {DepartureDate}, airline {AirlineId}, pageSize {PageSize}",
-                jobId, departureDate, airlineId, pageSize);
+            Log.Information(
+                "Flight search requested for job {JobId} with departure {DepartureDate}, airline {AirlineId}, pageSize {PageSize}, pageIndex {PageIndex}",
+                jobId, departureDate, airlineId, pageSize, pageIndex);
 
             // Cap page size to prevent excessive resource usage
             if (pageSize > 100) pageSize = 100;
 
-            var flightOptions = await flightService.GetFlightsAsync(
+            var flightPagination = await flightService.GetFlightsAsync(
                 jobId,
                 departureDate,
                 airlineId,
-                maxResults: pageSize);
+                flightBuffer: 0,
+                codeType: null,
+                extendedOptions: null,
+                pageSize: pageSize,
+                pageIndex: pageIndex);
 
             stopwatch.Stop();
-            Log.Information("Flight search API completed in {ElapsedMs}ms for job {JobId}, returned {FlightCount} flights",
-                stopwatch.ElapsedMilliseconds, jobId, flightOptions.Count);
+            Log.Information(
+                "Flight search API completed in {ElapsedMs}ms for job {JobId}, returned {FlightCount} flights, total {TotalCount}",
+                stopwatch.ElapsedMilliseconds, jobId, flightPagination.Items.Count, flightPagination.TotalCount);
 
-            return Json(flightOptions);
+            return Json(flightPagination);
         }
         catch (Exception e)
         {
@@ -305,6 +317,36 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting the active airlines");
+            return StatusCode(500, e.Message);
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAirportOptions()
+    {
+        try
+        {
+            var airports = await repository.GetActiveAirportOptionsAsync();
+            return Json(airports);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An error occured getting the active airports");
+            return StatusCode(500, e.Message);
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetFlightInfo(string flightNumber, DateTime departureDate)
+    {
+        try
+        {
+            var flightInfo = await flightService.GetFlightDetailByFlightNumberDetailDialog(flightNumber, departureDate);
+            return Json(flightInfo);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An error occured getting the flight detail");
             return StatusCode(500, e.Message);
         }
     }

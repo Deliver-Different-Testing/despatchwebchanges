@@ -12,7 +12,6 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.FlightStats;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualBasic;
 using Serilog;
 
 namespace DespatchWeb.Repositories;
@@ -65,9 +64,36 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         }
         catch (Exception e)
         {
-            Log.Error(e, "An error occured adding Flight {FlightFlightNumber} to job {JobId}", flight?.FlightNumber, jobId);
+            Log.Error(e, "An error occured adding Flight {FlightFlightNumber} to job {JobId}", flight?.FlightNumber,
+                jobId);
             throw;
         }
+    }
+
+    public async Task<List<Suggestion>> GetActiveAirportOptionsAsync()
+    {
+        var airports = await Context.TblAirports
+            .Where(a => a.Active)
+            .Select(a => new Suggestion
+            {
+                Id = a.AirportId,
+                Text = a.AirportCode
+            })
+            .AsNoTracking()
+            .ToListAsync();
+
+        return airports;
+    }
+
+    public async Task<string> GetSingleAirportCodeByIdAsync(int airportId)
+    {
+        var airportCode = await Context.TblAirports
+            .Where(a => a.AirportId == airportId)
+            .Select(a => a.AirportCode)
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        return airportCode;
     }
 
     public async Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId)
@@ -269,87 +295,87 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
     }
 
     public async Task<Dictionary<string, decimal>> GetBatchCarrierFlightRatesByJobIdAsync(
-    int jobId,
-    List<string> carrierCodes,
-    DateTime? bookTime)
-{
-    if (carrierCodes == null || carrierCodes.Count == 0) return new Dictionary<string, decimal>();
-
-    var result = new Dictionary<string, decimal>();
-
-    try
+        int jobId,
+        List<string> carrierCodes,
+        DateTime? bookTime)
     {
-        var job = await Context.TucJobs
-            .Include(j => j.TucJobItems)
-            .FirstOrDefaultAsync(j => j.UcjbId == jobId);
+        if (carrierCodes == null || carrierCodes.Count == 0) return new Dictionary<string, decimal>();
 
-        if (job == null)
+        var result = new Dictionary<string, decimal>();
+
+        try
         {
-            Log.Warning("Job not found for ID {JobId} when getting batch carrier rates", jobId);
+            var job = await Context.TucJobs
+                .Include(j => j.TucJobItems)
+                .FirstOrDefaultAsync(j => j.UcjbId == jobId);
+
+            if (job == null)
+            {
+                Log.Warning("Job not found for ID {JobId} when getting batch carrier rates", jobId);
+                return result;
+            }
+
+            // Set up a list of tasks to run in parallel
+            var tasks = carrierCodes.Select(async carrierName =>
+            {
+                try
+                {
+                    var returnValue = new OutputParameter<int>();
+
+                    var carrierResults = await Context.Procedures.DD_stpGetCarrierFlightRateAsync(
+                        clientID: job.UcjbClientId,
+                        fromCity: job.PickupAddressLine4,
+                        fromState: job.PickupAddressLine5,
+                        toCity: job.DeliveryAddressLine4,
+                        toState: job.DeliveryAddressLine5,
+                        carrierName: carrierName,
+                        totalWeight: job.UcjbWeight.HasValue ? (decimal)job.UcjbWeight.Value : 0,
+                        quantity: job.UcjbQty,
+                        cubic: null,
+                        totalPallets: job.TucJobItems.Count,
+                        extraStopOffs: 0, // Default to false, we can optimize this later
+                        bookTime: bookTime,
+                        vehicleSizeID: job.UcjbSize,
+                        dangerousGoods: false,
+                        dryIceWeight: job.DryIceWeight,
+                        waitTime: null,
+                        returnValue: returnValue);
+
+                    if (returnValue.Value == 0 && carrierResults.Count > 0)
+                    {
+                        return (carrierName, carrierResults.Select(r => r.Rate ?? 0).FirstOrDefault());
+                    }
+
+                    return (carrierName, 0m);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Error retrieving carrier rate for {Carrier} and job {JobId}",
+                        carrierName, jobId);
+                    return (carrierName, 0m);
+                }
+            }).ToList();
+
+            // Execute all the tasks in parallel and wait for them to complete
+            var results = await Task.WhenAll(tasks);
+
+            // Convert the results to a dictionary
+            foreach (var (carrierName, rate) in results)
+            {
+                result[carrierName] = rate;
+            }
+
+            Log.Information("Retrieved rates for {CarrierCount} carriers for job {JobId}",
+                result.Count, jobId);
+
             return result;
         }
-
-        // Set up a list of tasks to run in parallel
-        var tasks = carrierCodes.Select(async carrierName =>
+        catch (Exception ex)
         {
-            try
-            {
-                var returnValue = new OutputParameter<int>();
-
-                var carrierResults = await Context.Procedures.DD_stpGetCarrierFlightRateAsync(
-                    clientID: job.UcjbClientId,
-                    fromCity: job.PickupAddressLine4,
-                    fromState: job.PickupAddressLine5,
-                    toCity: job.DeliveryAddressLine4,
-                    toState: job.DeliveryAddressLine5,
-                    carrierName: carrierName,
-                    totalWeight: job.UcjbWeight.HasValue ? (decimal)job.UcjbWeight.Value : 0,
-                    quantity: job.UcjbQty,
-                    cubic: null,
-                    totalPallets: job.TucJobItems.Count,
-                    extraStopOffs: 0, // Default to false, we can optimize this later
-                    bookTime: bookTime,
-                    vehicleSizeID: job.UcjbSize,
-                    dangerousGoods: false,
-                    dryIceWeight: job.DryIceWeight,
-                    waitTime: null,
-                    returnValue: returnValue);
-
-                if (returnValue.Value == 0 && carrierResults.Count > 0)
-                {
-                    return (carrierName, carrierResults.Select(r => r.Rate ?? 0).FirstOrDefault());
-                }
-
-                return (carrierName, 0m);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error retrieving carrier rate for {Carrier} and job {JobId}",
-                    carrierName, jobId);
-                return (carrierName, 0m);
-            }
-        }).ToList();
-
-        // Execute all the tasks in parallel and wait for them to complete
-        var results = await Task.WhenAll(tasks);
-
-        // Convert the results to a dictionary
-        foreach (var (carrierName, rate) in results)
-        {
-            result[carrierName] = rate;
+            Log.Error(ex, "Error retrieving batch carrier flight rates for job {JobId}", jobId);
+            return result;
         }
-
-        Log.Information("Retrieved rates for {CarrierCount} carriers for job {JobId}",
-            result.Count, jobId);
-
-        return result;
     }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "Error retrieving batch carrier flight rates for job {JobId}", jobId);
-        return result;
-    }
-}
 
     public async Task<decimal> GetCarrierFlightRateByJobIdAsync(int jobId, string carrierName, bool extraStopOffs,
         DateTime? bookTime)
@@ -470,14 +496,17 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
     private static string FormatDelimMessage<T>(string format, string startDelim, string endDelim, T data)
     {
         var message = string.Empty;
-        while (format?.Length > 0)
+        while (!string.IsNullOrEmpty(format) && format.Length > 0)
         {
-            var c = Strings.Left(format, 1);
-            format = Strings.Mid(format, 2);
+            var c = format[..1];
+            format = format[1..];
+
             if (c == startDelim)
             {
-                var fieldName = Strings.Left(format, Strings.InStr(format, endDelim) - 1);
-                format = Strings.Mid(format, Strings.InStr(format, endDelim) + 1);
+                var endDelimIndex = format.IndexOf(endDelim);
+                var fieldName = format[..endDelimIndex];
+                format = format[(endDelimIndex + 1)..];
+
                 var props = typeof(T).GetRuntimeProperties();
                 var p = props.First(x => string.Equals(x.Name, fieldName, StringComparison.CurrentCultureIgnoreCase));
 
@@ -490,7 +519,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         }
 
         message = message.Replace("  ", " ");
-        message = Strings.Trim(message);
+        message = message.Trim();
         return message;
     }
 }

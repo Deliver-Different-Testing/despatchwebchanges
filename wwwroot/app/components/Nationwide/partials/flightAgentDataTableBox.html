@@ -12,7 +12,7 @@
         class="md-primary">
 </md-progress-linear>
 
-<div class="box-content nationwide-job-list" ng-if="!ctrl.isDeliveryJob()">
+<div class="nationwide-job-list" ng-if="!ctrl.isDeliveryJob()">
     <!-- No Current Job Selected -->
     <no-data
             ng-if="!ctrl.currentJob"
@@ -70,11 +70,22 @@
                 <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
                 <span class="airline-label">{{airline.text}}</span>
             </md-button>
+
+            <div flex></div>
+
+            <md-select
+                    placeholder="Manually select airport"
+                       ng-model="ctrl.selectedAirport"
+                       md-on-open="ctrl.getAirportOptions()"
+                       style="min-width: 200px;">
+            <md-option ng-value="airport" ng-repeat="airport in airports">{{airport.text}}</md-option>
+            </md-select>
+
         </div>
 
         <md-divider></md-divider>
 
-        <md-table-container style="overflow: auto; height:100%; width: 100%;">
+        <md-table-container>
             <table md-progress="ctrl.flightListPromise" md-table ng-model="ctrl.selectedFlight">
                 <thead fix-head md-head md-order="ctrl.flightTableQuery.order">
                 <tr md-row>
@@ -85,7 +96,7 @@
                     <th md-column md-order-by="duration">Duration</th>
                     <th md-column md-order-by="stops">Stops</th>
                     <th md-column md-order-by="amount">Rate</th>
-                    <th md-column md-order-by="aircraft">Airc raft</th>
+                    <th md-column md-order-by="aircraft">Aircraft</th>
                     <th md-column>Actions</th>
                 </tr>
                 </thead>
@@ -112,6 +123,11 @@
                             <md-icon md-font-set="material-symbols-outlined">add</md-icon>
                             <md-tooltip md-direction="left">Assign Flight</md-tooltip>
                         </span>
+
+                        <span class="action-icon" ng-click="ctrl.openFlightMoreInfo($event, flight)">
+                            <md-icon md-font-set="material-symbols-outlined">info</md-icon>
+                            <md-tooltip md-direction="left">More Info</md-tooltip>
+                        </span>
                     </td>
                 </tr>
                 </tbody>
@@ -119,18 +135,26 @@
         </md-table-container>
 
         <!-- Flight Table Footer Actions -->
+        <md-table-pagination
+                md-limit="ctrl.flightPagination.pageSize"
+                md-limit-options="[10, 25, 50, 100]"
+                md-page="ctrl.flightPagination.pageIndex"
+                md-total="{{ctrl.flightPagination.totalCount}}"
+                md-on-paginate="ctrl.onFlightPageChange"
+                md-page-select>
+        </md-table-pagination>
+
+        <!-- Keep the Next Day button -->
         <div class="table-footer-actions md-padding" layout="row" layout-align="end center">
-            <md-button class="md-raised md-primary" ng-click="ctrl.loadNextFlights()">
-                Load More Flights
-            </md-button>
             <md-button class="md-raised" ng-click="ctrl.loadNextDayFlights()">
                 Next Day
             </md-button>
         </div>
+
     </div>
 </div>
 
-<div class="box-content nationwide-job-list" ng-if="ctrl.isDeliveryJob()">
+<div class="nationwide-job-list" ng-if="ctrl.isDeliveryJob()">
     <!--  No Current Job Selected -->
     <no-data
             ng-if="!ctrl.currentJob"
@@ -169,7 +193,7 @@
 
     <!-- Agent List -->
     <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedAgent && ctrl.isDeliveryJob() && !ctrl.agentsLoading && ctrl.agentOptions.length > 0">
-        <md-table-container style="overflow: auto; height:100%; width: 100%;">
+        <md-table-container>
             <table md-progress="ctrl.agentListPromise" md-table ng-model="ctrl.selectedAgent">
                 <thead fix-head md-head md-order="ctrl.agentTableQuery.order">
                 <tr md-row>

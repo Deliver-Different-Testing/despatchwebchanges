@@ -1,5 +1,28 @@
 .nationwide-view {
+  thead[fix-head] {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background-color: #f8f8f8;
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background-color: #f8f8f8;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    }
+  }
+
   .nationwide-job-list {
+    overflow: auto;
+    max-height: 100%;
+
+    // Ensure the table takes the full height to enable scrolling
+    table {
+      width: 100%;
+    }
+
     // Variables
     @cell-padding-vertical: 4px;
     @cell-padding-horizontal: 2px;
@@ -285,33 +308,8 @@
     margin-bottom: 8px;
     border-radius: 4px;
     background-color: rgba(0, 0, 0, 0.03);
-
-    // Scrollable on smaller screens
-    @media (max-width: 1200px) {
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      padding-bottom: 16px; // Extra padding for scrollbar
-      &::-webkit-scrollbar {
-        height: 4px;
-      }
-
-      &::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 4px;
-      }
-
-      &::-webkit-scrollbar-thumb {
-        background: #888;
-        border-radius: 4px;
-      }
-
-      &::-webkit-scrollbar-thumb:hover {
-        background: #555;
-      }
-    }
   }
 
-  // Base airline chip styling
   .airline-chip {
     height: 32px;
     border-radius: 16px;
@@ -366,8 +364,6 @@
       }
     }
   }
-
-  // Top 20 US and Canadian airlines with their branding colors
 
   // American Airlines (AA)
   .airline-chip.aa {
