@@ -1,5 +1,4 @@
 import {Coordinates} from "../overview/overview.interfaces";
-import JobDataType from "./enums/JobDataType";
 
 export interface IFlightViewModel {
     airline: string;
@@ -26,13 +25,6 @@ export interface IFlightPagination {
     pageIndex: number;
     pageSize: number;
     lastDepartureTime: Date | null;
-}
-
-export interface Filter {
-    value: number;
-    label: string;
-    icon: string;
-    active: boolean;
 }
 
 export interface HereMapsConfig {
