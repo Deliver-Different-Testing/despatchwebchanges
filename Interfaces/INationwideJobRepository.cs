@@ -18,8 +18,6 @@ public interface INationwideJobRepository
 
     Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId);
 
-    Task<List<string>> GetActiveAirlineCodesAsync();
-
     Task<List<AgentViewModel>> GetAgentsAsync(int jobId);
 
     Task<bool> AddAgentToJobAsync(int agentId, int jobId);
@@ -29,9 +27,8 @@ public interface INationwideJobRepository
         List<string> carrierCodes,
         DateTime? bookTime);
 
-    Task<decimal> GetCarrierFlightRateByJobIdAsync(int jobId, string carrierName, bool extraStopOffs,
-        DateTime? bookTime);
-
     Task<List<Suggestion>> GetActiveAirlineOptionsAsync();
     Task SendAgentRequestMessageAsync(int agentId, int jobId);
+    Task<List<Suggestion>> GetActiveAirportOptionsAsync();
+    Task<string> GetSingleAirportCodeByIdAsync(int airportId);
 }

@@ -55,7 +55,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             {
                 case AppPage.Dispatch:
                     // Filters
-                    query = query.Where(j => j.UcjbStatus != 9);
+                    query = query.Where(j => j.UcjbStatus != (int)JobStatus.AwaitingPod);
                     if (dateCutoff.HasValue) query = query.Where(j => j.UcjbDate <= dateCutoff.Value.Date);
 
                     // Sorting
@@ -80,9 +80,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 default:
                     return [];
             }
-
-            var sql = query.ToQueryString();
-            Log.Information("Generated SQL: {Sql}", sql);
 
             var jobs = await query
                 .Select(JobMappings.JobDispatchMapping)
@@ -168,11 +165,11 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         {
             NationwideWidget.JobList => query.Where(j =>
                 j.InternalStatus == (int)InternalJobStatus.NewJobs
-                || (j.InternalStatus == null && j.UcjbStatus != 9)
+                || (j.InternalStatus == null && j.UcjbStatus != (int)JobStatus.AwaitingPod)
             ),
 
             NationwideWidget.Pod => query.Where(j =>
-                j.InternalStatus == (int)InternalJobStatus.AwaitingPod || j.UcjbStatus == 9
+                j.InternalStatus == (int)InternalJobStatus.AwaitingPod || j.UcjbStatus == (int)JobStatus.AwaitingPod
             ),
 
             NationwideWidget.ActionRequired => query.Where(j =>
@@ -185,9 +182,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
             _ => query
         };
-
-        // Only get child jobs
-        query = query.Where(j => j.ParentId != null);
 
         // Block out completed jobs from the domestic/nationwide page
         query = query.Where(j => j.UcjbComplTime == null);

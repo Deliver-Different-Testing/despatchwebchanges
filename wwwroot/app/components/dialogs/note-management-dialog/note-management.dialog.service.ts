@@ -2,7 +2,7 @@ import {IJobNote} from "../../../interfaces/job.interface";
 import NoteManagementDialogController from "./note-management-dialog.component";
 import {IDocumentService, material} from "angular";
 
-class NoteManagementDialogService {
+class NoteManagementDialogService implements angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
         '$document'
@@ -11,7 +11,9 @@ class NoteManagementDialogService {
     constructor(
         private $mdDialog: material.IDialogService,
         private $document: IDocumentService
-    ) {}
+    ) {
+        console.log('NoteManagementDialogService: Service instantiated');
+    }
 
     $get() {
         return this;

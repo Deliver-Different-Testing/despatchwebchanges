@@ -1,4 +1,5 @@
 import moment from "moment";
+import {findIana} from "windows-iana";
 
 /**
  * Returns a unique list of items based on a key property
@@ -127,12 +128,16 @@ export function timezoneShortFilter(timezone: string): string {
     if (!timezone) return '';
 
     try {
-        // Use moment-timezone to get the abbreviation
-        // Get current date to account for DST
         const now = new Date();
-        return moment.tz(now, timezone).format('z');
+
+        const ianaTimezones = findIana(timezone);
+        const ianaTimezone = ianaTimezones && ianaTimezones.length > 0
+            ? ianaTimezones[0]
+            : timezone; // If not found, use original (might already be IANA)
+
+        return moment.tz(now, ianaTimezone).format('z');
     } catch (error) {
-        console.error('Error formatting timezone:', error);
+        console.error('Error formatting timezone:', error, 'for timezone:', timezone);
         return timezone;
     }
 }

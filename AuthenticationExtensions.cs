@@ -14,9 +14,9 @@ public static class AuthenticationExtensions
 {
     public static JwtSecurityToken CreateApiToken(string name, int tenantId, string connection, string timeZone)
     {
-            
+
         var symmetricSecurityKey =
-            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSecretKey")));
+            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSecretKey") ?? string.Empty));
 
         var sensitiveClaims = JsonSerializer.Serialize(new
         {
@@ -27,8 +27,8 @@ public static class AuthenticationExtensions
         var encryptedClaims = EncryptClaims(sensitiveClaims, Environment.GetEnvironmentVariable("ClaimsKey"));
         var claims = new Claim[]
         {
-            new Claim(ClaimTypes.Name, name),
-            new Claim("SC", encryptedClaims)
+            new(ClaimTypes.Name, name),
+            new("SC", encryptedClaims)
         };
         Log.Debug("JWT token create process");
         Log.Debug("JWT Issuer: {Issuer}, Audience: {Audience}", Environment.GetEnvironmentVariable("Issuer"), Environment.GetEnvironmentVariable("Audience"));
@@ -63,5 +63,5 @@ public static class AuthenticationExtensions
         return Convert.ToBase64String(msEncrypt.ToArray());
     }
 
-  
+
 }

@@ -2,24 +2,30 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Models;
 using DespatchWeb.Models.FlightStats;
+using DespatchWeb.Models.Response;
 using DateTime = System.DateTime;
 
 namespace DespatchWeb.Interfaces;
 
 public interface IFlightStatsService
 {
-    Task<List<FlightViewModel>> GetFlightsAsync(
+    Task<FlightPaginationResult> GetFlightsAsync(
         int jobId,
         DateTime? departureDateTime = null,
         int? airlineId = null,
+        int? departureAirportId = null,
         int flightBuffer = 0,
         string codeType = null,
         List<string> extendedOptions = null,
-        int maxResults = 25);
+        int pageSize = 25,
+        int pageIndex = 0);
 
     Task<ScheduledFlight> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,
         DateTime departureTime);
 
     Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
         string departureAirportCode);
+
+    Task<FlightDetailsDialogViewModel> GetFlightDetailByFlightNumberDetailDialog(string completeFlightNumber,
+        DateTime departureTime);
 }

@@ -67,7 +67,6 @@ import RouterConfig from "./routes";
 import ThemeConfig from "./materialTheme";
 import AddEventDialogController from "./components/dialogs/add-event-dialog/add-event-dialog.controller";
 import AddEventDialogService from "./components/dialogs/add-event-dialog/add-event-dialog.service";
-import {IQProvider, material, ui} from "angular";
 import InterCourierChargeDialogController
     from "./components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.controller";
 import InterCourierChargeDialogService
@@ -87,6 +86,8 @@ import RecurringJobsComponent from "./components/recurringJobs/recurringJobs.con
 import RecurringJobsService from "./components/recurringJobs/recurringJobs.service";
 import JobSearchService from "./components/jobSearch/jobSearch.service";
 import JobSearchComponent from "./components/jobSearch/jobSearch.controller";
+import FlightDetailsDialogService from "./components/dialogs/flight-details-dialog/flight-details-dialog.service";
+import FlightDetailsDialogController from "./components/dialogs/flight-details-dialog/flight-details-dialog.component";
 
 const app = angular.module("uDispatch", [
     "ui.router",
@@ -109,7 +110,6 @@ const app = angular.module("uDispatch", [
     "angularPromiseButtons",
     "ng-mfb",
     "md.time.picker",
-    "angularMoment",
     "md.data.table",
     "ngFileUpload",
     "hereMapTracking.services",
@@ -134,8 +134,8 @@ app
 
 // Routes
 app.config(["$urlRouterProvider", "$stateProvider",
-    ($urlRouterProvider: ui.IUrlRouterProvider,
-     $stateProvider: ui.IStateProvider) => {
+    ($urlRouterProvider: angular.ui.IUrlRouterProvider,
+     $stateProvider: angular.ui.IStateProvider) => {
         new RouterConfig($urlRouterProvider, $stateProvider);
     }
 ]);
@@ -143,7 +143,7 @@ app.config(["$urlRouterProvider", "$stateProvider",
 // Theme
 app.config(["$mdThemingProvider", "APP_CONFIG",
     (
-        $mdThemingProvider: material.IThemingProvider,
+        $mdThemingProvider: angular.material.IThemingProvider,
         APP_CONFIG: AppConfig
     ): void => {
         const themeConfig = new ThemeConfig($mdThemingProvider, APP_CONFIG);
@@ -166,11 +166,11 @@ app
             }
         });
     }])
-    .config(["$qProvider", ($qProvider: IQProvider) => {
+    .config(["$qProvider", ($qProvider: angular.IQProvider) => {
         $qProvider.errorOnUnhandledRejections(false);
     }])
     .config(["$mdDateLocaleProvider", "APP_CONFIG", (
-        $mdDateLocaleProvider: material.IDateLocaleProvider,
+        $mdDateLocaleProvider: angular.material.IDateLocaleProvider,
         APP_CONFIG: AppConfig) => {
         if (!APP_CONFIG.US_Customer) {
             // Set locale to New Zealand English
@@ -258,6 +258,7 @@ app.controller("EditAddressDialogController", EditAddressDialogController);
 app.controller("jobFileUploadController", JobFileUploadController);
 app.controller("jobNoteEditorDialogController", NoteManagementDialogController);
 app.controller("InterCourierChargeDialog", InterCourierChargeDialogController);
+app.controller("flightDetailsDialogController", FlightDetailsDialogController);
 
 // Services
 app.service("configService", ConfigService);
@@ -286,5 +287,6 @@ app.service("interCourierChargeDialogService", InterCourierChargeDialogService);
 app.service("jobContextMenuService", JobContextMenuService);
 app.service("editParcelDimensionsDialogService", EditParcelDimensionsDialogService);
 app.service("uCSData", JobSearchService);
+app.service("flightDetailsDialogService", FlightDetailsDialogService);
 
 export default app;

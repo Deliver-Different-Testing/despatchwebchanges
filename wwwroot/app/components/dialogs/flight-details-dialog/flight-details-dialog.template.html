@@ -1,0 +1,232 @@
+<md-dialog aria-label="Flight Details" class="flight-details-dialog">
+    <md-toolbar>
+        <div class="md-toolbar-tools">
+            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">flight</md-icon>
+            <h2>Flight Details</h2>
+            <span flex></span>
+            <md-button class="md-icon-button" ng-click="ctrl.cancel()" aria-label="Close">
+                <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+                <md-tooltip md-direction="bottom">Close</md-tooltip>
+            </md-button>
+        </div>
+    </md-toolbar>
+
+    <md-dialog-content>
+        <div class="md-dialog-content">
+            <!-- Loading state -->
+            <div ng-if="ctrl.isLoading" layout="row" layout-align="center center" class="loading-container">
+                <md-progress-circular md-mode="indeterminate"></md-progress-circular>
+                <span class="loading-text">Loading flight details...</span>
+            </div>
+
+            <!-- Error state -->
+            <div ng-if="!ctrl.isLoading && ctrl.error" class="error-container">
+                <md-icon md-font-set="material-symbols-outlined">error</md-icon>
+                <p>{{ctrl.error}}</p>
+            </div>
+
+            <!-- No data state -->
+            <div ng-if="!ctrl.isLoading && !ctrl.error && !ctrl.flightViewModel" class="no-data-container">
+                <md-icon md-font-set="material-symbols-outlined">flight_off</md-icon>
+                <p>No flight information available for the selected flight.</p>
+            </div>
+
+            <!-- Flight data -->
+            <div ng-if="!ctrl.isLoading && !ctrl.error && ctrl.flightViewModel">
+                <!-- Flight header -->
+                <div class="flight-header">
+                    <md-card class="md-whiteframe-2dp">
+                        <md-card-content>
+                            <div layout="row" layout-align="space-between center">
+                                <div class="airline-info">
+                                    <div class="flight-number-container">
+                                        <span class="airline-name">{{ctrl.flightViewModel.airlineName}}</span>
+                                        <span class="flight-number">{{ctrl.flightViewModel.carrierCode}} {{ctrl.flightViewModel.flightNumber}}</span>
+                                    </div>
+                                    <div ng-if="ctrl.flightViewModel.serviceType" class="service-type">
+                                        <md-chip>{{ctrl.flightViewModel.serviceType}}</md-chip>
+                                    </div>
+                                </div>
+                                <div class="flight-status">
+                                    <md-chip ng-if="ctrl.flightViewModel.isNonStop" class="non-stop">Non-stop</md-chip>
+                                    <md-chip ng-if="!ctrl.flightViewModel.isNonStop" class="with-stops">{{ctrl.flightViewModel.stops}} stop{{ctrl.flightViewModel.stops > 1 ? 's' : ''}}</md-chip>
+                                </div>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+                </div>
+
+                <!-- Flight route -->
+                <div class="flight-route-card">
+                    <md-card class="md-whiteframe-2dp">
+                        <md-card-content>
+                            <div layout="row" layout-xs="column" class="flight-route">
+                                <div flex="45" class="departure-info">
+                                    <h4 class="airport-section-title">Departure</h4>
+                                    <div class="airport-name">{{ctrl.flightViewModel.origin.name}} ({{ctrl.flightViewModel.origin.code}})</div>
+                                    <div class="airport-location">{{ctrl.flightViewModel.origin.city}}, {{ctrl.flightViewModel.origin.country}}</div>
+                                    <div class="time">{{ctrl.flightViewModel.departureTime}} ({{ctrl.timeZone | timezoneShort}})</div>
+                                </div>
+
+                                <div flex="10" layout="column" layout-align="center center" class="flight-divider">
+                                    <div class="duration-badge">
+                                        <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
+                                        <span>{{ctrl.flightViewModel.duration}}</span>
+                                    </div>
+                                    <div class="flight-line">
+                                        <md-icon md-font-set="material-symbols-outlined" class="flight-icon">flight</md-icon>
+                                    </div>
+                                </div>
+
+                                <div flex="45" class="arrival-info">
+                                    <h4 class="airport-section-title">Arrival</h4>
+                                    <div class="airport-name">{{ctrl.flightViewModel.destination.name}} ({{ctrl.flightViewModel.destination.code}})</div>
+                                    <div class="airport-location">{{ctrl.flightViewModel.destination.city}}, {{ctrl.flightViewModel.destination.country}}</div>
+                                    <div class="time">{{ctrl.flightViewModel.arrivalTime}} ({{ctrl.timeZone | timezoneShort}})</div>
+                                    <div ng-if="ctrl.flightViewModel.arrivalTerminal" class="terminal">
+                                        <md-icon md-font-set="material-symbols-outlined">door_front</md-icon>
+                                        Terminal: {{ctrl.flightViewModel.arrivalTerminal}}
+                                    </div>
+                                </div>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+                </div>
+
+                <!-- Flight details -->
+                <div class="flight-details-card">
+                    <md-card class="md-whiteframe-2dp">
+                        <md-card-title>
+                            <md-card-title-text>
+                                <span class="md-headline">Flight Information</span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-divider></md-divider>
+                        <md-card-content>
+                            <md-list class="md-dense flight-details-list">
+                                <md-list-item>
+                                    <md-icon md-font-set="material-symbols-outlined">airlines</md-icon>
+                                    <p>Aircraft: <strong>{{ctrl.flightViewModel.aircraft}}</strong></p>
+                                </md-list-item>
+
+                                <md-list-item>
+                                    <md-icon md-font-set="material-symbols-outlined">airline_seat_recline_normal</md-icon>
+                                    <p>Service Classes: <strong>{{ctrl.getServiceClassesFormatted()}}</strong></p>
+                                </md-list-item>
+
+                                <md-list-item ng-if="ctrl.flightViewModel.isWetLease">
+                                    <md-icon md-font-set="material-symbols-outlined">handshake</md-icon>
+                                    <p>Wet Lease: <strong>Yes</strong></p>
+                                </md-list-item>
+
+                                <md-list-item ng-if="ctrl.flightViewModel.isCodeShare">
+                                    <md-icon md-font-set="material-symbols-outlined">share</md-icon>
+                                    <p>Codeshare Flight: <strong>Yes</strong></p>
+                                </md-list-item>
+
+                                <md-list-item ng-if="ctrl.flightViewModel.operatedBy">
+                                    <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
+                                    <p>Operated by: <strong>{{ctrl.flightViewModel.operatedBy.airlineName}} ({{ctrl.flightViewModel.operatedBy.carrierCode}} {{ctrl.flightViewModel.operatedBy.flightNumber}})</strong></p>
+                                </md-list-item>
+                            </md-list>
+                        </md-card-content>
+                    </md-card>
+                </div>
+
+                <!-- Codeshare section -->
+                <div ng-if="ctrl.hasCodeshares()" class="codeshare-card">
+                    <md-card class="md-whiteframe-2dp">
+                        <md-card-title>
+                            <md-card-title-text>
+                                <div layout="row" layout-align="space-between center">
+                                    <span class="md-headline">Codeshare Information</span>
+                                    <md-button class="md-icon-button" ng-click="ctrl.toggleCodeshares()" aria-label="Show Codeshares">
+                                        <md-icon md-font-set="material-symbols-outlined">
+                                            {{ctrl.showCodeshares ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}}
+                                        </md-icon>
+                                    </md-button>
+                                </div>
+                            </md-card-title-text>
+                        </md-card-title>
+
+                        <md-divider></md-divider>
+
+                        <md-card-content ng-if="ctrl.showCodeshares">
+                            <md-list class="md-dense codeshare-list">
+                                <md-list-item ng-repeat="codeshare in ctrl.flightViewModel.codeShares">
+                                    <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
+                                    <p>
+                                        <strong>{{codeshare.carrierCode}} {{codeshare.flightNumber}}</strong>
+                                        <span class="codeshare-service-type">({{codeshare.serviceType}})</span>
+                                        <span class="codeshare-service-classes">Classes: {{codeshare.serviceClasses.join(', ')}}</span>
+                                    </p>
+                                </md-list-item>
+                            </md-list>
+                        </md-card-content>
+                    </md-card>
+                </div>
+
+                <!-- Airport information -->
+                <div class="airport-info-section">
+                    <md-tabs md-dynamic-height md-border-bottom>
+                        <md-tab label="Departure Airport">
+                            <md-content class="md-padding airport-tab-content">
+                                <h3>{{ctrl.flightViewModel.origin.name}} ({{ctrl.flightViewModel.origin.code}})</h3>
+                                <div layout="row" layout-wrap>
+                                    <div flex="50" flex-xs="100" class="airport-info-item">
+                                        <md-icon md-font-set="material-symbols-outlined">location_on</md-icon>
+                                        <span>{{ctrl.flightViewModel.origin.city}}, {{ctrl.flightViewModel.origin.country}}</span>
+                                    </div>
+                                    <div flex="50" flex-xs="100" class="airport-info-item">
+                                        <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
+                                        <span>Timezone: {{ctrl.flightViewModel.origin.timezone}}</span>
+                                    </div>
+                                    <div flex="50" flex-xs="100" class="airport-info-item">
+                                        <md-icon md-font-set="material-symbols-outlined">height</md-icon>
+                                        <span>Elevation: {{ctrl.flightViewModel.origin.elevation}} ft</span>
+                                    </div>
+                                    <div flex="50" flex-xs="100" class="airport-info-item">
+                                        <md-icon md-font-set="material-symbols-outlined">explore</md-icon>
+                                        <span>Coordinates: {{ctrl.flightViewModel.origin.latitude.toFixed(4)}}, {{ctrl.flightViewModel.origin.longitude.toFixed(4)}}</span>
+                                    </div>
+                                </div>
+                            </md-content>
+                        </md-tab>
+                        <md-tab label="Arrival Airport">
+                            <md-content class="md-padding airport-tab-content">
+                                <h3>{{ctrl.flightViewModel.destination.name}} ({{ctrl.flightViewModel.destination.code}})</h3>
+                                <div layout="row" layout-wrap>
+                                    <div flex="50" flex-xs="100" class="airport-info-item">
+                                        <md-icon md-font-set="material-symbols-outlined">location_on</md-icon>
+                                        <span>{{ctrl.flightViewModel.destination.city}}, {{ctrl.flightViewModel.destination.country}}</span>
+                                    </div>
+                                    <div flex="50" flex-xs="100" class="airport-info-item">
+                                        <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
+                                        <span>Timezone: {{ctrl.flightViewModel.destination.timezone}}</span>
+                                    </div>
+                                    <div flex="50" flex-xs="100" class="airport-info-item">
+                                        <md-icon md-font-set="material-symbols-outlined">height</md-icon>
+                                        <span>Elevation: {{ctrl.flightViewModel.destination.elevation}} ft</span>
+                                    </div>
+                                    <div flex="50" flex-xs="100" class="airport-info-item">
+                                        <md-icon md-font-set="material-symbols-outlined">explore</md-icon>
+                                        <span>Coordinates: {{ctrl.flightViewModel.destination.latitude.toFixed(4)}}, {{ctrl.flightViewModel.destination.longitude.toFixed(4)}}</span>
+                                    </div>
+                                    <div flex="100" class="airport-info-item" ng-if="ctrl.flightViewModel.arrivalTerminal">
+                                        <md-icon md-font-set="material-symbols-outlined">door_front</md-icon>
+                                        <span>Terminal: {{ctrl.flightViewModel.arrivalTerminal}}</span>
+                                    </div>
+                                </div>
+                            </md-content>
+                        </md-tab>
+                    </md-tabs>
+                </div>
+            </div>
+        </div>
+    </md-dialog-content>
+
+    <md-dialog-actions layout="row">
+        <span flex></span>
+        <md-button class="md-primary" ng-click="ctrl.cancel()">Close</md-button>
+    </md-dialog-actions>
+</md-dialog>

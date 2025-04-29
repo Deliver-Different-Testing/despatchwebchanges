@@ -31,7 +31,7 @@
                 </md-menu>
 
                 <md-menu>
-                    <md-button aria-label="Open layout options menu" class="md-button-m3 md-icon-button"
+                    <md-button aria-label="Open layout options menu" class="md-icon-button"
                                ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined">grid_view</md-icon>
                         <md-tooltip md-direction="bottom">Layouts</md-tooltip>
@@ -68,7 +68,7 @@
 
                 <span style="font-size: medium;">{{ctrl.greetUser()}}</span>
 
-                <md-button aria-label="Menu" class="md-button-m3 md-icon-button" ng-mouseover="ctrl.toggleSidenav()">
+                <md-button aria-label="Menu" class="md-icon-button" ng-mouseover="ctrl.toggleSidenav()">
                     <md-icon md-font-set="material-symbols-outlined">menu</md-icon>
                 </md-button>
             </div>
@@ -86,13 +86,11 @@
                          r-directions="['bottom']" r-flex="true" resizable style="flex-basis: {{box.height}}">
 
                         <md-toolbar class="md-accent">
-                            <div class="md-toolbar-tools-m3">
-                                <div class="section section-start">
+                            <div class="md-toolbar-tools">
+                                <!--Icon-->
+                                <span class="material-symbols-outlined">{{ctrl.boxes[box.name].icon}}</span>
 
-                                    <!--Icon-->
-                                    <span class="material-symbols-outlined">{{ctrl.boxes[box.name].icon}}</span>
-
-                                    <span class="md-headline-title" flex style="margin-left: 8px;">
+                                <span class="md-headline-title" flex style="margin-left: 8px;">
 
                                     {{ctrl.boxes[box.name].title}}
 
@@ -109,120 +107,119 @@
                                         {{ctrl.isDeliveryJob() ? 'Agents' : 'Flights'}}
                                     </span>
                                 </span>
-                                </div>
 
-                                <div class="section section-end">
-                                    <md-button class="md-button-m3 md-icon-button md-primary" ng-click="ctrl.getData()"
-                                               ng-if="ctrl.boxes[box.name].showRefresh">
-                                        <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+                                <div flex></div>
+
+                                <md-button class="md-icon-button md-primary" ng-click="ctrl.getData()"
+                                           ng-if="ctrl.boxes[box.name].showRefresh">
+                                    <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+                                </md-button>
+
+                                <div class="row-overflow" layout="row"
+                                     ng-if="box.name === 'flightAgentDataTable' && ctrl.flightOptions.length > 0">
+                                    <md-button class="md-icon-button md-primary"
+                                               ng-click="ctrl.loadNextFlights()">
+                                        <md-tooltip md-direction="top">Next Available Flights</md-tooltip>
+                                        <md-icon md-font-set="material-symbols-outlined">next_week</md-icon>
                                     </md-button>
 
-                                    <div class="row-overflow" layout="row"
-                                         ng-if="box.name === 'flightAgentDataTable' && ctrl.flightOptions.length > 0">
-                                        <md-button class="md-button-m3 md-icon-button md-primary"
-                                                   ng-click="ctrl.loadNextFlights()">
-                                            <md-tooltip md-direction="top">Next Available Flights</md-tooltip>
-                                            <md-icon md-font-set="material-symbols-outlined">next_week</md-icon>
-                                        </md-button>
+                                    <md-button class="md-icon-button md-primary"
+                                               ng-click="ctrl.loadNextDayFlights()">
+                                        <md-tooltip md-direction="top">Next Day's Flights</md-tooltip>
+                                        <md-icon md-font-set="material-symbols-outlined">event_upcoming</md-icon>
+                                    </md-button>
+                                </div>
 
-                                        <md-button class="md-button-m3 md-icon-button md-primary"
-                                                   ng-click="ctrl.loadNextDayFlights()">
-                                            <md-tooltip md-direction="top">Next Day's Flights</md-tooltip>
-                                            <md-icon md-font-set="material-symbols-outlined">event_upcoming</md-icon>
-                                        </md-button>
-                                    </div>
+                                <!-- Detail Buttons-->
+                                <div class="row-overflow" layout="row"
+                                     ng-if="ctrl.currentJob && ctrl.boxes[box.name].showDetailButtons">
+                                    <md-fab-speed-dial class="md-scale" md-direction="left"
+                                                       md-open="jobDetailFabIsOpen"
+                                                       ng-class="{ 'md-hover-full': true }"
+                                                       ng-mouseenter="jobDetailFabIsOpen=true"
+                                                       ng-mouseleave="jobDetailFabIsOpen=false">
+                                        <md-fab-trigger>
+                                            <md-button aria-label="menu" class="md-fab md-mini md-primary">
+                                                <md-tooltip md-direction="bottom">Options</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">page_info</md-icon>
+                                            </md-button>
+                                        </md-fab-trigger>
 
-                                    <!-- Detail Buttons-->
-                                    <div class="row-overflow" layout="row"
-                                         ng-if="ctrl.currentJob && ctrl.boxes[box.name].showDetailButtons">
-                                        <md-fab-speed-dial class="md-scale" md-direction="left"
-                                                           md-open="jobDetailFabIsOpen"
-                                                           ng-class="{ 'md-hover-full': true }"
-                                                           ng-mouseenter="jobDetailFabIsOpen=true"
-                                                           ng-mouseleave="jobDetailFabIsOpen=false">
-                                            <md-fab-trigger>
-                                                <md-button aria-label="menu" class="md-fab md-mini md-primary">
-                                                    <md-tooltip md-direction="bottom">Options</md-tooltip>
-                                                    <md-icon md-font-set="material-symbols-outlined">page_info</md-icon>
-                                                </md-button>
-                                            </md-fab-trigger>
+                                        <md-fab-actions>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="ctrl.showAdditionalServicesMenu($event, ctrl.currentJob)">
+                                                <md-tooltip md-direction="bottom">Additional Services</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">
+                                                    add_shopping_cart
+                                                </md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="ctrl.createEvent($event, ctrl.currentJob)">
+                                                <md-tooltip md-direction="bottom">Add Task</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">edit_calendar
+                                                </md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="ctrl.openFileAttachmentDialog($event, ctrl.currentJob)">
+                                                <md-tooltip md-direction="bottom">Attachments</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">
+                                                    cloud_upload
+                                                </md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="ctrl.unlockJob(ctrl.currentJob)"
+                                                       ng-if="ctrl.currentJob && (ctrl.currentJob.locked && !ctrl.currentJob.invoiced)">
+                                                <md-tooltip md-direction="bottom">Unlock Job</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">lock_open</md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="ctrl.lockJob(ctrl.currentJob)"
+                                                       ng-if="ctrl.currentJob && (!ctrl.currentJob.locked && !ctrl.currentJob.invoiced)">
+                                                <md-tooltip md-direction="bottom">Lock Job</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">lock</md-icon>
+                                            </md-button>
+                                        </md-fab-actions>
+                                    </md-fab-speed-dial>
+                                </div>
 
-                                            <md-fab-actions>
-                                                <md-button class="md-fab md-raised md-mini"
-                                                           ng-click="ctrl.showAdditionalServicesMenu($event, ctrl.currentJob)">
-                                                    <md-tooltip md-direction="bottom">Additional Services</md-tooltip>
-                                                    <md-icon md-font-set="material-symbols-outlined">
-                                                        add_shopping_cart
-                                                    </md-icon>
-                                                </md-button>
-                                                <md-button class="md-fab md-raised md-mini"
-                                                           ng-click="ctrl.createEvent($event, ctrl.currentJob)">
-                                                    <md-tooltip md-direction="bottom">Add Task</md-tooltip>
-                                                    <md-icon md-font-set="material-symbols-outlined">edit_calendar
-                                                    </md-icon>
-                                                </md-button>
-                                                <md-button class="md-fab md-raised md-mini"
-                                                           ng-click="ctrl.openFileAttachmentDialog($event, ctrl.currentJob)">
-                                                    <md-tooltip md-direction="bottom">Attachments</md-tooltip>
-                                                    <md-icon md-font-set="material-symbols-outlined">
-                                                        cloud_upload
-                                                    </md-icon>
-                                                </md-button>
-                                                <md-button class="md-fab md-raised md-mini"
-                                                           ng-click="ctrl.unlockJob(ctrl.currentJob)"
-                                                           ng-if="ctrl.currentJob && (ctrl.currentJob.locked && !ctrl.currentJob.invoiced)">
-                                                    <md-tooltip md-direction="bottom">Unlock Job</md-tooltip>
-                                                    <md-icon md-font-set="material-symbols-outlined">lock_open</md-icon>
-                                                </md-button>
-                                                <md-button class="md-fab md-raised md-mini"
-                                                           ng-click="ctrl.lockJob(ctrl.currentJob)"
-                                                           ng-if="ctrl.currentJob && (!ctrl.currentJob.locked && !ctrl.currentJob.invoiced)">
-                                                    <md-tooltip md-direction="bottom">Lock Job</md-tooltip>
-                                                    <md-icon md-font-set="material-symbols-outlined">lock</md-icon>
-                                                </md-button>
-                                            </md-fab-actions>
-                                        </md-fab-speed-dial>
-                                    </div>
+                                <div class="row-overflow" id="box-{{box.name}}-{{$index}}" layout="row"
+                                     ng-if="ctrl.boxes[box.name].showSearch">
+                                    <md-button class="md-icon-button"
+                                               ng-click="ctrl.openSearch(box.name, $index)">
+                                        <md-icon md-font-set="material-symbols-outlined"
+                                                 ng-if="!ctrl.showInput[box.name + '-' + $index]">search
+                                        </md-icon>
+                                        <md-icon md-font-set="material-symbols-outlined"
+                                                 ng-if="ctrl.showInput[box.name + '-' + $index]">close
+                                        </md-icon>
+                                    </md-button>
 
-                                    <div class="row-overflow" id="box-{{box.name}}-{{$index}}" layout="row"
-                                         ng-if="ctrl.boxes[box.name].showSearch">
-                                        <md-button class="md-button-m3 md-icon-button"
-                                                   ng-click="ctrl.openSearch(box.name, $index)">
-                                            <md-icon md-font-set="material-symbols-outlined"
-                                                     ng-if="!ctrl.showInput[box.name + '-' + $index]">search
-                                            </md-icon>
-                                            <md-icon md-font-set="material-symbols-outlined"
-                                                     ng-if="ctrl.showInput[box.name + '-' + $index]">close
-                                            </md-icon>
-                                        </md-button>
-
-                                        <md-autocomplete
-                                                md-autoselect
-                                                md-escape-options="clear"
-                                                md-item-text="item.text"
-                                                md-items="item in ctrl.jobRecordSearch(ctrl.jobRecordSearchText)"
-                                                md-min-length="1"
-                                                md-search-text="ctrl.jobRecordSearchText"
-                                                md-selected-item="ctrl.selectedJobRecord"
-                                                md-selected-item-change="ctrl.jobRecordSelected(item.id)"
-                                                ng-if="ctrl.showInput[box.name + '-' + $index]"
-                                                placeholder="Search by job number...">
-                                            <md-item-template>
+                                    <md-autocomplete
+                                            md-autoselect
+                                            md-escape-options="clear"
+                                            md-item-text="item.text"
+                                            md-items="item in ctrl.jobRecordSearch(ctrl.jobRecordSearchText)"
+                                            md-min-length="1"
+                                            md-search-text="ctrl.jobRecordSearchText"
+                                            md-selected-item="ctrl.selectedJobRecord"
+                                            md-selected-item-change="ctrl.jobRecordSelected(item.id)"
+                                            ng-if="ctrl.showInput[box.name + '-' + $index]"
+                                            placeholder="Search by job number...">
+                                        <md-item-template>
                                             <span md-highlight-flags="^i"
                                                   md-highlight-text="ctrl.jobRecordSearchText">{{item.text}}</span>
-                                            </md-item-template>
-                                            <md-not-found>
-                                                No jobs matching "{{ctrl.jobRecordSearchText}}" were found. Please check the
-                                                POD page.
-                                            </md-not-found>
-                                        </md-autocomplete>
-                                    </div>
+                                        </md-item-template>
+                                        <md-not-found>
+                                            No jobs matching "{{ctrl.jobRecordSearchText}}" were found. Please check the
+                                            POD page.
+                                        </md-not-found>
+                                    </md-autocomplete>
+                                </div>
 
-                                    <div class="box-handle md-button-m3 md-icon-button">
-                                        <md-icon class="md-drag-button" md-font-set="material-symbols-outlined">
-                                            drag_indicator
-                                        </md-icon>
-                                    </div>
+                                <div class="box-handle md-icon-button">
+                                    <md-icon class="md-drag-button" md-font-set="material-symbols-outlined">
+                                        drag_indicator
+                                    </md-icon>
                                 </div>
 
                             </div>

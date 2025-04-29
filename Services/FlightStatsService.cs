@@ -10,6 +10,7 @@ using System.Web;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.FlightStats;
+using DespatchWeb.Models.Response;
 using Microsoft.AspNetCore.Http;
 using Serilog;
 
@@ -88,183 +89,231 @@ public class FlightStatsService(
         return createAlertResponse.Rule?.Id;
     }
 
-public async Task<List<FlightViewModel>> GetFlightsAsync(
-    int jobId,
-    DateTime? departureDateTime = null,
-    int? airlineId = null,
-    int flightBuffer = 0,
-    string codeType = null,
-    List<string> extendedOptions = null,
-    int maxResults = 25)
-{
-    var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-    Log.Information("Flight search started for job {JobId} with departure {DepartureDateTime}",
-        jobId, departureDateTime);
-
-    var (destinationAirportCode, departureAirportCode) = await repository.GetAirportCodesByJobIdAsync(jobId);
-    var activeAirlines = await repository.GetActiveAirlineOptionsAsync();
-    var activeAirlineCodes = activeAirlines.Select(x => x.Text).ToList();
-
-    ArgumentException.ThrowIfNullOrEmpty(departureAirportCode);
-    ArgumentException.ThrowIfNullOrEmpty(destinationAirportCode);
-
-    var tenantTime = infoService.GetCurrentTenantTime();
-
-    var flightsFrom = departureDateTime == null || departureDateTime < tenantTime
-        ? tenantTime
-        : departureDateTime;
-    flightsFrom = flightsFrom.Value.AddMinutes(flightBuffer);
-
-    var (year, month, day, hour, minute) = SplitDate(flightsFrom.Value);
-
-    var relativeUrl =
-        $"json/firstflightout/{departureAirportCode}/to/{destinationAirportCode}/leaving_after/{year}/{month}/{day}/{hour}/{minute}";
-
-    var query = HttpUtility.ParseQueryString(string.Empty);
-    query["appId"] = _appId;
-    query["appKey"] = _appKey;
-    query["payloadType"] = "cargo";
-    query["maxResults"] = maxResults.ToString();
-    query["includeCodeshares"] = "false";
-
-    // Filter by specific airline if airlineId is provided
-    string selectedAirlineCode = null;
-    if (airlineId is > 0)
+    public async Task<FlightPaginationResult> GetFlightsAsync(
+        int jobId,
+        DateTime? departureDateTime = null,
+        int? airlineId = null,
+        int? departureAirportId = null,
+        int flightBuffer = 0,
+        string codeType = null,
+        List<string> extendedOptions = null,
+        int pageSize = 25,
+        int pageIndex = 0)
     {
-        var selectedAirline = activeAirlines.FirstOrDefault(a => a.Id == airlineId.Value);
-        if (selectedAirline != null)
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        Log.Information("Flight search started for job {JobId} with departure {DepartureDateTime}, page {PageIndex}",
+            jobId, departureDateTime, pageIndex);
+
+        var (destinationAirportCode, departureAirportCode) = await repository.GetAirportCodesByJobIdAsync(jobId);
+        if (departureAirportId.HasValue) departureAirportCode = await repository.GetSingleAirportCodeByIdAsync(departureAirportId.Value);
+
+        var activeAirlines = await repository.GetActiveAirlineOptionsAsync();
+        var activeAirlineCodes = activeAirlines.Select(x => x.Text).ToList();
+
+        ArgumentException.ThrowIfNullOrEmpty(departureAirportCode);
+        ArgumentException.ThrowIfNullOrEmpty(destinationAirportCode);
+
+        var tenantTime = infoService.GetCurrentTenantTime();
+
+        var flightsFrom = departureDateTime == null || departureDateTime < tenantTime
+            ? tenantTime
+            : departureDateTime;
+        flightsFrom = flightsFrom.Value.AddMinutes(flightBuffer);
+
+        var (year, month, day, hour, minute) = SplitDate(flightsFrom.Value);
+
+        var relativeUrl =
+            $"json/firstflightout/{departureAirportCode}/to/{destinationAirportCode}/leaving_after/{year}/{month}/{day}/{hour}/{minute}";
+
+        var query = HttpUtility.ParseQueryString(string.Empty);
+        query["appId"] = _appId;
+        query["appKey"] = _appKey;
+        query["payloadType"] = "cargo";
+        query["maxResults"] =
+            (pageSize * (pageIndex + 1)).ToString(); // Request enough results for all pages up to current
+        query["includeCodeshares"] = "false";
+        query["maxConnections"] = "1";
+
+
+        // Filter by specific airline if airlineId is provided
+        if (airlineId is > 0)
         {
-            selectedAirlineCode = selectedAirline.Text;
-            Log.Debug("Filtering by specific airline: {Carrier}", selectedAirlineCode);
-            query["includeAirlines"] = selectedAirlineCode;
+            var selectedAirline = activeAirlines.FirstOrDefault(a => a.Id == airlineId.Value);
+            if (selectedAirline != null)
+            {
+                var selectedAirlineCode = selectedAirline.Text;
+                Log.Debug("Filtering by specific airline: {Carrier}", selectedAirlineCode);
+                query["includeAirlines"] = selectedAirlineCode;
+            }
         }
-    }
-    else if (activeAirlines.Count != 0)
-    {
-        var combinedAirlines = string.Join(",", activeAirlineCodes);
-        Log.Debug("Adding carrier filters: {Carriers}", combinedAirlines);
-        query["includeAirlines"] = combinedAirlines;
-    }
-
-    if (!string.IsNullOrEmpty(codeType))
-    {
-        query["codeType"] = codeType;
-    }
-
-    if (extendedOptions != null && extendedOptions.Count != 0)
-    {
-        var combinedOptions = string.Join(",", extendedOptions);
-        Log.Debug("Adding extended options: {Options}", combinedOptions);
-        query.Add("extendedOptions", combinedOptions);
-    }
-
-    // Construct the final URI
-    var fullUrl = $"{ConnectionsBaseUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
-    var uriBuilder = new UriBuilder(fullUrl)
-    {
-        Query = query.ToString() ?? string.Empty
-    };
-
-    var uri = uriBuilder.Uri;
-    Log.Debug("FlightRequest: {Uri}", uri);
-
-    var response = await httpClient.GetAsync(uri);
-
-    Log.Debug("FlightStats API call completed in {ElapsedMilliseconds}ms with status {StatusCode}",
-        stopwatch.ElapsedMilliseconds, response.StatusCode);
-
-    var content = await response.Content.ReadAsStringAsync();
-    var flightStatusResponse = JsonSerializer.Deserialize<FlightConnectionsResponse>(content);
-
-    if (flightStatusResponse?.Connections == null)
-    {
-        Log.Warning("No connections found for flight search");
-        return [];
-    }
-
-    // Pre-filter connections to avoid processing unnecessary data
-    var validConnections = flightStatusResponse.Connections
-        .Where(conn => conn.ScheduledFlight.Count != 0 &&
-                        conn.ScheduledFlight.Count <= 2 &&
-                        conn.ScheduledFlight.Exists(x => activeAirlineCodes.Contains(x.CarrierFsCode)) &&
-                        (airlineId is not > 0 ||
-                        conn.ScheduledFlight.Exists(x => x.CarrierFsCode == selectedAirlineCode)))
-        .ToList();
-
-    Log.Debug("Filtered down to {ValidConnectionsCount} valid connections out of {TotalConnectionsCount}",
-        validConnections.Count, flightStatusResponse.Connections.Count);
-
-    if (validConnections.Count == 0) return [];
-
-    var carrierCodes = validConnections
-        .SelectMany(conn => conn.ScheduledFlight)
-        .Select(flight => flight.CarrierFsCode)
-        .Distinct()
-        .ToList();
-
-    var carrierRatesTask = repository.GetBatchCarrierFlightRatesByJobIdAsync(
-        jobId,
-        carrierCodes,
-        flightsFrom.Value);
-
-    var airportsLookup = flightStatusResponse.Appendix?.Airports?
-        .ToDictionary(a => a.Fs, a => a) ?? new Dictionary<string, Airport>();
-
-    var airlinesLookup = flightStatusResponse.Appendix?.Airlines?
-        .ToDictionary(a => a.Fs, a => a) ?? new Dictionary<string, Airline>();
-
-    var equipmentLookup = flightStatusResponse.Appendix?.Equipments?
-        .ToDictionary(e => e.Iata, e => e) ?? new Dictionary<string, Equipment>();
-
-    // Await the carrier rates
-    var carrierRates = await carrierRatesTask;
-
-    // Process flights in parallel
-    var flightOptions = validConnections.Select(conn =>
-    {
-        var firstFlight = conn.ScheduledFlight.First();
-        var lastFlight = conn.ScheduledFlight.Last();
-
-        decimal amount = 0;
-        if (carrierRates.TryGetValue(firstFlight.CarrierFsCode, out var rate))
+        else if (activeAirlines.Count != 0)
         {
-            amount = rate;
+            var combinedAirlines = string.Join(",", activeAirlineCodes);
+            Log.Debug("Adding carrier filters: {Carriers}", combinedAirlines);
+            query["includeAirlines"] = combinedAirlines;
         }
 
-        airportsLookup.TryGetValue(firstFlight.DepartureAirportFsCode, out var departureAirport);
-        airportsLookup.TryGetValue(lastFlight.ArrivalAirportFsCode, out var arrivalAirport);
-        airlinesLookup.TryGetValue(firstFlight.CarrierFsCode, out var airline);
-        equipmentLookup.TryGetValue(firstFlight.FlightEquipmentIataCode, out var equipment);
-
-        return new FlightViewModel
+        if (!string.IsNullOrEmpty(codeType))
         {
-            Airline = airline?.Name,
-            FlightNumber = firstFlight.CarrierFsCode + firstFlight.FlightNumber,
-            DepartureTime = firstFlight.DepartureTime,
-            ArrivalTime = lastFlight.ArrivalTime,
-            DepartureAirport = firstFlight.DepartureAirportFsCode,
-            ArrivalAirport = lastFlight.ArrivalAirportFsCode,
-            Duration = lastFlight.ArrivalTime - firstFlight.DepartureTime,
-            Stops = conn.ScheduledFlight.Count - 1,
-            Aircraft = equipment?.Name,
-            ServiceClasses = firstFlight.ServiceClasses,
-            IsCodeShare = firstFlight.IsCodeShare,
-            Amount = amount,
-            CodeShareAirline = firstFlight.IsCodeShare ? firstFlight.CarrierFsCode : null,
-            AirlineId = activeAirlines.FirstOrDefault(x => x.Text == firstFlight.CarrierFsCode)?.Id ?? 0,
-            DepartureTimeZone = departureAirport?.TimeZoneRegionName,
-            ArrivalTimeZone = arrivalAirport?.TimeZoneRegionName
+            query["codeType"] = codeType;
+        }
+
+        if (extendedOptions != null && extendedOptions.Count != 0)
+        {
+            var combinedOptions = string.Join(",", extendedOptions);
+            Log.Debug("Adding extended options: {Options}", combinedOptions);
+            query.Add("extendedOptions", combinedOptions);
+        }
+
+        // Construct the final URI
+        var fullUrl = $"{ConnectionsBaseUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
+        var uriBuilder = new UriBuilder(fullUrl)
+        {
+            Query = query.ToString() ?? string.Empty
         };
-    }).OrderBy(flight => flight.DepartureTime).ToList();
 
-    stopwatch.Stop();
-    Log.Information("Flight search completed in {ElapsedMilliseconds}ms, found {FlightCount} flights",
-        stopwatch.ElapsedMilliseconds, flightOptions.Count);
+        var uri = uriBuilder.Uri;
+        Log.Debug("FlightRequest: {Uri}", uri);
 
-    return flightOptions;
-}
+        var response = await httpClient.GetAsync(uri);
+
+        Log.Debug("FlightStats API call completed in {ElapsedMilliseconds}ms with status {StatusCode}",
+            stopwatch.ElapsedMilliseconds, response.StatusCode);
+
+        var content = await response.Content.ReadAsStringAsync();
+        var flightStatusResponse = JsonSerializer.Deserialize<FlightConnectionsResponse>(content);
+
+        if (flightStatusResponse?.Connections == null)
+        {
+            Log.Warning("No connections found for flight search");
+            return new FlightPaginationResult
+                { Items = [], TotalCount = 0, PageIndex = pageIndex, PageSize = pageSize };
+        }
+
+        // Pre-filter connections to avoid processing unnecessary data
+        var connections = flightStatusResponse.Connections;
+
+        Log.Debug("Filtered down to {ValidConnectionsCount} valid connections out of {TotalConnectionsCount}",
+            connections.Count, flightStatusResponse.Connections.Count);
+
+        if (connections.Count == 0)
+            return new FlightPaginationResult
+                { Items = [], TotalCount = 0, PageIndex = pageIndex, PageSize = pageSize };
+
+        var carrierCodes = connections
+            .SelectMany(conn => conn.ScheduledFlight)
+            .Select(flight => flight.CarrierFsCode)
+            .Distinct()
+            .ToList();
+
+        var carrierRatesTask = repository.GetBatchCarrierFlightRatesByJobIdAsync(
+            jobId,
+            carrierCodes,
+            flightsFrom.Value);
+
+        var airportsLookup = flightStatusResponse.Appendix?.Airports?
+            .ToDictionary(a => a.Fs, a => a) ?? new Dictionary<string, Airport>();
+
+        var airlinesLookup = flightStatusResponse.Appendix?.Airlines?
+            .ToDictionary(a => a.Fs, a => a) ?? new Dictionary<string, Airline>();
+
+        var equipmentLookup = flightStatusResponse.Appendix?.Equipments?
+            .ToDictionary(e => e.Iata, e => e) ?? new Dictionary<string, Equipment>();
+
+        // Await the carrier rates
+        var carrierRates = await carrierRatesTask;
+
+        // Process flights in parallel
+        var flightOptions = connections.Select(conn =>
+        {
+            var firstFlight = conn.ScheduledFlight.First();
+            var lastFlight = conn.ScheduledFlight.Last();
+
+            decimal amount = 0;
+            if (carrierRates.TryGetValue(firstFlight.CarrierFsCode, out var rate))
+            {
+                amount = rate;
+            }
+
+            airportsLookup.TryGetValue(firstFlight.DepartureAirportFsCode, out var departureAirport);
+            airportsLookup.TryGetValue(lastFlight.ArrivalAirportFsCode, out var arrivalAirport);
+            airlinesLookup.TryGetValue(firstFlight.CarrierFsCode, out var airline);
+            equipmentLookup.TryGetValue(firstFlight.FlightEquipmentIataCode, out var equipment);
+
+            return new FlightViewModel
+            {
+                Airline = airline?.Name,
+                FlightNumber = firstFlight.CarrierFsCode + firstFlight.FlightNumber,
+                DepartureTime = firstFlight.DepartureTime,
+                ArrivalTime = lastFlight.ArrivalTime,
+                DepartureAirport = firstFlight.DepartureAirportFsCode,
+                ArrivalAirport = lastFlight.ArrivalAirportFsCode,
+                Duration = lastFlight.ArrivalTime - firstFlight.DepartureTime,
+                Stops = conn.ScheduledFlight.Count - 1,
+                Aircraft = equipment?.Name,
+                ServiceClasses = firstFlight.ServiceClasses,
+                IsCodeShare = firstFlight.IsCodeShare,
+                Amount = amount,
+                CodeShareAirline = firstFlight.IsCodeShare ? firstFlight.CarrierFsCode : null,
+                AirlineId = activeAirlines.FirstOrDefault(x => x.Text == firstFlight.CarrierFsCode)?.Id ?? 0,
+                DepartureTimeZone = departureAirport?.TimeZoneRegionName,
+                ArrivalTimeZone = arrivalAirport?.TimeZoneRegionName
+            };
+        }).OrderBy(flight => flight.DepartureTime).ToList();
+
+        var totalItems = flightOptions.Count;
+        var lastItem = flightOptions.LastOrDefault();
+        var lastDepartureTime = lastItem?.DepartureTime;
+
+        var pagedFlights = flightOptions
+            .Skip(pageIndex * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        stopwatch.Stop();
+        Log.Information("Flight search completed in {ElapsedMilliseconds}ms, found {FlightCount} flights",
+            stopwatch.ElapsedMilliseconds, flightOptions.Count);
+
+        return new FlightPaginationResult
+        {
+            Items = pagedFlights,
+            TotalCount = totalItems,
+            PageIndex = pageIndex,
+            PageSize = pageSize,
+            LastDepartureTime = lastDepartureTime
+        };
+    }
 
     public async Task<ScheduledFlight> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,
+        DateTime departureTime)
+    {
+        var flightResponse = await FetchFlightDataAsync(completeFlightNumber, departureTime);
+        return flightResponse.ScheduledFlights.FirstOrDefault();
+    }
+
+    public async Task<FlightDetailsDialogViewModel> GetFlightDetailByFlightNumberDetailDialog(string completeFlightNumber,
+        DateTime departureTime)
+    {
+        var flightResponse = await FetchFlightDataAsync(completeFlightNumber, departureTime);
+
+        // Get the main scheduled flight
+        var flight = flightResponse.ScheduledFlights.First();
+
+        // Get reference data from the appendix
+        var airline = flightResponse.Appendix.Airlines.FirstOrDefault(a => a.Fs == flight.CarrierFsCode);
+        var departureAirport =
+            flightResponse.Appendix.Airports.FirstOrDefault(a => a.Fs == flight.DepartureAirportFsCode);
+        var arrivalAirport = flightResponse.Appendix.Airports.FirstOrDefault(a => a.Fs == flight.ArrivalAirportFsCode);
+        var equipment =
+            flightResponse.Appendix.Equipments.FirstOrDefault(e => e.Iata == flight.FlightEquipmentIataCode);
+
+        // Map to view model
+        var viewModel = MapToViewModel(flight, airline, departureAirport, arrivalAirport, equipment,
+            flightResponse.Appendix);
+        return viewModel;
+    }
+
+    private async Task<FlightSchedulesResponse> FetchFlightDataAsync(string completeFlightNumber,
         DateTime departureTime)
     {
         if (string.IsNullOrEmpty(completeFlightNumber))
@@ -274,13 +323,10 @@ public async Task<List<FlightViewModel>> GetFlightsAsync(
         var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
         var (year, month, day, _, _) = SplitDate(departureTime);
 
-
         var relativeUrl = $"json/flight/{carrierCode}/{flightNumber}/departing/{year}/{month}/{day}";
-
         var query = HttpUtility.ParseQueryString(string.Empty);
         query["appId"] = _appId;
         query["appKey"] = _appKey;
-
 
         var fullUrl = $"{SchedulesBaseUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
         var uriBuilder = new UriBuilder(fullUrl)
@@ -292,16 +338,16 @@ public async Task<List<FlightViewModel>> GetFlightsAsync(
         Log.Debug("FlightRequest: {Uri}", uri);
 
         var response = await httpClient.GetAsync(uri);
-
         if (!response.IsSuccessStatusCode)
             throw new Exception($"Failed to retrieve flight information: {response.ReasonPhrase}");
 
         Log.Debug("FlightService StatusCode: {ResponseStatusCode}", response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
-        var flightStatusResponse = JsonSerializer.Deserialize<FlightSchedulesResponse>(content);
+        var flightResponse = JsonSerializer.Deserialize<FlightSchedulesResponse>(content);
+        ArgumentNullException.ThrowIfNull(flightResponse);
 
-        return flightStatusResponse.ScheduledFlights.FirstOrDefault();
+        return flightResponse;
     }
 
     private static (int year, int month, int day, int hour, int min) SplitDate(DateTime effectiveDateTime) =>
@@ -310,4 +356,116 @@ public async Task<List<FlightViewModel>> GetFlightsAsync(
 
     private static (string carrierCode, string flightNumber) SplitFlightCode(string completeFlightNumber) =>
         (completeFlightNumber?[..2], completeFlightNumber?[2..]);
+
+    private static FlightDetailsDialogViewModel MapToViewModel(
+            ScheduledFlight flight,
+            Airline airline,
+            Airport departureAirport,
+            Airport arrivalAirport,
+            Equipment equipment,
+            Appendix appendix)
+        {
+            if (flight == null) return null;
+
+            // Create airport view models
+            var origin = new AirportViewModel
+            {
+                Code = departureAirport?.Iata ?? "Unknown",
+                Name = departureAirport?.Name ?? "Unknown Airport",
+                City = departureAirport?.City ?? "Unknown",
+                Country = departureAirport?.CountryName ?? "Unknown",
+                Timezone = departureAirport?.TimeZoneRegionName ?? "Unknown",
+                Elevation = departureAirport?.ElevationFeet ?? 0,
+                Latitude = departureAirport?.Latitude ?? 0,
+                Longitude = departureAirport?.Longitude ?? 0
+            };
+
+            var destination = new AirportViewModel
+            {
+                Code = arrivalAirport?.Iata ?? "Unknown",
+                Name = arrivalAirport?.Name ?? "Unknown Airport",
+                City = arrivalAirport?.City ?? "Unknown",
+                Country = arrivalAirport?.CountryName ?? "Unknown",
+                Timezone = arrivalAirport?.TimeZoneRegionName ?? "Unknown",
+                Elevation = arrivalAirport?.ElevationFeet ?? 0,
+                Latitude = arrivalAirport?.Latitude ?? 0,
+                Longitude = arrivalAirport?.Longitude ?? 0
+            };
+
+            // Calculate flight duration
+            var duration = flight.ArrivalTime - flight.DepartureTime;
+            var hours = (int)duration.TotalHours;
+            var minutes = duration.Minutes;
+            var durationFormatted = $"{hours}h {minutes}m";
+
+            // Format date/times
+            var departureTimeFormatted = flight.DepartureTime.ToString("MMM d, yyyy HH:mm:ss");
+            var arrivalTimeFormatted = flight.ArrivalTime.ToString("MMM d, yyyy HH:mm:ss");
+
+            // Create operator view model if available
+            OperatorViewModel operatedBy = null;
+            if (flight.Operator != null)
+            {
+                var operatorAirline = appendix.Airlines.FirstOrDefault(a => a.Fs == flight.Operator.CarrierFsCode);
+                operatedBy = new OperatorViewModel
+                {
+                    CarrierCode = flight.Operator.CarrierFsCode,
+                    FlightNumber = flight.Operator.FlightNumber,
+                    AirlineName = operatorAirline?.Name ?? flight.Operator.CarrierFsCode,
+                    ServiceType = flight.Operator.ServiceType
+                };
+            }
+
+            // Create codeshare view models if available
+            CodeShareViewModel[] codeShares = null;
+            if (flight.CodeShares != null && flight.CodeShares.Count != 0)
+            {
+                codeShares = flight.CodeShares.Select(cs => new CodeShareViewModel
+                {
+                    CarrierCode = cs.CarrierFsCode,
+                    FlightNumber = cs.FlightNumber,
+                    ServiceType = cs.ServiceType,
+                    ServiceClasses = cs.ServiceClasses?.ToArray() ?? []
+                }).ToArray();
+            }
+
+            // Create aircraft name
+            var aircraftName = equipment?.Name ?? "Unknown";
+            var aircraftCode = flight.FlightEquipmentIataCode ?? "N/A";
+            var aircraftFormatted = $"{aircraftName} ({aircraftCode})";
+
+            // Build and return the view model
+            return new FlightDetailsDialogViewModel
+            {
+                FlightNumber = flight.FlightNumber,
+                CarrierCode = flight.CarrierFsCode,
+                AirlineName = airline?.Name ?? flight.CarrierFsCode,
+                ServiceType = flight.ServiceType,
+
+                Origin = origin,
+                Destination = destination,
+                DepartureTime = departureTimeFormatted,
+                ArrivalTime = arrivalTimeFormatted,
+                Duration = durationFormatted,
+                Stops = flight.Stops,
+                IsNonStop = flight.Stops == 0,
+                ArrivalTerminal = flight.ArrivalTerminal,
+
+                Aircraft = aircraftFormatted,
+                AircraftType = equipment != null
+                    ? equipment.Jet ? "Jet" : equipment.TurboProp ? "Turboprop" : "Other"
+                    : "Unknown",
+
+                ServiceClasses = flight.ServiceClasses?.ToArray() ?? [],
+                IsCodeShare = flight.IsCodeShare,
+                IsWetLease = flight.IsWetLease,
+
+                OperatedBy = operatedBy,
+                CodeShares = codeShares,
+
+                FlightId = $"{flight.CarrierFsCode}{flight.FlightNumber}",
+                ReferenceCode = flight.ReferenceCode
+            };
+        }
+
 }
