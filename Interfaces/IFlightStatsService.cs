@@ -24,6 +24,6 @@ public interface IFlightStatsService
     Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
         string departureAirportCode);
 
-    Task<FlightDetailsDialogViewModel> GetFlightDetailByFlightNumberDetailDialog(string completeFlightNumber,
-        DateTime departureTime);
+    Task<List<FlightDetailsDialogViewModel>> GetFlightDetailByFlightNumberDetailDialog(
+        string completeFlightNumber, DateTime departureTime);
 }

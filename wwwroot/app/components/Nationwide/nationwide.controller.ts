@@ -23,6 +23,7 @@ import {JobStatus} from "../../enums/job-status.enum";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
 import {JobProperty} from "../../enums/job-property.enum";
 import FlightDetailsDialogService from "../dialogs/flight-details-dialog/flight-details-dialog.service";
+import NavigationService from '../../services/navigation.service';
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -42,7 +43,8 @@ class NationwideControl extends BaseController {
         'additionalServicesDialogService',
         'jobContextMenuService',
         '$interval',
-        'flightDetailsDialogService'
+        'flightDetailsDialogService',
+        'navigationService'
     ];
 
     readonly nationwidePageId: number = AppPages.Domestic;
@@ -139,7 +141,8 @@ class NationwideControl extends BaseController {
         private additionalServicesDialogService: AdditionalServicesDialogService,
         private jobContextMenuService: JobContextMenuService,
         private $interval: angular.IIntervalService,
-        private flightDetailsDialogService: FlightDetailsDialogService
+        private flightDetailsDialogService: FlightDetailsDialogService,
+        private navigationService: NavigationService,
     ) {
         super();
 
@@ -1836,6 +1839,10 @@ class NationwideControl extends BaseController {
         const spaceIndex = text.indexOf(' ');
         if (spaceIndex === -1) return text;
         return text.substring(0, spaceIndex + 1);
+    }
+
+    async openHubUrl() {
+        await this.navigationService.openHubUrl();
     }
 }
 

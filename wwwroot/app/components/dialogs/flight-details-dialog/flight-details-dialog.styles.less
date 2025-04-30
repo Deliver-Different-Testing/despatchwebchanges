@@ -1,24 +1,42 @@
+@import "../../../../css/variables.less";
+
 .flight-details-dialog {
   min-width: 80%;
   max-width: 900px;
 
+  .connection-tabs {
+    background-color: #fff;
+
+    md-tab-item:focus {
+      outline: none;
+    }
+  }
+
+  .connection-summary {
+    margin-bottom: 16px;
+
+    .connection-divider {
+      margin: 0 8px;
+      color: rgba(0, 0, 0, 0.38);
+    }
+
+    md-icon {
+      margin: 0 4px;
+    }
+  }
+
+  // Loading state
   .loading-container {
-    padding: 32px;
+    padding: 24px;
 
     .loading-text {
       margin-left: 16px;
-      color: rgba(0, 0, 0, 0.54);
     }
   }
 
   .error-container, .no-data-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 32px;
+    padding: 24px;
     text-align: center;
-    color: rgba(0, 0, 0, 0.54);
 
     md-icon {
       font-size: 48px;
@@ -28,70 +46,16 @@
     }
   }
 
-  .error-container {
-    md-icon {
-      color: #F44336;
-    }
-  }
-
-  .popup-icon {
-    margin-right: 8px;
-  }
-
-  .flight-header, .flight-route-card, .flight-details-card, .codeshare-card, .airport-info-section {
-    margin-bottom: 16px;
-  }
-
-  .airline-info {
-    .flight-number-container {
-      display: flex;
-      flex-direction: column;
-
-      .airline-name {
-        font-size: 16px;
-        font-weight: 500;
-      }
-
-      .flight-number {
-        font-size: 20px;
-        font-weight: bold;
-      }
-    }
-
-    .service-type {
-      margin-top: 8px;
-    }
-  }
-
-  .flight-status {
-    .non-stop {
-      background-color: #4CAF50;
-      color: white;
-    }
-
-    .with-stops {
-      background-color: #FF9800;
-      color: white;
-    }
-  }
-
+  // Flight route section
   .flight-route {
-    padding: 16px 0;
+    padding: 8px 0;
 
-    .airport-section-title {
-      margin-top: 0;
-      color: rgba(0, 0, 0, 0.54);
-      font-weight: 500;
-    }
-
-    .airport-name {
-      font-size: 18px;
-      font-weight: 500;
-    }
-
-    .airport-location, .time {
+    .airport-name, .time {
       margin-top: 4px;
-      color: rgba(0, 0, 0, 0.87);
+    }
+
+    .airport-location {
+      margin-top: 2px;
     }
 
     .terminal {
@@ -108,16 +72,17 @@
     }
   }
 
+  // Flight divider
   .flight-divider {
     position: relative;
+    padding: 10px;
 
     .duration-badge {
-      background-color: #E0E0E0;
+      background-color: rgba(0, 0, 0, 0.05);
       padding: 4px 8px;
       border-radius: 16px;
       font-size: 12px;
       margin-bottom: 8px;
-      z-index: 1;
       display: flex;
       align-items: center;
 
@@ -132,7 +97,7 @@
     .flight-line {
       position: relative;
       height: 2px;
-      background-color: #1976D2;
+      background-color: @primary-color;
       width: 100%;
 
       .flight-icon {
@@ -142,51 +107,42 @@
         width: 24px;
         top: -11px;
         left: calc(50% - 12px);
-        color: #1976D2;
+        color: @primary-color;
         transform: rotate(90deg);
       }
     }
   }
 
-  .flight-details-list, .codeshare-list {
-    md-icon {
-      margin-right: 16px;
-      color: rgba(0, 0, 0, 0.54);
-    }
-
-    p {
-      margin: 0;
-    }
-  }
-
-  .codeshare-list {
-    .codeshare-service-type {
-      margin-left: 8px;
-      color: rgba(0, 0, 0, 0.54);
-    }
-
-    .codeshare-service-classes {
-      margin-left: 8px;
-      font-size: 12px;
-      color: rgba(0, 0, 0, 0.54);
-    }
-  }
-
+  // Airport tab content
   .airport-tab-content {
-    h3 {
+    h3.md-title {
       margin-top: 0;
       margin-bottom: 16px;
     }
+  }
 
-    .airport-info-item {
-      display: flex;
-      align-items: center;
-      margin-bottom: 12px;
-
-      md-icon {
-        margin-right: 8px;
-        color: rgba(0, 0, 0, 0.54);
-      }
+  // Airline info in header
+  .airline-info {
+    .flight-number {
+      line-height: 1.2;
     }
+  }
+
+  // Dialog actions
+  md-dialog-actions {
+    padding: 8px 16px;
+  }
+
+  // Remove unwanted margin on lists
+  md-list-item .md-list-item-text h3,
+  md-list-item .md-list-item-text p {
+    line-height: 1.2;
+  }
+
+  // Fix spacing in list items
+  .md-2-line > .md-avatar-icon,
+  .md-2-line > .md-no-style > .md-avatar-icon {
+    margin-top: 12px;
+    margin-bottom: 12px;
   }
 }

@@ -11,6 +11,7 @@ import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {ContactID} from "../../contants";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {JobProperty} from "../../enums/job-property.enum";
+import NavigationService from "../../services/navigation.service";
 class JobSearchController extends BaseController {
 
     static $inject = [
@@ -27,7 +28,8 @@ class JobSearchController extends BaseController {
         'DispatchData',
         '$mdSidenav',
         'APP_CONFIG',
-        'jobContextMenuService'
+        'jobContextMenuService',
+        "navigationService",
     ];
 
     readonly isUsCustomer: boolean;
@@ -114,7 +116,8 @@ class JobSearchController extends BaseController {
         private DispatchData: DispatchCoreService,
         private $mdSidenav: angular.material.ISidenavService,
         appConfig: AppConfig,
-        private jobContextMenuService: JobContextMenuService
+        private jobContextMenuService: JobContextMenuService,
+        private navigationService: NavigationService
     ) {
         super();
 
@@ -1199,6 +1202,10 @@ class JobSearchController extends BaseController {
         };
 
         return this.jobContextMenuService.getMenuOptions(job, callbacks);
+    }
+
+    async openHubUrl() {
+        await this.navigationService.openHubUrl();
     }
 }
 

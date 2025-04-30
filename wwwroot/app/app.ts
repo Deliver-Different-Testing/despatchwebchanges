@@ -28,7 +28,7 @@ import DispatchCoreService from "./services/dispatch-core.service";
 import DispatchExecutorService from "./services/dispatch-executor.service";
 import UsStatesService from "./services/getUsStates.service";
 import GreetingService from "./services/greeting.service";
-import OpenJobDispatchService from "./services/open-job-dispatch.service";
+import NavigationService from "./services/navigation.service";
 import ToastrService from "./services/toastr.service";
 import {SelectDialogService} from "./components/dialogs/select-dialog/select-dialog.service";
 import {EventGroupDialogController} from "./components/dialogs/event-group-dialog/event-group-dialog.controller";
@@ -115,6 +115,7 @@ const app = angular.module("uDispatch", [
     "hereMapTracking.services",
     "hereMapTracking.components",
     "fixed.table.header",
+    "ngMaterialDatePicker",
 ]);
 
 // Constants
@@ -266,7 +267,7 @@ app.service("DispatchData", DispatchCoreService);
 app.service("dispatchJobService", DispatchExecutorService);
 app.service("UsStatesService", UsStatesService);
 app.service("greetingService", GreetingService);
-app.service("openJobDispatchService", OpenJobDispatchService);
+app.service("navigationService", NavigationService);
 app.service("toastrService", ToastrService);
 app.service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService);
 app.service("overviewFiltersService", OverviewFiltersService);

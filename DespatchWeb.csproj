@@ -306,7 +306,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\parcel-visuailzation\parcel-visualization.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\index.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\inter-courier-charge-dialog\inter-courier-charge-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\inter-courier-charge-dialog\inter-courier-charge-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload-dialog.interfaces.ts" />
@@ -323,7 +322,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\index.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\send-message-dialog\send-message-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\home.controller.ts" />
@@ -331,7 +329,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\enums\JobDataType.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\overview\index.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\overview\vendor.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\mega-map\mega-map.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\mega-map\mega-map.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\open-jobs\open-jobs.controller.ts" />
@@ -358,7 +356,7 @@
     <TypeScriptCompile Include="wwwroot\app\enums\late-event-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
     <TypeScriptCompile Include="wwwroot\app\bindAllMethods.ts" />
-    <TypeScriptCompile Include="wwwroot\app\index.ts" />
+    <TypeScriptCompile Include="wwwroot\app\vendor.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\app-config.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\apiConfig.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\courier.interface.ts" />

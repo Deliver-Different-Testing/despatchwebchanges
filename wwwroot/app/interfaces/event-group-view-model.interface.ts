@@ -6,7 +6,7 @@ export interface EventGroupViewModel {
     group: string;
     date: Date;
     sequence: number;
-    dueTime: number;
+    dueTime?: Date;
     assignTo: Suggestion;
     notes: string;
     active: boolean;

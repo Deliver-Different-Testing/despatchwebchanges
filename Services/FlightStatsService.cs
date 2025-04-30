@@ -323,26 +323,26 @@ public class FlightStatsService(
         return flightResponse.ScheduledFlights.FirstOrDefault();
     }
 
-    public async Task<FlightDetailsDialogViewModel> GetFlightDetailByFlightNumberDetailDialog(string completeFlightNumber,
+    public async Task<List<FlightDetailsDialogViewModel>> GetFlightDetailByFlightNumberDetailDialog(
+        string completeFlightNumber,
         DateTime departureTime)
     {
         var flightResponse = await FetchFlightDataAsync(completeFlightNumber, departureTime);
 
-        // Get the main scheduled flight
-        var flight = flightResponse.ScheduledFlights.First();
+        // Map flight data to view models using LINQ
+        return flightResponse.ScheduledFlights
+            .Select(flight => CreateFlightViewModel(flight, flightResponse.Appendix))
+            .ToList();
+    }
 
-        // Get reference data from the appendix
-        var airline = flightResponse.Appendix.Airlines.FirstOrDefault(a => a.Fs == flight.CarrierFsCode);
-        var departureAirport =
-            flightResponse.Appendix.Airports.FirstOrDefault(a => a.Fs == flight.DepartureAirportFsCode);
-        var arrivalAirport = flightResponse.Appendix.Airports.FirstOrDefault(a => a.Fs == flight.ArrivalAirportFsCode);
-        var equipment =
-            flightResponse.Appendix.Equipments.FirstOrDefault(e => e.Iata == flight.FlightEquipmentIataCode);
+    private static FlightDetailsDialogViewModel CreateFlightViewModel(ScheduledFlight flight, Appendix appendix)
+    {
+        var airline = appendix.Airlines.FirstOrDefault(a => a.Fs == flight.CarrierFsCode);
+        var departureAirport = appendix.Airports.FirstOrDefault(a => a.Fs == flight.DepartureAirportFsCode);
+        var arrivalAirport = appendix.Airports.FirstOrDefault(a => a.Fs == flight.ArrivalAirportFsCode);
+        var equipment = appendix.Equipments.FirstOrDefault(e => e.Iata == flight.FlightEquipmentIataCode);
 
-        // Map to view model
-        var viewModel = MapToViewModel(flight, airline, departureAirport, arrivalAirport, equipment,
-            flightResponse.Appendix);
-        return viewModel;
+        return MapToViewModel(flight, airline, departureAirport, arrivalAirport, equipment, appendix);
     }
 
     private async Task<FlightSchedulesResponse> FetchFlightDataAsync(string completeFlightNumber,

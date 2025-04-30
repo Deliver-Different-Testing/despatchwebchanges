@@ -335,8 +335,8 @@ public class NationwideJobController(
     {
         try
         {
-            var flightInfo = await flightService.GetFlightDetailByFlightNumberDetailDialog(flightNumber, departureDate);
-            return Json(flightInfo);
+            var flightConnections = await flightService.GetFlightDetailByFlightNumberDetailDialog(flightNumber, departureDate);
+            return Json(flightConnections);
         }
         catch (Exception e)
         {

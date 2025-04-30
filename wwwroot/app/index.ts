@@ -6,6 +6,7 @@ import "../lib/ng-material-floating-button/mfb/dist/mfb.css";
 import "../lib/material-time-picker/md-time-picker.css";
 import "../lib/pickdate/angular-pickadate.css";
 import "angular-resizable/angular-resizable.min.css";
+import "ng-material-datetimepicker/css/material-datetimepicker.css";
 
 // Npm packages
 import "moment";
@@ -15,6 +16,7 @@ import "ngmap";
 import "ng-file-upload";
 import "angular-ui-sortable/dist/sortable";
 import "angular-resizable/angular-resizable.min";
+import "ng-material-datetimepicker/js/angular-material-datetimepicker";
 
 // Local libs
 import "../lib/ModernizerLocalStorage";
