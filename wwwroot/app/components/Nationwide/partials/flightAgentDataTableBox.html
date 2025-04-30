@@ -74,31 +74,12 @@
             <div flex></div>
 
             <md-menu>
-                <md-button aria-label="Select airport" class="md-raised md-accent"
+                <md-button aria-label="View nearby airports" class="md-raised md-primary"
                            ng-click="$mdMenu.open($event)">
-                    Airport <span>{{ctrl.selectedAirport ? ctrl.selectedAirport.text : 'Select'}}</span>
+                   <span>{{ctrl.selectedAirport ? 'Flights for '+ ctrl.formatAirportCodeForDropdown(ctrl.selectedAirport.text) : 'Nearby Airports Select'}}</span>
                     <md-icon md-font-set="material-symbols-outlined">arrow_drop_down</md-icon>
                 </md-button>
                 <md-menu-content class="md-dense" width="4">
-                    <!-- Search input at the top of the menu -->
-                    <md-menu-item>
-                        <div class="md-padding" style="padding: 0 8px;">
-                            <md-input-container class="md-block" style="margin: 0;">
-                                <label>Search airports</label>
-                                <input ng-model="airportSearch">
-                            </md-input-container>
-                        </div>
-                    </md-menu-item>
-                    <md-divider></md-divider>
-
-                    <!-- Loading indicator -->
-                    <md-menu-item ng-if="!ctrl.airportOptions || ctrl.airportOptions.length === 0">
-                        <div class="md-padding" layout="row" layout-align="center center">
-                            <md-progress-circular md-diameter="20" md-mode="indeterminate"></md-progress-circular>
-                            <span style="margin-left: 8px;">Loading airports...</span>
-                        </div>
-                    </md-menu-item>
-
                     <!-- Option to clear selection -->
                     <md-menu-item ng-if="ctrl.selectedAirport">
                         <md-button ng-click="ctrl.selectedAirport = null; ctrl.onAirportSelectionChanged();">
@@ -108,7 +89,7 @@
                     </md-menu-item>
 
                     <!-- Airport options -->
-                    <md-menu-item ng-repeat="airport in ctrl.airportOptions | filter:airportSearch">
+                    <md-menu-item ng-repeat="airport in ctrl.airportOptions">
                         <md-button ng-click="ctrl.selectedAirport = airport; ctrl.onAirportSelectionChanged(); $mdMenu.close()">
                             <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.selectedAirport.id === airport.id">check</md-icon>
                             <span ng-if="ctrl.selectedAirport.id !== airport.id" style="width: 24px; display: inline-block;"></span>
@@ -117,9 +98,9 @@
                     </md-menu-item>
 
                     <!-- No results message -->
-                    <md-menu-item ng-if="ctrl.airportOptions.length > 0 && (ctrl.airportOptions | filter:airportSearch).length === 0">
+                    <md-menu-item ng-if="ctrl.airportOptions.length > 0 && ctrl.airportOptions.length === 0">
                         <div class="md-padding">
-                            No airports match your search
+                            No other airports are within the specified radius.
                         </div>
                     </md-menu-item>
                 </md-menu-content>
@@ -131,7 +112,7 @@
 
         <md-table-container>
             <table md-progress="ctrl.flightListPromise" md-table ng-model="ctrl.selectedFlight">
-                <thead fix-head md-head md-order="ctrl.flightTableQuery.order">
+                <thead md-head md-order="ctrl.flightTableQuery.order">
                 <tr md-row>
                     <th md-column md-order-by="airline">Airline</th>
                     <th md-column md-order-by="flightNumber">Flight No</th>
@@ -178,18 +159,11 @@
             </table>
         </md-table-container>
 
-        <!-- Flight Table Footer Actions -->
-        <md-table-pagination
-                md-limit="ctrl.flightPagination.pageSize"
-                md-limit-options="[10, 25, 50, 100]"
-                md-page="ctrl.flightPagination.pageIndex"
-                md-total="{{ctrl.flightPagination.totalCount}}"
-                md-on-paginate="ctrl.onFlightPageChange"
-                md-page-select>
-        </md-table-pagination>
-
         <!-- Keep the Next Day button -->
         <div class="table-footer-actions md-padding" layout="row" layout-align="end center">
+            <md-button class="md-raised" ng-click="ctrl.loadMoreFlights()">
+                Load More Flights
+            </md-button>
             <md-button class="md-raised" ng-click="ctrl.loadNextDayFlights()">
                 Next Day
             </md-button>
@@ -239,7 +213,7 @@
     <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedAgent && ctrl.isDeliveryJob() && !ctrl.agentsLoading && ctrl.agentOptions && ctrl.agentOptions.length > 0">
         <md-table-container>
             <table md-progress="ctrl.agentListPromise" md-table ng-model="ctrl.selectedAgent">
-                <thead fix-head md-head md-order="ctrl.agentTableQuery.order">
+                <thead md-head md-order="ctrl.agentTableQuery.order">
                 <tr md-row>
                     <th md-column md-order-by="agentName">Agent Name</th>
                     <th md-column md-order-by="agentRate">Rate</th>
@@ -251,7 +225,6 @@
 
                 <tbody md-body>
                 <tr md-row
-                    md-dense
                     ng-repeat="agent in ctrl.agentOptions | filter: box.searchBox | orderBy: ctrl.agentTableQuery.order">
                     <td md-cell>{{agent.agentName}}</td>
                     <td md-cell>{{agent.agentRate}}</td>

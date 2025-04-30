@@ -199,12 +199,10 @@
                     <!-- Pickup Location -->
                     <div class="address-block pickup-block" flex="50" flex-xs="100">
                         <md-toolbar class="md-primary">
-                            <div class="md-toolbar-tools-m3">
-                                <div class="section section-start">
-                                    <span class="material-symbols-outlined">{{ctrl.getJobAddressIcon()}}</span>
-                                    <span class="md-headline-title" flex
-                                          style="margin-left: 8px;">Pickup Location</span>
-                                </div>
+                            <div class="md-toolbar-tools">
+                                <span class="material-symbols-outlined">{{ctrl.getJobAddressIcon()}}</span>
+                                <span class="md-headline-title" flex
+                                      style="margin-left: 8px;">Pickup Location</span>
                             </div>
                         </md-toolbar>
 
@@ -241,12 +239,10 @@
                     <!-- Delivery Location -->
                     <div class="address-block delivery-block" flex="50" flex-xs="100">
                         <md-toolbar class="md-primary">
-                            <div class="md-toolbar-tools-m3">
-                                <div class="section section-start">
-                                    <span class="material-symbols-outlined">{{ctrl.getJobAddressIcon()}}</span>
-                                    <span class="md-headline-title" flex
-                                          style="margin-left: 8px;">Delivery Location</span>
-                                </div>
+                            <div class="md-toolbar-tools">
+                                <span class="material-symbols-outlined">{{ctrl.getJobAddressIcon()}}</span>
+                                <span class="md-headline-title" flex
+                                      style="margin-left: 8px;">Delivery Location</span>
                             </div>
                         </md-toolbar>
 
@@ -298,12 +294,10 @@
                     <!-- Flight Information -->
                     <section class="info-section client-section" ng-if="ctrl.job.assignedFlight">
                         <md-toolbar class="md-primary">
-                            <div class="md-toolbar-tools-m3">
-                                <div class="section section-start">
-                                    <span class="material-symbols-outlined">flight</span>
-                                    <span class="md-headline-title" flex
-                                          style="margin-left: 8px;">Flight Information</span>
-                                </div>
+                            <div class="md-toolbar-tools">
+                                <span class="material-symbols-outlined">flight</span>
+                                <span class="md-headline-title" flex
+                                      style="margin-left: 8px;">Flight Information</span>
                             </div>
                         </md-toolbar>
 
@@ -351,12 +345,10 @@
                     <!-- Agent information -->
                     <section class="info-section booker-section" ng-if="ctrl.job.assignedAgent">
                         <md-toolbar class="md-primary">
-                            <div class="md-toolbar-tools-m3">
-                                <div class="section section-start">
-                                    <span class="material-symbols-outlined">badge</span>
-                                    <span class="md-headline-title" flex
-                                          style="margin-left: 8px;">Agent Information</span>
-                                </div>
+                            <div class="md-toolbar-tools">
+                                <span class="material-symbols-outlined">badge</span>
+                                <span class="md-headline-title" flex
+                                      style="margin-left: 8px;">Agent Information</span>
                             </div>
                         </md-toolbar>
 
@@ -410,12 +402,10 @@
                     <!-- Package Details -->
                     <div class="info-section" flex="50" flex-xs="100">
                         <md-toolbar class="md-primary">
-                            <div class="md-toolbar-tools-m3">
-                                <div class="section section-start">
-                                    <span class="material-symbols-outlined">inventory_2</span>
-                                    <span class="md-headline-title" flex
-                                          style="margin-left: 8px;">Package Details</span>
-                                </div>
+                            <div class="md-toolbar-tools">
+                                <span class="material-symbols-outlined">inventory_2</span>
+                                <span class="md-headline-title" flex
+                                      style="margin-left: 8px;">Package Details</span>
                             </div>
                         </md-toolbar>
 
@@ -454,12 +444,11 @@
                     <!-- Additional Info -->
                     <div class="info-section" flex="50" flex-xs="100">
                         <md-toolbar class="md-primary">
-                            <div class="md-toolbar-tools-m3">
-                                <div class="section section-start">
-                                    <span class="material-symbols-outlined">description</span>
-                                    <span class="md-headline-title" flex
-                                          style="margin-left: 8px;">Additional Info</span>
-                                </div>
+                            <div class="md-toolbar-tools">
+                                <span class="material-symbols-outlined">description</span>
+                                <span class="md-headline-title" flex
+                                      style="margin-left: 8px;">Additional Info</span>
+
                             </div>
                         </md-toolbar>
 
@@ -503,12 +492,10 @@
                          ng-if="!ctrl.job.prebook">
                         <div class="info-section">
                             <md-toolbar class="md-primary">
-                                <div class="md-toolbar-tools-m3">
-                                    <div class="section section-start">
-                                        <span class="material-symbols-outlined">local_shipping</span>
-                                        <span class="md-headline-title" flex
-                                              style="margin-left: 8px;">Delivery Details</span>
-                                    </div>
+                                <div class="md-toolbar-tool">
+                                    <span class="material-symbols-outlined">local_shipping</span>
+                                    <span class="md-headline-title" flex
+                                          style="margin-left: 8px;">Delivery Details</span>
                                 </div>
                             </md-toolbar>
 
@@ -570,12 +557,11 @@
                     <div class="info-section" flex="50" flex-xs="100" ng-if="ctrl.job.preBook">
                         <div class="info-section">
                             <md-toolbar class="md-primary">
-                                <div class="md-toolbar-tools-m3">
-                                    <div class="section section-start">
-                                        <span class="material-symbols-outlined">schedule</span>
-                                        <span class="md-headline-title" flex
-                                              style="margin-left: 8px;">Recurring Jobs</span>
-                                    </div>
+                                <div class="md-toolbar-tools">
+                                    <span class="material-symbols-outlined">schedule</span>
+                                    <span class="md-headline-title" flex
+                                          style="margin-left: 8px;">Recurring Jobs</span>
+
                                 </div>
                             </md-toolbar>
 
@@ -590,7 +576,8 @@
                                             <span class="label">Days:</span>
                                         </div>
                                         <div class="value">
-                                            <md-select aria-label="Days of Week" multiple ng-change="ctrl.updateDaysOfWeek(ctrl.job)"
+                                            <md-select aria-label="Days of Week" multiple
+                                                       ng-change="ctrl.updateDaysOfWeek(ctrl.job)"
                                                        ng-model="ctrl.job.daysOfWeek">
                                                 <md-option ng-value="1">Monday</md-option>
                                                 <md-option ng-value="2">Tuesday</md-option>
@@ -739,12 +726,10 @@
                     <!-- Client Information -->
                     <section class="info-section client-section">
                         <md-toolbar class="md-primary">
-                            <div class="md-toolbar-tools-m3">
-                                <div class="section section-start">
-                                    <span class="material-symbols-outlined">account_box</span>
-                                    <span class="md-headline-title" flex
-                                          style="margin-left: 8px;">Client Information</span>
-                                </div>
+                            <div class="md-toolbar-tools">
+                                <span class="material-symbols-outlined">account_box</span>
+                                <span class="md-headline-title" flex
+                                      style="margin-left: 8px;">Client Information</span>
                             </div>
                         </md-toolbar>
 
@@ -776,11 +761,9 @@
                     <!-- Booked By -->
                     <section class="info-section booker-section">
                         <md-toolbar class="md-primary">
-                            <div class="md-toolbar-tools-m3">
-                                <div class="section section-start">
-                                    <span class="material-symbols-outlined">person_outline</span>
-                                    <span class="md-headline-title" flex style="margin-left: 8px;">Booked By</span>
-                                </div>
+                            <div class="md-toolbar-tools">
+                                <span class="material-symbols-outlined">person_outline</span>
+                                <span class="md-headline-title" flex style="margin-left: 8px;">Booked By</span>
                             </div>
                         </md-toolbar>
 
@@ -828,11 +811,9 @@
                 <div class="info-sections-container job-details-info md-whiteframe-1dp">
                     <div class="info-section">
                         <md-toolbar class="md-primary">
-                            <div class="md-toolbar-tools-m3">
-                                <div class="section section-start">
-                                    <span class="material-symbols-outlined">assignment</span>
-                                    <span class="md-headline-title" flex style="margin-left: 8px;">Job Details</span>
-                                </div>
+                            <div class="md-toolbar-tools">
+                                <span class="material-symbols-outlined">assignment</span>
+                                <span class="md-headline-title" flex style="margin-left: 8px;">Job Details</span>
                             </div>
                         </md-toolbar>
 
@@ -962,27 +943,32 @@
                     <div layout="row" layout-align="start center" layout-wrap>
                         <div flex="50" ng-if="!ctrl.isUsCustomer">
                             <md-checkbox class="compact-checkbox"
-                                         ng-click="ctrl.toggleProperty(ctrl.job, 'van', ctrl.job.van)" ng-model="ctrl.job.van">Van
+                                         ng-click="ctrl.toggleProperty(ctrl.job, 'van', ctrl.job.van)"
+                                         ng-model="ctrl.job.van">Van
                             </md-checkbox>
                         </div>
                         <div flex="50" ng-if="!ctrl.isUsCustomer">
                             <md-checkbox class="compact-checkbox"
-                                         ng-click="ctrl.toggleProperty(ctrl.job, 'truck', ctrl.job.truck)" ng-model="ctrl.job.truck">Truck
+                                         ng-click="ctrl.toggleProperty(ctrl.job, 'truck', ctrl.job.truck)"
+                                         ng-model="ctrl.job.truck">Truck
                             </md-checkbox>
                         </div>
                         <div flex="50">
                             <md-checkbox class="compact-checkbox"
-                                         ng-click="ctrl.toggleProperty(ctrl.job, 'reprice', ctrl.job.reprice)" ng-model="ctrl.job.reprice">Reprice
+                                         ng-click="ctrl.toggleProperty(ctrl.job, 'reprice', ctrl.job.reprice)"
+                                         ng-model="ctrl.job.reprice">Reprice
                             </md-checkbox>
                         </div>
                         <div flex="50">
                             <md-checkbox class="compact-checkbox"
-                                         ng-click="ctrl.toggleProperty(ctrl.job, 'void', ctrl.job.void)" ng-model="ctrl.job.void">Void
+                                         ng-click="ctrl.toggleProperty(ctrl.job, 'void', ctrl.job.void)"
+                                         ng-model="ctrl.job.void">Void
                             </md-checkbox>
                         </div>
                         <div flex="50">
                             <md-checkbox class="compact-checkbox"
-                                         ng-click="ctrl.markJobAsDone($event, ctrl.job, ctrl.job.done)" ng-model="ctrl.job.done">Done
+                                         ng-click="ctrl.markJobAsDone($event, ctrl.job, ctrl.job.done)"
+                                         ng-model="ctrl.job.done">Done
                             </md-checkbox>
                         </div>
                     </div>

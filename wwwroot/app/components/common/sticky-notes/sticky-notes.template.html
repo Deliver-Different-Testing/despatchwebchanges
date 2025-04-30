@@ -2,18 +2,16 @@
     <div class="note-list-container md-whiteframe-1dp">
 
         <md-toolbar class="md-primary">
-            <div class="md-toolbar-tools-m3">
-                <div class="section section-start">
-                    <span class="material-symbols-outlined">note</span>
-                    <span class="md-headline-title" flex style="margin-left: 8px;">Notes</span>
+            <div class="md-toolbar-tools">
+                <span class="material-symbols-outlined">note</span>
+                <span class="md-headline-title" flex style="margin-left: 8px;">Notes</span>
 
-                    <div class="section section-end">
-                        <md-button class="md-icon-button md-accent" ng-click="ctrl.addNote($event)">
-                            <md-icon md-font-set="material-symbols-outlined">note_add</md-icon>
-                            <md-tooltip md-direction="bottom">Add Note</md-tooltip>
-                        </md-button>
-                    </div>
-                </div>
+                <div flex></div>
+
+                <md-button class="md-icon-button md-accent" ng-click="ctrl.addNote($event)">
+                    <md-icon md-font-set="material-symbols-outlined">note_add</md-icon>
+                    <md-tooltip md-direction="bottom">Add Note</md-tooltip>
+                </md-button>
             </div>
         </md-toolbar>
 
