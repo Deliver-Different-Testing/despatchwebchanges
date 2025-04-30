@@ -156,7 +156,7 @@ public class TaskRepository(
             {
                 EventTypeGroupTypeGroupId = x.Id,
                 Active = x.IsActive,
-                DueTime = x.DueTime ?? 0,
+                DueTime = x.DueTime != null ? DateTime.Now.AddMinutes((double)x.DueTime) : null,
                 EventType = new Suggestion
                 {
                     Id = x.EventType.UcetId,
@@ -192,7 +192,7 @@ public class TaskRepository(
                 time: currentDate,
                 type: eventGroup.EventType.Id,
                 lateTime: null,
-                eTATime: null,
+                eTATime: eventGroup.DueTime,
                 staffIDIn: eventGroup.AssignTo.Id,
                 staffIDOut: null,
                 responseTime: null,

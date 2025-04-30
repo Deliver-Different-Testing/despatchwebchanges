@@ -1174,10 +1174,69 @@ body > .angular-bootstrap-contextmenu.dropdown {
   }
 }
 
+
+@secondary-color: #d0f0f0;
+@header-color: #009796;
+
 // Tasks Status Summary container
 .tasks-status-summary {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin: 8px 0;
+}
+
+@secondary-color: #d0f0f0;
+
+.dtp {
+  table.dtp-picker-days tr > td > a {
+    &.selected,
+    &.selected.hilite {
+      background: @primary-color !important;
+    }
+
+    &.hilite:not(.selected) {
+      color: @primary-color !important;
+    }
+  }
+
+  div {
+    &.dtp-date,
+    &.dtp-time {
+      background: @primary-color !important;
+    }
+
+    &.dtp-year-btn,
+    &.dtp-actual-year,
+    &.dtp-actual-maxtime {
+      color: @secondary-color !important;
+    }
+
+    &.dtp-actual-time.p60 span.selected {
+      color: @primary-color !important;
+    }
+  }
+
+  .dtp-hand.on {
+    background: @primary-color !important;
+  }
+
+  .dtp-actual-meridien a.selected {
+    background: @primary-color !important;
+  }
+
+  .dtp-picker-time > a.dtp-select-hour.selected {
+    background: @primary-color !important;
+  }
+
+  > .dtp-content > .dtp-date-view > header.dtp-header {
+    background: @primary-color !important;
+  }
+}
+
+md-menu-content {
+  &.dtp-month-list,
+  &.dtp-year-list {
+    background-color: @secondary-color !important;
+  }
 }

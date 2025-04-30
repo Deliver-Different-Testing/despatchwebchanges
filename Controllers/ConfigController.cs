@@ -8,6 +8,12 @@ namespace DespatchWeb.Controllers;
 
 public class ConfigController(IWebHostEnvironment environment) : Controller
 {
+    [HttpGet]
+    public IActionResult GetHubUrl()
+    {
+        var hubUrl = Environment.GetEnvironmentVariable("HubUrl");
+        return Json(hubUrl);
+    }
 
     [HttpGet]
     public IActionResult GetHereMapsKey()

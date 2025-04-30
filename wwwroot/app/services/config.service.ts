@@ -3,12 +3,19 @@ import ApiConfig from "../interfaces/apiConfig.interface";
 class ConfigService implements angular.IServiceProvider {
     static $inject = ["$http"];
 
-    constructor(private $http: angular.IHttpService) {
+    constructor(
+        private $http: angular.IHttpService
+    ) {
         console.log("Config service initialized");
     }
 
     $get() {
         return this;
+    }
+
+    async getHubUrl(): Promise<string> {
+        const response = await this.$http.get<string>("/config/GetHubUrl");
+        return response.data;
     }
 
     async getHereMapsKey(): Promise<string> {

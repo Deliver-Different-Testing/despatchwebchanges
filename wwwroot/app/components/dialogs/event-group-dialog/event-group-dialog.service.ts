@@ -41,9 +41,7 @@ export class EventGroupDialogService implements angular.IServiceProvider {
             });
             console.log('EventGroupDialogService: Dialog closed');
         } catch (error) {
-            if(error === undefined) {
-                return;
-            }
+            if(!error)  return;
 
             // Error occured
             console.error('EventGroupDialogService: Error in openEventGroupDialog', error);

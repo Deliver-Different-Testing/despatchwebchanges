@@ -1,7 +1,7 @@
 import OverviewService from "./overview.service";
 import ToastrService from "../../services/toastr.service";
 import GreetingService from "../../services/greeting.service";
-import OpenJobDispatchService from "../../services/open-job-dispatch.service";
+import NavigationService from "../../services/navigation.service";
 import OverviewFiltersService from "./services/overview-filters.service";
 import {OverviewTableChildJob, OverviewTableParentJob} from "./overview.interfaces";
 import "./overview.styles.less";
@@ -20,7 +20,7 @@ class OverviewController extends BaseController {
         "$state",
         "$window",
         "greetingService",
-        "openJobDispatchService",
+        "navigationService",
         "overviewFiltersService",
         "$document"
     ];
@@ -67,7 +67,7 @@ class OverviewController extends BaseController {
         private $state: angular.ui.IStateService,
         private $window: angular.IWindowService,
         greetingService: GreetingService,
-        private openJobDispatchService: OpenJobDispatchService,
+        private navigationService: NavigationService,
         private overviewFiltersService: OverviewFiltersService,
         private $document: angular.IDocumentService
     ) {
@@ -428,7 +428,7 @@ class OverviewController extends BaseController {
 
     openJobDetail(delivery: OverviewTableParentJob) {
         if (delivery && delivery.jobId) {
-            this.openJobDispatchService.openJobDetail(delivery.jobId);
+            this.navigationService.openJobDetail(delivery.jobId);
         }
     }
 

@@ -204,10 +204,10 @@ class NationwideService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getFlightInfoForDialog(flightNumber: string, departureDate: Date): Promise<FlightDetailsViewModel> {
+    async getFlightConnectionsInfoForDialog(flightNumber: string, departureDate: Date): Promise<FlightDetailsViewModel[]> {
         const formattedDate = moment(departureDate).format();
 
-        const response = await this.$http.get<FlightDetailsViewModel>("nationwideJob/GetFlightInfo", {
+        const response = await this.$http.get<FlightDetailsViewModel[]>("nationwideJob/GetFlightInfo", {
             params: {
                 flightNumber: flightNumber,
                 departureDate: formattedDate

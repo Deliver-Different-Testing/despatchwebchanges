@@ -21,7 +21,7 @@ class FlightDetailsDialogService implements angular.IServiceProvider {
     }
 
     async openFlightDetailsDialog($event: MouseEvent, flightNumber: string, departureDate: Date) {
-        const flightInfo = await this.nationwideService.getFlightInfoForDialog(flightNumber, departureDate);
+        const flightConnections = await this.nationwideService.getFlightConnectionsInfoForDialog(flightNumber, departureDate);
 
         await this.$mdDialog.show({
             controller: FlightDetailsDialogController,
@@ -31,7 +31,7 @@ class FlightDetailsDialogService implements angular.IServiceProvider {
             targetEvent: $event,
             clickOutsideToClose: false,
             locals: {
-               flightInfo
+               flightConnections
             }
         });
     }

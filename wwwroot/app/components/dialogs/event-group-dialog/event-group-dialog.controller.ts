@@ -2,10 +2,13 @@ import "./event-group-dialog.styles.less";
 import {Suggestion} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
 import {EventGroupViewModel} from "../../../interfaces/event-group-view-model.interface";
+import BaseController from "../../base-controller";
 
-export class EventGroupDialogController implements angular.IController {
+export class EventGroupDialogController extends BaseController{
     searchText?: string;
     selectedUser?: Suggestion;
+    minDate: Date;
+    maxDate: Date;
 
     static $inject = [
         '$mdDialog',
@@ -24,6 +27,12 @@ export class EventGroupDialogController implements angular.IController {
         public events: EventGroupViewModel[],
         public users: Suggestion[],
     ) {
+        super();
+
+        // Min and max dates
+        this.minDate = new Date();
+        this.maxDate = new Date();
+        this.maxDate.setDate(this.maxDate.getFullYear() + 15);
     }
 
     async save(jobId: number, events: EventGroupViewModel[]) {

@@ -11,7 +11,7 @@
         </md-toolbar>
 
         <md-dialog-content>
-            <div class="md-dialog-content">
+            <div class="md-padding">
                 <md-table-container>
                     <table md-table>
                         <thead md-head>
@@ -19,7 +19,7 @@
                             <th md-column>Task Type</th>
                             <th md-column>Group</th>
                             <th md-column>Sequence</th>
-                            <th md-column>Due Time (mins)</th>
+                            <th md-column>Due</th>
                             <th md-column>Assign To</th>
                             <th md-column>Active</th>
                         </tr>
@@ -27,11 +27,24 @@
                         <tbody md-body>
                         <tr md-row ng-repeat="item in ctrl.events">
                             <td md-cell>{{item.eventType.text}}</td>
-                            <td md-cell>{{item.group}}</td>
+                            <td md-cell md-truncate="">{{item.group}}</td>
                             <td md-cell>{{item.sequence}}</td>
                             <td md-cell>
-                                <md-input-container class="md-block">
-                                    <input type="number" ng-model="item.dueTime" min="0"/>
+                                <md-input-container>
+                                    <input mdc-datetime-picker
+                                           date="true" time="true" type="text"
+                                           id="datetimeedit"
+                                           show-todays-date=""
+                                           minutes="true"
+                                           short-time="false"
+                                           min-date="ctrl.minDate"
+                                           max-date="ctrl.maxDate"
+                                           edit-input="true"
+                                           show-icon="true"
+                                           ng-model="item.dueTime"
+                                           name="datetimeedit"
+                                           required
+                                           class=" dtp-no-msclear dtp-input md-input">
                                 </md-input-container>
                             </td>
                             <td md-cell>
@@ -46,8 +59,7 @@
                                         md-input-name="assignTo"
                                         md-autocomplete-enter-select
                                         md-no-asterisk="true"
-                                        md-clear-button="false"
-                                        md-min-length="0"
+                                        md-min-length="2"
                                         md-selected-item-change="ctrl.selectedUserChange(user, $index)">
                                     <md-item-template>
                                         <span md-highlight-text="item.searchText">{{user.text}}</span>

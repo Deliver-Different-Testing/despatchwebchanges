@@ -12,7 +12,7 @@ public class EventGroupViewModel
 
     public int Sequence { get; set; }
 
-    public int DueTime { get; set; }
+    public DateTime? DueTime { get; set; }
 
     public Suggestion AssignTo { get; set; }
     public string Notes { get; set; }

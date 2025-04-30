@@ -37,7 +37,7 @@ import {ContactID, FirstName} from "../../contants";
 import {ResendJobsRequest} from "./home.interfaces";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
 import {JobProperty} from "../../enums/job-property.enum";
-import moment from "moment";
+import NavigationService from "../../services/navigation.service";
 
 class HomeController extends BaseController {
     static $inject = [
@@ -63,6 +63,7 @@ class HomeController extends BaseController {
         'jobContextMenuService',
         '$mdEditDialog',
         '$interval',
+        'navigationService'
     ];
 
     private readonly DOM_SELECTORS = {
@@ -177,6 +178,7 @@ class HomeController extends BaseController {
         private jobContextMenuService: JobContextMenuService,
         private $mdEditDialog: any,
         private $interval: angular.IIntervalService,
+        private navigationService: NavigationService,
     ) {
         super();
 
@@ -2651,6 +2653,10 @@ class HomeController extends BaseController {
         } catch (error) {
             console.error("[HomeRefresh] - Error refreshing job list:", error);
         }
+    }
+
+    async openHubUrl() {
+        await this.navigationService.openHubUrl();
     }
 }
 
