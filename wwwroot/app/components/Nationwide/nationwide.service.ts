@@ -78,23 +78,21 @@ class NationwideService implements angular.IServiceProvider {
         return await this.getNationwideJobs("nationwideJobListReprice", queryParams, selectedClients, internal, selectedAreas);
     }
 
-
     async getFlightOptions(
         jobId: number,
         departureDate: string | Date,
         airlineId?: number,
-        departureAirportId?: number,
-        pageSize: number = 25,
-        pageIndex: number = 0
+        departureAirportId?: number
     ): Promise<{
-        flightPagination: IFlightPagination;
-        message: string | null
+        flights: IFlightViewModel[];
+        message: string | null;
+        lastDepartureTime: Date | null;
     }> {
         const startTime = performance.now();
         const formattedDate = moment(departureDate).format();
 
         // Create a cache key based on the parameters
-        const cacheKey = `flights_${jobId}_${formattedDate}_${airlineId || 'all'}_${pageSize}_${pageIndex}`;
+        const cacheKey = `flights_${jobId}_${formattedDate}_${airlineId || 'all'}_${departureAirportId || 'default'}`;
         const cachedData = this.flightCache.get(cacheKey);
 
         // Return cached data if it's still valid
@@ -103,25 +101,33 @@ class NationwideService implements angular.IServiceProvider {
             return cachedData.data;
         }
 
-        console.log(`Fetching flight data for job ${jobId} with departure ${formattedDate}, page ${pageIndex}`);
+        console.log(`Fetching flight data for job ${jobId} with departure ${formattedDate}`);
 
         try {
-            const response = await this.$http.get<IFlightPagination>("nationwideJob/GetScheduledFlightOptions", {
+            const response = await this.$http.get<IFlightViewModel[]>("nationwideJob/GetScheduledFlightOptions", {
                 params: {
                     departureDate: formattedDate,
                     jobId,
                     airlineId,
-                    departureAirportId,
-                    pageSize,
-                    pageIndex
+                    departureAirportId
                 }
             });
 
+            // Find the latest departure time for pagination purposes
+            let lastDepartureTime = null;
+            if (response.data && response.data.length > 0) {
+                const sortedFlights = [...response.data].sort((a, b) => {
+                    return new Date(b.departureTime).getTime() - new Date(a.departureTime).getTime();
+                });
+                lastDepartureTime = new Date(sortedFlights[0].departureTime);
+            }
+
             const result = {
-                flightPagination: response.data,
-                message: response.data.items.length === 0
+                flights: response.data,
+                message: response.data.length === 0
                     ? "Sorry, we couldn't find any flights between these airports on the selected date. Please try different dates or airports."
-                    : null
+                    : null,
+                lastDepartureTime
             };
 
             // Store in cache
@@ -131,7 +137,7 @@ class NationwideService implements angular.IServiceProvider {
             });
 
             const endTime = performance.now();
-            console.log(`Flight request completed in ${(endTime - startTime).toFixed(2)}ms for job ${jobId}, received ${response.data.items.length} flights`);
+            console.log(`Flight request completed in ${(endTime - startTime).toFixed(2)}ms for job ${jobId}, received ${response.data.length} flights`);
 
             return result;
         } catch (error) {
@@ -189,8 +195,12 @@ class NationwideService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getActiveAirports(): Promise<Suggestion[]> {
-        const response = await this.$http.get<Suggestion[]>("nationwideJob/GetAirportOptions");
+    async getNearbyAirports(jobId: number): Promise<Suggestion[]> {
+        const response = await this.$http.get<Suggestion[]>("nationwideJob/GetNearbyAirports", {
+            params: {
+                jobId,
+            }
+        });
         return response.data;
     }
 

@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
@@ -70,19 +71,56 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         }
     }
 
-    public async Task<List<Suggestion>> GetActiveAirportOptionsAsync()
+    public async Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId, int? maxDistanceMiles = 100)
     {
-        var airports = await Context.TblAirports
-            .Where(a => a.Active)
-            .Select(a => new Suggestion
-            {
-                Id = a.AirportId,
-                Text = a.AirportCode
-            })
+        // Set default value if null
+        var distance = maxDistanceMiles ?? 100;
+
+        // Get pickup coordinates and nearby airports in a single query
+        var pickupAndAirports = await (
+                from job in Context.TucJobs
+                where job.UcjbId == jobId && job.PickUpLatitude != null && job.PickUpLongitude != null
+                join airport in Context.TblAirports on 1 equals 1
+                where airport.Active && airport.Latitude != null && airport.Longitude != null
+                select new
+                {
+                    PickupLatitude = job.PickUpLatitude.Value,
+                    PickupLongitude = job.PickUpLongitude.Value,
+                    airport.AirportId,
+                    airport.Name,
+                    AirportLatitude = airport.Latitude.Value,
+                    AirportLongitude = airport.Longitude.Value
+                })
             .AsNoTracking()
             .ToListAsync();
 
-        return airports;
+        // Return empty list if no valid job found
+        if (pickupAndAirports.Count == 0) return [];
+
+        // Extract pickup coordinates from the first result (all have same pickup coordinates)
+        var pickupLatitude = pickupAndAirports.First().PickupLatitude;
+        var pickupLongitude = pickupAndAirports.First().PickupLongitude;
+
+        // Calculate distances, filter and sort
+        return pickupAndAirports
+            .Select(item => new
+            {
+                item.AirportId,
+                item.Name,
+                Distance = DistanceCalculator.CalculateDistance(
+                    pickupLatitude,
+                    pickupLongitude,
+                    item.AirportLatitude,
+                    item.AirportLongitude)
+            })
+            .Where(result => result.Distance <= distance)
+            .OrderBy(result => result.Distance)
+            .Select(result => new Suggestion
+            {
+                Id = result.AirportId,
+                Text = $"{result.Name} ({result.Distance} mi)"
+            })
+            .ToList();
     }
 
     public async Task<string> GetSingleAirportCodeByIdAsync(int airportId)

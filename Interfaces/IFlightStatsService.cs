@@ -9,16 +9,14 @@ namespace DespatchWeb.Interfaces;
 
 public interface IFlightStatsService
 {
-    Task<FlightPaginationResult> GetFlightsAsync(
+    Task< List<FlightViewModel>> GetFlightsAsync(
         int jobId,
         DateTime? departureDateTime = null,
         int? airlineId = null,
         int? departureAirportId = null,
         int flightBuffer = 0,
         string codeType = null,
-        List<string> extendedOptions = null,
-        int pageSize = 25,
-        int pageIndex = 0);
+        List<string> extendedOptions = null);
 
     Task<ScheduledFlight> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,
         DateTime departureTime);

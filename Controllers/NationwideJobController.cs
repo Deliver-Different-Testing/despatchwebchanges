@@ -109,37 +109,31 @@ public class NationwideJobController(
         DateTime departureDate,
         int jobId,
         int? airlineId,
-        int? departureAirportId,
-        int pageSize = 25,
-        int pageIndex = 0)
+        int? departureAirportId)
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
         try
         {
             Log.Information(
-                "Flight search requested for job {JobId} with departure {DepartureDate}, airline {AirlineId}, pageSize {PageSize}, pageIndex {PageIndex}",
-                jobId, departureDate, airlineId, pageSize, pageIndex);
+                "Flight search requested for job {JobId} with departure {DepartureDate}, airline {AirlineId}",
+                jobId, departureDate, airlineId);
 
-            // Cap page size to prevent excessive resource usage
-            if (pageSize > 100) pageSize = 100;
-
-            var flightPagination = await flightService.GetFlightsAsync(
+            var flights = await flightService.GetFlightsAsync(
                 jobId,
                 departureDate,
                 airlineId,
+                departureAirportId,
                 flightBuffer: 0,
                 codeType: null,
-                extendedOptions: null,
-                pageSize: pageSize,
-                pageIndex: pageIndex);
+                extendedOptions: null);
 
             stopwatch.Stop();
             Log.Information(
-                "Flight search API completed in {ElapsedMs}ms for job {JobId}, returned {FlightCount} flights, total {TotalCount}",
-                stopwatch.ElapsedMilliseconds, jobId, flightPagination.Items.Count, flightPagination.TotalCount);
+                "Flight search API completed in {ElapsedMs}ms for job {JobId}, returned {FlightCount} flights",
+                stopwatch.ElapsedMilliseconds, jobId, flights.Count);
 
-            return Json(flightPagination);
+            return Json(flights);
         }
         catch (Exception e)
         {
@@ -322,11 +316,11 @@ public class NationwideJobController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAirportOptions()
+    public async Task<IActionResult> GetNearbyAirports(int jobId, int? maxDistanceMiles)
     {
         try
         {
-            var airports = await repository.GetActiveAirportOptionsAsync();
+            var airports = await repository.GetNearbyAirportsAsync(jobId, maxDistanceMiles);
             return Json(airports);
         }
         catch (Exception e)

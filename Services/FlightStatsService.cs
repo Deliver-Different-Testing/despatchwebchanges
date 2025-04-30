@@ -89,20 +89,22 @@ public class FlightStatsService(
         return createAlertResponse.Rule?.Id;
     }
 
-    public async Task<FlightPaginationResult> GetFlightsAsync(
+   public async Task<List<FlightViewModel>> GetFlightsAsync(
         int jobId,
         DateTime? departureDateTime = null,
         int? airlineId = null,
         int? departureAirportId = null,
         int flightBuffer = 0,
         string codeType = null,
-        List<string> extendedOptions = null,
-        int pageSize = 25,
-        int pageIndex = 0)
+        List<string> extendedOptions = null)
     {
+#if DEBUG
+        // Return test data when debugging
+        return GetTestFlights();
+#else
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        Log.Information("Flight search started for job {JobId} with departure {DepartureDateTime}, page {PageIndex}",
-            jobId, departureDateTime, pageIndex);
+        Log.Information("Flight search started for job {JobId} with departure {DepartureDateTime}",
+            jobId, departureDateTime);
 
         var (destinationAirportCode, departureAirportCode) = await repository.GetAirportCodesByJobIdAsync(jobId);
         if (departureAirportId.HasValue) departureAirportCode = await repository.GetSingleAirportCodeByIdAsync(departureAirportId.Value);
@@ -129,8 +131,7 @@ public class FlightStatsService(
         query["appId"] = _appId;
         query["appKey"] = _appKey;
         query["payloadType"] = "cargo";
-        query["maxResults"] =
-            (pageSize * (pageIndex + 1)).ToString(); // Request enough results for all pages up to current
+        query["maxResults"] = "100"; // Request a reasonable number of results
         query["includeCodeshares"] = "false";
         query["maxConnections"] = "1";
 
@@ -186,8 +187,7 @@ public class FlightStatsService(
         if (flightStatusResponse?.Connections == null)
         {
             Log.Warning("No connections found for flight search");
-            return new FlightPaginationResult
-                { Items = [], TotalCount = 0, PageIndex = pageIndex, PageSize = pageSize };
+            return [];
         }
 
         // Pre-filter connections to avoid processing unnecessary data
@@ -197,8 +197,7 @@ public class FlightStatsService(
             connections.Count, flightStatusResponse.Connections.Count);
 
         if (connections.Count == 0)
-            return new FlightPaginationResult
-                { Items = [], TotalCount = 0, PageIndex = pageIndex, PageSize = pageSize };
+            return [];
 
         var carrierCodes = connections
             .SelectMany(conn => conn.ScheduledFlight)
@@ -223,7 +222,7 @@ public class FlightStatsService(
         // Await the carrier rates
         var carrierRates = await carrierRatesTask;
 
-        // Process flights in parallel
+        // Process flights
         var flightOptions = connections.Select(conn =>
         {
             var firstFlight = conn.ScheduledFlight.First();
@@ -261,27 +260,60 @@ public class FlightStatsService(
             };
         }).OrderBy(flight => flight.DepartureTime).ToList();
 
-        var totalItems = flightOptions.Count;
-        var lastItem = flightOptions.LastOrDefault();
-        var lastDepartureTime = lastItem?.DepartureTime;
-
-        var pagedFlights = flightOptions
-            .Skip(pageIndex * pageSize)
-            .Take(pageSize)
-            .ToList();
-
         stopwatch.Stop();
         Log.Information("Flight search completed in {ElapsedMilliseconds}ms, found {FlightCount} flights",
             stopwatch.ElapsedMilliseconds, flightOptions.Count);
 
-        return new FlightPaginationResult
+        return flightOptions;
+#endif
+    }
+
+    private static List<FlightViewModel> GetTestFlights()
+    {
+        Log.Information("Returning test flight data for debugging");
+
+        // Create a list of test flights
+        var testFlights = new List<FlightViewModel>();
+        var now = DateTime.Now;
+
+        var airlines = new[] { "Delta Air Lines", "American Airlines", "United Airlines", "Lufthansa", "Emirates" };
+        var airlineCodes = new[] { "DL", "AA", "UA", "LH", "EK" };
+        var airlineIds = new[] { 1, 2, 3, 4, 5 };
+        var departureAirports = new[] { "JFK", "LAX", "ORD", "LHR", "DXB" };
+        var arrivalAirports = new[] { "LHR", "SFO", "FRA", "JFK", "SYD" };
+        var aircrafts = new[] { "Boeing 787-9", "Airbus A350-900", "Boeing 777-300ER", "Airbus A330-300", "Boeing 747-8" };
+        var timeZones = new[] { "America/New_York", "America/Los_Angeles", "Europe/London", "Europe/Berlin", "Asia/Dubai" };
+
+        // Generate 50 test flights
+        for (var i = 0; i < 50; i++)
         {
-            Items = pagedFlights,
-            TotalCount = totalItems,
-            PageIndex = pageIndex,
-            PageSize = pageSize,
-            LastDepartureTime = lastDepartureTime
-        };
+            var airlineIndex = i % 5;
+            var departureTime = now.AddHours(i + 1);
+            var flightDuration = TimeSpan.FromHours(3 + i % 5);
+
+            testFlights.Add(new FlightViewModel
+            {
+                Airline = airlines[airlineIndex],
+                FlightNumber = airlineCodes[airlineIndex] + (100 + i),
+                DepartureTime = departureTime,
+                ArrivalTime = departureTime.Add(flightDuration),
+                DepartureAirport = departureAirports[i % 5],
+                ArrivalAirport = arrivalAirports[i % 5],
+                Duration = flightDuration,
+                Stops = i % 3,
+                Aircraft = aircrafts[i % 5],
+                ServiceClasses = ["ECONOMY", "BUSINESS"],
+                IsCodeShare = i % 7 == 0,
+                Amount = 100m + i * 10,
+                CodeShareAirline = i % 7 == 0 ? airlineCodes[(i + 1) % 5] : null,
+                AirlineId = airlineIds[airlineIndex],
+                DepartureTimeZone = timeZones[i % 5],
+                ArrivalTimeZone = timeZones[(i + 2) % 5]
+            });
+        }
+
+        // Order by departure time and return all flights
+        return testFlights.OrderBy(f => f.DepartureTime).ToList();
     }
 
     public async Task<ScheduledFlight> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,

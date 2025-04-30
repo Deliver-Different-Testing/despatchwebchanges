@@ -34,11 +34,9 @@
                     <!-- Date Range Filter -->
                     <div class="filter-section">
                         <md-toolbar class="md-primary">
-                            <div class="md-toolbar-tools-m3">
-                                <div class="section section-start">
-                                    <span class="material-symbols-outlined">date_range</span>
-                                    <span class="md-headline-title" flex style="margin-left: 8px;">Date Range</span>
-                                </div>
+                            <div class="md-toolbar-tools">
+                                <span class="material-symbols-outlined">date_range</span>
+                                <span class="md-headline-title" flex style="margin-left: 8px;">Date Range</span>
                             </div>
                         </md-toolbar>
 
@@ -65,24 +63,21 @@
                     </div>
 
                     <div class="filter-section">
-                            <md-toolbar class="md-primary">
-                                <div class="md-toolbar-tools-m3">
-                                    <div class="section section-start">
-                                        <span class="material-symbols-outlined">public_off</span>
-                                        <span class="md-headline-title" flex style="margin-left: 8px;">Regions</span>
+                        <md-toolbar class="md-primary">
+                            <div class="md-toolbar-tools">
+                                <span class="material-symbols-outlined">public_off</span>
+                                <span class="md-headline-title" flex style="margin-left: 8px;">Regions</span>
 
-                                        <div flex></div>
+                                <div flex></div>
 
-                                        <md-checkbox
-                                                aria-label="{{ctrl.allRegionsSelected ? 'Unselect All Regions' : 'Select All Regions'}}"
-                                                ng-change="ctrl.toggleAllRegions()"
-                                                ng-model="ctrl.allRegionsSelected">
-                                            {{ctrl.allRegionsSelected ? 'Unselect All' : 'Select All'}}
-                                        </md-checkbox>
-
-                                    </div>
-                                </div>
-                            </md-toolbar>
+                                <md-checkbox
+                                        aria-label="{{ctrl.allRegionsSelected ? 'Unselect All Regions' : 'Select All Regions'}}"
+                                        ng-change="ctrl.toggleAllRegions()"
+                                        ng-model="ctrl.allRegionsSelected">
+                                    {{ctrl.allRegionsSelected ? 'Unselect All' : 'Select All'}}
+                                </md-checkbox>
+                            </div>
+                        </md-toolbar>
 
                         <md-progress-linear
                                 md-mode="indeterminate"
@@ -112,20 +107,18 @@
 
                     <div class="filter-section">
                         <md-toolbar class="md-primary">
-                            <div class="md-toolbar-tools-m3">
-                                <div class="section section-start">
-                                    <span class="material-symbols-outlined">speed</span>
-                                    <span class="md-headline-title" flex style="margin-left: 8px;">Speeds</span>
+                            <div class="md-toolbar-tools">
+                                <span class="material-symbols-outlined">speed</span>
+                                <span class="md-headline-title" flex style="margin-left: 8px;">Speeds</span>
 
-                                    <div flex></div>
+                                <div flex></div>
 
-                                    <md-checkbox
-                                            aria-label="{{ctrl.allSpeedsSelected ? 'Unselect All Speeds' : 'Select All Speeds'}}"
-                                            ng-change="ctrl.toggleAllSpeeds()"
-                                            ng-model="ctrl.allSpeedsSelected">
-                                        {{ctrl.allSpeedsSelected ? 'Unselect All' : 'Select All'}}
-                                    </md-checkbox>
-                                </div>
+                                <md-checkbox
+                                        aria-label="{{ctrl.allSpeedsSelected ? 'Unselect All Speeds' : 'Select All Speeds'}}"
+                                        ng-change="ctrl.toggleAllSpeeds()"
+                                        ng-model="ctrl.allSpeedsSelected">
+                                    {{ctrl.allSpeedsSelected ? 'Unselect All' : 'Select All'}}
+                                </md-checkbox>
                             </div>
                         </md-toolbar>
 

@@ -1,6 +1,5 @@
 // Style imports
 import "../css/udispatch.less";
-import "../css/material3.less";
 import "../css/toasts.less";
 import "../css/promiseButton.css";
 import "../lib/ng-material-floating-button/mfb/dist/mfb.css";
