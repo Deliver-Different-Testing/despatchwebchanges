@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
@@ -270,7 +271,7 @@ public class TaskRepository(
         string despatcherName,
         string notes,
         int eventType,
-        float? lateTime = null,
+        int? lateTime = null,
         DateTime? etaTime = null,
         bool close = false
     )
@@ -280,27 +281,123 @@ public class TaskRepository(
 
         var currentDate = infoService.GetCurrentTenantTime();
 
-        await Context.Procedures.DES_qdfEvent_InsertAsync(
+        await InsertEventAsync(
             jobNo: job.UcjbNumber,
-            clientID: job.UcjbClientId,
+            clientId: job.UcjbClientId ?? 0,
             contact: job.UcjbContact,
             date: currentDate,
             time: currentDate,
             type: eventType,
             lateTime: lateTime,
-            eTATime: etaTime,
-            staffIDIn: staffId,
-            staffIDOut: null,
+            etaTime: etaTime,
+            staffIdIn: staffId,
+            staffIdOut: null,
             responseTime: null,
             notes: notes,
             pageCourier: false,
             closed: close,
             originator: staffId,
             description: notes,
-            courierID: job.UcjbCourierId,
-            jobID: jobId,
+            courierId: job.UcjbCourierId,
+            jobId: jobId,
             despatcher: despatcherName,
             jobType: job.UcjbSpeed
         );
+    }
+
+    private static readonly HashSet<string> AutoResponseTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Web", "Email", "Text"
+    };
+
+    public async Task InsertEventAsync(
+        string jobNo,
+        int clientId,
+        string contact,
+        DateTime date,
+        DateTime time,
+        int type,
+        int? lateTime,
+        DateTime? etaTime,
+        int staffIdIn,
+        int? staffIdOut,
+        DateTime? responseTime,
+        string notes,
+        bool pageCourier,
+        bool closed,
+        int originator,
+        string description,
+        int? courierId,
+        int jobId,
+        string despatcher,
+        int? jobType)
+    {
+        var currentDate = infoService.GetCurrentTenantTime();
+
+        if (type is (int)EventType.LatePickUp or (int)EventType.LateDelivery)
+        {
+            var automaticResponse = false;
+
+            var job = await Context.TucJobs.FindAsync(jobId);
+            if (job != null)
+            {
+                // Find the relevant ClientContactJobType record
+                var clientContactJobType =
+                    Context.TblClientContactJobTypes.First(x => x.JobTypeId == job.UcjbSpeed);
+
+                if (clientContactJobType != null)
+                {
+                    switch (type)
+                    {
+                        // Late pickup
+                        case (int)EventType.LatePickUp:
+                            automaticResponse = AutoResponseTypes.Contains(clientContactJobType.PickupType);
+                            break;
+                        // Late delivery
+                        case (int)EventType.LateDelivery:
+                            automaticResponse = AutoResponseTypes.Contains(clientContactJobType.DeliveryType);
+                            break;
+                    }
+                }
+            }
+
+            // Set fields for automatic response
+            if (automaticResponse)
+            {
+                closed = true;
+                staffIdOut = 33; // INTERNET USER
+                responseTime = currentDate;
+                contact = "Automatic Response";
+                despatcher = "Internet";
+            }
+        }
+
+        // Create and add the new event
+        var newEvent = new TucEvent
+        {
+            UcevJobNumber = jobNo,
+            UcevClientId = clientId,
+            UcevContact = contact,
+            UcevDate = date,
+            UcevTime = time,
+            UcevType = type,
+            UcevLateTime = lateTime,
+            UcevEtatime = etaTime,
+            UcevStaffIdin = staffIdIn,
+            UcevStaffIdout = staffIdOut,
+            UcevResponseTime = responseTime,
+            UcevNotes = notes,
+            UcevPageCourier = pageCourier,
+            UcevClosed = closed,
+            UcevOriginator = originator,
+            UcevDescription = description,
+            UcevCourierId = courierId,
+            UcevJobId = jobId,
+            UcevDespatcher = despatcher,
+            UcevJobType = jobType
+        };
+
+        await Context.TucEvents.AddAsync(newEvent);
+        await Context.SaveChangesAsync();
     }
 }

@@ -1,68 +1,68 @@
-    <md-table-container>
-        <table md-progress="ctrl.promise" md-row-select md-table multiple ng-model="ctrl.selectedPrebooks">
-            <thead fix-head md-head md-order="ctrl.jobQuery.order">
-            <tr md-row>
-                <th md-column md-order-by="booked">Booked</th>
-                <th md-column md-order-by="speed">Speed</th>
-                <th md-column md-order-by="jobNo">Job</th>
-                <th md-column md-order-by="client">Client</th>
-                <th md-column md-order-by="from">From</th>
-                <th md-column md-order-by="to">To</th>
-                <th md-column md-order-by="code">Code</th>
-                <th md-column>Actions</th>
-            </tr>
-            </thead>
+<md-table-container card-content-scroll>
+    <table md-progress="ctrl.promise" md-row-select md-table multiple ng-model="ctrl.selectedPrebooks">
+        <thead fix-head md-head md-order="ctrl.jobQuery.order">
+        <tr md-row>
+            <th md-column md-order-by="booked">Booked</th>
+            <th md-column md-order-by="speed">Speed</th>
+            <th md-column md-order-by="jobNo">Job</th>
+            <th md-column md-order-by="client">Client</th>
+            <th md-column md-order-by="from">From</th>
+            <th md-column md-order-by="to">To</th>
+            <th md-column md-order-by="code">Code</th>
+            <th md-column>Actions</th>
+        </tr>
+        </thead>
 
-            <tbody md-body>
-            <tr class="droppable-row draggable-row"
-                data-courier="{{job.courier}}"
-                data-jobNo="{{job.jobNo}}"
-                data-jobid="{{job.id}}"
-                md-row
-                ng-click="ctrl.selectJobDetail(job.id);"
-                ng-repeat="job in ctrl.pagedData | filter: ctrl.searchText">
+        <tbody md-body>
+        <tr class="droppable-row draggable-row"
+            data-courier="{{job.courier}}"
+            data-jobNo="{{job.jobNo}}"
+            data-jobid="{{job.id}}"
+            md-row
+            ng-click="ctrl.selectJobDetail(job.id);"
+            ng-repeat="job in ctrl.pagedData | filter: ctrl.searchText">
 
-                <td md-cell>{{job.booked | momentFormat:"HH:mm"}} ({{ctrl.timeZone | timezoneShort}})</td>
-                <td md-cell>{{job.speed}}</td>
-                <td md-cell>{{job.jobNo}}</td>
-                <td md-cell>{{job.client}}</td>
-                <td md-cell md-dense>
-                   <span> {{ctrl.isUsCustomer ? job.pickupAddress.fullAddress : job.fromAddress}}</span>
-                </td>
-                <td md-cell md-dense>
-                    <span>{{ctrl.isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}</span>
-                </td>
-                <td md-cell>{{job.courier}}</td>
-                <td md-cell>
-                    <md-button class="md-icon-button" ng-click="ctrl.sendPrebookJob(job.id); $event.stopPropagation()"
-                               title="Send">
-                        <md-icon md-font-set="material-symbols-outlined">send</md-icon>
-                    </md-button>
-                    <md-button class="md-icon-button" ng-click="ctrl.voidPrebookJob(job.id); $event.stopPropagation()"
-                               title="Void">
-                        <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
-                    </md-button>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-    </md-table-container>
+            <td md-cell>{{job.booked | momentFormat:"HH:mm"}} ({{ctrl.timeZone | timezoneShort}})</td>
+            <td md-cell>{{job.speed}}</td>
+            <td md-cell>{{job.jobNo}}</td>
+            <td md-cell>{{job.client}}</td>
+            <td md-cell md-truncate>
+                <span> {{ctrl.isUsCustomer ? job.pickupAddress.fullAddress : job.fromAddress}}</span>
+            </td>
+            <td md-cell md-truncate>
+                <span>{{ctrl.isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}</span>
+            </td>
+            <td md-cell>{{job.courier}}</td>
+            <td md-cell>
+                <md-button class="md-icon-button" ng-click="ctrl.sendPrebookJob(job.id); $event.stopPropagation()"
+                           title="Send">
+                    <md-icon md-font-set="material-symbols-outlined">send</md-icon>
+                </md-button>
+                <md-button class="md-icon-button" ng-click="ctrl.voidPrebookJob(job.id); $event.stopPropagation()"
+                           title="Void">
+                    <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
+                </md-button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</md-table-container>
 
-    <!-- Pagination -->
-    <md-table-pagination
-            md-limit="ctrl.jobQuery.limit"
-            md-limit-options="[25, 50, 100, 250]"
-            md-page="ctrl.jobQuery.page"
-            md-total="{{ctrl.filteredData.length}}"
-            md-on-paginate="ctrl.onPaginate"
-            md-page-select>
-    </md-table-pagination>
+<!-- Pagination -->
+<md-table-pagination
+        md-limit="ctrl.jobQuery.limit"
+        md-limit-options="[25, 50, 100, 250]"
+        md-page="ctrl.jobQuery.page"
+        md-total="{{ctrl.filteredData.length}}"
+        md-on-paginate="ctrl.onPaginate"
+        md-page-select>
+</md-table-pagination>
 
-    <!-- No Data Message -->
-    <no-data
-            ng-if="!ctrl.jobList || ctrl.jobList.length === 0"
-            title="No Recurring Jobs Available"
-            message="There are currently no recurring jobs that match your criteria."
-            icon="list_alt"
-            show-action="false">
-    </no-data>
+<!-- No Data Message -->
+<no-data
+        ng-if="!ctrl.jobList || ctrl.jobList.length === 0"
+        title="No Recurring Jobs Available"
+        message="There are currently no recurring jobs that match your criteria."
+        icon="list_alt"
+        show-action="false">
+</no-data>

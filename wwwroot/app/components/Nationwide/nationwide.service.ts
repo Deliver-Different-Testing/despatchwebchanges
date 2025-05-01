@@ -224,6 +224,12 @@ class NationwideService implements angular.IServiceProvider {
         });
     }
 
+    async restoreJob(jobId: number) {
+        await this.$http.post("nationwideJob/RestoreJob", {
+            jobId,
+        });
+    }
+
     private _prepareViewIdsForRequest(selectedAreas: DfrntPageViewModel[] | Suggestion[]): number[] {
         return selectedAreas.map(area => {
             return typeof area === "object" && area.id ? area.id : 0;

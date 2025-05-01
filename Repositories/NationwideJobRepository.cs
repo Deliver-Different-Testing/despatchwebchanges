@@ -122,7 +122,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             })
             .ToList();
     }
-
+    
     public async Task<string> GetSingleAirportCodeByIdAsync(int airportId)
     {
         var airportCode = await Context.TblAirports
@@ -541,7 +541,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
             if (c == startDelim)
             {
-                var endDelimIndex = format.IndexOf(endDelim);
+                var endDelimIndex = format.IndexOf(endDelim, StringComparison.Ordinal);
                 var fieldName = format[..endDelimIndex];
                 format = format[(endDelimIndex + 1)..];
 
@@ -559,5 +559,43 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         message = message.Replace("  ", " ");
         message = message.Trim();
         return message;
+    }
+
+    public async Task RestoreNationwideJobAsync(int jobId)
+    {
+        var job = await Context.TucJobs.Include(j => j.TucJobNationwides).FirstOrDefaultAsync(j => j.UcjbId == jobId);
+        ArgumentNullException.ThrowIfNull(job);
+
+        // Reset fields
+        job.UcjbStatus = (int)JobStatus.New;
+        job.UcjbJobDone = false;
+        job.UcjbVoid = false;
+        job.UcjbCourierId = null;
+        job.UcjbDispDate = null;
+        job.UcjbDispTime = null;
+        job.UcjbPaged = false;
+        job.UcjbPagedTime = null;
+        job.UcjbComplTime = null;
+        job.UcjbMobileSend = false;
+        job.AutoDespatch = false;
+        job.PickRunOrder = null;
+        job.DropRunOrder = null;
+        job.DesCheck = false;
+        job.FdcourierId = null;
+        job.FirstJob = false;
+        job.AgentId = null;
+        job.UcjbFlightDetails = string.Empty;
+
+        // Remove flight record
+        if (job.TucJobNationwides != null && job.TucJobNationwides.Count != 0)
+        {
+            var flightDetails = job.TucJobNationwides.FirstOrDefault();
+            if (flightDetails != null) Context.TucJobNationwides.Remove(flightDetails);
+        }
+
+        await Context.SaveChangesAsync();
+
+        // Make a note
+        await SaveNoteAsync(jobId, "Job restored");
     }
 }

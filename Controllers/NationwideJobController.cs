@@ -16,7 +16,9 @@ public class NationwideJobController(
     INationwideJobRepository repository,
     IFlightStatsService flightService,
     IClientAccessValidatorService clientAccessValidator,
-    ICountryService countryService)
+    ICountryService countryService,
+    ITaskRepository taskRepository,
+    ITenantInfoService infoService)
     : Controller
 {
     [HttpGet]
@@ -341,6 +343,21 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting the flight detail");
+            return StatusCode(500, e.Message);
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> RestoreJob(int jobId)
+    {
+        try
+        {
+            await repository.RestoreNationwideJobAsync(jobId);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An error occured retstoring the nationwide job");
             return StatusCode(500, e.Message);
         }
     }

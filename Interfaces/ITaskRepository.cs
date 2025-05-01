@@ -20,15 +20,15 @@ public interface ITaskRepository
         int jobId,
         List<EventGroupViewModel> eventGroupViewModels);
     Task<List<Suggestion>> GetActiveStaffAsync();
-    
+
     Task AddEventAsync(
-            int jobId,
-            int staffId,
-            string despatcherName,
-            string notes,
-            int eventType,
-            float? lateTime = null,
-            DateTime? etaTime = null,
-            bool close = false
-        );
+        int jobId,
+        int staffId,
+        string despatcherName,
+        string notes,
+        int eventType,
+        int? lateTime = null,
+        DateTime? etaTime = null,
+        bool close = false
+    );
 }

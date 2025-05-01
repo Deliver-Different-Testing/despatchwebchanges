@@ -1,4 +1,4 @@
-<div class="md-table-footer-container">
+`<div class="md-table-footer-container">
     <div class="md-table-footer-content">
         <div flex></div>
 
@@ -117,7 +117,7 @@
             </td>
 
             <td class="actions" md-cell>
-                    <span class="action-icon" ng-click="job.courier == null || ctrl.restoreJob(job);">
+                    <span class="action-icon" ng-if="ctrl.restoreJobAvaliable(job)" ng-click="ctrl.restoreJob(job);">
                         <md-icon md-font-set="material-symbols-outlined" ng-if="job.courier !== null">undo</md-icon>
                         <md-tooltip md-direction="bottom">Restore</md-tooltip>
                     </span>
@@ -149,3 +149,4 @@
         padding: 0 !important;
     }
 </style>
+`

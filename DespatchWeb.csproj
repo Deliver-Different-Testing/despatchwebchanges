@@ -356,7 +356,6 @@
     <TypeScriptCompile Include="wwwroot\app\enums\late-event-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
     <TypeScriptCompile Include="wwwroot\app\bindAllMethods.ts" />
-    <TypeScriptCompile Include="wwwroot\app\vendor.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\app-config.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\apiConfig.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\courier.interface.ts" />
@@ -379,7 +378,6 @@
     <TypeScriptCompile Include="wwwroot\app\services\greeting.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\job-context-menu.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\notes.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\services\open-job-dispatch.service.ts" />
     <TypeScriptCompile Include="wwwroot\types\html.d.ts" />
   </ItemGroup>
   <ItemGroup>
