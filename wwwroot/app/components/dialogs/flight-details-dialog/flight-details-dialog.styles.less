@@ -1,14 +1,65 @@
 @import "../../../../css/variables.less";
 
 .flight-details-dialog {
-  min-width: 80%;
-  max-width: 900px;
+ width: 60%;
 
   .connection-tabs {
     background-color: #fff;
 
     md-tab-item:focus {
       outline: none;
+    }
+  }
+
+  .flight-header-card {
+    margin-bottom: 16px;
+
+    md-card-content {
+      padding: 16px;
+    }
+
+    .airline-info {
+      .md-title {
+        margin: 0;
+        color: rgba(0, 0, 0, 0.87);
+      }
+
+      .flight-number {
+        line-height: 1.2;
+        margin: 4px 0;
+        color: @primary-color;
+        font-weight: 500;
+      }
+
+      .airline-logo {
+        margin-right: 16px;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background-color: rgba(0, 0, 0, 0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+
+    .flight-status {
+      .flight-chip {
+        border-radius: 16px;
+        font-weight: 500;
+        height: 32px;
+        line-height: 32px;
+
+        md-icon {
+          margin-right: 4px;
+        }
+      }
+
+      .flight-date {
+        text-align: right;
+        margin-top: 8px;
+        color: rgba(0, 0, 0, 0.54);
+      }
     }
   }
 

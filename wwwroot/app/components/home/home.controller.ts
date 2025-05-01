@@ -38,6 +38,7 @@ import {ResendJobsRequest} from "./home.interfaces";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
 import {JobProperty} from "../../enums/job-property.enum";
 import NavigationService from "../../services/navigation.service";
+import JobSearchService from "../jobSearch/jobSearch.service";
 
 class HomeController extends BaseController {
     static $inject = [
@@ -79,7 +80,6 @@ class HomeController extends BaseController {
     currentJobId?: number;
     jobList: IDispatchJob[];
     mapZoom?: number;
-    options: any;
     truckMode: string;
     showInput: any;
     queryParams: JobQueryParams;
@@ -95,8 +95,6 @@ class HomeController extends BaseController {
     selectedViews: DfrntPageViewModel[];
     mapCenter: Coordinates;
     autoZoomEnabled: boolean;
-    filters: any;
-    selectedFilter: any;
     selected: any;
     supports: ExtendedTask[];
     driverLocations?: ClearListViewModel;
@@ -128,22 +126,7 @@ class HomeController extends BaseController {
     potentialCouriersSelection: any;
     currentSelection?: string;
     selectedJobs: any;
-    boxSortableOptions: {
-        handle: string;
-        connectWith: string;
-        placeholder: string;
-        tolerance: string;
-        cursor: string;
-        opacity: number;
-        scroll: boolean;
-        revert: number;
-        delay: number;
-        forcePlaceholderSize: boolean;
-        start: (e: JQueryEventObject, ui: any) => void;
-        over: (e: JQueryEventObject, ui: any) => void;
-        out: (e: JQueryEventObject, ui: any) => void;
-        stop: (e: JQueryEventObject, ui: any) => void
-    };
+    boxSortableOptions: angular.ui.SortableOptions<any>;
     jobCutoffDate?: Date;
     supportsFilter: string = 'all';
     filteredSupports: ExtendedTask[] = [];
@@ -164,7 +147,7 @@ class HomeController extends BaseController {
         private $timeout: angular.ITimeoutService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
-        private uCSData: any,
+        private uCSData: JobSearchService,
         private dispatchJobService: DispatchExecutorService,
         private APP_CONFIG: AppConfig,
         private $mdSidenav: angular.material.ISidenavService,
@@ -214,6 +197,7 @@ class HomeController extends BaseController {
             revert: 200,
             delay: 150,
             forcePlaceholderSize: true,
+            distance: 5,
 
             start: (e: JQueryEventObject, ui: any) => {
                 ui.item.addClass('dragging');
@@ -228,8 +212,8 @@ class HomeController extends BaseController {
 
                 this.$document.on('mousemove.sortable', (event) => {
                     dragInfo.css({
-                        top: event.pageY + 20 + 'px',
-                        left: event.pageX + 10 + 'px'
+                        top: (event.pageY || 0) + 20 + 'px',
+                        left: (event.pageX || 0) + 10 + 'px'
                     });
                 });
             },
@@ -242,7 +226,6 @@ class HomeController extends BaseController {
                 angular.element(e.target).removeClass('ui-sortable-active');
             },
 
-            // When drag operation stops
             stop: (_: JQueryEventObject, ui: any) => {
                 angular.element(this.$document[0]).off('mousemove.sortable');
                 angular.element('#draggingItems').css('display', 'none');
@@ -255,49 +238,6 @@ class HomeController extends BaseController {
                     this._saveCurrentLayout();
                 }, 100);
             }
-        };
-
-
-        this.options = {
-            detail: {
-                size: [{
-                    id: 1, label: "Bike",
-                }, {
-                    id: 2, label: "Car",
-                }, {
-                    id: 3, label: "Van",
-                }, {
-                    id: 4, label: "Truck",
-                }, {
-                    id: 5, label: "Scooter",
-                },], tracking: [{
-                    id: 1, label: "Email",
-                }, {
-                    id: 2, label: "Mobile",
-                }, {
-                    id: 3, label: "Email & Mobile",
-                },], DGClass: [{
-                    id: 0, label: "0",
-                }, {
-                    id: 1, label: "1",
-                }, {
-                    id: 2, label: "2",
-                }, {
-                    id: 3, label: "3",
-                }, {
-                    id: 4, label: "4",
-                }, {
-                    id: 5, label: "5",
-                }, {
-                    id: 6, label: "6",
-                }, {
-                    id: 7, label: "7",
-                }, {
-                    id: 8, label: "8",
-                }, {
-                    id: 9, label: "9",
-                },],
-            },
         };
 
         this.truckMode = "On";
@@ -347,17 +287,6 @@ class HomeController extends BaseController {
                 }
             }
         }
-
-        this.filters = [{value: 1, label: "New", icon: "fiber_new", active: false}, {
-            value: 2, label: "NDA", icon: "local_shipping", active: false,
-        }, {value: 3, label: "Active", icon: "sync", active: false}, {
-            value: 4, label: "Done", icon: "task_alt", active: false,
-        }, {value: 5, label: "All", icon: "list_alt", active: true},];
-
-        this.selectedFilter = this.loadFilterFromStorage();
-        this.filters.forEach((filter: any) => {
-            filter.active = filter.value === this.selectedFilter;
-        });
 
         this.selected = [];
         this.jobList = [];
@@ -1086,14 +1015,14 @@ class HomeController extends BaseController {
 
 
     async updateJobsAfterSwap(secondJobId: number, firstJobId: number) {
-        await this.uCSData.reSendJobs(secondJobId);
-        await this.uCSData.reAssignJobs(firstJobId);
-        await this.uCSData.reSendJobs(firstJobId);
+        await this.uCSData.reSendJobs([secondJobId]);
+        await this.uCSData.reAssignJobs([firstJobId]);
+        await this.uCSData.reSendJobs([firstJobId]);
     }
 
     async voidJobForm(jobNumber: string, jobId: number) {
         try {
-            const note = await this.$mdDialog
+            const note: string = await this.$mdDialog
                 .show(this.$mdDialog
                     .prompt()
                     .title("Void Job " + jobNumber)

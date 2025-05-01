@@ -482,6 +482,9 @@ export interface IDispatchJob {
     searchText?: string;
     relatedJobs?: Suggestion[];
 
+    assignedFlight?: AssignedFlight;
+    assignedAgent?: IAgent;
+
     // Search helper property
     [key: string]: any;
 }

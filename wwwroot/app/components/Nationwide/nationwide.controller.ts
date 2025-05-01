@@ -24,6 +24,8 @@ import {IJobReadChanged} from "../../interfaces/event-interfaces";
 import {JobProperty} from "../../enums/job-property.enum";
 import FlightDetailsDialogService from "../dialogs/flight-details-dialog/flight-details-dialog.service";
 import NavigationService from '../../services/navigation.service';
+import ApiConfig from "../../interfaces/apiConfig.interface";
+import ConfigService from "../../services/config.service";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -44,7 +46,8 @@ class NationwideControl extends BaseController {
         'jobContextMenuService',
         '$interval',
         'flightDetailsDialogService',
-        'navigationService'
+        'navigationService',
+        'configService',
     ];
 
     readonly nationwidePageId: number = AppPages.Domestic;
@@ -97,8 +100,8 @@ class NationwideControl extends BaseController {
     boxes?: Record<string, IBox>;
     pickService: any;
     pickClients: any;
-    sortableOptions: any;
-    hereCredentials?: { apiKey: string };
+    sortableOptions: angular.ui.SortableOptions<any>;
+    hereCredentials?: ApiConfig;
     mapConfig?: HereMapsConfig;
     currentSelection?: string;
     agentsLoading: boolean = false;
@@ -143,6 +146,7 @@ class NationwideControl extends BaseController {
         private $interval: angular.IIntervalService,
         private flightDetailsDialogService: FlightDetailsDialogService,
         private navigationService: NavigationService,
+        private configService: ConfigService,
     ) {
         super();
 
@@ -174,49 +178,8 @@ class NationwideControl extends BaseController {
             angular.element('body').append('<div id="draggingItems"></div>');
         }
 
-        this.initializeVariables();
         this.initHereMaps();
-        this.initLayoutSystem(ContactID);
 
-        // Start loading data
-        this.loadPageViews().then(() => {
-            console.log('Loaded Page Views and Data!');
-        });
-
-        this.STATUS_TO_LIST_MAP = {
-            1: [JobDataType.NEW],
-            3: [JobDataType.POD],
-            4: [JobDataType.REPRICE]
-        };
-
-        this.nationwideService.getActiveAirlines().then((response) => {
-            console.log("[NationwideController] - Active Airlines:", response);
-            this.activeAirlineOptions = response;
-        });
-    }
-
-    $onInit() {
-        this.refreshInterval = this.$interval(async () => {
-            console.log("[NationwideController] - Refreshing tasks and job lists");
-
-            // Store current state before refresh
-            const currentJobId = this.currentJob?.id;
-
-            // Refresh tasks
-            await this.getTasks();
-
-            // Refresh job lists while preserving selections
-            await this.refreshJobLists(currentJobId);
-        }, 60000);
-    }
-
-    $onDestroy() {
-        if (this.refreshInterval) {
-            this.$interval.cancel(this.refreshInterval);
-        }
-    }
-
-    initLayoutSystem(contactID: number) {
         const jobsListBox: IBox = {name: "jobsList", height: "60%"};
         const jobsListPODBox: IBox = {name: "jobsListPOD", height: "40%"};
         const tasksListBox: IBox = {name: "tasksList", height: "50%"};
@@ -255,8 +218,8 @@ class NationwideControl extends BaseController {
         // Load saved layouts or use default
         if (Modernizr.localstorage) {
             try {
-                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(`layoutsNW-${contactID}`) || '[]');
-                const lastActiveLayout = localStorage.getItem(`lastActiveLayoutNW-${contactID}`);
+                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(`layoutsNW-${ContactID}`) || '[]');
+                const lastActiveLayout = localStorage.getItem(`lastActiveLayoutNW-${ContactID}`);
 
                 this.layouts = storedLayouts || [this.defaultLayout];
                 this.layouts[0] = this.defaultLayout; // Ensure default is always up-to-date
@@ -283,15 +246,28 @@ class NationwideControl extends BaseController {
                 if (index !== -1) {
                     this.layouts[index].layout = angular.copy(newValue);
                     if (Modernizr.localstorage) {
-                        localStorage.setItem(`layoutsNW-${contactID}`, JSON.stringify(this.layouts));
+                        localStorage.setItem(`layoutsNW-${ContactID}`, JSON.stringify(this.layouts));
                     }
                 }
             }
         }, true);
-    }
 
-    // Variables
-    initializeVariables() {
+        // Start loading data
+        this.loadPageViews().then(() => {
+            console.log('Loaded Page Views and Data!');
+        });
+
+        this.STATUS_TO_LIST_MAP = {
+            1: [JobDataType.NEW],
+            3: [JobDataType.POD],
+            4: [JobDataType.REPRICE]
+        };
+
+        this.nationwideService.getActiveAirlines().then((response) => {
+            console.log("[NationwideController] - Active Airlines:", response);
+            this.activeAirlineOptions = response;
+        });
+
         this.jobRecordSearchText = "";
 
         // New map
@@ -378,6 +354,7 @@ class NationwideControl extends BaseController {
             revert: 200,
             delay: 150,
             forcePlaceholderSize: true,
+            distance: 5,
 
             start: (e: JQueryEventObject, ui: any) => {
                 ui.item.addClass('dragging');
@@ -390,10 +367,10 @@ class NationwideControl extends BaseController {
                     left: e.pageX + 10 + 'px'
                 });
 
-                this.$document.on('mousemove.sortable', (event: JQueryMouseEventObject) => {
+                this.$document.on('mousemove.sortable', (event) => {
                     dragInfo.css({
-                        top: event.pageY + 20 + 'px',
-                        left: event.pageX + 10 + 'px'
+                        top: (event.pageY || 0) + 20 + 'px',
+                        left: (event.pageX || 0) + 10 + 'px'
                     });
                 });
             },
@@ -406,7 +383,6 @@ class NationwideControl extends BaseController {
                 angular.element(e.target).removeClass('ui-sortable-active');
             },
 
-            // When drag operation stops
             stop: (_: JQueryEventObject, ui: any) => {
                 angular.element(this.$document[0]).off('mousemove.sortable');
                 angular.element('#draggingItems').css('display', 'none');
@@ -421,6 +397,28 @@ class NationwideControl extends BaseController {
             }
         };
     }
+
+    $onInit() {
+        this.refreshInterval = this.$interval(async () => {
+            console.log("[NationwideController] - Refreshing tasks and job lists");
+
+            // Store current state before refresh
+            const currentJobId = this.currentJob?.id;
+
+            // Refresh tasks
+            await this.getTasks();
+
+            // Refresh job lists while preserving selections
+            await this.refreshJobLists(currentJobId);
+        }, 60000);
+    }
+
+    $onDestroy() {
+        if (this.refreshInterval) {
+            this.$interval.cancel(this.refreshInterval);
+        }
+    }
+
 
     private _updateBoxMetrics() {
         if (!this.layout || !this.layout.columns) return;
@@ -474,9 +472,11 @@ class NationwideControl extends BaseController {
     }
 
     initHereMaps() {
-        this.hereCredentials = {
-            apiKey: 'KedIcK-HWes4X4mqtK64i4jrxTkD7tAWfJdLCXwGPD8'
-        };
+        this.configService.getHereMapsKey().then((response) => {
+            this.hereCredentials = {
+                apiKey: response
+            };
+        });
 
         this.mapConfig = {
             center: this.appConfig.US_Customer ?
@@ -843,7 +843,7 @@ class NationwideControl extends BaseController {
 
     async restoreJob(job: IDispatchJob) {
         try {
-            await this.dispatchJobService.restoreJob(job);
+            await this.nationwideService.restoreJob(job.id);
             await this.getData();
         } catch (error) {
             console.error('Error restoring job:', error);
@@ -1843,6 +1843,11 @@ class NationwideControl extends BaseController {
 
     async openHubUrl() {
         await this.navigationService.openHubUrl();
+    }
+
+    restoreJobAvaliable(job: IDispatchJob): boolean {
+        if (!job) return false;
+        return !!(job.assignedCourier || job.assignedFlight || job.assignedAgent);
     }
 }
 

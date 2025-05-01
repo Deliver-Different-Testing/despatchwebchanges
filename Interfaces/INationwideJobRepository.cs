@@ -31,4 +31,5 @@ public interface INationwideJobRepository
     Task SendAgentRequestMessageAsync(int agentId, int jobId);
     Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId, int? maxDistanceMiles = 100);
     Task<string> GetSingleAirportCodeByIdAsync(int airportId);
+    Task RestoreNationwideJobAsync(int jobId);
 }

@@ -1,18 +1,18 @@
 <md-dialog aria-label="Flight Details" class="flight-details-dialog">
     <md-toolbar class="md-primary">
         <div class="md-toolbar-tools">
-            <md-icon class="md-icon-button" md-font-set="material-symbols-outlined">flight</md-icon>
+            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">flight</md-icon>
             <h2>Flight Details</h2>
             <span flex></span>
             <md-button class="md-icon-button" ng-click="ctrl.cancel()" aria-label="Close">
                 <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+                <md-tooltip md-direction="bottom">Close</md-tooltip>
             </md-button>
         </div>
     </md-toolbar>
 
     <!-- Flight Connection Tabs -->
-    <md-tabs md-dynamic-height md-center-tabs md-selected="ctrl.selectedTabIndex"
-             ng-if="ctrl.flightConnections.length > 1" class="connection-tabs">
+    <md-tabs md-dynamic-height md-center-tabs md-selected="ctrl.selectedTabIndex" class="connection-tabs">
         <md-tab ng-repeat="connection in ctrl.flightConnections track by $index"
                 label="{{ctrl.getConnectionLabel($index)}}"
                 ng-click="ctrl.selectConnection($index)">
@@ -42,7 +42,7 @@
             <!-- Flight data -->
             <div ng-if="!ctrl.isLoading && !ctrl.error && ctrl.flightViewModel">
                 <!-- Multi-connection summary if applicable -->
-                <div ng-if="ctrl.flightConnections.length > 1" class="connection-summary">
+                <div class="connection-summary">
                     <md-card>
                         <md-card-content layout="row" layout-align="center center">
                             <md-icon md-font-set="material-symbols-outlined" class="md-secondary">sync_alt</md-icon>
@@ -54,22 +54,66 @@
                     </md-card>
                 </div>
 
-                <!-- Flight header -->
-                <md-card>
+                <!-- Flight header with improved Material Design -->
+                <md-card class="flight-header-card md-whiteframe-2dp">
                     <md-card-content>
-                        <div layout="row" layout-align="space-between center">
-                            <div class="airline-info">
-                                <div class="md-title">{{ctrl.flightViewModel.airlineName}}</div>
-                                <div class="flight-number md-headline">{{ctrl.flightViewModel.carrierCode}} {{ctrl.flightViewModel.flightNumber}}</div>
-                                <div ng-if="ctrl.flightViewModel.serviceType">
-                                    <md-chips ng-model="[ctrl.flightViewModel.serviceType]" readonly="true"></md-chips>
+                        <div layout="row" layout-align="space-between start">
+                            <!-- Left side with airline info -->
+                            <div layout="row" layout-align="start center">
+                                <div class="airline-logo" ng-if="ctrl.flightViewModel.airlineLogo">
+                                    <img ng-src="{{ctrl.flightViewModel.airlineLogo}}" alt="{{ctrl.flightViewModel.airlineName}}" aria-label="Airline logo">
+                                </div>
+                                <div class="airline-logo" ng-if="!ctrl.flightViewModel.airlineLogo">
+                                    <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
+                                </div>
+                                <div class="airline-info">
+                                    <div class="md-title">{{ctrl.flightViewModel.airlineName}}</div>
+                                    <div class="flight-number md-headline">{{ctrl.flightViewModel.carrierCode}} {{ctrl.flightViewModel.flightNumber}}</div>
+                                    <div layout="row" layout-align="start center" ng-if="ctrl.flightViewModel.aircraft">
+                                        <md-icon md-font-set="material-icons-outlined" aria-label="Aircraft">airplanemode_active</md-icon>
+                                        <span class="md-caption">{{ctrl.flightViewModel.aircraft}}</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="flight-status">
-                                <md-chip ng-if="ctrl.flightViewModel.isNonStop" class="md-accent">Non-stop</md-chip>
-                                <md-chip ng-if="!ctrl.flightViewModel.isNonStop" class="md-warn">
-                                    {{ctrl.flightViewModel.stops}} stop{{ctrl.flightViewModel.stops > 1 ? 's' : ''}}
-                                </md-chip>
+
+                            <!-- Right side with status & date -->
+                            <div class="flight-status" layout="column" layout-align="start end">
+                                <div>
+                                    <md-chip ng-if="ctrl.flightViewModel.isNonStop" class="flight-chip md-accent">
+                                        <md-icon md-font-set="material-symbols-outlined">check_circle</md-icon>
+                                        Non-stop
+                                    </md-chip>
+                                    <md-chip ng-if="!ctrl.flightViewModel.isNonStop" class="flight-chip md-warn">
+                                        <md-icon md-font-set="material-symbols-outlined">flight_land</md-icon>
+                                        {{ctrl.flightViewModel.stops}} stop{{ctrl.flightViewModel.stops > 1 ? 's' : ''}}
+                                    </md-chip>
+                                </div>
+
+                                <div ng-if="ctrl.flightViewModel.serviceType" layout="row" layout-align="end center">
+                                    <md-chip class="md-default flight-chip">
+                                        {{ctrl.flightViewModel.serviceType}}
+                                    </md-chip>
+                                </div>
+
+                                <div class="flight-date md-caption" ng-if="ctrl.flightViewModel.departureDate">
+                                    {{ctrl.flightViewModel.departureDate | date:'MMM d, yyyy'}}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom route summary section -->
+                        <div layout="row" layout-align="center center" class="connection-summary" ng-if="ctrl.flightViewModel.originCode && ctrl.flightViewModel.destinationCode">
+                            <div class="airport-code md-subhead">{{ctrl.flightViewModel.originCode}}</div>
+                            <span class="connection-divider">-</span>
+                            <md-icon>flight</md-icon>
+                            <span class="connection-divider">-</span>
+                            <div class="airport-code md-subhead">{{ctrl.flightViewModel.destinationCode}}</div>
+
+                            <span flex></span>
+
+                            <div class="duration-badge" ng-if="ctrl.flightViewModel.duration">
+                                <md-icon>schedule</md-icon>
+                                <span>{{ctrl.flightViewModel.duration}}</span>
                             </div>
                         </div>
                     </md-card-content>
@@ -83,7 +127,7 @@
                             <h4 class="md-subhead">Departure</h4>
                                 <div class="md-title airport-name">{{ctrl.flightViewModel.origin.name}} ({{ctrl.flightViewModel.origin.code}})</div>
                                 <div class="md-body-1 airport-location">{{ctrl.flightViewModel.origin.city}}, {{ctrl.flightViewModel.origin.country}}</div>
-                                <div class="md-body-2 time">{{ctrl.flightViewModel.departureTime}} ({{ctrl.timeZone | timezoneShort}})</div>
+                                <div class="md-body-2 time">{{ctrl.flightViewModel.departureTime}} ({{ctrl.flightViewModel.origin.timezone | timezoneShort}})</div>
                             </div>
 
                             <div flex="10" layout="column" layout-align="center center" class="flight-divider">
@@ -100,7 +144,7 @@
                                 <h4 class="md-subhead">Arrival</h4>
                                 <div class="md-title airport-name">{{ctrl.flightViewModel.destination.name}} ({{ctrl.flightViewModel.destination.code}})</div>
                                 <div class="md-body-1 airport-location">{{ctrl.flightViewModel.destination.city}}, {{ctrl.flightViewModel.destination.country}}</div>
-                                <div class="md-body-2 time">{{ctrl.flightViewModel.arrivalTime}} ({{ctrl.timeZone | timezoneShort}})</div>
+                                <div class="md-body-2 time">{{ctrl.flightViewModel.arrivalTime}} ({{ctrl.flightViewModel.destination.timezone | timezoneShort}})</div>
                                 <div ng-if="ctrl.flightViewModel.arrivalTerminal" class="terminal md-body-2">
                                     <md-icon md-font-set="material-symbols-outlined">door_front</md-icon>
                                     Terminal: {{ctrl.flightViewModel.arrivalTerminal}}
@@ -195,7 +239,7 @@
 
                 <!-- Airport information -->
                 <md-card>
-                    <md-tabs md-dynamic-height md-border-bottom>
+                    <md-tabs md-center-tabs md-border-bottom>
                         <md-tab label="Departure Airport">
                             <md-content class="md-padding airport-tab-content">
                                 <h3 class="md-title">{{ctrl.flightViewModel.origin.name}} ({{ctrl.flightViewModel.origin.code}})</h3>
@@ -301,9 +345,4 @@
             </div>
         </div>
     </md-dialog-content>
-
-    <md-dialog-actions layout="row">
-        <span flex></span>
-        <md-button class="md-primary" ng-click="ctrl.cancel()">Close</md-button>
-    </md-dialog-actions>
 </md-dialog>
