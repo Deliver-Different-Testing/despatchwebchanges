@@ -23,8 +23,7 @@ public class TaskRepository(
         var today = filters?.Date ?? infoService.GetCurrentTenantTime();
 
         var query = Context.TucEvents
-            .Where(e => e.UcevDate.Value.Date > today.Date ||
-                        (e.UcevDate.Value.Date <= today.Date && !e.UcevClosed));
+            .Where(e => e.UcevDate.Value.Date <= today.Date);
 
         if (filters != null) query = ApplyFilters(query, filters);
 
@@ -64,6 +63,14 @@ public class TaskRepository(
     private static IQueryable<TucEvent> ApplyOrdering(IQueryable<TucEvent> query, TaskTableFiltersRequest filters,
         DateTime today)
     {
+        query = query
+            .OrderByDescending(e =>
+                e.UcevDate.Value.Date < today.Date ||
+                (e.UcevDate.Value.Date == today.Date &&
+                 e.UcevTime.Value.TimeOfDay < today.TimeOfDay &&
+                 !e.UcevClosed)
+            );
+
         if (filters == null || string.IsNullOrWhiteSpace(filters.OrderBy)) return query;
 
         var isDescending = string.Equals(filters.OrderDirection, "desc", StringComparison.OrdinalIgnoreCase);
@@ -181,30 +188,34 @@ public class TaskRepository(
         ArgumentNullException.ThrowIfNull(job, nameof(job));
 
         var currentDate = infoService.GetCurrentTenantTime();
+        var staffId = infoService.GetStaffId();
+        var despatcher = await Context.TucStaffs
+            .Where(s => s.UcstId == staffId)
+            .Select(s => s.UcstFirstName + " " + s.UcstLastName)
+            .FirstOrDefaultAsync();
 
         foreach (var eventGroup in eventGroupViewModels)
         {
-            // Call the stored procedure for each agent
-            await Context.Procedures.DES_qdfEvent_InsertAsync(
+            await InsertEventAsync(
                 jobNo: job.UcjbNumber,
-                clientID: job.UcjbClientId,
+                clientId: job.UcjbClientId ?? 0,
                 contact: job.UcjbContact,
                 date: currentDate,
                 time: currentDate,
                 type: eventGroup.EventType.Id,
                 lateTime: null,
-                eTATime: eventGroup.DueTime,
-                staffIDIn: eventGroup.AssignTo.Id,
-                staffIDOut: null,
+                etaTime: eventGroup.DueTime,
+                staffIdIn: eventGroup.AssignTo?.Id,
+                staffIdOut: null,
                 responseTime: null,
                 notes: eventGroup.Notes,
                 pageCourier: false,
                 closed: false,
-                originator: eventGroup.AssignTo.Id,
+                originator: staffId,
                 description: eventGroup.EventType.Text,
-                courierID: job.UcjbCourierId,
-                jobID: job.UcjbId,
-                despatcher: eventGroup.AssignTo.Text,
+                courierId: job.UcjbCourierId,
+                jobId: job.UcjbId,
+                despatcher: despatcher,
                 jobType: job.UcjbSpeed
             );
         }
@@ -231,6 +242,9 @@ public class TaskRepository(
         TaskTableFiltersRequest filters
     )
     {
+        if (filters.ShowCompleted.HasValue)
+            query = query.Where(e => e.UcevClosed == filters.ShowCompleted.Value);
+
         // Filter by CourierId if provided
         if (filters.CourierId.HasValue)
             query = query.Where(e => e.UcevCourierId == filters.CourierId.Value);
@@ -319,7 +333,7 @@ public class TaskRepository(
         int type,
         int? lateTime,
         DateTime? etaTime,
-        int staffIdIn,
+        int? staffIdIn,
         int? staffIdOut,
         DateTime? responseTime,
         string notes,
@@ -399,5 +413,15 @@ public class TaskRepository(
 
         await Context.TucEvents.AddAsync(newEvent);
         await Context.SaveChangesAsync();
+    }
+
+    public async Task<int> GetDoneCountAsync(DateTime? date)
+    {
+        var today = date ?? infoService.GetCurrentTenantTime();
+
+        var doneTaskCount = await Context.TucEvents
+            .Where(e => e.UcevDate.Value.Date <= today.Date && e.UcevClosed)
+            .CountAsync();
+        return doneTaskCount;
     }
 }

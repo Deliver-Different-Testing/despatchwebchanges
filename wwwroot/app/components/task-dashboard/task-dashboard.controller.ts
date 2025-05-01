@@ -1,12 +1,13 @@
-import {ExtendedTask, TaskViewModel, TaskTableFiltersRequest} from "./task-dashboard.interfaces";
 import "./task-dashboard.styles.less";
+import {ExtendedTask, TaskTableFiltersRequest, TaskViewModel} from "./task-dashboard.interfaces";
 import GreetingService from "../../services/greeting.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import {Suggestion} from "../../interfaces/job.interface";
-import {StatusFilter} from "./enums/status-filter";
 import {ViewMode} from "./enums/view-mode";
 import BaseController from "../base-controller";
 import {ITaskListItemConfig} from "../common/task-item-component/task-item.interfaces";
+import {StatusFilter} from "./enums/status-filter";
+import moment from "moment/moment";
 
 class TaskDashboardController extends BaseController {
     static $inject = [
@@ -178,22 +179,28 @@ class TaskDashboardController extends BaseController {
     private buildTaskFilters(): TaskTableFiltersRequest {
         const filters: TaskTableFiltersRequest = {};
 
-        console.log('[TaskDashboardController] Staff filter:', this.staffFilter);
+        // Add staff filter
         if (this.staffFilter && this.staffFilter !== StatusFilter.All) {
             filters.staffId = parseInt(this.staffFilter, 10);
         }
 
-        console.log('[TaskDashboardController] Event type filter:', this.eventTypeFilter);
+        // Add event type filter
         if (this.eventTypeFilter && this.eventTypeFilter !== StatusFilter.All) {
             filters.eventTypeId = parseInt(this.eventTypeFilter, 10);
         }
 
-        console.log('[TaskDashboardController] search text filter:', this.searchQuery);
+        // Apply "Done" filter at the server level
+        if (this.statusFilter === StatusFilter.Done) {
+            filters.showCompleted = true;
+        }
+
+        // Add search filter
         if (this.searchQuery) {
             filters.searchText = this.searchQuery;
         }
 
-        filters.date = this.selectedDate.toISOString().split('T')[0];
+        // Set the date filter
+        filters.date = moment(this.selectedDate).format();
 
         return filters;
     }
@@ -215,7 +222,7 @@ class TaskDashboardController extends BaseController {
                 const formattedHours = hours < 10 ? `0${hours}` : `${hours}`;
 
                 task.dueTimeStr = `${formattedHours}:${roundedMinutes === 0 ? '00' : roundedMinutes}`;
-                task.dueDate = dueDate.toISOString();
+                task.dueDate = moment(dueDate).format();
             } catch (error) {
                 console.error(`Error processing dueDate for task:`, task, error);
                 task.dueTimeStr = "00:00";
@@ -227,21 +234,30 @@ class TaskDashboardController extends BaseController {
         await this.getTasks();
     }
 
-    setStatusFilter(status: string): void {
+    setStatusFilter(status: string) {
         this.statusFilter = status;
-        this.applyFilters();
+
+        if (status === StatusFilter.Done) {
+            return this.getTasks();
+        } else {
+            this.$timeout(() => {
+                this.applyFilters();
+            });
+        }
     }
 
     private applyFilters(): void {
-        if (this.statusFilter === StatusFilter.All || this.isFirstLoad) {
-            this.filteredTasks = this.tasks;
-        } else if (this.statusFilter === StatusFilter.Overdue) {
-            this.filteredTasks = this.tasks.filter(task => this.isTaskOverdue(task));
-        } else if (this.statusFilter === StatusFilter.Todo) {
-            this.filteredTasks = this.tasks.filter(task => !task.closed && !this.isTaskOverdue(task));
-        } else if (this.statusFilter === StatusFilter.Done) {
-            this.filteredTasks = this.tasks.filter(task => task.closed);
-        }
+        this.$timeout(() => {
+            if (this.statusFilter === StatusFilter.All) {
+                this.filteredTasks = this.tasks;
+            } else if (this.statusFilter === StatusFilter.Overdue) {
+                this.filteredTasks = this.tasks.filter(task => this.isTaskOverdue(task));
+            } else if (this.statusFilter === StatusFilter.Todo) {
+                this.filteredTasks = this.tasks.filter(task => !task.closed && !this.isTaskOverdue(task));
+            } else if (this.statusFilter === StatusFilter.Done) {
+                this.filteredTasks = this.tasks.filter(task => task.closed);
+            }
+        });
     }
 
     refreshTasks() {
@@ -263,10 +279,11 @@ class TaskDashboardController extends BaseController {
     }
 
     getTasksByDate(date: Date): ExtendedTask[] {
-        const dateStr = date.toISOString().split('T')[0];
+        const dateStr = moment(date).format();
+
         return this.filteredTasks.filter(task => {
-            const taskDate = new Date(task.dueDate);
-            return taskDate.toISOString().split('T')[0] === dateStr;
+            const taskDate = moment(task.dueDate).format();
+            return  taskDate === dateStr;
         });
     }
 
@@ -288,6 +305,17 @@ class TaskDashboardController extends BaseController {
             todo: this.tasks.filter(task => !task.closed && !this.isTaskOverdue(task)).length,
             done: this.tasks.filter(task => task.closed).length
         };
+    }
+
+    // Task completion handler
+    handleTaskCompletion(task: ExtendedTask) {
+        this.refreshTasks().then(() => {
+            if (this.statusFilter === StatusFilter.Done) {
+                this.$timeout(() => {
+                    this.applyFilters();
+                });
+            }
+        });
     }
 
     async changeDate(days: number) {
@@ -318,4 +346,5 @@ const TaskDashboardComponent: angular.IComponentOptions = {
     controller: TaskDashboardController,
     controllerAs: "ctrl"
 }
+
 export default TaskDashboardComponent;

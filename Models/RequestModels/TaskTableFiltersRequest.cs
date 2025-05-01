@@ -11,4 +11,5 @@ public class TaskTableFiltersRequest
     public string OrderBy { get; set; }
     public string OrderDirection { get; set; }
     public int? StaffId { get; set; }
+    public bool? ShowCompleted { get; set; }
 }

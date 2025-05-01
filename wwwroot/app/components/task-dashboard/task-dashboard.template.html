@@ -156,7 +156,6 @@
                         <span style="margin-left: 8px;">No tasks match your filters</span>
                     </div>
 
-                    <!-- Task items using the new component -->
                     <md-list ng-if="!ctrl.tasksLoading">
                         <task-item-component
                                 ng-repeat="task in ctrl.filteredTasks track by task.id"

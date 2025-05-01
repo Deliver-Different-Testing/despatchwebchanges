@@ -14,6 +14,7 @@ export class EventGroupDialogController extends BaseController{
         '$mdDialog',
         '$http',
         'toastrService',
+        '$timeout',
         'jobId',
         'eventTypeGroups',
         'users'
@@ -23,6 +24,7 @@ export class EventGroupDialogController extends BaseController{
         private $mdDialog: angular.material.IDialogService,
         private $http: angular.IHttpService,
         private toastrService: ToastrService,
+        private $timeout: angular.ITimeoutService,
         public jobId: number,
         public events: EventGroupViewModel[],
         public users: Suggestion[],
@@ -33,19 +35,21 @@ export class EventGroupDialogController extends BaseController{
         this.minDate = new Date();
         this.maxDate = new Date();
         this.maxDate.setDate(this.maxDate.getFullYear() + 15);
+
+        this.$timeout(() => {
+            console.log('EventGroupDialog initialized with', events.length, 'event groups');
+        });
     }
 
     async save(jobId: number, events: EventGroupViewModel[]) {
         try {
+            this.$timeout(() => {
+                console.log('Processing event save request');
+            });
+
             const activeEvents = events.filter(event => event.active);
             if (activeEvents.length === 0) {
-                this.toastrService.showWarningToast('No events are active. Please select active events to assign.');
-                return;
-            }
-
-            const unassignedEvents = activeEvents.filter(event => !event.assignTo);
-            if (unassignedEvents.length > 0) {
-                this.toastrService.showWarningToast('Please assign all active events before saving.');
+                this.toastrService.showWarningToast('No events are active. Please select at least one event to add to the job.');
                 return;
             }
 
@@ -55,10 +59,12 @@ export class EventGroupDialogController extends BaseController{
             });
 
             const taskCount = activeEvents.length;
-            this.toastrService.showSuccessToast(`${taskCount} task${taskCount !== 1 ? 's' : ''} added successfully`);
 
-            // Close dialog
-            this.$mdDialog.hide();
+            this.$timeout(() => {
+                this.toastrService.showSuccessToast(`${taskCount} task${taskCount !== 1 ? 's' : ''} added successfully`);
+                // Close dialog
+                this.$mdDialog.hide();
+            });
         } catch (error) {
             console.error('EventGroupDialogController: Error in save', error);
             this.toastrService.showErrorToast();
@@ -66,23 +72,36 @@ export class EventGroupDialogController extends BaseController{
     }
 
     querySearch(text: string): Suggestion[] {
-        if (!text) return this.users;
+        let results: Suggestion[] = [];
 
-        const lowercaseQuery = text.toLowerCase();
-        return this.users.filter(user =>
-            user.text.toLowerCase().includes(lowercaseQuery)
-        );
+        this.$timeout(() => {
+            if (!text) {
+                results = this.users;
+            } else {
+                const lowercaseQuery = text.toLowerCase();
+                results = this.users.filter(user =>
+                    user.text.toLowerCase().includes(lowercaseQuery)
+                );
+            }
+
+            console.log('Search query processed with', results.length, 'results');
+        });
+
+        return results.length > 0 ? results : this.users;
     }
 
     selectedUserChange(user: Suggestion, index: number): void {
-        if (user && user.text) {
-            if (!this.events[index].assignTo) {
-                this.events[index].assignTo = { text: '', id: 0 };
-            }
+        this.$timeout(() => {
+            if (user && user.text) {
+                if (!this.events[index].assignTo) {
+                    this.events[index].assignTo = { text: '', id: 0 };
+                }
 
-            this.events[index].assignTo.text = user.text;
-            this.events[index].assignTo.id = user.id;
-        }
+                this.events[index].assignTo.text = user.text;
+                this.events[index].assignTo.id = user.id;
+                console.log('User assigned to event at index', index, ':', user.text);
+            }
+        });
     }
 
     cancel(): void {
