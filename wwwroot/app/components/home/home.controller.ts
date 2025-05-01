@@ -2098,7 +2098,7 @@ class HomeController extends BaseController {
                 this.currentCourier = null;
             }
 
-            await this.getSupports();
+            await this.loadSupports();
             await this.getJobList();
 
             if (!this.currentCourier && !this.currentJob) {
@@ -2389,7 +2389,8 @@ class HomeController extends BaseController {
     }
 
     private _buildFilterRequest(filterType: string): TaskTableFiltersRequest {
-        const filterRequest: TaskTableFiltersRequest = {};
+        let filterRequest: TaskTableFiltersRequest = {};
+        filterRequest.showCompleted = false;
 
         switch (filterType) {
             case 'mine':
@@ -2425,7 +2426,8 @@ class HomeController extends BaseController {
 
             // Build filter request based on filter type
             const filterRequest = this._buildFilterRequest(filterType);
-
+            console.log('Filter request:', filterRequest);
+            
             try {
                 this.supports = await this.DispatchData.getAllTasks(filterRequest);
                 this.filteredSupports = this.supports;
@@ -2442,10 +2444,6 @@ class HomeController extends BaseController {
         } finally {
             this.supportsLoading = false;
         }
-    }
-
-    async getSupports(): Promise<void> {
-        await this.loadSupports();
     }
 
     async filterSupports(filterType: string): Promise<void> {

@@ -118,7 +118,7 @@
 
             <td class="actions" md-cell>
                     <span class="action-icon" ng-if="ctrl.restoreJobAvaliable(job)" ng-click="ctrl.restoreJob(job);">
-                        <md-icon md-font-set="material-symbols-outlined" ng-if="job.courier !== null">undo</md-icon>
+                        <md-icon md-font-set="material-symbols-outlined">undo</md-icon>
                         <md-tooltip md-direction="bottom">Restore</md-tooltip>
                     </span>
                 <span class="action-icon" ng-click="job.courier == null || ctrl.reAllocateJobs(job);">

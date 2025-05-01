@@ -744,36 +744,19 @@ class DispatchCoreService implements angular.IServiceProvider {
             if (filters) {
                 const queryParams = new URLSearchParams();
 
-                if (filters.staffId) {
-                    queryParams.append('staffId', filters.staffId.toString());
-                }
+                if (filters.staffId) queryParams.append('staffId', filters.staffId.toString());
+                if (filters.courierId) queryParams.append('courierId', filters.courierId.toString());
+                if (filters.eventTypeId) queryParams.append('eventTypeId', filters.eventTypeId.toString());
+                if (filters.searchText) queryParams.append('searchText', filters.searchText);
+                if (filters.date) queryParams.append('date', filters.date);
+                if (filters.showCompleted != undefined) queryParams.append('showCompleted', filters.showCompleted.toString());
+                if (filters.orderBy) queryParams.append('orderBy', filters.orderBy);
+                if (filters.orderDirection)  queryParams.append('orderDirection', filters.orderDirection);
 
-                if (filters.courierId) {
-                    queryParams.append('courierId', filters.courierId.toString());
-                }
-
-                if (filters.eventTypeId) {
-                    queryParams.append('eventTypeId', filters.eventTypeId.toString());
-                }
-
-                if (filters.searchText) {
-                    queryParams.append('searchText', filters.searchText);
-                }
-
-                if (filters.date) {
-                    queryParams.append('date', filters.date);
-                }
-
-                if (filters.orderBy) {
-                    queryParams.append('orderBy', filters.orderBy);
-                }
-
-                if (filters.orderDirection) {
-                    queryParams.append('orderDirection', filters.orderDirection);
-                }
 
                 const queryString = queryParams.toString();
                 if (queryString) {
+                    console.log(`Query string: ${queryString}`);
                     url += `?${queryString}`;
                 }
             }

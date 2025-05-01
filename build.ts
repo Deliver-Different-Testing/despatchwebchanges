@@ -70,7 +70,7 @@ class Bundler {
             legalComments: this.isDev ? "inline" : "none",
             format: "iife",
             mainFields: ["browser", "module", "main"],
-            logLevel: 'info',
+            logLevel: this.isDev ? 'info' : 'error',
             plugins: [
                 esbuildPluginTsc(),
                 es5Plugin(),

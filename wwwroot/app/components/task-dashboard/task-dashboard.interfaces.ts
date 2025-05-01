@@ -1,31 +1,31 @@
-import {Suggestion} from "../../interfaces/job.interface";
-
 export interface TaskViewModel {
     id: number;
     title: string;
     description: string;
     dueDate: string;
     closed: boolean;
-    priority: string;
     assignee: Suggestion;
-    eventType: string;
     jobId: number;
-    icon: string;
-    isOverdue: boolean;
+    eventType: string;
     jobNumber: string;
-}
-
-export interface TaskTableFiltersRequest {
-    courierId?: number;
-    eventTypeId?: number;
-    searchText?: string;
-    date?: string;
-    orderBy?: string;
-    orderDirection?: string;
-    staffId?: number;
 }
 
 export interface ExtendedTask extends TaskViewModel {
     dueTimeStr?: string;
-    _supportData?: any;
+}
+
+export interface TaskTableFiltersRequest {
+    searchText?: string;
+    staffId?: number;
+    eventTypeId?: number;
+    orderBy?: string;
+    orderDirection?: string;
+    date?: string;
+    showCompleted?: boolean;
+    courierId?: number;
+}
+
+export interface Suggestion {
+    id: number;
+    text: string;
 }
