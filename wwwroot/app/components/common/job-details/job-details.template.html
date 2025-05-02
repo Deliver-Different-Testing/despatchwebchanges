@@ -21,7 +21,6 @@
             <div class="job-ids-container" ng-if="ctrl.job.relatedJobs && ctrl.job.relatedJobs.length > 0">
                 <md-tabs
                         md-border-bottom
-                        md-center-tabs="true"
                         md-no-pagination="ctrl.job.relatedJobs.length <= 5"
                         md-selected="ctrl.selectedTabIndex"
                         md-swipe-content>
@@ -170,7 +169,7 @@
                             <md-icon aria-label="POD time" md-font-set="material-symbols-outlined">verified</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">POD Time:</span>
-                                <span class="timing-value">{{ctrl.job.completedTime ? (ctrl.job.completedTime | momentFormat:'MM/dd HH:mm') + ' (' + (ctrl.timeZone | timezoneShort) + ')' : 'N/A'}}</span>
+                                <span class="timing-value">{{ctrl.job.completedTime ? (ctrl.job.completedTime | momentFormat:'MM/DD HH:mm') + ' (' + (ctrl.timeZone | timezoneShort) + ')' : 'N/A'}}</span>
                             </div>
                         </md-list-item>
 
@@ -182,7 +181,7 @@
                             </md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Follow Up:</span>
-                                <span class="timing-value">{{ctrl.job.followupTime ? (ctrl.job.followupTime | momentFormat:'MM/dd HH:mm') + ' (' + (ctrl.timeZone | timezoneShort) + ')' : 'N/A'}}</span>
+                                <span class="timing-value">{{ctrl.job.followupTime ? (ctrl.job.followupTime | momentFormat:'MM/DD HH:mm') + ' (' + (ctrl.timeZone | timezoneShort) + ')' : 'N/A'}}</span>
                             </div>
                         </md-list-item>
                     </md-list>
@@ -492,7 +491,7 @@
                          ng-if="!ctrl.job.prebook">
                         <div class="info-section">
                             <md-toolbar class="md-primary">
-                                <div class="md-toolbar-tool">
+                                <div class="md-toolbar-tools">
                                     <span class="material-symbols-outlined">local_shipping</span>
                                     <span class="md-headline-title" flex
                                           style="margin-left: 8px;">Delivery Details</span>
