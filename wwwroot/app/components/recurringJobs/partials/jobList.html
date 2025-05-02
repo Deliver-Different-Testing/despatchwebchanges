@@ -1,5 +1,5 @@
-<md-table-container card-content-scroll>
-    <table md-progress="ctrl.promise" md-row-select md-table multiple ng-model="ctrl.selectedPrebooks">
+<md-table-container style="overflow: auto; height: calc(100% - 150px);">
+<table md-progress="ctrl.promise" md-row-select md-table multiple ng-model="ctrl.selectedPrebooks">
         <thead fix-head md-head md-order="ctrl.jobQuery.order">
         <tr md-row>
             <th md-column md-order-by="booked">Booked</th>
@@ -14,10 +14,7 @@
         </thead>
 
         <tbody md-body>
-        <tr class="droppable-row draggable-row"
-            data-courier="{{job.courier}}"
-            data-jobNo="{{job.jobNo}}"
-            data-jobid="{{job.id}}"
+        <tr
             md-row
             ng-click="ctrl.selectJobDetail(job.id);"
             ng-repeat="job in ctrl.pagedData | filter: ctrl.searchText">
@@ -26,10 +23,10 @@
             <td md-cell>{{job.speed}}</td>
             <td md-cell>{{job.jobNo}}</td>
             <td md-cell>{{job.client}}</td>
-            <td md-cell md-truncate>
+            <td md-cell>
                 <span> {{ctrl.isUsCustomer ? job.pickupAddress.fullAddress : job.fromAddress}}</span>
             </td>
-            <td md-cell md-truncate>
+            <td md-cell>
                 <span>{{ctrl.isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}</span>
             </td>
             <td md-cell>{{job.courier}}</td>

@@ -66,7 +66,8 @@
                     </md-button>
 
                     <div layout="column" layout-align="center center">
-                        <span class="selected-date">{{ctrl.selectedDate | momentFormat:'dddd, MMMM D, YYYY'}} ({{ctrl.timeZone | timezoneShort}})</span>                        <md-button class="md-small today-button" ng-click="ctrl.goToToday()"
+                        <span class="selected-date">{{ctrl.selectedDate | momentFormat:'dddd, MMMM D, YYYY'}} ({{ctrl.timeZone | timezoneShort}})</span>
+                        <md-button class="md-small today-button" ng-click="ctrl.goToToday()"
                                    aria-label="Go to today">
                             Today
                         </md-button>
@@ -248,23 +249,23 @@
         </div>
         <!-- Second column -->
         <div class="main-column">
-                <md-card class="job-detail-card">
-                    <md-toolbar class="md-accent">
-                        <div class="md-toolbar-tools">
-                            <span class="material-symbols-outlined">info</span>
-                            <span class="md-headline-title" flex style="margin-left: 8px;">
+            <md-card class="job-detail-card">
+                <md-toolbar class="md-accent">
+                    <div class="md-toolbar-tools">
+                        <span class="material-symbols-outlined">info</span>
+                        <span class="md-headline-title" flex style="margin-left: 8px;">
                     Detail {{ctrl.currentJobNumber}}
                 </span>
-                        </div>
-                    </md-toolbar>
+                    </div>
+                </md-toolbar>
 
-                    <md-card-content class="job-detail-card-content">
-                            <job-detail-widget
-                                    job-id="ctrl.currentJobId">
-                            </job-detail-widget>
-                    </md-card-content>
-                </md-card>
-            </div>
+                <md-card-content>
+                    <job-detail-widget
+                            job-id="ctrl.currentJobId">
+                    </job-detail-widget>
+                </md-card-content>
+            </md-card>
+        </div>
 
     </div>
 </div>
