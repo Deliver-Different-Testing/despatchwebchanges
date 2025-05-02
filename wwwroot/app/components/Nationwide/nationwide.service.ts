@@ -113,17 +113,16 @@ class NationwideService implements angular.IServiceProvider {
                 }
             });
 
-            // Find the latest departure time for pagination purposes
-            let lastDepartureTime = null;
-            if (response.data && response.data.length > 0) {
-                const sortedFlights = [...response.data].sort((a, b) => {
-                    return new Date(b.departureTime).getTime() - new Date(a.departureTime).getTime();
-                });
-                lastDepartureTime = new Date(sortedFlights[0].departureTime);
+            const flights = response.data;
+
+            let lastDepartureTime: Date | null = null;
+            if (flights && flights.length > 0) {
+                const lastFlight = flights[flights.length - 1];
+                lastDepartureTime = lastFlight.departureTime;
             }
 
             const result = {
-                flights: response.data,
+                flights,
                 message: response.data.length === 0
                     ? "Sorry, we couldn't find any flights between these airports on the selected date. Please try different dates or airports."
                     : null,
