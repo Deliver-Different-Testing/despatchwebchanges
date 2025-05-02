@@ -122,7 +122,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             })
             .ToList();
     }
-    
+
     public async Task<string> GetSingleAirportCodeByIdAsync(int airportId)
     {
         var airportCode = await Context.TblAirports
@@ -332,89 +332,6 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .FirstOrDefault();
     }
 
-    public async Task<Dictionary<string, decimal>> GetBatchCarrierFlightRatesByJobIdAsync(
-        int jobId,
-        List<string> carrierCodes,
-        DateTime? bookTime)
-    {
-        if (carrierCodes == null || carrierCodes.Count == 0) return new Dictionary<string, decimal>();
-
-        var result = new Dictionary<string, decimal>();
-
-        try
-        {
-            var job = await Context.TucJobs
-                .Include(j => j.TucJobItems)
-                .FirstOrDefaultAsync(j => j.UcjbId == jobId);
-
-            if (job == null)
-            {
-                Log.Warning("Job not found for ID {JobId} when getting batch carrier rates", jobId);
-                return result;
-            }
-
-            // Set up a list of tasks to run in parallel
-            var tasks = carrierCodes.Select(async carrierName =>
-            {
-                try
-                {
-                    var returnValue = new OutputParameter<int>();
-
-                    var carrierResults = await Context.Procedures.DD_stpGetCarrierFlightRateAsync(
-                        clientID: job.UcjbClientId,
-                        fromCity: job.PickupAddressLine4,
-                        fromState: job.PickupAddressLine5,
-                        toCity: job.DeliveryAddressLine4,
-                        toState: job.DeliveryAddressLine5,
-                        carrierName: carrierName,
-                        totalWeight: job.UcjbWeight.HasValue ? (decimal)job.UcjbWeight.Value : 0,
-                        quantity: job.UcjbQty,
-                        cubic: null,
-                        totalPallets: job.TucJobItems.Count,
-                        extraStopOffs: 0, // Default to false, we can optimize this later
-                        bookTime: bookTime,
-                        vehicleSizeID: job.UcjbSize,
-                        dangerousGoods: false,
-                        dryIceWeight: job.DryIceWeight,
-                        waitTime: null,
-                        returnValue: returnValue);
-
-                    if (returnValue.Value == 0 && carrierResults.Count > 0)
-                    {
-                        return (carrierName, carrierResults.Select(r => r.Rate ?? 0).FirstOrDefault());
-                    }
-
-                    return (carrierName, 0m);
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex, "Error retrieving carrier rate for {Carrier} and job {JobId}",
-                        carrierName, jobId);
-                    return (carrierName, 0m);
-                }
-            }).ToList();
-
-            // Execute all the tasks in parallel and wait for them to complete
-            var results = await Task.WhenAll(tasks);
-
-            // Convert the results to a dictionary
-            foreach (var (carrierName, rate) in results)
-            {
-                result[carrierName] = rate;
-            }
-
-            Log.Information("Retrieved rates for {CarrierCount} carriers for job {JobId}",
-                result.Count, jobId);
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error retrieving batch carrier flight rates for job {JobId}", jobId);
-            return result;
-        }
-    }
-
     public async Task<decimal> GetCarrierFlightRateByJobIdAsync(int jobId, string carrierName, bool extraStopOffs,
         DateTime? bookTime)
     {
@@ -597,5 +514,27 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
         // Make a note
         await SaveNoteAsync(jobId, "Job restored");
+    }
+
+    public async Task<List<Suggestion>> GetAllAgentOptionsBySearchAsync(string searchTerm)
+    {
+        var query = Context.TucAgents.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(a => a.UcagName.Contains(searchTerm));
+        }
+
+        var agents = await query
+            .Select(a => new Suggestion
+            {
+                Id = a.UcagId,
+                Text = a.UcagName
+            })
+            .OrderBy(a => a.Text)
+            .AsNoTracking()
+            .ToListAsync();
+
+        return agents;
     }
 }

@@ -12,8 +12,6 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.FlightStats;
 using Microsoft.AspNetCore.Http;
 using Serilog;
-using Arrival = DespatchWeb.Models.FlightStats.Arrival;
-using Departure = DespatchWeb.Models.FlightStats.Departure;
 
 namespace DespatchWeb.Services;
 
@@ -99,12 +97,6 @@ public class FlightStatsService(
         string codeType = null,
         List<string> extendedOptions = null)
     {
-        // Return test data when debugging
-        if (System.Diagnostics.Debugger.IsAttached)
-        {
-            return GetTestFlights();
-        }
-
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         Log.Information("Flight search started for job {JobId} with departure {DepartureDateTime}",
             jobId, departureDateTime);
@@ -135,10 +127,9 @@ public class FlightStatsService(
         query["appId"] = _appId;
         query["appKey"] = _appKey;
         query["payloadType"] = "cargo";
-        query["maxResults"] = "100"; // Request a reasonable number of results
+        query["maxResults"] = "100";
         query["includeCodeshares"] = "false";
         query["maxConnections"] = "1";
-
 
         // Filter by specific airline if airlineId is provided
         if (airlineId is > 0)
@@ -197,78 +188,43 @@ public class FlightStatsService(
         // Pre-filter connections to avoid processing unnecessary data
         var connections = flightStatusResponse.Connections;
 
-        Log.Debug("Filtered down to {ValidConnectionsCount} valid connections out of {TotalConnectionsCount}",
-            connections.Count, flightStatusResponse.Connections.Count);
-
-        if (connections.Count == 0)
-            return [];
-
-        var carrierCodes = connections
-            .SelectMany(conn => conn.ScheduledFlight)
-            .Select(flight => flight.CarrierFsCode)
-            .Distinct()
-            .ToList();
-
-        var carrierRatesTask = repository.GetBatchCarrierFlightRatesByJobIdAsync(
-            jobId,
-            carrierCodes,
-            flightsFrom.Value);
-
-        var airportsLookup = flightStatusResponse.Appendix?.Airports?
-            .ToDictionary(a => a.Fs, a => a) ?? new Dictionary<string, Airport>();
-
-        var airlinesLookup = flightStatusResponse.Appendix?.Airlines?
-            .ToDictionary(a => a.Fs, a => a) ?? new Dictionary<string, Airline>();
-
-        var equipmentLookup = flightStatusResponse.Appendix?.Equipments?
-            .ToDictionary(e => e.Iata, e => e) ?? new Dictionary<string, Equipment>();
-
-        // Await the carrier rates
-        var carrierRates = await carrierRatesTask;
-
-        // Process flights
-        var flightOptions = connections.Select(conn =>
-        {
-            var firstFlight = conn.ScheduledFlight.First();
-            var lastFlight = conn.ScheduledFlight.Last();
-
-            decimal amount = 0;
-            if (carrierRates.TryGetValue(firstFlight.CarrierFsCode, out var rate))
+        var flightOptions = await Task.WhenAll(flightStatusResponse.Connections
+            .Where(conn => conn.ScheduledFlight.Count != 0)
+            .Select(async conn =>
             {
-                amount = rate;
-            }
+                var firstFlight = conn.ScheduledFlight.First();
+                var lastFlight = conn.ScheduledFlight.Last();
 
-            airportsLookup.TryGetValue(firstFlight.DepartureAirportFsCode, out var departureAirport);
-            airportsLookup.TryGetValue(lastFlight.ArrivalAirportFsCode, out var arrivalAirport);
-            airlinesLookup.TryGetValue(firstFlight.CarrierFsCode, out var airline);
-            equipmentLookup.TryGetValue(firstFlight.FlightEquipmentIataCode, out var equipment);
+                // Get amount from stored proc
+                var amount = await repository.GetCarrierFlightRateByJobIdAsync(
+                    jobId,
+                    firstFlight.CarrierFsCode,
+                    conn.ScheduledFlight.Count != 0,
+                    firstFlight.DepartureTime);
 
-            return new FlightViewModel
-            {
-                Airline = airline?.Name,
-                FlightNumber = firstFlight.CarrierFsCode + firstFlight.FlightNumber,
-                DepartureTime = firstFlight.DepartureTime,
-                ArrivalTime = lastFlight.ArrivalTime,
-                DepartureAirport = firstFlight.DepartureAirportFsCode,
-                ArrivalAirport = lastFlight.ArrivalAirportFsCode,
-                Duration = lastFlight.ArrivalTime - firstFlight.DepartureTime,
-                Stops = conn.ScheduledFlight.Count - 1,
-                Aircraft = equipment?.Name,
-                ServiceClasses = firstFlight.ServiceClasses,
-                IsCodeShare = firstFlight.IsCodeShare,
-                Amount = amount,
-                CodeShareAirline = firstFlight.IsCodeShare ? firstFlight.CarrierFsCode : null,
-                AirlineId = activeAirlines.FirstOrDefault(x => x.Text == firstFlight.CarrierFsCode)?.Id ?? 0,
-                DepartureTimeZone = departureAirport?.TimeZoneRegionName,
-                ArrivalTimeZone = arrivalAirport?.TimeZoneRegionName
-            };
-        }).OrderBy(flight => flight.DepartureTime).ToList();
+                return new FlightViewModel
+                {
+                    Airline = flightStatusResponse.Appendix?.Airlines
+                        .FirstOrDefault(a => a.Fs == firstFlight.CarrierFsCode)
+                        ?.Name,
+                    FlightNumber = firstFlight.CarrierFsCode + firstFlight.FlightNumber,
+                    DepartureTime = firstFlight.DepartureTime,
+                    ArrivalTime = lastFlight.ArrivalTime,
+                    DepartureAirport = firstFlight.DepartureAirportFsCode,
+                    ArrivalAirport = lastFlight.ArrivalAirportFsCode,
+                    Duration = lastFlight.ArrivalTime - firstFlight.DepartureTime,
+                    Stops = conn.ScheduledFlight.Count - 1, // Number of connections equals number of flights minus 1
+                    Aircraft = flightStatusResponse.Appendix?.Equipments
+                        .FirstOrDefault(e => e.Iata == firstFlight.FlightEquipmentIataCode)
+                        ?.Name,
+                    ServiceClasses = firstFlight.ServiceClasses,
+                    IsCodeShare = firstFlight.IsCodeShare,
+                    Amount = amount,
+                    CodeShareAirline = firstFlight.IsCodeShare ? firstFlight.CarrierFsCode : null
+                };
+            }));
 
-        stopwatch.Stop();
-        Log.Information("Flight search completed in {ElapsedMilliseconds}ms, found {FlightCount} flights",
-            stopwatch.ElapsedMilliseconds, flightOptions.Count);
-
-        return flightOptions;
+        return flightOptions.OrderBy(flight => flight.DepartureTime).ToList();
     }
 
     public async Task<ScheduledFlight> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,
@@ -303,12 +259,6 @@ public class FlightStatsService(
     private async Task<FlightSchedulesResponse> FetchFlightDataAsync(string completeFlightNumber,
         DateTime departureTime)
     {
-        // Return dummy data if in debug mode
-        if (System.Diagnostics.Debugger.IsAttached)
-        {
-            return CreateDummyFlightData(completeFlightNumber, departureTime);
-        }
-
         if (string.IsNullOrEmpty(completeFlightNumber))
             throw new ArgumentException("Flight number is required and cannot be null or empty.",
                 nameof(completeFlightNumber));
@@ -459,285 +409,4 @@ public class FlightStatsService(
             ReferenceCode = flight.ReferenceCode
         };
     }
-
-    #region Test Data
-
-    private static List<FlightViewModel> GetTestFlights()
-    {
-        Log.Information("Returning test flight data for debugging");
-
-        // Create a list of test flights
-        var testFlights = new List<FlightViewModel>();
-        var now = DateTime.Now;
-
-        var airlines = new[] { "Delta Air Lines", "American Airlines", "United Airlines", "Lufthansa", "Emirates" };
-        var airlineCodes = new[] { "DL", "AA", "UA", "LH", "EK" };
-        var airlineIds = new[] { 1, 2, 3, 4, 5 };
-        var departureAirports = new[] { "JFK", "LAX", "ORD", "LHR", "DXB" };
-        var arrivalAirports = new[] { "LHR", "SFO", "FRA", "JFK", "SYD" };
-        var aircrafts = new[]
-            { "Boeing 787-9", "Airbus A350-900", "Boeing 777-300ER", "Airbus A330-300", "Boeing 747-8" };
-        var timeZones = new[]
-            { "America/New_York", "America/Los_Angeles", "Europe/London", "Europe/Berlin", "Asia/Dubai" };
-
-        // Generate 50 test flights
-        for (var i = 0; i < 50; i++)
-        {
-            var airlineIndex = i % 5;
-            var departureTime = now.AddHours(i + 1);
-            var flightDuration = TimeSpan.FromHours(3 + i % 5);
-
-            testFlights.Add(new FlightViewModel
-            {
-                Airline = airlines[airlineIndex],
-                FlightNumber = airlineCodes[airlineIndex] + (100 + i),
-                DepartureTime = departureTime,
-                ArrivalTime = departureTime.Add(flightDuration),
-                DepartureAirport = departureAirports[i % 5],
-                ArrivalAirport = arrivalAirports[i % 5],
-                Duration = flightDuration,
-                Stops = i % 3,
-                Aircraft = aircrafts[i % 5],
-                ServiceClasses = ["ECONOMY", "BUSINESS"],
-                IsCodeShare = i % 7 == 0,
-                Amount = 100m + i * 10,
-                CodeShareAirline = i % 7 == 0 ? airlineCodes[(i + 1) % 5] : null,
-                AirlineId = airlineIds[airlineIndex],
-                DepartureTimeZone = timeZones[i % 5],
-                ArrivalTimeZone = timeZones[(i + 2) % 5]
-            });
-        }
-
-        // Order by departure time and return all flights
-        return testFlights.OrderBy(f => f.DepartureTime).ToList();
-    }
-
-    private static FlightSchedulesResponse CreateDummyFlightData(string completeFlightNumber, DateTime departureTime)
-    {
-        var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
-
-        var airports = new List<Airport>
-        {
-            new()
-            {
-                Fs = "LHR",
-                Iata = "LHR",
-                Name = "London Heathrow Airport",
-                City = "London",
-                CountryCode = "GB",
-                CountryName = "United Kingdom",
-                LocalTime = departureTime
-            },
-            new()
-            {
-                Fs = "JFK",
-                Iata = "JFK",
-                Name = "John F. Kennedy International Airport",
-                City = "New York",
-                CountryCode = "US",
-                CountryName = "United States",
-                LocalTime = departureTime.AddHours(-5) // EST time difference
-            },
-            new()
-            {
-                Fs = "LAX",
-                Iata = "LAX",
-                Name = "Los Angeles International Airport",
-                City = "Los Angeles",
-                CountryCode = "US",
-                CountryName = "United States",
-                LocalTime = departureTime.AddHours(-8) // PST time difference
-            },
-            new()
-            {
-                Fs = "SFO",
-                Iata = "SFO",
-                Name = "San Francisco International Airport",
-                City = "San Francisco",
-                CountryCode = "US",
-                CountryName = "United States",
-                LocalTime = departureTime.AddHours(-8) // PST time difference
-            }
-        };
-
-        // Create dummy airlines
-        var airlines = new List<Airline>
-        {
-            new()
-            {
-                Fs = "BA",
-                Iata = "BA",
-                Name = "British Airways",
-                Active = true
-            },
-            new()
-            {
-                Fs = "AA",
-                Iata = "AA",
-                Name = "American Airlines",
-                Active = true
-            },
-            new()
-            {
-                Fs = "UA",
-                Iata = "UA",
-                Name = "United Airlines",
-                Active = true
-            }
-        };
-
-        // Create dummy equipment
-        var equipment = new List<Equipment>
-        {
-            new()
-            {
-                Iata = "77W",
-                Name = "Boeing 777-300ER",
-                Jet = true,
-                Widebody = true
-            },
-            new()
-            {
-                Iata = "788",
-                Name = "Boeing 787-8 Dreamliner",
-                Jet = true,
-                Widebody = true
-            },
-            new()
-            {
-                Iata = "32A",
-                Name = "Airbus A320",
-                Jet = true,
-                Widebody = false
-            }
-        };
-
-        // Create scheduled flights
-        var scheduledFlights = new List<ScheduledFlight>
-        {
-            // Direct flight
-            new()
-            {
-                CarrierFsCode = carrierCode,
-                FlightNumber = flightNumber,
-                DepartureAirportFsCode = "LHR",
-                ArrivalAirportFsCode = "JFK",
-                DepartureTime = departureTime,
-                ArrivalTime = departureTime.AddHours(8),
-                Stops = 0,
-                FlightEquipmentIataCode = "77W",
-                IsCodeShare = false,
-                ServiceType = "J",
-                ServiceClasses = ["F", "J", "Y"],
-                ReferenceCode = "12345"
-            },
-
-            // Connection flight 1 - Option 1 (via LAX)
-            new()
-            {
-                CarrierFsCode = carrierCode,
-                FlightNumber = "123",
-                DepartureAirportFsCode = "LHR",
-                ArrivalAirportFsCode = "LAX",
-                DepartureTime = departureTime.AddHours(1),
-                ArrivalTime = departureTime.AddHours(12),
-                Stops = 0,
-                FlightEquipmentIataCode = "788",
-                IsCodeShare = false,
-                ServiceType = "J",
-                ServiceClasses = ["F", "J", "Y"],
-                ReferenceCode = "23456"
-            },
-
-            // Connection flight 2 - Option 1 (LAX to JFK)
-            new()
-            {
-                CarrierFsCode = "AA",
-                FlightNumber = "456",
-                DepartureAirportFsCode = "LAX",
-                ArrivalAirportFsCode = "JFK",
-                DepartureTime = departureTime.AddHours(14), // 2 hour layover
-                ArrivalTime = departureTime.AddHours(22),
-                Stops = 0,
-                FlightEquipmentIataCode = "32A",
-                IsCodeShare = true,
-                ServiceType = "J",
-                ServiceClasses = ["J", "Y"],
-                ReferenceCode = "34567"
-            },
-
-            // Connection flight 1 - Option 2 (via SFO)
-            new()
-            {
-                CarrierFsCode = "UA",
-                FlightNumber = "789",
-                DepartureAirportFsCode = "LHR",
-                ArrivalAirportFsCode = "SFO",
-                DepartureTime = departureTime.AddHours(2),
-                ArrivalTime = departureTime.AddHours(13),
-                Stops = 0,
-                FlightEquipmentIataCode = "788",
-                IsCodeShare = false,
-                ServiceType = "J",
-                ServiceClasses = ["F", "J", "Y"],
-                ReferenceCode = "45678"
-            },
-
-            // Connection flight 2 - Option 2 (SFO to JFK)
-            new()
-            {
-                CarrierFsCode = "UA",
-                FlightNumber = "101",
-                DepartureAirportFsCode = "SFO",
-                ArrivalAirportFsCode = "JFK",
-                DepartureTime = departureTime.AddHours(15), // 2 hour layover
-                ArrivalTime = departureTime.AddHours(23),
-                Stops = 0,
-                FlightEquipmentIataCode = "32A",
-                IsCodeShare = false,
-                ServiceType = "J",
-                ServiceClasses = ["J", "Y"],
-                ReferenceCode = "56789"
-            }
-        };
-
-        // Create appendix
-        var appendix = new Appendix
-        {
-            Airlines = airlines,
-            Airports = airports,
-            Equipments = equipment
-        };
-
-        // Create request
-        var request = new Request
-        {
-            Endpoint = "schedules",
-            Departure = new Departure
-            {
-                Requested = departureTime.ToString("yyyy-MM-dd"),
-                Interpreted = departureTime.ToString("yyyy-MM-dd")
-            },
-            Arrival = new Arrival
-            {
-                Requested = "JFK",
-                Interpreted = "JFK"
-            },
-            MaxConnections = new MaxConnections
-            {
-                Requested = "1",
-                Interpreted = 1
-            }
-        };
-
-        // Create and return flight response
-        return new FlightSchedulesResponse
-        {
-            Request = request,
-            ScheduledFlights = scheduledFlights,
-            Appendix = appendix
-        };
-    }
-
-    #endregion
 }

@@ -16,9 +16,7 @@ public class NationwideJobController(
     INationwideJobRepository repository,
     IFlightStatsService flightService,
     IClientAccessValidatorService clientAccessValidator,
-    ICountryService countryService,
-    ITaskRepository taskRepository,
-    ITenantInfoService infoService)
+    ICountryService countryService)
     : Controller
 {
     [HttpGet]
@@ -358,6 +356,21 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured retstoring the nationwide job");
+            return StatusCode(500, e.Message);
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAllAgentsSearch(string searchTerm)
+    {
+        try
+        {
+           var agents = await repository.GetAllAgentOptionsBySearchAsync(searchTerm);
+           return Json(agents);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An error occured getting all agents");
             return StatusCode(500, e.Message);
         }
     }

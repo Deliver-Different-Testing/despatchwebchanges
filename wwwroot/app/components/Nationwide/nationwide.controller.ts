@@ -9,7 +9,7 @@ import DispatchExecutorService from "../../services/dispatch-executor.service";
 import {IAgent, IDispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
 import {HereMapsConfig, IFlightViewModel, StatusChangeEvent} from "./nationwide.interfaces";
-import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
+import {IBox, IColumn} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import JobDataType from "./enums/JobDataType";
@@ -26,6 +26,7 @@ import FlightDetailsDialogService from "../dialogs/flight-details-dialog/flight-
 import NavigationService from '../../services/navigation.service';
 import ApiConfig from "../../interfaces/apiConfig.interface";
 import ConfigService from "../../services/config.service";
+import AutoCompleteDialogService from "../dialogs/auto-complete-dialog/auto-complete-dialog.service";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -48,14 +49,15 @@ class NationwideControl extends BaseController {
         'flightDetailsDialogService',
         'navigationService',
         'configService',
+        'autoCompleteDialogService',
     ];
 
     readonly nationwidePageId: number = AppPages.Domestic;
     readonly isUsCustomer: boolean = false;
     private refreshInterval?: angular.IPromise<any>;
 
-    layouts: ILayout[] = [];
-    defaultLayout?: ILayout;
+    layouts: any[] = [];
+    defaultLayout?: any;
     currentLayoutIndex: number = 0;
     currentLayoutName: string = "Default";
     layout?: { columns: IColumn[] };
@@ -99,7 +101,6 @@ class NationwideControl extends BaseController {
     boxes?: Record<string, IBox>;
     pickService: any;
     pickClients: any;
-    boxSortableOptions: angular.ui.SortableOptions<any>;
     hereCredentials?: ApiConfig;
     mapConfig?: HereMapsConfig;
     currentSelection?: string;
@@ -126,6 +127,10 @@ class NationwideControl extends BaseController {
     airportOptions?: Suggestion[];
     selectedAirport?: Suggestion;
 
+    gridsterOptions: angular.gridster.GridsterConfig;
+    widgets: any[] = [];
+    isEditing: boolean = false;
+
     constructor(
         private $scope: angular.IScope,
         private nationwideService: NationwideService,
@@ -146,86 +151,69 @@ class NationwideControl extends BaseController {
         private flightDetailsDialogService: FlightDetailsDialogService,
         private navigationService: NavigationService,
         private configService: ConfigService,
+        private autoCompleteDialogService: AutoCompleteDialogService,
     ) {
         super();
 
         this.isUsCustomer = this.appConfig.US_Customer;
         this.timeZone = TimeZone;
 
-        this.$scope.$on("angular-resizable.resizeEnd", (_, args) => {
-            const mapContainer = angular.element(args.id ? '#' + args.id : '').find('.here-map');
-            if (mapContainer.length > 0) {
-                this.$scope.$emit("map-container-resized", {
-                    id: args.id,
-                    width: args.width,
-                    height: args.height
-                });
-
-                console.log("Map container resized: ", args.id);
-            }
-        });
-
-        this.$scope.$on('jobReadChanged', (_, data: IJobReadChanged) => {
-            this._markJobReadStatus(data.jobId, data.isRead);
-        });
-
-        this.$scope.$watch(() => this.layout, () => {
-            this.$timeout(() => this._applyLayoutDimensions());
-        }, true);
-
-        if (angular.element('#draggingItems').length === 0) {
-            angular.element('body').append('<div id="draggingItems"></div>');
-        }
-
-        this.initHereMaps();
-
-        const jobsListBox: IBox = {name: "jobsList", height: "60%"};
-        const jobsListPODBox: IBox = {name: "jobsListPOD", height: "40%"};
-        const tasksListBox: IBox = {name: "tasksList", height: "50%"};
-        const jobsListRepriceBox: IBox = {name: "jobsListReprice", height: "50%"};
-        const mapBox: IBox = {name: "map", height: "30%"};
-        const jobDetailBox: IBox = {name: "jobDetail", height: "60%"};
-        const flightAgentDataTableBox: IBox = {name: "flightAgentDataTable", height: "30%"};
-
-        // Define columns
-        const column1: IColumn = {
-            id: "col1",
-            width: "35%",
-            boxes: [jobsListBox, flightAgentDataTableBox]
+        this.gridsterOptions = {
+            margins: [10, 10],
+            columns: 12,
+            draggable: {
+                enabled: true,
+                handle: '.box-handle',
+                start: (event: any, $element: any, widget: any) => {
+                    console.log('Drag started:', widget);
+                    this._updateDraggingInfo(event, widget, true);
+                },
+                drag: (event: any, $element: any, widget: any) => {
+                    this._updateDraggingPosition(event);
+                },
+                stop: (event: any, $element: any, widget: any) => {
+                    console.log('Drag stopped:', widget);
+                    this._updateDraggingInfo(event, widget, false);
+                }
+            },
+            resizable: {
+                enabled: true,
+                handles: ['n', 'e', 's', 'w', 'ne', 'se', 'sw', 'nw'],
+                start: (event: any, $element: any, widget: any) => {
+                    console.log('Resize started:', widget);
+                },
+                resize: (event: any, $element: any, widget: any) => {
+                    // Update widget content on resize
+                    this.$scope.$broadcast('gridster-item-resized', widget);
+                },
+                stop: (event: any, $element: any, widget: any) => {
+                    console.log('Resize stopped:', widget);
+                    this._saveLayout();
+                }
+            },
+            mobileBreakPoint: 600,
+            pushing: true,
+            floating: true,
+            outerMargin: true,
+            swapping: true
         };
 
-        const column2: IColumn = {
-            id: "col2",
-            width: "35%",
-            boxes: [jobDetailBox, mapBox]
-        };
+        // Initialize widgets
+        this._createDefaultLayout();
 
-        const column3: IColumn = {
-            id: "col3",
-            width: "30%",
-            boxes: [jobsListPODBox, tasksListBox, jobsListRepriceBox]
-        };
-
-        // Create default layout
-        this.defaultLayout = {
-            name: "Default",
-            layout: {
-                columns: [column1, column2, column3]
-            }
-        };
-
-        // Load saved layouts or use default
+        // Load saved layout or use default
         if (Modernizr.localstorage) {
             try {
-                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(`layoutsNW-${ContactID}`) || '[]');
+                const storedLayouts = JSON.parse(localStorage.getItem(`layoutsNW-${ContactID}`) || '[]');
                 const lastActiveLayout = localStorage.getItem(`lastActiveLayoutNW-${ContactID}`);
 
-                this.layouts = storedLayouts || [this.defaultLayout];
-                this.layouts[0] = this.defaultLayout; // Ensure default is always up-to-date
+                this.layouts = storedLayouts.length > 0 ? storedLayouts : [this.defaultLayout];
+                // Always ensure default layout is up to date
+                this.layouts[0] = this.defaultLayout;
 
                 // Load last active layout or default
                 const layoutToLoad = lastActiveLayout
-                    ? this.layouts.findIndex((l: ILayout) => l.name === lastActiveLayout)
+                    ? this.layouts.findIndex((l) => l.name === lastActiveLayout)
                     : 0;
                 this.loadLayout(layoutToLoad >= 0 ? layoutToLoad : 0);
             } catch (error: any) {
@@ -238,18 +226,17 @@ class NationwideControl extends BaseController {
             this.loadLayout(0);
         }
 
-        // Auto-save changes
-        this.$scope.$watch("layout", (newValue: { columns: IColumn[] }, oldValue: { columns: IColumn[] }) => {
-            if (newValue !== oldValue && this.currentLayoutName) {
-                const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
-                if (index !== -1) {
-                    this.layouts[index].layout = angular.copy(newValue);
-                    if (Modernizr.localstorage) {
-                        localStorage.setItem(`layoutsNW-${ContactID}`, JSON.stringify(this.layouts));
-                    }
-                }
-            }
-        }, true);
+        // Listen for widget content changes
+        this.$scope.$on('widget-content-changed', (event, widgetId) => {
+            console.log('Widget content changed:', widgetId);
+            this._saveLayout();
+        });
+
+        this.$scope.$on('jobReadChanged', (_, data: IJobReadChanged) => {
+            this._markJobReadStatus(data.jobId, data.isRead);
+        });
+
+        this.initHereMaps();
 
         // Start loading data
         this.loadPageViews().then(() => {
@@ -278,59 +265,6 @@ class NationwideControl extends BaseController {
 
         this.selected = [];
 
-        this.boxes = {
-            "jobsList": {
-                "title": "New Jobs",
-                "icon": "new_releases",
-                "templateUrl": "app/components/Nationwide/partials/jobList.html",
-                "showSearch": 1,
-                "showRefresh": 1
-            },
-            "jobsListPOD": {
-                "title": "Awaiting POD",
-                "icon": "pending_actions",
-                "templateUrl": "app/components/Nationwide/partials/jobListPOD.html",
-                "showSearch": 1,
-                "showRefresh": 1
-            },
-            "tasksList": {
-                "title": "Tasks",
-                "icon": "support",
-                "templateUrl": "app/components/Nationwide/partials/tasksList.html",
-                "showSearch": 0,
-                "showRefresh": 1
-            },
-            "jobsListReprice": {
-                "title": "Reprice",
-                "icon": "price_change",
-                "templateUrl": "app/components/Nationwide/partials/jobListReprice.html",
-                "showSearch": 1,
-                "showRefresh": 1
-            },
-            "jobDetail": {
-                "title": "Detail",
-                "icon": "assignment",
-                "templateUrl": "app/components/Nationwide/partials/jobDetail.html",
-                "showSearch": 0,
-                "showRefresh": 0,
-                "showDetailButtons": 1
-            },
-            "map": {
-                "title": "Map",
-                "icon": "pin_drop",
-                "templateUrl": "app/components/Nationwide/partials/map.html",
-                "showSearch": 0,
-                "showRefresh": 1
-            },
-            "flightAgentDataTable": {
-                "title": "Available",
-                "icon": "docs_add_on",
-                "templateUrl": "app/components/Nationwide/partials/flightAgentDataTableBox.html",
-                "showSearch": 0,
-                "showRefresh": 1
-            }
-        };
-
         this.pickService = {
             "clients": [], "settings": {
                 "enableSearch": true,
@@ -340,64 +274,13 @@ class NationwideControl extends BaseController {
                 "buttonClasses": "topBarActive btn-sm btn-clients"
             }
         };
+
         this.pickClients = [];
-
-        this.boxSortableOptions = {
-            handle: '.box-handle',
-            connectWith: '.column-sortable',
-            placeholder: 'box-placeholder',
-            tolerance: 'pointer',
-            cursor: 'move',
-            opacity: 0.8,
-            scroll: true,
-            revert: 200,
-            delay: 150,
-            forcePlaceholderSize: true,
-            distance: 5,
-
-            start: (e: JQueryEventObject, ui: any) => {
-                ui.item.addClass('dragging');
-
-                const dragInfo = angular.element('#draggingItems');
-                dragInfo.html(`Moving: ${ui.item.find('.md-headline-title').text().trim()}`);
-                dragInfo.css({
-                    display: 'block',
-                    top: e.pageY + 20 + 'px',
-                    left: e.pageX + 10 + 'px'
-                });
-
-                this.$document.on('mousemove.sortable', (event) => {
-                    dragInfo.css({
-                        top: (event.pageY || 0) + 20 + 'px',
-                        left: (event.pageX || 0) + 10 + 'px'
-                    });
-                });
-            },
-
-            over: (e: JQueryEventObject, _: any) => {
-                angular.element(e.target).addClass('ui-sortable-active');
-            },
-
-            out: (e: JQueryEventObject, _: any) => {
-                angular.element(e.target).removeClass('ui-sortable-active');
-            },
-
-            stop: (_: JQueryEventObject, ui: any) => {
-                angular.element(this.$document[0]).off('mousemove.sortable');
-                angular.element('#draggingItems').css('display', 'none');
-                ui.item.removeClass('dragging');
-                angular.element('.column-sortable').removeClass('ui-sortable-active');
-
-                // Update box metrics and save layout
-                this.$timeout(() => {
-                    this._updateBoxMetrics();
-                    this._saveCurrentLayout();
-                }, 100);
-            }
-        };
     }
 
     $onInit() {
+        this.refreshWidgets();
+
         this.refreshInterval = this.$interval(async () => {
             console.log("[NationwideController] - Refreshing tasks and job lists");
 
@@ -418,41 +301,515 @@ class NationwideControl extends BaseController {
         }
     }
 
-    private _updateBoxMetrics() {
-        if (!this.layout || !this.layout.columns) return;
+    private _createDefaultLayout() {
+        // Create same layout structure but with Gridster format
+        this.defaultLayout = {
+            name: "Default",
+            widgets: this._createInitialWidgets()
+        };
+    }
 
-        this.layout.columns.forEach((column: IColumn) => {
-            const columnEl = angular.element(`#co-${column.id}`);
-            if (columnEl.length) {
-                column.width = columnEl.css('flex-basis');
+    private _createInitialWidgets(): any[] {
+        return [
+            // Column 1 (35% width)
+            {
+                id: 'widget-1',
+                name: "jobsList",
+                type: 'jobsList',
+                title: 'New Jobs',
+                sizeX: 4,                    // Width for column 1
+                sizeY: 4,                    // 60% height
+                row: 0,                      // Top position
+                col: 0,                      // Column 1
+                templateUrl: 'app/components/Nationwide/widgets/jobList.html',
+                icon: 'new_releases',
+                showSearch: true,
+                showRefresh: true,
+                jobType: 'new'
+            },
+            {
+                id: 'widget-7',
+                name: "flightAgentDataTable",
+                type: 'flightAgentDataTable',
+                title: 'Available',
+                sizeX: 4,                    // Width for column 1
+                sizeY: 2,                    // 30% height
+                row: 3,                      // Position below jobsList
+                col: 0,                      // Column 1
+                templateUrl: 'app/components/Nationwide/widgets/flightAgentDataTableBox.html',
+                icon: 'docs_add_on',
+                showSearch: false,
+                showRefresh: true
+            },
 
-                column.boxes.forEach((box: IBox) => {
-                    const boxEl = angular.element(`#box-${box.name}`);
-                    if (boxEl.length) {
-                        box.height = boxEl.css('flex-basis');
-                    }
-                });
+            // Column 2 (35% width)
+            {
+                id: 'widget-2',
+                name: "jobDetail",
+                type: 'jobDetail',
+                title: 'Detail',
+                sizeX: 4,                    // Width for column 2
+                sizeY: 4,                    // 60% height
+                row: 0,                      // Top position
+                col: 4,                      // Column 2
+                templateUrl: 'app/components/Nationwide/widgets/jobDetail.html',
+                icon: 'assignment',
+                showSearch: false,
+                showRefresh: false,
+                showDetailButtons: true
+            },
+            {
+                id: 'widget-4',
+                name: "map",
+                type: 'map',
+                title: 'Map',
+                sizeX: 4,                    // Width for column 2
+                sizeY: 2,                    // 30% height
+                row: 3,                      // Position below jobDetail
+                col: 4,                      // Column 2
+                templateUrl: 'app/components/Nationwide/widgets/map.html',
+                icon: 'pin_drop',
+                showSearch: false,
+                showRefresh: true
+            },
+
+            // Column 3 (30% width)
+            {
+                id: 'widget-3',
+                name: "jobsListPOD",
+                type: 'jobsListPOD',
+                title: 'Awaiting POD',
+                sizeX: 4,                    // Width for column 3
+                sizeY: 1,                    // 40% height
+                row: 0,                      // Top position
+                col: 8,                      // Column 3
+                templateUrl: 'app/components/Nationwide/widgets/jobListPOD.html',
+                icon: 'pending_actions',
+                showSearch: true,
+                showRefresh: true,
+                jobType: 'pod'
+            },
+            {
+                id: 'widget-5',
+                name: "tasksList",
+                type: 'tasksList',
+                title: 'Tasks',
+                sizeX: 4,                    // Width for column 3
+                sizeY: 4,                  // 50% of remaining height
+                row: 2,                      // Position below jobsListPOD
+                col: 8,                      // Column 3
+                templateUrl: 'app/components/Nationwide/widgets/tasksList.html',
+                icon: 'support',
+                showSearch: false,
+                showRefresh: true,
+                tasksFilter: 'all'
+            },
+            {
+                id: 'widget-6',
+                name: "jobsListReprice",
+                type: 'jobsListReprice',
+                title: 'Reprice',
+                sizeX: 4,                    // Width for column 3 (NOT full width)
+                sizeY: 2,                  // 50% of remaining height
+                row: 3,                    // Position below tasksList
+                col: 8,                      // Column 3 (ensure it's in column 3)
+                templateUrl: 'app/components/Nationwide/widgets/jobListReprice.html',
+                icon: 'price_change',
+                showSearch: true,
+                showRefresh: true,
+                jobType: 'reprice'
             }
+        ];
+    }
+
+    private _updateDraggingInfo(event: any, widget: any, isDragging: boolean): void {
+        const dragInfo = angular.element('#draggingItems');
+
+        if (isDragging) {
+            dragInfo.html(`Moving: ${widget.title}`);
+            dragInfo.css({
+                display: 'block',
+                top: event.pageY + 20 + 'px',
+                left: event.pageX + 10 + 'px'
+            });
+
+            this.$document.on('mousemove.gridster', (moveEvent) => {
+                dragInfo.css({
+                    top: (moveEvent.pageY || 0) + 20 + 'px',
+                    left: (moveEvent.pageX || 0) + 10 + 'px'
+                });
+            });
+        } else {
+            this.$document.off('mousemove.gridster');
+            dragInfo.css('display', 'none');
+        }
+    }
+
+    private _updateDraggingPosition(event: any): void {
+        const dragInfo = angular.element('#draggingItems');
+        dragInfo.css({
+            top: (event.pageY || 0) + 20 + 'px',
+            left: (event.pageX || 0) + 10 + 'px'
         });
     }
 
-    private _saveCurrentLayout() {
-        if (!this.currentLayoutName || this.currentLayoutName === 'Default') {
-            return;
-        }
+    private _saveLayout(): void {
+        // Save current widget layout to localStorage
+        try {
+            // If we're in a saved layout (not default), update it
+            if (this.currentLayoutName && this.currentLayoutName !== 'Default') {
+                const index = this.layouts.findIndex((l) => l.name === this.currentLayoutName);
+                if (index !== -1) {
+                    // Update the widgets in the current layout
+                    this.layouts[index].widgets = angular.copy(this.widgets);
 
-        this._updateBoxMetrics();
-
-        const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
-        if (index !== -1) {
-            if (this.layout) {
-                this.layouts[index].layout = angular.copy(this.layout);
+                    // Save all layouts to localStorage
+                    if (Modernizr.localstorage) {
+                        localStorage.setItem(`layoutsNW-${ContactID}`, JSON.stringify(this.layouts));
+                    }
+                }
             }
 
+            // Also save current widgets state separately for persistence between sessions
+            localStorage.setItem('dashboardLayout', JSON.stringify(this.widgets));
+            console.log('Layout saved');
+        } catch (error) {
+            console.error('Error saving layout:', error);
+        }
+    }
+
+    loadLayout(index: number) {
+        const layout = this.layouts[index] || this.layouts[0];
+        this.currentLayoutName = layout.name;
+        this.currentLayoutIndex = index;
+        this.widgets = angular.copy(layout.widgets || []);
+
+        this.$timeout(() => {
+            // Save last active layout
+            if (Modernizr.localstorage) {
+                localStorage.setItem(`lastActiveLayoutNW-${ContactID}`, layout.name);
+            }
+            console.log('Layout loaded:', layout.name);
+        });
+    }
+
+    async saveLayout() {
+        try {
+            const layoutName = await this.$mdDialog.show(
+                this.$mdDialog
+                    .prompt()
+                    .title("Save Layout")
+                    .textContent("Please enter a name for this layout.")
+                    .ariaLabel("Layout name")
+                    .required(true)
+                    .ok("Save")
+                    .cancel("Cancel")
+            );
+
+            // Create new layout object
+            const currentLayout = {
+                name: layoutName,
+                widgets: angular.copy(this.widgets)
+            };
+
+            // Add to layouts array
+            this.layouts.push(currentLayout);
+            this.currentLayoutName = layoutName;
+
+            // Save to localStorage
+            if (Modernizr.localstorage) {
+                localStorage.setItem(`layoutsNW-${ContactID}`, JSON.stringify(this.layouts));
+                localStorage.setItem(`lastActiveLayoutNW-${ContactID}`, layoutName);
+            }
+
+            console.log('New layout saved:', layoutName);
+            return currentLayout;
+        } catch (error) {
+            if (!error) {
+                console.log("Save Layout Cancelled!");
+            } else {
+                console.error("Unable to save layout:", error);
+            }
+
+            return null;
+        }
+    }
+
+    async deleteLayout(index: number) {
+        if (index === 0) return; // Prevent deleting default layout
+
+        try {
+            await this.$mdDialog.show(
+                this.$mdDialog
+                    .confirm()
+                    .title("Delete Layout?")
+                    .textContent("Are you sure you would like to delete this layout?")
+                    .ok("Delete")
+                    .cancel("Cancel")
+            );
+
+            // Remove the layout
+            this.layouts.splice(index, 1);
+
+            // Save changes to localStorage
             if (Modernizr.localstorage) {
                 localStorage.setItem(`layoutsNW-${ContactID}`, JSON.stringify(this.layouts));
             }
+
+            // If the current layout was deleted, switch to default
+            if (this.currentLayoutName === this.layouts[index]?.name) {
+                this.loadLayout(0);
+            }
+
+            this.toastrService.showSuccessToast("Layout deleted successfully");
+        } catch (error) {
+            this._handleError(error);
         }
+    }
+
+    refreshWidgets() {
+        console.log('Refreshing all widgets');
+        // Here you would add API calls to refresh the widget data
+        return this.getData();
+    }
+
+    removeWidget(widget: any, index: number): void {
+        this.widgets.splice(index, 1);
+        this._saveLayout();
+    }
+
+    openSearch(widget: any, index: number): void {
+        const widgetID = widget.type + '-' + index;
+        if (this.showInput[widgetID]) {
+            this.showInput[widgetID] = false;
+            this.inputWidth[widgetID] = 31;
+        } else {
+            this.inputWidth[widgetID] = 200;
+            this.showInput[widgetID] = true;
+        }
+    }
+
+    searchWidgets(searchText: string): void {
+        console.log('Searching widgets for:', searchText);
+        // Implement search functionality here
+    }
+
+    async clearLayout(): Promise<void> {
+        try {
+            await this.$mdDialog.show(
+                this.$mdDialog
+                    .confirm()
+                    .title("Clear Dashboard")
+                    .textContent("Are you sure you want to remove all widgets from the dashboard?")
+                    .ok("Clear")
+                    .cancel("Cancel")
+            );
+
+            this.widgets = [];
+            this._saveLayout();
+
+        } catch (error) {
+            console.log('Clear dashboard cancelled');
+        }
+    }
+
+    async resetLayout(): Promise<void> {
+        try {
+            await this.$mdDialog.show(
+                this.$mdDialog
+                    .confirm()
+                    .title("Reset Dashboard")
+                    .textContent("Are you sure you want to reset the dashboard to its default layout?")
+                    .ok("Reset")
+                    .cancel("Cancel")
+            );
+
+            this.widgets = this._createInitialWidgets();
+            this._saveLayout();
+
+        } catch (error) {
+            console.log('Reset dashboard cancelled');
+        }
+    }
+
+    async addNewWidget(): Promise<void> {
+        const availableWidgetTypes = [
+            {
+                id: 'jobsList',
+                title: 'New Jobs',
+                type: 'jobsList',
+                icon: 'new_releases',
+                templateUrl: 'app/components/Nationwide/widgets/jobList.html'
+            },
+            {
+                id: 'jobDetail',
+                title: 'Detail',
+                type: 'jobDetail',
+                icon: 'assignment',
+                templateUrl: 'app/components/Nationwide/widgets/jobDetail.html'
+            },
+            {
+                id: 'jobsListPOD',
+                title: 'Awaiting POD',
+                type: 'jobsListPOD',
+                icon: 'pending_actions',
+                templateUrl: 'app/components/Nationwide/widgets/jobListPOD.html'
+            },
+            {
+                id: 'map',
+                title: 'Map',
+                type: 'map',
+                icon: 'pin_drop',
+                templateUrl: 'app/components/Nationwide/widgets/map.html'
+            },
+            {
+                id: 'tasksList',
+                title: 'Tasks',
+                type: 'tasksList',
+                icon: 'support',
+                templateUrl: 'app/components/Nationwide/widgets/tasksList.html'
+            },
+            {
+                id: 'jobsListReprice',
+                title: 'Reprice',
+                type: 'jobsListReprice',
+                icon: 'price_change',
+                templateUrl: 'app/components/Nationwide/widgets/jobListReprice.html'
+            },
+            {
+                id: 'flightAgentDataTable',
+                title: 'Available',
+                type: 'flightAgentDataTable',
+                icon: 'docs_add_on',
+                templateUrl: 'app/components/Nationwide/widgets/flightAgentDataTableBox.html'
+            }
+        ];
+
+        try {
+            const selectedType = await this.$mdDialog.show({
+                controller: ['$scope', '$mdDialog', ($scope, $mdDialog) => {
+                    $scope.widgetTypes = availableWidgetTypes;
+                    $scope.selectedWidgets = [];
+
+                    $scope.cancel = () => {
+                        $mdDialog.cancel();
+                    };
+
+                    $scope.addWidgets = () => {
+                        $mdDialog.hide($scope.selectedWidgets);
+                    };
+
+                    $scope.toggle = (item: { id: any; }, list: any[]) => {
+                        const idx = list.findIndex(widget => widget.id === item.id);
+                        if (idx > -1) {
+                            list.splice(idx, 1);
+                        } else {
+                            list.push(item);
+                        }
+                    };
+
+                    $scope.exists = (item: { id: any; }, list: any[]) => {
+                        return list.some(widget => widget.id === item.id);
+                    };
+                }],
+                template: `
+          <md-dialog aria-label="Add Widget" class="add-widget-dialog">
+            <form ng-submit="addWidgets()">
+              <md-toolbar>
+                <div class="md-toolbar-tools">
+                  <h2>Add New Widgets</h2>
+                  <span flex></span>
+                  <md-button class="md-icon-button" ng-click="cancel()">
+                    <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+                  </md-button>
+                </div>
+              </md-toolbar>
+              
+              <md-dialog-content>
+                <div class="md-dialog-content">
+                  <h3>Select Widget Types</h3>
+                  <md-list>
+                    <md-list-item ng-repeat="widget in widgetTypes">
+                      <md-checkbox 
+                        ng-checked="exists(widget, selectedWidgets)"
+                        ng-click="toggle(widget, selectedWidgets)"
+                        aria-label="Select {{widget.title}}">
+                      </md-checkbox>
+                      <div class="md-list-item-text" layout="row" layout-align="start center">
+                        <md-icon md-font-set="material-symbols-outlined" class="md-avatar">{{widget.icon}}</md-icon>
+                        <p class="md-body-1" style="margin-left: 16px;">{{widget.title}}</p>
+                      </div>
+                    </md-list-item>
+                  </md-list>
+                </div>
+              </md-dialog-content>
+              
+              <md-dialog-actions layout="row">
+                <span flex></span>
+                <md-button ng-click="cancel()">Cancel</md-button>
+                <md-button type="submit" class="md-primary" ng-disabled="selectedWidgets.length === 0">
+                  Add Selected
+                </md-button>
+              </md-dialog-actions>
+            </form>
+          </md-dialog>
+        `,
+                parent: angular.element(document.body),
+                clickOutsideToClose: true
+            });
+
+            if (selectedType && selectedType.length > 0) {
+                // Find next available position
+                let maxRow = 0;
+                this.widgets.forEach(w => {
+                    const widgetEndRow = w.row + w.sizeY;
+                    if (widgetEndRow > maxRow) {
+                        maxRow = widgetEndRow;
+                    }
+                });
+
+                // Process each selected widget
+                selectedType.forEach((widgetType: any, index: number) => {
+                    // Create widget ID
+                    const newId = 'widget-' + (this.widgets.length + 1);
+
+                    // Create new widget
+                    const newWidget = {
+                        id: newId,
+                        name: widgetType.id,
+                        type: widgetType.type,
+                        title: widgetType.title,
+                        sizeX: 6,
+                        sizeY: 2,
+                        row: maxRow + (index * 2), // Place widgets below each other
+                        col: 0,
+                        templateUrl: widgetType.templateUrl,
+                        icon: widgetType.icon,
+                        showSearch: ['jobsList', 'jobsListPOD', 'jobsListReprice'].includes(widgetType.id),
+                        showRefresh: widgetType.id !== 'jobDetail',
+                        showDetailButtons: widgetType.id === 'jobDetail',
+                        jobType: this._getJobType(widgetType.id),
+                        tasksFilter: widgetType.id === 'tasksList' ? 'all' : undefined
+                    };
+
+                    this.widgets.push(newWidget);
+                });
+
+                this.$timeout(() => {
+                    this._saveLayout();
+                });
+            }
+
+        } catch (error) {
+            console.log('Add widget cancelled');
+        }
+    }
+
+    private _getJobType(widgetId: string): string | undefined {
+        if (widgetId === 'jobsList') return 'new';
+        if (widgetId === 'jobsListPOD') return 'pod';
+        if (widgetId === 'jobsListReprice') return 'reprice';
+        return undefined;
     }
 
     getJobStyle(assigned: boolean = false) {
@@ -563,118 +920,6 @@ class NationwideControl extends BaseController {
         if (!selectedJob) return;
 
         return this.selectJob(selectedJob);
-    }
-
-    loadLayout(index: number) {
-        const layout: ILayout = this.layouts[index] || this.layouts[0];
-        this.currentLayoutName = layout.name;
-        this.currentLayoutIndex = index;
-        this.layout = angular.copy(layout.layout);
-
-        this.$timeout(() => {
-            this._applyLayoutDimensions();
-
-            if (Modernizr.localstorage) {
-                localStorage.setItem(`lastActiveLayoutNW-${ContactID}`, layout.name);
-            }
-        });
-    }
-
-    async saveLayout() {
-        try {
-            const layoutName = await this.$mdDialog.show(
-                this.$mdDialog
-                    .prompt()
-                    .title("Save Layout")
-                    .textContent("Please enter a name for this layout.")
-                    .ariaLabel("Layout name")
-                    .required(true)
-                    .ok("Save")
-                    .cancel("Cancel")
-            );
-
-            this._updateBoxMetrics();
-
-            const currentLayout: ILayout = {
-                name: layoutName,
-                layout: {
-                    columns: this.layout?.columns?.map((col: IColumn) => ({
-                        ...col,
-                        width: angular.element(`#co-${col.id}`).css("flex-basis"),
-                        boxes: col.boxes.map((box: IBox) => ({
-                            ...box,
-                            height: angular.element(`#box-${box.name}`).css("flex-basis"),
-                        })),
-                    })) || []
-                }
-            };
-
-            this.layouts.push(currentLayout);
-            this.currentLayoutName = layoutName;
-            this.layout = currentLayout.layout;
-
-            if (Modernizr.localstorage) {
-                localStorage.setItem(`layoutsNW-${ContactID}`, JSON.stringify(this.layouts));
-                localStorage.setItem(`lastActiveLayoutNW-${ContactID}`, layoutName);
-            }
-
-            return currentLayout;
-        } catch (error) {
-            if (!error) {
-                console.log("Save Layout Cancelled!");
-            } else {
-                console.error("Unable to save layout:", error);
-            }
-
-            return null;
-        }
-    }
-
-    async deleteLayout(index: number) {
-        if (index === 0) return; // Prevent deleting default layout
-
-        try {
-            await this.$mdDialog.show(
-                this.$mdDialog
-                    .confirm()
-                    .title("Delete Layout?")
-                    .textContent("Are you sure you would like to delete this layout?")
-                    .ok("Delete")
-                    .cancel("Cancel")
-            );
-
-            this.layouts.splice(index, 1);
-
-            if (Modernizr.localstorage) {
-                localStorage.setItem(`layoutsNW-${ContactID}`, JSON.stringify(this.layouts));
-            }
-
-            if (this.currentLayoutName === this.layouts[index]?.name) {
-                this.loadLayout(0);
-            }
-
-            this.toastrService.showSuccessToast("Layout deleted successfully");
-        } catch (error) {
-            this._handleError(error)
-        }
-    }
-
-    private _applyLayoutDimensions() {
-        if (!this.layout || !this.layout.columns) return;
-
-        this.layout.columns.forEach((column: IColumn) => {
-            const columnEl = angular.element(`#co-${column.id}`);
-            if (columnEl.length) {
-                columnEl.css('flex-basis', column.width);
-
-                column.boxes.forEach((box: IBox) => {
-                    const boxEl = angular.element(`#box-${box.name}`);
-                    if (boxEl.length) {
-                        boxEl.css('flex-basis', box.height || 'auto');
-                    }
-                });
-            }
-        });
     }
 
     saveViewsToStorage(views: any) {
@@ -829,17 +1074,6 @@ class NationwideControl extends BaseController {
         }
 
         return temp.trim();
-    }
-
-    openSearch(boxName: string, index: number) {
-        const boxID = boxName + '-' + index;
-        if (this.showInput[boxID]) {
-            this.showInput[boxID] = false;
-            this.inputWidth[boxID] = 31;
-        } else {
-            this.inputWidth[boxID] = 200;
-            this.showInput[boxID] = true;
-        }
     }
 
     async unlockJob(currentJob: IDispatchJob) {
@@ -1157,7 +1391,7 @@ class NationwideControl extends BaseController {
 
         // Only trigger reload if we have a current job
         if (this.currentJob) {
-           return this.onAirportSelectionChanged();
+            return this.onAirportSelectionChanged();
         }
     }
 
@@ -1233,10 +1467,18 @@ class NationwideControl extends BaseController {
     }
 
     async addAgentToJob($event: MouseEvent, agent: IAgent, job: IDispatchJob) {
+        const selectedAgent: Suggestion = {
+            id: agent.agentId, text: agent.agentName
+        };
+
+        await this.addSelectedAgentToJob($event, selectedAgent, job)
+    }
+
+    async addSelectedAgentToJob($event: MouseEvent, agent: Suggestion, job: IDispatchJob) {
         try {
             const confirm = this.$mdDialog.confirm()
                 .title('Assign Agent')
-                .textContent(`You are assigning Job ${job.jobNo} to ${agent.agentName}. Please confirm this is correct.`)
+                .textContent(`You are assigning Job ${job.jobNo} to ${agent.text}. Please confirm this is correct.`)
                 .ariaLabel('confirm assign flight to job')
                 .targetEvent($event)
                 .ok('Confirm')
@@ -1245,11 +1487,11 @@ class NationwideControl extends BaseController {
             await this.$mdDialog.show(confirm);
             console.log('Assigning to job');
 
-            await this.nationwideService.assignAgentToJob(job.id, agent.agentId);
+            await this.nationwideService.assignAgentToJob(job.id, agent.id);
 
             await this.getJobList([JobDataType.NEW, JobDataType.POD]);
 
-            const successMessage = (`Successfully assigned agent ${agent.agentName} to job ${job.jobNo}`)
+            const successMessage = (`Successfully assigned agent ${agent.text} to job ${job.jobNo}`)
             this.toastrService.showSuccessToast(successMessage);
 
             this.$timeout(() => {
@@ -1896,7 +2138,45 @@ class NationwideControl extends BaseController {
 
     restoreJobAvaliable(job: IDispatchJob): boolean {
         if (!job) return false;
-        return !!(job.assignedCourier || job.assignedFlight || job.assignedAgent);
+        if (job.assignedCourier) return true;
+        if (job.assignedFlight) return true;
+
+        return !!job.assignedAgent;
+    }
+
+    startEditingDashboard($event: MouseEvent) {
+        if (this.currentLayoutName === "Default") {
+            this.$mdDialog.show(
+                this.$mdDialog.alert()
+                    .parent(this.$document.parent())
+                    .clickOutsideToClose(true)
+                    .title('Default Dashboard Protected')
+                    .textContent('The default dashboard cannot be modified. Please create a custom dashboard to make changes.')
+                    .ariaLabel('Default dashboard cannot be edited')
+                    .ok('Understood')
+                    .targetEvent($event)
+            );
+        } else {
+            this.isEditing = true;
+        }
+    }
+
+    stopEditingDashboard() {
+        this.$timeout(() => {
+            this._saveLayout();
+            this.isEditing = false;
+        })
+    }
+
+    async openAgentSearchDialog($event: MouseEvent, job: IDispatchJob) {
+        try {
+            const url = "nationwideJob/GetAllAgentsSearch";
+            const selectedAgent = await this.autoCompleteDialogService.showAutocompleteDialog($event, url, "Search all Agents", "Agent", "Agents", null);
+
+            await this.addSelectedAgentToJob($event, selectedAgent, job);
+        } catch (error) {
+            this._handleError(error);
+        }
     }
 }
 

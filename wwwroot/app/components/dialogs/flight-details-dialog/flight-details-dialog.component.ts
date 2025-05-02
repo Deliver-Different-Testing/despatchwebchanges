@@ -6,6 +6,7 @@ class FlightDetailsDialogController extends BaseController {
     static $inject = [
         '$mdDialog',
         'flightConnections',
+        'correctConnectionNumber'
     ];
 
     flightViewModel: FlightDetailsViewModel | null = null;
@@ -14,10 +15,12 @@ class FlightDetailsDialogController extends BaseController {
     timeZone: string = TimeZone;
     showCodeshares: boolean = false;
     selectedTabIndex: number = 0;
+    showIncompleteApiWarning: boolean = false;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        public flightConnections: FlightDetailsViewModel[]
+        public flightConnections: FlightDetailsViewModel[],
+        public correctConnectionNumber: number,
     ) {
         super();
         console.log('FlightDetailsDialogController: Service instantiated');
@@ -27,6 +30,10 @@ class FlightDetailsDialogController extends BaseController {
         // Initialize with the first flight connection if available
         if (this.flightConnections && this.flightConnections.length > 0) {
             this.flightViewModel = this.flightConnections[0];
+
+            if(this.correctConnectionNumber != this.flightConnections.length) {
+                this.showIncompleteApiWarning = true;
+            }
         }
     }
 

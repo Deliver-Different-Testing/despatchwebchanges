@@ -102,7 +102,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error searching active couriers");
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 

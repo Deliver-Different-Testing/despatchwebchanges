@@ -1,3 +1,5 @@
+import {JobProperty} from "../../../enums/job-property.enum";
+
 export interface JobOptions {
     detail: {
         size: Array<{ id: number; label: string }>;
@@ -6,14 +8,14 @@ export interface JobOptions {
     }
 }
 
-export interface JobNote {
-    icon: string;
-    text: string;
-    type?: string;
-}
-
 export interface TabItem {
     id: number;
     text: string;
     isMainJob: boolean;
+}
+
+export interface CallData {
+    field: string | JobProperty;
+    value: string | Date | number | boolean;
+    jobID: number;
 }

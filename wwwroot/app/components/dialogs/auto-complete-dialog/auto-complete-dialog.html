@@ -1,4 +1,4 @@
-<md-dialog aria-label="{{ ctrl.title }}" id="{{ ctrl.id }}">
+<md-dialog>
     <md-toolbar>
         <div class="md-toolbar-tools">
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">manage_search</md-icon>
@@ -14,7 +14,7 @@
     </md-toolbar>
 
     <md-dialog-content>
-        <div class="md-dialog-content">
+        <div class="md-padding">
             <form ng-submit="ctrl.submit(ctrl.selectedItem)">
                 <!-- Autocomplete field -->
                 <md-autocomplete
@@ -47,15 +47,8 @@
     </md-dialog-content>
 
     <md-dialog-actions>
-        <md-progress-circular
-                class="md-primary"
-                md-diameter="40"
-                md-mode="indeterminate"
-                ng-disabled="ctrl.selectedItem === null"
-                ng-show="ctrl.isLoading">
-        </md-progress-circular>
-
-        <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.selectedItem)" ng-show="!ctrl.isLoading"
+        <md-button class="md-raised md-primary"
+                   ng-click="ctrl.submit(ctrl.selectedItem)"
                    ng-disabled="ctrl.selectedItem === null">
             Save
         </md-button>

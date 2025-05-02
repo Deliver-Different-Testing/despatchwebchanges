@@ -19,6 +19,15 @@
         </md-tab>
     </md-tabs>
 
+    <md-card class="warning-section md-whiteframe-1dp" ng-if="ctrl.showIncompleteApiWarning">
+        <md-card-content>
+            <div layout="row" layout-align="start center">
+                <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
+                <span class="warning-text">This job has {{ctrl.correctConnectionNumber}} connections, but not all could be loaded from the API</span>
+            </div>
+        </md-card-content>
+    </md-card>
+
     <md-dialog-content>
         <div class="md-dialog-content">
             <!-- Loading state -->

@@ -88,6 +88,7 @@ import JobSearchService from "./components/jobSearch/jobSearch.service";
 import JobSearchComponent from "./components/jobSearch/jobSearch.controller";
 import FlightDetailsDialogService from "./components/dialogs/flight-details-dialog/flight-details-dialog.service";
 import FlightDetailsDialogController from "./components/dialogs/flight-details-dialog/flight-details-dialog.component";
+import AutoCompleteDialogService from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.service";
 
 const app = angular.module("uDispatch", [
     "ui.router",
@@ -116,6 +117,7 @@ const app = angular.module("uDispatch", [
     "hereMapTracking.components",
     "fixed.table.header",
     "ngMaterialDatePicker",
+    "gridster",
 ]);
 
 // Constants
@@ -289,5 +291,6 @@ app.service("jobContextMenuService", JobContextMenuService);
 app.service("editParcelDimensionsDialogService", EditParcelDimensionsDialogService);
 app.service("uCSData", JobSearchService);
 app.service("flightDetailsDialogService", FlightDetailsDialogService);
+app.service("autoCompleteDialogService", AutoCompleteDialogService);
 
 export default app;

@@ -88,11 +88,9 @@ class Bundler {
             },
             external: [
                 "leaflet",
-                "angularResizable",
                 "ui.sortable",
                 "ui.timepicker",
                 "pickadate",
-                "ngMapAutocomplete",
             ],
             loader: {
                 '.js': "js",
