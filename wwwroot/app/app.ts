@@ -117,7 +117,6 @@ const app = angular.module("uDispatch", [
     "hereMapTracking.components",
     "fixed.table.header",
     "ngMaterialDatePicker",
-    "gridster",
 ]);
 
 // Constants

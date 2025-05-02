@@ -41,15 +41,23 @@
     </no-data>
 
     <!-- No Flights Available -->
-    <no-data
-            ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading && (!ctrl.flightOptions || ctrl.flightOptions.length === 0)"
-            title="No Flights Available"
-            message="{{ctrl.flightMessage || 'No flights available for the specified criteria.'}}"
-            icon="flight_takeoff"
-            show-action="true"
-            action-text="Load More Flights"
-            on-action="ctrl.loadNextFlights()">
-    </no-data>
+    <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading && (!ctrl.flightOptions || ctrl.flightOptions.length === 0)">
+        <no-data
+                title="No Flights Available"
+                message="{{ctrl.flightMessage || 'No flights available for the specified criteria.'}}"
+                icon="flight_takeoff"
+                show-action="false">
+        </no-data>
+
+        <div class="table-footer-actions md-padding" layout="row" layout-align="end center">
+            <md-button class="md-raised" ng-click="ctrl.loadFlights()">
+                Load More Flights
+            </md-button>
+            <md-button class="md-raised" ng-click="ctrl.loadNextDayFlights()">
+                Next Day
+            </md-button>
+        </div>
+    </div>
 
     <!-- Flight List -->
     <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading && ctrl.flightOptions && ctrl.flightOptions.length > 0">
@@ -114,7 +122,7 @@
 
         <md-divider></md-divider>
 
-        <md-table-container style="overflow: auto; max-height: 500px;">
+        <md-table-container style="overflow: auto; max-height: 400px;">
             <table md-progress="ctrl.flightListPromise" md-table ng-model="ctrl.selectedFlight">
                 <thead md-head md-order="ctrl.flightTableQuery.order">
                 <tr md-row>
@@ -165,14 +173,13 @@
 
         <!-- Keep the Next Day button -->
         <div class="table-footer-actions md-padding" layout="row" layout-align="end center">
-            <md-button class="md-raised" ng-click="ctrl.loadMoreFlights()">
+            <md-button class="md-raised" ng-click="ctrl.loadFlights()">
                 Load More Flights
             </md-button>
             <md-button class="md-raised" ng-click="ctrl.loadNextDayFlights()">
                 Next Day
             </md-button>
         </div>
-
     </div>
 </div>
 
@@ -229,7 +236,7 @@
 
         <md-divider></md-divider>
 
-        <md-table-container style="overflow: auto; max-height: 500px;">
+        <md-table-container style="overflow: auto; max-height: 400px;">
             <table md-progress="ctrl.agentListPromise" md-table ng-model="ctrl.selectedAgent">
                 <thead md-head md-order="ctrl.agentTableQuery.order">
                 <tr md-row>

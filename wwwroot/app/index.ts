@@ -8,7 +8,6 @@ import "angular-resizable/angular-resizable.min.css";
 import "ng-material-datetimepicker/css/material-datetimepicker.css";
 import "angular-material-data-table/dist/md-data-table.css";
 import "angular-hotkeys/build/hotkeys.css";
-import "angular-gridster/src/angular-gridster.less";
 
 // Npm packages
 import "moment";
@@ -22,7 +21,6 @@ import "ng-material-datetimepicker/js/angular-material-datetimepicker";
 import "angular-material-data-table";
 import "angular-hotkeys/build/hotkeys";
 import "angular-bootstrap-contextmenu/contextMenu";
-import "angular-gridster/src/angular-gridster";
 
 // Local libs
 import "../lib/ModernizerLocalStorage";
