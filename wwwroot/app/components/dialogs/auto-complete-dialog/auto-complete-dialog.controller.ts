@@ -1,52 +1,37 @@
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
-import app from "../../../app";
-import {SelectOption} from "../../../interfaces/job.interface";
+import {Suggestion} from "../../../interfaces/job.interface";
+import BaseController from "../../base-controller";
 
-export class AutoCompleteDialogController {
+export class AutoCompleteDialogController extends BaseController {
     static $inject = [
         "$mdDialog",
         "DispatchData",
         "toastrService",
-        "rateJobService",
-        "id",
         "fieldName",
         "title",
-        "job",
         "options",
         "existingItem",
         "showRerateOption"
     ];
 
-    id: string;
-    isLoading: boolean;
-    searchText: string;
-    shouldRerateJob: boolean;
-    selectedItem: SelectOption | null;
-    showRerateOption: boolean;
+    searchText: string = '"';
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private dispatchData: DispatchCoreService,
         private toastrService: ToastrService,
-        private rateJobService: any,
-        id: string,
-        private readonly fieldName: string,
-        private readonly title: string,
-        private job: Job,
+        public fieldName: string,
+        public title: string,
         private options: any,
-        existingItem: SelectOption | null,
-        showRerateOption: boolean
+        public selectedItem: Suggestion | undefined,
+        public showRerateOption: boolean
     ) {
-        this.id = id;
-        this.isLoading = false;
-        this.searchText = "";
-        this.shouldRerateJob = false;
-        this.selectedItem = existingItem;
-        this.showRerateOption = showRerateOption;
+        super();
+        console.log('AutoCompleteDialogController: Controller instantiated');
     }
 
-    async querySearch(searchTerm: string): Promise<SelectOption[] | undefined> {
+    async querySearch(searchTerm: string): Promise<Suggestion[] | undefined> {
         try {
             const url: string = this.options.searchUrl;
             return await this.dispatchData.autocompleteSearch(searchTerm, url);
@@ -55,72 +40,9 @@ export class AutoCompleteDialogController {
         }
     }
 
-    async submit(selectedOption: SelectOption): Promise<void> {
-        this.isLoading = true;
-
-        try {
-            const reRate: boolean = this.shouldRerateJob;
-            const callData = {
-                call: "updateDetailField",
-                field: this.fieldName,
-                value: selectedOption.id,
-                jobID: this.job.id
-            };
-
-            if (reRate && !this.job.bulkJob) {
-                const rate: string = await this.rateJobService.rateJob(this.job);
-                await this.dispatchData.updateJobDetail(
-                    callData.jobID,
-                    callData.field,
-                    callData.value,
-                    Number(rate.replace(/[^0-9.-]+/g, "")),
-                    this.job.preBook
-                );
-            } else {
-                this.job.bulkJob
-                    ? await this.dispatchData.updateBulkJobDetail(
-                        this.job.id,
-                        callData.field,
-                        callData.value,
-                        this.job.charge,
-                        FirstName,
-                        ContactID
-                    )
-                    : await this.dispatchData.updateJobDetail(
-                        callData.jobID,
-                        callData.field,
-                        callData.value,
-                        this.job.charge,
-                        this.job.preBook
-                    );
-            }
-        } catch (error: any) {
-            this.toastrService.showErrorToast(error.message);
-        } finally {
-            this.isLoading = false;
-
-            // Update field
-            const fieldName: string = this.fieldName.toLowerCase();
-            const matchingField = Object.keys(this.job).find(
-                key => key.toLowerCase() === fieldName
-            );
-
-            if (matchingField) {
-                (this.job as any)[matchingField] = selectedOption?.id;
-            } else {
-                console.warn(`Field ${this.fieldName} not found in job object.`);
-            }
-
-            if (fieldName === "clientid") {
-                this.job.clientName = selectedOption.text;
-            }
-
-            this.toastrService.showSuccessToast(
-                this.title + " successfully updated to " + selectedOption.text
-            );
-            this.$mdDialog.hide();
+    async submit(selectedOption: Suggestion): Promise<void> {
+            this.$mdDialog.hide(selectedOption);
         }
-    }
 
     cancel(): void {
         this.$mdDialog.cancel();

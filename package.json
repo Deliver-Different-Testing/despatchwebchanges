@@ -3,6 +3,10 @@
   "version": "3.1.0",
   "main": "index.ts",
   "dependencies": {
+    "angular-bootstrap-contextmenu": "^1.2.1",
+    "angular-gridster": "^0.13.14",
+    "angular-hotkeys": "^1.7.0",
+    "angular-material-data-table": "^0.10.10",
     "angular-resizable": "^1.2.0",
     "angular-ui-bootstrap": "^2.5.6",
     "angular-ui-sortable": "^0.19.0",
@@ -19,6 +23,7 @@
   "devDependencies": {
     "@swc/helpers": "^0.5.15",
     "@types/angular": "^1.8.9",
+    "@types/angular-gridster": "^0.13.9",
     "@types/angular-material": "^1.1.78",
     "@types/angular-ui-router": "^1.1.44",
     "@types/angular-ui-sortable": "^0.13.40",

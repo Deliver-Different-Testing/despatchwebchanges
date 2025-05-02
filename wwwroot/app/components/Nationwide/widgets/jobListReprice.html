@@ -1,37 +1,41 @@
-`<div class="md-table-footer-container">
+<div class="md-table-footer-container">
     <div class="md-table-footer-content">
         <div flex></div>
 
         <div class="status-summary" ng-if="ctrl.jobList && ctrl.jobList.length > 0">
-            <md-button class="md-button status-chip total" ng-click="ctrl.filterNewJobsByStatus('group-all')">
+            <md-button class="md-button status-chip total" ng-click="ctrl.filterRepriceJobsByStatus('group-all')">
                 <md-icon md-font-set="material-symbols-outlined">article</md-icon>
-                <span>{{ctrl.jobList.length || 0}}</span>
+                <span>{{ctrl.jobListReprice.length || 0}}</span>
                 <span class="status-label">Total</span>
             </md-button>
             <md-button class="md-button status-chip unread" ng-click="ctrl.filterByStatus('unread')">
                 <md-icon md-font-set="material-symbols-outlined">mark_email_unread</md-icon>
-                <span>{{ctrl.getUnreadNewCount()}}</span>
+                <span>{{ctrl.getUnreadRepriceCount()}}</span>
                 <span class="status-label">Unread</span>
             </md-button>
-            <md-button class="md-button status-chip pending" ng-click="ctrl.filterNewJobsByStatus('group-pending')">
+            <md-button class="md-button status-chip pending"
+                       ng-click="ctrl.filterRepriceJobsByStatus('group-pending')">
                 <md-icon md-font-set="material-symbols-outlined">hourglass_top</md-icon>
-                <span>{{ctrl.getNewJobsStatusCount('pending')}}</span>
+                <span>{{ctrl.getRepriceJobsStatusCount('pending')}}</span>
                 <span class="status-label">Pending</span>
             </md-button>
-            <md-button class="md-button status-chip in-transit" ng-click="ctrl.filterNewJobsByStatus('group-in-transit')">
+            <md-button class="md-button status-chip in-transit"
+                       ng-click="ctrl.filterRepriceJobsByStatus('group-in-transit')">
                 <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
-                <span>{{ctrl.getNewJobsStatusCount('in-transit')}}</span>
+                <span>{{ctrl.getRepriceJobsStatusCount('in-transit')}}</span>
                 <span class="status-label">In&nbsp;Transit</span>
             </md-button>
-            <md-button class="md-button status-chip completed" ng-click="ctrl.filterNewJobsByStatus('group-completed')">
+            <md-button class="md-button status-chip completed"
+                       ng-click="ctrl.filterRepriceJobsByStatus('group-completed')">
                 <md-icon md-font-set="material-symbols-outlined">done_all</md-icon>
-                <span>{{ctrl.getNewJobsStatusCount('completed')}}</span>
+                <span>{{ctrl.getRepriceJobsStatusCount('completed')}}</span>
                 <span class="status-label">Completed</span>
             </md-button>
-            <md-button class="md-button status-chip problem" ng-click="ctrl.filterNewJobsByStatus('group-problem')"
-                       ng-if="ctrl.getNewJobsStatusCount('problem') > 0">
+            <md-button class="md-button status-chip problem"
+                       ng-click="ctrl.filterRepriceJobsByStatus('group-problem')"
+                       ng-if="ctrl.getRepriceJobsStatusCount('problem') > 0">
                 <md-icon md-font-set="material-symbols-outlined">error_outline</md-icon>
-                <span>{{ctrl.getNewJobsStatusCount('problem')}}</span>
+                <span>{{ctrl.getRepriceJobsStatusCount('problem')}}</span>
                 <span class="status-label">Problem</span>
             </md-button>
         </div>
@@ -40,9 +44,9 @@
 
 <md-divider></md-divider>
 
-<md-table-container class="nationwide-job-list">
-    <table md-progress="ctrl.jobListPromise" md-table ng-model="ctrl.selectedJob">
-        <thead fix-head md-head md-on-reorder="ctrl.onReorderJobList" md-order="ctrl.jobFilters.order">
+<md-table-container class="nationwide-job-list" style="overflow: auto; max-height: 500px;">
+    <table md-dense md-progress="ctrl.repriceListPromise" md-table ng-model="ctrl.selectedRepriceJob">
+        <thead fix-head md-head md-on-reorder="ctrl.onReorderRepriceList" md-order="ctrl.jobRepriceFilters.order">
         <tr md-row>
             <th md-column md-order-by="time">Time</th>
             <th md-column md-order-by="speed">Speed</th>
@@ -59,11 +63,18 @@
 
         <tbody md-body>
         <tr md-row
-            ng-repeat="job in ctrl.jobList | filter: box.searchBox"
+            md-dense
+            ng-repeat="job in ctrl.jobListReprice | filter: box.searchBox"
+            ng-class="ctrl.jobClass(job)"
             context-menu="ctrl.getContextMenuOptions(job)"
             context-menu-on="contextmenu"
             context-menu-class="job-context-menu"
-            ng-click="ctrl.selectJob(job)">
+            ng-click="ctrl.selectJob(job)"
+            data-jobid="{{job.id}}"
+            data-jobno="{{job.jobNo}}"
+            data-courier="{{job.courier}}"
+            data-allowDispatch="{{job.allowDispatch}}"
+            data-index="{{$index}}">
 
             <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">
                 {{job.booked | momentFormat: (ctrl.isUsCustomer ? "MM/DD/YYYY HH:mm" : "DD/MM/YYYY HH:mm")}}
@@ -87,7 +98,7 @@
                 <md-tooltip md-direction="bottom">{{ job.deliveryAddress.fullAddress }}</md-tooltip>
                 <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
             </td>
-            <td md-cell>
+            <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">
                     <span ng-if="!job.assignedAgent.agentName && (!job.toAirportId || !job.fromAirportId)"
                           ng-style="ctrl.getJobStyle(job.courierData.courierID !== null)"
                           class="dispatch-field">
@@ -97,13 +108,13 @@
                 <span ng-if="!job.assignedAgent.agentName && job.toAirportId && job.fromAirportId"
                       ng-style="ctrl.getJobStyle(job.assignedFlight.flightNumber !== null)"
                       class="dispatch-field">
-                        {{job.assignedFlight.flightNumber || "NA"}}
+                        {{job.assignedFlight.flightNumber || "Flight"}}
                     </span>
 
                 <span ng-if="job.assignedAgent.agentName"
                       ng-style="ctrl.getJobStyle(job.assignedAgent.agentName !== null)"
                       class="dispatch-field">
-                        {{job.assignedAgent.agentName || "NA"}}
+                        {{job.assignedAgent.agentName || "Agent"}}
                     </span>
             </td>
             <td md-cell>
@@ -115,10 +126,9 @@
                     {{job.status}}
                 </md-chip>
             </td>
-
             <td class="actions" md-cell>
                     <span class="action-icon" ng-if="ctrl.restoreJobAvaliable(job)" ng-click="ctrl.restoreJob(job);">
-                        <md-icon md-font-set="material-symbols-outlined">undo</md-icon>
+                        <md-icon md-font-set="material-symbols-outlined" ng-if="job.courier !== null">undo</md-icon>
                         <md-tooltip md-direction="bottom">Restore</md-tooltip>
                     </span>
                 <span class="action-icon" ng-click="job.courier == null || ctrl.reAllocateJobs(job);">
@@ -133,10 +143,10 @@
 
 <!-- No Data Message -->
 <no-data
-        ng-if="!ctrl.jobListLoading && (!ctrl.jobList || ctrl.jobList.length === 0)"
-        title="No New Jobs Found"
-        message="There are currently no new jobs to display."
-        icon="new_releases"
+        ng-if="!ctrl.repriceListLoading && (!ctrl.jobListReprice || ctrl.jobListReprice.length === 0)"
+        title="No Repricing Jobs Found"
+        message="There are currently no jobs that need repricing."
+        icon="price_change"
         show-action="false">
 </no-data>
 
@@ -149,4 +159,3 @@
         padding: 0 !important;
     }
 </style>
-`

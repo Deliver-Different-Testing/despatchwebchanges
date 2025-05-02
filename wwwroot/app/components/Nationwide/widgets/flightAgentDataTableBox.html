@@ -76,7 +76,7 @@
             <md-menu>
                 <md-button aria-label="View nearby airports" class="md-raised md-primary"
                            ng-click="$mdMenu.open($event)">
-                   <span>{{ctrl.selectedAirport ? 'Flights for '+ ctrl.formatAirportCodeForDropdown(ctrl.selectedAirport.text) : 'Nearby Airports Select'}}</span>
+                    <span>{{ctrl.selectedAirport ? 'Flights for ' + ctrl.formatAirportCodeForDropdown(ctrl.selectedAirport.text) : 'Nearby Airports Select'}}</span>
                     <md-icon md-font-set="material-symbols-outlined">arrow_drop_down</md-icon>
                 </md-button>
                 <md-menu-content class="md-dense" width="4">
@@ -90,9 +90,13 @@
 
                     <!-- Airport options -->
                     <md-menu-item ng-repeat="airport in ctrl.airportOptions">
-                        <md-button ng-click="ctrl.selectedAirport = airport; ctrl.onAirportSelectionChanged(); $mdMenu.close()">
-                            <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.selectedAirport.id === airport.id">check</md-icon>
-                            <span ng-if="ctrl.selectedAirport.id !== airport.id" style="width: 24px; display: inline-block;"></span>
+                        <md-button
+                                ng-click="ctrl.selectedAirport = airport; ctrl.onAirportSelectionChanged(); $mdMenu.close()">
+                            <md-icon md-font-set="material-symbols-outlined"
+                                     ng-if="ctrl.selectedAirport.id === airport.id">check
+                            </md-icon>
+                            <span ng-if="ctrl.selectedAirport.id !== airport.id"
+                                  style="width: 24px; display: inline-block;"></span>
                             {{airport.text}}
                         </md-button>
                     </md-menu-item>
@@ -110,7 +114,7 @@
 
         <md-divider></md-divider>
 
-        <md-table-container>
+        <md-table-container style="overflow: auto; max-height: 500px;">
             <table md-progress="ctrl.flightListPromise" md-table ng-model="ctrl.selectedFlight">
                 <thead md-head md-order="ctrl.flightTableQuery.order">
                 <tr md-row>
@@ -211,7 +215,21 @@
 
     <!-- Agent List -->
     <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedAgent && ctrl.isDeliveryJob() && !ctrl.agentsLoading && ctrl.agentOptions && ctrl.agentOptions.length > 0">
-        <md-table-container>
+
+        <!-- Airline Filter Chips -->
+        <div class="airline-filter-container">
+            <div flex></div>
+
+            <md-button aria-label="search agents" class="md-raised md-primary"
+                       ng-click="ctrl.openAgentSearchDialog($event, ctrl.currentJob)">
+                <span>Search Agents</span>
+                <md-icon md-font-set="material-symbols-outlined">person_search</md-icon>
+            </md-button>
+        </div>
+
+        <md-divider></md-divider>
+
+        <md-table-container style="overflow: auto; max-height: 500px;">
             <table md-progress="ctrl.agentListPromise" md-table ng-model="ctrl.selectedAgent">
                 <thead md-head md-order="ctrl.agentTableQuery.order">
                 <tr md-row>

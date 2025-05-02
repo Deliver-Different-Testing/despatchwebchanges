@@ -22,9 +22,7 @@ public interface INationwideJobRepository
 
     Task<bool> AddAgentToJobAsync(int agentId, int jobId);
 
-    Task<Dictionary<string, decimal>> GetBatchCarrierFlightRatesByJobIdAsync(
-        int jobId,
-        List<string> carrierCodes,
+    Task<decimal> GetCarrierFlightRateByJobIdAsync(int jobId, string carrierName, bool extraStopOffs,
         DateTime? bookTime);
 
     Task<List<Suggestion>> GetActiveAirlineOptionsAsync();
@@ -32,4 +30,5 @@ public interface INationwideJobRepository
     Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId, int? maxDistanceMiles = 100);
     Task<string> GetSingleAirportCodeByIdAsync(int airportId);
     Task RestoreNationwideJobAsync(int jobId);
+    Task<List<Suggestion>> GetAllAgentOptionsBySearchAsync(string searchTerm);
 }

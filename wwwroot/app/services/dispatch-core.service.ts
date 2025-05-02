@@ -495,9 +495,9 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
     }
 
-    async updateBulkJobDetail(bulkJobId: number, field: string, value: string | number | Date, rate: number | string, despatcherName: string, staffId: number) {
+    async updateBulkJobDetail(bulkJobId: number, field: string, value: string | number | Date | boolean, rate: number | string , despatcherName: string, staffId: number) {
         // Handle time fields
-        if (field === "Time" || field === "CompletedTime") {
+        if (field === JobProperty.Time || field === JobProperty.CompletedTime) {
             if (value instanceof Date) {
                 // Format as YYYY-MM-DD HH:mm:ss using current date and time from value
                 const today = new Date();
@@ -519,8 +519,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
 
         // Handle date fields
-        if (field === "Date" || field === "StopDate" || field === "RestartDate" || field === "InActiveDate" ||
-            field === "FirstDue" || field === "LastDone" || field === "NextDue") {
+        if (field === JobProperty.Date || field === JobProperty.StopDate || field === JobProperty.RestartDate || field === JobProperty.InActiveDate ||
+            field === JobProperty.FirstDue || field === JobProperty.LastDone || field === JobProperty.NextDue) {
             if (value instanceof Date) {
                 value = moment(value).format();
             }

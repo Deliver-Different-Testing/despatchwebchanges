@@ -1,7 +1,7 @@
 import ToastrService from "../../../services/toastr.service";
 import {EditAddressDialogViewModel, IJob, InternalStatus, Suggestion} from "../../../interfaces/job.interface";
 import {ContactID, FirstName} from "../../../contants";
-import {JobOptions, TabItem} from "./job-details.interfaces";
+import {CallData, JobOptions, TabItem} from "./job-details.interfaces";
 import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import "./job-details.styles.less";
@@ -20,6 +20,7 @@ import EditParcelDimensionsDialogService
 import {IJobReadChanged} from "../../../interfaces/event-interfaces";
 import {JobProperty} from "../../../enums/job-property.enum";
 import {DaysOfWeek} from "../../../enums/days-of-week.enum";
+import AutoCompleteDialogService from "../../dialogs/auto-complete-dialog/auto-complete-dialog.service";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -36,7 +37,8 @@ class JobDetailController extends BaseController {
         "editParcelDimensionsDialogService",
         "$rootScope",
         "$timeout",
-        "$filter"
+        "$filter",
+        "autoCompleteDialogService",
     ];
 
     readonly appPage: AppPages = AppPages.Dispatch;
@@ -75,6 +77,7 @@ class JobDetailController extends BaseController {
         private $rootScope: angular.IRootScopeService,
         private $timeout: angular.ITimeoutService,
         private $filter: angular.IFilterService,
+        private autoCompleteDialogService: AutoCompleteDialogService,
     ) {
         super();
 
@@ -331,26 +334,15 @@ class JobDetailController extends BaseController {
     }
 
     async showAutocompleteDialog($event: MouseEvent, job: IJob, url: string, placeholder: string,
-                                 fieldName: string, title: string, existingItem: any, showRerateOption: boolean) {
-        const options = {
-            placeholder, minimumInputLength: 3, searchUrl: url
-        };
+                                 field: JobProperty, title: string, existingItem: any, showRerateOption: boolean) {
 
         try {
-            await this.$mdDialog.show({
-                controller: "AutoCompleteDialogController",
-                controllerAs: "ctrl",
-                parent: this.$document.parent(),
-                targetEvent: $event,
-                template: require("../../dialogs/auto-complete-dialog/auto-complete-dialog.html"),
-                clickOutsideToClose: true,
-                fullscreen: false,
-                locals: {
-                    id: 'editField', fieldName, title, job, options, existingItem, showRerateOption
-                },
-                bindToController: true
-            });
+            const result = await this.autoCompleteDialogService.showAutocompleteDialog($event, url, placeholder, field, title, existingItem, showRerateOption);
+            const callData: CallData = {
+                field, value: result.id, jobID: job.id
+            }
 
+            await this.updateField(job, callData);
             this.toastrService.showSuccessToast(`${job.jobNo} updated`);
             await this._refreshJobDetails(job.id);
         } catch (error) {
@@ -459,10 +451,12 @@ class JobDetailController extends BaseController {
 
         const result = await this.$mdDialog.show(prompt);
 
-        const callData = {
-            "call": "updateDetailField", "field": field, "value": result, "jobID": job.id
+        const callData: CallData = {
+           field,
+            value: result,
+            jobID: job.id
         };
-        await this.updateField(false, job, callData);
+        await this.updateField(job, callData);
 
         this.toastrService.showSuccessToast(`${job.jobNo} updated`);
         await this._refreshJobDetails(job.id);
@@ -692,14 +686,14 @@ class JobDetailController extends BaseController {
             id: job.clientId, text: job.clientName
         }
 
-        await this.showAutocompleteDialog($event, job, url, placeholder, "clientId", "Client", existingItem, true)
+        await this.showAutocompleteDialog($event, job, url, placeholder, JobProperty.ClientID, "Client", existingItem, true)
     }
 
     async courierClick($event: MouseEvent, job: IJob) {
         const url = "/courier/AllActiveSearch";
         const placeholder = "Start typing to search courier...";
 
-        await this.showAutocompleteDialog($event, job, url, placeholder, "CourierID", "Courier", null, false)
+        await this.showAutocompleteDialog($event, job, url, placeholder, JobProperty.CourierID, "Courier", null, false)
     }
 
     async contactClick($event: MouseEvent, job: IJob) {
@@ -794,12 +788,7 @@ class JobDetailController extends BaseController {
         this.isLoading = false;
     }
 
-    async updateField(_reRate: boolean, job: IJob, callData: {
-        call?: string;
-        field: JobProperty;
-        value: any;
-        jobID: number;
-    }) {
+    async updateField(job: IJob, callData: CallData) {
         this._showLoading();
 
         try {
@@ -864,8 +853,7 @@ class JobDetailController extends BaseController {
             const newValue = !value;
             console.log(`[JobDetailsComponentController] Toggling ${property} for job ${job.jobNo || job.id} from ${!newValue} to ${newValue}`);
 
-            const callData = {
-                call: "updateDetailField",
+            const callData: CallData = {
                 field: property,
                 value: newValue,
                 jobID: job.id
@@ -873,7 +861,7 @@ class JobDetailController extends BaseController {
 
             console.log(`[JobDetailsComponentController] Calling updateField with data:`, callData);
 
-            await this.updateField(useCharge, job, callData);
+            await this.updateField(job, callData);
 
             if (property === JobProperty.Reprice && newValue) {
                 console.log(`[JobDetailsComponentController] Special handling for reprice - updating internal status`);

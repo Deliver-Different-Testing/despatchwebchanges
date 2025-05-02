@@ -231,6 +231,8 @@
     <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\add-notes-dialog\add-notes-dialog.html" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\prebooks\partials\preBookDetail.html" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\prebooks\prebook.service.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\warning-card\warning-card.component.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\warning-card\warning-card.template.html" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
@@ -286,6 +288,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\common\sticky-notes\sticky-notes.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\task-item-component\task-item.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\task-item-component\task-item.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\auto-complete-dialog\auto-complete-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.service.ts" />
@@ -329,7 +332,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\enums\JobDataType.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\overview\vendor.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\mega-map\mega-map.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\mega-map\mega-map.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\overview\open-jobs\open-jobs.controller.ts" />
