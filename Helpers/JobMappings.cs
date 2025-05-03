@@ -118,12 +118,20 @@ public static class JobMappings
             ToAirportId = j.ToAirportId,
             FromAirportId = j.FromAirportId,
 
-            AssignedFlight = j
-                .TucJobNationwides.Select(nj => new AssignedFlight
-                {
-                    FlightNumber = nj.UcnwFlightNo,
-                })
-                .FirstOrDefault(),
+            AssignedFlight = j.Parent != null
+                ? j.Parent.InverseParent
+                    .SelectMany(childJob => childJob.TucJobNationwides)
+                    .Select(nj => new AssignedFlight
+                    {
+                        FlightNumber = nj.UcnwFlightNo,
+                    })
+                    .FirstOrDefault()
+                : j.TucJobNationwides
+                    .Select(nj => new AssignedFlight
+                    {
+                        FlightNumber = nj.UcnwFlightNo,
+                    })
+                    .FirstOrDefault(),
 
             // Assigned agent
             AssignedAgent =
@@ -209,17 +217,30 @@ public static class JobMappings
             FromAirportId = j.FromAirportId,
 
             // Assigned flight information
-            AssignedFlight = j
-                .TucJobNationwides.Select(nj => new AssignedFlight
-                {
-                    ExpectedArrival = nj.UcnwEta,
-                    ArrivalTimeZone = j.ToAirport.Timezone,
-                    ExpectedDeparture = nj.UcnwEtd,
-                    DepartureTimeZone = j.FromAirport.Timezone,
-                    FlightNumber = nj.UcnwFlightNo,
-                    Notes = nj.UcnwNotes
-                })
-                .FirstOrDefault(),
+            AssignedFlight = j.Parent != null
+                ? j.Parent.InverseParent
+                    .SelectMany(childJob => childJob.TucJobNationwides)
+                    .Select(nj => new AssignedFlight
+                    {
+                        ExpectedArrival = nj.UcnwEta,
+                        ArrivalTimeZone = j.ToAirport.Timezone,
+                        ExpectedDeparture = nj.UcnwEtd,
+                        DepartureTimeZone = j.FromAirport.Timezone,
+                        FlightNumber = nj.UcnwFlightNo,
+                        Notes = nj.UcnwNotes
+                    })
+                    .FirstOrDefault()
+                : j.TucJobNationwides
+                    .Select(nj => new AssignedFlight
+                    {
+                        ExpectedArrival = nj.UcnwEta,
+                        ArrivalTimeZone = j.ToAirport.Timezone,
+                        ExpectedDeparture = nj.UcnwEtd,
+                        DepartureTimeZone = j.FromAirport.Timezone,
+                        FlightNumber = nj.UcnwFlightNo,
+                        Notes = nj.UcnwNotes
+                    })
+                    .FirstOrDefault(),
 
             // Assigned agent
             AssignedAgent =
@@ -387,22 +408,24 @@ public static class JobMappings
             DeliverByTime = j.DeliverByTime,
             Attention = j.UcjbAttention,
 
-            Distance = j.ToAirportId.HasValue && j.FromAirportId.HasValue ?
-                DistanceCalculator.CalculateDistance(
-                    j.PickUpLatitude  ?? 0,
+            Distance = j.ToAirportId.HasValue && j.FromAirportId.HasValue
+                ? DistanceCalculator.CalculateDistance(
+                    j.PickUpLatitude ?? 0,
                     j.PickUpLongitude ?? 0,
                     j.DeliveryLatitude ?? 0,
-                    j.DeliveryLongitude ?? 0) :  0, // ToDo: Add Kerran's new field
+                    j.DeliveryLongitude ?? 0)
+                : 0, // ToDo: Add Kerran's new field
 
-            ReadTrackerInfo = j.TucJobReadTracker != null ?
-                new ReadTrackerInfoViewModel
-            {
-                HasBeenRead = j.TucJobReadTracker.HasBeenRead,
-                ReadBy = j.TucJobReadTracker.ReadByStaff != null
-                    ? FormatFullName(j.TucJobReadTracker.ReadByStaff)
-                    : string.Empty,
-                ReadDate = j.TucJobReadTracker.ReadTimestamp
-            } : new ReadTrackerInfoViewModel
+            ReadTrackerInfo = j.TucJobReadTracker != null
+                ? new ReadTrackerInfoViewModel
+                {
+                    HasBeenRead = j.TucJobReadTracker.HasBeenRead,
+                    ReadBy = j.TucJobReadTracker.ReadByStaff != null
+                        ? FormatFullName(j.TucJobReadTracker.ReadByStaff)
+                        : string.Empty,
+                    ReadDate = j.TucJobReadTracker.ReadTimestamp
+                }
+                : new ReadTrackerInfoViewModel
                 {
                     HasBeenRead = false
                 },
@@ -562,12 +585,13 @@ public static class JobMappings
             DeliverByTime = j.DeliverByTime,
             Attention = j.UcjbAttention,
 
-            Distance = j.ToAirportId.HasValue && j.FromAirportId.HasValue ?
-                DistanceCalculator.CalculateDistance(
-                    j.PickUpLatitude  ?? 0,
+            Distance = j.ToAirportId.HasValue && j.FromAirportId.HasValue
+                ? DistanceCalculator.CalculateDistance(
+                    j.PickUpLatitude ?? 0,
                     j.PickUpLongitude ?? 0,
                     j.DeliveryLatitude ?? 0,
-                    j.DeliveryLongitude ?? 0) :  0, // ToDo: Add Kerran's new field
+                    j.DeliveryLongitude ?? 0)
+                : 0, // ToDo: Add Kerran's new field
 
             PickUpWindowMins = j.PickUpWindowMins,
             DeliverByWindowMins = j.DeliverByWindowMins
@@ -591,7 +615,7 @@ public static class JobMappings
 
             Courier = null,
             CourierData = j.CourierId.HasValue
-                ? new CourierData { CourierId = j.CourierId, CourierName = j.Courier.UccrName}
+                ? new CourierData { CourierId = j.CourierId, CourierName = j.Courier.UccrName }
                 : null,
             AssignedCourier = j.CourierId.HasValue
                 ? new Suggestion { Id = j.CourierId.Value, Text = j.Courier.UccrName }
@@ -721,14 +745,15 @@ public static class JobMappings
                     })
                     .ToList(),
 
-            Distance = j.ToAirportId.HasValue && j.FromAirportId.HasValue ?
-                DistanceCalculator.CalculateDistance(
-                    j.PickUpLatitude  ?? 0,
+            Distance = j.ToAirportId.HasValue && j.FromAirportId.HasValue
+                ? DistanceCalculator.CalculateDistance(
+                    j.PickUpLatitude ?? 0,
                     j.PickUpLongitude ?? 0,
                     j.DeliveryLatitude ?? 0,
-                    j.DeliveryLongitude ?? 0) :  0, // ToDo: Add Kerran's new field
+                    j.DeliveryLongitude ?? 0)
+                : 0, // ToDo: Add Kerran's new field
 
- // Added recurring job fields
+            // Added recurring job fields
             InActiveBy = j.UcbkInActiveBy != null
                 ? new Suggestion { Id = j.UcbkInActiveBy.Value, Text = FormatFullName(j.UcbkInActiveByNavigation) }
                 : null,
