@@ -10,8 +10,31 @@ md-dialog {
   min-width: 400px;
 }
 
+@scroll-overflow: auto;
+
+.table-scroll {
+  overflow: @scroll-overflow;
+  height: calc(100% - 140px);
+}
+
+.table-scroll-with-pagination {
+  overflow: @scroll-overflow;
+  height: calc(100% - 110px);
+}
+
+.task-widget-list-scroll {
+  overflow: @scroll-overflow;
+  height: calc(100% - 80px);
+}
+
+.basic-box-scroll {
+  overflow: @scroll-overflow;
+  height: 100%;
+}
+
+/* This style is depreciated and will be removed in the future*/
 .card-content-scroll {
-  overflow: auto;
+  overflow: @scroll-overflow;
   height: calc(100% - 64px);
   width: 100%;
 }
@@ -302,14 +325,10 @@ md-dialog {
         }
 
         .box-content {
-          height: calc(100%);
+          height: calc(100% - 64px);
           background-color: whitesmoke;
           font-size: 11px;
           position: relative;
-        }
-
-        .related-content {
-          top: 15px;
         }
       }
     }
@@ -898,7 +917,7 @@ body > .angular-bootstrap-contextmenu.dropdown {
 
   &-container {
     overflow-x: auto;
-    min-height: 80px;
+    max-height: 80px;
   }
 
   &-content {

@@ -1,4 +1,4 @@
-<md-table-container>
+<md-table-container class="table-scroll-with-pagination">
     <table md-dense md-progress="ctrl.bulkJobPromise" md-table>
         <thead fix-head md-head md-on-reorder="ctrl.orderList('bulkJobList', ctrl.bulkJobQuery.order)"
                md-order="ctrl.bulkJobQuery.order">
@@ -28,12 +28,8 @@
         </thead>
 
         <tbody md-body>
-        <tr class="droppable-row draggable-row"
-            data-courier="{{job.courier}}"
-            data-jobNo="{{job.jobNo}}"
-            data-jobid="{{job.id}}"
+        <tr
             md-row
-            md-dense
             ng-click="ctrl.selectBulkJobDetail(job.id)"
             ng-repeat="job in ctrl.bulkJobList | filter: box.searchBox | orderBy: ctrl.bulkJobQuery.order">
 

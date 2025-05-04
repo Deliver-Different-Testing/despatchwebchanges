@@ -122,9 +122,9 @@
 
         <md-divider></md-divider>
 
-        <md-table-container style="overflow: auto; max-height: 400px;">
+        <md-table-container class="table-scroll">
             <table md-progress="ctrl.flightListPromise" md-table ng-model="ctrl.selectedFlight">
-                <thead md-head md-order="ctrl.flightTableQuery.order">
+                <thead fix-head md-head md-order="ctrl.flightTableQuery.order">
                 <tr md-row>
                     <th md-column md-order-by="airline">Airline</th>
                     <th md-column md-order-by="flightNumber">Flight No</th>
@@ -236,9 +236,9 @@
 
         <md-divider></md-divider>
 
-        <md-table-container style="overflow: auto; max-height: 400px;">
+        <md-table-container class="table-scroll">
             <table md-progress="ctrl.agentListPromise" md-table ng-model="ctrl.selectedAgent">
-                <thead md-head md-order="ctrl.agentTableQuery.order">
+                <thead fix-head md-head md-order="ctrl.agentTableQuery.order">
                 <tr md-row>
                     <th md-column md-order-by="agentName">Agent Name</th>
                     <th md-column md-order-by="agentRate">Rate</th>

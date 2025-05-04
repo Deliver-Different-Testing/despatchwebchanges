@@ -188,14 +188,18 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             ArgumentNullException.ThrowIfNull(job);
 
             var currentDate = _infoService.GetCurrentTenantTime();
+            var isDepartureAirportAgent = job.FromAirportId != null && job.ToAirportId == null;
 
             job.AgentId = agentId;
-            job.UcjbStatus = (int)JobStatus.Dispatched;
+            job.UcjbStatus = isDepartureAirportAgent ? (int)JobStatus.InboundAgentAssigned : (int)JobStatus.OutboundAgentAssigned;
             job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
             job.UcjbDispDate = currentDate;
             job.UcjbDispTime = currentDate;
 
             await Context.SaveChangesAsync();
+
+            var agentName = Context.TucAgents.Where(a => a.UcagId == agentId).Select(a => a.UcagName).FirstOrDefault();
+            await SaveNoteAsync(jobId, $"Agent {agentName} assigned");
 
             return true;
         }
@@ -205,6 +209,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             return false;
         }
     }
+
 
     public async Task<List<DispatchJobViewModel>> NationwideJobListAsync(string order, string orderDirection,
         bool isInternal, bool isUsTenant,
