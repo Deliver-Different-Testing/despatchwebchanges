@@ -68,7 +68,7 @@
 
 <md-divider></md-divider>
 
-<md-table-container class="card-content-scroll">
+<md-table-container class="table-scroll">
     <table md-progress="ctrl.jobListPromise" md-table ng-model="ctrl.selectedJob">
     <thead fix-head md-head md-on-reorder="ctrl.getJobList" md-order="ctrl.queryParams.order">
         <tr md-row>
@@ -198,5 +198,54 @@
 
     table.md-table:not(.md-row-select) td.md-cell:first-child, table.md-table:not(.md-row-select) th.md-column:first-child {
         padding: 0 !important;
+    }
+</style>
+
+
+<style>
+    dispatch-map {
+        display: block;
+        flex: 1;
+        height: 100% !important;
+        min-height: 0;
+        position: relative;
+    }
+
+    .full-height-map {
+        height: 100% !important;
+    }
+
+    .dispatch-map-component {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 100% !important;
+        width: 100%;
+    }
+
+    .dispatch-map-container {
+        height: 100% !important;
+    }
+
+    /* Fix for the Google Map container */
+    .map-wrapper,
+    ng-map,
+    .gm-style {
+        height: 100% !important;
+        width: 100% !important;
+    }
+
+    /* Handle resize in progress */
+    .box.resizable-dragging .box-content {
+        pointer-events: none; /* Prevents map interaction during resize */
+    }
+
+    /* Add transition for smoother resizing */
+    .dispatch-map-component,
+    .dispatch-map-container,
+    .map-wrapper {
+        transition: height 0.1s ease;
     }
 </style>

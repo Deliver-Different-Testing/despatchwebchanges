@@ -42,7 +42,7 @@
 
 <md-divider></md-divider>
 
-<md-table-container class="nationwide-job-list" style="overflow: auto; max-height: 600px;">
+<md-table-container class="table-scroll nationwide-job-list">
     <table md-dense md-progress="ctrl.podListPromise" md-table ng-model="ctrl.selectedPodJob">
         <thead fix-head md-head md-on-reorder="ctrl.onReorderPodList" md-order="ctrl.jobPodFilters.order">
         <tr md-row>
@@ -146,14 +146,3 @@
         icon="pending_actions"
         show-action="false">
 </no-data>
-
-
-<style>
-    table.md-table:not(.md-row-select) td.md-cell:nth-child(n+2):nth-last-child(n+2), table.md-table:not(.md-row-select) th.md-column:nth-child(n+2):nth-last-child(n+2) {
-        padding: 0 !important;
-    }
-
-    table.md-table:not(.md-row-select) td.md-cell:first-child, table.md-table:not(.md-row-select) th.md-column:first-child {
-        padding: 0 !important;
-    }
-</style>

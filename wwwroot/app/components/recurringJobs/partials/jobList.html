@@ -1,5 +1,5 @@
-<md-table-container style="overflow: auto; height: calc(100% - 150px);">
-<table md-progress="ctrl.promise" md-row-select md-table multiple ng-model="ctrl.selectedPrebooks">
+<md-table-container class="table-scroll-with-pagination">
+    <table md-progress="ctrl.promise" md-row-select md-table multiple ng-model="ctrl.selectedPrebooks">
         <thead fix-head md-head md-order="ctrl.jobQuery.order">
         <tr md-row>
             <th md-column md-order-by="booked">Booked</th>
@@ -15,9 +15,9 @@
 
         <tbody md-body>
         <tr
-            md-row
-            ng-click="ctrl.selectJobDetail(job.id);"
-            ng-repeat="job in ctrl.pagedData | filter: ctrl.searchText">
+                md-row
+                ng-click="ctrl.selectJobDetail(job.id);"
+                ng-repeat="job in ctrl.pagedData | filter: ctrl.searchText">
 
             <td md-cell>{{job.booked | momentFormat:"HH:mm"}} ({{ctrl.timeZone | timezoneShort}})</td>
             <td md-cell>{{job.speed}}</td>

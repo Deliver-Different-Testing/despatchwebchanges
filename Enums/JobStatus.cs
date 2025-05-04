@@ -20,5 +20,7 @@ public enum JobStatus
     ReadyToPickup = 15,
     AwaitingProcessing = 16,
     OutForDelivery = 17,
-    Preassigned = 18
+    Preassigned = 18,
+    OutboundAgentAssigned = 103,
+    InboundAgentAssigned = 104,
 }
