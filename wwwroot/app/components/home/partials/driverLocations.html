@@ -4,7 +4,9 @@
         class="md-primary">
 </md-progress-linear>
 
-    <div id="driverLocations" ng-if="!ctrl.driverLocationsLoading && ctrl.driverLocations && ctrl.driverLocations.areas.length > 0">
+<div class="basic-box-scroll">
+    <div id="driverLocations"
+         ng-if="!ctrl.driverLocationsLoading && ctrl.driverLocations && ctrl.driverLocations.areas.length > 0">
         <div class="container-fluid">
             <div class="row">
                 <div class="col-xs-3" ng-repeat="area in ctrl.driverLocations.areas">
@@ -69,11 +71,12 @@
             </div>
         </div>
     </div>
+</div>
 
-    <no-data
-            ng-if="!ctrl.driverLocations || ctrl.driverLocations.areas.length === 0"
-            title="No Driver Locations"
-            message="Please configure driver locations in Admin Manager to continue."
-            icon="person_pin_circle"
-            show-action="false">
-    </no-data>
+<no-data
+        ng-if="!ctrl.driverLocations || ctrl.driverLocations.areas.length === 0"
+        title="No Driver Locations"
+        message="Please configure driver locations in Admin Manager to continue."
+        icon="person_pin_circle"
+        show-action="false">
+</no-data>
