@@ -12,7 +12,7 @@
         class="md-primary">
 </md-progress-linear>
 
-<div class="nationwide-job-list" ng-if="!ctrl.isDeliveryJob()">
+<div class="basic-box-scroll nationwide-job-list" ng-if="!ctrl.isDeliveryJob()">
     <!-- No Current Job Selected -->
     <no-data
             ng-if="!ctrl.currentJob"
@@ -124,7 +124,7 @@
 
         <md-table-container class="table-scroll">
             <table md-progress="ctrl.flightListPromise" md-table ng-model="ctrl.selectedFlight">
-                <thead fix-head md-head md-order="ctrl.flightTableQuery.order">
+                <thead md-head md-order="ctrl.flightTableQuery.order">
                 <tr md-row>
                     <th md-column md-order-by="airline">Airline</th>
                     <th md-column md-order-by="flightNumber">Flight No</th>
@@ -183,7 +183,7 @@
     </div>
 </div>
 
-<div class="nationwide-job-list" ng-if="ctrl.isDeliveryJob()">
+<div class=" basic-box-scroll nationwide-job-list" ng-if="ctrl.isDeliveryJob()">
     <!--  No Current Job Selected -->
     <no-data
             ng-if="!ctrl.currentJob"
@@ -238,7 +238,7 @@
 
         <md-table-container class="table-scroll">
             <table md-progress="ctrl.agentListPromise" md-table ng-model="ctrl.selectedAgent">
-                <thead fix-head md-head md-order="ctrl.agentTableQuery.order">
+                <thead md-head md-order="ctrl.agentTableQuery.order">
                 <tr md-row>
                     <th md-column md-order-by="agentName">Agent Name</th>
                     <th md-column md-order-by="agentRate">Rate</th>
