@@ -108,13 +108,13 @@
                 <span ng-if="!job.assignedAgent.agentName && job.toAirportId && job.fromAirportId"
                       ng-style="ctrl.getJobStyle(job.assignedFlight.flightNumber !== null)"
                       class="dispatch-field">
-                        {{job.assignedFlight.flightNumber || "Flight"}}
+                        {{job.assignedFlight.flightNumber || "NA"}}
                     </span>
 
                 <span ng-if="job.assignedAgent.agentName"
                       ng-style="ctrl.getJobStyle(job.assignedAgent.agentName !== null)"
                       class="dispatch-field">
-                        {{job.assignedAgent.agentName || "Agent"}}
+                        {{job.assignedAgent.agentName || "NA"}}
                     </span>
             </td>
             <td md-cell>
