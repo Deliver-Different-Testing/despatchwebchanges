@@ -223,9 +223,9 @@ public static class JobMappings
                     .Select(nj => new AssignedFlight
                     {
                         ExpectedArrival = nj.UcnwEta,
-                        ArrivalTimeZone = j.ToAirport.Timezone,
+                        ArrivalTimeZone = nj.UcnwJob.ToAirport.Timezone,
                         ExpectedDeparture = nj.UcnwEtd,
-                        DepartureTimeZone = j.FromAirport.Timezone,
+                        DepartureTimeZone = nj.UcnwJob.FromAirport.Timezone,
                         FlightNumber = nj.UcnwFlightNo,
                         Notes = nj.UcnwNotes
                     })
@@ -234,9 +234,9 @@ public static class JobMappings
                     .Select(nj => new AssignedFlight
                     {
                         ExpectedArrival = nj.UcnwEta,
-                        ArrivalTimeZone = j.ToAirport.Timezone,
+                        ArrivalTimeZone = nj.UcnwJob.ToAirport.Timezone,
                         ExpectedDeparture = nj.UcnwEtd,
-                        DepartureTimeZone = j.FromAirport.Timezone,
+                        DepartureTimeZone = nj.UcnwJob.FromAirport.Timezone,
                         FlightNumber = nj.UcnwFlightNo,
                         Notes = nj.UcnwNotes
                     })
