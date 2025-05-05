@@ -354,6 +354,11 @@ public class NationwideJobController(
     {
         try
         {
+            // Step 1: Disconnect from webhook alerts
+            var webhookIds = await repository.GetFlightWebhookIdByJobIdAsync(request.JobId);
+            foreach (var webhookId in webhookIds) await flightService.DeleteFlightRuleById(webhookId);
+
+            // Step 2: Restore Job
             await repository.RestoreNationwideJobAsync(request.JobId);
             return Ok();
         }
