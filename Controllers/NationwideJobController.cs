@@ -301,11 +301,15 @@ public class NationwideJobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> SendAgentQuote(int agentId, int jobId)
+    public async Task<IActionResult> SendAgentQuote([FromBody] AgentJobRequestModel data)
     {
         try
         {
-            await repository.SendAgentRequestMessageAsync(agentId, jobId);
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(data.AgentId);
+            ArgumentNullException.ThrowIfNull(data.JobId);
+
+            await repository.SendAgentRequestMessageAsync(data.AgentId.Value, data.JobId.Value);
             return Ok();
         }
         catch (Exception e)
@@ -346,11 +350,11 @@ public class NationwideJobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> RestoreJob([FromBody] int jobId)
+    public async Task<IActionResult> RestoreJob([FromBody] RestoreJobRequest request)
     {
         try
         {
-            await repository.RestoreNationwideJobAsync(jobId);
+            await repository.RestoreNationwideJobAsync(request.JobId);
             return Ok();
         }
         catch (Exception e)
