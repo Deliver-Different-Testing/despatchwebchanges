@@ -38,4 +38,16 @@ public partial class TucManualMessage
     public bool Read { get; set; }
 
     public DateTime? TimeRead { get; set; }
+
+    public bool? HasAttachment { get; set; }
+
+    public bool? IsExternalStorage { get; set; }
+
+    public string FilePath { get; set; }
+
+    public string FileName { get; set; }
+
+    public string FileType { get; set; }
+
+    public byte[] FileContent { get; set; }
 }

@@ -217,6 +217,16 @@ public partial class TblBulkJob
 
     public string DeliveryAddressLine8 { get; set; }
 
+    public string PickupFromContact { get; set; }
+
+    public string PickupFromPhone { get; set; }
+
+    public int? PickupTimeZoneId { get; set; }
+
+    public decimal? TotalDistance { get; set; }
+
+    public int? DeliverByTimeZoneId { get; set; }
+
     public virtual TucJob Job { get; set; }
 
     public virtual TblBulkRegion Region { get; set; }

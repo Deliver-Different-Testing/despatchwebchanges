@@ -362,6 +362,12 @@ public partial class TucJobBooking
 
     public int? DeliverByWindowMins { get; set; }
 
+    public int? PickupTimeZoneId { get; set; }
+
+    public decimal? TotalDistance { get; set; }
+
+    public int? DeliverByTimeZoneId { get; set; }
+
     public virtual TucJobBooking BookingParent { get; set; }
 
     public virtual TucCourier Courier { get; set; }
@@ -393,6 +399,4 @@ public partial class TucJobBooking
     public virtual VehicleSize UcbkSizeNavigation { get; set; }
 
     public virtual TucJobType UcbkSpeedNavigation { get; set; }
-
-    public virtual TucJobType UcbkTypeNavigation { get; set; }
 }

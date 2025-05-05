@@ -33,7 +33,10 @@ private async Task UpdateTucJob(int jobId, JobProperty property, string value)
     switch (property)
     {
         case JobProperty.ConNote:
-            job.Connote = value;
+            if (job.ParentId != null)
+                job.Parent.Connote = value;
+            else
+                job.Connote = value;
             break;
         case JobProperty.AirportOnly:
             var airportOnly = bool.Parse(value);

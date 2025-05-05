@@ -49,6 +49,10 @@ public partial class TucJobNationwide
 
     public string GateNumber { get; set; }
 
+    public int UcnwLegNumber { get; set; }
+
+    public string UcnwAirlineName { get; set; }
+
     public virtual TucJobBooking JobBooking { get; set; }
 
     public virtual TucJob UcnwJob { get; set; }
