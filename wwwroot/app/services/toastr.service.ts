@@ -1,3 +1,5 @@
+import {bindAllMethods} from "../bindAllMethods";
+
 enum ToastType {
     SUCCESS = 'success',
     ERROR = 'error',
@@ -14,6 +16,8 @@ class ToastrService implements angular.IServiceProvider {
         private $mdToast: angular.material.IToastService,
         private $document: angular.IDocumentService
     ) {
+        console.log("Toastr service initialized");
+        bindAllMethods(this);
     }
 
     $get() {

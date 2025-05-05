@@ -490,6 +490,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
         // Reset fields
         job.UcjbStatus = (int)JobStatus.New;
+        job.InternalStatus = (int)InternalJobStatus.NewJobs;
         job.UcjbJobDone = false;
         job.UcjbVoid = false;
         job.UcjbCourierId = null;
@@ -511,8 +512,8 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         // Remove flight record
         if (job.TucJobNationwides != null && job.TucJobNationwides.Count != 0)
         {
-            var flightDetails = job.TucJobNationwides.FirstOrDefault();
-            if (flightDetails != null) Context.TucJobNationwides.Remove(flightDetails);
+            var flightDetails = job.TucJobNationwides.ToList();
+            Context.TucJobNationwides.RemoveRange(flightDetails);
         }
 
         await Context.SaveChangesAsync();
