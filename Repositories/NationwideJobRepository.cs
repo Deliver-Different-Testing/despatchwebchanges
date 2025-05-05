@@ -485,7 +485,10 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
     public async Task RestoreNationwideJobAsync(int jobId)
     {
-        var job = await Context.TucJobs.Include(j => j.TucJobNationwides).FirstOrDefaultAsync(j => j.UcjbId == jobId);
+        var job = await Context.TucJobs
+            .Include(j => j.TucJobNationwides)
+            .Include(j => j.TucJobReadTracker)
+            .FirstOrDefaultAsync(j => j.UcjbId == jobId);
         ArgumentNullException.ThrowIfNull(job);
 
         // Reset fields
@@ -515,6 +518,9 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             var flightDetails = job.TucJobNationwides.ToList();
             Context.TucJobNationwides.RemoveRange(flightDetails);
         }
+
+        // Remove read record
+        if (job.TucJobReadTracker != null) Context.TucJobReadTrackers.Remove(job.TucJobReadTracker);
 
         await Context.SaveChangesAsync();
 
