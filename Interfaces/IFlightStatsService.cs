@@ -26,4 +26,6 @@ public interface IFlightStatsService
 
     Task<List<FlightDetailsDialogViewModel>> GetFlightDetailByFlightNumberDetailDialog(
         string completeFlightNumber, DateTime departureTime);
+
+    Task DeleteFlightRuleById(string webhookId);
 }

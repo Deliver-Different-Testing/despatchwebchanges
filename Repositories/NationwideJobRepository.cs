@@ -543,4 +543,16 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
         return agents;
     }
+
+    public async Task<List<string>> GetFlightWebhookIdByJobIdAsync(int jobId)
+    {
+        var webhookId = await Context.TucJobNationwides
+            .Where(nj => nj.UcnwJobId == jobId)
+            .Select(nj => nj.WebhookAlertId)
+            .Distinct()
+            .AsNoTracking()
+            .ToListAsync();
+
+        return webhookId;
+    }
 }

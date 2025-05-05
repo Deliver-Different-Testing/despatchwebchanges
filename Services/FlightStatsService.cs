@@ -88,6 +88,34 @@ public class FlightStatsService(
         return createAlertResponse.Rule?.Id;
     }
 
+    public async Task DeleteFlightRuleById(string webhookId)
+    {
+        if (string.IsNullOrEmpty(webhookId)) return;
+
+        var relativeUrl =
+            $"json/delete/{webhookId}";
+
+        var query = HttpUtility.ParseQueryString(string.Empty);
+        query["appId"] = _appId;
+        query["appKey"] = _appKey;
+
+        // Construct the final URI
+        var fullUrl = $"{AlertUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
+        var uriBuilder = new UriBuilder(fullUrl)
+        {
+            Query = query.ToString() ?? string.Empty
+        };
+
+        var uri = uriBuilder.Uri;
+        Log.Debug("r: {Uri}", uri);
+
+        var response = await httpClient.GetAsync(uri);
+
+        Log.Debug("FlightService StatusCode: {ResponseStatusCode}", response.StatusCode);
+        if (!response.IsSuccessStatusCode)
+            throw new Exception($"Failed to disconnect alert aler: {response.ReasonPhrase}");
+    }
+
     public async Task<List<FlightViewModel>> GetFlightsAsync(
         int jobId,
         DateTime? departureDateTime = null,
