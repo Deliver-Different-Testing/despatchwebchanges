@@ -27,6 +27,7 @@ import NavigationService from '../../services/navigation.service';
 import ApiConfig from "../../interfaces/apiConfig.interface";
 import ConfigService from "../../services/config.service";
 import AutoCompleteDialogService from "../dialogs/auto-complete-dialog/auto-complete-dialog.service";
+import InternalJobStatus from "../../enums/job-internal-status.enum";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -1181,7 +1182,7 @@ class NationwideControl extends BaseController {
             await this.$mdDialog.show(confirm);
             console.log('Assigning to job');
 
-            const previousInternalStatusId = job.internalStatusId ?? 1;
+            const previousInternalStatusId = job.internalStatusId ?? InternalJobStatus.NewJobs;
             const listsToRefresh = new Set([JobDataType.POD]);
 
             if (this.STATUS_TO_LIST_MAP[previousInternalStatusId]) {

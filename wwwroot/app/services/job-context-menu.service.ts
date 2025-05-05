@@ -8,6 +8,9 @@ import {JobNoteType} from "../enums/job-note-type.enum";
 import IContextMenuOption from "../interfaces/context-menu-option.interface";
 import {bindAllMethods} from "../bindAllMethods";
 import NationwideService from "../components/Nationwide/nationwide.service";
+import InternalJobStatus from "../enums/job-internal-status.enum";
+import {JobProperty} from "../enums/job-property.enum";
+import JobInternalStatusEnum from "../enums/job-internal-status.enum";
 
 class JobContextMenuService implements angular.IServiceProvider {
     static $inject = [
@@ -62,7 +65,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         menuOptions.push({
             text: job.hasBeenRead ? 'Mark as Unread' : 'Mark as Read',
             icon: job.hasBeenRead ? 'mark_email_unread' : 'mark_email_read',
-            click: () => this.markJobReadOrUnread(job, callbacks.onRefresh),
+            click: () => this._markJobReadOrUnread(job, callbacks.onRefresh),
             hasBottomDivider: true
         });
 
@@ -72,7 +75,7 @@ class JobContextMenuService implements angular.IServiceProvider {
             menuOptions.push({
                 text: 'Unassign Flight',
                 icon: 'remove_from_queue',
-                click: () => this.unassignFlight(job, callbacks.onRefresh),
+                click: () => this._unassignFlight(job, callbacks.onRefresh),
                 hasBottomDivider: true
             });
         }
@@ -82,7 +85,16 @@ class JobContextMenuService implements angular.IServiceProvider {
             menuOptions.push({
                 text: 'Unassign Agent',
                 icon: 'person_remove',
-                click: () => this.unassignAgent(job, callbacks.onRefresh),
+                click: () => this._unassignAgent(job, callbacks.onRefresh),
+                hasBottomDivider: true
+            });
+        }
+
+        if (job.internalStatusId && job.internalStatusId != InternalJobStatus.Reprice) {
+            menuOptions.push({
+                text: 'Reprice Job',
+                icon: 'price_check',
+                click: () => this._moveJobToReprice(job, callbacks.onRefresh),
                 hasBottomDivider: true
             });
         }
@@ -97,7 +109,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         menuOptions.push({
             text: 'Add Task - Other',
             icon: 'add',
-            click: (_$itemScope: any, $event: MouseEvent) => this.addEventOtherAction($event, job, callbacks.onRefresh),
+            click: (_$itemScope: any, $event: MouseEvent) => this._addEventOtherAction($event, job, callbacks.onRefresh),
             hasBottomDivider: true
         });
 
@@ -113,7 +125,7 @@ class JobContextMenuService implements angular.IServiceProvider {
             menuOptions.push({
                 text: 'Split Job',
                 icon: 'call_split',
-                click: (_$itemScope: any, $event: MouseEvent) => this.splitJobAction($event, job, callbacks.onSplitJob),
+                click: (_$itemScope: any, $event: MouseEvent) => this._splitJobAction($event, job, callbacks.onSplitJob),
                 hasBottomDivider: true
             });
         }
@@ -122,7 +134,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         menuOptions.push({
             text: 'Set First Job',
             icon: 'first_page',
-            click: () => this.setFirstJobAction(job, callbacks.onRefreshCourierJobs)
+            click: () => this._setFirstJobAction(job, callbacks.onRefreshCourierJobs)
         });
 
         return menuOptions;
@@ -135,7 +147,7 @@ class JobContextMenuService implements angular.IServiceProvider {
             if (this.eventGroupsCache.length > 0) {
                 return this.eventGroupsCache.map(group => ({
                     text: group.text,
-                    click: () => this.selectEventGroup(group.id, jobId, onRefresh)
+                    click: () => this._selectEventGroup(group.id, jobId, onRefresh)
                 }));
             }
 
@@ -145,7 +157,7 @@ class JobContextMenuService implements angular.IServiceProvider {
                     this.eventGroupsCache = groups || [];
                     return this.eventGroupsCache.map(group => ({
                         text: group.text,
-                        click: () => this.selectEventGroup(group.id, jobId, onRefresh)
+                        click: () => this._selectEventGroup(group.id, jobId, onRefresh)
                     }));
                 })
                 .catch(error => {
@@ -155,7 +167,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         };
     }
 
-    async markJobReadOrUnread(job: IDispatchJob, onRefresh: () => void) {
+    private async _markJobReadOrUnread(job: IDispatchJob, onRefresh: () => void) {
         if (!job) return;
 
         try {
@@ -171,7 +183,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         }
     }
 
-    async unassignFlight(job: IDispatchJob, onRefresh: () => void) {
+    private async _unassignFlight(job: IDispatchJob, onRefresh: () => void) {
         if (!job) return;
         await this._performUnassignment(
             job,
@@ -182,7 +194,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         );
     }
 
-    async unassignAgent(job: IDispatchJob, onRefresh: () => void) {
+    private async _unassignAgent(job: IDispatchJob, onRefresh: () => void) {
         if (!job) return;
         await this._performUnassignment(
             job,
@@ -191,6 +203,27 @@ class JobContextMenuService implements angular.IServiceProvider {
             `${job.flightNumber} unassigned successfully`,
             onRefresh
         );
+    }
+
+    private async _moveJobToReprice(job: IDispatchJob, onRefresh: () => void) {
+        if (!job) return;
+
+        try {
+            await this.DispatchData.updateJobDetail(
+                job.id,
+                JobProperty.InternalStatusID,
+                JobInternalStatusEnum.Reprice,
+                false
+            );
+
+            this.toastrService.showSuccessToast(`Job ${job.jobNum} marked as Reprice`);
+
+            if (onRefresh) {
+                onRefresh();
+            }
+        } catch (error) {
+            console.error("Error updating internal status:", error);
+        }
     }
 
     private async _performUnassignment(
@@ -262,7 +295,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         }
     }
 
-    async addEventOtherAction($event: MouseEvent, job: IDispatchJob, onRefresh: () => void) {
+    private async _addEventOtherAction($event: MouseEvent, job: IDispatchJob, onRefresh: () => void) {
         if (!job) return;
 
         await this.addEventDialogService.openAddEventDialog($event, job);
@@ -272,7 +305,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         }
     }
 
-    async selectEventGroup(eventGroupId: number, jobId: number, onRefresh: () => void) {
+    private async _selectEventGroup(eventGroupId: number, jobId: number, onRefresh: () => void) {
         if (!jobId) return;
 
         try {
@@ -289,7 +322,9 @@ class JobContextMenuService implements angular.IServiceProvider {
         }
     }
 
-    async splitJobAction($event: MouseEvent, job: IDispatchJob, onSplitJob: (params: { job: IDispatchJob }) => void) {
+    private async _splitJobAction($event: MouseEvent, job: IDispatchJob, onSplitJob: (params: {
+        job: IDispatchJob
+    }) => void) {
         if (!job) return;
 
         if (!job.allowSplit) {
@@ -328,7 +363,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         }
     }
 
-    async setFirstJobAction(job: IDispatchJob, onRefreshCourierJobs: (params: { courierId: number }) => void) {
+    private async _setFirstJobAction(job: IDispatchJob, onRefreshCourierJobs: (params: { courierId: number }) => void) {
         if (!job) return;
 
         try {

@@ -21,6 +21,7 @@
             <div class="job-ids-container" ng-if="ctrl.job.relatedJobs && ctrl.job.relatedJobs.length > 0">
                 <md-tabs
                         md-border-bottom
+                        md-center-tabs="true"
                         md-no-pagination="ctrl.job.relatedJobs.length <= 5"
                         md-selected="ctrl.selectedTabIndex"
                         md-swipe-content>
@@ -885,6 +886,16 @@
                                         <span class="label">Our Ref:</span>
                                     </div>
                                     <span class="value">{{ctrl.job.ourRef}}</span>
+                                </div>
+                            </md-list-item>
+                            <md-list-item class="info-row" md-ink-ripple ng-click="ctrl.editConNote($event, ctrl.job)">
+                                <md-icon aria-label="Our reference" md-font-set="material-symbols-outlined">draw
+                                </md-icon>
+                                <div class="info-detail">
+                                    <div class="left-content">
+                                        <span class="label">Con Note:</span>
+                                    </div>
+                                    <span class="value">{{ctrl.job.conNote}}</span>
                                 </div>
                             </md-list-item>
                         </md-list>
