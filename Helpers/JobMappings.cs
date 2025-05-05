@@ -19,6 +19,7 @@ public static class JobMappings
             JobNo = j.UcjbNumber,
             HasBeenRead = j.TucJobReadTracker != null && j.TucJobReadTracker.HasBeenRead,
 
+            InternalStatusId = j.InternalStatus,
             SpeedId = j.UcjbSpeed,
             StatusId = j.UcjbStatus,
             Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsCode : null,
@@ -362,6 +363,7 @@ public static class JobMappings
             Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsCode : null,
             StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
             InternalStatusId = j.InternalStatus,
+            ConNote = j.Connote,
 
             // Checkboxes
             Reprice = j.Reprice,
@@ -567,6 +569,7 @@ public static class JobMappings
 
             StatusId = j.UcjbStatus,
             InternalStatusId = j.InternalStatus,
+            ConNote = j.Connote,
 
             // Checkboxes
             Reprice = j.Reprice,

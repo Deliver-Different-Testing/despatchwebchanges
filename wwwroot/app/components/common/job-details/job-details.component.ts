@@ -27,12 +27,10 @@ class JobDetailController extends BaseController {
         "$mdDialog",
         "toastrService",
         "DispatchData",
-        "$mdMenu",
         "selectDialogService",
         "editDateTimeDialogService",
         "editAddressDialogService",
         "priceBreakdownDialogService",
-        "$document",
         "APP_CONFIG",
         "editParcelDimensionsDialogService",
         "$rootScope",
@@ -53,10 +51,7 @@ class JobDetailController extends BaseController {
     formattedPodPhotos: PodPhoto[] = [];
     selectedPhotoIndex: number = 0;
     internalStatusList: InternalStatus[];
-    onStatusChange?: (params: { $event: any }) => void;
-    selectedStatusText?: string;
     isLoading: boolean = false;
-    showStageDropdown: boolean = false;
     distance?: number;
     selectedTabIndex: number = 0;
     processingTabChange: boolean = false;
@@ -66,12 +61,10 @@ class JobDetailController extends BaseController {
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
-        private $mdMenu: angular.material.IMenuService,
         private selectDialogService: SelectDialogService,
         private editDateTimeDialogService: EditDateTimeDialogService,
         private editAddressDialogService: EditAddressDialogService,
         private priceBreakdownDialogService: PriceBreakdownDialogService,
-        private $document: angular.IDocumentService,
         APP_CONFIG: AppConfig,
         private editParcelDimensionsDialogService: EditParcelDimensionsDialogService,
         private $rootScope: angular.IRootScopeService,
@@ -138,10 +131,6 @@ class JobDetailController extends BaseController {
             } else {
                 this.job = undefined;
             }
-        }
-
-        if (changes['appPage']) {
-            this.showStageDropdown = changes['appPage'].currentValue == AppPages.Domestic;
         }
     }
 
@@ -323,8 +312,6 @@ class JobDetailController extends BaseController {
             this.job.frequency = Number(this.job.frequency);
             console.log('Set frequency to:', this.job.frequency);
         }
-
-        this._getSelectedStatusText();
     }
 
     getJobAddressIcon() {
@@ -649,6 +636,14 @@ class JobDetailController extends BaseController {
     async editOurRef($event: MouseEvent, job: IJob) {
         try {
             await this.showEditDialog($event, job, "Edit Our Reference", "Our Reference...", "our reference", job.ourRef, JobProperty.OurRef);
+        } catch (error) {
+            this._handleError(error);
+        }
+    }
+
+    async editConNote($event: MouseEvent, job: IJob) {
+        try {
+            await this.showEditDialog($event, job, "Edit Con Note", "Con note...", "con note", job.conNote, JobProperty.ConNote);
         } catch (error) {
             this._handleError(error);
         }
@@ -1051,50 +1046,6 @@ class JobDetailController extends BaseController {
 
         } catch (error: any) {
             this._handleError(error);
-        }
-    }
-
-    private _getSelectedStatusText() {
-        console.log('getSelectedStatusText() called');
-        const defaultText = 'Stage';
-        console.log('Current job:', this.job);
-
-        console.log('Current internalStatusList:', this.internalStatusList);
-
-        const selectedStatus = this.internalStatusList?.find(status =>
-            status.id === this.job?.internalStatusId
-        );
-        console.log('Found selectedStatus:', selectedStatus);
-
-        this.selectedStatusText = selectedStatus ? selectedStatus.text : defaultText;
-        console.log('Set selectedStatusText to:', this.selectedStatusText);
-    }
-
-    async setInternalStatus(internalStatusId: number, job: IJob) {
-        this.$mdMenu.hide();
-        const previousStatusId = job.internalStatusId;
-
-        try {
-            await this.DispatchData.updateJobDetail(
-                job.id,
-                JobProperty.InternalStatusID,
-                internalStatusId,
-                false
-            );
-
-            if (this.onStatusChange) {
-                this.onStatusChange({
-                    $event: {
-                        previousStatusId,
-                        newStatusId: internalStatusId,
-                        jobId: job.id
-                    }
-                });
-            }
-
-            this._getSelectedStatusText();
-        } catch (error) {
-            console.error("Error updating internal status:", error);
         }
     }
 

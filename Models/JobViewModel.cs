@@ -83,6 +83,7 @@ public class JobViewModel : DispatchJobViewModel
 
     public DateTime? FollowupTime { get; set; }
     public int? InternalStatusId { get; set; }
+    public string ConNote {get;set;}
     public List<PalletInfo> PalletInfo { get; set; }
     public decimal? CourierLatitude { get; set; }
     public decimal? CourierLongitude { get; set; }

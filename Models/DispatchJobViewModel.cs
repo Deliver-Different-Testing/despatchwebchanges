@@ -12,6 +12,7 @@ public class DispatchJobViewModel
     public bool HasBeenRead { get; set; }
 
     // Status and timing information
+    public int? InternalStatusId { get; set; }
     public int? SpeedId { get; set; }
     public int? StatusId { get; set; }
     public string StatusName { get; set; }

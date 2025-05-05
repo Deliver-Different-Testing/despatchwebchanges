@@ -415,6 +415,7 @@ export interface IDispatchJob {
 
     // Status and timing information
     statusId?: JobStatus;
+    internalStatusId?: number;
     statusName?: string;
     status?: string;
     time?: Date;
