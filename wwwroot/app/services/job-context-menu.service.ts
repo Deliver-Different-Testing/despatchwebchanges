@@ -3,22 +3,13 @@ import ToastrService from "./toastr.service";
 import NoteService from "./notes.service";
 import {EventGroupDialogService} from "../components/dialogs/event-group-dialog/event-group-dialog.service";
 import AddEventDialogService from "../components/dialogs/add-event-dialog/add-event-dialog.service";
-import {IDispatchJob, IJobNote} from "../interfaces/job.interface";
+import {IDispatchJob, IJobNote, Suggestion} from "../interfaces/job.interface";
 import {JobNoteType} from "../enums/job-note-type.enum";
+import IContextMenuOption from "../interfaces/context-menu-option.interface";
+import {bindAllMethods} from "../bindAllMethods";
+import NationwideService from "../components/Nationwide/nationwide.service";
 
-interface IContextMenuOption {
-    text: string | Function;
-    html?: string | Function;
-    click?: Function;
-    enabled?: boolean | Function;
-    displayed?: boolean | Function;
-    hasTopDivider?: boolean | Function;
-    hasBottomDivider?: boolean | Function;
-    children?: IContextMenuOption[] | Function | Promise<any>;
-    icon?: string;
-}
-
-export default class JobContextMenuService implements angular.IServiceProvider {
+class JobContextMenuService implements angular.IServiceProvider {
     static $inject = [
         "$mdDialog",
         "$document",
@@ -26,7 +17,8 @@ export default class JobContextMenuService implements angular.IServiceProvider {
         "toastrService",
         "noteService",
         "eventGroupDialogService",
-        "addEventDialogService"
+        "addEventDialogService",
+        "NWData",
     ];
 
     private eventGroupsCache: Suggestion[] = [];
@@ -38,8 +30,11 @@ export default class JobContextMenuService implements angular.IServiceProvider {
         private toastrService: ToastrService,
         private noteService: NoteService,
         private eventGroupDialogService: EventGroupDialogService,
-        private addEventDialogService: AddEventDialogService
+        private addEventDialogService: AddEventDialogService,
+        private nationwideService: NationwideService,
     ) {
+        console.log("JobContextMenuService initialized");
+        bindAllMethods(this);
         this._preloadEventGroups();
     }
 
@@ -62,31 +57,49 @@ export default class JobContextMenuService implements angular.IServiceProvider {
     getMenuOptions(job: IDispatchJob, callbacks: any): IContextMenuOption[] {
         if (!job) return [];
 
-        const menuOptions: IContextMenuOption[] = [
-            // Read/Unread Job
-            {
-                text: job.hasBeenRead ? 'Mark as Unread' : 'Mark as Read',
-                icon: job.hasBeenRead ? 'mark_email_unread' : 'mark_email_read',
-                click: () => this.markJobReadOrUnread(job, callbacks.onRefresh),
-                hasBottomDivider: true
-            },
+        const menuOptions: IContextMenuOption[] = [];
 
-            // Void Job
-            {
-                text: 'Void Job',
-                icon: 'cancel',
-                click: () => this.voidJobAction(job, callbacks.onRefresh),
-                hasBottomDivider: true
-            },
+        menuOptions.push({
+            text: job.hasBeenRead ? 'Mark as Unread' : 'Mark as Read',
+            icon: job.hasBeenRead ? 'mark_email_unread' : 'mark_email_read',
+            click: () => this.markJobReadOrUnread(job, callbacks.onRefresh),
+            hasBottomDivider: true
+        });
 
-            // Add Task - Other
-            {
-                text: 'Add Task - Other',
-                icon: 'add',
-                click: (_$itemScope: any, $event: MouseEvent) => this.addEventOtherAction($event, job, callbacks.onRefresh),
+        // Flight
+        const lastChar = job.jobNo.toString().slice(-1);
+        if (job.assignedFlight && lastChar === '2') {
+            menuOptions.push({
+                text: 'Unassign Flight',
+                icon: 'remove_from_queue',
+                click: () => this.unassignFlight(job, callbacks.onRefresh),
                 hasBottomDivider: true
-            }
-        ];
+            });
+        }
+
+        // Agent
+        if (job.assignedAgent) {
+            menuOptions.push({
+                text: 'Unassign Agent',
+                icon: 'person_remove',
+                click: () => this.unassignAgent(job, callbacks.onRefresh),
+                hasBottomDivider: true
+            });
+        }
+
+        menuOptions.push({
+            text: 'Void Job',
+            icon: 'cancel',
+            click: () => this.voidJobAction(job, callbacks.onRefresh),
+            hasBottomDivider: true
+        });
+
+        menuOptions.push({
+            text: 'Add Task - Other',
+            icon: 'add',
+            click: (_$itemScope: any, $event: MouseEvent) => this.addEventOtherAction($event, job, callbacks.onRefresh),
+            hasBottomDivider: true
+        });
 
         menuOptions.push({
             text: 'Task Groups',
@@ -155,6 +168,56 @@ export default class JobContextMenuService implements angular.IServiceProvider {
         } catch (error) {
             console.error("Job void error:", error);
             this.toastrService.showErrorToast("Error marking job as read/unread");
+        }
+    }
+
+    async unassignFlight(job: IDispatchJob, onRefresh: () => void) {
+        if (!job) return;
+        await this._performUnassignment(
+            job,
+            "Unassign Flight?",
+            `Are you sure you wish to unassign flight ${job.flightNumber} from ${job.jobNo} ?`,
+            `${job.flightNumber} unassigned successfully`,
+            onRefresh
+        );
+    }
+
+    async unassignAgent(job: IDispatchJob, onRefresh: () => void) {
+        if (!job) return;
+        await this._performUnassignment(
+            job,
+            "Unassign Agent?",
+            `Are you sure you wish to unassign agent ${job.agentName} from ${job.jobNo} ?`,
+            `${job.flightNumber} unassigned successfully`,
+            onRefresh
+        );
+    }
+
+    private async _performUnassignment(
+        job: IDispatchJob,
+        dialogTitle: string,
+        dialogText: string,
+        successMessage: string,
+        onRefresh?: () => void
+    ): Promise<void> {
+        try {
+            await this.$mdDialog.show(
+                this.$mdDialog
+                    .confirm()
+                    .title(dialogTitle)
+                    .textContent(dialogText)
+                    .ok("Unassign")
+                    .cancel("Cancel")
+            );
+            await this.nationwideService.restoreJob(job.id);
+            this.toastrService.showSuccessToast(successMessage);
+            if (onRefresh) {
+                onRefresh();
+            }
+        } catch (error) {
+            if (error) {
+                console.error("Job void error:", error);
+            }
         }
     }
 
@@ -291,3 +354,5 @@ export default class JobContextMenuService implements angular.IServiceProvider {
         }
     }
 }
+
+export default JobContextMenuService;

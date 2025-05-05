@@ -55,7 +55,6 @@
             <th md-column md-order-by="courier">Dispatch</th>
             <th md-column md-order-by="remain">Remain</th>
             <th md-column md-order-by="status">Status</th>
-            <th md-column>Actions</th>
         </tr>
         </thead>
 
@@ -116,17 +115,6 @@
                 <md-chip class="status {{job.statusName | lowercase }}">
                     {{job.status}}
                 </md-chip>
-            </td>
-
-            <td class="actions" md-cell>
-            <span class="action-icon" ng-if="ctrl.restoreJobAvailable(job)" ng-click="ctrl.restoreJob(job);">
-                    <md-icon md-font-set="material-symbols-outlined">undo</md-icon>
-                <md-tooltip md-direction="bottom">Restore</md-tooltip>
-                    </span>
-                <span class="action-icon" ng-click="job.courier == null || ctrl.reAllocateJobs(job);">
-                        <md-icon md-font-set="material-symbols-outlined" ng-if="job.courier !== null">repeat</md-icon>
-                        <md-tooltip md-direction="bottom">ReDispatch</md-tooltip>
-                    </span>
             </td>
         </tr>
         </tbody>

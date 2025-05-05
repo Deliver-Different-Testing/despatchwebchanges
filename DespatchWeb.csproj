@@ -360,6 +360,7 @@
     <TypeScriptCompile Include="wwwroot\app\bindAllMethods.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\app-config.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\apiConfig.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\context-menu-option.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\courier.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\dfrnt-page-view-model.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\dialog-result.interfaces.ts" />
