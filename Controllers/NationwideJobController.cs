@@ -346,7 +346,7 @@ public class NationwideJobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> RestoreJob(int jobId)
+    public async Task<IActionResult> RestoreJob([FromBody] int jobId)
     {
         try
         {
@@ -355,7 +355,7 @@ public class NationwideJobController(
         }
         catch (Exception e)
         {
-            Log.Error(e, "An error occured retstoring the nationwide job");
+            Log.Error(e, "An error occured restoring the nationwide job");
             return StatusCode(500, e.Message);
         }
     }
