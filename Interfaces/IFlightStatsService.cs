@@ -1,8 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Models;
-using DespatchWeb.Models.FlightStats;
-using DespatchWeb.Models.Response;
+using DespatchWeb.Models.Dto;
 using DateTime = System.DateTime;
 
 namespace DespatchWeb.Interfaces;
@@ -18,7 +17,7 @@ public interface IFlightStatsService
         string codeType = null,
         List<string> extendedOptions = null);
 
-    Task<ScheduledFlight> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,
+    Task<AddFlightToJobDto> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,
         DateTime departureTime);
 
     Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,

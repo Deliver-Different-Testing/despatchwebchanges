@@ -907,6 +907,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CourierId).HasColumnName("CourierID");
             entity.Property(e => e.CourierPayment).HasColumnType("money");
             entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
+            entity.Property(e => e.DeliverByTimeZoneId).HasColumnName("DeliverByTimeZoneID");
             entity.Property(e => e.DeliverToContact).HasMaxLength(100);
             entity.Property(e => e.DeliverToLeaveId).HasColumnName("DeliverToLeaveID");
             entity.Property(e => e.DeliverToPhone).HasMaxLength(100);
@@ -949,7 +950,10 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PickupAddressLine6).HasMaxLength(255);
             entity.Property(e => e.PickupAddressLine7).HasMaxLength(255);
             entity.Property(e => e.PickupAddressLine8).HasMaxLength(255);
+            entity.Property(e => e.PickupFromContact).HasMaxLength(100);
+            entity.Property(e => e.PickupFromPhone).HasMaxLength(100);
             entity.Property(e => e.PickupReadyDateTime).HasColumnType("datetime");
+            entity.Property(e => e.PickupTimeZoneId).HasColumnName("PickupTimeZoneID");
             entity.Property(e => e.ProofOfDeliveryEmail).HasMaxLength(500);
             entity.Property(e => e.ProofOfDeliveryMobile).HasMaxLength(100);
             entity.Property(e => e.RegionId).HasColumnName("RegionID");
@@ -969,6 +973,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ToAddress).HasMaxLength(150);
             entity.Property(e => e.ToCompany).HasMaxLength(150);
             entity.Property(e => e.ToSuburb).HasMaxLength(50);
+            entity.Property(e => e.TotalDistance).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.TrackingEmail).HasMaxLength(500);
             entity.Property(e => e.TrackingMobile).HasMaxLength(500);
             entity.Property(e => e.Weight).HasColumnType("decimal(6, 2)");
@@ -2197,6 +2202,7 @@ public partial class DespatchContext : DbContext
                 .ToView("tblJob");
 
             entity.Property(e => e.AcceptedJobTypeId).HasColumnName("AcceptedJobTypeID");
+            entity.Property(e => e.AgentId).HasColumnName("AgentID");
             entity.Property(e => e.Amount).HasColumnType("money");
             entity.Property(e => e.Barcode).HasMaxLength(300);
             entity.Property(e => e.BulkParentId).HasColumnName("BulkParentID");
@@ -2227,6 +2233,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
             entity.Property(e => e.Date).HasColumnType("datetime");
             entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
+            entity.Property(e => e.DeliverByTimeZoneId).HasColumnName("DeliverByTimeZoneID");
             entity.Property(e => e.DeliverToContact).HasMaxLength(100);
             entity.Property(e => e.DeliverToPhone).HasMaxLength(100);
             entity.Property(e => e.DeliveryAddressLine1).HasMaxLength(255);
@@ -2306,6 +2313,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PickupAddressLine8).HasMaxLength(255);
             entity.Property(e => e.PickupFromContact).HasMaxLength(100);
             entity.Property(e => e.PickupFromPhone).HasMaxLength(100);
+            entity.Property(e => e.PickupTimeZoneId).HasColumnName("PickupTimeZoneID");
             entity.Property(e => e.Podname)
                 .HasMaxLength(100)
                 .IsUnicode(false)
@@ -2330,6 +2338,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ShopRef4).HasMaxLength(50);
             entity.Property(e => e.ShopRef5).HasMaxLength(50);
             entity.Property(e => e.SourceId).HasColumnName("SourceID");
+            entity.Property(e => e.SubContractorBonusPercentage).HasColumnType("numeric(5, 4)");
+            entity.Property(e => e.SubContractorFuelPercentage).HasColumnType("numeric(5, 4)");
+            entity.Property(e => e.SubContractorPercentage).HasColumnType("numeric(5, 4)");
             entity.Property(e => e.TextRef1)
                 .HasMaxLength(50)
                 .IsUnicode(false);
@@ -2353,6 +2364,7 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(120)
                 .IsUnicode(false);
             entity.Property(e => e.ToSuburbId).HasColumnName("ToSuburbID");
+            entity.Property(e => e.TotalDistance).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.TrackingEmail).HasMaxLength(500);
             entity.Property(e => e.TrackingMobile).HasMaxLength(500);
             entity.Property(e => e.TruckStartTime).HasColumnType("datetime");
@@ -3412,6 +3424,10 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.CourierLogInOutId, "CourierLogInOutID");
 
+            entity.HasIndex(e => e.CourierTypeId, "IX_CourierTypeId");
+
+            entity.HasIndex(e => e.MasterCourierId, "IX_MasterCourierId");
+
             entity.HasIndex(e => e.XeroId, "IX_XeroId");
 
             entity.HasIndex(e => e.Code, "IX_tucCourier_Code");
@@ -3500,6 +3516,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.SiteId)
                 .HasDefaultValue(1)
                 .HasColumnName("SiteID");
+            entity.Property(e => e.SubContractorBonusPercentage).HasColumnType("numeric(5, 4)");
+            entity.Property(e => e.SubContractorFuelPercentage).HasColumnType("numeric(5, 4)");
+            entity.Property(e => e.SubContractorPercentage).HasColumnType("numeric(5, 4)");
             entity.Property(e => e.TaxSavingsEnd).HasColumnType("datetime");
             entity.Property(e => e.TaxSavingsStart).HasColumnType("datetime");
             entity.Property(e => e.TrainingHr).HasMaxLength(50);
@@ -3887,6 +3906,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => new { e.UcjbClientId, e.UcjbDate }, "IX_Client_Date");
 
+            entity.HasIndex(e => e.MasterCourierId, "IX_MasterCourierId");
+
             entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
 
             entity.HasIndex(e => e.ContactId, "IX_TucJob_ContactID");
@@ -3965,6 +3986,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CourierPercentage).HasColumnType("numeric(18, 4)");
             entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
             entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
+            entity.Property(e => e.DeliverByTimeZoneId).HasColumnName("DeliverByTimeZoneID");
             entity.Property(e => e.DeliverToContact).HasMaxLength(100);
             entity.Property(e => e.DeliverToLeaveId).HasColumnName("DeliverToLeaveID");
             entity.Property(e => e.DeliverToPhone).HasMaxLength(100);
@@ -4047,6 +4069,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PickupFromContact).HasMaxLength(100);
             entity.Property(e => e.PickupFromPhone).HasMaxLength(100);
             entity.Property(e => e.PickupRawAmount).HasColumnType("money");
+            entity.Property(e => e.PickupTimeZoneId).HasColumnName("PickupTimeZoneID");
             entity.Property(e => e.PodnotificationHasBeenSent).HasColumnName("PODNotificationHasBeenSent");
             entity.Property(e => e.Ppdamount)
                 .HasColumnType("money")
@@ -4073,6 +4096,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.StripeChargeId)
                 .HasMaxLength(50)
                 .HasColumnName("StripeChargeID");
+            entity.Property(e => e.SubContractorBonusPercentage).HasColumnType("numeric(5, 4)");
+            entity.Property(e => e.SubContractorFuelPercentage).HasColumnType("numeric(5, 4)");
+            entity.Property(e => e.SubContractorPercentage).HasColumnType("numeric(5, 4)");
             entity.Property(e => e.TextRef1)
                 .HasMaxLength(50)
                 .IsUnicode(false);
@@ -4094,6 +4120,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ToAddressStreetName)
                 .HasMaxLength(200)
                 .HasColumnName("toAddressStreetName");
+            entity.Property(e => e.TotalDistance).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.TrackingEmail).HasMaxLength(500);
             entity.Property(e => e.TrackingMobile).HasMaxLength(500);
             entity.Property(e => e.TruckStartTime).HasColumnType("datetime");
@@ -4247,6 +4274,10 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.JobRelationshipTypeId)
                 .HasConstraintName("FK_tucJob_tblJobRelationshipType");
 
+            entity.HasOne(d => d.MasterCourier).WithMany(p => p.TucJobMasterCouriers)
+                .HasForeignKey(d => d.MasterCourierId)
+                .HasConstraintName("FK_tucJob_tucCourierMaster");
+
             entity.HasOne(d => d.NotifiedJobType).WithMany(p => p.TucJobNotifiedJobTypes).HasForeignKey(d => d.NotifiedJobTypeId);
 
             entity.HasOne(d => d.Parent).WithMany(p => p.InverseParent)
@@ -4332,6 +4363,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => new { e.UcjbClientId, e.UcjbDate }, "IX_Client_Date");
 
+            entity.HasIndex(e => e.MasterCourierId, "IX_MasterCourierId");
+
             entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
 
             entity.HasIndex(e => e.UcjbClientRefb, "IX_tucJobArchive");
@@ -4408,6 +4441,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CourierPercentage).HasColumnType("numeric(18, 4)");
             entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
             entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
+            entity.Property(e => e.DeliverByTimeZoneId).HasColumnName("DeliverByTimeZoneID");
             entity.Property(e => e.DeliverToContact).HasMaxLength(100);
             entity.Property(e => e.DeliverToLeaveId).HasColumnName("DeliverToLeaveID");
             entity.Property(e => e.DeliverToPhone).HasMaxLength(100);
@@ -4501,6 +4535,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PickupAddressLine8).HasMaxLength(255);
             entity.Property(e => e.PickupAmount).HasColumnType("money");
             entity.Property(e => e.PickupRawAmount).HasColumnType("money");
+            entity.Property(e => e.PickupTimeZoneId).HasColumnName("PickupTimeZoneID");
             entity.Property(e => e.PodnotificationHasBeenSent).HasColumnName("PODNotificationHasBeenSent");
             entity.Property(e => e.Ppdamount)
                 .HasColumnType("money")
@@ -4532,6 +4567,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.StripeChargeId)
                 .HasMaxLength(50)
                 .HasColumnName("StripeChargeID");
+            entity.Property(e => e.SubContractorBonusPercentage).HasColumnType("numeric(5, 4)");
+            entity.Property(e => e.SubContractorFuelPercentage).HasColumnType("numeric(5, 4)");
+            entity.Property(e => e.SubContractorPercentage).HasColumnType("numeric(5, 4)");
             entity.Property(e => e.TextRef1)
                 .HasMaxLength(50)
                 .IsUnicode(false);
@@ -4553,6 +4591,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ToAddressStreetName)
                 .HasMaxLength(200)
                 .HasColumnName("toAddressStreetName");
+            entity.Property(e => e.TotalDistance).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.TrackingEmail).HasMaxLength(500);
             entity.Property(e => e.TrackingMobile).HasMaxLength(500);
             entity.Property(e => e.TruckStartTime).HasColumnType("datetime");
@@ -4680,6 +4719,10 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.FromAirportId)
                 .HasConstraintName("FK_tucJobArchive_FromAirport");
 
+            entity.HasOne(d => d.MasterCourier).WithMany(p => p.TucJobArchives)
+                .HasForeignKey(d => d.MasterCourierId)
+                .HasConstraintName("FK_tucJobArchive_tucCourierMaster");
+
             entity.HasOne(d => d.ToAirport).WithMany(p => p.TucJobArchiveToAirports)
                 .HasForeignKey(d => d.ToAirportId)
                 .HasConstraintName("FK_tucJobArchive_ToAirport");
@@ -4736,6 +4779,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CourierPayment).HasColumnType("money");
             entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
             entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
+            entity.Property(e => e.DeliverByTimeZoneId).HasColumnName("DeliverByTimeZoneID");
             entity.Property(e => e.DeliverToContact).HasMaxLength(100);
             entity.Property(e => e.DeliverToLeaveId).HasColumnName("DeliverToLeaveID");
             entity.Property(e => e.DeliverToPhone).HasMaxLength(100);
@@ -4804,6 +4848,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PickupFromContact).HasMaxLength(100);
             entity.Property(e => e.PickupFromPhone).HasMaxLength(100);
             entity.Property(e => e.PickupRawAmount).HasColumnType("money");
+            entity.Property(e => e.PickupTimeZoneId).HasColumnName("PickupTimeZoneID");
             entity.Property(e => e.ProofOfDeliveryEmail).HasMaxLength(100);
             entity.Property(e => e.ProofOfDeliveryMobile).HasMaxLength(100);
             entity.Property(e => e.RawAmount).HasColumnType("money");
@@ -4846,6 +4891,7 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(200)
                 .HasColumnName("toAddressStreetName");
             entity.Property(e => e.ToAirportId).HasColumnName("ToAirportID");
+            entity.Property(e => e.TotalDistance).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.TrackingEmail).HasMaxLength(500);
             entity.Property(e => e.TrackingMobile).HasMaxLength(500);
             entity.Property(e => e.TruckStartTime).HasColumnType("datetime");
@@ -5000,13 +5046,9 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.UcbkSizeNavigation).WithMany(p => p.TucJobBookings).HasForeignKey(d => d.UcbkSize);
 
-            entity.HasOne(d => d.UcbkSpeedNavigation).WithMany(p => p.TucJobBookingUcbkSpeedNavigations)
+            entity.HasOne(d => d.UcbkSpeedNavigation).WithMany(p => p.TucJobBookings)
                 .HasForeignKey(d => d.UcbkSpeed)
                 .HasConstraintName("FK_TucJobBooking_TucJobTypes");
-
-            entity.HasOne(d => d.UcbkTypeNavigation).WithMany(p => p.TucJobBookingUcbkTypeNavigations)
-                .HasForeignKey(d => d.UcbkType)
-                .HasConstraintName("FK_tucJobBooking_tucJobType");
         });
 
         modelBuilder.Entity<TucJobBookingItem>(entity =>
@@ -5082,6 +5124,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcnwId).HasColumnName("ucnwID");
             entity.Property(e => e.GateNumber).HasMaxLength(50);
             entity.Property(e => e.JobBookingId).HasColumnName("JobBookingID");
+            entity.Property(e => e.UcnwAirlineName)
+                .HasMaxLength(100)
+                .HasColumnName("ucnwAirlineName");
             entity.Property(e => e.UcnwAirportOnly).HasColumnName("ucnwAirportOnly");
             entity.Property(e => e.UcnwClientId).HasColumnName("ucnwClientID");
             entity.Property(e => e.UcnwConNote)
@@ -5107,6 +5152,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcnwJobNumber)
                 .HasMaxLength(50)
                 .HasColumnName("ucnwJobNumber");
+            entity.Property(e => e.UcnwLegNumber)
+                .HasDefaultValue(1)
+                .HasColumnName("ucnwLegNumber");
             entity.Property(e => e.UcnwNotes)
                 .HasColumnType("text")
                 .HasColumnName("ucnwNotes");
@@ -5262,6 +5310,9 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.UcmmTimeSent, "ucmmTimeSent");
 
             entity.Property(e => e.UcmmId).HasColumnName("ucmmID");
+            entity.Property(e => e.FileName).HasMaxLength(255);
+            entity.Property(e => e.FilePath).HasMaxLength(1000);
+            entity.Property(e => e.FileType).HasMaxLength(100);
             entity.Property(e => e.JobId).HasColumnName("JobID");
             entity.Property(e => e.ReplyToEmailAddress).HasMaxLength(500);
             entity.Property(e => e.SendToEmailAddress).HasMaxLength(500);

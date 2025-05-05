@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Web;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.FlightStats;
 using Microsoft.AspNetCore.Http;
 using Serilog;
@@ -261,11 +262,29 @@ public class FlightStatsService(
         return flightOptions.OrderBy(flight => flight.DepartureTime).ToList();
     }
 
-    public async Task<ScheduledFlight> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,
+    public async Task<AddFlightToJobDto> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,
         DateTime departureTime)
     {
         var flightResponse = await FetchFlightDataAsync(completeFlightNumber, departureTime);
-        return flightResponse.ScheduledFlights.FirstOrDefault();
+
+        if (flightResponse?.ScheduledFlights == null || flightResponse.ScheduledFlights.Count == 0)
+            return null;
+
+        return MapToFlightDto(flightResponse.ScheduledFlights.First(), flightResponse.Appendix);
+    }
+
+    private static AddFlightToJobDto MapToFlightDto(ScheduledFlight flight, Appendix appendix)
+    {
+      ArgumentNullException.ThrowIfNull(flight);
+
+        return new AddFlightToJobDto
+        {
+            AirlineName = appendix?.Airlines?.FirstOrDefault(a => a.Fs == flight.CarrierFsCode)?.Name,
+            ArrivalTime = flight.ArrivalTime,
+            CarrierFsCode = flight.CarrierFsCode,
+            DepartureTime = flight.DepartureTime,
+            FlightNumber = flight.FlightNumber
+        };
     }
 
     public async Task<List<FlightDetailsDialogViewModel>> GetFlightDetailByFlightNumberDetailDialog(

@@ -447,9 +447,25 @@ public partial class TucJobArchive
 
     public int? DeliverByWindowMins { get; set; }
 
+    public int? PickupTimeZoneId { get; set; }
+
+    public decimal? TotalDistance { get; set; }
+
+    public int? MasterCourierId { get; set; }
+
+    public decimal? SubContractorBonusPercentage { get; set; }
+
+    public decimal? SubContractorFuelPercentage { get; set; }
+
+    public decimal? SubContractorPercentage { get; set; }
+
+    public int? DeliverByTimeZoneId { get; set; }
+
     public virtual TucAgent Agent { get; set; }
 
     public virtual TblAirport FromAirport { get; set; }
+
+    public virtual TucCourier MasterCourier { get; set; }
 
     public virtual TblAirport ToAirport { get; set; }
 

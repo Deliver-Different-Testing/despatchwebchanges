@@ -22,7 +22,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 {
     private readonly ITenantInfoService _infoService = infoService;
 
-    public async Task AddJobNationwideAsync(int jobId, ScheduledFlight flight, string webhookAlertId)
+    public async Task AddJobNationwideAsync(int jobId, AddFlightToJobDto flight, string webhookAlertId)
     {
         try
         {
@@ -48,15 +48,21 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 UcnwFlightNo = flight.CarrierFsCode + flight.FlightNumber,
                 UcnwEtd = flight.DepartureTime,
                 UcnwEta = flight.ArrivalTime,
-                WebhookAlertId = webhookAlertId
+                WebhookAlertId = webhookAlertId,
+                UcnwAirlineName = flight.AirlineName
             };
 
             // First operation - Update job status
             job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
-            job.UcjbTime = flight.DepartureTime; // ToDo: Update this to the tenant timezone
-            job.Parent.InverseParent.Last().UcjbTime =
-                flight.ArrivalTime.AddMinutes(60); // ToDo: Update this to the tenant timezone
             job.UcjbStatus = (int)JobStatus.Dispatched;
+
+            job.UcjbDate = flight.DepartureTime;
+            job.UcjbTime = flight.DepartureTime;
+            job.Parent.InverseParent.Last().UcjbTime =
+                flight.ArrivalTime.AddMinutes(60);
+
+            job.UcjbDispDate = flight.DepartureTime;
+            job.UcjbDispTime = flight.DepartureTime;
 
             await Context.SaveChangesAsync();
 

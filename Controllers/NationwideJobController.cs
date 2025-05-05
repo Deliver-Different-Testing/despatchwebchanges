@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
-using DespatchWeb.Models.FlightStats;
+using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -153,7 +153,7 @@ public class NationwideJobController(
                 return BadRequest("Oops, no flight data was provided. Unable to assign to job.");
 
             // Get flight details
-            ScheduledFlight flight;
+            AddFlightToJobDto flight;
             try
             {
                 flight = await flightService.GetFlightDetailsByFlightNumberAsync(request.FlightNumber,

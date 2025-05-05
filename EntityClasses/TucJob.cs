@@ -431,6 +431,20 @@ public partial class TucJob
 
     public int? DeliverByWindowMins { get; set; }
 
+    public int? PickupTimeZoneId { get; set; }
+
+    public decimal? TotalDistance { get; set; }
+
+    public int? MasterCourierId { get; set; }
+
+    public decimal? SubContractorBonusPercentage { get; set; }
+
+    public decimal? SubContractorFuelPercentage { get; set; }
+
+    public decimal? SubContractorPercentage { get; set; }
+
+    public int? DeliverByTimeZoneId { get; set; }
+
     public virtual TucJobType AcceptedJobType { get; set; }
 
     public virtual TucAgent Agent { get; set; }
@@ -450,6 +464,8 @@ public partial class TucJob
     public virtual ICollection<TucJob> InverseParent { get; set; } = new List<TucJob>();
 
     public virtual TblJobRelationshipType JobRelationshipType { get; set; }
+
+    public virtual TucCourier MasterCourier { get; set; }
 
     public virtual TucJobType NotifiedJobType { get; set; }
 

@@ -356,4 +356,26 @@ public partial class TblJob
     public decimal? DryIceWeight { get; set; }
 
     public DateTime? DeliverByTime { get; set; }
+
+    public int? AgentId { get; set; }
+
+    public string Connote { get; set; }
+
+    public int? PickupTimeZoneId { get; set; }
+
+    public int? DeliverByTimeZoneId { get; set; }
+
+    public decimal? TotalDistance { get; set; }
+
+    public int? PickUpWindowMins { get; set; }
+
+    public int? DeliverByWindowMins { get; set; }
+
+    public int? MasterCourierId { get; set; }
+
+    public decimal? SubContractorPercentage { get; set; }
+
+    public decimal? SubContractorFuelPercentage { get; set; }
+
+    public decimal? SubContractorBonusPercentage { get; set; }
 }

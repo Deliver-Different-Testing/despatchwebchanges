@@ -255,15 +255,29 @@ public partial class TucCourier
 
     public string BankRoutingNumber { get; set; }
 
+    public int CourierTypeId { get; set; }
+
+    public int? MasterCourierId { get; set; }
+
+    public decimal? SubContractorPercentage { get; set; }
+
+    public decimal? SubContractorBonusPercentage { get; set; }
+
+    public decimal? SubContractorFuelPercentage { get; set; }
+
     public virtual TblCourierGp CourierGps { get; set; }
 
     public virtual TblCourierLogInOut CourierLogInOut { get; set; }
 
     public virtual ICollection<TucEvent> TucEvents { get; set; } = new List<TucEvent>();
 
+    public virtual ICollection<TucJobArchive> TucJobArchives { get; set; } = new List<TucJobArchive>();
+
     public virtual ICollection<TucJobBooking> TucJobBookings { get; set; } = new List<TucJobBooking>();
 
     public virtual ICollection<TucJob> TucJobFdcouriers { get; set; } = new List<TucJob>();
+
+    public virtual ICollection<TucJob> TucJobMasterCouriers { get; set; } = new List<TucJob>();
 
     public virtual ICollection<TucJob> TucJobUcjbCouriers { get; set; } = new List<TucJob>();
 }
