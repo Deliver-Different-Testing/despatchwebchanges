@@ -3722,6 +3722,7 @@ public partial class DespatchContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("ucevDespatcher");
             entity.Property(e => e.UcevDueTime)
+                .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("ucevDueTime");
             entity.Property(e => e.UcevEtatime)

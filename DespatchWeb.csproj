@@ -288,6 +288,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\common\sticky-notes\sticky-notes.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\task-item-component\task-item.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\task-item-component\task-item.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-event-dialog\add-event-dialog.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\auto-complete-dialog\auto-complete-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.interfaces.ts" />

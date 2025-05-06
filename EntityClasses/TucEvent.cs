@@ -65,7 +65,7 @@ public partial class TucEvent
 
     public DateTime? UcevNotificationSentAt { get; set; }
 
-    public DateTime? UcevDueTime { get; set; }
+    public DateTime UcevDueTime { get; set; }
 
     public virtual TucJobType Speed { get; set; }
 

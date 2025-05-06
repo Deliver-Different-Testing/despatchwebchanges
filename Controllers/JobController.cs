@@ -975,6 +975,7 @@ public class JobController(
             contact,
             "Late Call from Despatch",
             eventType,
+            null,
             lateTime,
             etaTime
         );
@@ -1189,6 +1190,7 @@ public class JobController(
                 despatcherName,
                 $"Restored by {despatcherName} at {currentDate.ToShortDateString()} {currentDate.ToShortTimeString()}",
                 (int)EventType.RestoreJob,
+                null,
                 33
             );
 
@@ -1249,17 +1251,23 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddEvent(
-        int staffId,
-        int jobId,
-        string despatcherName,
-        string notes,
-        int eventType
-    )
+    public async Task<IActionResult> AddEvent([FromBody] JobEventDataRequest data)
     {
-        await taskRepository.AddEventAsync(jobId, staffId, despatcherName, notes,
-            eventType);
-        return Ok();
+        try
+        {
+            await taskRepository.AddEventAsync(data.JobId,
+                data.StaffId,
+                data.DespatcherName,
+                data.Notes,
+                data.EventTypeId,
+                data.EventDueDate);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error updating pickup address for job");
+            return StatusCode(500, ex.Message);
+        }
     }
 
     public async Task<IActionResult> ExsalerateActivity(

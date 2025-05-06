@@ -28,11 +28,12 @@
   // Dark green group (#86EFAC with black text)
   &.picked-up, &.P,
   &.in-transit, &.IT,
-  &.out-for-delivery, &.OFD {
+  &.out-for-delivery, &.OFD,
+  &.outbound-agent-assigned, &.OAA,
+  &.inbound-agent-assigned, &.IAA {
     background-color: @status-green-dark;
     color: black;
   }
-
   // Light red group (#FCA5A5 with black text)
   &.rejected, &.R,
   &.late-pickup, &.LP,

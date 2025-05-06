@@ -27,6 +27,7 @@ public interface ITaskRepository
         string despatcherName,
         string notes,
         int eventType,
+        DateTime? dueDate = null,
         int? lateTime = null,
         DateTime? etaTime = null,
         bool close = false

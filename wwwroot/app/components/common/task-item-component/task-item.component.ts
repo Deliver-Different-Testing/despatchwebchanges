@@ -22,7 +22,6 @@ export class TaskListItemController extends BaseController {
 
     task?: ExtendedTask;
     config?: ITaskListItemConfig;
-    onStatusChange?: (params: { task: TaskViewModel }) => void;
     onTaskUpdated?: () => void;
     onTaskClick?: (params: { task: ExtendedTask }) => void;
     timeZone: string;

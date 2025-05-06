@@ -7,6 +7,8 @@ import NoteService from "../../../services/notes.service";
 import {JobNoteType} from "../../../enums/job-note-type.enum";
 import {material} from "angular";
 import {EventType} from "../../../enums/event-type";
+import {JobEventData} from "./add-event-dialog.interfaces";
+import moment from "moment";
 
 class AddEventDialogController extends BaseController {
     static $inject = [
@@ -21,9 +23,9 @@ class AddEventDialogController extends BaseController {
     ];
 
     isLoading: boolean;
-    eventTypes: Suggestion[];
-    selectedEvent: any | null;
-    eventForm: any;
+    eventTypes?: Suggestion[];
+    selectedEventType?: Suggestion;
+    eventForm?: any;
     event?: DfrntEvent;
 
     constructor(
@@ -39,12 +41,8 @@ class AddEventDialogController extends BaseController {
         super();
 
         this.isLoading = false;
-        this.eventTypes = [];
-        this.selectedEvent = null;
-        this.eventForm = null;
 
         let time = new Date();
-
         time.setSeconds(0);
         time.setMilliseconds(0);
 
@@ -52,10 +50,7 @@ class AddEventDialogController extends BaseController {
             id: job.id,
             jobNumber: job.jobNo,
             clientCode: job.client,
-            eventDate: new Date(),
-            eventTime: time,
-            eventType: "",
-            notes: ""
+            eventDate: new Date()
         };
     }
 
@@ -63,13 +58,13 @@ class AddEventDialogController extends BaseController {
         this.DispatchData.getEventTypes().then((data: Suggestion[]) => {
             this.eventTypes = data;
 
-            // Default select other
+            // Default selects other
             const otherEvent = this.eventTypes.find(
                 (eventType) => eventType.text === "Other"
             );
 
             if (otherEvent) {
-                this.selectedEvent = otherEvent;
+                this.selectedEventType = otherEvent;
             }
         });
     }
@@ -85,21 +80,27 @@ class AddEventDialogController extends BaseController {
 
             this.isLoading = true;
 
-            const eventId = this.selectedEvent.id;
-            const eventName = this.selectedEvent.text;
+            if (!this.selectedEventType) {
+                this.toastrService.showWarningToast("Please select an event type.");
+                this.isLoading = false;
+                return;
+            }
+
+            const eventId = this.selectedEventType.id;
+            const eventName = this.selectedEventType.text;
 
             // Exsalerate Event
             if (eventId === EventType.Compliment || eventId === EventType.Complaint) {
                 await this.NWData.exsalerateActivity(
                     eventName,
-                    event.notes,
+                    event.notes ?? '',
                     this.job.clientId ?? 0,
                     event.jobNumber,
                     this.dispatcherName
                 );
             }
 
-            //Process Event
+            // Process Event
             if (
                 eventId === EventType.Closed ||
                 eventId === EventType.AddressIncorrect ||
@@ -122,13 +123,16 @@ class AddEventDialogController extends BaseController {
                 await this.noteService.createNote(jobNote);
             }
 
-            await this.NWData.addEvent(
-                this.contactId,
-                this.job.id,
-                this.dispatcherName,
-                event.notes,
-                eventId
-            );
+            const eventData: JobEventData = {
+                staffId: this.contactId,
+                jobId: this.job.id,
+                despatcherName: this.dispatcherName,
+                notes: event.notes ?? '',
+                eventTypeId: eventId,
+                eventDueDate: moment(event.eventDate).format()
+            }
+
+            await this.NWData.addEvent(eventData);
 
             if (eventId === EventType.CancelJob) {
                 await this.DispatchData.voidJob(this.job.id);

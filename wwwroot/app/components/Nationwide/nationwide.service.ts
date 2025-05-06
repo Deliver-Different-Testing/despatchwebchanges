@@ -1,8 +1,9 @@
 import {IAgent, IDispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
-import {IFlightPagination, IFlightViewModel} from "./nationwide.interfaces";
+import {IFlightViewModel} from "./nationwide.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import moment from "moment";
 import {FlightDetailsViewModel} from "../dialogs/flight-details-dialog/flight-details-dialog.interfaces";
+import {JobEventData} from "../dialogs/add-event-dialog/add-event-dialog.interfaces";
 
 class NationwideService implements angular.IServiceProvider {
     static $inject = [
@@ -22,8 +23,8 @@ class NationwideService implements angular.IServiceProvider {
         return this;
     }
 
-    async addEvent(staffId: number, jobId: number, despatcherName: string, notes: string, eventType: number) {
-        await this.$http.post(`job/addEvent?staffId=${staffId}&jobId=${jobId}&despatcherName=${encodeURIComponent(despatcherName)}&notes=${encodeURIComponent(notes)}&eventType=${eventType}`, null);
+    async addEvent(eventData: JobEventData): Promise<void> {
+            await this.$http.post('job/addEvent', eventData);
     }
 
     async exsalerateActivity(eventName: string, notes: string, clientId: number, jobNumber: string, despatcherName: string) {
