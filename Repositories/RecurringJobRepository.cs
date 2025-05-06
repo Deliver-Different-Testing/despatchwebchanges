@@ -150,10 +150,10 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
     public async Task<List<PrebookListViewModel>> PreBookJobListAsync()
     {
         var prebooks = await Context
-            .TucJobBookings.Where(j =>
-                j.UcbkDate.Value.Date <= DateTime.Today && j.UcbkDone == false
-            )
-            .OrderBy(j => j.UcbkTime)
+            .TucJobBookings
+            .Where(j => j.UcbkOneOff == false)
+            .OrderBy(j => j.UcbkDate)
+            .ThenBy(j => j.UcbkTime)
             .ThenBy(j => j.UcbkJobNumber)
             .Select(j => new PrebookListViewModel
             {
