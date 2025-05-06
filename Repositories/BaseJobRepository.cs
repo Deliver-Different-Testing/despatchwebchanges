@@ -221,7 +221,9 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 j.UcjbStatus == (int)JobStatus.Accepted ? 1 :
                 j.UcjbStatus == (int)JobStatus.PickedUp ? 2 :
                 j.UcjbStatus == (int)JobStatus.InTransit ? 3 :
-                j.UcjbStatus == (int)JobStatus.OutForDelivery ? 4 : 99
+                j.UcjbStatus == (int)JobStatus.OutboundAgentAssigned ? 4 :
+                j.UcjbStatus == (int)JobStatus.InboundAgentAssigned ? 5 :
+                j.UcjbStatus == (int)JobStatus.OutForDelivery ? 6 : 99
             ).ThenBy(j => j.UcjbTime),
 
             "group-completed" => query.OrderBy(j =>
@@ -252,15 +254,17 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             j.UcjbStatus == (int)JobStatus.Accepted ? 4 :
             j.UcjbStatus == (int)JobStatus.PickedUp ? 5 :
             j.UcjbStatus == (int)JobStatus.InTransit ? 6 :
-            j.UcjbStatus == (int)JobStatus.OutForDelivery ? 7 :
-            j.UcjbStatus == (int)JobStatus.Rejected ? 8 :
-            j.UcjbStatus == (int)JobStatus.LatePickup ? 9 :
-            j.UcjbStatus == (int)JobStatus.LateDelivery ? 10 :
-            j.UcjbStatus == (int)JobStatus.Warning ? 11 :
-            j.UcjbStatus == (int)JobStatus.Undeliverable ? 12 :
-            j.UcjbStatus == (int)JobStatus.Completed ? 13 :
-            j.UcjbStatus == (int)JobStatus.AwaitingPod ? 14 :
-            j.UcjbStatus == (int)JobStatus.AssumingCompleted ? 15 : 99);
+            j.UcjbStatus == (int)JobStatus.OutboundAgentAssigned ? 7 :
+            j.UcjbStatus == (int)JobStatus.InboundAgentAssigned ? 8 :
+            j.UcjbStatus == (int)JobStatus.OutForDelivery ? 9 :
+            j.UcjbStatus == (int)JobStatus.Rejected ? 10 :
+            j.UcjbStatus == (int)JobStatus.LatePickup ? 11 :
+            j.UcjbStatus == (int)JobStatus.LateDelivery ? 12 :
+            j.UcjbStatus == (int)JobStatus.Warning ? 13 :
+            j.UcjbStatus == (int)JobStatus.Undeliverable ? 14 :
+            j.UcjbStatus == (int)JobStatus.Completed ? 15 :
+            j.UcjbStatus == (int)JobStatus.AwaitingPod ? 16 :
+            j.UcjbStatus == (int)JobStatus.AssumingCompleted ? 17 : 99);
 
         return isAscending ? orderedQuery : orderedQuery.Reverse();
     }

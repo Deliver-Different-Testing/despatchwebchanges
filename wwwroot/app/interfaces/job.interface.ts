@@ -326,9 +326,8 @@ export interface DfrntEvent {
     clientCode: string;
     eventDate: Date;
     closedDate?: Date;
-    eventTime: Date;
-    eventType: string;
-    notes: string;
+    eventType?: string;
+    notes?: string;
 }
 
 export interface ClientItemsViewModel {

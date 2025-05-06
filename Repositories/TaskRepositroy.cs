@@ -13,17 +13,14 @@ namespace DespatchWeb.Repositories;
 
 public class TaskRepository(
     IDbContextFactory<DespatchContext> contextFactory,
-    ITenantInfoService infoService
-)
-    : BaseRepository(contextFactory),
-        ITaskRepository
+    ITenantInfoService infoService) : BaseRepository(contextFactory), ITaskRepository
 {
     public async Task<List<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters)
     {
         var today = filters?.Date ?? infoService.GetCurrentTenantTime();
 
         var query = Context.TucEvents
-            .Where(e => e.UcevDate.Value.Date <= today.Date);
+            .Where(e => e.UcevDueTime.Date <= today.Date);
 
         if (filters != null) query = ApplyFilters(query, filters);
 
@@ -40,16 +37,7 @@ public class TaskRepository(
                 Description = x.UcevNotes,
                 JobId = x.UcevJobId ?? 0,
                 Closed = x.UcevClosed,
-                DueDate = x.UcevDate != null && x.UcevTime != null
-                    ? EF.Functions.DateTimeFromParts(
-                        x.UcevDate.Value.Year,
-                        x.UcevDate.Value.Month,
-                        x.UcevDate.Value.Day,
-                        x.UcevTime.Value.Hour,
-                        x.UcevTime.Value.Minute,
-                        x.UcevTime.Value.Second,
-                        x.UcevTime.Value.Millisecond)
-                    : DateTime.MinValue,
+                DueDate = x.UcevDueTime,
                 Title = x.UcevTypeNavigation.UcetName,
                 EventType = x.UcevTypeNavigation.UcetGroup,
                 JobNumber = x.UcevJob.UcjbNumber
@@ -65,9 +53,9 @@ public class TaskRepository(
     {
         query = query
             .OrderByDescending(e =>
-                e.UcevDate.Value.Date < today.Date ||
-                (e.UcevDate.Value.Date == today.Date &&
-                 e.UcevTime.Value.TimeOfDay < today.TimeOfDay &&
+                e.UcevDueTime.Date < today.Date ||
+                (e.UcevDueTime.Date == today.Date &&
+                 e.UcevDueTime.TimeOfDay < today.TimeOfDay &&
                  !e.UcevClosed)
             );
 
@@ -86,12 +74,10 @@ public class TaskRepository(
         DateTime today)
     {
         return isDescending
-            ? query.OrderByDescending(e => e.UcevDate < today)
-                .ThenByDescending(e => e.UcevDate)
-                .ThenByDescending(e => e.UcevTime)
-            : query.OrderByDescending(e => e.UcevDate < today)
-                .ThenBy(e => e.UcevDate)
-                .ThenBy(e => e.UcevTime);
+            ? query.OrderByDescending(e => e.UcevDueTime < today)
+                .ThenByDescending(e => e.UcevDueTime)
+            : query.OrderByDescending(e => e.UcevDueTime < today)
+                .ThenBy(e => e.UcevDueTime);
     }
 
     public async Task SetEventAsClosedAsync(int eventId, bool closed)
@@ -108,7 +94,7 @@ public class TaskRepository(
         var eventToUpdate =
             await GetEventByIdAsync(eventId)
             ?? throw new KeyNotFoundException($"Event with ID {eventId} not found.");
-        eventToUpdate.UcevDate = date.Date;
+        eventToUpdate.UcevDueTime = date.Date;
         await Context.SaveChangesAsync();
     }
 
@@ -117,19 +103,9 @@ public class TaskRepository(
         var eventToUpdate =
             await GetEventByIdAsync(eventId)
             ?? throw new KeyNotFoundException($"Event with ID {eventId} not found.");
-        var existingDate = eventToUpdate.UcevTime?.Date ?? DateTime.Today;
 
         // Update only the time component
-        eventToUpdate.UcevTime = new DateTime(
-            existingDate.Year,
-            existingDate.Month,
-            existingDate.Day,
-            time.Hour,
-            time.Minute,
-            time.Second,
-            time.Millisecond
-        );
-
+        eventToUpdate.UcevTime = time;
         await Context.SaveChangesAsync();
     }
 
@@ -204,7 +180,7 @@ public class TaskRepository(
                 time: currentDate,
                 type: eventGroup.EventType.Id,
                 lateTime: null,
-                etaTime: eventGroup.DueTime,
+                etaTime: null,
                 staffIdIn: eventGroup.AssignTo?.Id,
                 staffIdOut: null,
                 responseTime: null,
@@ -216,7 +192,8 @@ public class TaskRepository(
                 courierId: job.UcjbCourierId,
                 jobId: job.UcjbId,
                 despatcher: despatcher,
-                jobType: job.UcjbSpeed
+                jobType: job.UcjbSpeed,
+                dueTime: eventGroup.DueTime
             );
         }
     }
@@ -285,6 +262,7 @@ public class TaskRepository(
         string despatcherName,
         string notes,
         int eventType,
+        DateTime? dueDate = null,
         int? lateTime = null,
         DateTime? etaTime = null,
         bool close = false
@@ -315,7 +293,8 @@ public class TaskRepository(
             courierId: job.UcjbCourierId,
             jobId: jobId,
             despatcher: despatcherName,
-            jobType: job.UcjbSpeed
+            jobType: job.UcjbSpeed,
+            dueTime: dueDate
         );
     }
 
@@ -344,7 +323,8 @@ public class TaskRepository(
         int? courierId,
         int jobId,
         string despatcher,
-        int? jobType)
+        int? jobType,
+        DateTime? dueTime)
     {
         var currentDate = infoService.GetCurrentTenantTime();
 
@@ -408,20 +388,11 @@ public class TaskRepository(
             UcevCourierId = courierId,
             UcevJobId = jobId,
             UcevDespatcher = despatcher,
-            UcevJobType = jobType
+            UcevJobType = jobType,
+            UcevDueTime = dueTime ?? currentDate
         };
 
         await Context.TucEvents.AddAsync(newEvent);
         await Context.SaveChangesAsync();
-    }
-
-    public async Task<int> GetDoneCountAsync(DateTime? date)
-    {
-        var today = date ?? infoService.GetCurrentTenantTime();
-
-        var doneTaskCount = await Context.TucEvents
-            .Where(e => e.UcevDate.Value.Date <= today.Date && e.UcevClosed)
-            .CountAsync();
-        return doneTaskCount;
     }
 }

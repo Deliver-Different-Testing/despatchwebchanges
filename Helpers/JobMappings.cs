@@ -416,7 +416,7 @@ public static class JobMappings
                     j.PickUpLongitude ?? 0,
                     j.DeliveryLatitude ?? 0,
                     j.DeliveryLongitude ?? 0)
-                : 0, // ToDo: Add Kerran's new field
+                : (double)j.TotalDistance,
 
             ReadTrackerInfo = j.TucJobReadTracker != null
                 ? new ReadTrackerInfoViewModel
@@ -594,7 +594,7 @@ public static class JobMappings
                     j.PickUpLongitude ?? 0,
                     j.DeliveryLatitude ?? 0,
                     j.DeliveryLongitude ?? 0)
-                : 0, // ToDo: Add Kerran's new field
+                : (double)j.TotalDistance,
 
             PickUpWindowMins = j.PickUpWindowMins,
             DeliverByWindowMins = j.DeliverByWindowMins
@@ -754,7 +754,7 @@ public static class JobMappings
                     j.PickUpLongitude ?? 0,
                     j.DeliveryLatitude ?? 0,
                     j.DeliveryLongitude ?? 0)
-                : 0, // ToDo: Add Kerran's new field
+                : (double)j.TotalDistance,
 
             // Added recurring job fields
             InActiveBy = j.UcbkInActiveBy != null

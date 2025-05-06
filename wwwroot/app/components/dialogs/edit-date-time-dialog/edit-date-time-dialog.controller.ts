@@ -118,7 +118,7 @@ export class EditDateTimeDialogController {
             return null;
         }
 
-        return moment(dateTime).format("YYYY-MM-DDTHH:mm");
+        return moment(dateTime).format();
     }
 
     cancel(): void {
