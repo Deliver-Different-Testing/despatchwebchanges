@@ -27,6 +27,7 @@ class AddEventDialogController extends BaseController {
     selectedEventType?: Suggestion;
     eventForm?: any;
     event?: DfrntEvent;
+    browserTimeZone: string;
 
     constructor(
         private $mdDialog: material.IDialogService,
@@ -41,6 +42,7 @@ class AddEventDialogController extends BaseController {
         super();
 
         this.isLoading = false;
+        this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
         let time = new Date();
         time.setSeconds(0);
@@ -129,7 +131,7 @@ class AddEventDialogController extends BaseController {
                 despatcherName: this.dispatcherName,
                 notes: event.notes ?? '',
                 eventTypeId: eventId,
-                eventDueDate: moment(event.eventDate).format()
+                eventDueDate: moment(event.eventDate).utc().format()
             }
 
             await this.NWData.addEvent(eventData);

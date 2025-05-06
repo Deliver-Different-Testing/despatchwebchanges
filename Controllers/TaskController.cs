@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
@@ -7,7 +8,9 @@ using Serilog;
 
 namespace DespatchWeb.Controllers;
 
-public class TaskController(ITaskRepository taskRepository) : Controller
+public class TaskController(
+    ITaskRepository taskRepository,
+    ITenantInfoService infoService) : Controller
 {
     [HttpGet]
     public async Task<IActionResult> GetAllTasks(TaskTableFiltersRequest filters)
@@ -113,7 +116,13 @@ public class TaskController(ITaskRepository taskRepository) : Controller
     {
         try
         {
-            if (request.EventGroupViewModels is { Count: 0 }) return BadRequest("No events provided");
+            ArgumentNullException.ThrowIfNull(request);
+
+            foreach (var tasks in request.EventGroupViewModels
+                         .Where(tasks => tasks.DueTime != null))
+            {
+                tasks.DueTime = infoService.ConvertUtcToTenantTime(tasks.DueTime.Value);
+            }
 
             await taskRepository.CreateEventsForJobAsync(request.JobId, request.EventGroupViewModels);
             return Ok();

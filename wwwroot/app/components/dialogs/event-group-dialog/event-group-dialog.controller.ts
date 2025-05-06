@@ -10,6 +10,7 @@ export class EventGroupDialogController extends BaseController{
     selectedUser?: Suggestion;
     minDate: Date;
     maxDate: Date;
+    browserTimeZone: string;
 
     static $inject = [
         '$mdDialog',
@@ -31,6 +32,8 @@ export class EventGroupDialogController extends BaseController{
         public users: Suggestion[],
     ) {
         super();
+
+        this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
         // Min and max dates
         this.minDate = new Date();
@@ -55,7 +58,7 @@ export class EventGroupDialogController extends BaseController{
             }
 
             activeEvents.forEach(event => {
-                event.dueTime = moment(event.dueTime).format();
+                event.dueTime = moment(event.dueTime).utc().format();
             })
 
             await this.$http.post('task/AddTasks', {

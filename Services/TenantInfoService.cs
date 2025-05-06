@@ -17,6 +17,14 @@ public class TenantInfoService(IHttpContextAccessor contextAccessor) : ITenantIn
         return TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tenantTimeZoneInfo);
     }
 
+    public DateTime ConvertUtcToTenantTime(DateTime utcDateTime)
+    {
+        var tenantTimeZone = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
+        var tenantTimeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTimeZone ?? string.Empty);
+
+        return TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tenantTimeZoneInfo);
+    }
+
     public int GetStaffId()
     {
         var staffId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "StaffID")?.Value;

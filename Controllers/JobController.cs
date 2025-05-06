@@ -37,7 +37,7 @@ public class JobController(
     IRateJobService rateJobService,
     ICountryService countryService,
     IRecurringJobRepository recurringJobRepository,
-    ITenantInfoService tenantInfoService
+    ITenantInfoService infoService
 ) : Controller
 {
     [HttpGet]
@@ -549,7 +549,7 @@ public class JobController(
         DateTime toDate
     )
     {
-        var currentDate = tenantInfoService.GetCurrentTenantTime();
+        var currentDate = infoService.GetCurrentTenantTime();
 
         var data = await jobRepository.PodSearchDownloadAsync(
             courierId,
@@ -622,7 +622,7 @@ public class JobController(
     [HttpPost]
     public async Task<IActionResult> Upload(IFormFile file)
     {
-        var currentDate = tenantInfoService.GetCurrentTenantTime();
+        var currentDate = infoService.GetCurrentTenantTime();
 
         if (
             file == null
@@ -1182,7 +1182,7 @@ public class JobController(
     {
         try
         {
-            var currentDate = tenantInfoService.GetCurrentTenantTime();
+            var currentDate = infoService.GetCurrentTenantTime();
 
             await taskRepository.AddEventAsync(
                 jobId,
@@ -1255,6 +1255,8 @@ public class JobController(
     {
         try
         {
+            data.EventDueDate = infoService.ConvertUtcToTenantTime(data.EventDueDate);
+
             await taskRepository.AddEventAsync(data.JobId,
                 data.StaffId,
                 data.DespatcherName,
@@ -1683,12 +1685,12 @@ public class JobController(
 
             var jobDetails = await jobRepository.GetJobDetailsForRating(jobId);
 
-            var isUsTenant = tenantInfoService.IsUsTenant();
+            var isUsTenant = infoService.IsUsTenant();
             if (isUsTenant)
                 await rateJobService.RateJobUs(jobDetails);
             else
                 await rateJobService.RateJob(jobDetails);
-            var staffId = tenantInfoService.GetStaffId();
+            var staffId = infoService.GetStaffId();
 
             // Add price change event
             await taskRepository.AddEventAsync(
@@ -1994,7 +1996,7 @@ public class JobController(
     {
         try
         {
-            var currentDate = tenantInfoService.GetCurrentTenantTime();
+            var currentDate = infoService.GetCurrentTenantTime();
 
             if (request?.File == null || request.File.Length == 0)
                 return BadRequest("No file uploaded");
