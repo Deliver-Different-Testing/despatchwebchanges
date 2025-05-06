@@ -17,7 +17,7 @@ public class TaskRepository(
 {
     public async Task<List<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters)
     {
-        var today = filters?.Date ?? infoService.GetCurrentTenantTime();
+        var today = filters?.Date ?? infoService.GetCurrentTenantTime().AddDays(1);
 
         var query = Context.TucEvents
             .Where(e => e.UcevDueTime.Date <= today.Date);
