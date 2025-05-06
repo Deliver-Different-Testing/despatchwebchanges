@@ -643,7 +643,7 @@ class JobDetailController extends BaseController {
 
     async editConNote($event: MouseEvent, job: IJob) {
         try {
-            await this.showEditDialog($event, job, "Edit Con Note", "Con note...", "con note", job.conNote, JobProperty.ConNote);
+            await this.showEditDialog($event, job, "Edit AWB", "AWB...", "awb", job.conNote, JobProperty.ConNote);
         } catch (error) {
             this._handleError(error);
         }

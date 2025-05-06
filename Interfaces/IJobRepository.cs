@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -393,10 +394,10 @@ public interface IJobRepository
         string clientIds,
         List<int> selectedViewIds);
 
-    Task<int> SaveNoteAsync(TucNoteViewModel viewModel);
+    Task<int> SaveNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default);
     Task<int> SaveNoteAsync(int jobId, string noteText, bool isImportant = false, bool isRecurringJob = false);
     Task<TucNoteViewModel> GetNoteByIdAsync(int noteId);
-    Task DeleteNoteAsync(int noteId);
+    Task DeleteNoteAsync(int noteId, CancellationToken cancellationToken = default);
     Task<List<NoteTypeViewModel>> GetNoteTypesAsync();
     Task<List<TucNoteViewModel>> GetNotesByJobId(int jobId);
     Task<bool> IsJobParentAsync(int jobId);

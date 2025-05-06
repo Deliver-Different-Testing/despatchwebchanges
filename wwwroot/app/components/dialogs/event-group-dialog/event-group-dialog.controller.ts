@@ -3,6 +3,7 @@ import {Suggestion} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
 import {EventGroupViewModel} from "../../../interfaces/event-group-view-model.interface";
 import BaseController from "../../base-controller";
+import moment from "moment";
 
 export class EventGroupDialogController extends BaseController{
     searchText?: string;
@@ -52,6 +53,10 @@ export class EventGroupDialogController extends BaseController{
                 this.toastrService.showWarningToast('No events are active. Please select at least one event to add to the job.');
                 return;
             }
+
+            activeEvents.forEach(event => {
+                event.dueTime = moment(event.dueTime).format();
+            })
 
             await this.$http.post('task/AddTasks', {
                 jobId,
