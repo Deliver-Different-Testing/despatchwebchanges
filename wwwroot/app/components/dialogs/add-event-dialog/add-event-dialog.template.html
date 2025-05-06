@@ -61,7 +61,7 @@
                     <md-card-content class="md-padding">
                         <div layout-gt-sm="row">
                             <div flex-gt-sm class="md-block layout-padding layout-align-center-center layout-column">
-                                <span class="md-body-1 text-center">Task Date</span>
+                                <span class="md-body-1 text-center">Task Date ({{ctrl.browserTimeZone | timezoneShort}})</span>
                                 <div class="layout-row layout-align-center-center">
                                     <md-datepicker
                                             id="TaskDate"
@@ -75,7 +75,7 @@
                             <md-divider vertical></md-divider>
 
                             <div flex-gt-sm class="md-block layout-padding layout-align-center-center layout-column">
-                                <span class="md-body-1 text-center">Task Time</span>
+                                <span class="md-body-1 text-center">Task Time ({{ctrl.browserTimeZone | timezoneShort}})</span>
                                 <div class="layout-row layout-align-center-center">
                                     <md-time-picker
                                             id="TaskTime"
