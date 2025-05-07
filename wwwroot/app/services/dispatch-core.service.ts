@@ -12,7 +12,7 @@ import {
     ParcelDimensions,
     PriceBreakdown,
     SuburbLookup,
-    Suggestion,
+    Suggestion, TimeZoneSuggestion,
 } from "../interfaces/job.interface";
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
@@ -24,22 +24,27 @@ import {EventGroupViewModel} from "../interfaces/event-group-view-model.interfac
 import {ClearListEnvelopeViewModel, DfrntPageViewModel} from "../interfaces/dfrnt-page-view-model.interface";
 import {bindAllMethods} from "../bindAllMethods";
 import {TaskTableFiltersRequest, TaskViewModel} from "../components/task-dashboard/task-dashboard.interfaces";
-import moment from "moment";
 import {JobProperty} from "../enums/job-property.enum";
+import TimezoneConverter from "./timezoneConverter.service";
+import moment from "moment";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [
         "$http",
         "APP_CONFIG",
+        "timezoneConverter",
     ];
 
     private readonly isUsCustomer: boolean;
+    browserTimeZone: string;
 
     constructor(
         private $http: angular.IHttpService,
-        private appConfig: AppConfig
+        private appConfig: AppConfig,
+        private timezoneConverter: TimezoneConverter
     ) {
         this.isUsCustomer = this.appConfig.US_Customer;
+        this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         bindAllMethods(this);
     }
 
@@ -69,6 +74,11 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async getActiveStaff() {
         const response = await this.$http.get<Suggestion[]>('task/GetStaff');
+        return response.data;
+    }
+
+    async getTimeZoneOptions(): Promise<TimeZoneSuggestion[]> {
+        const response = await this.$http.get<TimeZoneSuggestion[]>('job/GetTimeZoneOptions');
         return response.data;
     }
 
@@ -337,7 +347,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async updatePODDetail(jobId: number, jobStatus: number, podName: string, podTime: Date) {
-        const podTimeIso = moment(podTime).format();
+        const podTimeIso = this.timezoneConverter.format(podTime);
         console.log(`[DispatchCoreService] Updating POD details - Job: ${jobId}, Status: ${jobStatus}, POD Name: ${podName}, POD Time: ${podTimeIso}`);
 
         try {
@@ -445,29 +455,66 @@ class DispatchCoreService implements angular.IServiceProvider {
         await this.$http.post(`job/UpdateSplitJobAddress?jobId=${jobId}&toSuburbId=${toSuburbId}&address=${address}&deliveryLat=${lat}&deliveryLng=${lng}`, null);
     }
 
-    async releaseBulkJob(jobNumber: string, bookDate: Date) {
-        const bookDateIso = moment(bookDate).format();
+    async updateDeliverByTime(jobId: number, deliverByTime: Date, timeZone: TimeZoneSuggestion) {
+        console.log("[UpdateJobDetail] Converting date to string: ", deliverByTime);
+        console.log("[UpdateJobDetail] Time zone: ", timeZone);
 
-        await this.$http.post(
-            `job/ReleaseBulkJob?jobNumber=${encodeURIComponent(jobNumber)}` +
-            `&bookDate=${encodeURIComponent(bookDateIso)}`,
-            null
-        );
+        const  convertedDate = this.timezoneConverter.convertTimeZone(deliverByTime, this.browserTimeZone, timeZone.timeZoneIana);
+        console.log("[UpdateJobDetail] Converted date to string: ", convertedDate);
+
+        const params = new URLSearchParams({
+            jobId: String(jobId),
+            deliverByTime: String(convertedDate),
+            timeZoneId: String(timeZone.id)
+        });
+
+        const url = `job/UpdateDeliverByTime?${params.toString()}`;
+        await this.$http.post(url, null);
+    }
+
+    async updatePickUpTime(jobId: number, pickUpTime: Date, timeZone: TimeZoneSuggestion) {
+        console.log("[UpdateJobDetail] Converting date to string: ", pickUpTime);
+        console.log("[UpdateJobDetail] Time zone: ", timeZone);
+
+        const  convertedDate = this.timezoneConverter.convertTimeZone(pickUpTime, this.browserTimeZone, timeZone.timeZoneIana);
+        console.log("[UpdateJobDetail] Converted date to string: ", convertedDate);
+
+        const params = new URLSearchParams({
+            jobId: String(jobId),
+            pickUpTime: String(convertedDate),
+            timeZoneId: String(timeZone.id)
+        });
+
+        const url = `job/UpdateDeliverByTime?${params.toString()}`;
+        await this.$http.post(url, null);
     }
 
     async updateJobDetail(
         jobId: number,
         field: JobProperty | string,
         value: string | Date | number | boolean,
-        isRecurring: boolean
+        isRecurring: boolean,
+        timeZone?: TimeZoneSuggestion, // For DateTime Conversions
     ) {
         console.log("Starting updateJobDetail:", {
             jobId, field, initialValue: value, preBook: isRecurring
         });
 
+        if(field === JobProperty.DeliverBy) {
+            if(timeZone === undefined) throw new Error("Time zone is required for updating DeliverBy");
+            return await this.updateDeliverByTime(jobId, value as Date, timeZone)
+        }
+
+        if(field === JobProperty.PuTime) {
+            if(timeZone === undefined) throw new Error("Time zone is required for updating PickUp Time");
+            return await this.updatePickUpTime(jobId, value as Date, timeZone)
+        }
 
         if(value instanceof Date) {
-            value = moment(value).format();
+            console.log("[UpdateJobDetail] Converting date to string: ", value);
+            console.log("[UpdateJobDetail] Time zone: ", timeZone);
+            value = this.timezoneConverter.convertTimeZone(value, this.browserTimeZone);
+            console.log("[UpdateJobDetail] Converted date to string: ", value);
         }
 
         const method: string = isRecurring ? "job/UpdateRecurringJob" : "job/UpdateJob";
@@ -514,7 +561,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 );
 
                 // Format to YYYY-MM-DD HH:mm:ss
-                value = moment(combined).format();
+                value = this.timezoneConverter.format(combined);
             }
         }
 
@@ -522,7 +569,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         if (field === JobProperty.Date || field === JobProperty.StopDate || field === JobProperty.RestartDate || field === JobProperty.InActiveDate ||
             field === JobProperty.FirstDue || field === JobProperty.LastDone || field === JobProperty.NextDue) {
             if (value instanceof Date) {
-                value = moment(value).format();
+                value = this.timezoneConverter.format(value)
             }
         }
 

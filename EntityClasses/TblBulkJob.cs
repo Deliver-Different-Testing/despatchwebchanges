@@ -229,6 +229,8 @@ public partial class TblBulkJob
 
     public virtual TucJob Job { get; set; }
 
+    public virtual TimeZone PickupTimeZone { get; set; }
+
     public virtual TblBulkRegion Region { get; set; }
 
     public virtual TucJobType SpeedNavigation { get; set; }

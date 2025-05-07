@@ -1,16 +1,100 @@
+
+.date-time-dialog {
+  min-width: 360px;
+  max-width: 560px;
+  border-radius: 4px;
+}
+
 .date-time-content {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 16px;
 }
 
-.date-time-field {
-  margin: 16px 0;
+md-input-container {
+  width: 100%;
+  margin: 8px 0 16px 0;
 }
 
 .date-time-divider {
-  width: 80%;
+  width: 100%;
   margin: 16px 0;
+}
+
+.date-time-field {
+  width: 100%;
+  margin: 16px 0;
+}
+
+.timezone-select {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.timezone-info {
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.timezone-label {
+  margin-bottom: 8px;
+  display: block;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+/* Toolbar styling */
+md-toolbar .md-toolbar-tools {
+  height: 64px;
+  max-height: 64px;
+  padding: 0 16px;
+}
+
+md-toolbar .md-toolbar-tools .popup-icon {
+  margin-right: 12px;
+}
+
+md-toolbar .md-toolbar-tools h2 {
+  font-size: 20px;
+  font-weight: 500;
+}
+
+/* Dialog action buttons */
+md-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 16px 16px;
+}
+
+md-dialog-actions .md-button {
+  margin: 0 0 0 8px;
+  min-width: 88px;
+}
+
+md-progress-circular {
+  margin: 0 8px;
+}
+
+/* Input field styling */
+.dtp-input {
+  width: 100%;
+}
+
+.input-icon {
+  color: rgba(0, 0, 0, 0.54);
+  margin-right: 12px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 599px) {
+  .date-time-content {
+    padding: 16px 8px;
+  }
+
+  md-toolbar .md-toolbar-tools {
+    height: 56px;
+    max-height: 56px;
+  }
 }

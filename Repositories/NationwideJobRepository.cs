@@ -49,7 +49,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 UcnwEtd = flight.DepartureTime,
                 UcnwEta = flight.ArrivalTime,
                 WebhookAlertId = webhookAlertId,
-                UcnwAirlineName = flight.AirlineName
+                UcnwAirlineName = flight.AirlineName,
             };
 
             // First operation - Update job status

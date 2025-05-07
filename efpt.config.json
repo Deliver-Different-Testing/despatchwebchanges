@@ -151,6 +151,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[TimeZone]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucAgentRanking]",
          "ObjectType": 0
       },

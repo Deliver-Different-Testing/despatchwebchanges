@@ -2494,4 +2494,19 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
         return job;
     }
+
+    public async Task<List<TimeZoneSuggestion>> GetTimeZoneOptions()
+    {
+        var timeZones = await Context.TimeZones
+            .Select(t => new TimeZoneSuggestion
+            {
+                Id = t.Id,
+                Text = t.Code,
+                TimeZoneIana = t.Name
+            })
+            .AsNoTracking()
+            .ToListAsync();
+
+        return timeZones;
+    }
 }

@@ -9,8 +9,7 @@ using Serilog;
 namespace DespatchWeb.Controllers;
 
 public class TaskController(
-    ITaskRepository taskRepository,
-    ITenantInfoService infoService) : Controller
+    ITaskRepository taskRepository) : Controller
 {
     [HttpGet]
     public async Task<IActionResult> GetAllTasks(TaskTableFiltersRequest filters)
@@ -117,12 +116,6 @@ public class TaskController(
         try
         {
             ArgumentNullException.ThrowIfNull(request);
-
-            foreach (var tasks in request.EventGroupViewModels
-                         .Where(tasks => tasks.DueTime != null))
-            {
-                tasks.DueTime = infoService.ConvertUtcToTenantTime(tasks.DueTime.Value);
-            }
 
             await taskRepository.CreateEventsForJobAsync(request.JobId, request.EventGroupViewModels);
             return Ok();

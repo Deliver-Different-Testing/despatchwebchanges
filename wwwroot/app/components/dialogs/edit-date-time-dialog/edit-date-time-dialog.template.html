@@ -1,60 +1,98 @@
-<md-dialog aria-label="{{ ctrl.title }}">
+<md-dialog aria-label="{{ ctrl.title }}" class="date-time-dialog">
     <md-toolbar>
         <div class="md-toolbar-tools">
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">schedule</md-icon>
-            <h2>Edit {{ ctrl.title }}</h2>
+            <h2>{{ ctrl.title }}</h2>
             <span flex></span>
-            <md-button class="md-icon-button" ng-click="ctrl.cancel()">
-                <md-tooltip md-direction="bottom">Cancel</md-tooltip>
-                <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
-                    close
-                </md-icon>
+            <md-button class="md-icon-button" ng-click="ctrl.cancel()" aria-label="Close dialog">
+                <md-icon md-font-set="material-symbols-outlined">close</md-icon>
             </md-button>
         </div>
     </md-toolbar>
 
     <md-dialog-content>
         <div class="md-dialog-content date-time-content">
-            <!-- Calendar -->
+            <!-- Date Picker -->
             <div class="date-time-field" ng-if="ctrl.showDate">
-                <md-datepicker
-                        md-date-locale="{ firstDayOfWeek: 1 }"
-                        class="md-block"
-                        input-aria-describedby="datepicker-description"
-                        input-aria-labelledby="datepicker-header"
-                        md-placeholder="Enter date"
-                        ng-model="ctrl.date">
-                </md-datepicker>
+                <md-input-container class="md-block">
+                    <label for="date">Date ({{(ctrl.selectedTimeZone.timeZoneIana || ctrl.browserTimeZone) | timezoneShort}})</label>
+                    <input class="dtp-no-msclear dtp-input md-input"
+                           id="date"
+                           name="date"
+                           mdc-datetime-picker
+                           date="true"
+                           time="false"
+                           type="text"
+                           format="YYYY-MM-DD"
+                           edit-input="true"
+                           minutes="true"
+                           short-time="false"
+                           show-icon="true"
+                           show-todays-date
+                           ng-model="ctrl.dateTime"
+                           required>
+                </md-input-container>
             </div>
-
-            <md-divider class="date-time-divider" ng-show="ctrl.showDate && ctrl.showTime"></md-divider>
 
             <!-- Time Picker -->
             <div class="date-time-field" ng-if="ctrl.showTime">
-                <md-time-picker
-                        message="ctrl.message"
-                        ng-model="ctrl.time"
-                        no-meridiem
-                        no-auto-switch>
-                </md-time-picker>
+                <md-input-container class="md-block">
+                    <label for="date">Date ({{(ctrl.selectedTimeZone.timeZoneIana || ctrl.browserTimeZone) | timezoneShort}})</label>
+                    <input class="dtp-no-msclear dtp-input md-input"
+                           id="time"
+                           name="time"
+                           mdc-datetime-picker
+                           date="false"
+                           time="true"
+                           type="text"
+                           format="HH:mm"
+                           edit-input="true"
+                           minutes="true"
+                           short-time="false"
+                           show-icon="true"
+                           ng-model="ctrl.dateTime"
+                           required>
+                </md-input-container>
+            </div>
+
+            <!-- Timezone Selector -->
+            <div ng-if="ctrl.showTimeZoneSelector">
+                <md-divider class="date-time-divider" ng-show="(ctrl.showDate || ctrl.showTime)"></md-divider>
+
+                <div class="date-time-field">
+                    <label class="timezone-label md-body-1">Timezone</label>
+                    <md-select ng-model="ctrl.selectedTimeZone"
+                               placeholder="Select timezone"
+                               class="md-block timezone-select"
+                               aria-label="Select timezone">
+                        <md-option ng-repeat="timezone in ctrl.timeZones"
+                                   ng-value="timezone"
+                                   ng-selected="timezone === ctrl.selectedTimeZone">
+                            {{ timezone.text }}
+                        </md-option>
+                    </md-select>
+                    <div class="timezone-info md-caption">
+                        Current time in selected timezone: {{ ctrl.getCurrentTimeInSelectedTimeZone() }}
+                    </div>
+                </div>
             </div>
         </div>
     </md-dialog-content>
 
-    <md-dialog-actions>
-        <md-progress-circular
-                class="md-primary"
-                md-diameter="40"
-                md-mode="indeterminate"
-                ng-disabled="!ctrl.isValid()"
-                ng-show="ctrl.isLoading">
+    <md-dialog-actions layout="row">
+        <span flex></span>
+        <md-button class="md-button" ng-click="ctrl.cancel()" ng-show="!ctrl.isLoading">
+            Cancel
+        </md-button>
+        <md-progress-circular class="md-primary"
+                              md-diameter="20"
+                              md-mode="indeterminate"
+                              ng-show="ctrl.isLoading">
         </md-progress-circular>
-
-        <md-button
-                class="md-raised md-primary"
-                ng-click="ctrl.submit()"
-                ng-disabled="!ctrl.isValid()"
-                ng-show="!ctrl.isLoading">
+        <md-button class="md-raised md-primary"
+                   ng-click="ctrl.submit()"
+                   ng-disabled="!ctrl.isValid()"
+                   ng-show="!ctrl.isLoading">
             Save
         </md-button>
     </md-dialog-actions>

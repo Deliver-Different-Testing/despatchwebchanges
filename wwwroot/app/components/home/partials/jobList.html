@@ -15,7 +15,7 @@
             </md-button>
 
             <div layout="column" layout-align="center center">
-                <span class="cutoff-date">{{ctrl.jobCutoffDate | momentFormat:'dddd, MMMM D, YYYY'}} ({{ctrl.timeZone | timezoneShort}})</span>
+                <span class="cutoff-date">{{ctrl.jobCutoffDate | momentFormat:'dddd, MMMM D, YYYY'}} ({{ctrl.browserTimeZone | timezoneShort}})</span>
                 <md-button class="md-small today-button" ng-click="ctrl.resetJobCutoffDate()"
                            aria-label="Reset filter">
                     Today

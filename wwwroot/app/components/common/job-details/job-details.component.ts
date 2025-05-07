@@ -338,9 +338,9 @@ class JobDetailController extends BaseController {
     }
 
     async showEditTimeDialog($event: MouseEvent, job: IJob,
-                             title: string, fieldName: string, dateTime?: Date) {
+                             title: string, fieldName: string, dateTime?: Date, timezone?: Suggestion) {
         try {
-            const result = await this.editDateTimeDialogService.showEditTimeDialog($event, title, fieldName, dateTime);
+            const result = await this.editDateTimeDialogService.showEditTimeDialog($event, title, fieldName, dateTime, timezone);
             await this._processDateTimeUpdateResult(job, result)
         } catch (error) {
             this._handleError(error);
@@ -348,9 +348,9 @@ class JobDetailController extends BaseController {
     }
 
     async showEditDateDialog($event: MouseEvent, job: IJob,
-                             title: string, field: JobProperty, dateTime?: Date) {
+                             title: string, field: JobProperty, dateTime?: Date, timezone?: Suggestion) {
         try {
-            const result = await this.editDateTimeDialogService.showEditDateDialog($event, title, field, dateTime);
+            const result = await this.editDateTimeDialogService.showEditDateDialog($event, title, field, dateTime, timezone);
             await this._processDateTimeUpdateResult(job, result)
         } catch (error) {
             this._handleError(error);
@@ -358,9 +358,14 @@ class JobDetailController extends BaseController {
     }
 
     async showEditDateAndTimeDialog($event: MouseEvent, job: IJob,
-                                    title: string, fieldName: JobProperty, dateTime?: Date) {
+                                    title: string, fieldName: JobProperty, dateTime?: Date, timezone?: Suggestion) {
         try {
-            const result = await this.editDateTimeDialogService.showEditDateAndTimeDialog($event, title, fieldName, dateTime);
+            let showTImeZoneSelector = false;
+            if(fieldName === JobProperty.DeliverBy || fieldName === JobProperty.PuTime) {
+                showTImeZoneSelector = true;
+            }
+
+            const result = await this.editDateTimeDialogService.showEditDateAndTimeDialog($event, title, fieldName, dateTime, timezone, showTImeZoneSelector);
             await this._processDateTimeUpdateResult(job, result)
         } catch (error) {
             this._handleError(error);
@@ -373,7 +378,7 @@ class JobDetailController extends BaseController {
                 await this.DispatchData.updateBulkJobDetail(
                     job.id,
                     result.fieldName,
-                    result.formattedDateTime,
+                    result.value,
                     job.charge,
                     FirstName,
                     ContactID
@@ -382,8 +387,9 @@ class JobDetailController extends BaseController {
                 await this.DispatchData.updateJobDetail(
                     job.id,
                     result.fieldName,
-                    result.formattedDateTime,
-                    job.preBook
+                    result.value,
+                    job.preBook,
+                    result.selectedTimeZone
                 );
             }
 
@@ -472,11 +478,11 @@ class JobDetailController extends BaseController {
     }
 
     async editPuDate($event: MouseEvent, job: IJob) {
-        await this.showEditDateAndTimeDialog($event, job, "Pick Up Time", JobProperty.PuTime, job.puTime);
+        await this.showEditDateAndTimeDialog($event, job, "Pick Up Time", JobProperty.PuTime, job.puTime, job.pickUpTimeZone);
     }
 
     async editDeliverBy($event: MouseEvent, job: IJob) {
-        await this.showEditDateAndTimeDialog($event, job, "Deliver By", JobProperty.DeliverBy, job.deliverByTime);
+        await this.showEditDateAndTimeDialog($event, job, "Deliver By", JobProperty.DeliverBy, job.deliverByTime, job.deliveryTimeZone);
     }
 
     async editBookedDate($event: MouseEvent, job: IJob) {
@@ -1208,13 +1214,20 @@ class JobDetailController extends BaseController {
         }
     }
 
-    formatTimeWindow(baseTime?: Date, windowMins?: number): string {
+    formatTimeWindow(isPickup: boolean, baseTime?: Date, windowMins?: number): string {
         if (!baseTime) {
             return 'N/A';
         }
 
         // Get the formatted timezone using the filter
-        const timezoneShort = this.$filter<(timezone: string) => string>('timezoneShort')(TimeZone);
+        let timezone: string;
+        if(isPickup) {
+            timezone = this.job?.pickUpTimeZone?.text ?? TimeZone;
+        } else {
+            timezone = this.job?.deliveryTimeZone?.text ?? TimeZone;
+        }
+
+        const timezoneShort = this.$filter<(timezone: string) => string>('timezoneShort')(timezone);
         const timezoneDisplay = timezoneShort ? ` (${timezoneShort})` : '';
 
         const baseTimeFormatted = moment(baseTime).format('MM/DD HH:mm');
@@ -1233,11 +1246,11 @@ class JobDetailController extends BaseController {
     }
 
     getPickupTimeWindow(): string {
-        return this.formatTimeWindow(this.job?.puTime, this.job?.pickUpWindowMins);
+        return this.formatTimeWindow(true, this.job?.puTime, this.job?.pickUpWindowMins);
     }
 
     getDeliveryTimeWindow(): string {
-        return this.formatTimeWindow(this.job?.deliverByTime, this.job?.deliverByWindowMins);
+        return this.formatTimeWindow(false, this.job?.deliverByTime, this.job?.deliverByWindowMins);
     }
 }
 

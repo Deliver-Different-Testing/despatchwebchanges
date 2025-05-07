@@ -97,6 +97,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TblUndeliverableLocation> TblUndeliverableLocations { get; set; }
 
+    public virtual DbSet<TimeZone> TimeZones { get; set; }
+
     public virtual DbSet<TucAgent> TucAgents { get; set; }
 
     public virtual DbSet<TucAgentRanking> TucAgentRankings { get; set; }
@@ -982,6 +984,10 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.Job).WithMany(p => p.TblBulkJobs)
                 .HasForeignKey(d => d.JobId)
                 .HasConstraintName("FK_tblBulkJob_tucJob");
+
+            entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TblBulkJobs)
+                .HasForeignKey(d => d.PickupTimeZoneId)
+                .HasConstraintName("FK__tblBulkJo__Picku__3652C63E");
 
             entity.HasOne(d => d.Region).WithMany(p => p.TblBulkJobs)
                 .HasForeignKey(d => d.RegionId)
@@ -2788,6 +2794,26 @@ public partial class DespatchContext : DbContext
                 .HasConstraintName("FK_tblUndeliverableLocation_tucJobType");
         });
 
+        modelBuilder.Entity<TimeZone>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__TimeZone__3214EC072CB4AFDD");
+
+            entity.ToTable("TimeZone");
+
+            entity.Property(e => e.Code)
+                .IsRequired()
+                .HasMaxLength(20);
+            entity.Property(e => e.DisplayName)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.OffsetString)
+                .IsRequired()
+                .HasMaxLength(50);
+        });
+
         modelBuilder.Entity<TucAgent>(entity =>
         {
             entity.HasKey(e => e.UcagId)
@@ -4253,6 +4279,10 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.ContactId)
                 .HasConstraintName("FK_tucJob_tucClientContact");
 
+            entity.HasOne(d => d.DeliverByTimeZone).WithMany(p => p.TucJobDeliverByTimeZones)
+                .HasForeignKey(d => d.DeliverByTimeZoneId)
+                .HasConstraintName("FK_tucJob_TimeZone");
+
             entity.HasOne(d => d.DeliverToLeave).WithMany(p => p.TucJobs)
                 .HasForeignKey(d => d.DeliverToLeaveId)
                 .HasConstraintName("FK_tucJob_LeaveNotHome");
@@ -4284,6 +4314,10 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.Parent).WithMany(p => p.InverseParent)
                 .HasForeignKey(d => d.ParentId)
                 .HasConstraintName("FK_tucJob_ParentID");
+
+            entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TucJobPickupTimeZones)
+                .HasForeignKey(d => d.PickupTimeZoneId)
+                .HasConstraintName("FK__tucJob__PickupTi__33765993");
 
             entity.HasOne(d => d.Source).WithMany(p => p.TucJobs)
                 .HasForeignKey(d => d.SourceId)
@@ -4716,6 +4750,10 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.AgentId)
                 .HasConstraintName("FK_tucJobArchive_Agent");
 
+            entity.HasOne(d => d.DeliverByTimeZone).WithMany(p => p.TucJobArchiveDeliverByTimeZones)
+                .HasForeignKey(d => d.DeliverByTimeZoneId)
+                .HasConstraintName("FK_tucJobArchive_TimeZone");
+
             entity.HasOne(d => d.FromAirport).WithMany(p => p.TucJobArchiveFromAirports)
                 .HasForeignKey(d => d.FromAirportId)
                 .HasConstraintName("FK_tucJobArchive_FromAirport");
@@ -4723,6 +4761,10 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.MasterCourier).WithMany(p => p.TucJobArchives)
                 .HasForeignKey(d => d.MasterCourierId)
                 .HasConstraintName("FK_tucJobArchive_tucCourierMaster");
+
+            entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TucJobArchivePickupTimeZones)
+                .HasForeignKey(d => d.PickupTimeZoneId)
+                .HasConstraintName("FK__tucJobArc__Picku__346A7DCC");
 
             entity.HasOne(d => d.ToAirport).WithMany(p => p.TucJobArchiveToAirports)
                 .HasForeignKey(d => d.ToAirportId)
@@ -5017,6 +5059,10 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.CourierId)
                 .HasConstraintName("FK_tucJobBooking_tucCourier");
 
+            entity.HasOne(d => d.DeliverByTimeZone).WithMany(p => p.TucJobBookingDeliverByTimeZones)
+                .HasForeignKey(d => d.DeliverByTimeZoneId)
+                .HasConstraintName("FK_tucJobBooking_TimeZone");
+
             entity.HasOne(d => d.FromAirport).WithMany(p => p.TucJobBookingFromAirports)
                 .HasForeignKey(d => d.FromAirportId)
                 .HasConstraintName("FK__tucJobBoo__FromA__69B26EB3");
@@ -5028,6 +5074,10 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.LoggedInContact).WithMany(p => p.TucJobBookings)
                 .HasForeignKey(d => d.LoggedInContactId)
                 .HasConstraintName("FK_TucJobBooking_tucClientContact");
+
+            entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TucJobBookingPickupTimeZones)
+                .HasForeignKey(d => d.PickupTimeZoneId)
+                .HasConstraintName("FK__tucJobBoo__Picku__355EA205");
 
             entity.HasOne(d => d.Source).WithMany(p => p.TucJobBookings)
                 .HasForeignKey(d => d.SourceId)

@@ -451,6 +451,8 @@ public partial class TucJob
 
     public virtual TucClientContact Contact { get; set; }
 
+    public virtual TimeZone DeliverByTimeZone { get; set; }
+
     public virtual TblJobLeaveNotHome DeliverToLeave { get; set; }
 
     public virtual TucJobType DesiredJobType { get; set; }
@@ -470,6 +472,8 @@ public partial class TucJob
     public virtual TucJobType NotifiedJobType { get; set; }
 
     public virtual TucJob Parent { get; set; }
+
+    public virtual TimeZone PickupTimeZone { get; set; }
 
     public virtual ICollection<PricingBreakdown> PricingBreakdowns { get; set; } = new List<PricingBreakdown>();
 

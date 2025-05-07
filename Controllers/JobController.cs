@@ -1669,6 +1669,36 @@ public class JobController(
     }
 
     [HttpPost]
+    public async Task<IActionResult> UpdateDeliverByTime(int jobId, DateTime deliverByTime, int timeZoneId)
+    {
+        try
+        {
+            await jobRepository.UpdateDeliverByTime(jobId, deliverByTime, timeZoneId);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error updating deliver by time");
+            return StatusCode(500, ex.Message);
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> UpdatePickUpTime(int jobId, DateTime pickUpTime, int timeZoneId)
+    {
+        try
+        {
+            await jobRepository.UpdatePickUpTime(jobId, pickUpTime, timeZoneId);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error updating deliver by time");
+            return StatusCode(500, ex.Message);
+        }
+    }
+
+    [HttpPost]
     public async Task<IActionResult> UpdateJob(
         int jobId,
         JobProperty field,
@@ -2397,6 +2427,21 @@ public class JobController(
         {
             Log.Error(ex, "Error updating pickup address for job {JobId}", request.JobId);
             return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetTimeZoneOptions()
+    {
+        try
+        {
+            var timeZones = await jobRepository.GetTimeZoneOptions();
+            return Json(timeZones);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error updating job read status");
+            return StatusCode(500, ex.Message);
         }
     }
 

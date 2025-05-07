@@ -8,7 +8,7 @@ import {JobNoteType} from "../../../enums/job-note-type.enum";
 import {material} from "angular";
 import {EventType} from "../../../enums/event-type";
 import {JobEventData} from "./add-event-dialog.interfaces";
-import moment from "moment";
+import TimezoneConverter from "../../../timezoneConverter";
 
 class AddEventDialogController extends BaseController {
     static $inject = [
@@ -17,6 +17,7 @@ class AddEventDialogController extends BaseController {
         "toastrService",
         "NWData",
         "noteService",
+        "timezoneConverter",
         "job",
         "dispatcherName",
         "contactId",
@@ -35,6 +36,7 @@ class AddEventDialogController extends BaseController {
         private toastrService: ToastrService,
         private NWData: NationwideService,
         private noteService: NoteService,
+        private timezoneConverter: TimezoneConverter,
         private job: IJob,
         private dispatcherName: string,
         private contactId: number
@@ -129,7 +131,7 @@ class AddEventDialogController extends BaseController {
                 despatcherName: this.dispatcherName,
                 notes: event.notes ?? '',
                 eventTypeId: eventId,
-                eventDueDate: moment(event.eventDate).utc().format()
+                eventDueDate: this.timezoneConverter.format(event.eventDate)
             }
 
             await this.NWData.addEvent(eventData);

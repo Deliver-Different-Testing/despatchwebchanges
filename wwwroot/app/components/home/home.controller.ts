@@ -137,6 +137,7 @@ class HomeController extends BaseController {
         onTaskClick: true
     };
     timeZone: string;
+    browserTimeZone: string
 
     constructor(
         private $document: angular.IDocumentService,
@@ -166,6 +167,7 @@ class HomeController extends BaseController {
         super();
 
         this.timeZone = TimeZone;
+        this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
         // Views and Layout
         this.initialViewSet = false;
@@ -2427,7 +2429,7 @@ class HomeController extends BaseController {
             // Build filter request based on filter type
             const filterRequest = this._buildFilterRequest(filterType);
             console.log('Filter request:', filterRequest);
-            
+
             try {
                 this.supports = await this.DispatchData.getAllTasks(filterRequest);
                 this.filteredSupports = this.supports;

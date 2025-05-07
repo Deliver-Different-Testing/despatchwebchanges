@@ -123,6 +123,9 @@ public class JobViewModel : DispatchJobViewModel
     public int? PickUpWindowMins { get; set; }
 
     public int? DeliverByWindowMins { get; set; }
+
+    public Suggestion  PickUpTimeZone { get; set; }
+    public Suggestion DeliveryTimeZone {get;set;}
 }
 
 public class Vehicle
@@ -236,6 +239,11 @@ public class Suggestion
 {
     public int Id { get; set; }
     public string Text { get; set; }
+}
+
+public class TimeZoneSuggestion : Suggestion
+{
+    public string TimeZoneIana {get;set;}
 }
 
 public class NoteTypeViewModel : Suggestion

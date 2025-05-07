@@ -406,4 +406,8 @@ public interface IJobRepository
     Task AddNewTucNoteType(NoteTypeViewModel noteType);
     Task<JobRatingDetailsDto> GetJobDetailsForRating(int jobId);
     Task UpdateJobRateAsync(int jobId, decimal rate, string noteText);
+    Task<List<TimeZoneSuggestion>> GetTimeZoneOptions();
+    Task UpdateDeliverByTime(int jobId, DateTime deliverByTime, int timeZoneId);
+    Task UpdatePickUpTime(int jobId, DateTime pickUpTime, int timeZoneId);
+
 }
