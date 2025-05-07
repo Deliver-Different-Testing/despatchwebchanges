@@ -383,6 +383,7 @@
     <TypeScriptCompile Include="wwwroot\app\services\greeting.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\job-context-menu.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\notes.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\services\timezoneConverter.service.ts" />
     <TypeScriptCompile Include="wwwroot\types\html.d.ts" />
   </ItemGroup>
   <ItemGroup>

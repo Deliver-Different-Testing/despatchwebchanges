@@ -157,6 +157,8 @@ export interface IJob {
     holidayDeliveryOption: HolidayDeliveryOptions,
     pickUpWindowMins?: number;
     deliverByWindowMins?: number;
+    pickUpTimeZone?: Suggestion;
+    deliveryTimeZone?: Suggestion;
 }
 
 export interface ParcelDimensions {
@@ -219,8 +221,8 @@ export interface Suggestion {
     selected?: boolean;
 }
 
-export interface Views extends Suggestion {
-    selected?: boolean;
+export interface TimeZoneSuggestion extends Suggestion {
+    timeZoneIana: string;
 }
 
 export interface ClearListViewModel {

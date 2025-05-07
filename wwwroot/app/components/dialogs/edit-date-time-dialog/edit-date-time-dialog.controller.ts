@@ -1,64 +1,74 @@
 import "./edit-date-time-dialog.less";
 import ToastrService from "../../../services/toastr.service";
-import app from "../../../app";
 import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interfaces";
 import moment from "moment";
+import "moment-timezone";
+import DispatchCoreService from "../../../services/dispatch-core.service";
+import {Suggestion, TimeZoneSuggestion} from "../../../interfaces/job.interface";
+import BaseController from "../../base-controller";
 
-export class EditDateTimeDialogController {
+export class EditDateTimeDialogController extends  BaseController {
     static $inject = [
         "$mdDialog",
         "toastrService",
+        "DispatchData",
         "title",
         "fieldName",
         "dateTime",
+        "defaultTimeZone",
+        "showTimeZone",
         "showDate",
         "showTime",
     ];
 
-    showDate: boolean;
-    showTime: boolean;
     date?: Date;
     time?: Date;
     isLoading: boolean;
     message: { hour: string; minute: string };
+    browserTimeZone: string;
+    selectedTimeZone?: TimeZoneSuggestion;
+    timeZones?: TimeZoneSuggestion[];
+    showTimeZoneSelector: boolean = false;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
+        private DispatchData: DispatchCoreService,
         public readonly title: string,
         public readonly fieldName: string,
-        dateTime: Date,
-        showDate: boolean,
-        showTime: boolean
+        public dateTime: Date,
+        private defaultTimeZone?: Suggestion,
+        showTimeZoneSelector: boolean = false,
+        public showDate: boolean = false,
+        public showTime: boolean = false,
     ) {
-        this.showDate = showDate;
-        this.showTime = showTime;
+        super();
 
-        this._initializeDateTime(dateTime);
+        this.showTimeZoneSelector = showTimeZoneSelector;
+
+        if(this.dateTime === undefined) {
+            this.dateTime = new Date();
+        }
+
+        // Get a list of time zones if needed
+        if(showTimeZoneSelector) {
+            this.DispatchData.getTimeZoneOptions().then((data: TimeZoneSuggestion[]) => {
+                this.timeZones = data;
+
+                if(this.defaultTimeZone) {
+                    this.selectedTimeZone = data.find(tz => tz.id === this.defaultTimeZone?.id);
+                }
+            });
+        }
+
+        // Get browser timezone
+        this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
         this.isLoading = false;
         this.message = {
             hour: "Hour is required",
             minute: "Minute is required",
         };
-    }
-
-    private _initializeDateTime(dateTime: Date): void {
-        let parsedDate: Date;
-
-        if (dateTime === null || dateTime === undefined || isNaN(new Date(dateTime).getTime())) {
-            console.warn("Invalid or null date provided. Using current date/time.");
-            parsedDate = new Date();
-        } else {
-            parsedDate = new Date(dateTime);
-        }
-
-        if (this.showDate) {
-            this.date = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate());
-        }
-        if (this.showTime) {
-            this.time = new Date(1970, 0, 1, parsedDate.getHours(), parsedDate.getMinutes());
-        }
     }
 
     isValid(): boolean {
@@ -80,14 +90,11 @@ export class EditDateTimeDialogController {
             const newDateTime = this._combineDateTime();
             if (newDateTime === null) return;
 
-            const formattedDateTime = this._formatDateTime(newDateTime);
-            if (formattedDateTime === null) return;
-
             // Create result object
             const result: IDialogDateTimeResult = {
                 fieldName: this.fieldName,
                 value: newDateTime,
-                formattedDateTime: formattedDateTime
+                selectedTimeZone: this.selectedTimeZone
             };
 
             this.$mdDialog.hide(result);
@@ -108,17 +115,13 @@ export class EditDateTimeDialogController {
         } else if (this.showTime) {
             return this.time || null;
         }
+
         return null;
     }
 
-    private _formatDateTime(dateTime: Date): string | null {
-        // Ensure valid date
-        if (isNaN(dateTime.getTime())) {
-            console.warn("Invalid date provided to formatDateTime");
-            return null;
-        }
-
-        return moment(dateTime).format();
+// Get current time in selected timezone for display
+    getCurrentTimeInSelectedTimeZone(): string {
+        return moment().tz(this.selectedTimeZone?.text ?? this.browserTimeZone).format('HH:mm');
     }
 
     cancel(): void {

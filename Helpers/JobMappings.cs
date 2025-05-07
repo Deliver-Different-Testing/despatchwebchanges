@@ -433,7 +433,19 @@ public static class JobMappings
                 },
 
             PickUpWindowMins = j.PickUpWindowMins,
-            DeliverByWindowMins = j.DeliverByWindowMins
+            DeliverByWindowMins = j.DeliverByWindowMins,
+
+            // Timezones
+            PickUpTimeZone = j.PickupTimeZoneId != null ? new Suggestion
+            {
+                Id = j.PickupTimeZone.Id,
+                Text = j.PickupTimeZone.Name
+            } : null,
+            DeliveryTimeZone = j.DeliverByTimeZoneId != null ? new Suggestion
+            {
+                Id = j.DeliverByTimeZone.Id,
+                Text = j.DeliverByTimeZone.Name
+            } : null
         };
 
     public static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping =
@@ -597,7 +609,19 @@ public static class JobMappings
                 : (double)j.TotalDistance,
 
             PickUpWindowMins = j.PickUpWindowMins,
-            DeliverByWindowMins = j.DeliverByWindowMins
+            DeliverByWindowMins = j.DeliverByWindowMins,
+
+             // Timezones
+            PickUpTimeZone = j.PickupTimeZoneId != null ? new Suggestion
+            {
+                Id = j.PickupTimeZone.Id,
+                Text = j.PickupTimeZone.Name
+            } : null,
+            DeliveryTimeZone = j.DeliverByTimeZoneId != null ? new Suggestion
+            {
+                Id = j.DeliverByTimeZone.Id,
+                Text = j.DeliverByTimeZone.Name
+            } : null
         };
 
     public static readonly Expression<Func<TucJobBooking, JobRecurringViewModel>> JobRecurringMapping =
@@ -775,7 +799,19 @@ public static class JobMappings
             HolidayDeliveryOption = (HolidayDeliveryOptions)j.HolidayDeliveryOption,
 
             PickUpWindowMins = j.PickUpWindowMins,
-            DeliverByWindowMins = j.DeliverByWindowMins
+            DeliverByWindowMins = j.DeliverByWindowMins,
+
+             // Timezones
+            PickUpTimeZone = j.PickupTimeZoneId != null ? new Suggestion
+            {
+                Id = j.PickupTimeZone.Id,
+                Text = j.PickupTimeZone.Name
+            } : null,
+            DeliveryTimeZone = j.DeliverByTimeZoneId != null ? new Suggestion
+            {
+                Id = j.DeliverByTimeZone.Id,
+                Text = j.DeliverByTimeZone.Name
+            } : null
         };
 
     public static readonly Expression<Func<TucJob, JobLateCallDto>> JobLateCallMapping =

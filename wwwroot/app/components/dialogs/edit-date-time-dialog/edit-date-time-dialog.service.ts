@@ -1,6 +1,6 @@
 import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interfaces";
-import app from "../../../app";
 import {EditDateTimeDialogController} from "./edit-date-time-dialog.controller";
+import {Suggestion} from "../../../interfaces/job.interface";
 
 export class EditDateTimeDialogService implements angular.IServiceProvider {
     static $inject = [
@@ -19,29 +19,31 @@ export class EditDateTimeDialogService implements angular.IServiceProvider {
         return this;
     }
 
-    private _getBaseDialogConfig($event: MouseEvent, title: string, fieldName: string, dateTime?: Date) {
+    private _getBaseDialogConfig($event: MouseEvent, title: string, fieldName: string, dateTime?: Date, defaultTimeZone?: Suggestion, showTimeZone: boolean = false) {
         return {
             controller: EditDateTimeDialogController,
             controllerAs: "ctrl",
             parent: this.$document.parent(),
             targetEvent: $event,
             template: require("./edit-date-time-dialog.template.html"),
-            clickOutsideToClose: true,
+            clickOutsideToClose: false,
             fullscreen: true,
             bindToController: true,
             locals: {
                 title,
                 fieldName,
-                dateTime
+                dateTime,
+                defaultTimeZone,
+                showTimeZone
             }
         };
     }
 
-    async showEditTimeDialog($event: MouseEvent, title: string, fieldName: string, dateTime?: Date) {
+    async showEditTimeDialog($event: MouseEvent, title: string, fieldName: string, dateTime?: Date, defaultTimeZone?: Suggestion, showTimeZone: boolean = false) {
         const config = {
-            ...this._getBaseDialogConfig($event, title, fieldName, dateTime),
+            ...this._getBaseDialogConfig($event, title, fieldName, dateTime, defaultTimeZone, showTimeZone),
             locals: {
-                ...this._getBaseDialogConfig($event, title, fieldName, dateTime).locals,
+                ...this._getBaseDialogConfig($event, title, fieldName, dateTime, defaultTimeZone, showTimeZone).locals,
                 showDate: false,
                 showTime: true
             }
@@ -51,11 +53,11 @@ export class EditDateTimeDialogService implements angular.IServiceProvider {
         return result;
     }
 
-    async showEditDateDialog($event: MouseEvent, title: string, fieldName: string, dateTime?: Date) {
+    async showEditDateDialog($event: MouseEvent, title: string, fieldName: string, dateTime?: Date, defaultTimeZone?: Suggestion, showTimeZone: boolean = false) {
         const config = {
-            ...this._getBaseDialogConfig($event, title, fieldName, dateTime),
+            ...this._getBaseDialogConfig($event, title, fieldName, dateTime, defaultTimeZone, showTimeZone),
             locals: {
-                ...this._getBaseDialogConfig($event, title, fieldName, dateTime).locals,
+                ...this._getBaseDialogConfig($event, title, fieldName, dateTime, defaultTimeZone, showTimeZone).locals,
                 showDate: true,
                 showTime: false
             }
@@ -65,11 +67,11 @@ export class EditDateTimeDialogService implements angular.IServiceProvider {
         return result;
     }
 
-    async showEditDateAndTimeDialog($event: MouseEvent, title: string, fieldName: string, dateTime?: Date) {
+    async showEditDateAndTimeDialog($event: MouseEvent, title: string, fieldName: string, dateTime?: Date, defaultTimeZone?: Suggestion, showTimeZone: boolean = false) {
         const config = {
-            ...this._getBaseDialogConfig($event, title, fieldName, dateTime),
+            ...this._getBaseDialogConfig($event, title, fieldName, dateTime, defaultTimeZone, showTimeZone),
             locals: {
-                ...this._getBaseDialogConfig($event, title, fieldName, dateTime).locals,
+                ...this._getBaseDialogConfig($event, title, fieldName, dateTime, defaultTimeZone, showTimeZone).locals,
                 showDate: true,
                 showTime: true
             }

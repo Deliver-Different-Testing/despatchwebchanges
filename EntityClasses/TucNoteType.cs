@@ -17,5 +17,7 @@ public partial class TucNoteType
 
     public bool IsActive { get; set; }
 
+    public bool IsSystemDefined { get; set; }
+
     public virtual ICollection<TucNote> TucNotes { get; set; } = new List<TucNote>();
 }

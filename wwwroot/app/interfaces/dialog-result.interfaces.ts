@@ -1,4 +1,5 @@
 import {JobProperty} from "../enums/job-property.enum";
+import {TimeZoneSuggestion} from "./job.interface";
 
 export interface ISelectDialogResult {
     fieldName: JobProperty;
@@ -7,7 +8,7 @@ export interface ISelectDialogResult {
 }
 
 export interface IDialogDateTimeResult {
-    fieldName: JobProperty | string;
+    fieldName: string;
     value: Date;
-    formattedDateTime: string;
+    selectedTimeZone?: TimeZoneSuggestion;
 }

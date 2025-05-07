@@ -1,20 +1,22 @@
 import {IAgent, IDispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
 import {IFlightViewModel} from "./nationwide.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
-import moment from "moment";
 import {FlightDetailsViewModel} from "../dialogs/flight-details-dialog/flight-details-dialog.interfaces";
 import {JobEventData} from "../dialogs/add-event-dialog/add-event-dialog.interfaces";
+import TimezoneConverter from "../../timezoneConverter";
 
 class NationwideService implements angular.IServiceProvider {
     static $inject = [
-        "$http"
+        "$http",
+        "timezoneConverter"
     ];
 
     private flightCache: Map<string, {timestamp: number, data: any}> = new Map();
     private CACHE_DURATION = 5 * 60 * 1000;
 
     constructor(
-        private $http: angular.IHttpService
+        private $http: angular.IHttpService,
+        private timezoneConverter: TimezoneConverter,
     ) {
         console.log('NationwideService: Service instantiated');
     }
@@ -90,7 +92,7 @@ class NationwideService implements angular.IServiceProvider {
         lastDepartureTime: Date | null;
     }> {
         const startTime = performance.now();
-        const formattedDate = moment(departureDate).format();
+        const formattedDate = this.timezoneConverter.format(departureDate);
 
         // Create a cache key based on the parameters
         const cacheKey = `flights_${jobId}_${formattedDate}_${airlineId || 'all'}_${departureAirportId || 'default'}`;
@@ -204,13 +206,8 @@ class NationwideService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getAllAgentOptions(): Promise<Suggestion[]> {
-        const response = await this.$http.get<Suggestion[]>("nationwideJob/GetAllAgents");
-        return response.data;
-    }
-
     async getFlightConnectionsInfoForDialog(flightNumber: string, departureDate: Date): Promise<FlightDetailsViewModel[]> {
-        const formattedDate = moment(departureDate).format();
+        const formattedDate = this.timezoneConverter.format(departureDate);
 
         const response = await this.$http.get<FlightDetailsViewModel[]>("nationwideJob/GetFlightInfo", {
             params: {

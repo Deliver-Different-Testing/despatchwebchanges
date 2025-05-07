@@ -372,6 +372,8 @@ public partial class TucJobBooking
 
     public virtual TucCourier Courier { get; set; }
 
+    public virtual TimeZone DeliverByTimeZone { get; set; }
+
     public virtual TblAirport FromAirport { get; set; }
 
     public virtual ICollection<TucJobBooking> InverseBookingParent { get; set; } = new List<TucJobBooking>();
@@ -379,6 +381,8 @@ public partial class TucJobBooking
     public virtual TblJobRelationshipType JobRelationshipType { get; set; }
 
     public virtual TucClientContact LoggedInContact { get; set; }
+
+    public virtual TimeZone PickupTimeZone { get; set; }
 
     public virtual ICollection<PricingBreakdown> PricingBreakdowns { get; set; } = new List<PricingBreakdown>();
 
