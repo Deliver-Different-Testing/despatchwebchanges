@@ -12,6 +12,7 @@ import {ContactID} from "../../contants";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {JobProperty} from "../../enums/job-property.enum";
 import NavigationService from "../../services/navigation.service";
+
 class JobSearchController extends BaseController {
 
     static $inject = [
@@ -302,8 +303,8 @@ class JobSearchController extends BaseController {
 
                 this.$document.on('mousemove.sortable', (event) => {
                     dragInfo.css({
-                        top: event.pageY + 20 + 'px',
-                        left: event.pageX + 10 + 'px'
+                        top: (event.pageY || 0) + 20 + 'px',
+                        left: (event.pageX || 0) + 10 + 'px'
                     });
                 });
             },
@@ -323,11 +324,8 @@ class JobSearchController extends BaseController {
                 ui.item.removeClass('dragging');
                 angular.element('.column-sortable').removeClass('ui-sortable-active');
 
-                // Update box metrics and save layout
-                this.$timeout(() => {
-                    this._updateBoxMetrics();
-                    this._saveCurrentLayout();
-                }, 100);
+                this._updateBoxMetrics();
+                this._saveCurrentLayout()
             }
         };
 

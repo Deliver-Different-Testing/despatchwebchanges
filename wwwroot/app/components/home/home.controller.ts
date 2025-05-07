@@ -1944,7 +1944,7 @@ class HomeController extends BaseController {
             const contextMenuCtrl = contextMenuElement.controller('contextMenu');
 
             if (contextMenuCtrl) {
-                contextMenuCtrl.showJobContextMenu($event, job);
+                await contextMenuCtrl.showJobContextMenu($event, job);
             } else {
                 console.error('Context menu controller not found');
             }
