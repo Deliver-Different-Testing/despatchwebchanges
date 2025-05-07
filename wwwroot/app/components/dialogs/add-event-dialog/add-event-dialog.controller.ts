@@ -62,7 +62,7 @@ class AddEventDialogController extends BaseController {
 
             // Default selects other
             const otherEvent = this.eventTypes.find(
-                (eventType) => eventType.text === "Other"
+                eventType => eventType.id === EventType.Other
             );
 
             if (otherEvent) {
@@ -117,9 +117,7 @@ class AddEventDialogController extends BaseController {
                     jobNumber: this.job.jobNo,
                     isImportant: false,
                     noteTypeId: JobNoteType.InternalNote,
-                    noteText: newNote,
-                    createdBy: this.contactId,
-                    createdDate: new Date(),
+                    noteText: newNote
                 };
 
                 await this.noteService.createNote(jobNote);

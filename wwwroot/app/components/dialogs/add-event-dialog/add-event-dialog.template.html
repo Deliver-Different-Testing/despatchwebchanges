@@ -33,7 +33,7 @@
                 <div layout-gt-sm="row">
                     <md-input-container class="md-block" flex-gt-sm>
                         <label>Task Type</label>
-                        <md-select id="eventTypes" ng-model="ctrl.selectedEvent" required>
+                        <md-select id="eventTypes" ng-model="ctrl.selectedEventType" required>
                             <md-option ng-repeat="eventType in ctrl.eventTypes" ng-value="eventType">
                                 {{ eventType.text }}
                             </md-option>
@@ -44,64 +44,44 @@
                     </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
+                        <label for="taskDate">Task Date ({{ctrl.browserTimeZone | timezoneShort}})</label>
+                        <input class=" dtp-no-msclear dtp-input md-input"
+                               date="true" edit-input="true" id="taskDate"
+                               mdc-datetime-picker
+                               minutes="true"
+                               name="taskDate"
+                               ng-model="ctrl.event.eventDate"
+                               required
+                               short-time="false"
+                               show-icon="true"
+                               show-todays-date
+                               time="true"
+                               type="text">
+                    </md-input-container>
+                </div>
+
+                <div layout-gt-sm="row">
+                    <div flex></div>
+                    <md-input-container class="md-block" flex-gt-sm>
                         <label for="notes">Notes</label>
                         <textarea id="notes" md-maxlength="150" md-select-on-focus ng-model="ctrl.event.notes"
                                   rows="3"></textarea>
                     </md-input-container>
                 </div>
-
-                <md-card>
-                    <md-toolbar class="md-accent">
-                        <div class="md-toolbar-tools">
-                            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">schedule</md-icon>
-                            <h2>Task Schedule</h2>
-                            <div flex></div>
-                        </div>
-                    </md-toolbar>
-                    <md-card-content class="md-padding">
-                        <div layout-gt-sm="row">
-                            <div flex-gt-sm class="md-block layout-padding layout-align-center-center layout-column">
-                                <span class="md-body-1 text-center">Task Date ({{ctrl.browserTimeZone | timezoneShort}})</span>
-                                <div class="layout-row layout-align-center-center">
-                                    <md-datepicker
-                                            id="TaskDate"
-                                            ng-model="ctrl.event.eventDate"
-                                            md-placeholder="MM/DD/YYYY"
-                                            md-date-locale="ctrl.dateLocale">
-                                    </md-datepicker>
-                                </div>
-                            </div>
-
-                            <md-divider vertical></md-divider>
-
-                            <div flex-gt-sm class="md-block layout-padding layout-align-center-center layout-column">
-                                <span class="md-body-1 text-center">Task Time ({{ctrl.browserTimeZone | timezoneShort}})</span>
-                                <div class="layout-row layout-align-center-center">
-                                    <md-time-picker
-                                            id="TaskTime"
-                                            ng-model="ctrl.event.eventDate"
-                                            no-meridiem
-                                            no-auto-switch>
-                                    </md-time-picker>
-                                </div>
-                            </div>
-                        </div>
-                    </md-card-content>
-                </md-card>
             </div>
         </md-dialog-content>
 
         <md-dialog-actions layout="row">
             <span flex></span>
             <md-button class="md-primary md-raised"
-                       type="submit"
-                       ng-disabled="ctrl.eventForm.$invalid || ctrl.isLoading">
+                       ng-disabled="ctrl.eventForm.$invalid || ctrl.isLoading"
+                       type="submit">
                 <span ng-if="!ctrl.isLoading">Save</span>
-                <md-progress-circular ng-if="ctrl.isLoading"
-                                      md-mode="indeterminate"
-                                      md-diameter="20"
+                <md-progress-circular aria-label="Loading"
                                       class="md-accent"
-                                      aria-label="Loading">
+                                      md-diameter="20"
+                                      md-mode="indeterminate"
+                                      ng-if="ctrl.isLoading">
                 </md-progress-circular>
             </md-button>
         </md-dialog-actions>
