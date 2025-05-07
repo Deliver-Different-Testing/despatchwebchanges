@@ -397,8 +397,8 @@ export interface IJobNote {
     jobBookingId?: number;
     noteText: string;
     isImportant: boolean;
-    createdDate: Date;
-    createdBy: number;
+    createdDate?: Date;
+    createdBy?: number;
     createdByName?: string;
     updatedDate?: Date;
     updatedBy?: number;
