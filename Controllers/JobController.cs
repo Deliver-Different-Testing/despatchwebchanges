@@ -480,7 +480,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "An unexpected error occured");
-            return StatusCode(500, "An error occurred while processing your request.");
+            return StatusCode(500, ex.Message);
         }
     }
 
