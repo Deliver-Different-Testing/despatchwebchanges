@@ -106,11 +106,11 @@ class RecurringJobsController extends BaseController {
         private $mdSidenav: angular.material.ISidenavService,
         private uPBData: RecurringJobsService,
         private toastrService: ToastrService,
-        APP_CONFIG: AppConfig,
+        appConfig: AppConfig,
     ) {
         super();
 
-        this.isUsCustomer = APP_CONFIG.US_Customer;
+        this.isUsCustomer = appConfig.US_Customer;
         this.isAdmin = ClientInternal;
 
         this.$scope.$on('jobChanged', (_, newLabel) => {
