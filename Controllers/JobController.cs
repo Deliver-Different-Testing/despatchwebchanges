@@ -1255,8 +1255,6 @@ public class JobController(
     {
         try
         {
-            data.EventDueDate = infoService.ConvertUtcToTenantTime(data.EventDueDate);
-
             await taskRepository.AddEventAsync(data.JobId,
                 data.StaffId,
                 data.DespatcherName,

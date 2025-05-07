@@ -8,6 +8,7 @@ import {ITaskListItemConfig} from "./task-item.interfaces";
 import ToastrService from "../../../services/toastr.service";
 import "./task-item.styles.less";
 import {AppConfig} from "../../../interfaces/app-config.interface";
+import moment from "moment";
 
 export class TaskListItemController extends BaseController {
     readonly isUsCustomer: boolean = false;
@@ -60,8 +61,8 @@ export class TaskListItemController extends BaseController {
             const result: IDialogDateTimeResult = await this.editDateTimeDialogService.showEditDateDialog(
                 $event, "Due Date", "dueDate", new Date(task.dueDate));
 
-            await this._updateTaskDate(task.id, result.formattedDateTime);
-            task.dueDate = result.formattedDateTime;
+            await this._updateTaskDate(task.id, result.value);
+            task.dueDate = result.value.toISOString();
 
             this.toastrService.showSuccessToast("Task date updated successfully");
 
@@ -81,8 +82,8 @@ export class TaskListItemController extends BaseController {
             const result: IDialogDateTimeResult = await this.editDateTimeDialogService.showEditTimeDialog(
                 $event, "Due Time", "dueDate", new Date(task.dueDate));
 
-            await this._updateTaskTime(task.id, result.formattedDateTime);
-            task.dueDate = result.formattedDateTime;
+            await this._updateTaskTime(task.id, result.value);
+            task.dueDate = result.value.toISOString();
 
             this.toastrService.showSuccessToast("Task time updated successfully");
 
@@ -136,12 +137,14 @@ export class TaskListItemController extends BaseController {
         return new Date(task.dueDate) < new Date();
     }
 
-    private async _updateTaskDate(eventId: number, date: string) {
-        await this.$http.post("Task/UpdateTaskDate" + "?eventId=" + eventId + "&date=" + date, null);
+    private async _updateTaskDate(eventId: number, date: Date) {
+        const formattedDate = moment(date).utc().format();
+        await this.$http.post("Task/UpdateTaskDate" + "?eventId=" + eventId + "&date=" + formattedDate, null);
     }
 
-    private async _updateTaskTime(eventId: number, time: string) {
-        await this.$http.post("Task/UpdateTaskTime" + "?eventId=" + eventId + "&time=" + time, null);
+    private async _updateTaskTime(eventId: number, time: Date) {
+        const formattedDate = moment(time).utc().format();
+        await this.$http.post("Task/UpdateTaskTime" + "?eventId=" + eventId + "&time=" + formattedDate, null);
     }
 
     private async _reassignTaskToStaff(eventId: number, staffId: number) {

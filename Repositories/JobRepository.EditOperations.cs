@@ -13,7 +13,9 @@ public partial class JobRepository
         var job = await Context.TucJobs.FindAsync(jobId);
         ArgumentNullException.ThrowIfNull(job);
 
-        job.DeliverByTime = deliverByTime;
+        var timeZoneInfo = await GetTimeZoneInfoByIdAsync(timeZoneId);
+
+        job.DeliverByTime = TimeZoneInfo.ConvertTimeFromUtc(deliverByTime, timeZoneInfo);
         job.DeliverByTimeZoneId = timeZoneId;
 
         await Context.SaveChangesAsync();
@@ -25,7 +27,9 @@ public partial class JobRepository
         var job = await Context.TucJobs.FindAsync(jobId);
         ArgumentNullException.ThrowIfNull(job);
 
-        job.PickUpTime = pickUpTime;
+        var timeZoneInfo = await GetTimeZoneInfoByIdAsync(timeZoneId);
+
+        job.PickUpTime = TimeZoneInfo.ConvertTimeFromUtc(pickUpTime, timeZoneInfo);
         job.DeliverByTimeZoneId = timeZoneId;
         await Context.SaveChangesAsync();
     }
@@ -66,10 +70,10 @@ public partial class JobRepository
                 updateNote = $"Changed AirportOnly to {(airportOnly ? "Yes" : "No")}";
                 break;
             case JobProperty.Time:
-                job.UcjbTime = DateTime.Parse(value);
+                job.UcjbTime = _infoService.ConvertUtcToTenantTime(value);
                 break;
             case JobProperty.Date:
-                job.UcjbDate = DateTime.Parse(value);
+                job.UcjbDate = _infoService.ConvertUtcToTenantTime(value);
                 break;
             case JobProperty.Size:
                 job.UcjbSize = int.Parse(value);
@@ -235,7 +239,7 @@ public partial class JobRepository
 
                 break;
             case JobProperty.CompletedTime:
-                job.UcjbComplTime = DateTime.Parse(value);
+                job.UcjbComplTime = _infoService.ConvertUtcToTenantTime(value);
                 break;
             case JobProperty.DGClass:
                 job.Dgclass = int.Parse(value);
@@ -299,16 +303,16 @@ public partial class JobRepository
                 job.UcjbLocked = bool.Parse(value);
                 break;
             case JobProperty.PuTime:
-                job.PickUpTime = DateTime.Parse(value);
+                job.PickUpTime = _infoService.ConvertUtcToTenantTime(value);
                 break;
             case JobProperty.DeliverBy:
-                job.DeliverByTime = DateTime.Parse(value);
+                job.DeliverByTime = _infoService.ConvertUtcToTenantTime(value);
                 break;
             case JobProperty.BookedTime:
-                job.UcjbDate = DateTime.Parse(value);
+                job.UcjbDate = _infoService.ConvertUtcToTenantTime(value);
                 break;
             case JobProperty.FollowupTime:
-                job.FollowupTime = DateTime.Parse(value);
+                job.FollowupTime = _infoService.ConvertUtcToTenantTime(value);
                 updateNote = $"Followup Time updated to {job.FollowupTime:dd/MM/yyyy HH:mm}";
                 break;
             default:
@@ -512,10 +516,10 @@ public partial class JobRepository
                 updateNote = $"Changed AirportOnly to {(airportOnly ? "Yes" : "No")}";
                 break;
             case JobProperty.Time:
-                archive.Job.UcjbTime = DateTime.Parse(value);
+                archive.Job.UcjbTime = _infoService.ConvertUtcToTenantTime(value);
                 break;
             case JobProperty.Date:
-                archive.Job.UcjbDate = DateTime.Parse(value);
+                archive.Job.UcjbDate = _infoService.ConvertUtcToTenantTime(value);
                 break;
             case JobProperty.Size:
                 archive.Job.UcjbSize = short.Parse(value);
@@ -674,7 +678,7 @@ public partial class JobRepository
 
                 break;
             case JobProperty.CompletedTime:
-                archive.Job.UcjbComplTime = DateTime.Parse(value);
+                archive.Job.UcjbComplTime = _infoService.ConvertUtcToTenantTime(value);
                 break;
             case JobProperty.DGClass:
                 archive.Job.Dgclass = int.Parse(value);
@@ -736,13 +740,13 @@ public partial class JobRepository
                 archive.Job.UcjbLocked = int.Parse(value);
                 break;
             case JobProperty.PuTime:
-                archive.Job.PickUpTime = DateTime.Parse(value);
+                archive.Job.PickUpTime = _infoService.ConvertUtcToTenantTime(value);
                 break;
             case JobProperty.DeliverBy:
-                archive.Job.DeliverByTime = DateTime.Parse(value);
+                archive.Job.DeliverByTime = _infoService.ConvertUtcToTenantTime(value);
                 break;
             case JobProperty.BookedTime:
-                archive.Job.UcjbDate = DateTime.Parse(value);
+                archive.Job.UcjbDate = _infoService.ConvertUtcToTenantTime(value);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);

@@ -389,7 +389,7 @@ class JobDetailController extends BaseController {
                     result.fieldName,
                     result.value,
                     job.preBook,
-                    result.selectedTimeZone
+                    result.selectedTimeZoneId
                 );
             }
 
