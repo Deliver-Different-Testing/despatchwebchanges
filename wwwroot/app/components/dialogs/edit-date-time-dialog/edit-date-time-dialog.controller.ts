@@ -7,7 +7,7 @@ import DispatchCoreService from "../../../services/dispatch-core.service";
 import {Suggestion, TimeZoneSuggestion} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 
-export class EditDateTimeDialogController extends  BaseController {
+export class EditDateTimeDialogController extends BaseController {
     static $inject = [
         "$mdDialog",
         "toastrService",
@@ -21,10 +21,8 @@ export class EditDateTimeDialogController extends  BaseController {
         "showTime",
     ];
 
-    date?: Date;
-    time?: Date;
+    momentDateTime: moment.Moment;
     isLoading: boolean;
-    message: { hour: string; minute: string };
     browserTimeZone: string;
     selectedTimeZone?: TimeZoneSuggestion;
     timeZones?: TimeZoneSuggestion[];
@@ -38,63 +36,71 @@ export class EditDateTimeDialogController extends  BaseController {
         public readonly fieldName: string,
         public dateTime: Date,
         private defaultTimeZone?: Suggestion,
-        showTimeZoneSelector: boolean = false,
-        public showDate: boolean = false,
-        public showTime: boolean = false,
+        private showTimeZone: boolean = false,
+        public showDate: boolean = true,
+        public showTime: boolean = true,
     ) {
         super();
 
-        this.showTimeZoneSelector = showTimeZoneSelector;
+        this.showTimeZoneSelector = !!showTimeZone; // Convert to boolean
 
-        if(this.dateTime === undefined) {
+        // Initialize with current date/time if not provided
+        if (!this.dateTime) {
             this.dateTime = new Date();
         }
 
+        // Convert to moment object for easier manipulation
+        this.momentDateTime = moment(this.dateTime);
+
+        // Get browser timezone
+        this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
         // Get a list of time zones if needed
-        if(showTimeZoneSelector) {
+        if (showTimeZone) {
             this.DispatchData.getTimeZoneOptions().then((data: TimeZoneSuggestion[]) => {
                 this.timeZones = data;
 
-                if(this.defaultTimeZone) {
+                if (this.defaultTimeZone) {
                     this.selectedTimeZone = data.find(tz => tz.id === this.defaultTimeZone?.id);
                 }
             });
         }
 
-        // Get browser timezone
-        this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
         this.isLoading = false;
-        this.message = {
-            hour: "Hour is required",
-            minute: "Minute is required",
-        };
     }
 
     isValid(): boolean {
-        if (this.showDate && this.showTime) {
-            return this.date !== null && this.time !== null;
-        } else if (this.showDate) {
-            return this.date !== null;
-        } else if (this.showTime) {
-            return this.time !== null;
+        // Check if we have a valid moment
+        if (!this.momentDateTime || !this.momentDateTime.isValid()) {
+            return false;
         }
 
-        // If made it this far, something went wrong
-        return false;
+        // At least one of date or time must be shown
+        if (!this.showDate && !this.showTime) {
+            return false;
+        }
+
+        // If timezone selector is shown, a timezone must be selected
+        if (this.showTimeZoneSelector && !this.selectedTimeZone) {
+            return false;
+        }
+
+        return true;
     }
 
     async submit(): Promise<void> {
         try {
             this.isLoading = true;
-            const newDateTime = this._combineDateTime();
-            if (newDateTime === null) return;
+
+            if (!this.momentDateTime.isValid()) {
+                throw new Error("Invalid date or time");
+            }
 
             // Create result object
             const result: IDialogDateTimeResult = {
                 fieldName: this.fieldName,
-                value: newDateTime,
-                selectedTimeZone: this.selectedTimeZone
+                value: this.momentDateTime.toDate(),
+                selectedTimeZoneId: this.selectedTimeZone?.id
             };
 
             this.$mdDialog.hide(result);
@@ -105,23 +111,32 @@ export class EditDateTimeDialogController extends  BaseController {
         }
     }
 
-    private _combineDateTime(): Date | null {
-        if (this.showDate && this.showTime) {
-            const combinedDate = new Date(this.date as Date);
-            combinedDate.setHours((this.time as Date).getHours(), (this.time as Date).getMinutes());
-            return combinedDate;
-        } else if (this.showDate) {
-            return this.date || null;
-        } else if (this.showTime) {
-            return this.time || null;
-        }
-
-        return null;
+    getFormattedDate(): string {
+        return this.momentDateTime.format('YYYY-MM-DD');
     }
 
-// Get current time in selected timezone for display
-    getCurrentTimeInSelectedTimeZone(): string {
-        return moment().tz(this.selectedTimeZone?.text ?? this.browserTimeZone).format('HH:mm');
+    getFormattedTime(): string {
+        return this.momentDateTime.format('HH:mm');
+    }
+
+    updateDateTime(type: 'date' | 'time', value: string): void {
+        const currentValue = moment(this.momentDateTime);
+
+        if (type === 'date') {
+            const [year, month, day] = value.split('-').map(Number);
+            currentValue.year(year).month(month - 1).date(day);
+        } else if (type === 'time') {
+            const [hours, minutes] = value.split(':').map(Number);
+            currentValue.hours(hours).minutes(minutes);
+        }
+
+        this.momentDateTime = currentValue;
+    }
+
+
+    updateTimeZone(timezone: TimeZoneSuggestion): void {
+        // Just store the selected timezone - no conversion needed
+        this.selectedTimeZone = timezone;
     }
 
     cancel(): void {

@@ -29,7 +29,9 @@
                            short-time="false"
                            show-icon="true"
                            show-todays-date
-                           ng-model="ctrl.dateTime"
+                           on-change="ctrl.updateDateTime('date', $value)"
+                           placeholder="YYYY-MM-DD"
+                           ng-model="ctrl.momentDateTime._d"
                            required>
                 </md-input-container>
             </div>
@@ -37,7 +39,7 @@
             <!-- Time Picker -->
             <div class="date-time-field" ng-if="ctrl.showTime">
                 <md-input-container class="md-block">
-                    <label for="date">Date ({{(ctrl.selectedTimeZone.timeZoneIana || ctrl.browserTimeZone) | timezoneShort}})</label>
+                    <label for="time">Time ({{(ctrl.selectedTimeZone.timeZoneIana || ctrl.browserTimeZone) | timezoneShort}})</label>
                     <input class="dtp-no-msclear dtp-input md-input"
                            id="time"
                            name="time"
@@ -50,7 +52,9 @@
                            minutes="true"
                            short-time="false"
                            show-icon="true"
-                           ng-model="ctrl.dateTime"
+                           on-change="ctrl.updateDateTime('time', $value)"
+                           placeholder="HH:MM"
+                           ng-model="ctrl.momentDateTime._d"
                            required>
                 </md-input-container>
             </div>
@@ -64,15 +68,16 @@
                     <md-select ng-model="ctrl.selectedTimeZone"
                                placeholder="Select timezone"
                                class="md-block timezone-select"
-                               aria-label="Select timezone">
+                               ng-change="ctrl.updateTimeZone(ctrl.selectedTimeZone)"
+                               aria-label="Select timezone"
+                               required>
                         <md-option ng-repeat="timezone in ctrl.timeZones"
-                                   ng-value="timezone"
-                                   ng-selected="timezone === ctrl.selectedTimeZone">
+                                   ng-value="timezone">
                             {{ timezone.text }}
                         </md-option>
                     </md-select>
-                    <div class="timezone-info md-caption">
-                        Current time in selected timezone: {{ ctrl.getCurrentTimeInSelectedTimeZone() }}
+                    <div class="timezone-info md-caption" ng-if="ctrl.selectedTimeZone">
+                        Local timezone: {{ ctrl.browserTimeZone }}
                     </div>
                 </div>
             </div>

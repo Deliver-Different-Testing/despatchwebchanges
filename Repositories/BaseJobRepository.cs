@@ -1462,7 +1462,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         {
             JobId = jobId,
             NoteText = noteText,
-            IsImportant = isImportant
+            IsImportant = isImportant,
+            NoteTypeId = (int)NoteType.InternalNote
         };
 
         return await SaveNoteAsync(viewModel);

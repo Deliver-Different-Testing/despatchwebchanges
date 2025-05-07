@@ -94,7 +94,7 @@ public class TaskRepository(
         var eventToUpdate =
             await GetEventByIdAsync(eventId)
             ?? throw new KeyNotFoundException($"Event with ID {eventId} not found.");
-        eventToUpdate.UcevDueTime = date.Date;
+        eventToUpdate.UcevDueTime = infoService.ConvertUtcToTenantTime(date.Date);
         await Context.SaveChangesAsync();
     }
 
@@ -105,7 +105,7 @@ public class TaskRepository(
             ?? throw new KeyNotFoundException($"Event with ID {eventId} not found.");
 
         // Update only the time component
-        eventToUpdate.UcevTime = time;
+        eventToUpdate.UcevTime = infoService.ConvertUtcToTenantTime(time);
         await Context.SaveChangesAsync();
     }
 
@@ -389,7 +389,7 @@ public class TaskRepository(
             UcevJobId = jobId,
             UcevDespatcher = despatcher,
             UcevJobType = jobType,
-            UcevDueTime = dueTime ?? currentDate
+            UcevDueTime = dueTime.HasValue ? infoService.ConvertUtcToTenantTime(dueTime.Value) : currentDate
         };
 
         await Context.TucEvents.AddAsync(newEvent);

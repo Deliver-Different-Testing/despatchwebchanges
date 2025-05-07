@@ -4,7 +4,6 @@ import ToastrService from "../../../services/toastr.service";
 import {EventGroupViewModel} from "../../../interfaces/event-group-view-model.interface";
 import BaseController from "../../base-controller";
 import moment from "moment";
-import TimezoneConverter from "../../../timezoneConverter";
 
 export class EventGroupDialogController extends BaseController{
     searchText?: string;
@@ -18,7 +17,6 @@ export class EventGroupDialogController extends BaseController{
         '$http',
         'toastrService',
         '$timeout',
-        'timezoneConverter',
         'jobId',
         'eventTypeGroups',
         'users'
@@ -29,7 +27,6 @@ export class EventGroupDialogController extends BaseController{
         private $http: angular.IHttpService,
         private toastrService: ToastrService,
         private $timeout: angular.ITimeoutService,
-        private timezoneConverter: TimezoneConverter,
         public jobId: number,
         public events: EventGroupViewModel[],
         public users: Suggestion[],
@@ -62,7 +59,7 @@ export class EventGroupDialogController extends BaseController{
 
             activeEvents.forEach(event => {
                 if (event.dueTime !== undefined) {
-                    event.dueTime = this.timezoneConverter.format(event.dueTime);
+                    event.dueTime = moment(event.dueTime).utc().format();
                 }
             })
 

@@ -861,7 +861,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 archivedJob.UcjbJobDone = true;
                 archivedJob.UcjbStatus = jobStatus;
                 archivedJob.UcjbPodname = podName;
-                archivedJob.UcjbComplTime = podTime;
+                archivedJob.UcjbComplTime = infoService.ConvertUtcToTenantTime(podTime);
                 archivedJob.InternalStatus = (int)InternalJobStatus.Reprice;
             }
         }
@@ -875,7 +875,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 activeJob.UcjbJobDone = true;
                 activeJob.UcjbStatus = jobStatus;
                 activeJob.UcjbPodname = podName;
-                activeJob.UcjbComplTime = podTime;
+                activeJob.UcjbComplTime = infoService.ConvertUtcToTenantTime(podTime);
                 activeJob.InternalStatus = (int)InternalJobStatus.Reprice;
             }
         }
@@ -900,7 +900,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 parentJob.UcjbJobDone = true;
                 parentJob.UcjbStatus = jobStatus;
                 parentJob.UcjbPodname = podName;
-                parentJob.UcjbComplTime = podTime;
+                parentJob.UcjbComplTime = infoService.ConvertUtcToTenantTime(podTime);
             }
         }
         else
@@ -915,7 +915,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 parentJob.UcjbJobDone = true;
                 parentJob.UcjbStatus = jobStatus;
                 parentJob.UcjbPodname = podName;
-                parentJob.UcjbComplTime = podTime;
+                parentJob.UcjbComplTime = infoService.ConvertUtcToTenantTime(podTime);
             }
         }
     }

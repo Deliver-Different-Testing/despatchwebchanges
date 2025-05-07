@@ -25,6 +25,14 @@ public class TenantInfoService(IHttpContextAccessor contextAccessor) : ITenantIn
         return TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tenantTimeZoneInfo);
     }
 
+    public DateTime ConvertUtcToTenantTime(string utcDateTime)
+    {
+        var parsedDateTime = DateTime.Parse(utcDateTime);
+        var utcSpecifiedDateTime = DateTime.SpecifyKind(parsedDateTime, DateTimeKind.Utc);
+
+        return ConvertUtcToTenantTime(utcSpecifiedDateTime);
+    }
+
     public int GetStaffId()
     {
         var staffId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "StaffID")?.Value;

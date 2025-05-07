@@ -5,10 +5,10 @@ import BaseController from "../../base-controller";
 import NationwideService from "../../Nationwide/nationwide.service";
 import NoteService from "../../../services/notes.service";
 import {JobNoteType} from "../../../enums/job-note-type.enum";
-import {material} from "angular";
 import {EventType} from "../../../enums/event-type";
 import {JobEventData} from "./add-event-dialog.interfaces";
-import TimezoneConverter from "../../../timezoneConverter";
+import TimezoneConverter from "../../../services/timezoneConverter.service";
+import moment from "moment";
 
 class AddEventDialogController extends BaseController {
     static $inject = [
@@ -31,7 +31,7 @@ class AddEventDialogController extends BaseController {
     browserTimeZone: string;
 
     constructor(
-        private $mdDialog: material.IDialogService,
+        private $mdDialog: angular.material.IDialogService,
         private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
         private NWData: NationwideService,
@@ -131,7 +131,7 @@ class AddEventDialogController extends BaseController {
                 despatcherName: this.dispatcherName,
                 notes: event.notes ?? '',
                 eventTypeId: eventId,
-                eventDueDate: this.timezoneConverter.format(event.eventDate)
+                eventDueDate: moment(event.eventDate).utc().format()
             }
 
             await this.NWData.addEvent(eventData);
