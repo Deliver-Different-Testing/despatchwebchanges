@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
@@ -22,15 +23,23 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 {
     private readonly ITenantInfoService _infoService = infoService;
 
-    public async Task AddJobNationwideAsync(int jobId, AddFlightToJobDto flight, string webhookAlertId)
+    public async Task AddJobNationwideAsync(int jobId, AddFlightToJobDto flights, List<string> webhookIds)
     {
         try
         {
             ArgumentNullException.ThrowIfNull(jobId);
-            ArgumentNullException.ThrowIfNull(flight);
-            ArgumentException.ThrowIfNullOrWhiteSpace(webhookAlertId);
-            ArgumentException.ThrowIfNullOrWhiteSpace(flight.CarrierFsCode);
-            ArgumentException.ThrowIfNullOrWhiteSpace(flight.FlightNumber);
+            ArgumentNullException.ThrowIfNull(flights);
+            ArgumentNullException.ThrowIfNull(webhookIds);
+           // ArgumentException.ThrowIfNullOrWhiteSpace(webhookAlertId);
+
+            if (!flights.FlightSegments.Any())
+                throw new ArgumentException("Flight list cannot be empty", nameof(flights));
+
+            // Get the primary flight (first leg)
+            var primaryFlight = flights.FlightSegments.First();
+            ArgumentException.ThrowIfNullOrWhiteSpace(primaryFlight.CarrierFsCode);
+            ArgumentException.ThrowIfNullOrWhiteSpace(primaryFlight.FlightNumber);
+
 
             var job = await Context.TucJobs
                 .Include(j => j.Parent)
@@ -40,38 +49,67 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
             ArgumentNullException.ThrowIfNull(job);
 
+            // Create main flight record
             var jobNationwide = new TucJobNationwide
             {
                 UcnwJobId = job.UcjbId,
                 UcnwJobNumber = job.UcjbNumber,
                 UcnwClientId = job.UcjbClientId ?? 0,
-                UcnwFlightNo = flight.CarrierFsCode + flight.FlightNumber,
-                UcnwEtd = flight.DepartureTime,
-                UcnwEta = flight.ArrivalTime,
-                WebhookAlertId = webhookAlertId,
-                UcnwAirlineName = flight.AirlineName,
+                UcnwFlightNo = primaryFlight.CarrierFsCode + primaryFlight.FlightNumber,
+                UcnwEtd = primaryFlight.DepartureTime,
+                UcnwEta = primaryFlight.ArrivalTime,
+                WebhookAlertId = webhookIds.First(),
+                GateNumber = primaryFlight.DepartureTerminal,
+                UcnwLegNumber = 1,
+                UcnwAirlineName = primaryFlight.AirlineName
             };
 
             // First operation - Update job status
             job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
             job.UcjbStatus = (int)JobStatus.Dispatched;
 
-            job.UcjbDate = flight.DepartureTime;
-            job.UcjbTime = flight.DepartureTime;
-            job.Parent.InverseParent.Last().UcjbTime =
-                flight.ArrivalTime.AddMinutes(60);
+            job.UcjbDate = primaryFlight.DepartureTime;
+            job.UcjbTime = primaryFlight.DepartureTime;
 
-            job.UcjbDispDate = flight.DepartureTime;
-            job.UcjbDispTime = flight.DepartureTime;
+            // Use the last flight leg's arrival time for delivery timing
+            var lastFlight = flights.FlightSegments.Last();
+            job.Parent.InverseParent.Last().UcjbTime =
+                lastFlight.ArrivalTime.AddMinutes(60);
+
+            job.UcjbDispDate = primaryFlight.DepartureTime;
+            job.UcjbDispTime = primaryFlight.DepartureTime;
 
             await Context.SaveChangesAsync();
-
             await Context.TucJobNationwides.AddAsync(jobNationwide);
+
+            // Add additional flight legs if there are multiple
+            if (flights.FlightSegments.Count > 1)
+            {
+                for (int i = 1; i < flights.FlightSegments.Count; i++)
+                {
+                    var leg = flights.FlightSegments[i];
+                    var connectionSegment = new TucJobNationwide
+                    {
+                        UcnwJobId = job.UcjbId,
+                        UcnwJobNumber = job.UcjbNumber,
+                        UcnwClientId = job.UcjbClientId ?? 0,
+                        UcnwFlightNo = leg.CarrierFsCode + leg.FlightNumber,
+                        UcnwEtd = leg.DepartureTime,
+                        UcnwEta = leg.ArrivalTime,
+                        WebhookAlertId = webhookIds[i], // Same webhook for all legs
+                        UcnwLegNumber = ++i,
+                        UcnwAirlineName = leg.AirlineName
+                    };
+
+                    await Context.TucJobNationwides.AddAsync(connectionSegment);
+                }
+            }
+
             await Context.SaveChangesAsync();
         }
         catch (Exception e)
         {
-            Log.Error(e, "An error occured adding Flight {FlightFlightNumber} to job {JobId}", flight?.FlightNumber,
+            Log.Error(e, "An error occured adding Flight {FlightFlightNumber} to job {JobId}", flights.FlightSegments[0]?.FlightNumber,
                 jobId);
             throw;
         }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
@@ -154,25 +155,34 @@ public class NationwideJobController(
 
             // Get flight details
             AddFlightToJobDto flight;
-            try
-            {
-                flight = await flightService.GetFlightDetailsByFlightNumberAsync(request.FlightNumber,
-                    request.DepartureDate);
 
-                if (flight == null)
+            if (request.FlightSegments != null && request.FlightSegments.Any())
+            {
+                // Map flight segments from request
+                flight = new AddFlightToJobDto
                 {
-                    var warning =
-                        $"Flight with number {request.FlightNumber} and departure date {request.DepartureDate:yyyy-MM-dd} not found.";
-                    Log.Information(warning);
-                    return StatusCode(500, warning);
+                    AirlineName = request.FlightSegments.First().AirlineName ??
+                                  (request.FlightSegments.First().CarrierFsCode != null ? $"{request.FlightSegments.First().CarrierFsCode} Airlines" : null),
+                    ArrivalTime = request.FlightSegments.First().ArrivalTime,
+                    CarrierFsCode = request.FlightSegments.First().CarrierFsCode,
+                    DepartureTime = request.FlightSegments.First().DepartureTime,
+                    FlightNumber = request.FlightSegments.First().FlightNumber,
+                    FlightSegments = request.FlightSegments
+                };
+            }
+            else
+            {
+                try
+                {
+                    flight = await flightService.GetFlightDetailsByFlightNumberAsync(request.FlightNumber,
+                        request.DepartureDate);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Error retrieving flight details for flight {FlightNumber}", request.FlightNumber);
+                    return StatusCode(500, ex.Message);
                 }
             }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error retrieving flight details for flight {FlightNumber}", request.FlightNumber);
-                return StatusCode(500, ex.Message);
-            }
-
             // Get airport codes
             string departureAirportCode;
             try
@@ -187,13 +197,29 @@ public class NationwideJobController(
             }
 
             // Create webhook
-            string webhookId;
+            var webhookIds = new List<string>();
             try
             {
-                webhookId = await flightService.CreateFlightRuleByDepartureAsync(
-                    request.FlightNumber,
-                    request.DepartureDate,
-                    departureAirportCode) ?? string.Empty;
+                foreach (var segment in flight.FlightSegments)
+                {
+                    // Generate a webhookId for each flight segment
+                    var webhookId = await flightService.CreateFlightRuleByDepartureAsync(
+                        segment.CarrierFsCode + segment.FlightNumber,
+                        segment.DepartureTime,
+                        segment.DepartureAirportFsCode) ?? string.Empty;
+
+                    if (!string.IsNullOrEmpty(webhookId))
+                    {
+                        webhookIds.Add(webhookId);
+                    }
+                }
+
+                //// Create a webhook for each flight segment using the segment counts
+                //// This is a temporary solution until the actual webhook creation is implemented
+                //for (int i = 0; i < flight.FlightSegments.Count; i++)
+                //{
+                //    webhookIds.Add( "WebhookID for Segment:" + i.ToString());
+                //}
             }
             catch (Exception ex)
             {
@@ -205,8 +231,7 @@ public class NationwideJobController(
             // Add job
             try
             {
-
-                await repository.AddJobNationwideAsync(request.JobId, flight, webhookId);
+                await repository.AddJobNationwideAsync(request.JobId, flight, webhookIds);
             }
             catch (DbUpdateException ex)
             {

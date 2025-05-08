@@ -1,29 +1,28 @@
 @import "../../../css/status.less";
 
 .nationwide-view {
-  .nationwide-job-list {
-    // Ensure the table takes the full height to enable scrolling
-    table {
-      width: 100%;
-    }
+    .nationwide-job-list {
+        // Ensure the table takes the full height to enable scrolling
+        table {
+            width: 100%;
+        }
+        // Variables
+        @cell-padding-vertical: 4px;
+        @cell-padding-horizontal: 2px;
+        @row-height: 30px;
+        @cell-font-size: 12px;
+        @header-font-size: 13px;
+        @autocomplete-width: 110px;
+        @to-address-width: 250px;
+        @icon-size: 18px;
 
-    // Variables
-    @cell-padding-vertical: 4px;
-    @cell-padding-horizontal: 2px;
-    @row-height: 30px;
-    @cell-font-size: 12px;
-    @header-font-size: 13px;
-    @autocomplete-width: 110px;
-    @to-address-width: 250px;
-    @icon-size: 18px;
-
-    // Mixins
-    .no-select() {
-      user-select: none;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-    }
+        // Mixins
+        .no-select() {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
 
     .truncate() {
       white-space: nowrap;
@@ -96,547 +95,719 @@
             .column-width(100px);
           }
 
-          &.actions {
-            .column-width(100px);
-            white-space: nowrap;
+                &.actions {
+                    .column-width(100px);
+                    white-space: nowrap;
 
-            .action-icon {
-              cursor: pointer;
-              margin-right: 8px;
-              display: inline-block;
+                    .action-icon {
+                        cursor: pointer;
+                        margin-right: 8px;
+                        display: inline-block;
 
-              &:last-child {
-                margin-right: 0;
-              }
+                        &:last-child {
+                            margin-right: 0;
+                        }
+                    }
+                }
             }
-          }
+
+            td.md-cell {
+                padding: @cell-padding-vertical @cell-padding-horizontal !important;
+                height: @row-height !important;
+                font-size: @cell-font-size;
+
+                [md-truncate] {
+                    max-width: @to-address-width;
+                    display: block;
+                    .truncate();
+                }
+
+                md-icon {
+                    font-size: @icon-size !important;
+                    height: @icon-size;
+                    width: @icon-size;
+                    min-height: @icon-size;
+                    min-width: @icon-size;
+                }
+
+                .dispatch-field {
+                    display: block;
+                    padding: 2px 4px !important;
+                    border-radius: 2px;
+                    font-size: @cell-font-size;
+                    cursor: pointer;
+
+                    &:hover {
+                        background-color: rgba(0, 0, 0, 0.04);
+                    }
+                }
+            }
+
+            th.md-column {
+                padding: @cell-padding-vertical @cell-padding-horizontal !important;
+                height: @row-height !important;
+                font-size: @header-font-size;
+            }
+
+            tr.md-row {
+                &.active-job, &.active {
+                    background-color: rgba(158, 158, 158, 0.2);
+                }
+            }
         }
 
-        td.md-cell {
-          padding: @cell-padding-vertical @cell-padding-horizontal !important;
-          height: @row-height !important;
-          font-size: @cell-font-size;
+        .droppable-box {
+            height: 100%;
+            width: 100%;
+            overflow: auto;
+        }
 
-          [md-truncate] {
-            max-width: @to-address-width;
-            display: block;
-            .truncate();
-          }
-
-          md-icon {
-            font-size: @icon-size !important;
-            height: @icon-size;
-            width: @icon-size;
-            min-height: @icon-size;
-            min-width: @icon-size;
-          }
-
-          .dispatch-field {
-            display: block;
-            padding: 2px 4px !important;
-            border-radius: 2px;
-            font-size: @cell-font-size;
+        .clickable-row {
             cursor: pointer;
-
-            &:hover {
-              background-color: rgba(0, 0, 0, 0.04);
-            }
-          }
         }
 
-        th.md-column {
-          padding: @cell-padding-vertical @cell-padding-horizontal !important;
-          height: @row-height !important;
-          font-size: @header-font-size;
+        .noselect {
+            .no-select();
         }
-
-        tr.md-row {
-          &.active-job, &.active {
-            background-color: rgba(158, 158, 158, 0.2);
-          }
-        }
-      }
-
-    .droppable-box {
-      height: 100%;
-      width: 100%;
-      overflow: auto;
-    }
-
-    .clickable-row {
-      cursor: pointer;
-    }
-
-    .noselect {
-      .no-select();
-    }
 
     .remain-time {
       white-space: nowrap;
     }
 
-    .table-footer-actions {
-      margin-top: 8px;
+        .table-footer-actions {
+            margin-top: 8px;
+        }
+        // Styles for the action buttons in empty state
+        .no-data .action-buttons {
+            margin-top: 16px;
+
+            .md-button {
+                margin: 0 8px;
+                min-width: 120px;
+            }
+        }
+        // Ensure proper spacing in the actions column for flight and agent tables
+        md-table-container table.md-table {
+            // Flight table specific styles
+            th.md-column[md-order-by="airline"],
+            td.md-cell:nth-child(1) {
+                .column-width(100px);
+            }
+
+            th.md-column[md-order-by="flightNumber"],
+            td.md-cell:nth-child(2) {
+                .column-width(80px);
+            }
+            // Date column
+            th.md-column[md-order-by="departureTime"]:nth-of-type(3),
+            td.md-cell:nth-child(3) {
+                .column-width(90px);
+            }
+            // Departure time column
+            th.md-column[md-order-by="departureTime"]:nth-of-type(4),
+            td.md-cell:nth-child(4) {
+                .column-width(60px);
+            }
+            // Arrival time column
+            th.md-column[md-order-by="arrivalTime"],
+            td.md-cell:nth-child(5) {
+                .column-width(60px);
+            }
+            // Duration column
+            th.md-column[md-order-by="duration"],
+            td.md-cell:nth-child(6) {
+                .column-width(80px);
+            }
+            // Stops column
+            th.md-column[md-order-by="stops"],
+            td.md-cell:nth-child(7) {
+                .column-width(60px);
+            }
+            // Rate column
+            th.md-column[md-order-by="amount"],
+            td.md-cell:nth-child(8) {
+                .column-width(70px);
+            }
+            // Aircraft column
+            th.md-column[md-order-by="aircraft"],
+            td.md-cell:nth-child(9) {
+                .column-width(80px);
+            }
+            // Agent table specific styles
+            th.md-column[md-order-by="agentName"],
+            td.md-cell:nth-child(1) {
+                .column-width(150px);
+            }
+
+            th.md-column[md-order-by="agentRate"],
+            td.md-cell:nth-child(2) {
+                .column-width(80px);
+            }
+
+            th.md-column[md-order-by="agentRanking"],
+            td.md-cell:nth-child(3) {
+                .column-width(80px);
+            }
+        }
     }
 
-    // Styles for the action buttons in empty state
-    .no-data .action-buttons {
-      margin-top: 16px;
-
-      .md-button {
-        margin: 0 8px;
-        min-width: 120px;
-      }
+    .airline-filter-container {
+        display: flex;
+        flex-wrap: wrap;
+        padding: 12px 8px;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 8px;
+        border-radius: 4px;
+        background-color: rgba(0, 0, 0, 0.03);
     }
 
-    // Ensure proper spacing in the actions column for flight and agent tables
-    md-table-container table.md-table {
-      // Flight table specific styles
-      th.md-column[md-order-by="airline"],
-      td.md-cell:nth-child(1) {
-        .column-width(100px);
-      }
+    .airline-chip {
+        height: 32px;
+        border-radius: 16px;
+        min-width: 0;
+        padding: 0 12px;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.3s ease;
+        margin: 0 4px 0 0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
 
-      th.md-column[md-order-by="flightNumber"],
-      td.md-cell:nth-child(2) {
-        .column-width(80px);
-      }
+        &.md-focused {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
 
-      // Date column
-      th.md-column[md-order-by="departureTime"]:nth-of-type(3),
-      td.md-cell:nth-child(3) {
-        .column-width(90px);
-      }
+        &:last-child {
+            margin-right: 0;
+        }
 
-      // Departure time column
-      th.md-column[md-order-by="departureTime"]:nth-of-type(4),
-      td.md-cell:nth-child(4) {
-        .column-width(60px);
-      }
+        md-icon {
+            font-size: 18px;
+            height: 18px;
+            width: 18px;
+            min-height: 18px;
+            min-width: 18px;
+            margin-right: 6px;
+        }
 
-      // Arrival time column
-      th.md-column[md-order-by="arrivalTime"],
-      td.md-cell:nth-child(5) {
-        .column-width(60px);
-      }
+        .airline-count {
+            font-weight: bold;
+            margin-right: 6px;
+            min-width: 18px;
+            text-align: center;
+        }
 
-      // Duration column
-      th.md-column[md-order-by="duration"],
-      td.md-cell:nth-child(6) {
-        .column-width(80px);
-      }
+        .airline-label {
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 500;
+            letter-spacing: 0.4px;
+        }
+        // All airlines chip
+        &.total {
+            background-color: #f5f5f5;
+            color: rgba(0, 0, 0, 0.87);
 
-      // Stops column
-      th.md-column[md-order-by="stops"],
-      td.md-cell:nth-child(7) {
-        .column-width(60px);
-      }
-
-      // Rate column
-      th.md-column[md-order-by="amount"],
-      td.md-cell:nth-child(8) {
-        .column-width(70px);
-      }
-
-      // Aircraft column
-      th.md-column[md-order-by="aircraft"],
-      td.md-cell:nth-child(9) {
-        .column-width(80px);
-      }
-
-      // Agent table specific styles
-      th.md-column[md-order-by="agentName"],
-      td.md-cell:nth-child(1) {
-        .column-width(150px);
-      }
-
-      th.md-column[md-order-by="agentRate"],
-      td.md-cell:nth-child(2) {
-        .column-width(80px);
-      }
-
-      th.md-column[md-order-by="agentRanking"],
-      td.md-cell:nth-child(3) {
-        .column-width(80px);
-      }
+            &:hover {
+                background-color: #e0e0e0;
+            }
+        }
     }
-  }
+    // American Airlines (AA)
+    .airline-chip.aa {
+        background-color: #0078D2;
+        color: white;
 
-  .airline-filter-container {
-    display: flex;
-    flex-wrap: wrap;
-    padding: 12px 8px;
-    gap: 8px;
-    align-items: center;
-    margin-bottom: 8px;
-    border-radius: 4px;
-    background-color: rgba(0, 0, 0, 0.03);
-  }
-
-  .airline-chip {
-    height: 32px;
-    border-radius: 16px;
-    min-width: 0;
-    padding: 0 12px;
-    display: inline-flex;
-    align-items: center;
-    transition: all 0.3s ease;
-    margin: 0 4px 0 0;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-
-    &.md-focused {
-      background-color: rgba(0, 0, 0, 0.1);
+        &:hover {
+            background-color: darken(#0078D2, 10%);
+        }
     }
+    // Delta Air Lines (DL)
+    .airline-chip.dl {
+        background-color: #E01A4F;
+        color: white;
 
-    &:last-child {
-      margin-right: 0;
+        &:hover {
+            background-color: darken(#E01A4F, 10%);
+        }
     }
+    // United Airlines (UA)
+    .airline-chip.ua {
+        background-color: #002244;
+        color: white;
 
-    md-icon {
-      font-size: 18px;
-      height: 18px;
-      width: 18px;
-      min-height: 18px;
-      min-width: 18px;
-      margin-right: 6px;
+        &:hover {
+            background-color: darken(#002244, 5%);
+        }
     }
+    // Southwest Airlines (WN)
+    .airline-chip.wn {
+        background-color: #304CB2;
+        color: white;
 
-    .airline-count {
-      font-weight: bold;
-      margin-right: 6px;
-      min-width: 18px;
-      text-align: center;
+        &:hover {
+            background-color: darken(#304CB2, 10%);
+        }
     }
+    // Air Canada (AC)
+    .airline-chip.ac {
+        background-color: #D82F2F;
+        color: white;
 
-    .airline-label {
-      font-size: 12px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-weight: 500;
-      letter-spacing: 0.4px;
+        &:hover {
+            background-color: darken(#D82F2F, 10%);
+        }
     }
+    // JetBlue Airways (B6)
+    .airline-chip.b6 {
+        background-color: #003A70;
+        color: white;
 
-    // All airlines chip
-    &.total {
-      background-color: #f5f5f5;
-      color: rgba(0, 0, 0, 0.87);
-
-      &:hover {
-        background-color: #e0e0e0;
-      }
+        &:hover {
+            background-color: darken(#003A70, 10%);
+        }
     }
-  }
+    // Alaska Airlines (AS)
+    .airline-chip.as {
+        background-color: #0060AF;
+        color: white;
 
-  // American Airlines (AA)
-  .airline-chip.aa {
-    background-color: #0078D2;
-    color: white;
-
-    &:hover {
-      background-color: darken(#0078D2, 10%);
+        &:hover {
+            background-color: darken(#0060AF, 10%);
+        }
     }
-  }
+    // WestJet (WS)
+    .airline-chip.ws {
+        background-color: #0F8ED0;
+        color: white;
 
-  // Delta Air Lines (DL)
-  .airline-chip.dl {
-    background-color: #E01A4F;
-    color: white;
-
-    &:hover {
-      background-color: darken(#E01A4F, 10%);
+        &:hover {
+            background-color: darken(#0F8ED0, 10%);
+        }
     }
-  }
+    // Spirit Airlines (NK)
+    .airline-chip.nk {
+        background-color: #FFC600;
+        color: #000;
 
-  // United Airlines (UA)
-  .airline-chip.ua {
-    background-color: #002244;
-    color: white;
-
-    &:hover {
-      background-color: darken(#002244, 5%);
+        &:hover {
+            background-color: darken(#FFC600, 10%);
+        }
     }
-  }
+    // Frontier Airlines (F9)
+    .airline-chip.f9 {
+        background-color: #018A32;
+        color: white;
 
-  // Southwest Airlines (WN)
-  .airline-chip.wn {
-    background-color: #304CB2;
-    color: white;
-
-    &:hover {
-      background-color: darken(#304CB2, 10%);
+        &:hover {
+            background-color: darken(#018A32, 10%);
+        }
     }
-  }
+    // Air Transat (TS)
+    .airline-chip.ts {
+        background-color: #1F83BE;
+        color: white;
 
-  // Air Canada (AC)
-  .airline-chip.ac {
-    background-color: #D82F2F;
-    color: white;
-
-    &:hover {
-      background-color: darken(#D82F2F, 10%);
+        &:hover {
+            background-color: darken(#1F83BE, 10%);
+        }
     }
-  }
+    // Hawaiian Airlines (HA)
+    .airline-chip.ha {
+        background-color: #481D7D;
+        color: white;
 
-  // JetBlue Airways (B6)
-  .airline-chip.b6 {
-    background-color: #003A70;
-    color: white;
-
-    &:hover {
-      background-color: darken(#003A70, 10%);
+        &:hover {
+            background-color: darken(#481D7D, 10%);
+        }
     }
-  }
+    // Allegiant Air (G4)
+    .airline-chip.g4 {
+        background-color: #FFC72C;
+        color: #000;
 
-  // Alaska Airlines (AS)
-  .airline-chip.as {
-    background-color: #0060AF;
-    color: white;
-
-    &:hover {
-      background-color: darken(#0060AF, 10%);
+        &:hover {
+            background-color: darken(#FFC72C, 10%);
+        }
     }
-  }
+    // Porter Airlines (PD)
+    .airline-chip.pd {
+        background-color: #00BDF2;
+        color: white;
 
-  // WestJet (WS)
-  .airline-chip.ws {
-    background-color: #0F8ED0;
-    color: white;
-
-    &:hover {
-      background-color: darken(#0F8ED0, 10%);
+        &:hover {
+            background-color: darken(#00BDF2, 10%);
+        }
     }
-  }
+    // Flair Airlines (F8)
+    .airline-chip.f8 {
+        background-color: #59CAEE;
+        color: #000;
 
-  // Spirit Airlines (NK)
-  .airline-chip.nk {
-    background-color: #FFC600;
-    color: #000;
-
-    &:hover {
-      background-color: darken(#FFC600, 10%);
+        &:hover {
+            background-color: darken(#59CAEE, 10%);
+        }
     }
-  }
+    // Lynx Air (Y9)
+    .airline-chip.y9 {
+        background-color: #A3CE39;
+        color: #000;
 
-  // Frontier Airlines (F9)
-  .airline-chip.f9 {
-    background-color: #018A32;
-    color: white;
-
-    &:hover {
-      background-color: darken(#018A32, 10%);
+        &:hover {
+            background-color: darken(#A3CE39, 10%);
+        }
     }
-  }
+    // Sun Country Airlines (SY)
+    .airline-chip.sy {
+        background-color: #F4792B;
+        color: white;
 
-  // Air Transat (TS)
-  .airline-chip.ts {
-    background-color: #1F83BE;
-    color: white;
-
-    &:hover {
-      background-color: darken(#1F83BE, 10%);
+        &:hover {
+            background-color: darken(#F4792B, 10%);
+        }
     }
-  }
+    // PAL Airlines (PVL)
+    .airline-chip.pvl {
+        background-color: #024DA1;
+        color: white;
 
-  // Hawaiian Airlines (HA)
-  .airline-chip.ha {
-    background-color: #481D7D;
-    color: white;
-
-    &:hover {
-      background-color: darken(#481D7D, 10%);
+        &:hover {
+            background-color: darken(#024DA1, 10%);
+        }
     }
-  }
+    // Sunwing Airlines (WG)
+    .airline-chip.wg {
+        background-color: #FFBB00;
+        color: #000;
 
-  // Allegiant Air (G4)
-  .airline-chip.g4 {
-    background-color: #FFC72C;
-    color: #000;
-
-    &:hover {
-      background-color: darken(#FFC72C, 10%);
+        &:hover {
+            background-color: darken(#FFBB00, 10%);
+        }
     }
-  }
+    // Default for other airlines not in the top 20
+    .airline-chip:not(.total):not(.aa):not(.dl):not(.ua):not(.wn):not(.ac):not(.b6):not(.as):not(.ws):not(.nk):not(.f9):not(.ts):not(.ha):not(.g4):not(.pd):not(.f8):not(.y9):not(.sy):not(.pvl):not(.wg) {
+        background-color: #757575;
+        color: white;
 
-  // Porter Airlines (PD)
-  .airline-chip.pd {
-    background-color: #00BDF2;
-    color: white;
-
-    &:hover {
-      background-color: darken(#00BDF2, 10%);
+        &:hover {
+            background-color: darken(#757575, 10%);
+        }
     }
-  }
+    // Styling for airline codes in the flight table
+    .airline-code {
+        display: inline-block;
+        border-radius: 4px;
+        padding: 2px 6px;
+        font-weight: 500;
+        text-align: center;
+        font-size: 11px;
+        // Apply the same color scheme as chips
+        &.aa {
+            background-color: #0078D2;
+            color: white;
+        }
 
-  // Flair Airlines (F8)
-  .airline-chip.f8 {
-    background-color: #59CAEE;
-    color: #000;
+        &.dl {
+            background-color: #E01A4F;
+            color: white;
+        }
 
-    &:hover {
-      background-color: darken(#59CAEE, 10%);
+        &.ua {
+            background-color: #002244;
+            color: white;
+        }
+
+        &.wn {
+            background-color: #304CB2;
+            color: white;
+        }
+
+        &.ac {
+            background-color: #D82F2F;
+            color: white;
+        }
+
+        &.b6 {
+            background-color: #003A70;
+            color: white;
+        }
+
+        &.as {
+            background-color: #0060AF;
+            color: white;
+        }
+
+        &.ws {
+            background-color: #0F8ED0;
+            color: white;
+        }
+
+        &.nk {
+            background-color: #FFC600;
+            color: #000;
+        }
+
+        &.f9 {
+            background-color: #018A32;
+            color: white;
+        }
+
+        &.ts {
+            background-color: #1F83BE;
+            color: white;
+        }
+
+        &.ha {
+            background-color: #481D7D;
+            color: white;
+        }
+
+        &.g4 {
+            background-color: #FFC72C;
+            color: #000;
+        }
+
+        &.pd {
+            background-color: #00BDF2;
+            color: white;
+        }
+
+        &.f8 {
+            background-color: #59CAEE;
+            color: #000;
+        }
+
+        &.y9 {
+            background-color: #A3CE39;
+            color: #000;
+        }
+
+        &.sy {
+            background-color: #F4792B;
+            color: white;
+        }
+
+        &.pvl {
+            background-color: #024DA1;
+            color: white;
+        }
+
+        &.wg {
+            background-color: #FFBB00;
+            color: #000;
+        }
+        // Default for other airlines
+        &:not(.aa):not(.dl):not(.ua):not(.wn):not(.ac):not(.b6):not(.as):not(.ws):not(.nk):not(.f9):not(.ts):not(.ha):not(.g4):not(.pd):not(.f8):not(.y9):not(.sy):not(.pvl):not(.wg) {
+            background-color: #757575;
+            color: white;
+        }
     }
-  }
+    // Styling for flight segments
+    .flight-number-container {
+        display: flex;
+        align-items: center;
 
-  // Lynx Air (Y9)
-  .airline-chip.y9 {
-    background-color: #A3CE39;
-    color: #000;
+        .flight-number {
+            margin-right: 4px;
+        }
 
-    &:hover {
-      background-color: darken(#A3CE39, 10%);
-    }
-  }
-
-  // Sun Country Airlines (SY)
-  .airline-chip.sy {
-    background-color: #F4792B;
-    color: white;
-
-    &:hover {
-      background-color: darken(#F4792B, 10%);
-    }
-  }
-
-  // PAL Airlines (PVL)
-  .airline-chip.pvl {
-    background-color: #024DA1;
-    color: white;
-
-    &:hover {
-      background-color: darken(#024DA1, 10%);
-    }
-  }
-
-  // Sunwing Airlines (WG)
-  .airline-chip.wg {
-    background-color: #FFBB00;
-    color: #000;
-
-    &:hover {
-      background-color: darken(#FFBB00, 10%);
-    }
-  }
-
-  // Default for other airlines not in the top 20
-  .airline-chip:not(.total):not(.aa):not(.dl):not(.ua):not(.wn):not(.ac):not(.b6):not(.as):not(.ws):not(.nk):not(.f9):not(.ts):not(.ha):not(.g4):not(.pd):not(.f8):not(.y9):not(.sy):not(.pvl):not(.wg) {
-    background-color: #757575;
-    color: white;
-
-    &:hover {
-      background-color: darken(#757575, 10%);
-    }
-  }
-
-  // Styling for airline codes in the flight table
-  .airline-code {
-    display: inline-block;
-    border-radius: 4px;
-    padding: 2px 6px;
-    font-weight: 500;
-    text-align: center;
-    font-size: 11px;
-
-    // Apply the same color scheme as chips
-    &.aa {
-      background-color: #0078D2;
-      color: white;
-    }
-
-    &.dl {
-      background-color: #E01A4F;
-      color: white;
-    }
-
-    &.ua {
-      background-color: #002244;
-      color: white;
+        .segment-toggle {
+            cursor: pointer;
+            font-size: 18px;
+            color: #2196F3;
+        }
     }
 
-    &.wn {
-      background-color: #304CB2;
-      color: white;
+    .airport-code {
+        font-size: 12px;
+        color: #757575;
     }
 
-    &.ac {
-      background-color: #D82F2F;
-      color: white;
+    .codeshare-marker {
+        margin-left: 3px;
+        color: #f44336;
+        font-weight: bold;
     }
 
-    &.b6 {
-      background-color: #003A70;
-      color: white;
+    .has-segments {
+        background-color: rgba(33, 150, 243, 0.05);
+        cursor: pointer;
+
+        &:hover {
+            background-color: rgba(33, 150, 243, 0.1);
+        }
     }
 
-    &.as {
-      background-color: #0060AF;
-      color: white;
+    .segment-details-row {
+        background-color: #f5f5f5;
+
+        .segment-details {
+            padding: 12px;
+
+            .segment-journey {
+                width: 100%;
+
+                .segment-item {
+                    margin-bottom: 16px;
+                    border-left: 3px solid #2196F3;
+                    padding-left: 12px;
+
+                    &:last-child {
+                        margin-bottom: 0;
+                    }
+
+                    .segment-header {
+                        display: flex;
+                        justify-content: space-between;
+                        font-weight: 500;
+                        margin-bottom: 8px;
+
+                        .segment-number {
+                            color: #616161;
+                        }
+
+                        .segment-airline {
+                            color: #2196F3;
+                        }
+                    }
+
+                    .segment-info {
+                        background-color: white;
+                        border: 1px solid #e0e0e0;
+                        border-radius: 4px;
+                        padding: 12px;
+
+                        .segment-time {
+                            display: flex;
+                            align-items: center;
+                            justify-content: space-between;
+
+                            .departure, .arrival {
+                                text-align: center;
+                                width: 120px;
+
+                                .time {
+                                    font-size: 16px;
+                                    font-weight: bold;
+                                }
+
+                                .airport {
+                                    font-size: 14px;
+                                    color: #424242;
+                                }
+
+                                .terminal {
+                                    font-size: 12px;
+                                    color: #757575;
+                                }
+                            }
+
+                            .flight-line {
+                                flex: 1;
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                padding: 0 16px;
+
+                                .flight-duration {
+                                    color: #757575;
+                                    font-size: 12px;
+                                    margin-bottom: 4px;
+                                }
+
+                                .flight-line-inner {
+                                    height: 2px;
+                                    width: 100%;
+                                    background-color: #bdbdbd;
+                                    position: relative;
+
+                                    &:after {
+                                        content: "";
+                                        position: absolute;
+                                        right: -4px;
+                                        top: -3px;
+                                        border-top: 4px solid transparent;
+                                        border-bottom: 4px solid transparent;
+                                        border-left: 8px solid #bdbdbd;
+                                    }
+                                }
+                            }
+                        }
+
+                        .segment-details-extra {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-top: 8px;
+                            font-size: 12px;
+                            color: #757575;
+
+                            .aircraft {
+                                margin-right: 16px;
+                            }
+
+                            .stops {
+                                display: flex;
+                                align-items: center;
+
+                                md-icon {
+                                    font-size: 16px;
+                                    margin-right: 4px;
+                                }
+                            }
+                        }
+                    }
+
+                    .connection-time {
+                        /* display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        margin: 8px 0;
+                        color: #FF9800;
+                        font-weight: 500;
+                        padding: 6px 0;
+
+                        md-icon {
+                            margin-right: 4px;
+                            font-size: 18px;
+                        }*/
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        margin: 8px 0;
+                        padding: 8px 0;
+                        color: #FF9800;
+                        background-color: #ff98001a;
+                        border-radius: 4px;
+                    }
+
+                    .connection-time-content {
+                        padding: 8px 16px;
+                        display: flex;
+                        align-items: center;
+                        font-weight: bold;
+                        font-size:14px;
+                    }
+                }
+            }
+        }
     }
 
-    &.ws {
-      background-color: #0F8ED0;
-      color: white;
+
+
+
+    .direct-flight {
+        color: #4CAF50;
+        font-weight: 500;
     }
 
-    &.nk {
-      background-color: #FFC600;
-      color: #000;
+    .stops-badge {
+        display: inline-block;
+        background-color: #FF9800;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-size: 12px;
     }
-
-    &.f9 {
-      background-color: #018A32;
-      color: white;
-    }
-
-    &.ts {
-      background-color: #1F83BE;
-      color: white;
-    }
-
-    &.ha {
-      background-color: #481D7D;
-      color: white;
-    }
-
-    &.g4 {
-      background-color: #FFC72C;
-      color: #000;
-    }
-
-    &.pd {
-      background-color: #00BDF2;
-      color: white;
-    }
-
-    &.f8 {
-      background-color: #59CAEE;
-      color: #000;
-    }
-
-    &.y9 {
-      background-color: #A3CE39;
-      color: #000;
-    }
-
-    &.sy {
-      background-color: #F4792B;
-      color: white;
-    }
-
-    &.pvl {
-      background-color: #024DA1;
-      color: white;
-    }
-
-    &.wg {
-      background-color: #FFBB00;
-      color: #000;
-    }
-
-    // Default for other airlines
-    &:not(.aa):not(.dl):not(.ua):not(.wn):not(.ac):not(.b6):not(.as):not(.ws):not(.nk):not(.f9):not(.ts):not(.ha):not(.g4):not(.pd):not(.f8):not(.y9):not(.sy):not(.pvl):not(.wg) {
-      background-color: #757575;
-      color: white;
-    }
-  }
 }

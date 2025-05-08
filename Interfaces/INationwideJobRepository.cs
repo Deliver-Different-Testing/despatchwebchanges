@@ -15,7 +15,7 @@ public interface INationwideJobRepository
         string clientIds, NationwideWidget windowPane,
         List<int> selectedViewIds);
 
-    Task AddJobNationwideAsync(int jobId, AddFlightToJobDto flight, string webhookAlertId);
+    Task AddJobNationwideAsync(int jobId, AddFlightToJobDto flight, List<string> webhookIds);
 
     Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId);
 

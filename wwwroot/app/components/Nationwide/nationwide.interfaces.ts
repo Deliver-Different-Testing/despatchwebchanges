@@ -17,6 +17,44 @@ export interface IFlightViewModel {
     airlineId: number;
     departureTimeZone: string;
     arrivalTimeZone: string;
+
+    // Multi-segment support
+    isMultiSegment: boolean;
+    elapsedTime: number;
+    score: number;
+    connectionId: string;
+    flightSegments: FlightSegmentViewModel[];
+}
+
+export interface FlightSegmentViewModel {
+    segmentOrder: number;
+    carrierFsCode: string;
+    flightNumber: string;
+    departureTime: Date;
+    arrivalTime: Date;
+    departureAirportFsCode: string;
+    departureTerminal?: string;
+    arrivalAirportFsCode: string;
+    arrivalTerminal?: string;
+    flightEquipmentIataCode: string;
+    elapsedTime: number;
+    stopsInSegment: number;
+
+    // Additional details from appendix
+    departureAirportName?: string;
+    departureAirportCity?: string;
+    departureAirportCountry?: string;
+    departureAirportTimeZone?: string;
+
+    arrivalAirportName?: string;
+    arrivalAirportCity?: string;
+    arrivalAirportCountry?: string;
+    arrivalAirportTimeZone?: string;
+
+    aircraftName?: string;
+    aircraftType?: string;
+
+    airlineName?: string;
 }
 
 export interface IFlightPagination {

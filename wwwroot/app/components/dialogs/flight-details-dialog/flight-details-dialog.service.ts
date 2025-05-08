@@ -1,4 +1,5 @@
 import NationwideService from "../../Nationwide/nationwide.service";
+import { IFlightViewModel } from "../../Nationwide/nationwide.interfaces";
 import FlightDetailsDialogController from "./flight-details-dialog.component";
 
 class FlightDetailsDialogService implements angular.IServiceProvider {
@@ -20,9 +21,10 @@ class FlightDetailsDialogService implements angular.IServiceProvider {
         return this;
     }
 
-    async openFlightDetailsDialog($event: MouseEvent, flightNumber: string, departureDate: Date, correctConnectionNumber: number) {
-        const flightConnections = await this.nationwideService.getFlightConnectionsInfoForDialog(flightNumber, departureDate);
+    async openFlightDetailsDialog($event: MouseEvent, flightData: IFlightViewModel) {
+       // const flightConnections = await this.nationwideService.getFlightConnectionsInfoForDialog(flightNumber, departureDate);
 
+        // Don't need to make an additional API call since we already have the flight data
         await this.$mdDialog.show({
             controller: FlightDetailsDialogController,
             controllerAs: 'ctrl',
@@ -31,8 +33,7 @@ class FlightDetailsDialogService implements angular.IServiceProvider {
             targetEvent: $event,
             clickOutsideToClose: false,
             locals: {
-               flightConnections,
-                correctConnectionNumber
+                flightData: flightData
             }
         });
     }

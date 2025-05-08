@@ -1235,7 +1235,7 @@ class NationwideControl extends BaseController {
     }
 
     async openFlightMoreInfo($event: MouseEvent, flight: IFlightViewModel) {
-        await this.flightDetailsDialogService.openFlightDetailsDialog($event, flight.flightNumber, flight.departureTime, flight.stops);
+        await this.flightDetailsDialogService.openFlightDetailsDialog($event, flight);
     }
 
     async addFlightToJob($event: MouseEvent, flight: IFlightViewModel, job: IDispatchJob) {
@@ -1258,7 +1258,14 @@ class NationwideControl extends BaseController {
                 this.STATUS_TO_LIST_MAP[previousInternalStatusId].forEach((type: JobDataType) => listsToRefresh.add(type));
             }
 
-            await this.nationwideService.assignFlightToJob(job.id, flight.flightNumber, flight.departureTime);
+            // Pass the full flight data including segments to the service
+            await this.nationwideService.assignFlightToJob(
+                job.id,
+                flight.flightNumber,
+                flight.departureTime,
+                flight  // Pass the entire flight object with all segments
+            );
+
             await this.getJobList(Array.from(listsToRefresh));
 
             let updatedJob = this.jobListPOD?.find(j => j.id === job.id);
@@ -1947,6 +1954,25 @@ class NationwideControl extends BaseController {
         const spaceIndex = text.indexOf(' ');
         if (spaceIndex === -1) return text;
         return text.substring(0, spaceIndex + 1);
+    }
+
+    getConnectionTime(firstSegment: any, secondSegment: any): string {
+        if (!firstSegment || !secondSegment) return '';
+
+        // Calculate time difference in minutes
+        const firstArrival = moment(firstSegment.arrivalTime);
+        const secondDeparture = moment(secondSegment.departureTime);
+        const diffMinutes = secondDeparture.diff(firstArrival, 'minutes');
+
+        // Format as hours and minutes
+        const hours = Math.floor(diffMinutes / 60);
+        const mins = diffMinutes % 60;
+
+        if (hours > 0) {
+            return hours + 'h ' + (mins < 10 ? '0' + mins : mins) + 'm';
+        } else {
+            return mins + 'm';
+        }
     }
 
     async openHubUrl() {

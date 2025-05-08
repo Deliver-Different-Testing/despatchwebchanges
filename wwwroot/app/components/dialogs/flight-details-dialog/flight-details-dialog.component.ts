@@ -1,93 +1,127 @@
-import {FlightDetailsViewModel} from "./flight-details-dialog.interfaces";
+import { IFlightViewModel, FlightSegmentViewModel } from "../../Nationwide/nationwide.interfaces";
 import "./flight-details-dialog.styles.less";
 import BaseController from "../../base-controller";
+import moment from "moment";
 
 class FlightDetailsDialogController extends BaseController {
     static $inject = [
         '$mdDialog',
-        'flightConnections',
-        'correctConnectionNumber'
+        'flightData'
     ];
 
-    flightViewModel: FlightDetailsViewModel | null = null;
+    flight: IFlightViewModel;
     isLoading: boolean = false;
     error: string = '';
     timeZone: string = TimeZone;
-    showCodeshares: boolean = false;
     selectedTabIndex: number = 0;
-    showIncompleteApiWarning: boolean = false;
+    currentSegment: FlightSegmentViewModel;
+    isDisplayingOverview: boolean = true;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        public flightConnections: FlightDetailsViewModel[],
-        public correctConnectionNumber: number,
+        public flightData: IFlightViewModel
     ) {
         super();
-        console.log('FlightDetailsDialogController: Service instantiated');
+        this.flight = flightData;
+        console.log('FlightDetailsDialogController: Flight data received', this.flight);
+
+        // Initialize with overview or first segment
+        if (this.flight.isMultiSegment && this.flight.flightSegments && this.flight.flightSegments.length > 0) {
+            this.currentSegment = this.flight.flightSegments[0];
+        } else {
+            // Create a pseudo-segment from the main flight data for non-segmented flights
+            this.currentSegment = {
+                segmentOrder: 0,
+                carrierFsCode: this.flight.flightNumber.substring(0, 2),
+                flightNumber: this.flight.flightNumber.substring(2),
+                departureTime: this.flight.departureTime,
+                arrivalTime: this.flight.arrivalTime,
+                departureAirportFsCode: this.flight.departureAirport,
+                arrivalAirportFsCode: this.flight.arrivalAirport,
+                flightEquipmentIataCode: '',
+                elapsedTime: this.flight.elapsedTime || 0,
+                stopsInSegment: 0
+            };
+        }
     }
 
     $onInit() {
-        // Initialize with the first flight connection if available
-        if (this.flightConnections && this.flightConnections.length > 0) {
-            this.flightViewModel = this.flightConnections[0];
+        // No need to fetch data, we already have it
+    }
 
-            if(this.correctConnectionNumber != this.flightConnections.length) {
-                this.showIncompleteApiWarning = true;
+    selectSegment(index: number): void {
+        this.selectedTabIndex = index;
+
+        // Only change this flag when switching to overview
+        if (index === 0) {
+            this.isDisplayingOverview = true;
+        } else {
+            this.isDisplayingOverview = false;
+        }
+
+        // Always update the current segment for details display
+        if (this.flight.flightSegments && this.flight.flightSegments.length > 0) {
+            // For tab 0, use first segment
+            const segmentIndex = index === 0 ? 0 : index - 1;
+
+            if (segmentIndex < this.flight.flightSegments.length) {
+                this.currentSegment = this.flight.flightSegments[segmentIndex];
             }
         }
     }
 
-    selectConnection(index: number): void {
-        if (this.flightConnections && this.flightConnections[index]) {
-            this.flightViewModel = this.flightConnections[index];
-            this.selectedTabIndex = index;
-            this.showCodeshares = false;
-        }
-    }
 
-    toggleCodeshares(): void {
-        this.showCodeshares = !this.showCodeshares;
-    }
-
-    hasCodeshares(): boolean {
-        return !!(this.flightViewModel && this.flightViewModel.codeShares && this.flightViewModel.codeShares.length > 0);
-    }
-
-    getServiceClassesFormatted(): string {
-        if (!this.flightViewModel || !this.flightViewModel.serviceClasses) return 'N/A';
-        return this.flightViewModel.serviceClasses.join(', ');
-    }
-
-    getConnectionLabel(index: number): string {
-        if (!this.flightConnections || !this.flightConnections[index]) return `Connection ${index + 1}`;
-
-        const connection = this.flightConnections[index];
-        return `${connection.origin.code} - ${connection.destination.code}`;
-    }
-
-    getTotalDuration(): string {
-        if (!this.flightConnections || this.flightConnections.length === 0) return 'N/A';
-
-        if (this.flightConnections.length === 1) {
-            return this.flightConnections[0].duration;
+    getFlightTotalDuration(): string {
+        if (this.flight.elapsedTime) {
+            const hours = Math.floor(this.flight.elapsedTime / 60);
+            const mins = this.flight.elapsedTime % 60;
+            return `${hours}h ${mins < 10 ? '0' + mins : mins}m`;
         }
 
-        try {
-            const firstFlight = this.flightConnections[0];
-            const lastFlight = this.flightConnections[this.flightConnections.length - 1];
+        // Fallback to calculating from duration
+        if (this.flight.duration) {
+            const durationStr = this.flight.duration.toString();
+            const matches = durationStr.match(/(\d+):(\d+):(\d+)/);
+            if (matches && matches.length >= 4) {
+                const hours = parseInt(matches[1]);
+                const mins = parseInt(matches[2]);
+                return `${hours}h ${mins < 10 ? '0' + mins : mins}m`;
+            }
+        }
 
-            const departureTime = new Date(firstFlight.departureTime);
-            const arrivalTime = new Date(lastFlight.arrivalTime);
+        return 'N/A';
+    }
 
-            const diffMs = arrivalTime.getTime() - departureTime.getTime();
-            const totalMinutes = Math.floor(diffMs / (1000 * 60));
-            const hours = Math.floor(totalMinutes / 60);
-            const minutes = totalMinutes % 60;
+    getSegmentDuration(): string {
+        if (this.isDisplayingOverview) {
+            return this.getFlightTotalDuration();
+        }
 
-            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        } catch (e) {
-            console.error('Error calculating total duration:', e);
-            return 'N/A';
+        if (this.currentSegment && this.currentSegment.elapsedTime) {
+            const hours = Math.floor(this.currentSegment.elapsedTime / 60);
+            const mins = this.currentSegment.elapsedTime % 60;
+            return `${hours}h ${mins < 10 ? '0' + mins : mins}m`;
+        }
+
+        return 'N/A';
+    }
+
+    getConnectionTime(firstSegment: FlightSegmentViewModel, secondSegment: FlightSegmentViewModel): string {
+        if (!firstSegment || !secondSegment) return '';
+
+        // Calculate time difference in minutes
+        const firstArrival = moment(firstSegment.arrivalTime);
+        const secondDeparture = moment(secondSegment.departureTime);
+        const diffMinutes = secondDeparture.diff(firstArrival, 'minutes');
+
+        // Format as hours and minutes
+        const hours = Math.floor(diffMinutes / 60);
+        const mins = diffMinutes % 60;
+
+        if (hours > 0) {
+            return hours + 'h ' + (mins < 10 ? '0' + mins : mins) + 'm';
+        } else {
+            return mins + 'm';
         }
     }
 

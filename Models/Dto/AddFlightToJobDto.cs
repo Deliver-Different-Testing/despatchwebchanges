@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace DespatchWeb.Models.Dto;
 
@@ -9,4 +10,5 @@ public class AddFlightToJobDto
     public DateTime DepartureTime { get; set; }
     public DateTime ArrivalTime { get; set; }
     public string AirlineName { get; set; }
+    public List<FlightSegmentViewModel> FlightSegments { get; set; } = new List<FlightSegmentViewModel>();
 }
