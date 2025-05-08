@@ -29,8 +29,8 @@ public partial class JobRepository
 
         var timeZoneInfo = await GetTimeZoneInfoByIdAsync(timeZoneId);
 
-        job.PickUpTime = TimeZoneInfo.ConvertTimeFromUtc(pickUpTime, timeZoneInfo);
-        job.DeliverByTimeZoneId = timeZoneId;
+        job.UcjbTime = TimeZoneInfo.ConvertTimeFromUtc(pickUpTime, timeZoneInfo);
+        job.PickupTimeZoneId = timeZoneId;
         await Context.SaveChangesAsync();
     }
 

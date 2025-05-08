@@ -348,7 +348,7 @@ class JobDetailController extends BaseController {
     }
 
     async showEditTimeDialog($event: MouseEvent, job: IJob,
-                             title: string, fieldName: string, dateTime?: Date, timezone?: Suggestion) {
+                             title: string, fieldName: JobProperty, dateTime?: Date, timezone?: Suggestion) {
         try {
             const result = await this.editDateTimeDialogService.showEditTimeDialog($event, title, fieldName, dateTime, timezone);
             await this.processDateTimeUpdateResult(job, result)
@@ -370,12 +370,7 @@ class JobDetailController extends BaseController {
     async showEditDateAndTimeDialog($event: MouseEvent, job: IJob,
                                     title: string, fieldName: JobProperty, dateTime?: Date, timezone?: Suggestion) {
         try {
-            let showTImeZoneSelector = false;
-            if(fieldName === JobProperty.DeliverBy || fieldName === JobProperty.PuTime) {
-                showTImeZoneSelector = true;
-            }
-
-            const result = await this.editDateTimeDialogService.showEditDateAndTimeDialog($event, title, fieldName, dateTime, timezone, showTImeZoneSelector);
+            const result = await this.editDateTimeDialogService.showEditDateAndTimeDialog($event, title, fieldName, dateTime, timezone);
             await this.processDateTimeUpdateResult(job, result)
         } catch (error) {
             this.handleError(error);
@@ -471,13 +466,13 @@ class JobDetailController extends BaseController {
     }
 
     async editStartTime($event: MouseEvent, job: IJob) {
-        await this.showEditTimeDialog($event, job, "Start Time", "Time", job.time);
+        await this.showEditTimeDialog($event, job, "Start Time", JobProperty.Time, job.time, job.pickUpTimeZone);
     }
 
     async editCompletedTime($event: MouseEvent, job: IJob) {
         await this.showEditDateAndTimeDialog($event, job, "POD Time", JobProperty.CompletedTime, job.completedTime);
 
-        // Begin job done process
+        // Begin a job-done process
         const refreshedJob = this.job;
         if (!refreshedJob) return;
         await this.markJobAsDone($event, refreshedJob);
@@ -488,7 +483,7 @@ class JobDetailController extends BaseController {
     }
 
     async editPuDate($event: MouseEvent, job: IJob) {
-        await this.showEditDateAndTimeDialog($event, job, "Pick Up Time", JobProperty.PuTime, job.puTime, job.pickUpTimeZone);
+        await this.showEditDateAndTimeDialog($event, job, "Pick Up Time", JobProperty.PuTime, job.puTime);
     }
 
     async editDeliverBy($event: MouseEvent, job: IJob) {
@@ -1243,7 +1238,7 @@ class JobDetailController extends BaseController {
         // Get the formatted timezone using the filter
         let timezone: string;
         if(isPickup) {
-            timezone = this.job?.pickUpTimeZone?.text ?? TimeZone;
+            timezone = TimeZone;
         } else {
             timezone = this.job?.deliveryTimeZone?.text ?? TimeZone;
         }

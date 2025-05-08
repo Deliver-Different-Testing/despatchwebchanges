@@ -480,7 +480,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             timeZoneId: String(selectedTimeZoneId)
         });
 
-        const url = `job/UpdateDeliverByTime?${params.toString()}`;
+        const url = `job/UpdatePickUpTime?${params.toString()}`;
         await this.$http.post(url, null);
     }
 
@@ -499,7 +499,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             return await this.updateDeliverByTime(jobId, value as Date, selectedTimeZoneId)
         }
 
-        if(field === JobProperty.PuTime) {
+        if(field === JobProperty.Time) {
             return await this.updatePickUpTime(jobId, value as Date, selectedTimeZoneId)
         }
 

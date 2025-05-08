@@ -6,6 +6,7 @@ import "moment-timezone";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import {Suggestion, TimeZoneSuggestion} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
+import {JobProperty} from "../../../enums/job-property.enum";
 
 export class EditDateTimeDialogController extends BaseController {
     static $inject = [
@@ -33,7 +34,7 @@ export class EditDateTimeDialogController extends BaseController {
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
         public readonly title: string,
-        public readonly fieldName: string,
+        public readonly fieldName: JobProperty,
         public dateTime: Date,
         private defaultTimeZone?: Suggestion,
         private showTimeZone: boolean = false,
@@ -42,7 +43,7 @@ export class EditDateTimeDialogController extends BaseController {
     ) {
         super();
 
-        this.showTimeZoneSelector = !!showTimeZone; // Convert to boolean
+        this.showTimeZoneSelector = showTimeZone; // Convert to boolean
 
         // Initialize with current date/time if not provided
         if (!this.dateTime) {
@@ -81,11 +82,7 @@ export class EditDateTimeDialogController extends BaseController {
         }
 
         // If timezone selector is shown, a timezone must be selected
-        if (this.showTimeZoneSelector && !this.selectedTimeZone) {
-            return false;
-        }
-
-        return true;
+        return !(this.showTimeZoneSelector && !this.selectedTimeZone);
     }
 
     async submit(): Promise<void> {
