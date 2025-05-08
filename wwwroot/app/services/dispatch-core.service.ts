@@ -25,7 +25,6 @@ import {ClearListEnvelopeViewModel, DfrntPageViewModel} from "../interfaces/dfrn
 import {bindAllMethods} from "../bindAllMethods";
 import {TaskTableFiltersRequest, TaskViewModel} from "../components/task-dashboard/task-dashboard.interfaces";
 import {JobProperty} from "../enums/job-property.enum";
-import TimezoneConverter from "./timezoneConverter.service";
 import moment from "moment";
 
 class DispatchCoreService implements angular.IServiceProvider {

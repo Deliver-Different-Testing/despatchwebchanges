@@ -12,10 +12,10 @@
         class="md-primary">
 </md-progress-linear>
 
-<div class="basic-box-scroll nationwide-job-list" ng-if="!ctrl.isDeliveryJob()">
+<div class="basic-box-scroll nationwide-job-list" ng-if="!ctrl.isDeliveryJobType">
     <!-- No Current Job Selected -->
     <no-data
-            ng-if="!ctrl.currentJob"
+            ng-if="ctrl.showNoJobSelectedMessage"
             title="No Job Selected"
             message="Please select a job to view available flights."
             icon="flight_takeoff"
@@ -24,7 +24,7 @@
 
     <!-- Job Has Assigned Flight -->
     <no-data
-            ng-if="ctrl.currentJob && ctrl.currentJob.assignedFlight"
+            ng-if="ctrl.showJobHasAssignedFlightMessage"
             title="Flight Already Assigned"
             message="A flight has already been assigned to this job. This can be found in the job details widget."
             icon="flight_takeoff"
@@ -33,7 +33,7 @@
 
     <!-- Missing Airport Information -->
     <no-data
-            ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && (!ctrl.currentJob.toAirportId || !ctrl.currentJob.fromAirportId)"
+            ng-if="ctrl.showMissingAirportInfoMessage"
             title="Missing Airport Info"
             message="Airport information not applicable or not provided for this job. If needed, please update the job details with relevant airport data."
             icon="local_airport"
@@ -41,7 +41,7 @@
     </no-data>
 
     <!-- No Flights Available -->
-    <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading && (!ctrl.flightOptions || ctrl.flightOptions.length === 0)">
+    <div ng-if="ctrl.showNoFlightsAvailableMessage">
         <no-data
                 title="No Flights Available"
                 message="{{ctrl.flightMessage || 'No flights available for the specified criteria.'}}"
@@ -60,7 +60,7 @@
     </div>
 
     <!-- Flight List -->
-    <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading && ctrl.flightOptions && ctrl.flightOptions.length > 0">
+    <div ng-if="ctrl.showFlightList">
         <!-- Airline Filter Chips -->
         <div class="airline-filter-container">
             <!-- All Airlines Filter Chip -->
@@ -183,10 +183,10 @@
     </div>
 </div>
 
-<div class=" basic-box-scroll nationwide-job-list" ng-if="ctrl.isDeliveryJob()">
+<div class="basic-box-scroll nationwide-job-list" ng-if="ctrl.isDeliveryJobType">
     <!--  No Current Job Selected -->
     <no-data
-            ng-if="!ctrl.currentJob"
+            ng-if="ctrl.showNoAgentJobSelectedMessage"
             title="No Job Selected"
             message="Please select a job to view available agents."
             icon="engineering"
@@ -195,7 +195,7 @@
 
     <!-- Job Has Assigned Agent -->
     <no-data
-            ng-if="ctrl.currentJob && ctrl.currentJob.assignedAgent"
+            ng-if="ctrl.showJobHasAssignedAgentMessage"
             title="Agent Already Assigned"
             message="An agent has already been assigned to this job. This can be found in the job details widget."
             icon="engineering"
@@ -204,7 +204,7 @@
 
     <!-- Not a Delivery Job -->
     <no-data
-            ng-if="ctrl.currentJob && !ctrl.currentJob.assignedAgent && !ctrl.isDeliveryJob()"
+            ng-if="ctrl.showNotDeliveryJobMessage"
             title="Not a Delivery Job"
             message="Agent information is not applicable for this job. This section is only relevant for delivery jobs."
             icon="engineering"
@@ -213,7 +213,7 @@
 
     <!-- No Agents Available -->
     <no-data
-            ng-if="ctrl.currentJob && !ctrl.currentJob.assignedAgent && ctrl.isDeliveryJob() && !ctrl.agentsLoading && (!ctrl.agentOptions || ctrl.agentOptions.length === 0)"
+            ng-if="ctrl.showNoAgentsAvailableMessage"
             title="No Agents Available"
             message="{{ctrl.agentMessage || 'No agents available for the specified criteria.'}}"
             icon="engineering"
@@ -221,7 +221,7 @@
     </no-data>
 
     <!-- Agent List -->
-    <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedAgent && ctrl.isDeliveryJob() && !ctrl.agentsLoading && ctrl.agentOptions && ctrl.agentOptions.length > 0">
+    <div ng-if="ctrl.showAgentList">
 
         <!-- Airline Filter Chips -->
         <div class="airline-filter-container">
