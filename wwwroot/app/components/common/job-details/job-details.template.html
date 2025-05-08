@@ -104,8 +104,7 @@
                             <md-icon aria-label="start time" md-font-set="material-symbols-outlined">timer</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Start Time:</span>
-                                <span class="timing-value">{{ctrl.job.time ? (ctrl.job.time | momentFormat:'HH:mm') + ' (' + (ctrl.timeZone | timezoneShort) + ')' : 'N/A'}}</span>
-                            </div>
+                                <span class="timing-value">{{ctrl.job.time ? (ctrl.job.time | momentFormat:'HH:mm') + ' (' + ((ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort) + ')' : 'N/A'}}</span>                            </div>
                         </md-list-item>
                     </md-list>
                 </div>
