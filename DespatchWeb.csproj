@@ -351,6 +351,7 @@
     <TypeScriptCompile Include="wwwroot\app\enums\app-pages.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\days-of-week.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\event-type.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\file-upload-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\frequency.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\holiday-delivery-options.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\job-internal-status.enum.ts" />

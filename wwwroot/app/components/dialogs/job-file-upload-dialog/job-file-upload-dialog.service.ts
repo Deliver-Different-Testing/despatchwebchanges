@@ -1,5 +1,6 @@
 import {IDispatchJob, IJob} from "../../../interfaces/job.interface";
 import JobFileUploadController from "./job-file-upload.controller";
+import { FileUploadType } from "../../../enums/file-upload-type.enum";
 
 class JobFileUploadDialogService implements angular.IServiceProvider {
     static $inject = [
@@ -18,7 +19,7 @@ class JobFileUploadDialogService implements angular.IServiceProvider {
         return this;
     }
 
-    async openJobFileUploadDialog($event: MouseEvent, job: IJob | IDispatchJob) {
+    async openJobFileUploadDialog($event: MouseEvent, job: IJob | IDispatchJob, uploadType: FileUploadType = FileUploadType.NORMAL) {
         try {
             await this.$mdDialog.show({
                 controller: JobFileUploadController,
@@ -30,6 +31,7 @@ class JobFileUploadDialogService implements angular.IServiceProvider {
                 targetEvent: $event,
                 locals: {
                     jobId: job.id,
+                    initialUploadType: uploadType
                 },
                 bindToController: true,
             });

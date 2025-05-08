@@ -1,5 +1,11 @@
 import ToastrService from "../../../services/toastr.service";
-import {EditAddressDialogViewModel, IJob, InternalStatus, Suggestion} from "../../../interfaces/job.interface";
+import {
+    EditAddressDialogViewModel,
+    IDispatchJob,
+    IJob,
+    InternalStatus,
+    Suggestion
+} from "../../../interfaces/job.interface";
 import {ContactID, FirstName} from "../../../contants";
 import {CallData, JobOptions, TabItem} from "./job-details.interfaces";
 import {PodPhoto} from "../pod-photo-viewer/pod-photo-viewer.interfaces";
@@ -21,6 +27,8 @@ import {IJobReadChanged} from "../../../interfaces/event-interfaces";
 import {JobProperty} from "../../../enums/job-property.enum";
 import {DaysOfWeek} from "../../../enums/days-of-week.enum";
 import AutoCompleteDialogService from "../../dialogs/auto-complete-dialog/auto-complete-dialog.service";
+import JobFileUploadDialogService from "../../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
+import {FileUploadType} from "../../../enums/file-upload-type.enum";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -37,6 +45,7 @@ class JobDetailController extends BaseController {
         "$timeout",
         "$filter",
         "autoCompleteDialogService",
+        "jobFileUploadDialogService",
     ];
 
     readonly appPage: AppPages = AppPages.Dispatch;
@@ -65,16 +74,17 @@ class JobDetailController extends BaseController {
         private editDateTimeDialogService: EditDateTimeDialogService,
         private editAddressDialogService: EditAddressDialogService,
         private priceBreakdownDialogService: PriceBreakdownDialogService,
-        APP_CONFIG: AppConfig,
+        appConfig: AppConfig,
         private editParcelDimensionsDialogService: EditParcelDimensionsDialogService,
         private $rootScope: angular.IRootScopeService,
         private $timeout: angular.ITimeoutService,
         private $filter: angular.IFilterService,
         private autoCompleteDialogService: AutoCompleteDialogService,
+        private jobFileUploadDialogService: JobFileUploadDialogService,
     ) {
         super();
 
-        this.isUsCustomer = APP_CONFIG.US_Customer;
+        this.isUsCustomer = appConfig.US_Customer;
         this.timeZone = TimeZone;
 
         this.selectedTab = 0;
@@ -116,7 +126,7 @@ class JobDetailController extends BaseController {
             });
 
         if (this.jobId) {
-            return this._loadJobData(this.jobId);
+            return this.loadJobData(this.jobId);
         }
     }
 
@@ -127,7 +137,7 @@ class JobDetailController extends BaseController {
             console.log('jobId changed:', changes['jobId'].currentValue);
 
             if (changes['jobId'].currentValue) {
-                return this._loadJobData(changes['jobId'].currentValue);
+                return this.loadJobData(changes['jobId'].currentValue);
             } else {
                 this.job = undefined;
             }
@@ -139,7 +149,7 @@ class JobDetailController extends BaseController {
 
         const photoSection = angular.element('.pod-photo-section');
         if (photoSection) {
-            photoSection.off('keydown', this._handleKeydown);
+            photoSection.off('keydown', this.handleKeydown);
         }
     }
 
@@ -165,7 +175,7 @@ class JobDetailController extends BaseController {
                 this.selectedTabIndex = index;
 
                 this.jobId = targetJob.id;
-                await this._loadJobData(targetJob.id);
+                await this.loadJobData(targetJob.id);
             } else {
                 console.log(`[JobDetailController] Already on the selected job or invalid job data`);
             }
@@ -175,7 +185,7 @@ class JobDetailController extends BaseController {
         }
     }
 
-    private async _loadJobData(jobId: number) {
+    private async loadJobData(jobId: number) {
         if (!jobId) return;
 
         this.isLoading = true;
@@ -185,7 +195,7 @@ class JobDetailController extends BaseController {
                 ? await this.DispatchData.getRecurringJobDetail(jobId)
                 : await this.DispatchData.getJobDetail(jobId);
 
-            this._initializeJobData();
+            this.initializeJobData();
 
             if (this.job.relatedJobs && this.job.relatedJobs.length > 0) {
                 const currentJobIndex = this.job.relatedJobs.findIndex(
@@ -200,10 +210,10 @@ class JobDetailController extends BaseController {
 
             this.isLoading = false;
 
-            this._triggerDigestCycle();
+            this.triggerDigestCycle();
 
             if (this.job.completedTime && !this.isRecurringJob) {
-                this._loadPodPhotos();
+                this.loadPodPhotos();
             }
         } catch (error) {
             console.error("Error loading job data:", error);
@@ -212,7 +222,7 @@ class JobDetailController extends BaseController {
         }
     }
 
-    private _loadPodPhotos() {
+    private loadPodPhotos() {
         if (!this.job?.completedTime) {
             console.log('No POD time available for job');
             return;
@@ -259,7 +269,7 @@ class JobDetailController extends BaseController {
                     console.log(`Successfully processed ${this.formattedPodPhotos.length} POD photos`);
 
                     this.selectedPhotoIndex = 0;
-                    this._setupPhotoKeyboardNavigation();
+                    this.setupPhotoKeyboardNavigation();
                 })
                 .catch((error: Error) => {
                     this.toastrService.showErrorToast('Failed to load POD photos');
@@ -268,12 +278,12 @@ class JobDetailController extends BaseController {
                     this.formattedPodPhotos = [];
                 });
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
             this.formattedPodPhotos = [];
         }
     }
 
-    private _initializeJobData() {
+    private initializeJobData() {
         if (!this.job) return;
 
         console.log('Initializing job data:', this.job.id);
@@ -331,9 +341,9 @@ class JobDetailController extends BaseController {
 
             await this.updateField(job, callData);
             this.toastrService.showSuccessToast(`${job.jobNo} updated`);
-            await this._refreshJobDetails(job.id);
+            await this.refreshJobDetails(job.id);
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
@@ -341,9 +351,9 @@ class JobDetailController extends BaseController {
                              title: string, fieldName: string, dateTime?: Date, timezone?: Suggestion) {
         try {
             const result = await this.editDateTimeDialogService.showEditTimeDialog($event, title, fieldName, dateTime, timezone);
-            await this._processDateTimeUpdateResult(job, result)
+            await this.processDateTimeUpdateResult(job, result)
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
@@ -351,9 +361,9 @@ class JobDetailController extends BaseController {
                              title: string, field: JobProperty, dateTime?: Date, timezone?: Suggestion) {
         try {
             const result = await this.editDateTimeDialogService.showEditDateDialog($event, title, field, dateTime, timezone);
-            await this._processDateTimeUpdateResult(job, result)
+            await this.processDateTimeUpdateResult(job, result)
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
@@ -366,13 +376,13 @@ class JobDetailController extends BaseController {
             }
 
             const result = await this.editDateTimeDialogService.showEditDateAndTimeDialog($event, title, fieldName, dateTime, timezone, showTImeZoneSelector);
-            await this._processDateTimeUpdateResult(job, result)
+            await this.processDateTimeUpdateResult(job, result)
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
-    private async _processDateTimeUpdateResult(job: IJob, result: IDialogDateTimeResult) {
+    private async processDateTimeUpdateResult(job: IJob, result: IDialogDateTimeResult) {
         if (result) {
             if (job.bulkJob) {
                 await this.DispatchData.updateBulkJobDetail(
@@ -394,7 +404,7 @@ class JobDetailController extends BaseController {
             }
 
             this.toastrService.showSuccessToast(`${job.jobNo} updated`);
-            await this._refreshJobDetails(job.id);
+            await this.refreshJobDetails(job.id);
         }
     }
 
@@ -421,10 +431,10 @@ class JobDetailController extends BaseController {
                 }
 
                 this.toastrService.showSuccessToast(`${job.jobNo} updated`);
-                await this._refreshJobDetails(job.id);
+                await this.refreshJobDetails(job.id);
             }
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
@@ -452,12 +462,12 @@ class JobDetailController extends BaseController {
         await this.updateField(job, callData);
 
         this.toastrService.showSuccessToast(`${job.jobNo} updated`);
-        await this._refreshJobDetails(job.id);
+        await this.refreshJobDetails(job.id);
     }
 
     async showJobDimensionsDialog($event: MouseEvent, job: IJob) {
         await this.editParcelDimensionsDialogService.showJobDimensionsDialog($event, job);
-        await this._refreshJobDetails(job.id);
+        await this.refreshJobDetails(job.id);
     }
 
     async editStartTime($event: MouseEvent, job: IJob) {
@@ -511,29 +521,29 @@ class JobDetailController extends BaseController {
                 return; // User closed dialog
             }
 
-            await this._processAddressUpdate(job, newAddress, isDeliveryAddress);
+            await this.processAddressUpdate(job, newAddress, isDeliveryAddress);
         } catch (error) {
             console.log("Error updating GPS:", error);
         }
     }
 
-    private async _processAddressUpdate(job: IJob, newAddress: EditAddressDialogViewModel, isDeliveryAddress: boolean) {
+    private async processAddressUpdate(job: IJob, newAddress: EditAddressDialogViewModel, isDeliveryAddress: boolean) {
         console.log(`isDeliveryAddress: ${isDeliveryAddress}`);
 
         // Update job by address format
-        const updatedJob = this._updateJobAddressUs(job, newAddress, isDeliveryAddress);
+        const updatedJob = this.updateJobAddressUs(job, newAddress, isDeliveryAddress);
 
         try {
-            await this._updateJobRateAndAddress(updatedJob, newAddress, isDeliveryAddress);
+            await this.updateJobRateAndAddress(updatedJob, newAddress, isDeliveryAddress);
 
             this.toastrService.showSuccessToast(`${job.jobNo} updated`);
-            await this._refreshJobDetails(job.id);
+            await this.refreshJobDetails(job.id);
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
-    private _updateJobAddressUs(job: IJob, newAddress: EditAddressDialogViewModel, isDeliveryAddress: boolean) {
+    private updateJobAddressUs(job: IJob, newAddress: EditAddressDialogViewModel, isDeliveryAddress: boolean) {
         const addressField = isDeliveryAddress ? "deliveryAddress" : "pickupAddress";
         console.log(`Address Field: ${addressField}`);
 
@@ -541,7 +551,7 @@ class JobDetailController extends BaseController {
         return job;
     }
 
-    private async _updateJobRateAndAddress(job: IJob, addressResult: EditAddressDialogViewModel, isDeliveryAddress: boolean) {
+    private async updateJobRateAndAddress(job: IJob, addressResult: EditAddressDialogViewModel, isDeliveryAddress: boolean) {
         try {
             if (isDeliveryAddress) {
                 await this.DispatchData.updateDeliveryAddress(job.id, FirstName, job.preBook, addressResult);
@@ -580,7 +590,7 @@ class JobDetailController extends BaseController {
         try {
             await this.showEditDialog($event, job, contactDetails.title, contactDetails.placeholder, contactDetails.fieldLabel, contactDetails.contactValue, contactDetails.contactProperty);
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
@@ -610,7 +620,7 @@ class JobDetailController extends BaseController {
         try {
             await this.showEditDialog($event, job, phoneDetails.title, phoneDetails.placeholder, phoneDetails.fieldLabel, phoneDetails.phoneValue, phoneDetails.phoneProperty);
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
@@ -623,7 +633,7 @@ class JobDetailController extends BaseController {
             if (!refreshedJob) return;
             await this.markJobAsDone($event, refreshedJob);
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
@@ -635,7 +645,7 @@ class JobDetailController extends BaseController {
                 await this.showEditDialog($event, job, "Edit RefA", "RefB...", "refb", job.refB, JobProperty.RefB);
             }
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
@@ -643,7 +653,7 @@ class JobDetailController extends BaseController {
         try {
             await this.showEditDialog($event, job, "Edit Our Reference", "Our Reference...", "our reference", job.ourRef, JobProperty.OurRef);
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
@@ -651,7 +661,7 @@ class JobDetailController extends BaseController {
         try {
             await this.showEditDialog($event, job, "Edit AWB", "AWB...", "awb", job.conNote, JobProperty.ConNote);
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
@@ -659,7 +669,7 @@ class JobDetailController extends BaseController {
         try {
             await this.showEditDialog($event, job, "Edit Weight", "Job Weight...", "job weight", job.weight, JobProperty.Weight);
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
@@ -667,7 +677,7 @@ class JobDetailController extends BaseController {
         try {
             await this.showEditDialog($event, job, "Edit Tracking Mobile", "Tracking Mobile...", "tracking mobile", job.trackingMobile, JobProperty.TrackingMobile);
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
@@ -675,7 +685,7 @@ class JobDetailController extends BaseController {
         try {
             await this.showEditDialog($event, job, "Edit Tracking Email", "Tracking Email...", "tracking email", job.trackingEmail, JobProperty.TrackingEmail);
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
@@ -781,16 +791,16 @@ class JobDetailController extends BaseController {
         await this.showSelectDialog($event, job, statusList, JobProperty.Status, "Status", job.statusName);
     }
 
-    private _showLoading() {
+    private showLoading() {
         this.isLoading = true;
     }
 
-    private _hideLoading() {
+    private hideLoading() {
         this.isLoading = false;
     }
 
     async updateField(job: IJob, callData: CallData) {
-        this._showLoading();
+        this.showLoading();
 
         try {
             // Ensure rate is decimal
@@ -809,7 +819,7 @@ class JobDetailController extends BaseController {
             this.toastrService.showErrorToast("Failed to update job. Please try again.");
             throw error;
         } finally {
-            this._hideLoading();
+            this.hideLoading();
         }
     }
 
@@ -874,7 +884,7 @@ class JobDetailController extends BaseController {
             this.toastrService.showSuccessToast(`${job.jobNo} updated`);
 
             console.log(`[JobDetailsComponentController] Refreshing job details for ID: ${job.id}`);
-            await this._refreshJobDetails(job.id);
+            await this.refreshJobDetails(job.id);
 
             console.log(`[JobDetailsComponentController] Toggle operation completed for ${property}`);
         } catch (error) {
@@ -928,22 +938,33 @@ class JobDetailController extends BaseController {
                 if (!job.podName) return;
             }
 
+            try {
+                await this.jobFileUploadDialogService.openJobFileUploadDialog($event, job, FileUploadType.POD);
+            } catch(error) {
+                if(error !== undefined) {
+                    this.toastrService.showErrorToast("Oops an error occured uploading POD photos.");
+                  return;
+                }
+
+                // Do nothing as dialog was closed
+            }
+
             console.log("[JobDetailsComponentController] Marking job as done]")
             await this.DispatchData.updatePODDetail(job.id, JobStatus.Completed, job.podName, job.completedTime);
 
             this.toastrService.showSuccessToast(`${job.jobNo} Completed`);
-            await this._refreshJobDetails(job.id);
+            await this.refreshJobDetails(job.id);
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
-    private async _refreshJobDetails(jobId: number) {
+    private async refreshJobDetails(jobId: number) {
         try {
             console.log(`Refreshing job details for jobId: ${jobId}`);
             this.isLoading = true;
 
-            await this._loadJobData(jobId);
+            await this.loadJobData(jobId);
 
             console.log('Job data refreshed');
         } catch (error) {
@@ -952,7 +973,7 @@ class JobDetailController extends BaseController {
         }
     }
 
-    private _handleError(error: any) {
+    private handleError(error: any) {
         if (!error) {
             console.log("User closed dialog");
         } else {
@@ -987,7 +1008,7 @@ class JobDetailController extends BaseController {
         this.selectedPhotoIndex = (this.selectedPhotoIndex - 1 + this.formattedPodPhotos.length) % this.formattedPodPhotos.length;
     }
 
-    private _handleKeydown = (event: Event) => {
+    private handleKeydown = (event: Event) => {
         const keyboardEvent = event as KeyboardEvent;
         if (keyboardEvent.key === 'ArrowLeft') {
             this.prevPhoto();
@@ -996,13 +1017,13 @@ class JobDetailController extends BaseController {
         }
     };
 
-    private _setupPhotoKeyboardNavigation() {
+    private setupPhotoKeyboardNavigation() {
         const photoSection = angular.element('.pod-photo-section');
 
         if (photoSection.length) {
-            photoSection.off('keydown', this._handleKeydown);
+            photoSection.off('keydown', this.handleKeydown);
 
-            photoSection.on('keydown', this._handleKeydown);
+            photoSection.on('keydown', this.handleKeydown);
             photoSection.attr('tabindex', '0');
         }
     }
@@ -1051,14 +1072,14 @@ class JobDetailController extends BaseController {
                 .ok('OK'));
 
         } catch (error: any) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
     async showPricingBreakdown($event: MouseEvent, job: IJob) {
         try {
             await this.priceBreakdownDialogService.openPriceBreakdownDialog($event, job.id, job.preBook);
-            await this._refreshJobDetails(job.id);
+            await this.refreshJobDetails(job.id);
         } catch (error) {
             console.error("Error in displayPriceBreakdown:", error);
             this.toastrService.showErrorToast("An error occurred while fetching the price breakdown. Please try again.");
@@ -1078,7 +1099,7 @@ class JobDetailController extends BaseController {
         console.log(`[JobDetailController] Marking job ${job.jobNo} as ${actionText}`);
 
         try {
-            this._showLoading();
+            this.showLoading();
 
             // Update the job's read status in the database
             await this.DispatchData.updateJobReadStatus(job.id, newReadStatus);
@@ -1115,7 +1136,7 @@ class JobDetailController extends BaseController {
             };
 
             this.$rootScope.$broadcast('jobReadChanged', data);
-            this._hideLoading();
+            this.hideLoading();
         }
     }
 
@@ -1146,10 +1167,10 @@ class JobDetailController extends BaseController {
             );
 
             this.toastrService.showSuccessToast(`${job.jobNo} days updated`);
-            await this._refreshJobDetails(job.id);
+            await this.refreshJobDetails(job.id);
         } catch (error) {
             console.error('Error updating days of week:', error);
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
@@ -1168,14 +1189,14 @@ class JobDetailController extends BaseController {
             );
 
             this.toastrService.showSuccessToast(`${job.jobNo} frequency updated`);
-            await this._refreshJobDetails(job.id);
+            await this.refreshJobDetails(job.id);
         } catch (error) {
             console.error('Error updating frequency:', error);
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
-    private _triggerDigestCycle() {
+    private triggerDigestCycle() {
         console.log('[_triggerDigestCycle] Forcing UI update');
         try {
             if (!this.$rootScope.$$phase) {
@@ -1207,10 +1228,10 @@ class JobDetailController extends BaseController {
             );
 
             this.toastrService.showSuccessToast(`${job.jobNo} holiday delivery option updated`);
-            await this._refreshJobDetails(job.id);
+            await this.refreshJobDetails(job.id);
         } catch (error) {
             console.error('Error updating holiday delivery option:', error);
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
@@ -1251,6 +1272,10 @@ class JobDetailController extends BaseController {
 
     getDeliveryTimeWindow(): string {
         return this.formatTimeWindow(false, this.job?.deliverByTime, this.job?.deliverByWindowMins);
+    }
+
+    async openPodUploadDialog($event: MouseEvent, job: IDispatchJob) {
+        await this.jobFileUploadDialogService.openJobFileUploadDialog($event, job, FileUploadType.POD);
     }
 }
 

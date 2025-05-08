@@ -1,8 +1,10 @@
-<md-dialog flex="50">
+<md-dialog flex="60" class="job-file-upload-dialog">
     <md-toolbar>
         <div class="md-toolbar-tools">
-            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">upload_file</md-icon>
-            <h2>Attached Files</h2>
+            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">
+                {{ctrl.isPODUpload() ? 'camera_alt' : 'upload_file'}}
+            </md-icon>
+            <h2>{{ctrl.isPODUpload() ? 'POD Photos' : 'Attached Files'}}</h2>
             <span flex></span>
             <md-button class="md-icon-button" ng-click="ctrl.cancel()">
                 <md-tooltip md-direction="bottom">Close</md-tooltip>
@@ -11,60 +13,248 @@
         </div>
     </md-toolbar>
 
-    <md-dialog-content>
+    <md-dialog-content class="md-padding">
         <div layout="column">
-            <div
-                    class="drop-box"
-                    ng-model="ctrl.files"
-                    ngf-change="ctrl.uploadFiles($files)"
-                    ngf-drop
-                    ngf-multiple="true"
-                    ngf-accept="'image/*,application/pdf'"
-                    ngf-drag-over-class="'dragover'"
-                    ngf-max-size="10MB"
-                    ngf-select
-            >
-                <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px;">cloud_upload</md-icon>
-                <p>Drag and drop files here or click to upload</p>
-                <p class="md-caption">Accepted file types: Images, PDF. Max size: 10MB</p>
+            <!-- Single Tab Mode -->
+            <div ng-if="!ctrl.showNormalTab || !ctrl.showPodTab">
+                <!-- Regular File Upload (Only) -->
+                <div ng-if="ctrl.showNormalTab && !ctrl.showPodTab" layout="column">
+                    <div
+                            class="drop-box"
+                            ng-model="ctrl.files"
+                            ngf-change="ctrl.uploadFiles($files)"
+                            ngf-drop
+                            ngf-multiple="true"
+                            ngf-accept="'image/*,application/pdf'"
+                            ngf-drag-over-class="'dragover'"
+                            ngf-max-size="10MB"
+                            ngf-select
+                    >
+                        <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px;">cloud_upload</md-icon>
+                        <p>Drag and drop files here or click to upload</p>
+                        <p class="md-caption">Accepted file types: Images, PDF. Max size: 10MB</p>
+                    </div>
+
+                    <!-- Regular Files List -->
+                    <md-table-container>
+                        <table md-table>
+                            <thead md-head>
+                            <tr md-row>
+                                <th md-column>File Name</th>
+                                <th md-column>Size</th>
+                                <th md-column>Last Modified</th>
+                                <th md-column>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody md-body>
+                            <tr md-row ng-repeat="file in ctrl.files">
+                                <td md-cell>{{file.fileName}}</td>
+                                <td md-cell>{{file.size | bytes}}</td>
+                                <td md-cell>{{file.lastModified | date: 'MMM d, y HH:mm:ss'}}</td>
+                                <td md-cell>
+                                    <md-button class="md-icon-button" ng-click="ctrl.downloadFile(file)">
+                                        <md-tooltip>Download</md-tooltip>
+                                        <md-icon md-font-set="material-symbols-outlined">cloud_download</md-icon>
+                                    </md-button>
+                                    <md-button class="md-icon-button" ng-click="ctrl.deleteFile(file)">
+                                        <md-tooltip>Delete</md-tooltip>
+                                        <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
+                                    </md-button>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </md-table-container>
+                </div>
+
+                <!-- POD Upload (Only) -->
+                <div ng-if="!ctrl.showNormalTab && ctrl.showPodTab" layout="column">
+                    <!-- POD Description Input -->
+                    <md-input-container class="md-block">
+                        <label>POD Photo Description</label>
+                        <input ng-model="ctrl.podDescription" type="text" placeholder="Enter description for POD photo">
+                    </md-input-container>
+
+                    <div
+                            class="drop-box pod-drop-box"
+                            ng-model="ctrl.podFiles"
+                            ngf-change="ctrl.uploadFiles($files)"
+                            ngf-drop
+                            ngf-multiple="false"
+                            ngf-accept="'image/*'"
+                            ngf-drag-over-class="'dragover'"
+                            ngf-max-size="10MB"
+                            ngf-select
+                    >
+                        <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px;">camera_alt</md-icon>
+                        <p>Drag and drop POD photo here or click to upload</p>
+                        <p class="md-caption">Accepted file types: Images only. Max size: 10MB</p>
+                    </div>
+
+                    <!-- POD Files List -->
+                    <md-table-container>
+                        <table md-table>
+                            <thead md-head>
+                            <tr md-row>
+                                <th md-column>Photo Name</th>
+                                <th md-column>Description</th>
+                                <th md-column>Size</th>
+                                <th md-column>Upload Date</th>
+                                <th md-column>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody md-body>
+                            <tr md-row ng-repeat="file in ctrl.podFiles">
+                                <td md-cell>{{file.fileName}}</td>
+                                <td md-cell>{{file.podDescription || 'No description'}}</td>
+                                <td md-cell>{{file.size | bytes}}</td>
+                                <td md-cell>{{file.uploadDate | date: 'MMM d, y HH:mm:ss'}}</td>
+                                <td md-cell>
+                                    <md-button class="md-icon-button" ng-click="ctrl.downloadFile({fileName: file.fileName, s3Key: file.s3Key, isPOD: true})">
+                                        <md-tooltip>Download</md-tooltip>
+                                        <md-icon md-font-set="material-symbols-outlined">cloud_download</md-icon>
+                                    </md-button>
+                                    <md-button class="md-icon-button" ng-click="ctrl.deleteFile({s3Key: file.s3Key, isPOD: true})">
+                                        <md-tooltip>Delete</md-tooltip>
+                                        <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
+                                    </md-button>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </md-table-container>
+                </div>
             </div>
 
-            <!-- Uploading Files Progress -->
-            <div ng-repeat="file in ctrl.uploadingFiles">
-                <p>{{file.name}}</p>
-                <md-progress-linear md-mode="determinate" value="{{file.progress}}"></md-progress-linear>
+            <!-- Multi-Tab Mode -->
+            <div ng-if="ctrl.showNormalTab && ctrl.showPodTab">
+                <md-tabs md-dynamic-height md-border-bottom md-selected="ctrl.selectedTabIndex">
+                    <md-tab id="tab1" label="Regular Files" md-on-select="ctrl.setUploadType('normal')">
+                        <div layout="column" class="md-padding">
+                            <div
+                                    class="drop-box"
+                                    ng-model="ctrl.files"
+                                    ngf-change="ctrl.uploadFiles($files)"
+                                    ngf-drop
+                                    ngf-multiple="true"
+                                    ngf-accept="'image/*,application/pdf'"
+                                    ngf-drag-over-class="'dragover'"
+                                    ngf-max-size="10MB"
+                                    ngf-select
+                            >
+                                <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px;">cloud_upload</md-icon>
+                                <p>Drag and drop files here or click to upload</p>
+                                <p class="md-caption">Accepted file types: Images, PDF. Max size: 10MB</p>
+                            </div>
+
+                            <!-- Regular Files List -->
+                            <md-table-container>
+                                <table md-table>
+                                    <thead md-head>
+                                    <tr md-row>
+                                        <th md-column>File Name</th>
+                                        <th md-column>Size</th>
+                                        <th md-column>Last Modified</th>
+                                        <th md-column>Actions</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody md-body>
+                                    <tr md-row ng-repeat="file in ctrl.files">
+                                        <td md-cell>{{file.fileName}}</td>
+                                        <td md-cell>{{file.size | bytes}}</td>
+                                        <td md-cell>{{file.lastModified | date: 'MMM d, y HH:mm:ss'}}</td>
+                                        <td md-cell>
+                                            <md-button class="md-icon-button" ng-click="ctrl.downloadFile({fileName: file.fileName, s3Key: file.s3Key, isPOD: false})">
+                                                <md-tooltip>Download</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">cloud_download</md-icon>
+                                            </md-button>
+                                            <md-button class="md-icon-button" ng-click="ctrl.deleteFile({s3Key: file.s3Key, isPOD: false})">
+                                                <md-tooltip>Delete</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
+                                            </md-button>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </md-table-container>
+                        </div>
+                    </md-tab>
+
+                    <md-tab id="tab2" label="POD Photos" md-on-select="ctrl.setUploadType('pod')">
+                        <div layout="column" class="md-padding">
+                            <!-- POD Description Input -->
+                            <md-input-container class="md-block">
+                                <label>POD Photo Description</label>
+                                <input ng-model="ctrl.podDescription" type="text" placeholder="Enter description for POD photo">
+                            </md-input-container>
+
+                            <div
+                                    class="drop-box pod-drop-box"
+                                    ng-model="ctrl.podFiles"
+                                    ngf-change="ctrl.uploadFiles($files)"
+                                    ngf-drop
+                                    ngf-multiple="false"
+                                    ngf-accept="'image/*'"
+                                    ngf-drag-over-class="'dragover'"
+                                    ngf-max-size="10MB"
+                                    ngf-select
+                            >
+                                <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px;">camera_alt</md-icon>
+                                <p>Drag and drop POD photo here or click to upload</p>
+                                <p class="md-caption">Accepted file types: Images only. Max size: 10MB</p>
+                            </div>
+
+                            <!-- POD Files List -->
+                            <md-table-container>
+                                <table md-table>
+                                    <thead md-head>
+                                    <tr md-row>
+                                        <th md-column>Photo Name</th>
+                                        <th md-column>Description</th>
+                                        <th md-column>Size</th>
+                                        <th md-column>Upload Date</th>
+                                        <th md-column>Actions</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody md-body>
+                                    <tr md-row ng-repeat="file in ctrl.podFiles">
+                                        <td md-cell>{{file.fileName}}</td>
+                                        <td md-cell>{{file.podDescription || 'No description'}}</td>
+                                        <td md-cell>{{file.size | bytes}}</td>
+                                        <td md-cell>{{file.uploadDate | date: 'MMM d, y HH:mm:ss'}}</td>
+                                        <td md-cell>
+                                            <md-button class="md-icon-button" ng-click="ctrl.downloadFile(file)">
+                                                <md-tooltip>Download</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">cloud_download</md-icon>
+                                            </md-button>
+                                            <md-button class="md-icon-button" ng-click="ctrl.deleteFile(file)">
+                                                <md-tooltip>Delete</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
+                                            </md-button>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </md-table-container>
+                        </div>
+                    </md-tab>
+                </md-tabs>
             </div>
 
-            <!-- File List -->
-            <md-table-container>
-                <table md-table>
-                    <thead md-head>
-                    <tr md-row>
-                        <th md-column>File Name</th>
-                        <th md-column>Size</th>
-                        <th md-column>Last Modified</th>
-                        <th md-column>Actions</th>
-                    </tr>
-                    </thead>
-                    <tbody md-body>
-                    <tr md-row ng-repeat="file in ctrl.files">
-                        <td md-cell>{{file.fileName}}</td>
-                        <td md-cell>{{file.size | bytes}}</td>
-                        <td md-cell>{{file.lastModified | date: 'MMM d, y HH:mm:ss'}}</td>
-                        <td md-cell>
-                            <md-button class="md-icon-button" ng-click="ctrl.downloadFile(file)">
-                                <md-tooltip>Download</md-tooltip>
-                                <md-icon md-font-set="material-symbols-outlined">cloud_download</md-icon>
-                            </md-button>
-                            <md-button class="md-icon-button" ng-click="ctrl.deleteFile(file)">
-                                <md-tooltip>Delete</md-tooltip>
-                                <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
-                            </md-button>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </md-table-container>
+            <!-- Uploading Files Progress (Shared between both tabs) -->
+            <div ng-if="ctrl.uploadingFiles.length > 0" class="uploads-progress-section">
+                <h3>Uploading Files</h3>
+                <div ng-repeat="file in ctrl.uploadingFiles" layout="column" class="upload-progress-item">
+                    <div layout="row" layout-align="space-between center">
+                        <span>{{file.name}} {{file.isPOD ? '(POD)' : ''}}</span>
+                        <span>{{file.progress}}%</span>
+                    </div>
+                    <div ng-if="file.isPOD && file.podDescription" class="pod-description-text">
+                        Description: {{file.podDescription}}
+                    </div>
+                    <md-progress-linear md-mode="determinate" value="{{file.progress}}"></md-progress-linear>
+                </div>
+            </div>
         </div>
     </md-dialog-content>
 </md-dialog>

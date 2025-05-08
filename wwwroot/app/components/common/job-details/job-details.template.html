@@ -1040,6 +1040,10 @@
             </div>
 
             <div style="display: flex; gap: 8px;">
+                <md-button aria-label="Upload POD Photos" class="md-icon-button" ng-click="ctrl.openPodUploadDialog($event, ctrl.job)">
+                    <md-icon md-font-set="material-symbols-outlined">upload</md-icon>
+                    <md-tooltip>Upload POD Photos</md-tooltip>
+                </md-button>
                 <md-button aria-label="Send POD" class="md-icon-button" ng-click="ctrl.sendPOD($event)">
                     <md-icon md-font-set="material-symbols-outlined">send</md-icon>
                     <md-tooltip>Send POD</md-tooltip>

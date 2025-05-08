@@ -1,6 +1,7 @@
+import {FileUploadType} from "../../../enums/file-upload-type.enum";
 import ToastrService from "../../../services/toastr.service";
 import BaseController from "../../base-controller";
-import { IJobFile, IUploadProgressFile } from "./job-file-upload-dialog.interfaces";
+import {IJobFile, IUploadProgressFile} from "./job-file-upload-dialog.interfaces";
 
 class JobFileUploadController extends BaseController {
     static $inject = [
@@ -10,13 +11,18 @@ class JobFileUploadController extends BaseController {
         "toastrService",
         "Upload",
         "bytesFilter",
-        "jobId"
+        "jobId",
+        "initialUploadType"
     ];
 
     files: IJobFile[] = [];
+    podFiles: IJobFile[] = [];
     uploadingFiles: IUploadProgressFile[] = [];
-    allowedFileTypes: string[] = ["image/jpeg", "image/png", "image/gif", "application/pdf"];
-    maxFileSize: number = 10 * 1024 * 1024; // 10MB in bytes
+    currentUploadType: FileUploadType;
+    podDescription: string = '';
+    selectedTabIndex: number = 0;
+    showNormalTab: boolean = true;
+    showPodTab: boolean = true;
 
     constructor(
         private $http: angular.IHttpService,
@@ -25,9 +31,20 @@ class JobFileUploadController extends BaseController {
         private toastrService: ToastrService,
         public Upload: angular.angularFileUpload.IUploadService,
         public bytesFilter: (bytes: number) => string,
-        public jobId: number
+        public jobId: number,
+        public initialUploadType: FileUploadType = FileUploadType.NORMAL
     ) {
         super();
+        this.currentUploadType = initialUploadType;
+
+        // Determine which tabs to show based on the initialUploadType
+        if (initialUploadType === FileUploadType.NORMAL) {
+            this.showPodTab = false;
+            this.selectedTabIndex = 0;
+        } else if (initialUploadType === FileUploadType.POD) {
+            this.showNormalTab = false;
+            this.selectedTabIndex = 0; // Will be the first tab since the normal tab is hidden
+        }
     }
 
     $onInit() {
@@ -35,17 +52,76 @@ class JobFileUploadController extends BaseController {
     }
 
     loadFiles(): void {
+        // Load all files (both regular and POD)
         this.$http.get("/job/getAttachedFiles", {
             params: {
                 jobId: this.jobId
             }
         }).then((response: angular.IHttpResponse<any>) => {
-            this.files = response.data;
-            console.log("Files:", this.files);  // Combined logs for clarity
-        }).catch((error: any) => {    // Using catch instead of error callback
+            const allFiles = response.data || [];
+
+            if (this.showNormalTab) {
+                this.files = allFiles.filter((file: IJobFile) => !file.isPOD);
+                console.log("Regular Files:", this.files);
+            }
+
+            if (this.showPodTab) {
+                this.podFiles = allFiles.filter((file: IJobFile) => file.isPOD);
+                console.log("POD Files:", this.podFiles);
+            }
+        }).catch((error: any) => {
             console.error("Error loading files:", error);
             this.toastrService.showErrorToast("Failed to load files. Please try again.");
         });
+
+        // If the POD tab is visible, also load additional POD photos from the specialized endpoint
+        if (this.showPodTab) {
+            // Get the current month and year for the POD photo search
+            const now = new Date();
+            const month = now.getMonth() + 1;
+            const year = now.getFullYear();
+
+            this.$http.get("/job/GetJobDeliveryPhotosAndSignature", {
+                params: {
+                    jobId: this.jobId,
+                    year: year,
+                    month: month
+                }
+            }).then((response: angular.IHttpResponse<any>) => {
+                if (response.data && response.data.length) {
+                    // Transform the POD photos to match the IJobFile interface
+                    const podPhotos = response.data.map((photo: any) => {
+                        return {
+                            fileName: photo.fileName || `POD_${new Date().getTime()}.jpg`,
+                            s3Key: photo.s3Key,
+                            contentType: photo.contentType || 'image/jpeg',
+                            size: photo.size || 0,
+                            uploadDate: photo.uploadDate || new Date().toISOString(),
+                            isPOD: true,
+                            podDescription: photo.podDescription || ''
+                        };
+                    });
+
+                    // Merge with existing POD files, avoiding duplicates by s3Key
+                    const existingKeys = this.podFiles.map(f => f.s3Key);
+                    const newPodFiles = podPhotos.filter((p: { s3Key: string; }) => !existingKeys.includes(p.s3Key));
+
+                    this.podFiles = [...this.podFiles, ...newPodFiles];
+                    console.log("All POD Files:", this.podFiles);
+                }
+            }).catch((error: any) => {
+                console.error("Error loading POD files:", error);
+                this.toastrService.showErrorToast("Failed to load POD photos. Please try again.");
+            });
+        }
+    }
+
+    setUploadType(type: FileUploadType): void {
+        this.currentUploadType = type;
+    }
+
+    isPODUpload(): boolean {
+        return this.currentUploadType === FileUploadType.POD;
     }
 
     async uploadFiles(files: File[]): Promise<void> {
@@ -57,14 +133,24 @@ class JobFileUploadController extends BaseController {
     }
 
     async upload(file: File): Promise<void> {
-        const formData: any = {
-            jobId: this.jobId.toString(),
-            file: file
-        };
-
         try {
+            const formData: any = {
+                jobId: this.jobId.toString(),
+                file: file,
+                isPOD: this.isPODUpload()
+            };
+
+            // Add POD description if this is a POD upload
+            if (this.isPODUpload() && this.podDescription) {
+                formData.podDescription = this.podDescription;
+            }
+
+            const endpoint = this.isPODUpload()
+                ? "/job/uploadJobDeliveryPhotoOrSignature"
+                : "/job/uploadFile";
+
             const response = await this.Upload.upload({
-                url: "/job/uploadFile",
+                url: endpoint,
                 method: 'POST',
                 data: formData,
                 headers: {'Content-Type': undefined},
@@ -78,29 +164,42 @@ class JobFileUploadController extends BaseController {
                 }
             });
 
-            const message = `Success ${file.name} uploaded`;
+            const fileType = this.isPODUpload() ? 'POD photo' : 'file';
+            const message = `Success ${file.name} uploaded as ${fileType}`;
             this.toastrService.showSuccessToast(message);
             console.log(message + ". Response: " + JSON.stringify(response.data));
             this.loadFiles();
         } catch (error: any) {
             console.error(`Error status: ${error.status}`);
             console.error(`Error data: ${JSON.stringify(error.data)}`);
-            this.toastrService.showErrorToast(`Failed to upload file: ${file.name}. Please try again.`);
+            this.toastrService.showErrorToast(`Failed to upload ${this.isPODUpload() ? 'POD photo' : 'file'}: ${file.name}. Please try again.`);
         }
     }
 
     updateFileProgress(file: File, progress: number): void {
         let index: number = this.uploadingFiles.findIndex((f: any) => f.name === file.name && f.size === file.size);
         if (index === -1) {
-            this.uploadingFiles.push({...file, progress: progress});
+            this.uploadingFiles.push({
+                ...file,
+                progress: progress,
+                isPOD: this.isPODUpload(),
+                podDescription: this.isPODUpload() ? this.podDescription : undefined
+            });
         } else {
             this.uploadingFiles[index].progress = progress;
         }
     }
 
-    async downloadFile(file: { fileName: string; s3Key: string; }): Promise<void> {
+    async downloadFile(file: { fileName: string; s3Key: string; isPOD?: boolean }): Promise<void> {
         try {
-            const response: angular.IHttpResponse<Blob> = await this.$http.get<Blob>("/job/DownloadFile", {
+            // Determine the endpoint based on whether this is a POD file
+            const isPodFile = file.isPOD !== undefined
+                ? file.isPOD
+                : (file.s3Key.includes('/DeliveryPhotos/') || file.s3Key.includes('/DeliverySignatures/'));
+
+            const endpoint = isPodFile ? "/job/DownloadDeliveryFile" : "/job/DownloadFile";
+
+            const response: angular.IHttpResponse<Blob> = await this.$http.get<Blob>(endpoint, {
                 params: {
                     jobId: this.jobId,
                     key: file.s3Key
@@ -152,26 +251,53 @@ class JobFileUploadController extends BaseController {
             }, 100);
         } catch (error) {
             console.error("Download failed:", error);
-            // Handle error appropriately
+            this.toastrService.showErrorToast("Failed to download file. Please try again.");
         }
     }
 
-    deleteFile(file: { s3Key: string; }): void {
-        this.$http.delete("/job/DeleteFile", {
-            params: {
-                jobId: this.jobId,
-                key: file.s3Key
-            }
-        }).then(
-            (response: angular.IHttpResponse<any>) => {
-                console.log("Delete Success:", response.data);
-                this.loadFiles();
-            },
-            (error: any) => {
-                console.error("Delete Error:", error);
-                this.toastrService.showErrorToast("Failed to delete file. Please try again.");
-            }
-        );
+    deleteFile(file: { s3Key: string; isPOD?: boolean }): void {
+        // If isPOD isn't explicitly set, determine it from the file path
+        const isPodFile = file.isPOD !== undefined
+            ? file.isPOD
+            : (file.s3Key.includes('/DeliveryPhotos/') || file.s3Key.includes('/DeliverySignatures/'));
+
+        if (isPodFile) {
+            // Use the POD photo delete function
+            this.$http.delete("/job/DeleteJobDeliveryPhotoOrSignature", {
+                params: {
+                    jobId: this.jobId,
+                    key: file.s3Key
+                }
+            }).then(
+                (response: angular.IHttpResponse<any>) => {
+                    console.log("Delete Success:", response.data);
+                    this.loadFiles();
+                    this.toastrService.showSuccessToast("POD photo deleted successfully");
+                },
+                (error: any) => {
+                    console.error("Delete Error:", error);
+                    this.toastrService.showErrorToast("Failed to delete POD photo. Please try again.");
+                }
+            );
+        } else {
+            // Use the regular file delete for non-POD files
+            this.$http.delete("/job/DeleteFile", {
+                params: {
+                    jobId: this.jobId,
+                    key: file.s3Key
+                }
+            }).then(
+                (response: angular.IHttpResponse<any>) => {
+                    console.log("Delete Success:", response.data);
+                    this.loadFiles();
+                    this.toastrService.showSuccessToast("File deleted successfully");
+                },
+                (error: any) => {
+                    console.error("Delete Error:", error);
+                    this.toastrService.showErrorToast("Failed to delete file. Please try again.");
+                }
+            );
+        }
     }
 
     cancel(): void {
