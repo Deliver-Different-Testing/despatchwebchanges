@@ -781,6 +781,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             if (filters) {
                 const queryParams = new URLSearchParams();
 
+                if (filters.jobId) queryParams.append('jobId', filters.jobId.toString());
                 if (filters.staffId) queryParams.append('staffId', filters.staffId.toString());
                 if (filters.courierId) queryParams.append('courierId', filters.courierId.toString());
                 if (filters.eventTypeId) queryParams.append('eventTypeId', filters.eventTypeId.toString());

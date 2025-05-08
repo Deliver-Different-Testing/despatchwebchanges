@@ -219,6 +219,9 @@ public class TaskRepository(
         TaskTableFiltersRequest filters
     )
     {
+        if(filters.JobId.HasValue)
+            query = query.Where(e => e.UcevJobId == filters.JobId.Value);
+
         if (filters.ShowCompleted.HasValue)
             query = query.Where(e => e.UcevClosed == filters.ShowCompleted.Value);
 
@@ -303,7 +306,7 @@ public class TaskRepository(
         "Web", "Email", "Text"
     };
 
-    public async Task InsertEventAsync(
+    private async Task InsertEventAsync(
         string jobNo,
         int clientId,
         string contact,

@@ -265,7 +265,7 @@ class NationwideControl extends BaseController {
                 const lastActiveLayout = localStorage.getItem(`lastActiveLayoutNW-${ContactID}`);
 
                 this.layouts = storedLayouts || [this.defaultLayout];
-                this.layouts[0] = this.defaultLayout; // Ensure default is always up-to-date
+                this.layouts[0] = this.defaultLayout; // Ensure default is always up to date
 
                 // Load last active layout or default
                 const layoutToLoad = lastActiveLayout
@@ -447,9 +447,6 @@ class NationwideControl extends BaseController {
 
             // Store current state before refresh
             const currentJobId = this.currentJob?.id;
-
-            // Refresh tasks
-            await this.loadTasks();
 
             // Refresh job lists while preserving selections
             await this.refreshJobLists(currentJobId);
@@ -995,6 +992,9 @@ class NationwideControl extends BaseController {
         this.selected = null;
         this.selectedAirport = undefined;
 
+        // Refresh tasks
+        await this.loadTasks();
+
         // Pass job to updateUIState
         this.updateUIState(job);
 
@@ -1142,7 +1142,7 @@ class NationwideControl extends BaseController {
         if (!this.currentJob) {
             this.flightOptions = [];
             this.flightMessage = "Please select a job to view flight options";
-            this.updateUIState(); // No job parameter here, will use currentJob
+            this.updateUIState(); // No job parameter here will use currentJob
             return;
         }
 
@@ -1588,7 +1588,7 @@ class NationwideControl extends BaseController {
     }
 
     async getData() {
-        // Clear data once
+        // Clear data at once
         this.jobList = [];
         this.jobListPOD = [];
         this.currentJob = undefined;
@@ -1659,6 +1659,7 @@ class NationwideControl extends BaseController {
     // Tasks
     private buildFilterRequest(filterType: string): TaskTableFiltersRequest {
         let filterRequest: TaskTableFiltersRequest = {};
+        filterRequest.jobId = this.currentJobId;
         filterRequest.showCompleted = false;
 
         switch (filterType) {
@@ -1719,7 +1720,7 @@ class NationwideControl extends BaseController {
                 this.tasksLoading = true;
             });
 
-            // Build filter request based on filter type
+            // Build filter request based on a filter type
             const filterRequest = this.buildFilterRequest(filterType);
 
             try {
@@ -1767,10 +1768,10 @@ class NationwideControl extends BaseController {
         }
 
         try {
-            // First try to find the job in local lists
+            // First, try to find the job in local lists
             let attachedJob = this.findJobInLocalLists(task.jobId);
 
-            // If not found locally, fetch from database
+            // If not found locally, fetch from a database
             if (!attachedJob) {
                 attachedJob = await this.DispatchData.getJobDetail(task.jobId) as IDispatchJob;
             }
@@ -1973,13 +1974,13 @@ class NationwideControl extends BaseController {
 
     /**
      * Updates the UI state flags based on the provided job or the current job
-     * @param job Optional job to use for state calculations. If not provided, currentJob is used.
+     * @param job Optional job to use for state calculations. If not provided, the currentJob is used.
      */
     private updateUIState(job?: IDispatchJob) {
         // Reset all flags first
         this.resetAllFlags();
 
-        // Use provided job or fall back to currentJob
+        // Use provided job or fall back to the currentJob
         const activeJob = job || this.currentJob;
 
         // Determine if this is a delivery job

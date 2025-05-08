@@ -1,3 +1,5 @@
+import {Suggestion} from "../../interfaces/job.interface";
+
 export interface TaskViewModel {
     id: number;
     title: string;
@@ -23,9 +25,5 @@ export interface TaskTableFiltersRequest {
     date?: string;
     showCompleted?: boolean;
     courierId?: number;
-}
-
-export interface Suggestion {
-    id: number;
-    text: string;
+    jobId?: number;
 }

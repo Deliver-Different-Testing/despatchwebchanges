@@ -185,7 +185,7 @@ class HomeController extends BaseController {
         });
 
         $scope.$on('jobReadChanged', (_, data: IJobReadChanged) => {
-            this._markJobReadStatus(data.jobId, data.isRead);
+            this.markJobReadStatus(data.jobId, data.isRead);
         });
 
         this.boxSortableOptions = {
@@ -236,8 +236,8 @@ class HomeController extends BaseController {
 
                 // Update box metrics and save layout
                 this.$timeout(() => {
-                    this._updateBoxMetrics();
-                    this._saveCurrentLayout();
+                    this.updateBoxMetrics();
+                    this.saveCurrentLayout();
                 }, 100);
             }
         };
@@ -427,16 +427,13 @@ class HomeController extends BaseController {
             const currentJobId = this.currentJob?.id;
             const currentCourierId = this.currentCourier?.courierId;
 
-            // Refresh tasks
-            await this.loadSupports();
-
             // Refresh job list
             await this.refreshJobList(currentJobId, currentCourierId);
         }, 60000);
 
         // Set up a watch to apply dimensions when layout changes
         this.$scope.$watch(() => this.layout, () => {
-            this.$timeout(() => this._applyLayoutDimensions());
+            this.$timeout(() => this.applyLayoutDimensions());
         }, true);
 
         // Ensure draggingItems container exists
@@ -458,7 +455,7 @@ class HomeController extends BaseController {
         }
     }
 
-    private _updateBoxMetrics() {
+    private updateBoxMetrics() {
         if (!this.layout || !this.layout.columns) return;
 
         this.layout.columns.forEach((column: IColumn) => {
@@ -478,12 +475,12 @@ class HomeController extends BaseController {
         });
     }
 
-    private _saveCurrentLayout() {
+    private saveCurrentLayout() {
         if (!this.currentLayoutName || this.currentLayoutName === 'Default') {
             return;
         }
 
-        this._updateBoxMetrics();
+        this.updateBoxMetrics();
 
         const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
         if (index !== -1) {
@@ -565,7 +562,7 @@ class HomeController extends BaseController {
 
         // Apply dimensions on next digest cycle
         this.$timeout(() => {
-            this._applyLayoutDimensions();
+            this.applyLayoutDimensions();
 
             if (Modernizr.localstorage) {
                 localStorage.setItem(`lastActiveLayout-${ContactID}`, layout.name);
@@ -833,8 +830,8 @@ class HomeController extends BaseController {
             const areaGroupButtons = angular.element(this.DOM_SELECTORS.areaGroup);
             areaGroupButtons.removeClass("topBarActive");
 
-            if (this._shouldProcessJobs()) {
-                await this._processClearListJobs(selectedClearList.id);
+            if (this.shouldProcessJobs()) {
+                await this.processClearListJobs(selectedClearList.id);
             }
         } catch (error) {
             console.error("Clear list processing error:", error);
@@ -842,12 +839,12 @@ class HomeController extends BaseController {
         }
     }
 
-    private _shouldProcessJobs(): boolean {
+    private shouldProcessJobs(): boolean {
         const activeLocations = angular.element(this.DOM_SELECTORS.driverLocations);
         return activeLocations.length <= 1;
     }
 
-    private async _processClearListJobs(clearListId: number) {
+    private async processClearListJobs(clearListId: number) {
         const envelope = await this.getClearListEnvelope(clearListId);
         if (!envelope) {
             throw new Error(`Failed to retrieve envelope for clear list ID: ${clearListId}`);
@@ -1151,7 +1148,7 @@ class HomeController extends BaseController {
             return;
         }
 
-        const jobsToDispatch = this._getJobsToDispatch();
+        const jobsToDispatch = this.getJobsToDispatch();
 
         if (!jobsToDispatch.length) {
             console.warn("No jobs selected for dispatch");
@@ -1189,7 +1186,7 @@ class HomeController extends BaseController {
         }
     }
 
-    private _getJobsToDispatch() {
+    private getJobsToDispatch() {
         return this.jobList.filter((job) => this.dispatchState.selectedJobs.has(job.id));
     }
 
@@ -1353,7 +1350,7 @@ class HomeController extends BaseController {
     }
 
     async resendAll($event: MouseEvent) {
-        const confirmDialog = this._createResendConfirmDialog($event);
+        const confirmDialog = this.createResendConfirmDialog($event);
 
         try {
             await this.$mdDialog.show(confirmDialog);
@@ -1365,7 +1362,7 @@ class HomeController extends BaseController {
                 courierId: this.currentCourier.courierId,
             };
 
-            this._collectJobIds(resendRequest);
+            this.collectJobIds(resendRequest);
             const foundCourier = await this.DispatchData.getCourierById(resendRequest.courierId);
 
             if (resendRequest.jobs.length > 0) {
@@ -1380,7 +1377,7 @@ class HomeController extends BaseController {
         }
     }
 
-    private _createResendConfirmDialog($event: MouseEvent) {
+    private createResendConfirmDialog($event: MouseEvent) {
         return this.$mdDialog
             .confirm()
             .title("Resend All Jobs")
@@ -1390,7 +1387,7 @@ class HomeController extends BaseController {
             .cancel("No");
     }
 
-    private _collectJobIds(request: ResendJobsRequest) {
+    private collectJobIds(request: ResendJobsRequest) {
         this.jobsCurrentList?.forEach((job: IDispatchJob) => {
             request.jobs.push(job.id);
         });
@@ -1694,7 +1691,7 @@ class HomeController extends BaseController {
         await this.activateDrop();
     }
 
-    private _isValidCoordinates(lat: number, lng: number) {
+    private isValidCoordinates(lat: number, lng: number) {
         return (lat && lng && !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0 && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180);
     }
 
@@ -1797,9 +1794,13 @@ class HomeController extends BaseController {
 
         if (!job) return;
 
-        this._markJobReadStatus(job.id, true);
+        this.markJobReadStatus(job.id, true);
 
         await this.$timeout(async () => {
+            // Refresh tasks
+            await this.loadSupports();
+
+
             this.selectedJobs = [];
             this.currentSupport = null;
 
@@ -1860,8 +1861,8 @@ class HomeController extends BaseController {
                         // Set map bounds to include pickup, delivery and courier positions if available
                         if (job.pickupAddress?.latitude != null && job.pickupAddress?.longitude != null &&
                             job.deliveryAddress?.latitude != null && job.deliveryAddress?.longitude != null &&
-                            this._isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude) &&
-                            this._isValidCoordinates(job.deliveryAddress.latitude, job.deliveryAddress.longitude)) {
+                            this.isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude) &&
+                            this.isValidCoordinates(job.deliveryAddress.latitude, job.deliveryAddress.longitude)) {
 
                             if (this.map) {
                                 // Create bounds that include pickup and delivery points
@@ -1871,7 +1872,7 @@ class HomeController extends BaseController {
 
                                 // If courier position is available, include it
                                 if (job.courierData.latitude != null && job.courierData.longitude != null &&
-                                    this._isValidCoordinates(job.courierData.latitude, job.courierData.longitude)) {
+                                    this.isValidCoordinates(job.courierData.latitude, job.courierData.longitude)) {
                                     bounds.extend(new this.$window.google.maps.LatLng(job.courierData.latitude, job.courierData.longitude));
                                 }
                             }
@@ -1902,14 +1903,14 @@ class HomeController extends BaseController {
         // Verify we have valid coordinates before displaying
         if (this.autoZoomEnabled && this.map) {
             if (job.pickupAddress?.latitude != null && job.pickupAddress?.longitude != null &&
-                this._isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude)) {
+                this.isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude)) {
                 // Set bounds for pickup point
                 const bounds = new this.$window.google.maps.LatLngBounds();
                 bounds.extend(new this.$window.google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
 
                 // If delivery coordinates are valid, include them too
                 if (job.deliveryAddress?.latitude != null && job.deliveryAddress?.longitude != null &&
-                    this._isValidCoordinates(job.deliveryAddress.latitude, job.deliveryAddress.longitude)) {
+                    this.isValidCoordinates(job.deliveryAddress.latitude, job.deliveryAddress.longitude)) {
                     bounds.extend(new this.$window.google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude));
                 }
             } else {
@@ -2355,7 +2356,7 @@ class HomeController extends BaseController {
         console.log(`Jobs ordered by status group: ${statusGroup}`);
     }
 
-    private _applyLayoutDimensions() {
+    private applyLayoutDimensions() {
         if (!this.layout || !this.layout.columns) return;
 
         this.layout.columns.forEach((column: IColumn) => {
@@ -2390,8 +2391,9 @@ class HomeController extends BaseController {
         }
     }
 
-    private _buildFilterRequest(filterType: string): TaskTableFiltersRequest {
+    private buildFilterRequest(filterType: string): TaskTableFiltersRequest {
         let filterRequest: TaskTableFiltersRequest = {};
+        filterRequest.jobId = this.currentJobId;
         filterRequest.showCompleted = false;
 
         switch (filterType) {
@@ -2427,7 +2429,7 @@ class HomeController extends BaseController {
             this.supportsLoading = true;
 
             // Build filter request based on filter type
-            const filterRequest = this._buildFilterRequest(filterType);
+            const filterRequest = this.buildFilterRequest(filterType);
             console.log('Filter request:', filterRequest);
 
             try {
@@ -2546,7 +2548,7 @@ class HomeController extends BaseController {
         await this.loadSupports(filterType);
     }
 
-    private _markJobReadStatus(jobId: number, isRead: boolean) {
+    private markJobReadStatus(jobId: number, isRead: boolean) {
         const jobIndex = this.jobList.findIndex((job) => job.id === jobId);
         if (jobIndex !== -1) {
             this.jobList[jobIndex] = {
@@ -2570,7 +2572,7 @@ class HomeController extends BaseController {
                     this.currentJob = updatedJob;
 
                     // Mark as read since it was previously selected
-                    this._markJobReadStatus(updatedJob.id, true);
+                    this.markJobReadStatus(updatedJob.id, true);
                 }
             }
 

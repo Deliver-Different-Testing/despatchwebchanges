@@ -77,6 +77,7 @@ class TaskDashboardController extends BaseController {
     currentJobNumber?: string;
 
     timeZone: string;
+    browserTimeZone: string;
 
     constructor(
         greetingService: GreetingService,
@@ -88,6 +89,7 @@ class TaskDashboardController extends BaseController {
     ) {
         super();
         this.greeting = greetingService.greetUser(FirstName);
+        this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         this.timeZone = TimeZone;
 
         this.generateTimeOptions();
@@ -249,7 +251,7 @@ class TaskDashboardController extends BaseController {
     private applyFilters(): void {
         this.$timeout(() => {
             if (this.statusFilter === StatusFilter.All) {
-                this.filteredTasks = this.tasks;
+                this.filteredTasks = this.tasks.filter(task => !task.closed);
             } else if (this.statusFilter === StatusFilter.Overdue) {
                 this.filteredTasks = this.tasks.filter(task => this.isTaskOverdue(task));
             } else if (this.statusFilter === StatusFilter.Todo) {
@@ -301,6 +303,7 @@ class TaskDashboardController extends BaseController {
 
     getStatusCounts() {
         return {
+            active: this.tasks.filter(task => !task.closed).length,
             overdue: this.tasks.filter(task => this.isTaskOverdue(task)).length,
             todo: this.tasks.filter(task => !task.closed && !this.isTaskOverdue(task)).length,
             done: this.tasks.filter(task => task.closed).length

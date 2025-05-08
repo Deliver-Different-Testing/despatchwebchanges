@@ -1,3 +1,5 @@
+@import "../../../css/status.less";
+
 .nationwide-view {
   .nationwide-job-list {
     // Ensure the table takes the full height to enable scrolling
@@ -34,19 +36,6 @@
       width: @width !important;
       max-width: @width !important;
       flex: 0 0 @width !important;
-    }
-
-    // Status class styles
-    .status-future {
-      background: rgba(33, 150, 243, 0.12); // md-blue with reduced opacity
-    }
-
-    .status-current {
-      background: rgba(255, 235, 59, 0.15); // md-yellow with reduced opacity
-    }
-
-    .status-past {
-      background: rgba(244, 67, 54, 0.12); // md-red with reduced opacity
     }
 
       table.md-table {
@@ -180,14 +169,6 @@
 
     .noselect {
       .no-select();
-    }
-
-    md-chip.status {
-      height: 20px;
-      line-height: 20px;
-      min-height: 20px;
-      font-size: 11px;
-      padding: 0 8px;
     }
 
     .remain-time {
