@@ -416,7 +416,7 @@ public static class JobMappings
                     j.PickUpLongitude ?? 0,
                     j.DeliveryLatitude ?? 0,
                     j.DeliveryLongitude ?? 0)
-                : (double)j.TotalDistance,
+                : j.TotalDistance.HasValue ? (double)j.TotalDistance.Value : 0.0,
 
             ReadTrackerInfo = j.TucJobReadTracker != null
                 ? new ReadTrackerInfoViewModel
