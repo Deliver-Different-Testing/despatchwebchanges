@@ -362,6 +362,187 @@ public class JobController(
         return Json(result > 0);
     }
 
+     [HttpPost]
+    public async Task<IActionResult> UploadJobDeliveryPhotoOrSignature(
+        int jobId,
+        IFormFile file,
+        bool isPod = true,
+        string podDescription = null)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest("No file was uploaded");
+        }
+
+        try
+        {
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+            var folder = isPod ? "DeliveryPhotos" : "DeliverySignatures";
+
+            // Create the file path in format: [folder]/[year]/[month]/[jobId]-[timestamp]-[filename]
+            var now = DateTime.UtcNow;
+            var monthFolder = $"{now.Year}/{now:MM}/";
+
+            // Extract the file extension
+            var fileExtension = Path.GetExtension(file.FileName);
+
+            // Generate a unique filename with timestamp
+            var timestamp = now.ToString("yyyyMMddHHmmss");
+            var filename = $"{jobId}-{timestamp}{fileExtension}";
+
+            // Combine parts to form the full S3 key
+            var key = $"{folder}/{monthFolder}{filename}";
+
+            // Create the S3 upload request
+            using var memoryStream = new MemoryStream();
+            await file.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+
+            var contentType = DetermineContentType(fileExtension);
+
+            var putRequest = new PutObjectRequest
+            {
+                BucketName = bucketName,
+                Key = key,
+                InputStream = memoryStream,
+                ContentType = contentType
+            };
+
+            // Add metadata properly using the metadata dictionary
+            if (isPod && !string.IsNullOrEmpty(podDescription))
+            {
+                putRequest.Metadata.Add("pod-description", podDescription);
+            }
+
+            Log.Debug("Uploading {Type} file for job {JobId} to S3 path: {Key}",
+                isPod ? "POD photo" : "signature", jobId, key);
+
+            // Execute the upload
+            await s3Client.PutObjectAsync(putRequest);
+
+            Log.Information("Successfully uploaded {Type} file for job {JobId}",
+                isPod ? "POD photo" : "signature", jobId);
+
+            // Return the uploaded file information
+            return Json(new
+            {
+                success = true,
+                fileName = filename,
+                s3Key = key,
+                contentType,
+                size = file.Length,
+                uploadDate = now.ToString("o"),
+                isPOD = isPod,
+                podDescription
+            });
+        }
+        catch (AmazonS3Exception e)
+        {
+            Log.Error(e, "S3 error encountered when uploading {Type} for job {JobId}. Message: {Message}",
+                isPod ? "POD photo" : "signature", jobId, e.Message);
+            return StatusCode(500, $"S3 error: {e.Message}");
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Unknown error encountered when uploading {Type} for job {JobId}. Message: {Message}",
+                isPod ? "POD photo" : "signature", jobId, e.Message);
+            return StatusCode(500, "An error occurred while uploading the file");
+        }
+    }
+
+        private static string DetermineContentType(string fileExtension)
+        {
+            return fileExtension.ToLower() switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".gif" => "image/gif",
+                ".pdf" => "application/pdf",
+                _ => "application/octet-stream" // Default content type
+            };
+        }
+
+        [HttpPost]
+            public async Task<IActionResult> UploadMultipleJobDeliveryPhotos(
+                int jobId,
+                IFormFileCollection files,
+                string[] descriptions = null)
+            {
+                if (files == null || files.Count == 0)
+                {
+                    return BadRequest("No files were uploaded");
+                }
+
+                var results = new List<object>();
+
+                for (var i = 0; i < files.Count; i++)
+                {
+                    var file = files[i];
+                    var description = descriptions != null && i < descriptions.Length ? descriptions[i] : null;
+
+                    try
+                    {
+                        // Reuse the single upload method for each file
+                        if (await UploadJobDeliveryPhotoOrSignature(jobId, file, true, description) is JsonResult result)
+                        {
+                            results.Add(result.Value);
+                        }
+                        else
+                        {
+                            results.Add(new { success = false, fileName = file.FileName, error = "Failed to process file" });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "Error uploading POD photo {FileName} for job {JobId}", file.FileName, jobId);
+                        results.Add(new { success = false, fileName = file.FileName, error = ex.Message });
+                    }
+                }
+
+                return Json(new
+                {
+                    success = results.All(r => ((dynamic)r).success),
+                    files = results
+                });
+            }
+
+            [HttpDelete]
+            public async Task<IActionResult> DeleteJobDeliveryPhotoOrSignature(int jobId, string key)
+            {
+                if (string.IsNullOrEmpty(key)) return BadRequest("File key is required");
+
+                try
+                {
+                    var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+
+                    var deleteRequest = new DeleteObjectRequest
+                    {
+                        BucketName = bucketName,
+                        Key = key
+                    };
+
+                    Log.Debug("Deleting file with key {Key} for job {JobId}", key, jobId);
+
+                    await s3Client.DeleteObjectAsync(deleteRequest);
+
+                    Log.Information("Successfully deleted file with key {Key} for job {JobId}", key, jobId);
+
+                    return Json(new { success = true, message = "File deleted successfully" });
+                }
+                catch (AmazonS3Exception e)
+                {
+                    Log.Error(e, "S3 error encountered when deleting file for job {JobId}. Message: {Message}",
+                        jobId, e.Message);
+                    return StatusCode(500, $"S3 error: {e.Message}");
+                }
+                catch (Exception e)
+                {
+                    Log.Error(e, "Unknown error encountered when deleting file for job {JobId}. Message: {Message}",
+                        jobId, e.Message);
+                    return StatusCode(500, "An error occurred while deleting the file");
+                }
+            }
+
     private async Task<List<S3Object>> SearchDeliveryFilesByPatternAsync(
         string bucketName,
         string pattern,

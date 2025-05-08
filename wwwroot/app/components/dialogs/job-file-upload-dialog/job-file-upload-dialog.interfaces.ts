@@ -5,8 +5,12 @@ export interface IJobFile {
     size: number;
     uploadDate: string;
     lastModified?: string;
+    isPOD?: boolean;
+    podDescription?: string;
 }
 
 export interface IUploadProgressFile extends File {
     progress: number;
+    isPOD?: boolean;
+    podDescription?: string;
 }
