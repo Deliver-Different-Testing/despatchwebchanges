@@ -38,7 +38,7 @@
                                ng-class="{'active': ctrl.statusFilter === 'all'}"
                                ng-click="ctrl.setStatusFilter('all')"
                                aria-label="All tasks">
-                        All: {{ctrl.tasks.length}}
+                        Active: {{ctrl.getStatusCounts().active}}
                     </md-button>
                     <md-button class="status-pill overdue"
                                ng-class="{'active': ctrl.statusFilter === 'overdue'}"
@@ -66,7 +66,7 @@
                     </md-button>
 
                     <div layout="column" layout-align="center center">
-                        <span class="selected-date">{{ctrl.selectedDate | momentFormat:'dddd, MMMM D, YYYY'}} ({{ctrl.timeZone | timezoneShort}})</span>
+                        <span class="selected-date">{{ctrl.selectedDate | momentFormat:'dddd, MMMM D, YYYY'}} ({{ctrl.browserTimeZone | timezoneShort}})</span>
                         <md-button class="md-small today-button" ng-click="ctrl.goToToday()"
                                    aria-label="Go to today">
                             Today

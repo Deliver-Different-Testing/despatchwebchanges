@@ -61,9 +61,17 @@
     </div>
 
     <no-data
-            ng-if="!ctrl.tasksLoading && (!ctrl.filteredTasks || ctrl.filteredTasks.length === 0)"
+            ng-if="!ctrl.tasksLoading && (!ctrl.filteredTasks || ctrl.filteredTasks.length === 0) && !ctrl.currentJob"
             title="No Tasks Available"
             message="There are no support items matching your filter criteria."
+            icon="support"
+            show-action="false">
+    </no-data>
+
+    <no-data
+            ng-if="!ctrl.tasksLoading && (!ctrl.filteredTasks || ctrl.filteredTasks.length === 0) && ctrl.currentJob"
+            title="No Tasks Available"
+            message="This job does not have any tasks available."
             icon="support"
             show-action="false">
     </no-data>
