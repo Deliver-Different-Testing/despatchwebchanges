@@ -3,12 +3,11 @@ import {IFlightViewModel} from "./nationwide.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {FlightDetailsViewModel} from "../dialogs/flight-details-dialog/flight-details-dialog.interfaces";
 import {JobEventData} from "../dialogs/add-event-dialog/add-event-dialog.interfaces";
-import TimezoneConverter from "../../timezoneConverter";
+import moment from "moment";
 
 class NationwideService implements angular.IServiceProvider {
     static $inject = [
         "$http",
-        "timezoneConverter"
     ];
 
     private flightCache: Map<string, {timestamp: number, data: any}> = new Map();
@@ -16,7 +15,6 @@ class NationwideService implements angular.IServiceProvider {
 
     constructor(
         private $http: angular.IHttpService,
-        private timezoneConverter: TimezoneConverter,
     ) {
         console.log('NationwideService: Service instantiated');
     }
@@ -92,7 +90,7 @@ class NationwideService implements angular.IServiceProvider {
         lastDepartureTime: Date | null;
     }> {
         const startTime = performance.now();
-        const formattedDate = this.timezoneConverter.format(departureDate);
+        const formattedDate = moment(departureDate).format();
 
         // Create a cache key based on the parameters
         const cacheKey = `flights_${jobId}_${formattedDate}_${airlineId || 'all'}_${departureAirportId || 'default'}`;
@@ -207,7 +205,7 @@ class NationwideService implements angular.IServiceProvider {
     }
 
     async getFlightConnectionsInfoForDialog(flightNumber: string, departureDate: Date): Promise<FlightDetailsViewModel[]> {
-        const formattedDate = this.timezoneConverter.format(departureDate);
+        const formattedDate = moment(departureDate).format();
 
         const response = await this.$http.get<FlightDetailsViewModel[]>("nationwideJob/GetFlightInfo", {
             params: {

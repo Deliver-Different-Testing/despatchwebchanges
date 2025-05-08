@@ -7,7 +7,6 @@ import NoteService from "../../../services/notes.service";
 import {JobNoteType} from "../../../enums/job-note-type.enum";
 import {EventType} from "../../../enums/event-type";
 import {JobEventData} from "./add-event-dialog.interfaces";
-import TimezoneConverter from "../../../services/timezoneConverter.service";
 import moment from "moment";
 
 class AddEventDialogController extends BaseController {
@@ -17,7 +16,6 @@ class AddEventDialogController extends BaseController {
         "toastrService",
         "NWData",
         "noteService",
-        "timezoneConverter",
         "job",
         "dispatcherName",
         "contactId",
@@ -36,7 +34,6 @@ class AddEventDialogController extends BaseController {
         private toastrService: ToastrService,
         private NWData: NationwideService,
         private noteService: NoteService,
-        private timezoneConverter: TimezoneConverter,
         private job: IJob,
         private dispatcherName: string,
         private contactId: number

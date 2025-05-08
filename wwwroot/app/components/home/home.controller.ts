@@ -180,8 +180,8 @@ class HomeController extends BaseController {
             }
         }, true);
 
-        $scope.$on('jobChanged', (_, newLabel: string) => {
-            this.currentSelection = newLabel;
+        $scope.$on('jobChanged', (_, newJob: IDispatchJob) => {
+            this.currentSelection = ` for Job ${newJob.jobNo}`;
         });
 
         $scope.$on('jobReadChanged', (_, data: IJobReadChanged) => {

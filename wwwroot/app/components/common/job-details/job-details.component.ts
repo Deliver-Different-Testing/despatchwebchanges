@@ -171,7 +171,7 @@ class JobDetailController extends BaseController {
             }
         } finally {
             this.processingTabChange = false;
-            this.$rootScope.$broadcast('jobChanged', ` for Job ${this.job?.jobNo}`);
+            this.$rootScope.$broadcast('jobChanged', this.job);
         }
     }
 

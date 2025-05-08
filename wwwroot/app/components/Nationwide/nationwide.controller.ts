@@ -128,6 +128,21 @@ class NationwideControl extends BaseController {
     lastDepartureTime?: Date;
     airportOptions?: Suggestion[];
     selectedAirport?: Suggestion;
+    isDeliveryJobType: boolean = false;
+
+// Flight section visibility flags
+    showNoJobSelectedMessage: boolean = false;
+    showJobHasAssignedFlightMessage: boolean = false;
+    showMissingAirportInfoMessage: boolean = false;
+    showNoFlightsAvailableMessage: boolean = false;
+    showFlightList: boolean = false;
+
+// Agent section visibility flags
+    showNoAgentJobSelectedMessage: boolean = false;
+    showJobHasAssignedAgentMessage: boolean = false;
+    showNotDeliveryJobMessage: boolean = false;
+    showNoAgentsAvailableMessage: boolean = false;
+    showAgentList: boolean = false;
 
     constructor(
         private $scope: angular.IScope,
@@ -170,11 +185,36 @@ class NationwideControl extends BaseController {
         });
 
         this.$scope.$on('jobReadChanged', (_, data: IJobReadChanged) => {
-            this._markJobReadStatus(data.jobId, data.isRead);
+            this.markJobReadStatus(data.jobId, data.isRead);
+        });
+
+        $scope.$on('jobChanged', (_, newJob: IDispatchJob) => {
+            if (this.currentJobId === newJob.id) {
+                console.log(`Job ${newJob.jobNo} is already the current job, skipping reload`);
+                return;
+            }
+
+            console.log(`Handling job changed event for job ${newJob.jobNo}`);
+
+            this.updateCurrentSelection(newJob.jobNo);
+            this.markJobReadStatus(newJob.id, true);
+
+            this.isDeliveryJobType = this.isDeliveryJob(newJob);
+            this.updateUIState(newJob);
+            this.currentJob = newJob;
+
+            this.handleJobSelectionRelatedData(newJob).then(() => {
+                console.log(`Data loaded for job ${newJob.jobNo}`);
+
+                this.$timeout(() => {
+                    this.updateUIState(newJob);
+                    this.currentJobId = newJob.id;
+                });
+            });
         });
 
         this.$scope.$watch(() => this.layout, () => {
-            this.$timeout(() => this._applyLayoutDimensions());
+            this.$timeout(() => this.applyLayoutDimensions());
         }, true);
 
         if (angular.element('#draggingItems').length === 0) {
@@ -394,8 +434,8 @@ class NationwideControl extends BaseController {
 
                 // Update box metrics and save layout
                 this.$timeout(() => {
-                    this._updateBoxMetrics();
-                    this._saveCurrentLayout();
+                    this.updateBoxMetrics();
+                    this.saveCurrentLayout();
                 }, 100);
             }
         };
@@ -422,7 +462,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    private _updateBoxMetrics() {
+    private updateBoxMetrics() {
         if (!this.layout || !this.layout.columns) return;
 
         this.layout.columns.forEach((column: IColumn) => {
@@ -440,12 +480,12 @@ class NationwideControl extends BaseController {
         });
     }
 
-    private _saveCurrentLayout() {
+    private saveCurrentLayout() {
         if (!this.currentLayoutName || this.currentLayoutName === 'Default') {
             return;
         }
 
-        this._updateBoxMetrics();
+        this.updateBoxMetrics();
 
         const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
         if (index !== -1) {
@@ -576,7 +616,7 @@ class NationwideControl extends BaseController {
         this.layout = angular.copy(layout.layout);
 
         this.$timeout(() => {
-            this._applyLayoutDimensions();
+            this.applyLayoutDimensions();
 
             if (Modernizr.localstorage) {
                 localStorage.setItem(`lastActiveLayoutNW-${ContactID}`, layout.name);
@@ -597,7 +637,7 @@ class NationwideControl extends BaseController {
                     .cancel("Cancel")
             );
 
-            this._updateBoxMetrics();
+            this.updateBoxMetrics();
 
             const currentLayout: ILayout = {
                 name: layoutName,
@@ -659,11 +699,11 @@ class NationwideControl extends BaseController {
 
             this.toastrService.showSuccessToast("Layout deleted successfully");
         } catch (error) {
-            this._handleError(error)
+            this.handleError(error)
         }
     }
 
-    private _applyLayoutDimensions() {
+    private applyLayoutDimensions() {
         if (!this.layout || !this.layout.columns) return;
 
         this.layout.columns.forEach((column: IColumn) => {
@@ -761,23 +801,23 @@ class NationwideControl extends BaseController {
 
     async onReorderJobList() {
         console.log('[onReorderJobList] Called with order:', this.jobFilters?.order);
-        this._processOrderParam(this.jobFilters?.order, this.jobFilters);
+        this.processOrderParam(this.jobFilters?.order, this.jobFilters);
         await this.getJobList(JobDataType.NEW);
     }
 
     async onReorderPodList() {
         console.log('[onReorderPodList] Called with order:', this.jobPodFilters?.order);
-        this._processOrderParam(this.jobPodFilters?.order, this.jobPodFilters);
+        this.processOrderParam(this.jobPodFilters?.order, this.jobPodFilters);
         await this.getJobList(JobDataType.POD);
     }
 
     async onReorderRepriceList() {
         console.log('[onReorderRepriceList] Called with order:', this.jobRepriceFilters?.order);
-        this._processOrderParam(this.jobRepriceFilters?.order, this.jobRepriceFilters);
+        this.processOrderParam(this.jobRepriceFilters?.order, this.jobRepriceFilters);
         await this.getJobList(JobDataType.REPRICE);
     }
 
-    private _processOrderParam(orderParam: string | undefined, filtersObj: JobQueryParams): void {
+    private processOrderParam(orderParam: string | undefined, filtersObj: JobQueryParams): void {
         let orderBy = orderParam || '';
         let orderDirection = "asc";
 
@@ -923,54 +963,70 @@ class NationwideControl extends BaseController {
         try {
             if (!job) return;
 
-            this._markJobReadStatus(job.id, true);
+            this.markJobReadStatus(job.id, true);
 
             this.currentJob = job;
             this.currentJobId = job.id;
 
-            // Reset data
-            this.flightOptions = [];
-            this.agentOptions = [];
-            this.flightMessage = undefined;
-            this.agentMessage = undefined;
-            this.selected = null;
-            this.selectedAirport = undefined;
+            // Set isDeliveryJobType flag
+            this.isDeliveryJobType = this.isDeliveryJob(job);
 
-            // Show flight table
-            if (job.toAirportId && job.fromAirportId) {
-                this.airportOptions = await this.nationwideService.getNearbyAirports(job.id);
+            // Pass job directly to updateUIState
+            this.updateUIState(job);
 
-                if (this.airportOptions && this.airportOptions.length > 0) {
-                    const defaultAirport = this.airportOptions.find(airport => airport.id === job.fromAirportId);
-                    console.log('Default airport:', defaultAirport);
-                    if (defaultAirport) {
-                        this.selectedAirport = defaultAirport;
-                    }
-                }
-
-                // Reset search parameters
-                this.lastDepartureTime = undefined;
-                await this.loadFlights();
-            }
-
-            // Show agent table
-            if (this.isDeliveryJob()) {
-                await this._processAgents(job);
-            }
-
-            this._displayJobOnMap(job);
+            this.updateCurrentSelection(job.jobNo);
+            await this.handleJobSelectionRelatedData(job);
 
             this.$timeout(() => {
                 console.log('Final UI update after job selection completed');
+                this.updateUIState(job);
             });
         } catch (error) {
             console.error("Error in selectJob:", error);
         }
     }
 
-    private _displayJobOnMap(job: IDispatchJob) {
+    private async handleJobSelectionRelatedData(job: IDispatchJob) {
+        // Reset data
+        this.flightOptions = [];
+        this.agentOptions = [];
+        this.flightMessage = undefined;
+        this.agentMessage = undefined;
+        this.selected = null;
+        this.selectedAirport = undefined;
+
+        // Pass job to updateUIState
+        this.updateUIState(job);
+
+        // Show flight table
+        if (job.toAirportId !== undefined && job.fromAirportId !== undefined) {
+            this.airportOptions = await this.nationwideService.getNearbyAirports(job.id);
+
+            if (this.airportOptions && this.airportOptions.length > 0) {
+                const defaultAirport = this.airportOptions.find(airport => airport.id === job.fromAirportId);
+                console.log('Default airport:', defaultAirport);
+                if (defaultAirport) {
+                    this.selectedAirport = defaultAirport;
+                }
+            }
+
+            // Reset search parameters
+            this.lastDepartureTime = undefined;
+            await this.loadFlights();
+        }
+
+        // Show agent table
+        if (this.isDeliveryJob(job)) {
+            await this.processAgents(job);
+        }
+
+        this.displayJobOnMap(job);
+        this.updateUIState(job);
+    }
+
+    private displayJobOnMap(job: IDispatchJob) {
         try {
-            this.mapConfig = this._calculateMapBounds(job);
+            this.mapConfig = this.calculateMapBounds(job);
             console.log('Calculated map bounds!');
             console.log(this.mapConfig);
         } catch (error) {
@@ -979,7 +1035,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    private _calculateMapBounds(job: IDispatchJob) {
+    private calculateMapBounds(job: IDispatchJob) {
         const pickupCoords: Coordinates = {
             lat: job.pickupAddress?.latitude ?? 0,
             lng: job.pickupAddress?.longitude ?? 0
@@ -1014,12 +1070,12 @@ class NationwideControl extends BaseController {
         };
     }
 
-    isDeliveryJob(): boolean {
-        if (!this.currentJob || !this.currentJob.jobNo) {
+    isDeliveryJob(job: IDispatchJob): boolean {
+        if (!job || !job.jobNo) {
             return false;
         }
 
-        const jobNumber = this.currentJob.jobNo;
+        const jobNumber = job.jobNo;
         const isDeliveryJob = jobNumber.charAt(jobNumber.length - 1) === '1' || jobNumber.charAt(jobNumber.length - 1) === '3';
 
         console.log(jobNumber + " is delivery job!");
@@ -1043,7 +1099,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    private async _processAgents(job: IDispatchJob) {
+    private async processAgents(job: IDispatchJob) {
         console.log('Getting agents');
 
         // Clear existing agents while loading new ones
@@ -1051,6 +1107,7 @@ class NationwideControl extends BaseController {
         this.agentMessage = undefined;
 
         this.agentsLoading = true;
+        this.updateUIState(job);
 
         try {
             this.agentListPromise = this.nationwideService.getAgentOptions(job.id);
@@ -1060,6 +1117,9 @@ class NationwideControl extends BaseController {
                 this.agentOptions = result.agents || [];
                 this.agentMessage = result.message ||
                     (this.agentOptions.length === 0 ? "No agents available for this job" : undefined);
+
+                // Update UI state after agents are loaded
+                this.updateUIState(job);
             });
 
             console.log("Agent options loaded:", this.agentOptions.length);
@@ -1068,10 +1128,12 @@ class NationwideControl extends BaseController {
             this.$timeout(() => {
                 this.agentMessage = "An error occurred while loading agents. Please try again.";
                 this.agentOptions = [];
+                this.updateUIState(job);
             });
         } finally {
             this.$timeout(() => {
                 this.agentsLoading = false;
+                this.updateUIState(job);
             });
         }
     }
@@ -1080,6 +1142,7 @@ class NationwideControl extends BaseController {
         if (!this.currentJob) {
             this.flightOptions = [];
             this.flightMessage = "Please select a job to view flight options";
+            this.updateUIState(); // No job parameter here, will use currentJob
             return;
         }
 
@@ -1090,6 +1153,7 @@ class NationwideControl extends BaseController {
 
         this.$timeout(() => {
             this.flightsLoading = true;
+            this.updateUIState(this.currentJob);
         });
 
         try {
@@ -1125,6 +1189,9 @@ class NationwideControl extends BaseController {
                 this.lastDepartureTime = result.lastDepartureTime;
 
                 console.log(`Loaded ${this.flightOptions?.length} flights`);
+
+                // Update UI state after flights are loaded
+                this.updateUIState(this.currentJob);
             });
         } catch (error) {
             console.error("Error loading flights:", error);
@@ -1132,10 +1199,12 @@ class NationwideControl extends BaseController {
             this.$timeout(() => {
                 this.flightMessage = "An error occurred while loading flights. Please try again.";
                 this.flightOptions = [];
+                this.updateUIState(this.currentJob);
             });
         } finally {
             this.$timeout(() => {
                 this.flightsLoading = false;
+                this.updateUIState(this.currentJob);
             });
         }
     }
@@ -1205,7 +1274,7 @@ class NationwideControl extends BaseController {
                 console.log('UI updated after flight assignment');
             });
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
 
             this.$timeout(() => {
                 console.log('UI updated after flight assignment error');
@@ -1245,7 +1314,7 @@ class NationwideControl extends BaseController {
                 console.log('UI updated after agent assignment');
             });
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
 
             this.$timeout(() => {
                 console.log('UI updated after agent assignment error');
@@ -1549,7 +1618,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    private _handleError(error: any) {
+    private handleError(error: any) {
         if (!error) {
             console.log('User canceled!');
         } else {
@@ -1588,7 +1657,7 @@ class NationwideControl extends BaseController {
     }
 
     // Tasks
-    private _buildFilterRequest(filterType: string): TaskTableFiltersRequest {
+    private buildFilterRequest(filterType: string): TaskTableFiltersRequest {
         let filterRequest: TaskTableFiltersRequest = {};
         filterRequest.showCompleted = false;
 
@@ -1651,7 +1720,7 @@ class NationwideControl extends BaseController {
             });
 
             // Build filter request based on filter type
-            const filterRequest = this._buildFilterRequest(filterType);
+            const filterRequest = this.buildFilterRequest(filterType);
 
             try {
                 this.tasks = await this.DispatchData.getAllTasks(filterRequest);
@@ -1690,16 +1759,16 @@ class NationwideControl extends BaseController {
     }
 
     async selectTaskJobDetail(task: TaskViewModel): Promise<void> {
-        this._logTaskInfo(task);
+        this.logTaskInfo(task);
         this.currentSupport = task;
 
-        if (!this._validateJobId(task)) {
+        if (!this.validateJobId(task)) {
             return;
         }
 
         try {
             // First try to find the job in local lists
-            let attachedJob = this._findJobInLocalLists(task.jobId);
+            let attachedJob = this.findJobInLocalLists(task.jobId);
 
             // If not found locally, fetch from database
             if (!attachedJob) {
@@ -1715,13 +1784,13 @@ class NationwideControl extends BaseController {
             await this.selectJob(attachedJob);
             console.log('[selectTaskJobDetail] Job selected successfully');
 
-            this._updateCurrentSelection(attachedJob.jobNo);
+            this.updateCurrentSelection(attachedJob.jobNo);
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
-    private _logTaskInfo(task: TaskViewModel): void {
+    private logTaskInfo(task: TaskViewModel): void {
         console.log('[selectTaskJobDetail] Starting with task:', {
             jobId: task.jobId,
             jobNumber: task.jobNumber,
@@ -1729,7 +1798,7 @@ class NationwideControl extends BaseController {
         });
     }
 
-    private _validateJobId(task: TaskViewModel): boolean {
+    private validateJobId(task: TaskViewModel): boolean {
         const hasJobId = !!task.jobId;
         if (!hasJobId) {
             const message = "This task has no job attached";
@@ -1739,7 +1808,7 @@ class NationwideControl extends BaseController {
         return hasJobId;
     }
 
-    private _findJobInLocalLists(jobId: number) {
+    private findJobInLocalLists(jobId: number) {
         console.log('[selectTaskJobDetail] Fetching job details for jobId:', jobId);
 
         return this.jobList?.find((job) => job.id === jobId) ||
@@ -1747,7 +1816,7 @@ class NationwideControl extends BaseController {
             this.jobListReprice?.find((job) => job.id === jobId);
     }
 
-    private _updateCurrentSelection(jobNo: string): void {
+    private updateCurrentSelection(jobNo: string): void {
         this.currentSelection = ` for Job ${jobNo}`;
     }
 
@@ -1790,7 +1859,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    private _markJobReadStatus(jobId: number, isRead: boolean) {
+    private markJobReadStatus(jobId: number, isRead: boolean) {
         this.$timeout(() => {
             // Check the main jobList
             if (this.jobList) {
@@ -1852,7 +1921,7 @@ class NationwideControl extends BaseController {
             // Restore current job selection if applicable
             if (currentJobId) {
                 // Find the refreshed job in any of the job lists
-                const updatedJob = this._findJobInLocalLists(currentJobId);
+                const updatedJob = this.findJobInLocalLists(currentJobId);
 
                 this.$timeout(() => {
                     if (updatedJob) {
@@ -1898,8 +1967,67 @@ class NationwideControl extends BaseController {
 
             await this.addSelectedAgentToJob($event, selectedAgent, job);
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
+    }
+
+    /**
+     * Updates the UI state flags based on the provided job or the current job
+     * @param job Optional job to use for state calculations. If not provided, currentJob is used.
+     */
+    private updateUIState(job?: IDispatchJob) {
+        // Reset all flags first
+        this.resetAllFlags();
+
+        // Use provided job or fall back to currentJob
+        const activeJob = job || this.currentJob;
+
+        // Determine if this is a delivery job
+        this.isDeliveryJobType = activeJob ? this.isDeliveryJob(activeJob) : false;
+
+        if (!this.isDeliveryJobType) {
+            // Handle flight job UI states
+            if (!activeJob) {
+                this.showNoJobSelectedMessage = true;
+            } else if (activeJob.assignedFlight) {
+                this.showJobHasAssignedFlightMessage = true;
+            } else if (!activeJob.toAirportId || !activeJob.fromAirportId) {
+                this.showMissingAirportInfoMessage = true;
+            } else if (!this.flightsLoading && (!this.flightOptions || this.flightOptions.length === 0)) {
+                this.showNoFlightsAvailableMessage = true;
+            } else if (!this.flightsLoading && this.flightOptions && this.flightOptions.length > 0) {
+                this.showFlightList = true;
+            }
+        } else {
+            // Handle delivery job UI states
+            if (!activeJob) {
+                this.showNoAgentJobSelectedMessage = true;
+            } else if (activeJob.assignedAgent) {
+                this.showJobHasAssignedAgentMessage = true;
+            } else if (!this.isDeliveryJob(activeJob)) {
+                this.showNotDeliveryJobMessage = true;
+            } else if (!this.agentsLoading && (!this.agentOptions || this.agentOptions.length === 0)) {
+                this.showNoAgentsAvailableMessage = true;
+            } else if (!this.agentsLoading && this.agentOptions && this.agentOptions.length > 0) {
+                this.showAgentList = true;
+            }
+        }
+    }
+
+    private resetAllFlags() {
+        // Flight section flags
+        this.showNoJobSelectedMessage = false;
+        this.showJobHasAssignedFlightMessage = false;
+        this.showMissingAirportInfoMessage = false;
+        this.showNoFlightsAvailableMessage = false;
+        this.showFlightList = false;
+
+        // Agent section flags
+        this.showNoAgentJobSelectedMessage = false;
+        this.showJobHasAssignedAgentMessage = false;
+        this.showNotDeliveryJobMessage = false;
+        this.showNoAgentsAvailableMessage = false;
+        this.showAgentList = false;
     }
 }
 
