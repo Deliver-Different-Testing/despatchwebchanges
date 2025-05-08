@@ -11,8 +11,333 @@
         </div>
     </md-toolbar>
 
+    <!-- Flight Connection Tabs - only for multi-segment flights -->
+    <md-tabs md-dynamic-height md-center-tabs md-selected="ctrl.selectedTabIndex" class="connection-tabs" ng-if="ctrl.flight.isMultiSegment">
+        <md-tab label="Overview"
+                ng-click="ctrl.selectSegment(0)">
+        </md-tab>
+        <md-tab ng-repeat="segment in ctrl.flight.flightSegments track by $index"
+                label="Segment {{$index + 1}}"
+                ng-click="ctrl.selectSegment($index + 1)">
+        </md-tab>
+    </md-tabs>
+
+    <md-dialog-content>
+        <div class="md-dialog-content">
+            <!-- Loading state -->
+            <div ng-if="ctrl.isLoading" layout="row" layout-align="center center" class="loading-container">
+                <md-progress-circular md-mode="indeterminate"></md-progress-circular>
+                <span class="md-caption loading-text">Loading flight details...</span>
+            </div>
+
+            <!-- Error state -->
+            <div ng-if="!ctrl.isLoading && ctrl.error" class="error-container">
+                <md-icon md-font-set="material-symbols-outlined" class="md-warn md-hue-2">error</md-icon>
+                <p class="md-body-1">{{ctrl.error}}</p>
+            </div>
+
+            <!-- Flight data -->
+            <div ng-if="!ctrl.isLoading && !ctrl.error && ctrl.flight">
+                <!-- Multi-connection summary if applicable -->
+                <div class="connection-summary" ng-if="ctrl.flight.isMultiSegment">
+                    <md-card>
+                        <md-card-content layout="row" layout-align="center center">
+                            <md-icon md-font-set="material-symbols-outlined" class="md-secondary">sync_alt</md-icon>
+                            <span class="md-body-1">{{ctrl.flight.flightSegments.length}} segments</span>
+                            <span class="connection-divider">•</span>
+                            <md-icon md-font-set="material-symbols-outlined" class="md-secondary">schedule</md-icon>
+                            <span class="md-body-1">Total Duration: {{ctrl.getFlightTotalDuration()}}</span>
+                        </md-card-content>
+                    </md-card>
+                </div>
+
+                <!-- Flight header with improved Material Design -->
+                <md-card class="flight-header-card md-whiteframe-2dp">
+                    <md-card-content>
+                        <div layout="row" layout-align="space-between start">
+                            <!-- Left side with airline info -->
+                            <div layout="row" layout-align="start center">
+                                <div class="airline-logo">
+                                    <span class="airline-code {{ctrl.currentSegment.carrierFsCode || ctrl.flight.airline | lowercase}}">
+                                        {{ctrl.currentSegment.carrierFsCode || ctrl.flight.airline.substring(0, 2)}}
+                                    </span>
+                                </div>
+                                <div class="airline-info">
+                                    <div class="md-title">{{ctrl.currentSegment.airlineName || ctrl.flight.airline}}</div>
+                                    <div class="flight-number md-headline">
+                                        {{ctrl.currentSegment.carrierFsCode || ctrl.flight.flightNumber.substring(0, 2)}}
+                                        {{ctrl.currentSegment.flightNumber || ctrl.flight.flightNumber.substring(2)}}
+                                    </div>
+                                    <div layout="row" layout-align="start center" ng-if="ctrl.currentSegment.aircraftName || ctrl.flight.aircraft">
+                                        <md-icon md-font-set="material-icons-outlined" aria-label="Aircraft">airlines</md-icon>
+                                        <span class="md-caption">{{ctrl.currentSegment.aircraftName || ctrl.flight.aircraft}}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right side with status & date -->
+                            <div class="flight-status" layout="column" layout-align="start end">
+                                <div>
+                                    <md-chip ng-if="!ctrl.flight.isMultiSegment" class="flight-chip md-accent">
+                                        <md-icon md-font-set="material-symbols-outlined">check_circle</md-icon>
+                                        Non-stop
+                                    </md-chip>
+                                    <md-chip ng-if="ctrl.flight.isMultiSegment && ctrl.isDisplayingOverview" class="flight-chip md-warn">
+                                        <md-icon md-font-set="material-symbols-outlined">flight_land</md-icon>
+                                        {{ctrl.flight.stops}} stop{{ctrl.flight.stops > 1 ? 's' : ''}}
+                                    </md-chip>
+                                    <md-chip ng-if="ctrl.currentSegment.stopsInSegment > 0" class="flight-chip md-warn">
+                                        <md-icon md-font-set="material-symbols-outlined">flight_stop</md-icon>
+                                        {{ctrl.currentSegment.stopsInSegment}} stop{{ctrl.currentSegment.stopsInSegment > 1 ? 's' : ''}}
+                                    </md-chip>
+                                </div>
+
+                                <div ng-if="ctrl.flight.serviceClasses && ctrl.flight.serviceClasses.length > 0" layout="row" layout-align="end center">
+                                    <md-chip class="md-default flight-chip">
+                                        {{ctrl.flight.serviceClasses.join(', ')}}
+                                    </md-chip>
+                                </div>
+
+                                <div class="flight-date md-caption">
+                                    {{ctrl.currentSegment.departureTime || ctrl.flight.departureTime | date:'MMM d, yyyy'}}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom route summary section -->
+                        <div layout="row" layout-align="center center" class="connection-summary">
+                            <div class="airport-code md-subhead">
+                                {{ctrl.currentSegment.departureAirportFsCode || ctrl.flight.departureAirport}}
+                            </div>
+                            <span class="connection-divider">-</span>
+                            <md-icon>flight</md-icon>
+                            <span class="connection-divider">-</span>
+                            <div class="airport-code md-subhead">
+                                {{ctrl.currentSegment.arrivalAirportFsCode || ctrl.flight.arrivalAirport}}
+                            </div>
+
+                            <span flex></span>
+
+                            <div class="duration-badge">
+                                <md-icon>schedule</md-icon>
+                                <span>{{ctrl.getSegmentDuration()}}</span>
+                            </div>
+                        </div>
+                    </md-card-content>
+                </md-card>
+
+                <!-- Flight route -->
+                <md-card>
+                    <md-card-content>
+                        <div layout="row" layout-xs="column" class="flight-route">
+                            <div flex="45" class="departure-info" layout="column" layout-align="start end">
+                                <h4 class="md-subhead">Departure</h4>
+                                <div class="md-title airport-name">
+                                    {{ctrl.currentSegment.departureAirportName || ctrl.flight.departureAirport}}
+                                    ({{ctrl.currentSegment.departureAirportFsCode || ctrl.flight.departureAirport}})
+                                </div>
+                                <div class="md-body-1 airport-location" ng-if="ctrl.currentSegment.departureAirportCity">
+                                    {{ctrl.currentSegment.departureAirportCity}}, {{ctrl.currentSegment.departureAirportCountry}}
+                                </div>
+                                <div class="md-body-2 time">
+                                    {{ctrl.currentSegment.departureTime || ctrl.flight.departureTime | date: 'MM/dd/yyyy HH:mm'}}
+                                    <span ng-if="ctrl.currentSegment.departureAirportTimeZone || ctrl.flight.departureTimeZone">
+                                        ({{ctrl.currentSegment.departureAirportTimeZone || ctrl.flight.departureTimeZone | timezoneShort}})
+                                    </span>
+                                </div>
+                                <div ng-if="ctrl.currentSegment.departureTerminal" class="terminal md-body-2">
+                                    <md-icon md-font-set="material-symbols-outlined">door_front</md-icon>
+                                    Terminal: {{ctrl.currentSegment.departureTerminal}}
+                                </div>
+                            </div>
+
+                            <div flex="10" layout="column" layout-align="center center" class="flight-divider">
+                                <div class="duration-badge md-body-2">
+                                    <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
+                                    <span>{{ctrl.getSegmentDuration()}}</span>
+                                </div>
+                                <div class="flight-line">
+                                    <md-icon md-font-set="material-symbols-outlined" class="flight-icon">flight</md-icon>
+                                </div>
+                            </div>
+
+                            <div flex="45" class="arrival-info">
+                                <h4 class="md-subhead">Arrival</h4>
+                                <div class="md-title airport-name">
+                                    <!-- When in overview mode, use the last segment's arrival info -->
+                                    <span ng-if="ctrl.isDisplayingOverview && ctrl.flight.isMultiSegment">
+                                        {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length-1].arrivalAirportName || ctrl.flight.flightSegments[ctrl.flight.flightSegments.length-1].arrivalAirportFsCode || ctrl.flight.arrivalAirport}}
+                                        ({{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length-1].arrivalAirportFsCode || ctrl.flight.arrivalAirport}})
+                                    </span>
+                                    <!-- Otherwise use the current segment's arrival info -->
+                                    <span ng-if="!ctrl.isDisplayingOverview || !ctrl.flight.isMultiSegment">
+                                        {{ctrl.currentSegment.arrivalAirportName || ctrl.currentSegment.arrivalAirportFsCode || ctrl.flight.arrivalAirport}}
+                                        ({{ctrl.currentSegment.arrivalAirportFsCode || ctrl.flight.arrivalAirport}})
+                                    </span>
+                                </div>
+
+                                <div class="md-body-1 airport-location">
+                                    <!-- When in overview mode, use the last segment's city/country -->
+                                    <span ng-if="ctrl.isDisplayingOverview && ctrl.flight.isMultiSegment && ctrl.flight.flightSegments[ctrl.flight.flightSegments.length-1].arrivalAirportCity">
+                                        {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length-1].arrivalAirportCity}},
+                                        {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length-1].arrivalAirportCountry}}
+                                    </span>
+                                    <!-- Otherwise use the current segment's city/country -->
+                                    <span ng-if="(!ctrl.isDisplayingOverview || !ctrl.flight.isMultiSegment) && ctrl.currentSegment.arrivalAirportCity">
+                                        {{ctrl.currentSegment.arrivalAirportCity}}, {{ctrl.currentSegment.arrivalAirportCountry}}
+                                    </span>
+                                </div>
+
+                                <div class="md-body-2 time">
+                                    <!-- When in overview mode, use the last segment's arrival time -->
+                                    <span ng-if="ctrl.isDisplayingOverview && ctrl.flight.isMultiSegment">
+                                        {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length-1].arrivalTime || ctrl.flight.arrivalTime | date: 'MM/dd/yyyy HH:mm'}}
+                                        <span ng-if="ctrl.flight.flightSegments[ctrl.flight.flightSegments.length-1].arrivalAirportTimeZone || ctrl.flight.arrivalTimeZone">
+                                            ({{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length-1].arrivalAirportTimeZone || ctrl.flight.arrivalTimeZone | timezoneShort}})
+                                        </span>
+                                    </span>
+                                    <!-- Otherwise use the current segment's arrival time -->
+                                    <span ng-if="!ctrl.isDisplayingOverview || !ctrl.flight.isMultiSegment">
+                                        {{ctrl.currentSegment.arrivalTime || ctrl.flight.arrivalTime | date: 'MM/dd/yyyy HH:mm'}}
+                                        <span ng-if="ctrl.currentSegment.arrivalAirportTimeZone || ctrl.flight.arrivalTimeZone">
+                                            ({{ctrl.currentSegment.arrivalAirportTimeZone || ctrl.flight.arrivalTimeZone | timezoneShort}})
+                                        </span>
+                                    </span>
+                                </div>
+
+                                <div class="terminal md-body-2">
+                                    <!-- When in overview mode, use the last segment's terminal -->
+                                    <span ng-if="ctrl.isDisplayingOverview && ctrl.flight.isMultiSegment && ctrl.flight.flightSegments[ctrl.flight.flightSegments.length-1].arrivalTerminal">
+                                        <md-icon md-font-set="material-symbols-outlined">door_front</md-icon>
+                                        Terminal: {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length-1].arrivalTerminal}}
+                                    </span>
+                                    <!-- Otherwise use the current segment's terminal -->
+                                    <span ng-if="(!ctrl.isDisplayingOverview || !ctrl.flight.isMultiSegment) && ctrl.currentSegment.arrivalTerminal">
+                                        <md-icon md-font-set="material-symbols-outlined">door_front</md-icon>
+                                        Terminal: {{ctrl.currentSegment.arrivalTerminal}}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </md-card-content>
+                </md-card>
+
+                <!-- Flight details -->
+                <!--<md-card>
+                    <md-card-header>
+                        <md-card-header-text>
+                            <span class="md-title">Flight Information</span>
+                        </md-card-header-text>
+                    </md-card-header>
+                    <md-divider></md-divider>
+                    <md-card-content>
+                        <md-list>
+                            <md-list-item class="md-2-line">
+                                <md-icon md-font-set="material-symbols-outlined" class="md-avatar-icon">airlines</md-icon>
+                                <div class="md-list-item-text">
+                                    <h3>Aircraft</h3>
+                                    <p>{{ctrl.currentSegment.aircraftName || ctrl.flight.aircraft || 'Unknown'}}</p>
+                                </div>
+                            </md-list-item>
+
+                            <md-list-item class="md-2-line" ng-if="ctrl.flight.serviceClasses && ctrl.flight.serviceClasses.length > 0">
+                                <md-icon md-font-set="material-symbols-outlined" class="md-avatar-icon">airline_seat_recline_normal</md-icon>
+                                <div class="md-list-item-text">
+                                    <h3>Service Classes</h3>
+                                    <p>{{ctrl.flight.serviceClasses.join(', ')}}</p>
+                                </div>
+                            </md-list-item>
+
+                            <md-list-item class="md-2-line" ng-if="ctrl.flight.isCodeShare">
+                                <md-icon md-font-set="material-symbols-outlined" class="md-avatar-icon">share</md-icon>
+                                <div class="md-list-item-text">
+                                    <h3>Codeshare Flight</h3>
+                                    <p>Yes</p>
+                                </div>
+                            </md-list-item>
+
+                            <md-list-item class="md-2-line" ng-if="ctrl.flight.codeShareAirline">
+                                <md-icon md-font-set="material-symbols-outlined" class="md-avatar-icon">engineering</md-icon>
+                                <div class="md-list-item-text">
+                                    <h3>Operated by</h3>
+                                    <p>{{ctrl.flight.codeShareAirline}}</p>
+                                </div>
+                            </md-list-item>
+                        </md-list>
+                    </md-card-content>
+                </md-card>-->
+
+                <!-- Connection Details -->
+                <md-card ng-if="ctrl.flight.isMultiSegment && ctrl.isDisplayingOverview">
+                    <md-card-header>
+                        <md-card-header-text>
+                            <span class="md-title">All Flight Segments</span>
+                        </md-card-header-text>
+                    </md-card-header>
+                    <md-divider></md-divider>
+                    <md-card-content>
+                        <div class="flight-segments-timeline">
+                            <div ng-repeat="segment in ctrl.flight.flightSegments" class="segment-timeline-item">
+                                <div class="segment-header">
+                                    <span class="segment-number">Segment {{segment.segmentOrder + 1}} of {{ctrl.flight.flightSegments.length}}</span>
+                                    <span class="segment-flight-number">{{segment.carrierFsCode}}{{segment.flightNumber}}</span>
+                                </div>
+
+                                <div class="segment-journey">
+                                    <div class="journey-point departure">
+                                        <div class="time">{{segment.departureTime | date: 'MM/dd/yyyy HH:mm'}}</div>
+                                        <div class="airport">{{segment.departureAirportFsCode}}</div>
+                                        <div class="terminal" ng-if="segment.departureTerminal">Terminal {{segment.departureTerminal}}</div>
+                                        <div class="airport-name" ng-if="segment.departureAirportName">{{segment.departureAirportName}}</div>
+                                    </div>
+
+                                    <div class="journey-line">
+                                        <div class="duration">{{segment.elapsedTime | minutesToTime}}</div>
+                                        <div class="line"></div>
+                                        <div class="equipment" ng-if="segment.aircraftName || segment.flightEquipmentIataCode">
+                                            {{segment.aircraftName || segment.flightEquipmentIataCode}}
+                                        </div>
+                                    </div>
+
+                                    <div class="journey-point arrival">
+                                        <div class="time">{{segment.arrivalTime | date: 'MM/dd/yyyy HH:mm'}}</div>
+                                        <div class="airport">{{segment.arrivalAirportFsCode}}</div>
+                                        <div class="terminal" ng-if="segment.arrivalTerminal">Terminal {{segment.arrivalTerminal}}</div>
+                                        <div class="airport-name" ng-if="segment.arrivalAirportName">{{segment.arrivalAirportName}}</div>
+                                    </div>
+                                </div>
+
+                                <!-- Layover information between segments -->
+                                <div class="layover-info" ng-if="!$last">
+                                    <div class="layover-info-content">
+                                        <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
+                                        <span class="layover-time">{{ctrl.getConnectionTime(segment, ctrl.flight.flightSegments[$index + 1])}} layover</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </md-card-content>
+                </md-card>
+            </div>
+        </div>
+    </md-dialog-content>
+</md-dialog>
+
+<!--<md-dialog aria-label="Flight Details" class="flight-details-dialog">
+    <md-toolbar class="md-primary">
+        <div class="md-toolbar-tools">
+            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">flight</md-icon>
+            <h2>Flight Details</h2>
+            <span flex></span>
+            <md-button class="md-icon-button" ng-click="ctrl.cancel()" aria-label="Close">
+                <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+                <md-tooltip md-direction="bottom">Close</md-tooltip>
+            </md-button>
+        </div>
+    </md-toolbar>-->
+
     <!-- Flight Connection Tabs -->
-    <md-tabs md-dynamic-height md-center-tabs md-selected="ctrl.selectedTabIndex" class="connection-tabs">
+    <!--<md-tabs md-dynamic-height md-center-tabs md-selected="ctrl.selectedTabIndex" class="connection-tabs">
         <md-tab ng-repeat="connection in ctrl.flightConnections track by $index"
                 label="{{ctrl.getConnectionLabel($index)}}"
                 ng-click="ctrl.selectConnection($index)">
@@ -29,29 +354,29 @@
     </md-card>
 
     <md-dialog-content>
-        <div class="md-dialog-content">
+        <div class="md-dialog-content">-->
             <!-- Loading state -->
-            <div ng-if="ctrl.isLoading" layout="row" layout-align="center center" class="loading-container">
+            <!--<div ng-if="ctrl.isLoading" layout="row" layout-align="center center" class="loading-container">
                 <md-progress-circular md-mode="indeterminate"></md-progress-circular>
                 <span class="md-caption loading-text">Loading flight details...</span>
-            </div>
+            </div>-->
 
             <!-- Error state -->
-            <div ng-if="!ctrl.isLoading && ctrl.error" class="error-container">
+            <!--<div ng-if="!ctrl.isLoading && ctrl.error" class="error-container">
                 <md-icon md-font-set="material-symbols-outlined" class="md-warn md-hue-2">error</md-icon>
                 <p class="md-body-1">{{ctrl.error}}</p>
-            </div>
+            </div>-->
 
             <!-- No data state -->
-            <div ng-if="!ctrl.isLoading && !ctrl.error && !ctrl.flightViewModel" class="no-data-container">
+            <!--<div ng-if="!ctrl.isLoading && !ctrl.error && !ctrl.flightViewModel" class="no-data-container">
                 <md-icon md-font-set="material-symbols-outlined" class="md-primary">flight</md-icon>
                 <p class="md-body-1">No flight information available for the selected flight.</p>
-            </div>
+            </div>-->
 
             <!-- Flight data -->
-            <div ng-if="!ctrl.isLoading && !ctrl.error && ctrl.flightViewModel">
+            <!--<div ng-if="!ctrl.isLoading && !ctrl.error && ctrl.flightViewModel">-->
                 <!-- Multi-connection summary if applicable -->
-                <div class="connection-summary">
+                <!--<div class="connection-summary">
                     <md-card>
                         <md-card-content layout="row" layout-align="center center">
                             <md-icon md-font-set="material-symbols-outlined" class="md-secondary">sync_alt</md-icon>
@@ -61,14 +386,14 @@
                             <span class="md-body-1">Total Duration: {{ctrl.getTotalDuration()}}</span>
                         </md-card-content>
                     </md-card>
-                </div>
+                </div>-->
 
                 <!-- Flight header with improved Material Design -->
-                <md-card class="flight-header-card md-whiteframe-2dp">
+                <!--<md-card class="flight-header-card md-whiteframe-2dp">
                     <md-card-content>
-                        <div layout="row" layout-align="space-between start">
+                        <div layout="row" layout-align="space-between start">-->
                             <!-- Left side with airline info -->
-                            <div layout="row" layout-align="start center">
+                            <!--<div layout="row" layout-align="start center">
                                 <div class="airline-logo" ng-if="ctrl.flightViewModel.airlineLogo">
                                     <img ng-src="{{ctrl.flightViewModel.airlineLogo}}" alt="{{ctrl.flightViewModel.airlineName}}" aria-label="Airline logo">
                                 </div>
@@ -83,10 +408,10 @@
                                         <span class="md-caption">{{ctrl.flightViewModel.aircraft}}</span>
                                     </div>
                                 </div>
-                            </div>
+                            </div>-->
 
                             <!-- Right side with status & date -->
-                            <div class="flight-status" layout="column" layout-align="start end">
+                            <!--<div class="flight-status" layout="column" layout-align="start end">
                                 <div>
                                     <md-chip ng-if="ctrl.flightViewModel.isNonStop" class="flight-chip md-accent">
                                         <md-icon md-font-set="material-symbols-outlined">check_circle</md-icon>
@@ -108,10 +433,10 @@
                                     {{ctrl.flightViewModel.departureDate | date:'MMM d, yyyy'}}
                                 </div>
                             </div>
-                        </div>
+                        </div>-->
 
                         <!-- Bottom route summary section -->
-                        <div layout="row" layout-align="center center" class="connection-summary" ng-if="ctrl.flightViewModel.originCode && ctrl.flightViewModel.destinationCode">
+                        <!--<div layout="row" layout-align="center center" class="connection-summary" ng-if="ctrl.flightViewModel.originCode && ctrl.flightViewModel.destinationCode">
                             <div class="airport-code md-subhead">{{ctrl.flightViewModel.originCode}}</div>
                             <span class="connection-divider">-</span>
                             <md-icon>flight</md-icon>
@@ -126,10 +451,10 @@
                             </div>
                         </div>
                     </md-card-content>
-                </md-card>
+                </md-card>-->
 
                 <!-- Flight route -->
-                <md-card>
+                <!--<md-card>
                     <md-card-content>
                         <div layout="row" layout-xs="column" class="flight-route">
                             <div flex="45" class="departure-info" layout="column" layout-align="start end">
@@ -161,10 +486,10 @@
                             </div>
                         </div>
                     </md-card-content>
-                </md-card>
+                </md-card>-->
 
                 <!-- Flight details -->
-                <md-card>
+                <!--<md-card>
                     <md-card-header>
                         <md-card-header-text>
                             <span class="md-title">Flight Information</span>
@@ -214,10 +539,10 @@
                             </md-list-item>
                         </md-list>
                     </md-card-content>
-                </md-card>
+                </md-card>-->
 
                 <!-- Codeshare section -->
-                <md-card ng-if="ctrl.hasCodeshares()">
+                <!--<md-card ng-if="ctrl.hasCodeshares()">
                     <md-card-header>
                         <md-card-header-text>
                             <div layout="row" layout-align="space-between center">
@@ -244,10 +569,10 @@
                             </md-list-item>
                         </md-list>
                     </md-card-content>
-                </md-card>
+                </md-card>-->
 
                 <!-- Airport information -->
-                <md-card>
+                <!--<md-card>
                     <md-tabs md-center-tabs md-border-bottom>
                         <md-tab label="Departure Airport">
                             <md-content class="md-padding airport-tab-content">
@@ -354,4 +679,4 @@
             </div>
         </div>
     </md-dialog-content>
-</md-dialog>
+</md-dialog>-->

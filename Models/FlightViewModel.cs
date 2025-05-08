@@ -1,3 +1,4 @@
+using DespatchWeb.Models.FlightStats;
 using System;
 using System.Collections.Generic;
 
@@ -22,4 +23,27 @@ public class FlightViewModel
 
     public string DepartureTimeZone { get; set; }
     public string ArrivalTimeZone { get; set; }
+
+    public bool IsMultiSegment { get; set; }
+    public int ElapsedTime { get; set; }
+    public int Score { get; set; }
+    public string ConnectionId { get; set; }
+    public List<FlightSegmentViewModel> FlightSegments { get; set; } = new List<FlightSegmentViewModel>();
+}
+
+public class FlightSegmentViewModel: ScheduledFlight
+{
+    public int SegmentOrder { get; set; }
+    public int StopsInSegment { get; set; }
+    public string DepartureAirportName { get; set; }
+    public string DepartureAirportCity { get; set; }
+    public string DepartureAirportCountry { get; set; }
+    public string DepartureAirportTimeZone { get; set; }
+    public string ArrivalAirportName { get; set; }
+    public string ArrivalAirportCity { get; set; }
+    public string ArrivalAirportCountry { get; set; }
+    public string ArrivalAirportTimeZone { get; set; }
+    public string AircraftName { get; set; }
+    public string AircraftType { get; set; }
+    public string AirlineName { get; set; }
 }

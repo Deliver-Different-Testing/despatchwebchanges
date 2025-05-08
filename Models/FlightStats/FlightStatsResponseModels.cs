@@ -299,6 +299,8 @@ public class ScheduledFlight
 
     [JsonPropertyName("stops")] public int Stops { get; set; }
 
+    [JsonPropertyName("departureTerminal")] public string DepartureTerminal { get; set; }
+
     [JsonPropertyName("arrivalTerminal")] public string ArrivalTerminal { get; set; }
 
     [JsonPropertyName("flightEquipmentIataCode")]
@@ -313,7 +315,7 @@ public class ScheduledFlight
     [JsonPropertyName("serviceClasses")] public List<string> ServiceClasses { get; set; }
 
     [JsonPropertyName("trafficRestrictions")] public List<string> TrafficRestrictions { get; set; }
-
+    [JsonPropertyName("elapsedTime")] public int ElapsedTime { get; set; }
     [JsonPropertyName("codeshares")] public List<CodeShare> CodeShares { get; set; }
 
     [JsonPropertyName("referenceCode")] public string ReferenceCode { get; set; }

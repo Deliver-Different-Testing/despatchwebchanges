@@ -147,12 +147,13 @@ class NationwideService implements angular.IServiceProvider {
         }
     }
 
-    async assignFlightToJob(jobId: number, flightNumber: string, departureDate: Date) {
+    async assignFlightToJob(jobId: number, flightNumber: string, departureDate: Date, flightData: IFlightViewModel) {
         try {
             const response = await this.$http.post("nationwideJob/AssignFlightToJob", {
                 jobId,
                 flightNumber,
                 departureDate,
+                flightSegments: flightData.flightSegments || []
             });
 
             return response.data;

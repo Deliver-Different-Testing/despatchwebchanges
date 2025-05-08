@@ -74,7 +74,7 @@ import InterCourierChargeDialogService
 import {
     bytesFilter, getByAttrFilter, jobStatusIconFilter,
     momentFormatFilter,
-    replaceFilter, selectedToTopFilter, switchFilter, timezoneShortFilter, uniqueFilter, urlFixFilter
+    replaceFilter, selectedToTopFilter, switchFilter, timezoneShortFilter, uniqueFilter, urlFixFilter, minutesToTimeFilter
 } from "./filters";
 import JobContextMenuService from "./services/job-context-menu.service";
 import StickyNoteComponent from "./components/common/sticky-notes/sticky-notes.component";
@@ -219,6 +219,7 @@ app.filter("jobStatusIcon", () => jobStatusIconFilter);
 app.filter("replace", () => replaceFilter);
 app.filter('momentFormat', () => momentFormatFilter);
 app.filter('timezoneShort', () => timezoneShortFilter);
+app.filter('minutesToTime', () => minutesToTimeFilter);
 
 // Directives
 app.directive('ngRightClick', ngRightClickDirective);

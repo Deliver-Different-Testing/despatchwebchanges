@@ -126,11 +126,11 @@ public class FlightStatsService(
         string codeType = null,
         List<string> extendedOptions = null)
     {
-        // Return test data when debugging
-        if (System.Diagnostics.Debugger.IsAttached)
-        {
-            return GetTestFlights();
-        }
+        //// Return test data when debugging
+        //if (System.Diagnostics.Debugger.IsAttached)
+        //{
+        //    return GetTestFlights();
+        //}
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         Log.Information("Flight search started for job {JobId} with departure {DepartureDateTime}",
@@ -164,7 +164,7 @@ public class FlightStatsService(
         query["payloadType"] = "cargo";
         query["maxResults"] = "100";
         query["includeCodeshares"] = "false";
-        query["maxConnections"] = "1";
+        query["maxConnections"] = "1"; //default are 2
 
         // Filter by specific airline if airlineId is provided
         if (airlineId is > 0)
@@ -214,12 +214,6 @@ public class FlightStatsService(
         var content = await response.Content.ReadAsStringAsync();
         var flightStatusResponse = JsonSerializer.Deserialize<FlightConnectionsResponse>(content);
 
-        if (flightStatusResponse?.Connections == null)
-        {
-            Log.Warning("No connections found for flight search");
-            return [];
-        }
-
         // Pre-filter connections to avoid processing unnecessary data
         var connections = flightStatusResponse.Connections;
 
@@ -236,6 +230,72 @@ public class FlightStatsService(
                     firstFlight.CarrierFsCode,
                     conn.ScheduledFlight.Count != 0,
                     firstFlight.DepartureTime);
+
+                // Get airline info from appendix
+                var airlineInfo = flightStatusResponse.Appendix?.Airlines
+                    ?.FirstOrDefault(a => a.Fs == firstFlight.CarrierFsCode);
+
+                // Get departure airport info
+                var departureAirportInfo = flightStatusResponse.Appendix?.Airports
+                    ?.FirstOrDefault(a => a.Fs == firstFlight.DepartureAirportFsCode);
+
+                // Get arrival airport info
+                var arrivalAirportInfo = flightStatusResponse.Appendix?.Airports
+                    ?.FirstOrDefault(a => a.Fs == lastFlight.ArrivalAirportFsCode);
+
+                // Get aircraft info
+                var aircraftInfo = flightStatusResponse.Appendix?.Equipments
+                    ?.FirstOrDefault(e => e.Iata == firstFlight.FlightEquipmentIataCode);
+
+                // Map flight segments with detailed info from appendix
+                var segments = conn.ScheduledFlight
+                    .Select((segment, index) => {
+                        var depAirport = flightStatusResponse.Appendix?.Airports
+                            ?.FirstOrDefault(a => a.Fs == segment.DepartureAirportFsCode);
+
+                        var arrAirport = flightStatusResponse.Appendix?.Airports
+                            ?.FirstOrDefault(a => a.Fs == segment.ArrivalAirportFsCode);
+
+                        var equipment = flightStatusResponse.Appendix?.Equipments
+                            ?.FirstOrDefault(e => e.Iata == segment.FlightEquipmentIataCode);
+
+                        var airline = flightStatusResponse.Appendix?.Airlines
+                            ?.FirstOrDefault(a => a.Fs == segment.CarrierFsCode);
+
+                        return new FlightSegmentViewModel
+                        {
+                            SegmentOrder = index,
+                            CarrierFsCode = segment.CarrierFsCode,
+                            FlightNumber = segment.FlightNumber,
+                            DepartureTime = segment.DepartureTime,
+                            ArrivalTime = segment.ArrivalTime,
+                            DepartureAirportFsCode = segment.DepartureAirportFsCode,
+                            DepartureTerminal = segment.DepartureTerminal,
+                            ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
+                            ArrivalTerminal = segment.ArrivalTerminal,
+                            FlightEquipmentIataCode = segment.FlightEquipmentIataCode,
+                            ElapsedTime = segment.ElapsedTime,
+                            StopsInSegment = segment.Stops,
+
+                            // Additional details from appendix
+                            DepartureAirportName = depAirport?.Name,
+                            DepartureAirportCity = depAirport?.City,
+                            DepartureAirportCountry = depAirport?.CountryName,
+                            DepartureAirportTimeZone = depAirport?.TimeZoneRegionName,
+
+                            ArrivalAirportName = arrAirport?.Name,
+                            ArrivalAirportCity = arrAirport?.City,
+                            ArrivalAirportCountry = arrAirport?.CountryName,
+                            ArrivalAirportTimeZone = arrAirport?.TimeZoneRegionName,
+
+                            AircraftName = equipment?.Name,
+                            AircraftType = equipment?.Jet == true ? "Jet" :
+                                         equipment?.TurboProp == true ? "TurboProp" : "Unknown",
+
+                            AirlineName = airline?.Name
+                        };
+                    })
+                 .ToList();
 
                 return new FlightViewModel
                 {
@@ -255,7 +315,16 @@ public class FlightStatsService(
                     ServiceClasses = firstFlight.ServiceClasses,
                     IsCodeShare = firstFlight.IsCodeShare,
                     Amount = amount,
-                    CodeShareAirline = firstFlight.IsCodeShare ? firstFlight.CarrierFsCode : null
+                    CodeShareAirline = firstFlight.IsCodeShare ? firstFlight.CarrierFsCode : null,
+
+                      // Add new properties for multi-segment support
+                    IsMultiSegment = conn.ScheduledFlight.Count > 1,
+                    ElapsedTime = conn.ElapsedTime,
+                    Score = conn.Score,
+                    ConnectionId = Guid.NewGuid().ToString(),
+
+                    // Add flight segments
+                    FlightSegments = segments
                 };
             }));
 
@@ -266,7 +335,6 @@ public class FlightStatsService(
         DateTime departureTime)
     {
         var flightResponse = await FetchFlightDataAsync(completeFlightNumber, departureTime);
-
         if (flightResponse?.ScheduledFlights == null || flightResponse.ScheduledFlights.Count == 0)
             return null;
 
@@ -312,11 +380,11 @@ public class FlightStatsService(
     private async Task<FlightSchedulesResponse> FetchFlightDataAsync(string completeFlightNumber,
         DateTime departureTime)
     {
-        // Return dummy data if in debug mode
-        if (System.Diagnostics.Debugger.IsAttached)
-        {
-            return CreateDummyFlightData(completeFlightNumber, departureTime);
-        }
+        //// Return dummy data if in debug mode
+        //if (System.Diagnostics.Debugger.IsAttached)
+        //{
+        //    return CreateDummyFlightData(completeFlightNumber, departureTime);
+        //}
 
         if (string.IsNullOrEmpty(completeFlightNumber))
             throw new ArgumentException("Flight number is required and cannot be null or empty.",
