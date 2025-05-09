@@ -39,21 +39,16 @@ export interface FlightSegmentViewModel {
     flightEquipmentIataCode: string;
     elapsedTime: number;
     stopsInSegment: number;
-
-    // Additional details from appendix
     departureAirportName?: string;
     departureAirportCity?: string;
     departureAirportCountry?: string;
     departureAirportTimeZone?: string;
-
     arrivalAirportName?: string;
     arrivalAirportCity?: string;
     arrivalAirportCountry?: string;
     arrivalAirportTimeZone?: string;
-
     aircraftName?: string;
     aircraftType?: string;
-
     airlineName?: string;
 }
 

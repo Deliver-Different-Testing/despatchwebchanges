@@ -110,7 +110,8 @@ public class NationwideJobController(
         DateTime departureDate,
         int jobId,
         int? airlineId,
-        int? departureAirportId)
+        int? departureAirportId,
+        int minimumLayoverMinutes = 60) //minimumLayover allowed
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
@@ -127,7 +128,8 @@ public class NationwideJobController(
                 departureAirportId,
                 flightBuffer: 0,
                 codeType: null,
-                extendedOptions: null);
+                extendedOptions: null,
+                minimumLayoverMinutes: minimumLayoverMinutes);
 
             stopwatch.Stop();
             Log.Information(

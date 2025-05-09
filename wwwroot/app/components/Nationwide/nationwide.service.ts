@@ -83,7 +83,8 @@ class NationwideService implements angular.IServiceProvider {
         jobId: number,
         departureDate: string | Date,
         airlineId?: number,
-        departureAirportId?: number
+        departureAirportId?: number,
+        minimumLayoverMinutes: number = 0
     ): Promise<{
         flights: IFlightViewModel[];
         message: string | null;
@@ -110,7 +111,8 @@ class NationwideService implements angular.IServiceProvider {
                     departureDate: formattedDate,
                     jobId,
                     airlineId,
-                    departureAirportId
+                    departureAirportId,
+                    minimumLayoverMinutes
                 }
             });
 

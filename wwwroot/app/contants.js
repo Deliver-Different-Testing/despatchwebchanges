@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.serverConfig = exports.ClientInternal = exports.ContactID = exports.FirstName = void 0;
+const FirstName = window.FirstName;
+exports.FirstName = FirstName;
+const ContactID = window.ContactID;
+exports.ContactID = ContactID;
+const ClientInternal = window.ClientInternal;
+exports.ClientInternal = ClientInternal;
+const serverConfig = window.serverConfig;
+exports.serverConfig = serverConfig;

@@ -295,12 +295,12 @@
                         <md-toolbar class="md-primary">
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">flight</span>
-                                <span class="md-headline-title" flex
-                                      style="margin-left: 8px;">Flight Information</span>
+                                <span class="md-headline-title" flex style="margin-left: 8px;">Flight Information</span>
                             </div>
                         </md-toolbar>
 
-                        <md-list>
+                        <!-- Summary flight info -->
+                        <!--<md-list>
                             <md-list-item class="info-row">
                                 <md-icon aria-label="flight number" md-font-set="material-symbols-outlined">
                                     flight_takeoff
@@ -314,32 +314,101 @@
                             </md-list-item>
 
                             <md-list-item class="info-row">
-                                <md-icon aria-label="departure" md-font-set="material-symbols-outlined">start
-                                </md-icon>
+                                <md-icon aria-label="departure" md-font-set="material-symbols-outlined">start</md-icon>
                                 <div class="info-detail">
                                     <div class="left-content">
                                         <span class="label">Departure:</span>
                                     </div>
                                     <span class="value">
-            {{ctrl.job.assignedFlight.expectedDeparture ? (ctrl.job.assignedFlight.expectedDeparture | date: 'MM/dd/yyyy HH:mm') + ' (' + ctrl.job.assignedFlight.departureTimeZone + ')' : 'N/A'}}
-        </span>
+                                        {{ctrl.job.assignedFlight.expectedDeparture ? (ctrl.job.assignedFlight.expectedDeparture | date: 'MM/dd/yyyy HH:mm') + ' (' + ctrl.job.assignedFlight.departureTimeZone + ')' : 'N/A'}}
+                                    </span>
                                 </div>
                             </md-list-item>
 
                             <md-list-item class="info-row">
-                                <md-icon aria-label="arrival" md-font-set="material-symbols-outlined">location_on
-                                </md-icon>
+                                <md-icon aria-label="arrival" md-font-set="material-symbols-outlined">location_on</md-icon>
                                 <div class="info-detail">
                                     <div class="left-content">
                                         <span class="label">Arrival:</span>
                                     </div>
                                     <span class="value">
-            {{ctrl.job.assignedFlight.expectedArrival ? (ctrl.job.assignedFlight.expectedArrival | date: 'MM/dd/yyyy HH:mm') + ' (' + ctrl.job.assignedFlight.arrivalTimeZone + ')' : 'N/A'}}
-        </span>
+                                        {{ctrl.job.assignedFlight.expectedArrival ? (ctrl.job.assignedFlight.expectedArrival | date: 'MM/dd/yyyy HH:mm') + ' (' + ctrl.job.assignedFlight.arrivalTimeZone + ')' : 'N/A'}}
+                                    </span>
                                 </div>
                             </md-list-item>
-                        </md-list>
+                        </md-list>-->
+
+                        <!-- Flight segments information for multi-leg flights -->
+                        <div ng-if="ctrl.job.assignedFlight.flightSegments && ctrl.job.assignedFlight.flightSegments.length > 1"
+                             class="flight-segments-container md-padding">
+
+                            <div class="segment-header md-caption">
+                                <span>SEGMENTS: {{ctrl.job.assignedFlight.flightSegments.length}}</span>
+                            </div>
+
+                            <div ng-repeat="segment in ctrl.job.assignedFlight.flightSegments" class="segment-item">
+                                <div class="segment-content">
+                                    <div class="segment-number">
+                                        Segment {{$index + 1}} of {{ctrl.job.assignedFlight.flightSegments.length}} - {{segment.carrierFsCode}}{{segment.flightNumber}}
+                                    </div>
+
+                                    <div class="segment-info" layout="row" layout-align="space-between center">
+                                        <!-- Departure -->
+                                        <div class="segment-departure" flex="30">
+                                            <div class="time">
+                                                {{segment.departureTime | date: 'MM/dd/yyyy HH:mm'}}
+                                            </div>
+                                            <div class="airport-code">
+                                                {{segment.departureAirportFsCode}}
+                                            </div>
+                                            <div class="terminal" ng-if="segment.departureTerminal">
+                                                Terminal {{segment.departureTerminal}}
+                                            </div>
+                                        </div>
+
+                                        <!-- Flight line -->
+                                        <div class="flight-line" flex="40">
+                                            <div class="elapsed-time">
+                                                {{segment.elapsedTime | minutesToTime}}
+                                            </div>
+                                            <div class="line">
+                                                <md-icon md-font-set="material-symbols-outlined" class="line-arrow">
+                                                    arrow_forward
+                                                </md-icon>
+                                            </div>
+                                            <div class="aircraft-info">
+                                                {{segment.aircraftName || segment.flightEquipmentIataCode || 'Unknown'}}
+                                            </div>
+                                        </div>
+
+                                        <!-- Arrival -->
+                                        <div class="segment-arrival" flex="30">
+                                            <div class="time">
+                                                {{segment.arrivalTime | date: 'MM/dd/yyyy HH:mm'}}
+                                            </div>
+                                            <div class="airport-code">
+                                                {{segment.arrivalAirportFsCode}}
+                                            </div>
+                                            <div class="terminal" ng-if="segment.arrivalTerminal">
+                                                Terminal {{segment.arrivalTerminal}}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Layover/Connection time - show between segments -->
+                                <div class="layover-info" ng-if="!$last">
+                                    <md-icon md-font-set="material-symbols-outlined" class="layover-icon">schedule</md-icon>
+                                    <span class="layover-text">
+                                        {{ctrl.getConnectionTime(segment, ctrl.job.assignedFlight.flightSegments[$index + 1])}} layover
+                                    </span>
+                                </div>
+
+                                <md-divider ng-if="!$last"></md-divider>
+                            </div>
+                        </div>
                     </section>
+
 
                     <!-- Agent information -->
                     <section class="info-section booker-section" ng-if="ctrl.job.assignedAgent">
@@ -353,7 +422,8 @@
 
                         <md-list>
                             <md-list-item class="info-row">
-                                <md-icon aria-label="agent name" md-font-set="material-symbols-outlined">person
+                                <md-icon aria-label="agent name" md-font-set="material-symbols-outlined">
+                                    person
                                 </md-icon>
                                 <div class="info-detail">
                                     <div class="left-content">
@@ -364,7 +434,8 @@
                             </md-list-item>
 
                             <md-list-item class="info-row">
-                                <md-icon aria-label="agent rate" md-font-set="material-symbols-outlined">star_rate
+                                <md-icon aria-label="agent rate" md-font-set="material-symbols-outlined">
+                                    star_rate
                                 </md-icon>
                                 <div class="info-detail">
                                     <div class="left-content">
@@ -375,7 +446,8 @@
                             </md-list-item>
 
                             <md-list-item class="info-row">
-                                <md-icon aria-label="agent ranking" md-font-set="material-symbols-outlined">payments
+                                <md-icon aria-label="agent ranking" md-font-set="material-symbols-outlined">
+                                    payments
                                 </md-icon>
                                 <div class="info-detail">
                                     <div class="left-content">

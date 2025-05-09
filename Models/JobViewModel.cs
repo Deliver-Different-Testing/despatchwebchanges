@@ -172,6 +172,7 @@ public class AssignedFlight
     public DateTime? ExpectedArrival { get; set; }
     public string ArrivalTimeZone { get; set; }
     public string Notes { get; set; }
+    public List<FlightSegmentViewModel> FlightSegments { get; set; } = new List<FlightSegmentViewModel>();
 }
 
 public class PalletInfo

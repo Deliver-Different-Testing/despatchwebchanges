@@ -222,6 +222,25 @@ class JobDetailController extends BaseController {
         }
     }
 
+    getConnectionTime(firstSegment: any, secondSegment: any): string {
+        if (!firstSegment || !secondSegment) return '';
+
+        // Calculate time difference in minutes
+        const firstArrival = moment(firstSegment.arrivalTime);
+        const secondDeparture = moment(secondSegment.departureTime);
+        const diffMinutes = secondDeparture.diff(firstArrival, 'minutes');
+
+        // Format as hours and minutes
+        const hours = Math.floor(diffMinutes / 60);
+        const mins = diffMinutes % 60;
+
+        if (hours > 0) {
+            return hours + 'h ' + (mins < 10 ? '0' + mins : mins) + 'm';
+        } else {
+            return mins + 'm';
+        }
+    }
+
     private loadPodPhotos() {
         if (!this.job?.completedTime) {
             console.log('No POD time available for job');
