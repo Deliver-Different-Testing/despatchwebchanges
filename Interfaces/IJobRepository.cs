@@ -407,7 +407,7 @@ public interface IJobRepository
     Task<JobRatingDetailsDto> GetJobDetailsForRating(int jobId);
     Task UpdateJobRateAsync(int jobId, decimal rate, string noteText);
     Task<List<TimeZoneSuggestion>> GetTimeZoneOptions();
-    Task UpdateDeliverByTime(int jobId, DateTime deliverByTime, int timeZoneId);
-    Task UpdatePickUpTime(int jobId, DateTime pickUpTime, int timeZoneId);
+    Task UpdateDeliverByTime(int jobId, string deliverByTime, int timeZoneId);
+    Task UpdatePickUpTime(int jobId, string pickUpTime, int timeZoneId);
 
 }

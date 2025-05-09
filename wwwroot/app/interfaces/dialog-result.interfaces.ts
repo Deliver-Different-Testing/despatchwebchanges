@@ -8,6 +8,6 @@ export interface ISelectDialogResult {
 
 export interface IDialogDateTimeResult {
     fieldName: JobProperty;
-    value: Date;
+    value: string;
     selectedTimeZoneId?: number;
 }

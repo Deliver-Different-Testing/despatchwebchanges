@@ -4,7 +4,6 @@ import path from "path";
 import crypto from "crypto";
 import {lessLoader} from "esbuild-plugin-less";
 import esbuildPluginTsc from 'esbuild-plugin-tsc';
-import {es5Plugin} from "esbuild-plugin-es5";
 
 class Bundler {
     private readonly isDev: boolean;
@@ -64,7 +63,7 @@ class Bundler {
             minifyWhitespace: !this.isDev,
             minifyIdentifiers: !this.isDev,
             minifySyntax: !this.isDev,
-            target: ["es5"],
+            target: ["es2018"],
             metafile: !this.isDev,
             treeShaking: !this.isDev,
             legalComments: this.isDev ? "inline" : "none",
@@ -73,7 +72,6 @@ class Bundler {
             logLevel: this.isDev ? 'info' : 'error',
             plugins: [
                 esbuildPluginTsc(),
-                es5Plugin(),
                 lessLoader({
                     math: 'always'
                 }),

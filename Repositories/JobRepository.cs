@@ -2501,9 +2501,10 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             .Select(t => new TimeZoneSuggestion
             {
                 Id = t.Id,
-                Text = t.Code,
+                Text = $"{t.DisplayName} ({t.Code})",
                 TimeZoneIana = t.Name
             })
+            .OrderBy(tz => tz.TimeZoneIana)
             .AsNoTracking()
             .ToListAsync();
 
