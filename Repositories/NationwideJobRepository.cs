@@ -47,7 +47,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
             ArgumentNullException.ThrowIfNull(job);
 
-            // Create main flight record
+            // Create the main flight record
             var jobNationwide = new TucJobNationwide
             {
                 UcnwJobId = job.UcjbId,
@@ -87,25 +87,24 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             if (job.FromAirportId != null)
             {
                 var airportProcessingTime = await GetAirportProcessingTimeAsync(job.FromAirportId.Value);
-                job.Parent.InverseParent.First(j => j.UcjbNumber.EndsWith('1')).DeliverByTime =
-                    primaryFlight.DepartureTime.AddMinutes(-airportProcessingTime);
+                var pickUpJob = job.Parent.InverseParent.First(j => j.UcjbNumber.EndsWith('1'));
+                pickUpJob.DeliverByTime = primaryFlight.DepartureTime.AddMinutes(-airportProcessingTime);
+                pickUpJob.DeliverByTimeZoneId = job.PickupTimeZoneId;
             }
 
             // Second part
             var flightPart = flights.FlightSegments.Count > 1 ? flights.FlightSegments[1] : primaryFlight;
             job.DeliverByTime = flightPart.ArrivalTime;
-            job.DeliverByTimeZoneId = await Context.TimeZones
-                .Where(tz => tz.Name == flightPart.ArrivalAirportTimeZone)
-                .Select(tz => tz.Id)
-                .FirstOrDefaultAsync();;
+            job.DeliverByTimeZoneId = await GetTimeZoneIdByNameAsync(flightPart.ArrivalAirportTimeZone);
 
             // Set delivery job pick-up time
             if (job.ToAirportId != null)
             {
                 var airportProcessingTime = await GetAirportProcessingTimeAsync(job.ToAirportId.Value);
                 var lastFlight = flights.FlightSegments.Last();
-                job.Parent.InverseParent.First(j => j.UcjbNumber.EndsWith('3')).UcjbTime =
-                    lastFlight.ArrivalTime.AddMinutes(airportProcessingTime);
+                var deliveryJob = job.Parent.InverseParent.First(j => j.UcjbNumber.EndsWith('3'));
+                deliveryJob.UcjbTime = lastFlight.ArrivalTime.AddMinutes(airportProcessingTime);
+                deliveryJob.PickupTimeZoneId = await GetTimeZoneIdByNameAsync(lastFlight.ArrivalAirportTimeZone);
             }
 
             var currentTime = infoService.GetCurrentTenantTime();
@@ -160,6 +159,14 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 jobId);
             throw;
         }
+    }
+
+    private async Task<int> GetTimeZoneIdByNameAsync(string timeZoneName)
+    {
+        return await Context.TimeZones
+            .Where(tz => tz.Name == timeZoneName)
+            .Select(tz => tz.Id)
+            .FirstOrDefaultAsync();
     }
 
     public async Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId, int? maxDistanceMiles = 100)
