@@ -83,7 +83,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             job.UcjbDate = primaryFlight.DepartureTime;
             job.UcjbTime = primaryFlight.DepartureTime;
 
-            // Set Pick Up Job Deliver By
+            // Set Pickup Job Deliver By
             if (job.FromAirportId != null)
             {
                 var airportProcessingTime = await GetAirportProcessingTimeAsync(job.FromAirportId.Value);
@@ -91,7 +91,15 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                     primaryFlight.DepartureTime.AddMinutes(-airportProcessingTime);
             }
 
-            // Set delivery job pick up time
+            // Second part
+            var flightPart = flights.FlightSegments.Count > 1 ? flights.FlightSegments[1] : primaryFlight;
+            job.DeliverByTime = flightPart.ArrivalTime;
+            job.DeliverByTimeZoneId = await Context.TimeZones
+                .Where(tz => tz.Name == flightPart.ArrivalAirportTimeZone)
+                .Select(tz => tz.Id)
+                .FirstOrDefaultAsync();;
+
+            // Set delivery job pick-up time
             if (job.ToAirportId != null)
             {
                 var airportProcessingTime = await GetAirportProcessingTimeAsync(job.ToAirportId.Value);
