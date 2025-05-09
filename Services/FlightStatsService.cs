@@ -124,7 +124,9 @@ public class FlightStatsService(
         int? departureAirportId = null,
         int flightBuffer = 0,
         string codeType = null,
-        List<string> extendedOptions = null)
+        List<string> extendedOptions = null,
+        int minimumLayoverMinutes = 60
+        )
     {
         //// Return test data when debugging
         //if (System.Diagnostics.Debugger.IsAttached)
@@ -216,6 +218,34 @@ public class FlightStatsService(
 
         // Pre-filter connections to avoid processing unnecessary data
         var connections = flightStatusResponse.Connections;
+
+        // Filter out connections with layover times less than the minimum
+        if (minimumLayoverMinutes > 0)
+        {
+            // First filter connections based on layover times
+            connections = connections.Where(conn =>
+            {
+                // Skip connections with only one flight (no layovers)
+                if (conn.ScheduledFlight.Count <= 1)
+                    return true;
+
+                // Check layover times between each segment
+                for (int i = 0; i < conn.ScheduledFlight.Count - 1; i++)
+                {
+                    var currentFlight = conn.ScheduledFlight[i];
+                    var nextFlight = conn.ScheduledFlight[i + 1];
+
+                    // Calculate layover time in minutes
+                    var layoverMinutes = (int)(nextFlight.DepartureTime - currentFlight.ArrivalTime).TotalMinutes;
+
+                    // If any layover is less than minimum, exclude this connection
+                    if (layoverMinutes < minimumLayoverMinutes)
+                        return false;
+                }
+
+                return true;
+            }).ToList();
+        }
 
         var flightOptions = await Task.WhenAll(flightStatusResponse.Connections
             .Where(conn => conn.ScheduledFlight.Count != 0)

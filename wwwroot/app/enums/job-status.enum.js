@@ -1,0 +1,25 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.JobStatus = void 0;
+var JobStatus;
+(function (JobStatus) {
+    JobStatus[JobStatus["New"] = 0] = "New";
+    JobStatus[JobStatus["Dispatched"] = 1] = "Dispatched";
+    JobStatus[JobStatus["Accepted"] = 2] = "Accepted";
+    JobStatus[JobStatus["Rejected"] = 3] = "Rejected";
+    JobStatus[JobStatus["LatePickup"] = 4] = "LatePickup";
+    JobStatus[JobStatus["PickedUp"] = 5] = "PickedUp";
+    JobStatus[JobStatus["Completed"] = 6] = "Completed";
+    JobStatus[JobStatus["Warning"] = 7] = "Warning";
+    JobStatus[JobStatus["LateDelivery"] = 8] = "LateDelivery";
+    JobStatus[JobStatus["AwaitingPod"] = 9] = "AwaitingPod";
+    JobStatus[JobStatus["Undeliverable"] = 10] = "Undeliverable";
+    JobStatus[JobStatus["InTransit"] = 11] = "InTransit";
+    JobStatus[JobStatus["Acknowledge"] = 12] = "Acknowledge";
+    JobStatus[JobStatus["AssumingCompleted"] = 13] = "AssumingCompleted";
+    JobStatus[JobStatus["ReadyForPacking"] = 14] = "ReadyForPacking";
+    JobStatus[JobStatus["ReadyToPickup"] = 15] = "ReadyToPickup";
+    JobStatus[JobStatus["AwaitingProcessing"] = 16] = "AwaitingProcessing";
+    JobStatus[JobStatus["OutForDelivery"] = 17] = "OutForDelivery";
+    JobStatus[JobStatus["Preassigned"] = 18] = "Preassigned";
+})(JobStatus = exports.JobStatus || (exports.JobStatus = {}));

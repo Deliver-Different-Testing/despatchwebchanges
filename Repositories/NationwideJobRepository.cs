@@ -61,7 +61,21 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 WebhookAlertId = webhookIds.First(),
                 GateNumber = primaryFlight.DepartureTerminal,
                 UcnwLegNumber = 1,
-                UcnwAirlineName = primaryFlight.AirlineName
+                UcnwAirlineName = primaryFlight.AirlineName,
+                CarrierFsCode = primaryFlight.CarrierFsCode,
+                DepartureAirportFsCode = primaryFlight.DepartureAirportFsCode,
+                DepartureAirportName = primaryFlight.DepartureAirportName,
+                DepartureAirportCity = primaryFlight.DepartureAirportCity,
+                DepartureAirportCountry = primaryFlight.DepartureAirportCountry,
+                DepartureAirportTimeZone = primaryFlight.DepartureAirportTimeZone,
+                ArrivalAirportFsCode = primaryFlight.ArrivalAirportFsCode,
+                ArrivalAirportName = primaryFlight.ArrivalAirportName,
+                ArrivalAirportCity = primaryFlight.ArrivalAirportCity,
+                ArrivalAirportCountry = primaryFlight.ArrivalAirportCountry,
+                ArrivalAirportTimeZone = primaryFlight.ArrivalAirportTimeZone,
+                DepartureTerminal = primaryFlight.DepartureTerminal,
+                ArrivalTerminal = primaryFlight.ArrivalTerminal,
+                AircraftName = primaryFlight.AircraftName
             };
 
             // First operation - Update job status
@@ -98,7 +112,21 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                         UcnwEta = leg.ArrivalTime,
                         WebhookAlertId = webhookIds[i], // Same webhook for all legs
                         UcnwLegNumber = ++i,
-                        UcnwAirlineName = leg.AirlineName
+                        UcnwAirlineName = leg.AirlineName,
+                        CarrierFsCode = leg.CarrierFsCode,
+                        DepartureAirportFsCode = leg.DepartureAirportFsCode,
+                        DepartureAirportName = leg.DepartureAirportName,
+                        DepartureAirportCity = leg.DepartureAirportCity,
+                        DepartureAirportCountry = leg.DepartureAirportCountry,
+                        DepartureAirportTimeZone = leg.DepartureAirportTimeZone,
+                        ArrivalAirportFsCode = leg.ArrivalAirportFsCode,
+                        ArrivalAirportName = leg.ArrivalAirportName,
+                        ArrivalAirportCity = leg.ArrivalAirportCity,
+                        ArrivalAirportCountry = leg.ArrivalAirportCountry,
+                        ArrivalAirportTimeZone = leg.ArrivalAirportTimeZone,
+                        DepartureTerminal = leg.DepartureTerminal,
+                        ArrivalTerminal = leg.ArrivalTerminal,
+                        AircraftName = leg.AircraftName
                     };
 
                     await Context.TucJobNationwides.AddAsync(connectionSegment);

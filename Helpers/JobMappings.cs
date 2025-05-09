@@ -217,31 +217,110 @@ public static class JobMappings
             ToAirportId = j.ToAirportId,
             FromAirportId = j.FromAirportId,
 
-            // Assigned flight information
+            //// Assigned flight information
+            //AssignedFlight = j.Parent != null
+            //    ? j.Parent.InverseParent
+            //        .SelectMany(childJob => childJob.TucJobNationwides)
+            //        .Select(nj => new AssignedFlight
+            //        {
+            //            ExpectedArrival = nj.UcnwEta,
+            //            ArrivalTimeZone = nj.UcnwJob.ToAirport.Timezone,
+            //            ExpectedDeparture = nj.UcnwEtd,
+            //            DepartureTimeZone = nj.UcnwJob.FromAirport.Timezone,
+            //            FlightNumber = nj.UcnwFlightNo,
+            //            Notes = nj.UcnwNotes
+            //        })
+            //        .FirstOrDefault()
+            //    : j.TucJobNationwides
+            //        .Select(nj => new AssignedFlight
+            //        {
+            //            ExpectedArrival = nj.UcnwEta,
+            //            ArrivalTimeZone = nj.UcnwJob.ToAirport.Timezone,
+            //            ExpectedDeparture = nj.UcnwEtd,
+            //            DepartureTimeZone = nj.UcnwJob.FromAirport.Timezone,
+            //            FlightNumber = nj.UcnwFlightNo,
+            //            Notes = nj.UcnwNotes
+            //        })
+            //        .FirstOrDefault(),
             AssignedFlight = j.Parent != null
-                ? j.Parent.InverseParent
-                    .SelectMany(childJob => childJob.TucJobNationwides)
-                    .Select(nj => new AssignedFlight
-                    {
-                        ExpectedArrival = nj.UcnwEta,
-                        ArrivalTimeZone = nj.UcnwJob.ToAirport.Timezone,
-                        ExpectedDeparture = nj.UcnwEtd,
-                        DepartureTimeZone = nj.UcnwJob.FromAirport.Timezone,
-                        FlightNumber = nj.UcnwFlightNo,
-                        Notes = nj.UcnwNotes
-                    })
-                    .FirstOrDefault()
-                : j.TucJobNationwides
-                    .Select(nj => new AssignedFlight
-                    {
-                        ExpectedArrival = nj.UcnwEta,
-                        ArrivalTimeZone = nj.UcnwJob.ToAirport.Timezone,
-                        ExpectedDeparture = nj.UcnwEtd,
-                        DepartureTimeZone = nj.UcnwJob.FromAirport.Timezone,
-                        FlightNumber = nj.UcnwFlightNo,
-                        Notes = nj.UcnwNotes
-                    })
-                    .FirstOrDefault(),
+    ? j.Parent.InverseParent
+        .SelectMany(childJob => childJob.TucJobNationwides)
+        .Select(nj => new AssignedFlight
+        {
+            ExpectedArrival = nj.UcnwEta,
+            ArrivalTimeZone = nj.UcnwJob.ToAirport.Timezone,
+            ExpectedDeparture = nj.UcnwEtd,
+            DepartureTimeZone = nj.UcnwJob.FromAirport.Timezone,
+            FlightNumber = nj.UcnwFlightNo,
+            Notes = nj.UcnwNotes,
+            // Add flight segments mapping
+            FlightSegments = j.Parent.InverseParent
+                .SelectMany(childJob => childJob.TucJobNationwides)
+                .OrderBy(f => f.UcnwLegNumber)
+                .Select(segment => new FlightSegmentViewModel
+                {
+                    SegmentOrder = segment.UcnwLegNumber - 1,
+                    CarrierFsCode = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length >= 2 ? segment.UcnwFlightNo.Substring(0, 2) : "??",
+                    FlightNumber = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length > 2 ? segment.UcnwFlightNo.Substring(2) : "????",
+                    DepartureTime = segment.UcnwEtd ?? DateTime.MinValue,
+                    ArrivalTime = segment.UcnwEta ?? DateTime.MinValue,
+                    DepartureAirportFsCode = segment.DepartureAirportFsCode,
+                    DepartureAirportName = segment.DepartureAirportName,
+                    DepartureAirportCity = segment.DepartureAirportCity,
+                    DepartureAirportCountry = segment.DepartureAirportCountry,
+                    DepartureAirportTimeZone = segment.DepartureAirportTimeZone,
+                    DepartureTerminal = segment.DepartureTerminal,
+                    ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
+                    ArrivalAirportName = segment.ArrivalAirportName,
+                    ArrivalAirportCity = segment.ArrivalAirportCity,
+                    ArrivalAirportCountry = segment.ArrivalAirportCountry,
+                    ArrivalAirportTimeZone = segment.ArrivalAirportTimeZone,
+                    ArrivalTerminal = segment.ArrivalTerminal,
+                    ElapsedTime = (int)((segment.UcnwEta.HasValue && segment.UcnwEtd.HasValue) ? (segment.UcnwEta.Value - segment.UcnwEtd.Value).TotalMinutes : 0),
+                    AircraftName = segment.AircraftName,
+                    AirlineName = segment.UcnwAirlineName
+                })
+                .ToList()
+        })
+        .FirstOrDefault()
+    : j.TucJobNationwides
+        .Select(nj => new AssignedFlight
+        {
+            ExpectedArrival = nj.UcnwEta,
+            ArrivalTimeZone = nj.UcnwJob.ToAirport.Timezone,
+            ExpectedDeparture = nj.UcnwEtd,
+            DepartureTimeZone = nj.UcnwJob.FromAirport.Timezone,
+            FlightNumber = nj.UcnwFlightNo,
+            Notes = nj.UcnwNotes,
+            // Add flight segments mapping
+            FlightSegments = j.TucJobNationwides
+                .OrderBy(f => f.UcnwLegNumber)
+                .Select(segment => new FlightSegmentViewModel
+                {
+                    SegmentOrder = segment.UcnwLegNumber - 1,
+                    CarrierFsCode = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length >= 2 ? segment.UcnwFlightNo.Substring(0, 2) : "??",
+                    FlightNumber = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length > 2 ? segment.UcnwFlightNo.Substring(2) : "????",
+                    DepartureTime = segment.UcnwEtd ?? DateTime.MinValue,
+                    ArrivalTime = segment.UcnwEta ?? DateTime.MinValue,
+                    DepartureAirportFsCode = segment.DepartureAirportFsCode,
+                    DepartureAirportName = segment.DepartureAirportName,
+                    DepartureAirportCity = segment.DepartureAirportCity,
+                    DepartureAirportCountry = segment.DepartureAirportCountry,
+                    DepartureAirportTimeZone = segment.DepartureAirportTimeZone,
+                    DepartureTerminal = segment.DepartureTerminal,
+                    ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
+                    ArrivalAirportName = segment.ArrivalAirportName,
+                    ArrivalAirportCity = segment.ArrivalAirportCity,
+                    ArrivalAirportCountry = segment.ArrivalAirportCountry,
+                    ArrivalAirportTimeZone = segment.ArrivalAirportTimeZone,
+                    ArrivalTerminal = segment.ArrivalTerminal,
+                    ElapsedTime = (int)((segment.UcnwEta.HasValue && segment.UcnwEtd.HasValue) ? (segment.UcnwEta.Value - segment.UcnwEtd.Value).TotalMinutes : 0),
+                    AircraftName = segment.AircraftName,
+                    AirlineName = segment.UcnwAirlineName
+                })
+                .ToList()
+        })
+        .FirstOrDefault(),
 
             // Assigned agent
             AssignedAgent =
@@ -386,9 +465,9 @@ public static class JobMappings
                     Quantity = i.Items,
                     ItemId = i.ItemId,
                     Weight = i.Weight,
-                    Length = i.Length,
-                    Depth = i.Depth,
-                    Height = i.Height,
+                    Length = i.Length.Value,
+                    Depth = i.Depth.Value,
+                    Height = i.Height.Value,
                     Pu = i.Pu,
                     Do = i.Do,
                     DgClass = i.Dgclass,

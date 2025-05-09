@@ -1157,27 +1157,54 @@ class NationwideControl extends BaseController {
         });
 
         try {
-            // Get either the saved departure time, last departure time, or current time
-            const departureDate = this.lastDepartureTime ||
-                this.currentJob.departureTime ||
-                new Date();
+
+            //// Get either the saved departure time, last departure time, or current time
+            //const departureDate = this.lastDepartureTime ||
+            //    this.currentJob.departureTime ||
+            //    new Date();
+
+            // Use job booking date/time as search date, if it's not in the past
+            const now = new Date();
+            let departureDate;
+
+            if (this.lastDepartureTime) {
+                // Use lastDepartureTime if available
+                departureDate = this.lastDepartureTime;
+            } else if (this.currentJob.time && this.currentJob.date) {
+                // Convert job date and time to a Date object
+                const jobDateTime = this.currentJob.time instanceof Date ?
+                    this.currentJob.time :
+                    new Date(this.currentJob.date + ' ' + (typeof this.currentJob.time === 'string' ?
+                        this.currentJob.time :
+                        this.currentJob.time.toLocaleTimeString()));
+
+                // Only use job date/time if it's in the future
+                departureDate = jobDateTime > now ? jobDateTime : now;
+            } else {
+                // Fallback to current time
+                departureDate = now;
+            }
+
 
             // Filters
             const airlineId = this.selected?.airline?.id;
             const departureAirportId = this.selectedAirport?.id;
+            const minimumLayoverMinutes = 60; // Set minimum layover minutes
 
             console.log('Loading flights with params:', {
                 jobId: this.currentJob.id,
                 departureDate: departureDate,
                 airlineId: airlineId,
-                departureAirportId: departureAirportId
+                departureAirportId: departureAirportId,
+                minimumLayoverMinutes: minimumLayoverMinutes // Add minimum layover parameter
             });
 
             this.flightListPromise = this.nationwideService.getFlightOptions(
                 this.currentJob.id,
                 departureDate,
                 airlineId,
-                departureAirportId
+                departureAirportId,
+                minimumLayoverMinutes // Pass minimum layover minutes
             );
 
             const result = await this.flightListPromise;
