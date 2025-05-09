@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using DespatchWeb.EntityClasses;
@@ -253,74 +254,82 @@ public static class JobMappings
             DepartureTimeZone = nj.UcnwJob.FromAirport.Timezone,
             FlightNumber = nj.UcnwFlightNo,
             Notes = nj.UcnwNotes,
-            // Add flight segments mapping
+            // First check if there are any flight segments
             FlightSegments = j.Parent.InverseParent
                 .SelectMany(childJob => childJob.TucJobNationwides)
-                .OrderBy(f => f.UcnwLegNumber)
-                .Select(segment => new FlightSegmentViewModel
-                {
-                    SegmentOrder = segment.UcnwLegNumber - 1,
-                    CarrierFsCode = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length >= 2 ? segment.UcnwFlightNo.Substring(0, 2) : "??",
-                    FlightNumber = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length > 2 ? segment.UcnwFlightNo.Substring(2) : "????",
-                    DepartureTime = segment.UcnwEtd ?? DateTime.MinValue,
-                    ArrivalTime = segment.UcnwEta ?? DateTime.MinValue,
-                    DepartureAirportFsCode = segment.DepartureAirportFsCode,
-                    DepartureAirportName = segment.DepartureAirportName,
-                    DepartureAirportCity = segment.DepartureAirportCity,
-                    DepartureAirportCountry = segment.DepartureAirportCountry,
-                    DepartureAirportTimeZone = segment.DepartureAirportTimeZone,
-                    DepartureTerminal = segment.DepartureTerminal,
-                    ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
-                    ArrivalAirportName = segment.ArrivalAirportName,
-                    ArrivalAirportCity = segment.ArrivalAirportCity,
-                    ArrivalAirportCountry = segment.ArrivalAirportCountry,
-                    ArrivalAirportTimeZone = segment.ArrivalAirportTimeZone,
-                    ArrivalTerminal = segment.ArrivalTerminal,
-                    ElapsedTime = (int)((segment.UcnwEta.HasValue && segment.UcnwEtd.HasValue) ? (segment.UcnwEta.Value - segment.UcnwEtd.Value).TotalMinutes : 0),
-                    AircraftName = segment.AircraftName,
-                    AirlineName = segment.UcnwAirlineName
-                })
-                .ToList()
+                .Any() == true
+                    ? j.Parent.InverseParent
+                        .SelectMany(childJob => childJob.TucJobNationwides)
+                        .OrderBy(f => f.UcnwLegNumber)
+                        .Select(segment => new FlightSegmentViewModel
+                        {
+                            SegmentOrder = segment.UcnwLegNumber - 1,
+                            CarrierFsCode = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length >= 2 ? segment.UcnwFlightNo.Substring(0, 2) : "??",
+                            FlightNumber = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length > 2 ? segment.UcnwFlightNo.Substring(2) : "????",
+                            DepartureTime = segment.UcnwEtd ?? new DateTime(1753, 1, 1),
+                            ArrivalTime = segment.UcnwEta ?? new DateTime(1753, 1, 1),
+                            DepartureAirportFsCode = segment.DepartureAirportFsCode,
+                            DepartureAirportName = segment.DepartureAirportName,
+                            DepartureAirportCity = segment.DepartureAirportCity,
+                            DepartureAirportCountry = segment.DepartureAirportCountry,
+                            DepartureAirportTimeZone = segment.DepartureAirportTimeZone,
+                            DepartureTerminal = segment.DepartureTerminal,
+                            ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
+                            ArrivalAirportName = segment.ArrivalAirportName,
+                            ArrivalAirportCity = segment.ArrivalAirportCity,
+                            ArrivalAirportCountry = segment.ArrivalAirportCountry,
+                            ArrivalAirportTimeZone = segment.ArrivalAirportTimeZone,
+                            ArrivalTerminal = segment.ArrivalTerminal,
+                            ElapsedTime = (int)((segment.UcnwEta.HasValue && segment.UcnwEtd.HasValue) ? (segment.UcnwEta.Value - segment.UcnwEtd.Value).TotalMinutes : 0),
+                            AircraftName = segment.AircraftName,
+                            AirlineName = segment.UcnwAirlineName
+                        })
+                        .ToList()
+                    : new List<FlightSegmentViewModel>() // Empty list if no segments
         })
         .FirstOrDefault()
-    : j.TucJobNationwides
-        .Select(nj => new AssignedFlight
-        {
-            ExpectedArrival = nj.UcnwEta,
-            ArrivalTimeZone = nj.UcnwJob.ToAirport.Timezone,
-            ExpectedDeparture = nj.UcnwEtd,
-            DepartureTimeZone = nj.UcnwJob.FromAirport.Timezone,
-            FlightNumber = nj.UcnwFlightNo,
-            Notes = nj.UcnwNotes,
-            // Add flight segments mapping
-            FlightSegments = j.TucJobNationwides
-                .OrderBy(f => f.UcnwLegNumber)
-                .Select(segment => new FlightSegmentViewModel
-                {
-                    SegmentOrder = segment.UcnwLegNumber - 1,
-                    CarrierFsCode = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length >= 2 ? segment.UcnwFlightNo.Substring(0, 2) : "??",
-                    FlightNumber = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length > 2 ? segment.UcnwFlightNo.Substring(2) : "????",
-                    DepartureTime = segment.UcnwEtd ?? DateTime.MinValue,
-                    ArrivalTime = segment.UcnwEta ?? DateTime.MinValue,
-                    DepartureAirportFsCode = segment.DepartureAirportFsCode,
-                    DepartureAirportName = segment.DepartureAirportName,
-                    DepartureAirportCity = segment.DepartureAirportCity,
-                    DepartureAirportCountry = segment.DepartureAirportCountry,
-                    DepartureAirportTimeZone = segment.DepartureAirportTimeZone,
-                    DepartureTerminal = segment.DepartureTerminal,
-                    ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
-                    ArrivalAirportName = segment.ArrivalAirportName,
-                    ArrivalAirportCity = segment.ArrivalAirportCity,
-                    ArrivalAirportCountry = segment.ArrivalAirportCountry,
-                    ArrivalAirportTimeZone = segment.ArrivalAirportTimeZone,
-                    ArrivalTerminal = segment.ArrivalTerminal,
-                    ElapsedTime = (int)((segment.UcnwEta.HasValue && segment.UcnwEtd.HasValue) ? (segment.UcnwEta.Value - segment.UcnwEtd.Value).TotalMinutes : 0),
-                    AircraftName = segment.AircraftName,
-                    AirlineName = segment.UcnwAirlineName
-                })
-                .ToList()
-        })
-        .FirstOrDefault(),
+    : j.TucJobNationwides.Any() == true
+        ? j.TucJobNationwides
+            .Select(nj => new AssignedFlight
+            {
+                ExpectedArrival = nj.UcnwEta,
+                ArrivalTimeZone = nj.UcnwJob.ToAirport.Timezone,
+                ExpectedDeparture = nj.UcnwEtd,
+                DepartureTimeZone = nj.UcnwJob.FromAirport.Timezone,
+                FlightNumber = nj.UcnwFlightNo,
+                Notes = nj.UcnwNotes,
+                // Check if there are any flight segments
+                FlightSegments = j.TucJobNationwides.Any() == true
+                    ? j.TucJobNationwides
+                        .OrderBy(f => f.UcnwLegNumber)
+                        .Select(segment => new FlightSegmentViewModel
+                        {
+                            SegmentOrder = segment.UcnwLegNumber - 1,
+                            CarrierFsCode = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length >= 2 ? segment.UcnwFlightNo.Substring(0, 2) : "??",
+                            FlightNumber = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length > 2 ? segment.UcnwFlightNo.Substring(2) : "????",
+                            DepartureTime = segment.UcnwEtd ?? new DateTime(1753, 1, 1),
+                            ArrivalTime = segment.UcnwEta ?? new DateTime(1753, 1, 1),
+                            DepartureAirportFsCode = segment.DepartureAirportFsCode,
+                            DepartureAirportName = segment.DepartureAirportName,
+                            DepartureAirportCity = segment.DepartureAirportCity,
+                            DepartureAirportCountry = segment.DepartureAirportCountry,
+                            DepartureAirportTimeZone = segment.DepartureAirportTimeZone,
+                            DepartureTerminal = segment.DepartureTerminal,
+                            ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
+                            ArrivalAirportName = segment.ArrivalAirportName,
+                            ArrivalAirportCity = segment.ArrivalAirportCity,
+                            ArrivalAirportCountry = segment.ArrivalAirportCountry,
+                            ArrivalAirportTimeZone = segment.ArrivalAirportTimeZone,
+                            ArrivalTerminal = segment.ArrivalTerminal,
+                            ElapsedTime = (int)((segment.UcnwEta.HasValue && segment.UcnwEtd.HasValue) ? (segment.UcnwEta.Value - segment.UcnwEtd.Value).TotalMinutes : 0),
+                            AircraftName = segment.AircraftName,
+                            AirlineName = segment.UcnwAirlineName
+                        })
+                        .ToList()
+                    : new List<FlightSegmentViewModel>() // Empty list if no segments
+            })
+            .FirstOrDefault()
+        : null, // Return null if no job nationwides exist
 
             // Assigned agent
             AssignedAgent =
