@@ -300,7 +300,7 @@
                         </md-toolbar>
 
                         <!-- Summary flight info -->
-                        <!--<md-list>
+                        <md-list ng-if="!ctrl.job.assignedFlight.flightSegments">
                             <md-list-item class="info-row">
                                 <md-icon aria-label="flight number" md-font-set="material-symbols-outlined">
                                     flight_takeoff
@@ -336,7 +336,7 @@
                                     </span>
                                 </div>
                             </md-list-item>
-                        </md-list>-->
+                        </md-list>
 
                         <!-- Flight segments information for multi-leg flights -->
                         <div ng-if="ctrl.job.assignedFlight.flightSegments && ctrl.job.assignedFlight.flightSegments.length > 1"
