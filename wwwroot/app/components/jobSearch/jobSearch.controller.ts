@@ -133,7 +133,7 @@ class JobSearchController extends BaseController {
         this.jobs = [];
 
         this.jobDetailFabIsOpen = false;
-        this.dateSearchRange = 1; // Set to fortnight
+        this.dateSearchRange = 1; // Set to a fortnight
 
         this.searchBox = "";
         this.selectedEvents = [];

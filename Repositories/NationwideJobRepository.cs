@@ -32,7 +32,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             ArgumentNullException.ThrowIfNull(webhookIds);
            // ArgumentException.ThrowIfNullOrWhiteSpace(webhookAlertId);
 
-            if (!flights.FlightSegments.Any())
+            if (flights.FlightSegments.Count == 0)
                 throw new ArgumentException("Flight list cannot be empty", nameof(flights));
 
             // Get the primary flight (first leg)
@@ -85,21 +85,34 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             job.UcjbDate = primaryFlight.DepartureTime;
             job.UcjbTime = primaryFlight.DepartureTime;
 
-            // Use the last flight leg's arrival time for delivery timing
-            var lastFlight = flights.FlightSegments.Last();
-            job.Parent.InverseParent.Last().UcjbTime =
-                lastFlight.ArrivalTime.AddMinutes(60);
+            // Set Pick Up Job Deliver By
+            if (job.FromAirportId != null)
+            {
+                var airportProcessingTime = await GetAirportProcessingTimeAsync(job.FromAirportId.Value);
+                job.Parent.InverseParent.First().DeliverByTime =
+                    primaryFlight.DepartureTime.AddMinutes(-airportProcessingTime);
+            }
 
-            job.UcjbDispDate = primaryFlight.DepartureTime;
-            job.UcjbDispTime = primaryFlight.DepartureTime;
+            // Set delivery job pick up time
+            if (job.ToAirportId != null)
+            {
+                var airportProcessingTime = await GetAirportProcessingTimeAsync(job.ToAirportId.Value);
+                var lastFlight = flights.FlightSegments.Last();
+                job.Parent.InverseParent.Last().UcjbTime =
+                    lastFlight.ArrivalTime.AddMinutes(airportProcessingTime);
+            }
+
+            var currentTime = infoService.GetCurrentTenantTime();
+            job.UcjbDispDate = currentTime;
+            job.UcjbDispTime = currentTime;
 
             await Context.SaveChangesAsync();
             await Context.TucJobNationwides.AddAsync(jobNationwide);
 
-            // Add additional flight legs if there are multiple
+            // Add additional flight legs if there is multiple
             if (flights.FlightSegments.Count > 1)
             {
-                for (int i = 1; i < flights.FlightSegments.Count; i++)
+                for (var i = 1; i < flights.FlightSegments.Count; i++)
                 {
                     var leg = flights.FlightSegments[i];
                     var connectionSegment = new TucJobNationwide
@@ -632,5 +645,15 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .ToListAsync();
 
         return webhookId;
+    }
+
+    public async Task<int> GetAirportProcessingTimeAsync(int airportId)
+    {
+        var processingTime = await Context.TblAirports
+            .Where(a => a.AirportId == airportId)
+            .Select(a => a.ProcessingTime)
+            .FirstOrDefaultAsync();
+
+        return processingTime ?? 60;
     }
 }
