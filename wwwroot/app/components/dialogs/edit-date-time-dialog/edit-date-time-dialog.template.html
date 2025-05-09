@@ -15,7 +15,7 @@
             <!-- Date Picker -->
             <div class="date-time-field" ng-if="ctrl.showDate">
                 <md-input-container class="md-block">
-                    <label for="date">Date ({{(ctrl.selectedTimeZone.timeZoneIana || ctrl.browserTimeZone) | timezoneShort}})</label>
+                    <label for="date">Date ({{(ctrl.selectedTimeZone.timeZoneIana || ctrl.timeZone) | timezoneShort}})</label>
                     <input class="dtp-no-msclear dtp-input md-input"
                            id="date"
                            name="date"
@@ -39,7 +39,7 @@
             <!-- Time Picker -->
             <div class="date-time-field" ng-if="ctrl.showTime">
                 <md-input-container class="md-block">
-                    <label for="time">Time ({{(ctrl.selectedTimeZone.timeZoneIana || ctrl.browserTimeZone) | timezoneShort}})</label>
+                    <label for="time">Time ({{(ctrl.selectedTimeZone.timeZoneIana || ctrl.timeZone) | timezoneShort}})</label>
                     <input class="dtp-no-msclear dtp-input md-input"
                            id="time"
                            name="time"
@@ -70,6 +70,7 @@
                                class="md-block timezone-select"
                                ng-change="ctrl.updateTimeZone(ctrl.selectedTimeZone)"
                                aria-label="Select timezone"
+                               ng-disabled="true"
                                required>
                         <md-option ng-repeat="timezone in ctrl.timeZones"
                                    ng-value="timezone">

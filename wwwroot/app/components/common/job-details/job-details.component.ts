@@ -915,7 +915,7 @@ class JobDetailController extends BaseController {
                     job.completedTime);
 
                 if (!result.value) return;
-                job.completedTime = result.value;
+                job.completedTime = new Date(result.value);
             }
 
             if (!job.podName) {

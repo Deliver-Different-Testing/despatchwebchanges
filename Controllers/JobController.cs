@@ -1848,11 +1848,11 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdateDeliverByTime(int jobId, DateTime deliverByTime, int timeZoneId)
+    public async Task<IActionResult> UpdateDeliverByTime(int jobId, string dateTime, int timeZoneId)
     {
         try
         {
-            await jobRepository.UpdateDeliverByTime(jobId, deliverByTime, timeZoneId);
+            await jobRepository.UpdateDeliverByTime(jobId, dateTime, timeZoneId);
             return Ok();
         }
         catch (Exception ex)
@@ -1863,11 +1863,11 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdatePickUpTime(int jobId, DateTime pickUpTime, int timeZoneId)
+    public async Task<IActionResult> UpdatePickUpTime(int jobId, string dateTime, int timeZoneId)
     {
         try
         {
-            await jobRepository.UpdatePickUpTime(jobId, pickUpTime, timeZoneId);
+            await jobRepository.UpdatePickUpTime(jobId, dateTime, timeZoneId);
             return Ok();
         }
         catch (Exception ex)
