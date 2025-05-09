@@ -104,7 +104,11 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 var lastFlight = flights.FlightSegments.Last();
                 var deliveryJob = job.Parent.InverseParent.First(j => j.UcjbNumber.EndsWith('3'));
                 deliveryJob.UcjbTime = lastFlight.ArrivalTime.AddMinutes(airportProcessingTime);
-                deliveryJob.PickupTimeZoneId = await GetTimeZoneIdByNameAsync(lastFlight.ArrivalAirportTimeZone);
+
+                // Set TimeZone
+                var timeZoneForDeliveryJob = await GetTimeZoneIdByNameAsync(lastFlight.ArrivalAirportTimeZone);
+                deliveryJob.PickupTimeZoneId = timeZoneForDeliveryJob;
+                deliveryJob.DeliverByTimeZoneId = timeZoneForDeliveryJob;
             }
 
             var currentTime = infoService.GetCurrentTenantTime();
