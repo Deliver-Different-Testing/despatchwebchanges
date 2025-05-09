@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
@@ -12,7 +11,6 @@ using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
-using DespatchWeb.Models.FlightStats;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -89,7 +87,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             if (job.FromAirportId != null)
             {
                 var airportProcessingTime = await GetAirportProcessingTimeAsync(job.FromAirportId.Value);
-                job.Parent.InverseParent.First().DeliverByTime =
+                job.Parent.InverseParent.First(j => j.UcjbNumber.EndsWith('1')).DeliverByTime =
                     primaryFlight.DepartureTime.AddMinutes(-airportProcessingTime);
             }
 
@@ -98,7 +96,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             {
                 var airportProcessingTime = await GetAirportProcessingTimeAsync(job.ToAirportId.Value);
                 var lastFlight = flights.FlightSegments.Last();
-                job.Parent.InverseParent.Last().UcjbTime =
+                job.Parent.InverseParent.First(j => j.UcjbNumber.EndsWith('3')).UcjbTime =
                     lastFlight.ArrivalTime.AddMinutes(airportProcessingTime);
             }
 
