@@ -13,5 +13,6 @@ public class AgentQuoteTemplateDto
     public string ToAddress { get; set; }
     public string SuburbTo { get; set; }
     public string PodName { get; set; }
-    public string CompletedTime { get; set; }
+    public DateTime? CompletedTime { get; set; }
+    public string CompletedTimeFormatted { get; set; }
 }

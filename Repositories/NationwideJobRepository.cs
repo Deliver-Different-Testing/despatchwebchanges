@@ -528,14 +528,20 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                     j.DeliveryAddressLine6,
                     j.DeliveryAddressLine7,
                     j.DeliveryAddressLine8).FullAddress,
-                CompletedTime = _infoService.FormatDateForTenant(j.UcjbComplTime),
-
+                CompletedTime = j.UcjbComplTime,
                 PodName = j.UcjbPodname,
                 SuburbTo = j.DeliveryAddressLine6,
             })
             .AsNoTracking()
             .FirstOrDefaultAsync();
 
+        agentQuoteTemplateDto.CompletedTimeFormatted =
+            _infoService.FormatDateForTenant(agentQuoteTemplateDto.CompletedTime);
+        
+        Log.Information("AgentQuoteTemplateDto for job {JobId} and agent {AgentId}: {@AgentQuoteTemplateDto}", 
+            jobId, 
+            agentId, 
+            agentQuoteTemplateDto);
         var subject = FormatDelimMessage(smppSetting.AgentEmailSubject, "[", "]", agentQuoteTemplateDto);
         var body = FormatDelimMessage(smppSetting.AgentEmailMessage, "[", "]", agentQuoteTemplateDto);
 
