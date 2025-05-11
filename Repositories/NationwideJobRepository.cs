@@ -470,7 +470,8 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                     j.DeliveryAddressLine6,
                     j.DeliveryAddressLine7,
                     j.DeliveryAddressLine8).FullAddress,
-                CompletedTime = j.UcjbComplTime ?? DateTime.MinValue,
+                CompletedTime = _infoService.FormatDateForTenant(j.UcjbComplTime),
+
                 PodName = j.UcjbPodname,
                 SuburbTo = j.DeliveryAddressLine6,
             })

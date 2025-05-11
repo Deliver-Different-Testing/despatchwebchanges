@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
@@ -31,6 +32,27 @@ public class TenantInfoService(IHttpContextAccessor contextAccessor) : ITenantIn
         var utcSpecifiedDateTime = DateTime.SpecifyKind(parsedDateTime, DateTimeKind.Utc);
 
         return ConvertUtcToTenantTime(utcSpecifiedDateTime);
+    }
+    
+    public string FormatDateForTenant(DateTime? dateTime)
+    {
+        if (!dateTime.HasValue)
+            return "";
+        
+        var countryCode = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CountryCode")?.Value;
+        
+        var cultureCode = countryCode switch
+        {
+            "US" => "en-US",
+            "GB" => "en-GB",
+            "AU" => "en-AU",
+            "NZ" => "en-NZ",
+            _ => "en-US" // Default fallback
+        };
+        
+        var culture = new CultureInfo(cultureCode);
+        
+        return dateTime.Value.ToString("g", culture); // "g" is short date/time pattern
     }
 
     public int GetStaffId()
