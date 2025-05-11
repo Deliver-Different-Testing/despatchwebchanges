@@ -427,13 +427,15 @@ public partial class TucJob
 
     public string Connote { get; set; }
 
-    public int? PickUpWindowMins { get; set; }
-
-    public int? DeliverByWindowMins { get; set; }
-
     public int? PickupTimeZoneId { get; set; }
 
     public decimal? TotalDistance { get; set; }
+
+    public int? DeliverByTimeZoneId { get; set; }
+
+    public int? PickUpWindowMins { get; set; }
+
+    public int? DeliverByWindowMins { get; set; }
 
     public int? MasterCourierId { get; set; }
 
@@ -442,8 +444,6 @@ public partial class TucJob
     public decimal? SubContractorFuelPercentage { get; set; }
 
     public decimal? SubContractorPercentage { get; set; }
-
-    public int? DeliverByTimeZoneId { get; set; }
 
     public virtual TucJobType AcceptedJobType { get; set; }
 

@@ -784,3 +784,119 @@
     }
   }
 }
+
+// Flight segments styles
+.flight-segments-container {
+    // Segment header styles
+    .segment-header {
+        margin-top: 8px;
+        color: rgba(0, 0, 0, 0.54);
+        font-weight: 500;
+    }
+    // Individual segment item
+    .segment-item {
+        margin-bottom: 16px;
+
+        .segment-content {
+            padding: 8px 0;
+        }
+        // Segment number text
+        .segment-number {
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 4px;
+            color: rgba(0, 0, 0, 0.87);
+        }
+        // Segment info container
+        .segment-info {
+            // Departure section
+            .segment-departure {
+                .time {
+                    font-size: 14px;
+                    color: rgba(0, 0, 0, 0.87);
+                }
+
+                .airport-code {
+                    font-size: 14px;
+                    color: rgba(0, 0, 0, 0.87);
+                }
+
+                .terminal {
+                    font-size: 12px;
+                    color: rgba(0, 0, 0, 0.54);
+                }
+            }
+            // Flight line (middle section)
+            .flight-line {
+                text-align: center;
+                position: relative;
+
+                .elapsed-time {
+                    font-size: 12px;
+                    margin-bottom: 4px;
+                    color: rgba(0, 0, 0, 0.54);
+                }
+
+                .line {
+                    height: 2px;
+                    background-color: #1976d2;
+                    position: relative;
+                    margin: 0 16px;
+
+                    .line-arrow {
+                        position: absolute;
+                        right: -12px;
+                        top: -8px;
+                        font-size: 18px;
+                        color: #1976d2;
+                    }
+                }
+
+                .aircraft-info {
+                    font-size: 12px;
+                    color: rgba(0, 0, 0, 0.54);
+                    margin-top: 4px;
+                }
+            }
+            // Arrival section
+            .segment-arrival {
+                text-align: right;
+
+                .time {
+                    font-size: 14px;
+                    color: rgba(0, 0, 0, 0.87);
+                }
+
+                .airport-code {
+                    font-size: 14px;
+                    color: rgba(0, 0, 0, 0.87);
+                }
+
+                .terminal {
+                    font-size: 12px;
+                    color: rgba(0, 0, 0, 0.54);
+                }
+            }
+        }
+        // Layover info styling
+        .layover-info {
+            background-color: #FFF8E1;
+            padding: 8px;
+            margin: 8px 0;
+            text-align: center;
+            border-radius: 4px;
+
+            .layover-icon {
+                color: #FFA000;
+                vertical-align: middle;
+            }
+
+            .layover-text {
+                color: #FFA000;
+                font-weight: 500;
+                font-size:14px;
+                vertical-align:middle;
+            }
+        }
+    }
+}

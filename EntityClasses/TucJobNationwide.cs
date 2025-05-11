@@ -53,6 +53,34 @@ public partial class TucJobNationwide
 
     public string UcnwAirlineName { get; set; }
 
+    public string CarrierFsCode { get; set; }
+
+    public string DepartureAirportFsCode { get; set; }
+
+    public string DepartureAirportName { get; set; }
+
+    public string DepartureAirportCity { get; set; }
+
+    public string DepartureAirportCountry { get; set; }
+
+    public string DepartureAirportTimeZone { get; set; }
+
+    public string ArrivalAirportFsCode { get; set; }
+
+    public string ArrivalAirportName { get; set; }
+
+    public string ArrivalAirportCity { get; set; }
+
+    public string ArrivalAirportCountry { get; set; }
+
+    public string ArrivalAirportTimeZone { get; set; }
+
+    public string DepartureTerminal { get; set; }
+
+    public string ArrivalTerminal { get; set; }
+
+    public string AircraftName { get; set; }
+
     public virtual TucJobBooking JobBooking { get; set; }
 
     public virtual TucJob UcnwJob { get; set; }

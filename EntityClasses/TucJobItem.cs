@@ -15,11 +15,11 @@ public partial class TucJobItem
 
     public double Weight { get; set; }
 
-    public double Length { get; set; }
+    public double? Length { get; set; }
 
-    public double Height { get; set; }
+    public double? Height { get; set; }
 
-    public double Depth { get; set; }
+    public double? Depth { get; set; }
 
     public bool? Pu { get; set; }
 
@@ -30,6 +30,8 @@ public partial class TucJobItem
     public string Notes { get; set; }
 
     public bool? PrivateRes { get; set; }
+
+    public decimal? Cubic { get; set; }
 
     public virtual TucJob Job { get; set; }
 }

@@ -15,7 +15,9 @@ public interface IFlightStatsService
         int? departureAirportId = null,
         int flightBuffer = 0,
         string codeType = null,
-        List<string> extendedOptions = null);
+        List<string> extendedOptions = null,
+        int minimumLayoverMinutes = 60
+        );
 
     Task<AddFlightToJobDto> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,
         DateTime departureTime);

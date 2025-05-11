@@ -12,7 +12,8 @@ import {
     ParcelDimensions,
     PriceBreakdown,
     SuburbLookup,
-    Suggestion, TimeZoneSuggestion,
+    Suggestion,
+    TimeZoneSuggestion,
 } from "../interfaces/job.interface";
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
@@ -452,35 +453,23 @@ class DispatchCoreService implements angular.IServiceProvider {
         await this.$http.post(`job/UpdateSplitJobAddress?jobId=${jobId}&toSuburbId=${toSuburbId}&address=${address}&deliveryLat=${lat}&deliveryLng=${lng}`, null);
     }
 
-    async updateDeliverByTime(jobId: number, deliverByTime: Date, selectedTimeZoneId?: number) {
-        console.log("[UpdateJobDetail] Converting date to string: ", deliverByTime);
-
-        const  convertedDate = moment(deliverByTime).utc().format();
-        console.log("[UpdateJobDetail] Converted date to string: ", convertedDate);
-
+    async updateDeliverByTime(jobId: number, field: JobProperty,  dateTime: string, selectedTimeZoneId?: number) {
         const params = new URLSearchParams({
             jobId: String(jobId),
-            deliverByTime: String(convertedDate),
+            dateTime: dateTime,
             timeZoneId: String(selectedTimeZoneId)
         });
 
-        const url = `job/UpdateDeliverByTime?${params.toString()}`;
-        await this.$http.post(url, null);
-    }
+        let functionUrl;
+        if(field === JobProperty.DeliverBy) {
+            functionUrl = "job/UpdateDeliverByTime";
+        } else if (field === JobProperty.Time)  {
+            functionUrl =  "job/UpdatePickUpTime";
+        } else {
+            return;
+        }
 
-    async updatePickUpTime(jobId: number, pickUpTime: Date, selectedTimeZoneId?: number) {
-        console.log("[UpdateJobDetail] Converting date to string: ", pickUpTime);
-
-        const  convertedDate = moment(pickUpTime).utc().format();
-        console.log("[UpdateJobDetail] Converted date to string: ", convertedDate);
-
-        const params = new URLSearchParams({
-            jobId: String(jobId),
-            pickUpTime: String(convertedDate),
-            timeZoneId: String(selectedTimeZoneId)
-        });
-
-        const url = `job/UpdatePickUpTime?${params.toString()}`;
+        const url = `${functionUrl}?${params.toString()}`;
         await this.$http.post(url, null);
     }
 
@@ -495,16 +484,12 @@ class DispatchCoreService implements angular.IServiceProvider {
             jobId, field, initialValue: value, preBook: isRecurring
         });
 
-        if(field === JobProperty.DeliverBy) {
-            return await this.updateDeliverByTime(jobId, value as Date, selectedTimeZoneId)
-        }
-
-        if(field === JobProperty.Time) {
-            return await this.updatePickUpTime(jobId, value as Date, selectedTimeZoneId)
+        if(field === JobProperty.DeliverBy || field === JobProperty.Time) {
+            return await this.updateDeliverByTime(jobId, field, String(value), selectedTimeZoneId)
         }
 
         if(value instanceof Date) {
-            value = moment(value).utc().format();
+            value = moment(value).format();
         }
 
         const method: string = isRecurring ? "job/UpdateRecurringJob" : "job/UpdateJob";
