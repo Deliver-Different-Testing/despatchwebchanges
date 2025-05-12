@@ -33,15 +33,13 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
     protected async Task<List<DispatchJobViewModel>> DespatchQry(
         AppPage page,
-        string order,
-        string orderDirection,
+      JobQueryParams queryParams,
         bool isInternal,
         bool isUsTenant,
         string clientIds,
         List<int> selectedViewIds,
         NationwideWidget? windowPane = null,
-        ClearListEnvelopeViewModel clearListEnvelope = null,
-        DateTime? dateCutoff = null
+        ClearListEnvelopeViewModel clearListEnvelope = null
     )
     {
         try
@@ -56,24 +54,25 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 case AppPage.Dispatch:
                     // Filters
                     query = query.Where(j => j.UcjbStatus != (int)JobStatus.AwaitingPod);
-                    if (dateCutoff.HasValue) query = query.Where(j => j.UcjbDate <= dateCutoff.Value.Date);
+                    if (queryParams.DateCutoff.HasValue) query = query.Where(j => j.UcjbDate <= queryParams.DateCutoff.Value.Date);
 
                     // Sorting
                     query = ApplyDashboardSpecificOrdering(
                         query,
-                        order,
-                        orderDirection,
+                        queryParams.Order,
+                        queryParams.OrderDirection,
                         isUsTenant
                     );
                     break;
                 case AppPage.Domestic:
                     query = ApplyNationwideSpecificFilters(
                         query,
+                        queryParams,
                         isInternal,
                         windowPane ?? NationwideWidget.JobList,
                         clientIds
                     );
-                    query = ApplyNationwideSpecificOrdering(query, order, orderDirection);
+                    query = ApplyNationwideSpecificOrdering(query, queryParams.Order, queryParams.OrderDirection);
                     break;
                 case AppPage.JobSearch:
                 case AppPage.Prebooks:
@@ -152,6 +151,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
     private static IQueryable<TucJob> ApplyNationwideSpecificFilters(
         IQueryable<TucJob> query,
+        JobQueryParams queryParams,
         bool isInternal,
         NationwideWidget windowPane,
         string clientIds
@@ -159,6 +159,10 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     {
         // Remove parent jobs
         query = query.Where(j => j.ParentId != null);
+
+        // Filter dates
+        if (queryParams.StartDate != null) query = query.Where(j => j.UcjbDate >= queryParams.StartDate);
+        if(queryParams.DateCutoff != null) query = query.Where(j => j.UcjbDate <= queryParams.DateCutoff);
 
         // Apply window pane viewFilters
         query = windowPane switch

@@ -200,10 +200,10 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .AsNoTracking()
             .ToListAsync();
 
-        // Return empty list if no valid job found
+        // Return an empty list if no valid job found
         if (pickupAndAirports.Count == 0) return [];
 
-        // Extract pickup coordinates from the first result (all have same pickup coordinates)
+        // Extract pickup coordinates from the first result (all have the same pickup coordinates)
         var pickupLatitude = pickupAndAirports.First().PickupLatitude;
         var pickupLongitude = pickupAndAirports.First().PickupLongitude;
 
@@ -317,8 +317,8 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
     }
 
 
-    public async Task<List<DispatchJobViewModel>> NationwideJobListAsync(string order, string orderDirection,
-        bool isInternal, bool isUsTenant,
+    public async Task<List<DispatchJobViewModel>> NationwideJobListAsync(JobQueryParams queryParams, bool isInternal,
+        bool isUsTenant,
         string clientIds, NationwideWidget windowPane,
         List<int> selectedViewIds)
     {
@@ -327,8 +327,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
         return await DespatchQry(
             AppPage.Domestic,
-            order,
-            orderDirection,
+            queryParams,
             isInternal,
             isUsTenant,
             clientIds,
@@ -511,7 +510,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
         var staffId = _infoService.GetStaffId();
 
-        // Create object
+        // Create an object
         var agentQuoteTemplateDto = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Select(j => new AgentQuoteTemplateDto
@@ -533,17 +532,17 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                     j.DeliveryAddressLine8).FullAddress,
                 CompletedTime = j.UcjbComplTime,
                 PodName = j.UcjbPodname,
-                SuburbTo = j.DeliveryAddressLine6,
+                SuburbTo = j.DeliveryAddressLine6
             })
             .AsNoTracking()
             .FirstOrDefaultAsync();
 
         agentQuoteTemplateDto.CompletedTimeFormatted =
             _infoService.FormatDateForTenant(agentQuoteTemplateDto.CompletedTime);
-        
-        Log.Information("AgentQuoteTemplateDto for job {JobId} and agent {AgentId}: {@AgentQuoteTemplateDto}", 
-            jobId, 
-            agentId, 
+
+        Log.Information("AgentQuoteTemplateDto for job {JobId} and agent {AgentId}: {@AgentQuoteTemplateDto}",
+            jobId,
+            agentId,
             agentQuoteTemplateDto);
         var subject = FormatDelimMessage(smppSetting.AgentEmailSubject, "[", "]", agentQuoteTemplateDto);
         var body = FormatDelimMessage(smppSetting.AgentEmailMessage, "[", "]", agentQuoteTemplateDto);

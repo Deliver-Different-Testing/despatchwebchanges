@@ -10,6 +10,58 @@
 
                 <md-menu>
                     <md-button aria-label="Open views menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
+                        <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.views">calendar_today</md-icon>
+                        <md-tooltip md-direction="bottom">Date</md-tooltip>
+                    </md-button>
+                    <md-menu-content style="width: 300px; overflow: hidden;">
+                        <div class="md-padding" md-prevent-menu-close>
+                            <label id="dateRange" class="label-padding">Date Filter: ({{ctrl.browserTimeZone | timezoneShort}})</label>
+                            <md-radio-group ng-change="ctrl.onSearchRangeChange(ctrl.dateSearchRange)" ng-model="ctrl.dateSearchRange"
+                                            aria-labelledby="dateRange" layout="row" layout-align="center center">
+                                <md-radio-button value="1">24 Hours</md-radio-button>
+                                <md-radio-button value="2">Custom</md-radio-button>
+                            </md-radio-group>
+
+                            <md-divider style="margin: 10px;"></md-divider>
+
+                            <div layout="column" layout-align="center end" ng-if="ctrl.dateSearchRange == 2">
+                                <div>
+                                    <label id="from-datepicker-header">From: </label>
+                                    <md-datepicker
+                                            md-date-locale="{ firstDayOfWeek: 1 }"
+                                            input-aria-describedby="from-datepicker-description"
+                                            input-aria-labelledby="from-datepicker-header "
+                                            md-placeholder="Enter date"
+                                            ng-model-options="{ debounce: 500 }"
+                                            ng-change="ctrl.getData()"
+                                            ng-model="ctrl.startDate"></md-datepicker>
+                                    <p id="from-datepicker-description" style="display: none">
+                                        Start date search
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label id="datepicker-header">To: </label>
+                                    <md-datepicker
+                                            md-date-locale="{ firstDayOfWeek: 1 }"
+                                            input-aria-describedby="to-datepicker-description"
+                                            input-aria-labelledby="to-datepicker-header "
+                                            md-placeholder="Enter date"
+                                            ng-model-options="{ debounce: 500 }"
+                                            ng-change="ctrl.getData()"
+                                            ng-model="ctrl.endDate"></md-datepicker>
+                                    <p id="to-datepicker-description" style="display: none">
+                                        End date search
+                                    </p>
+                                </div>
+                            </div>
+
+                        </div>
+                    </md-menu-content>
+                </md-menu>
+
+                <md-menu>
+                    <md-button aria-label="Open views menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.views">view_list</md-icon>
                         <md-tooltip md-direction="bottom">Views</md-tooltip>
                         <md-progress-circular md-diameter="18" md-mode="indeterminate"

@@ -26,11 +26,10 @@ public class NationwideJobController(
     {
         try
         {
-            if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
-            var isUsTenant = countryService.IsUsTenant();
+            if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds); var isUsTenant = countryService.IsUsTenant();
 
-            var result = await repository.NationwideJobListAsync(queryParams.Order,
-                queryParams.OrderDirection, isInternal, isUsTenant, clientIds, NationwideWidget.JobList, despatchViewIds);
+            var result = await repository.NationwideJobListAsync(queryParams, isInternal, isUsTenant, clientIds,
+                NationwideWidget.JobList, despatchViewIds);
 
             return Json(result);
         }
@@ -50,8 +49,8 @@ public class NationwideJobController(
             if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
             var isUsTenant = countryService.IsUsTenant();
 
-            var result = await repository.NationwideJobListAsync(queryParams.Order,
-                queryParams.OrderDirection, isInternal, isUsTenant, clientIds, NationwideWidget.Pod, despatchViewIds);
+            var result = await repository.NationwideJobListAsync(queryParams, isInternal, isUsTenant, clientIds,
+                NationwideWidget.Pod, despatchViewIds);
 
             return Json(result);
         }
@@ -64,16 +63,15 @@ public class NationwideJobController(
 
     [HttpGet]
     public async Task<IActionResult> NationwideJobListBookDelivery(JobQueryParams queryParams,
-        bool isInternal,
-        int cid, string clientIds, List<int> despatchViewIds)
+        bool isInternal, int cid, string clientIds, List<int> despatchViewIds)
     {
         try
         {
             if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
             var isUsTenant = countryService.IsUsTenant();
 
-            var result = await repository.NationwideJobListAsync(queryParams.Order,
-                queryParams.OrderDirection, isInternal, isUsTenant, clientIds, NationwideWidget.ActionRequired, despatchViewIds);
+            var result = await repository.NationwideJobListAsync(queryParams, isInternal, isUsTenant, clientIds,
+                NationwideWidget.ActionRequired, despatchViewIds);
 
             return Json(result);
         }
@@ -93,8 +91,8 @@ public class NationwideJobController(
             if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
             var isUsTenant = countryService.IsUsTenant();
 
-            var result = await repository.NationwideJobListAsync(queryParams.Order,
-                queryParams.OrderDirection, isInternal, isUsTenant, clientIds, NationwideWidget.Reprice, despatchViewIds);
+            var result = await repository.NationwideJobListAsync(queryParams, isInternal, isUsTenant, clientIds,
+                NationwideWidget.Reprice, despatchViewIds);
 
             return Json(result);
         }
