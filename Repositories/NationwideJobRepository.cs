@@ -177,11 +177,8 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .FirstOrDefaultAsync();
     }
 
-    public async Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId, int? maxDistanceMiles = 100)
+    public async Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId, int? maxDistanceMiles = 250)
     {
-        // Set default value if null
-        var distance = maxDistanceMiles ?? 100;
-
         // Get pickup coordinates and nearby airports in a single query
         var pickupAndAirports = await (
                 from job in Context.TucJobs
@@ -219,7 +216,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                     item.AirportLatitude,
                     item.AirportLongitude)
             })
-            .Where(result => result.Distance <= distance)
+            .Where(result => result.Distance <= maxDistanceMiles)
             .OrderBy(result => result.Distance)
             .Select(result => new Suggestion
             {
@@ -253,17 +250,6 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .FirstOrDefaultAsync();
 
         return (airportCodes?.ToAirport, airportCodes?.FromAirport);
-    }
-
-    public async Task<List<string>> GetActiveAirlineCodesAsync()
-    {
-        var airlineCodes = await Context.FlightCarriers
-            .Where(fc => fc.IsActive == true)
-            .Select(fc => fc.CarrierCode)
-            .AsNoTracking()
-            .ToListAsync();
-
-        return airlineCodes;
     }
 
     public async Task<List<AgentViewModel>> GetAgentsAsync(int jobId)
@@ -447,7 +433,10 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
     {
         try
         {
-            var job = await Context.TucJobs.Include(j => j.TucJobItems).FirstOrDefaultAsync(j => j.UcjbId == jobId);
+            var job = await Context.TucJobs
+                .Include(j => j.TucJobItems)
+                .FirstOrDefaultAsync(j => j.UcjbId == jobId);
+
             var returnValue = new OutputParameter<int>();
 
             var results = await Context.Procedures.DD_stpGetCarrierFlightRateAsync(
@@ -469,14 +458,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 waitTime: null,
                 returnValue: returnValue);
 
-            if (returnValue.Value != 0)
-                throw new NullReferenceException(
-                    $"Failed to retrieve carrier rates. Return value: {returnValue.Value}");
-
-            if (results.Count != 0) return results.Select(r => r.Rate ?? 0).FirstOrDefault();
-
-            Log.Warning("No carrier flight rates found for job {JobId}", jobId);
-            return 0;
+            return results.Count != 0 ? results.Select(r => r.Rate ?? 0).FirstOrDefault() : 0;
         }
         catch (Exception ex)
         {
