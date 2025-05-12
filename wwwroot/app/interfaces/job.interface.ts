@@ -293,6 +293,7 @@ export interface JobQueryParams {
     order?: string;
     orderDirection?: string;
     dateCutoff?: Date;
+    startDate?: Date;
 }
 
 export interface PriceBreakdown {

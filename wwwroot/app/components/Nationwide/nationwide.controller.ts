@@ -56,7 +56,6 @@ class NationwideControl extends BaseController {
 
     readonly nationwidePageId: number = AppPages.Domestic;
     readonly isUsCustomer: boolean = false;
-    private refreshInterval?: angular.IPromise<any>;
 
     layouts: any[] = [];
     defaultLayout?: any;
@@ -145,6 +144,11 @@ class NationwideControl extends BaseController {
     showNoAgentsAvailableMessage: boolean = false;
     showAgentList: boolean = false;
 
+    browserTimeZone: string;
+    dateSearchRange: number = 1;
+    startDate: Date = moment().toDate();
+    endDate: Date = moment().add(24, 'hours').toDate();
+
     constructor(
         private $scope: angular.IScope,
         private nationwideService: NationwideService,
@@ -173,8 +177,13 @@ class NationwideControl extends BaseController {
 
         this.isUsCustomer = this.appConfig.US_Customer;
         this.timeZone = TimeZone;
+        this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-        this.registerEvent(this.$scope, "angular-resizable.resizeEnd", (_, args: { id?: string, width: number, height: number }) => {
+        this.registerEvent(this.$scope, "angular-resizable.resizeEnd", (_, args: {
+            id?: string,
+            width: number,
+            height: number
+        }) => {
             const mapContainer = angular.element(args.id ? '#' + args.id : '').find('.here-map');
             if (mapContainer.length > 0) {
                 this.$scope.$emit("map-container-resized", {
@@ -444,25 +453,12 @@ class NationwideControl extends BaseController {
                 angular.element('.column-sortable').removeClass('ui-sortable-active');
 
                 // Update box metrics and save layout
-               this.registerTimeout(() => {
+                this.registerTimeout(() => {
                     this.updateBoxMetrics();
                     this.saveCurrentLayout();
                 }, 100);
             }
         };
-    }
-
-    $onInit() {
-        this.refreshInterval = this.registerInterval(async () => {
-            console.log("[NationwideController] - Refreshing tasks and job lists");
-
-            if (document.visibilityState === 'visible') {
-                const currentJobId = this.currentJob?.id;
-                await this.refreshJobLists(currentJobId);
-            } else {
-                console.log("Page not visible, skipping refresh");
-            }
-        }, 120000);
     }
 
     private updateBoxMetrics() {
@@ -558,7 +554,7 @@ class NationwideControl extends BaseController {
     }
 
     initializeViews() {
-       this.registerTimeout(() => {
+        this.registerTimeout(() => {
             if (this.views && this.views.length > 0) {
                 this.selectedViews = this.loadViewsFromStorage();
 
@@ -576,7 +572,7 @@ class NationwideControl extends BaseController {
     }
 
     async toggleView(view: DfrntPageViewModel) {
-       this.registerTimeout(() => {
+        this.registerTimeout(() => {
             if (view.selected) {
                 if (!this.selectedViews.some((v: DfrntPageViewModel) => v.id === view.id)) {
                     this.selectedViews.push(view);
@@ -618,7 +614,7 @@ class NationwideControl extends BaseController {
         this.currentLayoutIndex = index;
         this.layout = angular.copy(layout.layout);
 
-       this.registerTimeout(() => {
+        this.registerTimeout(() => {
             this.applyLayoutDimensions();
 
             if (Modernizr.localstorage) {
@@ -795,7 +791,7 @@ class NationwideControl extends BaseController {
                 console.log('Job reselected successfully');
             }
 
-           this.registerTimeout(() => {
+            this.registerTimeout(() => {
                 console.log('UI update triggered after status change');
             });
         } catch (error) {
@@ -987,7 +983,7 @@ class NationwideControl extends BaseController {
             this.updateCurrentSelection(job.jobNo);
             await this.handleJobSelectionRelatedData(job);
 
-           this.registerTimeout(() => {
+            this.registerTimeout(() => {
                 console.log('Final UI update after job selection completed');
                 this.updateUIState(job);
             });
@@ -1126,7 +1122,7 @@ class NationwideControl extends BaseController {
             this.agentListPromise = this.nationwideService.getAgentOptions(job.id);
             const result = await this.agentListPromise;
 
-           this.registerTimeout(() => {
+            this.registerTimeout(() => {
                 this.agentOptions = result.agents || [];
                 this.agentMessage = result.message ||
                     (this.agentOptions.length === 0 ? "No agents available for this job" : undefined);
@@ -1138,13 +1134,13 @@ class NationwideControl extends BaseController {
             console.log("Agent options loaded:", this.agentOptions.length);
         } catch (error) {
             console.error("Error fetching agents:", error);
-           this.registerTimeout(() => {
+            this.registerTimeout(() => {
                 this.agentMessage = "An error occurred while loading agents. Please try again.";
                 this.agentOptions = [];
                 this.updateUIState(job);
             });
         } finally {
-           this.registerTimeout(() => {
+            this.registerTimeout(() => {
                 this.agentsLoading = false;
                 this.updateUIState(job);
             });
@@ -1164,7 +1160,7 @@ class NationwideControl extends BaseController {
             return;
         }
 
-       this.registerTimeout(() => {
+        this.registerTimeout(() => {
             this.flightsLoading = true;
             this.updateUIState(this.currentJob);
         });
@@ -1221,7 +1217,7 @@ class NationwideControl extends BaseController {
 
             const result = await this.flightListPromise;
 
-           this.registerTimeout(() => {
+            this.registerTimeout(() => {
                 this.flightOptions = result.flights || [];
                 this.flightMessage = result.message || (result.flights.length === 0 ?
                     "No flights available for the selected criteria" : undefined);
@@ -1235,13 +1231,13 @@ class NationwideControl extends BaseController {
         } catch (error) {
             console.error("Error loading flights:", error);
 
-           this.registerTimeout(() => {
+            this.registerTimeout(() => {
                 this.flightMessage = "An error occurred while loading flights. Please try again.";
                 this.flightOptions = [];
                 this.updateUIState(this.currentJob);
             });
         } finally {
-           this.registerTimeout(() => {
+            this.registerTimeout(() => {
                 this.flightsLoading = false;
                 this.updateUIState(this.currentJob);
             });
@@ -1316,13 +1312,13 @@ class NationwideControl extends BaseController {
             const successMessage = `Successfully assigned flight ${flight.flightNumber} to job ${job.jobNo}`;
             this.toastrService.showSuccessToast(successMessage);
 
-           this.registerTimeout(() => {
+            this.registerTimeout(() => {
                 console.log('UI updated after flight assignment');
             });
         } catch (error) {
             this.handleError(error);
 
-           this.registerTimeout(() => {
+            this.registerTimeout(() => {
                 console.log('UI updated after flight assignment error');
             });
         }
@@ -1356,13 +1352,13 @@ class NationwideControl extends BaseController {
             const successMessage = (`Successfully assigned agent ${agent.text} to job ${job.jobNo}`)
             this.toastrService.showSuccessToast(successMessage);
 
-           this.registerTimeout(() => {
+            this.registerTimeout(() => {
                 console.log('UI updated after agent assignment');
             });
         } catch (error) {
             this.handleError(error);
 
-           this.registerTimeout(() => {
+            this.registerTimeout(() => {
                 console.log('UI updated after agent assignment error');
             });
         }
@@ -1471,148 +1467,118 @@ class NationwideControl extends BaseController {
         }).length;
     }
 
+    private updateDateFilters(dataTypes: JobDataType | JobDataType[] = JobDataType.ALL) {
+        if (dataTypes.includes(JobDataType.NEW)) {
+            this.jobFilters.startDate = this.startDate;
+            this.jobFilters.dateCutoff = this.endDate;
+        }
+        if (dataTypes.includes(JobDataType.POD)) {
+            this.jobPodFilters.startDate = this.startDate;
+            this.jobPodFilters.dateCutoff = this.endDate;
+        }
+        if (dataTypes.includes(JobDataType.REPRICE)) {
+            this.jobRepriceFilters.startDate = this.startDate;
+            this.jobRepriceFilters.dateCutoff = this.endDate;
+        }
+    }
 
-    async getJobList(dataTypes: JobDataType | JobDataType[] = JobDataType.ALL) {
+    async getJobList(dataTypes: JobDataType | JobDataType[] = JobDataType.ALL): Promise<void> {
         const selectedClients = this.pickService.clients.map((a: { id: number }) => a.id);
+
+        // Convert input to an array of types
         const types = Array.isArray(dataTypes) ? dataTypes : [dataTypes];
-        const requestedTypes = types.includes(JobDataType.ALL) ?
-            Object.values(JobDataType).filter(type => type !== JobDataType.ALL) :
-            types;
+
+        // If ALL is included, convert it to all specific job types (NEW, POD, REPRICE)
+        // This ensures that passing JobDataType.ALL will fetch all job types
+        const requestedTypes = types.includes(JobDataType.ALL)
+            ? [JobDataType.NEW, JobDataType.POD, JobDataType.REPRICE]
+            : types;
+
+        this.updateDateFilters(requestedTypes);
+
+        // Set loading states
+        this.registerTimeout(() => {
+            if (requestedTypes.includes(JobDataType.NEW)) this.jobListLoading = true;
+            if (requestedTypes.includes(JobDataType.POD)) this.podListLoading = true;
+            if (requestedTypes.includes(JobDataType.REPRICE)) this.repriceListLoading = true;
+        });
 
         try {
-           this.registerTimeout(() => {
-                if (requestedTypes.includes(JobDataType.NEW)) {
-                    this.jobListLoading = true;
-                }
-                if (requestedTypes.includes(JobDataType.POD)) {
-                    this.podListLoading = true;
-                }
-                if (requestedTypes.includes(JobDataType.REPRICE)) {
-                    this.repriceListLoading = true;
-                }
-            });
+            // Initialize promises
+            if (requestedTypes.includes(JobDataType.NEW)) {
+                this.jobListPromise = this.nationwideService.getNationwideJobsNew(
+                    this.jobFilters || {},
+                    selectedClients,
+                    ClientInternal,
+                    this.selectedViews
+                );
+            }
 
-            const loadingStates: Record<JobDataType.NEW | JobDataType.POD | JobDataType.REPRICE, () => void> = {
-                [JobDataType.NEW]: () => {
-                    this.jobListPromise = this.nationwideService.getNationwideJobsNew(
-                        this.jobFilters || {},
-                        selectedClients,
-                        ClientInternal,
-                        this.selectedViews
-                    );
-                },
-                [JobDataType.POD]: () => {
-                    this.podListPromise = this.nationwideService.getNationwideJobsPOD(
-                        this.jobPodFilters || {},
-                        selectedClients,
-                        ClientInternal,
-                        this.selectedViews
-                    );
-                },
-                [JobDataType.REPRICE]: () => {
-                    this.repriceListPromise = this.nationwideService.getNationwideJobsReprice(
-                        this.jobRepriceFilters || {},
-                        selectedClients,
-                        ClientInternal,
-                        this.selectedViews
-                    );
-                }
-            };
+            if (requestedTypes.includes(JobDataType.POD)) {
+                this.podListPromise = this.nationwideService.getNationwideJobsPOD(
+                    this.jobPodFilters || {},
+                    selectedClients,
+                    ClientInternal,
+                    this.selectedViews
+                );
+            }
 
-            requestedTypes.forEach((type) => {
-                if (type === JobDataType.NEW || type === JobDataType.POD || type === JobDataType.REPRICE) {
-                    loadingStates[type]?.();
-                }
-            });
+            if (requestedTypes.includes(JobDataType.REPRICE)) {
+                this.repriceListPromise = this.nationwideService.getNationwideJobsReprice(
+                    this.jobRepriceFilters || {},
+                    selectedClients,
+                    ClientInternal,
+                    this.selectedViews
+                );
+            }
 
-            const fetchMap: Record<Exclude<JobDataType, JobDataType.ALL>, {
-                fetch: () => Promise<IDispatchJob[]>;
-                updateScope: (result: IDispatchJob[]) => void;
-            }> = {
-                [JobDataType.NEW]: {
-                    fetch: () => {
-                        if (!this.jobListPromise) {
-                            throw new Error('Job list promise not initialized');
-                        }
-                        return this.jobListPromise;
-                    },
-                    updateScope: (result: IDispatchJob[]) => {
-                       this.registerTimeout(() => {
-                            this.jobList = result || [];
-                            this.totalJobCount = result.length | 0;
-                            this.jobListLoading = false;
-                        });
-                    }
-                },
-                [JobDataType.POD]: {
-                    fetch: () => {
-                        if (!this.podListPromise) {
-                            throw new Error('Job pod list promise not initialized');
-                        }
-                        return this.podListPromise;
-                    },
-                    updateScope: (result: IDispatchJob[]) => {
-                       this.registerTimeout(() => {
-                            this.jobListPOD = result || [];
-                            this.totalPodCount = result.length | 0;
-                            this.podListLoading = false;
-                        });
-                    }
-                },
-                [JobDataType.REPRICE]: {
-                    fetch: () => {
-                        if (!this.repriceListPromise) {
-                            throw new Error('Job reprice list promise not initialized');
-                        }
-                        return this.repriceListPromise;
-                    },
-                    updateScope: (result: IDispatchJob[]) => {
-                       this.registerTimeout(() => {
-                            this.jobListReprice = result || [];
-                            this.totalRepriceCount = result.length;
-                            this.repriceListLoading = false;
-                        });
-                    }
-                }
-            };
+            // Create fetch promises
+            const fetchPromises = [];
 
-            const promises = requestedTypes.map(async (type: JobDataType) => {
-                if (type !== JobDataType.ALL) {
-                    return {type, data: await fetchMap[type].fetch()};
-                }
-                return null;
-            }).filter((promise): promise is Promise<{
-                type: Exclude<JobDataType, JobDataType.ALL>;
-                data: IDispatchJob[]
-            }> => promise !== null);
+            if (requestedTypes.includes(JobDataType.NEW) && this.jobListPromise) {
+                fetchPromises.push(this.jobListPromise.then(data => ({ type: JobDataType.NEW, data })));
+            }
 
+            if (requestedTypes.includes(JobDataType.POD) && this.podListPromise) {
+                fetchPromises.push(this.podListPromise.then(data => ({ type: JobDataType.POD, data })));
+            }
+
+            if (requestedTypes.includes(JobDataType.REPRICE) && this.repriceListPromise) {
+                fetchPromises.push(this.repriceListPromise.then(data => ({ type: JobDataType.REPRICE, data })));
+            }
+
+            // Execute in parallel
             const tasksPromise = this.loadTasks();
-            const results = await Promise.all(promises);
+            const results = await Promise.all(fetchPromises);
 
-            results.forEach(({type, data}) => {
-                fetchMap[type].updateScope(data);
+            // Update state with results
+            results.forEach(({ type, data }) => {
+                this.registerTimeout(() => {
+                    if (type === JobDataType.NEW) {
+                        this.jobList = data || [];
+                        this.totalJobCount = data.length || 0;
+                        this.jobListLoading = false;
+                    } else if (type === JobDataType.POD) {
+                        this.jobListPOD = data || [];
+                        this.totalPodCount = data.length || 0;
+                        this.podListLoading = false;
+                    } else if (type === JobDataType.REPRICE) {
+                        this.jobListReprice = data || [];
+                        this.totalRepriceCount = data.length;
+                        this.repriceListLoading = false;
+                    }
+                });
             });
 
             await tasksPromise;
         } catch (error) {
             console.error("Error fetching job data:", error);
 
-            // Reset loading states with $timeout
-           this.registerTimeout(() => {
-                requestedTypes.forEach(type => {
-                    switch (type) {
-                        case JobDataType.NEW:
-                            this.jobListLoading = false;
-                            break;
-
-                        case JobDataType.POD:
-                            this.podListLoading = false;
-                            break;
-                        case JobDataType.REPRICE:
-                            this.repriceListLoading = false;
-                            break;
-                    }
-                });
+            // Reset loading states
+            this.registerTimeout(() => {
+                if (requestedTypes.includes(JobDataType.NEW)) this.jobListLoading = false;
+                if (requestedTypes.includes(JobDataType.POD)) this.podListLoading = false;
+                if (requestedTypes.includes(JobDataType.REPRICE)) this.repriceListLoading = false;
             });
         }
     }
@@ -1762,7 +1728,7 @@ class NationwideControl extends BaseController {
 
     async loadTasks(filterType: string = this.tasksFilter) {
         try {
-           this.registerTimeout(() => {
+            this.registerTimeout(() => {
                 this.tasksLoading = true;
             });
 
@@ -1772,7 +1738,7 @@ class NationwideControl extends BaseController {
             try {
                 this.tasks = await this.DispatchData.getAllTasks(filterRequest);
 
-               this.registerTimeout(() => {
+                this.registerTimeout(() => {
                     this.filteredTasks = this.tasks;
 
                     // Apply additional client-side filtering if needed
@@ -1786,7 +1752,7 @@ class NationwideControl extends BaseController {
                 console.error("Service error getting tasks:", serviceError);
                 this.toastrService.showErrorToast("Failed to load tasks");
 
-               this.registerTimeout(() => {
+                this.registerTimeout(() => {
                     this.tasks = [];
                     this.filteredTasks = [];
                 });
@@ -1890,7 +1856,7 @@ class NationwideControl extends BaseController {
             this.selectedAirport ? this.selectedAirport.text : 'All airports');
 
         // Add loading indicator
-       this.registerTimeout(() => {
+        this.registerTimeout(() => {
             this.flightsLoading = true;
         });
 
@@ -1900,7 +1866,7 @@ class NationwideControl extends BaseController {
         } catch (error) {
             console.error('Error loading flights after airport change:', error);
         } finally {
-           this.registerTimeout(() => {
+            this.registerTimeout(() => {
                 this.flightsLoading = false;
             });
         }
@@ -1950,7 +1916,7 @@ class NationwideControl extends BaseController {
                 // Find the refreshed job in any of the job lists
                 const updatedJob = this.findJobInLocalLists(currentJobId);
 
-               this.registerTimeout(() => {
+                this.registerTimeout(() => {
                     if (updatedJob) {
                         this.currentJob = updatedJob;
                         console.log("[NationwideRefresh] - Current job selection maintained");
@@ -2020,41 +1986,41 @@ class NationwideControl extends BaseController {
     private updateUIState(job?: IDispatchJob) {
         this.$scope.$applyAsync(() => {
             // Reset all flags first
-        this.resetAllFlags();
+            this.resetAllFlags();
 
-        // Use a provided job or fell back to the currentJob
-        const activeJob = job || this.currentJob;
+            // Use a provided job or fell back to the currentJob
+            const activeJob = job || this.currentJob;
 
-        // Determine if this is a delivery job
-        this.isDeliveryJobType = activeJob ? this.isDeliveryJob(activeJob) : false;
+            // Determine if this is a delivery job
+            this.isDeliveryJobType = activeJob ? this.isDeliveryJob(activeJob) : false;
 
-        if (!this.isDeliveryJobType) {
-            // Handle flight job UI states
-            if (!activeJob) {
-                this.showNoJobSelectedMessage = true;
-            } else if (activeJob.assignedFlight) {
-                this.showJobHasAssignedFlightMessage = true;
-            } else if (!activeJob.toAirportId || !activeJob.fromAirportId) {
-                this.showMissingAirportInfoMessage = true;
-            } else if (!this.flightsLoading && (!this.flightOptions || this.flightOptions.length === 0)) {
-                this.showNoFlightsAvailableMessage = true;
-            } else if (!this.flightsLoading && this.flightOptions && this.flightOptions.length > 0) {
-                this.showFlightList = true;
+            if (!this.isDeliveryJobType) {
+                // Handle flight job UI states
+                if (!activeJob) {
+                    this.showNoJobSelectedMessage = true;
+                } else if (activeJob.assignedFlight) {
+                    this.showJobHasAssignedFlightMessage = true;
+                } else if (!activeJob.toAirportId || !activeJob.fromAirportId) {
+                    this.showMissingAirportInfoMessage = true;
+                } else if (!this.flightsLoading && (!this.flightOptions || this.flightOptions.length === 0)) {
+                    this.showNoFlightsAvailableMessage = true;
+                } else if (!this.flightsLoading && this.flightOptions && this.flightOptions.length > 0) {
+                    this.showFlightList = true;
+                }
+            } else {
+                // Handle delivery job UI states
+                if (!activeJob) {
+                    this.showNoAgentJobSelectedMessage = true;
+                } else if (activeJob.assignedAgent) {
+                    this.showJobHasAssignedAgentMessage = true;
+                } else if (!this.isDeliveryJob(activeJob)) {
+                    this.showNotDeliveryJobMessage = true;
+                } else if (!this.agentsLoading && (!this.agentOptions || this.agentOptions.length === 0)) {
+                    this.showNoAgentsAvailableMessage = true;
+                } else if (!this.agentsLoading && this.agentOptions && this.agentOptions.length > 0) {
+                    this.showAgentList = true;
+                }
             }
-        } else {
-            // Handle delivery job UI states
-            if (!activeJob) {
-                this.showNoAgentJobSelectedMessage = true;
-            } else if (activeJob.assignedAgent) {
-                this.showJobHasAssignedAgentMessage = true;
-            } else if (!this.isDeliveryJob(activeJob)) {
-                this.showNotDeliveryJobMessage = true;
-            } else if (!this.agentsLoading && (!this.agentOptions || this.agentOptions.length === 0)) {
-                this.showNoAgentsAvailableMessage = true;
-            } else if (!this.agentsLoading && this.agentOptions && this.agentOptions.length > 0) {
-                this.showAgentList = true;
-            }
-        }
         });
     }
 
@@ -2074,7 +2040,7 @@ class NationwideControl extends BaseController {
         this.showAgentList = false;
     }
 
-    private async refreshAction(boxName: string) {
+    async refreshAction(boxName: string) {
         console.log('[NationwideController] refreshing ', boxName);
         switch (boxName) {
             case NationwideBoxes.Tasks:
@@ -2093,6 +2059,16 @@ class NationwideControl extends BaseController {
                 // Add a default case if needed
                 break;
         }
+    }
+
+    async onSearchRangeChange(optionSelected: number) {
+        if(optionSelected != 1) return;
+
+        // Set for 24 hours
+        this.startDate = moment().toDate();
+        this.endDate = moment().add(24, 'hours').toDate();
+
+        await this.getData();
     }
 }
 

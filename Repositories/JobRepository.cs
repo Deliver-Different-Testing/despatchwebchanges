@@ -689,15 +689,13 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
         return await DespatchQry(
             AppPage.Dispatch,
-            queryParams.Order,
-            queryParams.OrderDirection,
+            queryParams,
             isInternal,
             isUsTenant,
             clientIds,
             selectedViewIds,
             null,
-            clearListEnvelope,
-            queryParams.DateCutoff
+            clearListEnvelope
         );
     }
 
