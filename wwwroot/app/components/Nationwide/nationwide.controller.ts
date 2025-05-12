@@ -1185,10 +1185,10 @@ class NationwideControl extends BaseController {
 
             if (this.lastDepartureTime) {
                 departureDate = moment(this.lastDepartureTime);
-            } else if (this.currentJob.time && this.currentJob.date) {
+            } else if (this.currentJob.booked) {
                 let jobDateTime;
 
-                jobDateTime = moment(this.currentJob.time);
+                jobDateTime = moment(this.currentJob.booked);
                 departureDate = jobDateTime.isAfter(now) ? jobDateTime : now;
             } else {
                 departureDate = now;
