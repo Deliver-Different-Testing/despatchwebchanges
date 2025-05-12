@@ -47,7 +47,7 @@ public class TaskController(
     [HttpPost]
     public async Task<IActionResult> UpdateTaskDate(
         int eventId,
-        DateTime date
+        string date
     )
     {
         try
@@ -65,7 +65,7 @@ public class TaskController(
     [HttpPost]
     public async Task<IActionResult> UpdateTaskTime(
         int eventId,
-        DateTime time
+        string time
     )
     {
         try

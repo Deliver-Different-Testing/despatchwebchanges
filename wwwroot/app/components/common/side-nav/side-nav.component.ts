@@ -7,6 +7,7 @@ class MaterialSidenavComponentController extends BaseController {
         "$state",
         "$mdSidenav",
         "$timeout",
+        "$interval",
         "APP_CONFIG"
     ];
 
@@ -28,11 +29,16 @@ class MaterialSidenavComponentController extends BaseController {
     constructor(
         private $state: angular.ui.IStateService,
         private $mdSidenav: angular.material.ISidenavService,
-        private $timeout: angular.ITimeoutService,
-        APP_CONFIG: AppConfig
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
+        appConfig: AppConfig
     ) {
         super();
-        this.isUsCustomer = APP_CONFIG.US_Customer;
+
+        // Initialize base services
+        this.initServices($timeout, $interval);
+
+        this.isUsCustomer = appConfig.US_Customer;
         this.userName = FirstName;
         this.currentYear = new Date().getFullYear();
 
@@ -45,17 +51,18 @@ class MaterialSidenavComponentController extends BaseController {
             day: 'numeric'
         };
 
-        const locale = APP_CONFIG.US_Customer ? 'en-US' : 'en-NZ';
+        const locale = appConfig.US_Customer ? 'en-US' : 'en-NZ';
         this.currentDate = today.toLocaleDateString(locale, options);
     }
 
     $postLink(): void {
         this.sidenav = angular.element('md-sidenav');
 
-        // Set up event listeners
         this.sidenav.on("mouseenter", () => {
             if (this.timeoutId) {
-                this.$timeout.cancel(this.timeoutId);
+                if (this.$timeoutService) {
+                    this.$timeoutService.cancel(this.timeoutId);
+                }
                 this.timeoutId = null;
             }
 
@@ -64,24 +71,23 @@ class MaterialSidenavComponentController extends BaseController {
 
         this.sidenav.on("mouseleave", () => {
             if (this.timeoutId) {
-                this.$timeout.cancel(this.timeoutId);
+                if (this.$timeoutService) {
+                    this.$timeoutService.cancel(this.timeoutId);
+                }
             }
 
-            this.timeoutId = this.$timeout(() => {
+            // Use registerTimeout instead of direct $timeout
+            this.timeoutId = this.registerTimeout(() => {
                 this._toggleNav(false);
-            }, this.HOVER_DELAY);
+            }, this.HOVER_DELAY) as angular.IPromise<void>;
         });
-    }
 
-    $onDestroy(): void {
-        if (this.timeoutId) {
-            this.$timeout.cancel(this.timeoutId);
-        }
-
-        if (this.sidenav) {
-            this.sidenav.off("mouseenter");
-            this.sidenav.off("mouseleave");
-        }
+        this.eventDeregistrations.push(() => {
+            if (this.sidenav) {
+                this.sidenav.off("mouseenter");
+                this.sidenav.off("mouseleave");
+            }
+        });
     }
 
     isActive(stateName: string): boolean {
@@ -98,7 +104,8 @@ class MaterialSidenavComponentController extends BaseController {
         const action = shouldOpen ? sideNav.open() : sideNav.close();
         action.then(() => {
             this.navState.isOpen = shouldOpen;
-            this.$timeout(() => {
+
+            this.registerTimeout(() => {
                 this.navState.isAnimating = false;
             }, this.ANIMATION_DURATION);
         });

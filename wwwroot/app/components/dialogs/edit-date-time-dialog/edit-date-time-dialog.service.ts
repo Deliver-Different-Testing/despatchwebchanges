@@ -20,7 +20,7 @@ export class EditDateTimeDialogService implements angular.IServiceProvider {
         return this;
     }
 
-    private _getBaseDialogConfig($event: MouseEvent, title: string, fieldName: JobProperty, dateTime?: Date, defaultTimeZone?: Suggestion) {
+    private _getBaseDialogConfig($event: MouseEvent, title: string, fieldName: JobProperty | string, dateTime?: Date, defaultTimeZone?: Suggestion) {
         const showTimeZone = defaultTimeZone !== undefined;
 
         return {
@@ -42,7 +42,7 @@ export class EditDateTimeDialogService implements angular.IServiceProvider {
         };
     }
 
-    async showEditTimeDialog($event: MouseEvent, title: string, fieldName: JobProperty, dateTime?: Date, defaultTimeZone?: Suggestion) {
+    async showEditTimeDialog($event: MouseEvent, title: string, fieldName: JobProperty | string, dateTime?: Date, defaultTimeZone?: Suggestion) {
         const config = {
             ...this._getBaseDialogConfig($event, title, fieldName, dateTime, defaultTimeZone),
             locals: {
@@ -56,7 +56,7 @@ export class EditDateTimeDialogService implements angular.IServiceProvider {
         return result;
     }
 
-    async showEditDateDialog($event: MouseEvent, title: string, fieldName: JobProperty, dateTime?: Date, defaultTimeZone?: Suggestion) {
+    async showEditDateDialog($event: MouseEvent, title: string, fieldName: JobProperty | string, dateTime?: Date, defaultTimeZone?: Suggestion) {
         const config = {
             ...this._getBaseDialogConfig($event, title, fieldName, dateTime, defaultTimeZone),
             locals: {
@@ -70,7 +70,7 @@ export class EditDateTimeDialogService implements angular.IServiceProvider {
         return result;
     }
 
-    async showEditDateAndTimeDialog($event: MouseEvent, title: string, fieldName: JobProperty, dateTime?: Date, defaultTimeZone?: Suggestion) {
+    async showEditDateAndTimeDialog($event: MouseEvent, title: string, fieldName: JobProperty | string, dateTime?: Date, defaultTimeZone?: Suggestion) {
         const config = {
             ...this._getBaseDialogConfig($event, title, fieldName, dateTime, defaultTimeZone),
             locals: {
