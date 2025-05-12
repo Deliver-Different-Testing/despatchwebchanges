@@ -1173,16 +1173,27 @@ class NationwideControl extends BaseController {
             const now = moment();
             let departureDate;
 
-            if (this.lastDepartureTime) {
-                // Use lastDepartureTime if available
-                departureDate = this.lastDepartureTime;
-            } else if (this.currentJob.booked) {
-                // Parse the booked ISO datetime string
-                const jobDateTime = new Date(this.currentJob.booked);
+            //if (this.lastDepartureTime) {
+            //    // Use lastDepartureTime if available
+            //    departureDate = this.lastDepartureTime;
+            //} else if (this.currentJob.booked) {
+            //    // Parse the booked ISO datetime string
+            //    const jobDateTime = new Date(this.currentJob.booked);
 
-                // Only use job datetime if it's valid and in the future
-                departureDate = (!isNaN(jobDateTime.getTime()) && jobDateTime > now) ?
-                    jobDateTime : now;
+            //    // Only use job datetime if it's valid and in the future
+            //    departureDate = (!isNaN(jobDateTime.getTime()) && jobDateTime > now) ?
+            //        jobDateTime : now;
+            //} else {
+            //    departureDate = now;
+            //}
+
+            if (this.lastDepartureTime) {
+                departureDate = moment(this.lastDepartureTime);
+            } else if (this.currentJob.time && this.currentJob.date) {
+                let jobDateTime;
+
+                jobDateTime = moment(this.currentJob.time);
+                departureDate = jobDateTime.isAfter(now) ? jobDateTime : now;
             } else {
                 departureDate = now;
             }
