@@ -510,7 +510,6 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         var smppSetting = await Context.TblSmppsettings.FirstOrDefaultAsync();
 
         var staffId = _infoService.GetStaffId();
-        var currentTenantTime = _infoService.GetCurrentTenantTime();
 
         // Create object
         var agentQuoteTemplateDto = await Context.TucJobs
@@ -556,7 +555,6 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             ReplyToEmailAddress = smppSetting.AgentEmailReplyAddress,
             UcmmMessage = body,
             UcmmStaffId = staffId,
-            UcmmTimeSent = currentTenantTime,
             SendToEmailAddress = agentEmail
         };
 
