@@ -39,10 +39,12 @@ public class FlightSegmentViewModel: ScheduledFlight
     public string DepartureAirportCity { get; set; }
     public string DepartureAirportCountry { get; set; }
     public string DepartureAirportTimeZone { get; set; }
+    public int DepartureAirportTimeZoneId { get; set; }
     public string ArrivalAirportName { get; set; }
     public string ArrivalAirportCity { get; set; }
     public string ArrivalAirportCountry { get; set; }
     public string ArrivalAirportTimeZone { get; set; }
+    public int ArrivalAirportTimeZoneId { get; set; }
     public string AircraftName { get; set; }
     public string AircraftType { get; set; }
     public string AirlineName { get; set; }

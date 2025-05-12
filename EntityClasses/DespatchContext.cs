@@ -5186,6 +5186,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ArrivalAirportFsCode).HasMaxLength(20);
             entity.Property(e => e.ArrivalAirportName).HasMaxLength(100);
             entity.Property(e => e.ArrivalAirportTimeZone).HasMaxLength(100);
+            entity.Property(e => e.ArrivalAirportTimeZoneId).HasColumnName("ArrivalAirportTimeZoneID");
             entity.Property(e => e.ArrivalTerminal).HasMaxLength(20);
             entity.Property(e => e.CarrierFsCode).HasMaxLength(20);
             entity.Property(e => e.DepartureAirportCity).HasMaxLength(100);
@@ -5193,6 +5194,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.DepartureAirportFsCode).HasMaxLength(20);
             entity.Property(e => e.DepartureAirportName).HasMaxLength(100);
             entity.Property(e => e.DepartureAirportTimeZone).HasMaxLength(100);
+            entity.Property(e => e.DepartureAirportTimeZoneId).HasColumnName("DepartureAirportTimeZoneID");
             entity.Property(e => e.DepartureTerminal).HasMaxLength(20);
             entity.Property(e => e.GateNumber).HasMaxLength(50);
             entity.Property(e => e.JobBookingId).HasColumnName("JobBookingID");
@@ -5237,6 +5239,14 @@ public partial class DespatchContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("ucnwSystemDate");
             entity.Property(e => e.WebhookAlertId).HasMaxLength(36);
+
+            entity.HasOne(d => d.ArrivalAirportTimeZoneNavigation).WithMany(p => p.TucJobNationwideArrivalAirportTimeZoneNavigations)
+                .HasForeignKey(d => d.ArrivalAirportTimeZoneId)
+                .HasConstraintName("FK_tucJobNationwide_TimeZone_Arrival");
+
+            entity.HasOne(d => d.DepartureAirportTimeZoneNavigation).WithMany(p => p.TucJobNationwideDepartureAirportTimeZoneNavigations)
+                .HasForeignKey(d => d.DepartureAirportTimeZoneId)
+                .HasConstraintName("FK_tucJobNationwide_TimeZone_Departure");
 
             entity.HasOne(d => d.JobBooking).WithMany(p => p.TucJobNationwides)
                 .HasForeignKey(d => d.JobBookingId)

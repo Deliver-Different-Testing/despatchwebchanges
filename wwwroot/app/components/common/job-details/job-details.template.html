@@ -357,6 +357,9 @@
                                         <div class="segment-departure" flex="30">
                                             <div class="time">
                                                 {{segment.departureTime | date: 'MM/dd/yyyy HH:mm'}}
+                                                <span ng-if="segment.departureAirportTimeZone">
+                                                    ({{segment.departureAirportTimeZone| timezoneShort}})
+                                                </span>
                                             </div>
                                             <div class="airport-code">
                                                 {{segment.departureAirportFsCode}}
@@ -385,6 +388,9 @@
                                         <div class="segment-arrival" flex="30">
                                             <div class="time">
                                                 {{segment.arrivalTime | date: 'MM/dd/yyyy HH:mm'}}
+                                                <span ng-if="segment.arrivalAirportTimeZone">
+                                                    ({{segment.arrivalAirportTimeZone| timezoneShort}})
+                                                </span>
                                             </div>
                                             <div class="airport-code">
                                                 {{segment.arrivalAirportFsCode}}
