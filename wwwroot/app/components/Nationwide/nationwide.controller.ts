@@ -146,7 +146,7 @@ class NationwideControl extends BaseController {
 
     browserTimeZone: string;
     dateSearchRange: number = 1;
-    startDate: Date = moment().toDate();
+    startDate: Date = moment(new Date(0)).toDate();
     endDate: Date = moment().add(24, 'hours').toDate();
 
     constructor(
@@ -1186,10 +1186,7 @@ class NationwideControl extends BaseController {
             if (this.lastDepartureTime) {
                 departureDate = moment(this.lastDepartureTime);
             } else if (this.currentJob.booked) {
-                let jobDateTime;
-
-                jobDateTime = moment(this.currentJob.booked);
-                departureDate = jobDateTime.isAfter(now) ? jobDateTime : now;
+                departureDate = moment(this.currentJob.booked); 
             } else {
                 departureDate = now;
             }
@@ -2065,7 +2062,7 @@ class NationwideControl extends BaseController {
         if(optionSelected != 1) return;
 
         // Set for 24 hours
-        this.startDate = moment().toDate();
+        this.startDate = moment(new Date(0)).toDate();
         this.endDate = moment().add(24, 'hours').toDate();
 
         await this.getData();
