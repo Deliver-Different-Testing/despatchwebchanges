@@ -65,11 +65,14 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 DepartureAirportCity = primaryFlight.DepartureAirportCity,
                 DepartureAirportCountry = primaryFlight.DepartureAirportCountry,
                 DepartureAirportTimeZone = primaryFlight.DepartureAirportTimeZone,
+                DepartureAirportTimeZoneId = await GetTimeZoneIdByNameAsync(primaryFlight.DepartureAirportTimeZone),
+
                 ArrivalAirportFsCode = primaryFlight.ArrivalAirportFsCode,
                 ArrivalAirportName = primaryFlight.ArrivalAirportName,
                 ArrivalAirportCity = primaryFlight.ArrivalAirportCity,
                 ArrivalAirportCountry = primaryFlight.ArrivalAirportCountry,
                 ArrivalAirportTimeZone = primaryFlight.ArrivalAirportTimeZone,
+                ArrivalAirportTimeZoneId = await GetTimeZoneIdByNameAsync(primaryFlight.ArrivalAirportTimeZone),
                 DepartureTerminal = primaryFlight.DepartureTerminal,
                 ArrivalTerminal = primaryFlight.ArrivalTerminal,
                 AircraftName = primaryFlight.AircraftName
@@ -140,11 +143,13 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                         DepartureAirportCity = leg.DepartureAirportCity,
                         DepartureAirportCountry = leg.DepartureAirportCountry,
                         DepartureAirportTimeZone = leg.DepartureAirportTimeZone,
+                        DepartureAirportTimeZoneId = await GetTimeZoneIdByNameAsync(primaryFlight.DepartureAirportTimeZone),
                         ArrivalAirportFsCode = leg.ArrivalAirportFsCode,
                         ArrivalAirportName = leg.ArrivalAirportName,
                         ArrivalAirportCity = leg.ArrivalAirportCity,
                         ArrivalAirportCountry = leg.ArrivalAirportCountry,
                         ArrivalAirportTimeZone = leg.ArrivalAirportTimeZone,
+                        ArrivalAirportTimeZoneId = await GetTimeZoneIdByNameAsync(primaryFlight.ArrivalAirportTimeZone),
                         DepartureTerminal = leg.DepartureTerminal,
                         ArrivalTerminal = leg.ArrivalTerminal,
                         AircraftName = leg.AircraftName

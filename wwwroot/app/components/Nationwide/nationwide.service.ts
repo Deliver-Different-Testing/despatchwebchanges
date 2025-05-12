@@ -91,7 +91,7 @@ class NationwideService implements angular.IServiceProvider {
         lastDepartureTime: Date | null;
     }> {
         const startTime = performance.now();
-        const formattedDate = moment(departureDate).format();
+        const formattedDate = moment(departureDate).format('YYYY-MM-DDTHH:mm:ss');
 
         // Create a cache key based on the parameters
         const cacheKey = `flights_${jobId}_${formattedDate}_${airlineId || 'all'}_${departureAirportId || 'default'}`;

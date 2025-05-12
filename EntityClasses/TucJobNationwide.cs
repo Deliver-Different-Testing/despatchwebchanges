@@ -81,6 +81,14 @@ public partial class TucJobNationwide
 
     public string AircraftName { get; set; }
 
+    public int? DepartureAirportTimeZoneId { get; set; }
+
+    public int? ArrivalAirportTimeZoneId { get; set; }
+
+    public virtual TimeZone ArrivalAirportTimeZoneNavigation { get; set; }
+
+    public virtual TimeZone DepartureAirportTimeZoneNavigation { get; set; }
+
     public virtual TucJobBooking JobBooking { get; set; }
 
     public virtual TucJob UcnwJob { get; set; }

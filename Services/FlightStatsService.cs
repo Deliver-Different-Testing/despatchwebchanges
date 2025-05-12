@@ -247,7 +247,7 @@ public class FlightStatsService(
             }).ToList();
         }
 
-        var flightOptions = await Task.WhenAll(flightStatusResponse.Connections
+        var flightOptions = await Task.WhenAll(connections
             .Where(conn => conn.ScheduledFlight.Count != 0)
             .Select(async conn =>
             {

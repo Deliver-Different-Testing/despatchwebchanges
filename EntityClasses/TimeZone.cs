@@ -31,5 +31,9 @@ public partial class TimeZone
 
     public virtual ICollection<TucJob> TucJobDeliverByTimeZones { get; set; } = new List<TucJob>();
 
+    public virtual ICollection<TucJobNationwide> TucJobNationwideArrivalAirportTimeZoneNavigations { get; set; } = new List<TucJobNationwide>();
+
+    public virtual ICollection<TucJobNationwide> TucJobNationwideDepartureAirportTimeZoneNavigations { get; set; } = new List<TucJobNationwide>();
+
     public virtual ICollection<TucJob> TucJobPickupTimeZones { get; set; } = new List<TucJob>();
 }
