@@ -2,7 +2,7 @@ import "./task-dashboard.styles.less";
 import {ExtendedTask, TaskTableFiltersRequest, TaskViewModel} from "./task-dashboard.interfaces";
 import GreetingService from "../../services/greeting.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
-import {Suggestion} from "../../interfaces/job.interface";
+import {IDispatchJob, Suggestion} from "../../interfaces/job.interface";
 import {ViewMode} from "./enums/view-mode";
 import BaseController from "../base-controller";
 import {ITaskListItemConfig} from "../common/task-item-component/task-item.interfaces";
@@ -16,6 +16,7 @@ class TaskDashboardController extends BaseController {
         "$filter",
         "DispatchData",
         "$timeout",
+        "$interval",
         "$scope",
     ];
 
@@ -74,7 +75,7 @@ class TaskDashboardController extends BaseController {
     };
 
     currentJobId?: number;
-    currentJobNumber?: string;
+    currentSelection?: string;
 
     timeZone: string;
     browserTimeZone: string;
@@ -84,10 +85,14 @@ class TaskDashboardController extends BaseController {
         private $mdSidenav: angular.material.ISidenavService,
         private $filter: angular.IFilterService,
         private DispatchService: DispatchCoreService,
-        private $timeout: angular.ITimeoutService,
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
         $scope: angular.IScope,
     ) {
         super();
+
+        this.initServices($timeout, $interval);
+
         this.greeting = greetingService.greetUser(FirstName);
         this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         this.timeZone = TimeZone;
@@ -97,18 +102,18 @@ class TaskDashboardController extends BaseController {
         this.initializeDates();
         this.calendarViewMode = this.viewMode === ViewMode.Calendar;
 
-        this._loadLists()
+        this.loadLists()
             .then(() => this.getTasks())
             .catch(error => {
                 console.error('Initialization error:', error);
             });
 
-        $scope.$on('jobChanged', (_, newLabel) => {
-            this.currentJobNumber = newLabel;
+        this.registerEvent($scope, 'jobChanged', (_, newJob: IDispatchJob) => {
+            this.currentSelection = ` for Job ${newJob.jobNo}`;
         });
     }
 
-    private async _loadLists() {
+    private async loadLists() {
         try {
             const [staffList, eventTypesList] = await Promise.all([
                 this.DispatchService.getActiveStaff(),
@@ -162,18 +167,23 @@ class TaskDashboardController extends BaseController {
 
         try {
             const tasks = await this.DispatchService.getAllTasks(filters);
-            this.tasks = tasks as ExtendedTask[];
-            this.initializeTaskTimeStrings();
-            this.applyFilters();
 
-            this.$timeout(() => {
+            this.registerTimeout(() => {
+                this.tasks = tasks as ExtendedTask[];
+                this.initializeTaskTimeStrings();
+                this.applyFilters();
+
                 this.tasksLoading = false;
                 this.isFirstLoad = false;
             });
         } catch (error) {
             console.error('Error loading tasks:', error);
-            this.tasksLoading = false;
-            this.isFirstLoad = false;
+
+            this.registerTimeout(() => {
+                this.tasksLoading = false;
+                this.isFirstLoad = false;
+            });
+
             throw error;
         }
     }
@@ -191,12 +201,9 @@ class TaskDashboardController extends BaseController {
             filters.eventTypeId = parseInt(this.eventTypeFilter, 10);
         }
 
-        // Apply "Done" filter at the server level
-        if (this.statusFilter === StatusFilter.Done) {
-            filters.showCompleted = true;
-        }
+        filters.showCompleted = true;
 
-        // Add search filter
+        // Add a search filter
         if (this.searchQuery) {
             filters.searchText = this.searchQuery;
         }
@@ -242,24 +249,51 @@ class TaskDashboardController extends BaseController {
         if (status === StatusFilter.Done) {
             return this.getTasks();
         } else {
-            this.$timeout(() => {
+            this.registerTimeout(() => {
                 this.applyFilters();
             });
         }
     }
 
     private applyFilters(): void {
-        this.$timeout(() => {
-            if (this.statusFilter === StatusFilter.All) {
-                this.filteredTasks = this.tasks.filter(task => !task.closed);
-            } else if (this.statusFilter === StatusFilter.Overdue) {
-                this.filteredTasks = this.tasks.filter(task => this.isTaskOverdue(task));
-            } else if (this.statusFilter === StatusFilter.Todo) {
-                this.filteredTasks = this.tasks.filter(task => !task.closed && !this.isTaskOverdue(task));
-            } else if (this.statusFilter === StatusFilter.Done) {
-                this.filteredTasks = this.tasks.filter(task => task.closed);
+        let filteredTasks: ExtendedTask[];
+
+        if (this.statusFilter === StatusFilter.All) {
+            filteredTasks = this.tasks.filter(task => !task.closed);
+        } else if (this.statusFilter === StatusFilter.Overdue) {
+            filteredTasks = this.tasks.filter(task => this.isTaskOverdue(task));
+        } else if (this.statusFilter === StatusFilter.Todo) {
+            filteredTasks = this.tasks.filter(task => !task.closed && !this.isTaskOverdue(task));
+        } else if (this.statusFilter === StatusFilter.Done) {
+            filteredTasks = this.tasks.filter(task => task.closed);
+        } else {
+            filteredTasks = [...this.tasks]; // Default - show all tasks
+        }
+
+        if (filteredTasks) {
+            this.filteredTasks = filteredTasks;
+        }
+    }
+
+    getStatusCounts() {
+        let active = 0, overdue = 0, todo = 0, done = 0;
+
+        // Single pass through the tasks array
+        for (const task of this.tasks) {
+            if (task.closed) {
+                done++;
+            } else {
+                active++;
+                const isOverdue = this.isTaskOverdue(task);
+                if (isOverdue) {
+                    overdue++;
+                } else {
+                    todo++;
+                }
             }
-        });
+        }
+
+        return {active, overdue, todo, done};
     }
 
     refreshTasks() {
@@ -285,7 +319,7 @@ class TaskDashboardController extends BaseController {
 
         return this.filteredTasks.filter(task => {
             const taskDate = moment(task.dueDate).format();
-            return  taskDate === dateStr;
+            return taskDate === dateStr;
         });
     }
 
@@ -301,20 +335,10 @@ class TaskDashboardController extends BaseController {
         });
     }
 
-    getStatusCounts() {
-        return {
-            active: this.tasks.filter(task => !task.closed).length,
-            overdue: this.tasks.filter(task => this.isTaskOverdue(task)).length,
-            todo: this.tasks.filter(task => !task.closed && !this.isTaskOverdue(task)).length,
-            done: this.tasks.filter(task => task.closed).length
-        };
-    }
-
-    // Task completion handler
     handleTaskCompletion(task: ExtendedTask) {
         this.refreshTasks().then(() => {
             if (this.statusFilter === StatusFilter.Done) {
-                this.$timeout(() => {
+                this.registerTimeout(() => {
                     this.applyFilters();
                 });
             }
@@ -340,7 +364,7 @@ class TaskDashboardController extends BaseController {
 
     selectTaskJobDetail(task: ExtendedTask) {
         this.currentJobId = task.jobId;
-        this.currentJobNumber = "for Job " + task.jobNumber;
+        this.currentSelection = "for Job " + task.jobNumber;
     }
 }
 

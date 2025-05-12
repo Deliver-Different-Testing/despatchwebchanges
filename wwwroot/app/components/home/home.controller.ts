@@ -166,6 +166,8 @@ class HomeController extends BaseController {
     ) {
         super();
 
+        this.initServices($timeout, $interval);
+
         this.timeZone = TimeZone;
         this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -180,11 +182,11 @@ class HomeController extends BaseController {
             }
         }, true);
 
-        $scope.$on('jobChanged', (_, newJob: IDispatchJob) => {
+        this.registerEvent(this.$scope, 'jobChanged', (_, newJob: IDispatchJob) => {
             this.currentSelection = ` for Job ${newJob.jobNo}`;
         });
 
-        $scope.$on('jobReadChanged', (_, data: IJobReadChanged) => {
+        this.registerEvent(this.$scope, 'jobReadChanged', (_, data: IJobReadChanged) => {
             this.markJobReadStatus(data.jobId, data.isRead);
         });
 
@@ -235,7 +237,7 @@ class HomeController extends BaseController {
                 angular.element('.column-sortable').removeClass('ui-sortable-active');
 
                 // Update box metrics and save layout
-                this.$timeout(() => {
+                this.registerTimeout(() => {
                     this.updateBoxMetrics();
                     this.saveCurrentLayout();
                 }, 100);
@@ -431,9 +433,9 @@ class HomeController extends BaseController {
             await this.refreshJobList(currentJobId, currentCourierId);
         }, 60000);
 
-        // Set up a watch to apply dimensions when layout changes
-        this.$scope.$watch(() => this.layout, () => {
-            this.$timeout(() => this.applyLayoutDimensions());
+        // Set up a watch to apply dimensions when the layout changes
+        this.registerWatch(this.$scope, () => this.layout, () => {
+            this.registerTimeout(() => this.applyLayoutDimensions());
         }, true);
 
         // Ensure draggingItems container exists
@@ -561,7 +563,7 @@ class HomeController extends BaseController {
         this.layout = angular.copy(layout.layout);
 
         // Apply dimensions on next digest cycle
-        this.$timeout(() => {
+        this.registerTimeout(() => {
             this.applyLayoutDimensions();
 
             if (Modernizr.localstorage) {
@@ -1294,7 +1296,7 @@ class HomeController extends BaseController {
                 console.log("Restore Jobs complete");
             }
 
-            this.$timeout(() => {
+            this.registerTimeout(() => {
                 if (foundCourier) {
                     this.getCurrentJobs(foundCourier.courierId);
                     this.getData();
@@ -1620,7 +1622,7 @@ class HomeController extends BaseController {
 
     async selectCourier(courier: CourierData) {
         try {
-            await this.$timeout(() => {
+            await this.registerTimeout(() => {
                 this.currentListLoading = true;
             });
 
@@ -1651,7 +1653,7 @@ class HomeController extends BaseController {
             console.error("Error selecting courier:", error);
             this.toastrService.showErrorToast("Error loading courier information");
         } finally {
-            await this.$timeout(() => {
+            await this.registerTimeout(() => {
                 this.currentListLoading = false;
             });
         }
@@ -1920,7 +1922,7 @@ class HomeController extends BaseController {
     }
 
     focusDispatchField(jobId: number) {
-        this.$timeout(() => {
+        this.registerTimeout(() => {
             const inputField = angular.element(`#input_${jobId}`);
             if (inputField.length) {
                 const inputElement = inputField.find('input');

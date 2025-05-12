@@ -1214,11 +1214,11 @@ class JobDetailController extends BaseController {
         console.log('[_triggerDigestCycle] Forcing UI update');
         try {
             if (!this.$rootScope.$$phase) {
-                this.$rootScope.$apply();
+                this.$rootScope.$applyAsync();
             } else {
-                this.$timeout(() => {
+                this.registerTimeout(() => {
                     if (!this.$rootScope.$$phase) {
-                        this.$rootScope.$apply();
+                        this.$rootScope.$applyAsync();
                     }
                 }, 0);
             }

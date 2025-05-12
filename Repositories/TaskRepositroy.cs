@@ -82,41 +82,41 @@ public class TaskRepository(
 
     public async Task SetEventAsClosedAsync(int eventId, bool closed)
     {
-        var eventToUpdate =
-            await GetEventByIdAsync(eventId)
-            ?? throw new KeyNotFoundException($"Event with ID {eventId} not found.");
-        eventToUpdate.UcevClosed = closed;
+        var dfrntEvent = await Context.TucEvents.FindAsync(eventId);
+        ArgumentNullException.ThrowIfNull(dfrntEvent);
+
+        dfrntEvent.UcevClosed = closed;
+
         await Context.SaveChangesAsync();
     }
 
-    public async Task UpdateEventDateAsync(int eventId, DateTime date)
+    public async Task UpdateEventDateAsync(int eventId, string date)
     {
-        var eventToUpdate =
-            await GetEventByIdAsync(eventId)
-            ?? throw new KeyNotFoundException($"Event with ID {eventId} not found.");
-        eventToUpdate.UcevDueTime = infoService.ConvertUtcToTenantTime(date.Date);
+        var dfrntEvent = await Context.TucEvents.FindAsync(eventId);
+        ArgumentNullException.ThrowIfNull(dfrntEvent);
+
+        var newDate = DateTime.Parse(date).Date;
+        var existingTime = dfrntEvent.UcevDueTime.TimeOfDay;
+
+        dfrntEvent.UcevDueTime = newDate.Add(existingTime);
         await Context.SaveChangesAsync();
     }
 
-    public async Task UpdateEventTime(int eventId, DateTime time)
+    public async Task UpdateEventTime(int eventId, string time)
     {
-        var eventToUpdate =
-            await GetEventByIdAsync(eventId)
-            ?? throw new KeyNotFoundException($"Event with ID {eventId} not found.");
+        var dfrntEvent = await Context.TucEvents.FindAsync(eventId);
+        ArgumentNullException.ThrowIfNull(dfrntEvent);
 
-        // Update only the time component
-        eventToUpdate.UcevTime = infoService.ConvertUtcToTenantTime(time);
+        dfrntEvent.UcevDueTime = DateTime.Parse(time);
         await Context.SaveChangesAsync();
     }
 
     public async Task ReassignEventToUser(int eventId, int staffId)
     {
-        var eventToUpdate =
-            await GetEventByIdAsync(eventId)
-            ?? throw new KeyNotFoundException($"Event with ID {eventId} not found.");
+        var dfrntEvent = await Context.TucEvents.FindAsync(eventId);
+        ArgumentNullException.ThrowIfNull(dfrntEvent);
 
-        // Update only the time component
-        eventToUpdate.UcevStaffIdin = staffId;
+        dfrntEvent.UcevStaffIdin = staffId;
         await Context.SaveChangesAsync();
     }
 
@@ -219,11 +219,13 @@ public class TaskRepository(
         TaskTableFiltersRequest filters
     )
     {
-        if(filters.JobId.HasValue)
-            query = query.Where(e => e.UcevJobId == filters.JobId.Value);
+        if (filters.JobId.HasValue)
+            query = query.Where(e => e.UcevJobId == filters.JobId.Value
+                                     || e.UcevJob.ParentId == filters.JobId.Value
+                                     || e.UcevJob.Parent.InverseParent.Any(j => j.UcjbId == filters.JobId.Value));
 
-        if (filters.ShowCompleted.HasValue)
-            query = query.Where(e => e.UcevClosed == filters.ShowCompleted.Value);
+        if (filters.ShowCompleted is false)
+            query = query.Where(e => e.UcevClosed == filters.ShowCompleted);
 
         // Filter by CourierId if provided
         if (filters.CourierId.HasValue)
@@ -246,18 +248,16 @@ public class TaskRepository(
         var searchText = filters.SearchText.ToLower();
         query = query.Where(e =>
             (e.UcevDescription != null && e.UcevDescription.ToLower().Contains(searchText))
-            || (
-                e.UcevNotes != null
-                && e.UcevNotes.Contains(searchText)
-            )
+            || (e.UcevNotes != null && e.UcevNotes.Contains(searchText))
             || (e.UcevDespatcher != null && e.UcevDespatcher.ToLower().Contains(searchText))
+            || (e.UcevJob != null && e.UcevJob.UcjbNumber != null && e.UcevJob.UcjbNumber.ToLower().Contains(searchText))
+            || (e.UcevJob != null && e.UcevJob.Parent != null && e.UcevJob.Parent.UcjbNumber != null && e.UcevJob.Parent.UcjbNumber.ToLower().Contains(searchText))
+            || (e.UcevJob != null && e.UcevJob.Parent != null && e.UcevJob.Parent.InverseParent != null && e.UcevJob.Parent.InverseParent.Any(j =>
+                j.UcjbNumber != null && j.UcjbNumber.ToLower().Contains(searchText)))
         );
 
         return query;
     }
-
-    private async Task<TucEvent> GetEventByIdAsync(int eventId) =>
-        await Context.TucEvents.FirstOrDefaultAsync(e => e.UcevId == eventId);
 
     public async Task AddEventAsync(
         int jobId,

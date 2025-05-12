@@ -28,7 +28,6 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             ArgumentNullException.ThrowIfNull(jobId);
             ArgumentNullException.ThrowIfNull(flights);
             ArgumentNullException.ThrowIfNull(webhookIds);
-           // ArgumentException.ThrowIfNullOrWhiteSpace(webhookAlertId);
 
             if (flights.FlightSegments.Count == 0)
                 throw new ArgumentException("Flight list cannot be empty", nameof(flights));
@@ -111,7 +110,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 deliveryJob.DeliverByTimeZoneId = timeZoneForDeliveryJob;
             }
 
-            var currentTime = infoService.GetCurrentTenantTime();
+            var currentTime = _infoService.GetCurrentTenantTime();
             job.UcjbDispDate = currentTime;
             job.UcjbDispTime = currentTime;
 
@@ -671,7 +670,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         return webhookId;
     }
 
-    public async Task<int> GetAirportProcessingTimeAsync(int airportId)
+    private async Task<int> GetAirportProcessingTimeAsync(int airportId)
     {
         var processingTime = await Context.TblAirports
             .Where(a => a.AirportId == airportId)

@@ -24,6 +24,7 @@ class JobSearchController extends BaseController {
         'greetingService',
         '$document',
         '$timeout',
+        '$interval',
         'dispatchJobService',
         'toastrService',
         'DispatchData',
@@ -111,7 +112,8 @@ class JobSearchController extends BaseController {
         private $mdDialog: angular.material.IDialogService,
         private greetingService: GreetingService,
         private $document: angular.IDocumentService,
-        private $timeout: angular.ITimeoutService,
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
         private dispatchJobService: DispatchExecutorService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
@@ -121,6 +123,8 @@ class JobSearchController extends BaseController {
         private navigationService: NavigationService
     ) {
         super();
+
+        this.initServices($timeout, $interval);
 
         this.isUsCustomer = appConfig.US_Customer;
         this.isAdmin = ClientInternal;
@@ -446,7 +450,7 @@ class JobSearchController extends BaseController {
         this.layout = angular.copy(layout.layout);
 
         // Apply dimensions on next digest cycle
-        this.$timeout(() => {
+        this.registerTimeout(() => {
             this._applyLayoutDimensions();
 
             if (Modernizr.localstorage) {
@@ -1145,7 +1149,7 @@ class JobSearchController extends BaseController {
     }
 
     highlightEvent() {
-        this.$timeout(() => {
+        this.registerTimeout(() => {
             this.selectedEvents = this.selected || [];
         }, 10);
     }

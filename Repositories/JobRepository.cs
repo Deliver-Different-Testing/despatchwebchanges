@@ -861,7 +861,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 archivedJob.UcjbJobDone = true;
                 archivedJob.UcjbStatus = jobStatus;
                 archivedJob.UcjbPodname = podName;
-                archivedJob.UcjbComplTime = infoService.ConvertUtcToTenantTime(podTime);
+                archivedJob.UcjbComplTime = _infoService.ConvertUtcToTenantTime(podTime);
                 archivedJob.InternalStatus = (int)InternalJobStatus.Reprice;
             }
         }
@@ -875,7 +875,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 activeJob.UcjbJobDone = true;
                 activeJob.UcjbStatus = jobStatus;
                 activeJob.UcjbPodname = podName;
-                activeJob.UcjbComplTime = infoService.ConvertUtcToTenantTime(podTime);
+                activeJob.UcjbComplTime = _infoService.ConvertUtcToTenantTime(podTime);
                 activeJob.InternalStatus = (int)InternalJobStatus.Reprice;
             }
         }
@@ -900,7 +900,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 parentJob.UcjbJobDone = true;
                 parentJob.UcjbStatus = jobStatus;
                 parentJob.UcjbPodname = podName;
-                parentJob.UcjbComplTime = infoService.ConvertUtcToTenantTime(podTime);
+                parentJob.UcjbComplTime = _infoService.ConvertUtcToTenantTime(podTime);
             }
         }
         else
@@ -915,7 +915,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 parentJob.UcjbJobDone = true;
                 parentJob.UcjbStatus = jobStatus;
                 parentJob.UcjbPodname = podName;
-                parentJob.UcjbComplTime = infoService.ConvertUtcToTenantTime(podTime);
+                parentJob.UcjbComplTime = _infoService.ConvertUtcToTenantTime(podTime);
             }
         }
     }
@@ -1034,7 +1034,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         bool calculationRequired
     )
     {
-        var currentDate = infoService.GetCurrentTenantTime();
+        var currentDate = _infoService.GetCurrentTenantTime();
 
         var time = await Context.TucJobTypes
             .Where(jt => jt.ShortName == bookedSpeed || jt.ShortName == notifiedSpeed)
@@ -1086,7 +1086,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         bool calculationRequired
     )
     {
-        var currentDate = infoService.GetCurrentTenantTime();
+        var currentDate = _infoService.GetCurrentTenantTime();
 
         // Get the maximum delivery time for the specified speeds
         var time = await Context.TucJobTypes
@@ -2098,7 +2098,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             UcjbStatus = 6,
             UcjbJobDone = true,
             ProofOfDelivery = 0,
-            WhenPodnotificationSent = infoService.GetCurrentTenantTime(),
+            WhenPodnotificationSent = _infoService.GetCurrentTenantTime(),
             UcjbReturn = false,
             UcjbPaged = false
         };
