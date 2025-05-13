@@ -345,11 +345,11 @@ public class NationwideJobController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetNearbyAirports(int jobId, int? maxDistanceMiles)
+    public async Task<IActionResult> GetNearbyAirports(int jobId)
     {
         try
         {
-            var airports = await repository.GetNearbyAirportsAsync(jobId, maxDistanceMiles);
+            var airports = await repository.GetNearbyAirportsAsync(jobId);
             return Json(airports);
         }
         catch (Exception e)

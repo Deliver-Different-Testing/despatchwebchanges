@@ -5,8 +5,7 @@ import {EventGroupDialogService} from "../components/dialogs/event-group-dialog/
 import AddEventDialogService from "../components/dialogs/add-event-dialog/add-event-dialog.service";
 import {IDispatchJob, IJobNote, Suggestion} from "../interfaces/job.interface";
 import {JobNoteType} from "../enums/job-note-type.enum";
-import IContextMenuOption from "../interfaces/context-menu-option.interface";
-import {bindAllMethods} from "../functions/bindAllMethods";
+import IContextMenuOption from "../interfaces/context-menu-option.interface"
 import NationwideService from "../components/Nationwide/nationwide.service";
 import InternalJobStatus from "../enums/job-internal-status.enum";
 import JobInternalStatusEnum from "../enums/job-internal-status.enum";
@@ -14,6 +13,7 @@ import {JobProperty} from "../enums/job-property.enum";
 import JobAddStopService from "./job-add-stop.service";
 import {isDeliveryJob} from "../functions/isDeliveryJob";
 import {isFlightJob} from "../functions/isFlightJob";
+import {bindAllMethods} from "../functions/bindAllMethods";
 
 class JobContextMenuService implements angular.IServiceProvider {
     static $inject = [
@@ -83,14 +83,14 @@ class JobContextMenuService implements angular.IServiceProvider {
         }
 
         // Add Stop
-        if (isDeliveryJob(job)) {
+      /*  if (isDeliveryJob(job)) {
             menuOptions.push({
                 text: 'Add Stop',
                 icon: 'pin_drop',
                 click: () => this.addStopToJob(job, callbacks.onRefresh),
                 hasBottomDivider: true
             });
-        }
+        }*/
 
         // Reprice Job
         if (job.internalStatusId

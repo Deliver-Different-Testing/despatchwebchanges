@@ -199,6 +199,7 @@
 
                                         <md-fab-actions>
                                             <md-button
+                                                    ng-disabled="true"
                                                     ng-if="ctrl.isDeliveryJob(ctrl.currentJob)"
                                                     class="md-fab md-raised md-mini"
                                                     ng-click="ctrl.addStopToJob($event, ctrl.currentJob)">

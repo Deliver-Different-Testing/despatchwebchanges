@@ -177,8 +177,10 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .FirstOrDefaultAsync();
     }
 
-    public async Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId, int? maxDistanceMiles = 250)
+    public async Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId)
     {
+        const double maxDistanceMiles = 250;
+
         // Get pickup coordinates and nearby airports in a single query
         var pickupAndAirports = await (
                 from job in Context.TucJobs
