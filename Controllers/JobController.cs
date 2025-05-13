@@ -362,7 +362,7 @@ public class JobController(
         return Json(result > 0);
     }
 
-     [HttpPost]
+    [HttpPost]
     public async Task<IActionResult> UploadJobDeliveryPhotoOrSignature(
         int jobId,
         IFormFile file,
@@ -450,98 +450,98 @@ public class JobController(
         }
     }
 
-        private static string DetermineContentType(string fileExtension)
+    private static string DetermineContentType(string fileExtension)
+    {
+        return fileExtension.ToLower() switch
         {
-            return fileExtension.ToLower() switch
-            {
-                ".jpg" or ".jpeg" => "image/jpeg",
-                ".png" => "image/png",
-                ".gif" => "image/gif",
-                ".pdf" => "application/pdf",
-                _ => "application/octet-stream" // Default content type
-            };
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            ".pdf" => "application/pdf",
+            _ => "application/octet-stream" // Default content type
+        };
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> UploadMultipleJobDeliveryPhotos(
+        int jobId,
+        IFormFileCollection files,
+        string[] descriptions = null)
+    {
+        if (files == null || files.Count == 0)
+        {
+            return BadRequest("No files were uploaded");
         }
 
-        [HttpPost]
-            public async Task<IActionResult> UploadMultipleJobDeliveryPhotos(
-                int jobId,
-                IFormFileCollection files,
-                string[] descriptions = null)
+        var results = new List<object>();
+
+        for (var i = 0; i < files.Count; i++)
+        {
+            var file = files[i];
+            var description = descriptions != null && i < descriptions.Length ? descriptions[i] : null;
+
+            try
             {
-                if (files == null || files.Count == 0)
+                // Reuse the single upload method for each file
+                if (await UploadJobDeliveryPhotoOrSignature(jobId, file, true, description) is JsonResult result)
                 {
-                    return BadRequest("No files were uploaded");
+                    results.Add(result.Value);
                 }
-
-                var results = new List<object>();
-
-                for (var i = 0; i < files.Count; i++)
+                else
                 {
-                    var file = files[i];
-                    var description = descriptions != null && i < descriptions.Length ? descriptions[i] : null;
-
-                    try
-                    {
-                        // Reuse the single upload method for each file
-                        if (await UploadJobDeliveryPhotoOrSignature(jobId, file, true, description) is JsonResult result)
-                        {
-                            results.Add(result.Value);
-                        }
-                        else
-                        {
-                            results.Add(new { success = false, fileName = file.FileName, error = "Failed to process file" });
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error(ex, "Error uploading POD photo {FileName} for job {JobId}", file.FileName, jobId);
-                        results.Add(new { success = false, fileName = file.FileName, error = ex.Message });
-                    }
-                }
-
-                return Json(new
-                {
-                    success = results.All(r => ((dynamic)r).success),
-                    files = results
-                });
-            }
-
-            [HttpDelete]
-            public async Task<IActionResult> DeleteJobDeliveryPhotoOrSignature(int jobId, string key)
-            {
-                if (string.IsNullOrEmpty(key)) return BadRequest("File key is required");
-
-                try
-                {
-                    var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-
-                    var deleteRequest = new DeleteObjectRequest
-                    {
-                        BucketName = bucketName,
-                        Key = key
-                    };
-
-                    Log.Debug("Deleting file with key {Key} for job {JobId}", key, jobId);
-
-                    await s3Client.DeleteObjectAsync(deleteRequest);
-
-                    Log.Information("Successfully deleted file with key {Key} for job {JobId}", key, jobId);
-
-                    return Json(new { success = true, message = "File deleted successfully" });
-                }
-                catch (AmazonS3Exception e)
-                {
-                    Log.Error(e, "S3 error encountered when deleting file for job {JobId}. Message: {Message}",
-                        jobId, e.Message);
-                    return StatusCode(500, $"S3 error: {e.Message}");
-                }
-                catch (Exception e)
-                {
-                    Log.Error(e, "Unknown error encountered when deleting file for job {JobId}. Message: {Message}",
-                        jobId, e.Message);
-                    return StatusCode(500, "An error occurred while deleting the file");
+                    results.Add(new { success = false, fileName = file.FileName, error = "Failed to process file" });
                 }
             }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error uploading POD photo {FileName} for job {JobId}", file.FileName, jobId);
+                results.Add(new { success = false, fileName = file.FileName, error = ex.Message });
+            }
+        }
+
+        return Json(new
+        {
+            success = results.All(r => ((dynamic)r).success),
+            files = results
+        });
+    }
+
+    [HttpDelete]
+    public async Task<IActionResult> DeleteJobDeliveryPhotoOrSignature(int jobId, string key)
+    {
+        if (string.IsNullOrEmpty(key)) return BadRequest("File key is required");
+
+        try
+        {
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+
+            var deleteRequest = new DeleteObjectRequest
+            {
+                BucketName = bucketName,
+                Key = key
+            };
+
+            Log.Debug("Deleting file with key {Key} for job {JobId}", key, jobId);
+
+            await s3Client.DeleteObjectAsync(deleteRequest);
+
+            Log.Information("Successfully deleted file with key {Key} for job {JobId}", key, jobId);
+
+            return Json(new { success = true, message = "File deleted successfully" });
+        }
+        catch (AmazonS3Exception e)
+        {
+            Log.Error(e, "S3 error encountered when deleting file for job {JobId}. Message: {Message}",
+                jobId, e.Message);
+            return StatusCode(500, $"S3 error: {e.Message}");
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Unknown error encountered when deleting file for job {JobId}. Message: {Message}",
+                jobId, e.Message);
+            return StatusCode(500, "An error occurred while deleting the file");
+        }
+    }
 
     private async Task<List<S3Object>> SearchDeliveryFilesByPatternAsync(
         string bucketName,
@@ -1828,13 +1828,26 @@ public class JobController(
     [HttpPost]
     public async Task<IActionResult> UpdateRecurringJob(
         int jobId,
-        string field,
+        JobProperty field,
         string value
     )
     {
         try
         {
             await recurringJobRepository.UpdateTucJobRecurring(jobId, field, value);
+
+            // Recalcate job
+            var shouldRecalculateRate = ShouldRecalculateRate(field);
+            if (!shouldRecalculateRate) return Ok();
+
+            var jobDetails = await jobRepository.GetJobBookingDetailsForRating(jobId);
+            if (jobDetails.IsManuallyRated) return Ok();
+
+            var isUsTenant = infoService.IsUsTenant();
+            if (isUsTenant)
+                await rateJobService.RateJobUs(jobDetails);
+            else
+                await rateJobService.RateJob(jobDetails);
             return Ok();
         }
         catch (Exception e)
@@ -1888,17 +1901,19 @@ public class JobController(
         {
             await jobRepository.UpdateJobAsync(jobId, field, value);
 
-            // Reclacute job
+            // Recalcate job
             var shouldRecalculateRate = ShouldRecalculateRate(field);
             if (!shouldRecalculateRate) return Ok();
 
             var jobDetails = await jobRepository.GetJobDetailsForRating(jobId);
+            if (jobDetails.IsManuallyRated) return Ok();
 
             var isUsTenant = infoService.IsUsTenant();
             if (isUsTenant)
                 await rateJobService.RateJobUs(jobDetails);
             else
                 await rateJobService.RateJob(jobDetails);
+
             var staffId = infoService.GetStaffId();
 
             // Add price change event

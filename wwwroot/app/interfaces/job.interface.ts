@@ -417,6 +417,7 @@ export interface IDispatchJob {
     hasBeenRead: boolean;
 
     // Status and timing information
+    speedId?: number;
     statusId?: JobStatus;
     internalStatusId?: number;
     statusName?: string;

@@ -203,19 +203,7 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
         return prebooks;
     }
 
-    public async Task UpdateTucJobRecurring(int jobId, string fieldName, string value)
-        {
-            if (Enum.TryParse<JobProperty>(fieldName, out var property))
-            {
-                await UpdateTucJobRecurring(jobId, property, value);
-            }
-            else
-            {
-                throw new ArgumentException($"Unknown job property: {fieldName}");
-            }
-        }
-
-        public async Task UpdateTucJobRecurring(int jobId, JobProperty property, string value)
+    public async Task UpdateTucJobRecurring(int jobId, JobProperty property, string value)
         {
             var job = await Context
                 .TucJobBookings.Where(j => j.UcbkId == jobId)

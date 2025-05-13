@@ -1504,7 +1504,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         switch (isPrebook)
         {
             case true:
-                await SetPrebookJobAsManuallyPriceAsync(viewModel.PrebookJobId.Value, note, staffId);
+                await SetPrebookJobAsManuallyPriceAsync(viewModel.PrebookJobId.Value, note);
                 break;
             default:
                 if (viewModel.JobId != null) await SetJobAsManuallyPriceAsync(viewModel.JobId.Value, note, staffId);
@@ -1534,7 +1534,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         {
             case true:
                 if (viewModel.PrebookJobId != null)
-                    await SetPrebookJobAsManuallyPriceAsync(viewModel.PrebookJobId.Value, note, staffId);
+                    await SetPrebookJobAsManuallyPriceAsync(viewModel.PrebookJobId.Value, note);
                 break;
             default:
                 if (viewModel.JobId != null) await SetJobAsManuallyPriceAsync(viewModel.JobId.Value, note, staffId);
@@ -1558,7 +1558,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         {
             case true:
                 if (breakdown.PrebookJobId != null)
-                    await SetPrebookJobAsManuallyPriceAsync(breakdown.PrebookJobId.Value, note, staffId);
+                    await SetPrebookJobAsManuallyPriceAsync(breakdown.PrebookJobId.Value, note);
                 break;
             default:
                 if (breakdown.JobId != null) await SetJobAsManuallyPriceAsync(breakdown.JobId.Value, note, staffId);
@@ -1578,7 +1578,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         Context.Update(job);
     }
 
-    private async Task SetPrebookJobAsManuallyPriceAsync(int prebookJobId, string note, int staffId)
+    private async Task SetPrebookJobAsManuallyPriceAsync(int prebookJobId, string note)
     {
         var job = await Context.TucJobBookings.FirstOrDefaultAsync(j => j.UcbkId == prebookJobId);
         job.RatedManually = true;

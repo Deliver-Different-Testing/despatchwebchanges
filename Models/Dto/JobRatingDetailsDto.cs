@@ -49,4 +49,7 @@ public class JobRatingDetailsDto
     public decimal ClientDiscount { get; set; }
     public decimal ClientSurcharge { get; set; }
     public decimal ClientFuelSurcharge { get; set; }
+
+    public decimal? Cubic { get; set; }
+    public bool IsManuallyRated { get; set; }
 }

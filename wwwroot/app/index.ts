@@ -2,7 +2,6 @@
 import "../css/udispatch.less";
 import "../css/toasts.less";
 import "../lib/ng-material-floating-button/mfb/dist/mfb.css";
-import "../lib/material-time-picker/md-time-picker.css";
 import "../lib/pickdate/angular-pickadate.css";
 import "angular-resizable/angular-resizable.min.css";
 import "ng-material-datetimepicker/css/material-datetimepicker.css";
@@ -24,10 +23,8 @@ import "angular-bootstrap-contextmenu/contextMenu";
 
 // Local libs
 import "../lib/ModernizerLocalStorage";
-import "../lib/angular-promise-buttons";
 import "../lib/angular-heremaps";
 import "../lib/pickdate/angular-pickadate";
-import "../lib/material-time-picker/md-time-picker";
 import "../lib/ng-material-floating-button/src/mfb-directive";
 import "../lib/ng-material-floating-button/mfb/dist/mfb";
 import "../lib/timepickerdirective.min";
