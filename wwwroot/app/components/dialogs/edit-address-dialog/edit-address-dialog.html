@@ -122,7 +122,7 @@
                 <md-card ng-if="ctrl.showContactInfo" class="contact-info-card" style="margin-bottom: 15px;">
                     <md-toolbar>
                         <div class="md-toolbar-tools">
-                            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">contact</md-icon>
+                            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">person_add</md-icon>
                             <h2>Contact Information</h2>
                             <span flex></span>
                             <md-button class="md-icon-button" ng-click="ctrl.toggleContactCard()">
@@ -146,10 +146,6 @@
                                 <md-icon md-font-set="material-symbols-outlined">phone</md-icon>
                                 <input ng-model="ctrl.contactInfo.mobile" type="tel" required>
                             </md-input-container>
-                        </div>
-
-                        <div layout="row" layout-align="end center">
-                            <md-button class="md-primary md-raised" ng-click="ctrl.saveContact()">Save</md-button>
                         </div>
                     </md-card-content>
                 </md-card>

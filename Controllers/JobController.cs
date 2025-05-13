@@ -2640,11 +2640,14 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddStopToJob(int jobId, EditAddressDialogViewModel pickUpAddress, EditAddressDialogViewModel deliveryAddress)
+    public async Task<IActionResult> AddStopToJob([FromBody] AddStopRequest data)
     {
         try
         {
-            var jobStopId = await jobRepository.AddStopToJobAsync(jobId, pickUpAddress, deliveryAddress);
+            var jobStopId = await jobRepository.AddStopToJobAsync(
+                data.JobId,
+                data.PickUpAddress,
+                data.DeliveryAddress);
             return Json(jobStopId);
         }
         catch (Exception ex)

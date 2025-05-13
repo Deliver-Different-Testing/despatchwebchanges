@@ -1,6 +1,6 @@
 import DispatchCoreService from "./dispatch-core.service";
 import {EditAddressDialogService} from "../components/dialogs/edit-address-dialog/edit-address-dialog.service";
-import {IDispatchJob} from "../interfaces/job.interface";
+import {ContactInfo, IDispatchJob} from "../interfaces/job.interface";
 import ToastrService from "./toastr.service";
 import JobSuffix from "../enums/job-suffix.enum";
 import NavigationService from "./navigation.service";
