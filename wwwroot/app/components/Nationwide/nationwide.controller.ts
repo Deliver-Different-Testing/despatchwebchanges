@@ -31,6 +31,7 @@ import InternalJobStatus from "../../enums/job-internal-status.enum";
 import NationwideBoxes from "./enums/NationwideBoxes";
 import JobAddStopService from "../../services/job-add-stop.service";
 import {isDeliveryJob} from "../../functions/isDeliveryJob";
+import {isFlightJob} from "../../functions/isFlightJob";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -1012,8 +1013,10 @@ class NationwideControl extends BaseController {
         this.updateUIState(job);
 
         // Show flight table
-        if (job.toAirportId !== undefined && job.fromAirportId !== undefined) {
+        if (isFlightJob(job)) {
+            console.log('[NationwideController] Getting nearby airports');
             this.airportOptions = await this.nationwideService.getNearbyAirports(job.id);
+            console.log('[NationwideController] Got nearby airports:', this.airportOptions);
 
             if (this.airportOptions && this.airportOptions.length > 0) {
                 const defaultAirport = this.airportOptions.find(airport => airport.id === job.fromAirportId);
