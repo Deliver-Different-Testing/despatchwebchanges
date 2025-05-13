@@ -236,6 +236,17 @@ public class AddressViewModel
         );
 }
 
+public class EditAddressDialogViewModel : AddressViewModel
+{
+    public ContactInfo ContactInfo { get; set; }
+}
+
+public class ContactInfo
+{
+    public string Name { get; set; }
+    public string Phone { get; set; }
+}
+
 public class Suggestion
 {
     public int Id { get; set; }

@@ -29,6 +29,8 @@ import ConfigService from "../../services/config.service";
 import AutoCompleteDialogService from "../dialogs/auto-complete-dialog/auto-complete-dialog.service";
 import InternalJobStatus from "../../enums/job-internal-status.enum";
 import NationwideBoxes from "./enums/NationwideBoxes";
+import JobAddStopService from "../../services/job-add-stop.service";
+import {isDeliveryJob} from "../../functions/isDeliveryJob";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -52,6 +54,7 @@ class NationwideControl extends BaseController {
         'navigationService',
         'configService',
         'autoCompleteDialogService',
+        'jobAddStopService'
     ];
 
     readonly nationwidePageId: number = AppPages.Domestic;
@@ -170,6 +173,7 @@ class NationwideControl extends BaseController {
         private navigationService: NavigationService,
         private configService: ConfigService,
         private autoCompleteDialogService: AutoCompleteDialogService,
+        private jobAddStopService: JobAddStopService,
     ) {
         super();
 
@@ -1090,15 +1094,7 @@ class NationwideControl extends BaseController {
     }
 
     isDeliveryJob(job: IDispatchJob): boolean {
-        if (!job || !job.jobNo) {
-            return false;
-        }
-
-        const jobNumber = job.jobNo;
-        const isDeliveryJob = jobNumber.charAt(jobNumber.length - 1) === '1' || jobNumber.charAt(jobNumber.length - 1) === '3';
-
-        console.log(jobNumber + " is delivery job!");
-        return isDeliveryJob;
+        return isDeliveryJob(job);
     }
 
     getFlightIcon(jobNumber: string) {
@@ -2076,6 +2072,10 @@ class NationwideControl extends BaseController {
         this.endDate = moment().add(24, 'hours').toDate();
 
         await this.getData();
+    }
+
+    async addStopToJob($event: MouseEvent, job: IDispatchJob) {
+        await this.jobAddStopService.addNewStop(job, $event);
     }
 }
 

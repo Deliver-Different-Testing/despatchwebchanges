@@ -2,7 +2,7 @@ import {AppConfig} from "../interfaces/app-config.interface";
 import {
     AddressViewModel,
     ClearListViewModel,
-    ClientItemsViewModel,
+    ClientItemsViewModel, EditAddressDialogViewModel,
     IClearListEnvelope,
     IDispatchJob,
     IJob,
@@ -23,7 +23,7 @@ import {
 } from "../interfaces/courier.interface";
 import {EventGroupViewModel} from "../interfaces/event-group-view-model.interface";
 import {ClearListEnvelopeViewModel, DfrntPageViewModel} from "../interfaces/dfrnt-page-view-model.interface";
-import {bindAllMethods} from "../bindAllMethods";
+import {bindAllMethods} from "../functions/bindAllMethods";
 import {TaskTableFiltersRequest, TaskViewModel} from "../components/task-dashboard/task-dashboard.interfaces";
 import {JobProperty} from "../enums/job-property.enum";
 import moment from "moment";
@@ -802,6 +802,21 @@ class DispatchCoreService implements angular.IServiceProvider {
             await this.$http.post(`job/UpdateJobReadStatus?${queryParams}`, null);
         } catch (error) {
             console.error('Error updating job read status:', error);
+            throw error;
+        }
+    }
+
+    async addStopToJob(jobId: number, pickUpAddress: EditAddressDialogViewModel, deliveryAddress: EditAddressDialogViewModel): Promise<number> {
+        try {
+            const response = await this.$http.post<number>('job/AddStopToJob', {
+                jobId: jobId,
+                pickUpAddress: pickUpAddress,
+                deliveryAddress: deliveryAddress
+            });
+
+            return response.data;
+        } catch (error) {
+            console.error('Error updating packages:', error);
             throw error;
         }
     }

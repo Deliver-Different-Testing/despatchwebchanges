@@ -198,6 +198,15 @@
                                         </md-fab-trigger>
 
                                         <md-fab-actions>
+                                            <md-button
+                                                    ng-if="ctrl.isDeliveryJob(ctrl.currentJob)"
+                                                    class="md-fab md-raised md-mini"
+                                                    ng-click="ctrl.addStopToJob($event, ctrl.currentJob)">
+                                                <md-tooltip md-direction="bottom">Add Stop</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">
+                                                    pin_drop
+                                                </md-icon>
+                                            </md-button>
                                             <md-button class="md-fab md-raised md-mini"
                                                        ng-click="ctrl.showAdditionalServicesMenu($event, ctrl.currentJob)">
                                                 <md-tooltip md-direction="bottom">Additional Services</md-tooltip>

@@ -1,5 +1,5 @@
 import {IDocumentService, IServiceProvider, material} from "angular";
-import {bindAllMethods} from "../../../bindAllMethods";
+import {bindAllMethods} from "../../../functions/bindAllMethods";
 import InterCourierChargeDialogController from "./inter-courier-charge-dialog.controller";
 import ToastrService from "../../../services/toastr.service";
 

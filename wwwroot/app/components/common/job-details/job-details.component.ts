@@ -530,7 +530,7 @@ class JobDetailController extends BaseController {
         const existingAddress = isDeliveryAddress ? job.deliveryAddress : job.pickupAddress;
 
         try {
-            const newAddress = await this.editAddressDialogService.openEditAddressDialog($event, existingAddress);
+            const newAddress = await this.editAddressDialogService.openEditAddressDialog(existingAddress, $event);
             if (!newAddress) {
                 return; // User closed dialog
             }

@@ -1,4 +1,4 @@
-import {bindAllMethods} from "../bindAllMethods";
+import {bindAllMethods} from "../functions/bindAllMethods";
 
 enum ToastType {
     SUCCESS = 'success',

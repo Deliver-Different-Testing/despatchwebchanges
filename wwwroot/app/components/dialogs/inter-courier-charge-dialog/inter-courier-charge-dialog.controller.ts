@@ -6,6 +6,7 @@ import "./inter-courier-charge-dialog.styles.less";
 import {
     FeatureInDevelopmentDialogService
 } from "../feature-in-development-dialog/feature-in-development-dialog.service";
+import {Suggestion} from "../../../interfaces/job.interface";
 
 class InterCourierChargeDialogController extends BaseController {
     static $inject = [

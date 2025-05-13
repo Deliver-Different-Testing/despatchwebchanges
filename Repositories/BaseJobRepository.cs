@@ -33,7 +33,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
     protected async Task<List<DispatchJobViewModel>> DespatchQry(
         AppPage page,
-      JobQueryParams queryParams,
+        JobQueryParams queryParams,
         bool isInternal,
         bool isUsTenant,
         string clientIds,
@@ -54,7 +54,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 case AppPage.Dispatch:
                     // Filters
                     query = query.Where(j => j.UcjbStatus != (int)JobStatus.AwaitingPod);
-                    if (queryParams.DateCutoff.HasValue) query = query.Where(j => j.UcjbDate <= queryParams.DateCutoff.Value.Date);
+                    if (queryParams.DateCutoff.HasValue)
+                        query = query.Where(j => j.UcjbDate <= queryParams.DateCutoff.Value.Date);
 
                     // Sorting
                     query = ApplyDashboardSpecificOrdering(
@@ -162,7 +163,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
         // Filter dates
         if (queryParams.StartDate != null) query = query.Where(j => j.UcjbDate >= queryParams.StartDate);
-        if(queryParams.DateCutoff != null) query = query.Where(j => j.UcjbDate <= queryParams.DateCutoff);
+        if (queryParams.DateCutoff != null) query = query.Where(j => j.UcjbDate <= queryParams.DateCutoff);
 
         // Apply window pane viewFilters
         query = windowPane switch
@@ -536,10 +537,10 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             if (isLiveJob)
             {
                 var liveJob = await Context.TucJobs
-                                .Where(j => j.UcjbId == jobId)
-                                .Select(JobMappings.JobMapping)
-                                .AsNoTracking()
-                                .FirstOrDefaultAsync();
+                    .Where(j => j.UcjbId == jobId)
+                    .Select(JobMappings.JobMapping)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync();
                 return liveJob;
             }
 
@@ -1057,22 +1058,22 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         var curAmount = new OutputParameter<decimal?>();
 
         await Context.Procedures.sp_RateJob2Async(
-            clientId,
-            fromId,
-            toId,
-            speed,
-            pedal,
-            van,
-            returnJob,
-            weight,
-            size,
-            includeFuelSurcharge,
-            ourRef,
-            refA,
-            refB,
-            quantity,
-            booked,
-            curAmount
+            intClientID: clientId,
+            intFromID: fromId,
+            intToID: toId,
+            intSpeed: speed,
+            bolPedal: pedal,
+            bolVan: van,
+            bolReturn: returnJob,
+            intWeight: weight,
+            size: size,
+            includeFuelSurcharge: includeFuelSurcharge,
+            ourRef: ourRef,
+            clientRefA: refA,
+            clientRefB: refB,
+            quantity: quantity,
+            booked: booked,
+            curAmount: curAmount
         );
 
         return curAmount.Value ?? 0;
@@ -1437,7 +1438,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             : await UpdateNoteAsync(viewModel, staffId, currentTime, cancellationToken);
     }
 
-    public async Task<int> SaveNoteAsync(int jobId, string noteText, bool isImportant = false, bool isRecurringJob = false)
+    public async Task<int> SaveNoteAsync(int jobId, string noteText, bool isImportant = false,
+        bool isRecurringJob = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(noteText, nameof(noteText));
 
@@ -1483,7 +1485,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     }
 
     // Note Create/Update Operations
-    private async Task<int> CreateNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime, CancellationToken cancellationToken = default)
+    private async Task<int> CreateNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime,
+        CancellationToken cancellationToken = default)
     {
         var isArchived = await IsJobArchived(viewModel.JobId.Value) && !viewModel.JobBookingId.HasValue;
 
@@ -1515,7 +1518,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         }
     }
 
-    private async Task<int> UpdateNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime, CancellationToken cancellationToken = default)
+    private async Task<int> UpdateNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime,
+        CancellationToken cancellationToken = default)
     {
         var isArchived = await IsJobArchived(viewModel.JobId.Value);
 
@@ -1707,199 +1711,233 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     }
 
     protected async Task<int> GetJobArchiveRelationshipInfoAsync(int jobId)
-        {
-            var jobInfo = await Context.TucJobArchives
-                .Where(j => j.UcjbId == jobId)
-                .Select(j => new
-                {
-                    EffectiveJobId = j.ParentId ?? j.UcjbId,
-                })
-                .AsNoTracking()
-                .FirstOrDefaultAsync();
+    {
+        var jobInfo = await Context.TucJobArchives
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new
+            {
+                EffectiveJobId = j.ParentId ?? j.UcjbId,
+            })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
 
-            return jobInfo.EffectiveJobId;
-        }
+        return jobInfo.EffectiveJobId;
+    }
 
     protected static string GetTrackingName(int trackingMethodId)
+    {
+        return trackingMethodId switch
         {
-            return trackingMethodId switch
-            {
-                1 => "Email",
-                2 => "Mobile",
-                3 => "Email & Mobile",
-                _ => string.Empty
-            };
-        }
-
-      public async Task AddNewTucNoteType(NoteTypeViewModel noteType)
-      {
-          var newType = new TucNoteType
-          {
-              IsActive = true,
-              IsPublic = noteType.IsPublic,
-              NoteTypeName = noteType.Text,
-              Description = noteType.Description
-          };
-
-          await Context.TucNoteTypes.AddAsync(newType);
-          await Context.SaveChangesAsync();
-      }
-
-public async Task<JobRatingDetailsDto> GetJobDetailsForRating(int jobId)
-{
-    try
-    {
-        var jobDetails = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Include(j => j.UcjbClient)                   // Include client info
-            .Include(j => j.UcjbSpeedNavigation)                // Include job type info
-            .Select(job => new JobRatingDetailsDto
-            {
-                // Map the entity properties to our model
-                JobId = job.UcjbId,
-                ClientId = job.UcjbClientId ?? 0,
-                FromId = job.UcjbFrom ?? 0,
-                ToId = job.UcjbTo ?? 0,
-                SpeedId = job.UcjbSpeed ?? 0,
-                IsPedal = job.UcjbCbd,
-                IsVan = job.UcjbVan,
-                IsReturnJob = job.UcjbReturn,
-                Weight = job.UcjbWeight ?? 0,
-                SizeId = job.UcjbSize ?? 0,
-                IncludeFuelSurcharge = false,
-                IsDirect = job.Direct,
-                AcceptedJobTypeId = job.AcceptedJobTypeId ?? 0,
-                OurRef = job.UcjbOurRef,
-                RefA = job.UcjbClientRefa,
-                RefB = job.UcjbClientRefb,
-                Quantity = job.UcjbQty ?? 1,
-                BookedDate = job.UcjbDate,
-
-                // Coordinates
-                PickupLat = job.PickUpLatitude ?? 0,
-                PickupLong = job.PickUpLongitude ?? 0,
-                DeliveryLat = job.DeliveryLatitude ?? 0,
-                DeliveryLong = job.DeliveryLongitude ?? 0,
-
-                // US-specific properties
-                FromZip = job.PickupAddressLine7,
-                ToZip = job.DeliveryAddressLine7,
-                DangerousGoods = job.Dgdocument ?? false,
-                TotalPallets = job.TucJobItems.Count,
-                ExtraStopOffs = 0,
-                DryIceWeight = job.DryIceWeight ?? 0,
-                WaitTime = 0,
-
-                // Flight-specific properties
-                FromAirportId = job.FromAirportId,
-                ToAirportId = job.ToAirportId,
-                FromAgentId = job.FromAirport != null ? job.FromAirport.AgentId : null,
-                ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
-
-                // Client-specific rate information
-                ClientDiscount = job.UcjbClient.Discount,
-                Cubic = job.TucJobItems.Sum(i => i.Cubic),
-                IsManuallyRated = job.RatedManually
-            })
-            .FirstOrDefaultAsync();
-
-        ArgumentNullException.ThrowIfNull(jobDetails);
-
-        return jobDetails;
+            1 => "Email",
+            2 => "Mobile",
+            3 => "Email & Mobile",
+            _ => string.Empty
+        };
     }
-    catch (Exception ex)
+
+    public async Task AddNewTucNoteType(NoteTypeViewModel noteType)
     {
-        Log.Error(ex, "Error retrieving job details for rating. Job ID: {JobId}", jobId);
-        throw new ApplicationException($"Failed to retrieve job details for rating: {ex.Message}", ex);
-    }
-}
+        var newType = new TucNoteType
+        {
+            IsActive = true,
+            IsPublic = noteType.IsPublic,
+            NoteTypeName = noteType.Text,
+            Description = noteType.Description
+        };
 
-public async Task<JobRatingDetailsDto> GetJobBookingDetailsForRating(int jobId)
-{
-    try
-    {
-        var jobDetails = await Context.TucJobBookings
-            .Where(j => j.UcbkId == jobId)
-            .Include(j => j.UcbkClient)                   // Include client info
-            .Include(j => j.UcbkSpeedNavigation)                // Include job type info
-            .Select(job => new JobRatingDetailsDto
-            {
-                // Map the entity properties to our model
-                JobId = job.UcbkId,
-                ClientId = job.UcbkClientId ?? 0,
-                FromId = (int)job.UcbkFrom,
-                ToId = (int)job.UcbkTo,
-                SpeedId = job.UcbkSpeed ?? 0,
-                IsPedal = job.UcbkCbd ?? false,
-                IsVan = job.UcbkVan,
-                IsReturnJob = job.UcbkReturn,
-                Weight = job.UcbkWeight ?? 0,
-                SizeId = job.UcbkSize ?? 0,
-                IncludeFuelSurcharge = false,
-                IsDirect = job.Direct,
-                AcceptedJobTypeId = job.AcceptedJobTypeId ?? 0,
-                OurRef = job.UcbkOurRef,
-                RefA = job.UcbkClientRefa,
-                RefB = job.UcbkClientRefb,
-                Quantity = job.Quantity.HasValue ? (int)job.Quantity : 0,
-                BookedDate = job.UcbkDate ?? DateTime.MinValue,
-
-                // Coordinates
-                PickupLat = job.PickUpLatitude ?? 0,
-                PickupLong = job.PickUpLongitude ?? 0,
-                DeliveryLat = job.DeliveryLatitude ?? 0,
-                DeliveryLong = job.DeliveryLongitude ?? 0,
-
-                // US-specific properties
-                FromZip = job.PickupAddressLine7,
-                ToZip = job.DeliveryAddressLine7,
-                DangerousGoods = job.Dgdocument ?? false,
-                TotalPallets = job.TucJobBookingItems.Count,
-                ExtraStopOffs = 0,
-                DryIceWeight = job.DryIceWeight ?? 0,
-                WaitTime = 0,
-
-                // Flight-specific properties
-                FromAirportId = job.FromAirportId,
-                ToAirportId = job.ToAirportId,
-                FromAgentId = job.FromAirport != null ? job.FromAirport.AgentId : null,
-                ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
-
-                // Client-specific rate information
-                ClientDiscount = job.UcbkClient.Discount,
-                Cubic = job.TucJobBookingItems.Sum(i => i.Cubic),
-            })
-            .FirstOrDefaultAsync();
-
-        ArgumentNullException.ThrowIfNull(jobDetails);
-
-        return jobDetails;
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "Error retrieving job details for rating. Job ID: {JobId}", jobId);
-        throw new ApplicationException($"Failed to retrieve job details for rating: {ex.Message}", ex);
-    }
-}
-
-public async Task UpdateJobRateAsync(int jobId, decimal rate, string noteText)
-{
-    try
-    {
-        var job = await Context.TucJobs.FindAsync(jobId);
-        ArgumentNullException.ThrowIfNull(job);
-
-        // Update job with new rate
-        job.UcjbAmount = rate;
+        await Context.TucNoteTypes.AddAsync(newType);
         await Context.SaveChangesAsync();
+    }
 
-        // Record change in note
-        await SaveNoteAsync(jobId, noteText);
-    }
-    catch (Exception ex)
+    public async Task<JobRatingDetailsDto> GetJobDetailsForRating(int jobId)
     {
-        Log.Error(ex, "An error occurred updating the rate for job {JobId}", jobId);
-        throw;
+        try
+        {
+            var jobDetails = await Context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .Include(j => j.UcjbClient) // Include client info
+                .Include(j => j.UcjbSpeedNavigation) // Include job type info
+                .Select(job => new JobRatingDetailsDto
+                {
+                    // Map the entity properties to our model
+                    JobId = job.UcjbId,
+                    ClientId = job.UcjbClientId ?? 0,
+                    FromId = job.UcjbFrom ?? 0,
+                    ToId = job.UcjbTo ?? 0,
+                    SpeedId = job.UcjbSpeed ?? 0,
+                    IsPedal = job.UcjbCbd,
+                    IsVan = job.UcjbVan,
+                    IsReturnJob = job.UcjbReturn,
+                    Weight = job.UcjbWeight ?? 0,
+                    SizeId = job.UcjbSize ?? 0,
+                    IncludeFuelSurcharge = false,
+                    IsDirect = job.Direct,
+                    AcceptedJobTypeId = job.AcceptedJobTypeId ?? 0,
+                    OurRef = job.UcjbOurRef,
+                    RefA = job.UcjbClientRefa,
+                    RefB = job.UcjbClientRefb,
+                    Quantity = job.UcjbQty ?? 1,
+                    BookedDate = job.UcjbDate,
+
+                    // Coordinates
+                    PickupLat = job.PickUpLatitude ?? 0,
+                    PickupLong = job.PickUpLongitude ?? 0,
+                    DeliveryLat = job.DeliveryLatitude ?? 0,
+                    DeliveryLong = job.DeliveryLongitude ?? 0,
+
+                    // US-specific properties
+                    FromZip = job.PickupAddressLine7,
+                    ToZip = job.DeliveryAddressLine7,
+                    DangerousGoods = job.Dgdocument ?? false,
+                    TotalPallets = job.TucJobItems.Count,
+                    ExtraStopOffs = 0,
+                    DryIceWeight = job.DryIceWeight ?? 0,
+                    WaitTime = 0,
+
+                    // Flight-specific properties
+                    FromAirportId = job.FromAirportId,
+                    ToAirportId = job.ToAirportId,
+                    FromAgentId = job.FromAirport != null ? job.FromAirport.AgentId : null,
+                    ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
+
+                    // Client-specific rate information
+                    ClientDiscount = job.UcjbClient.Discount,
+                    Cubic = job.TucJobItems.Sum(i => i.Cubic),
+                    IsManuallyRated = job.RatedManually
+                })
+                .FirstOrDefaultAsync();
+
+            ArgumentNullException.ThrowIfNull(jobDetails);
+
+            return jobDetails;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error retrieving job details for rating. Job ID: {JobId}", jobId);
+            throw new ApplicationException($"Failed to retrieve job details for rating: {ex.Message}", ex);
+        }
     }
-}
+
+    public async Task<JobRatingDetailsDto> GetJobBookingDetailsForRating(int jobId)
+    {
+        try
+        {
+            var jobDetails = await Context.TucJobBookings
+                .Where(j => j.UcbkId == jobId)
+                .Include(j => j.UcbkClient) // Include client info
+                .Include(j => j.UcbkSpeedNavigation) // Include job type info
+                .Select(job => new JobRatingDetailsDto
+                {
+                    // Map the entity properties to our model
+                    JobId = job.UcbkId,
+                    ClientId = job.UcbkClientId ?? 0,
+                    FromId = (int)job.UcbkFrom,
+                    ToId = (int)job.UcbkTo,
+                    SpeedId = job.UcbkSpeed ?? 0,
+                    IsPedal = job.UcbkCbd ?? false,
+                    IsVan = job.UcbkVan,
+                    IsReturnJob = job.UcbkReturn,
+                    Weight = job.UcbkWeight ?? 0,
+                    SizeId = job.UcbkSize ?? 0,
+                    IncludeFuelSurcharge = false,
+                    IsDirect = job.Direct,
+                    AcceptedJobTypeId = job.AcceptedJobTypeId ?? 0,
+                    OurRef = job.UcbkOurRef,
+                    RefA = job.UcbkClientRefa,
+                    RefB = job.UcbkClientRefb,
+                    Quantity = job.Quantity.HasValue ? (int)job.Quantity : 0,
+                    BookedDate = job.UcbkDate ?? DateTime.MinValue,
+
+                    // Coordinates
+                    PickupLat = job.PickUpLatitude ?? 0,
+                    PickupLong = job.PickUpLongitude ?? 0,
+                    DeliveryLat = job.DeliveryLatitude ?? 0,
+                    DeliveryLong = job.DeliveryLongitude ?? 0,
+
+                    // US-specific properties
+                    FromZip = job.PickupAddressLine7,
+                    ToZip = job.DeliveryAddressLine7,
+                    DangerousGoods = job.Dgdocument ?? false,
+                    TotalPallets = job.TucJobBookingItems.Count,
+                    ExtraStopOffs = 0,
+                    DryIceWeight = job.DryIceWeight ?? 0,
+                    WaitTime = 0,
+
+                    // Flight-specific properties
+                    FromAirportId = job.FromAirportId,
+                    ToAirportId = job.ToAirportId,
+                    FromAgentId = job.FromAirport != null ? job.FromAirport.AgentId : null,
+                    ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
+
+                    // Client-specific rate information
+                    ClientDiscount = job.UcbkClient.Discount,
+                    Cubic = job.TucJobBookingItems.Sum(i => i.Cubic),
+                })
+                .FirstOrDefaultAsync();
+
+            ArgumentNullException.ThrowIfNull(jobDetails);
+
+            return jobDetails;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error retrieving job details for rating. Job ID: {JobId}", jobId);
+            throw new ApplicationException($"Failed to retrieve job details for rating: {ex.Message}", ex);
+        }
+    }
+
+    public async Task UpdateJobRateAsync(int jobId, decimal rate, string noteText)
+    {
+        try
+        {
+            var job = await Context.TucJobs.FindAsync(jobId);
+            ArgumentNullException.ThrowIfNull(job);
+
+            // Update job with a new rate
+            job.UcjbAmount = rate;
+            await Context.SaveChangesAsync();
+
+            // Record change in note
+            await SaveNoteAsync(jobId, noteText);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred updating the rate for job {JobId}", jobId);
+            throw;
+        }
+    }
+
+    public async Task<int> AddStopToJobAsync(int jobId, EditAddressDialogViewModel pickUpAddress, EditAddressDialogViewModel deliveryAddress)
+    {
+        var jobStopId = new OutputParameter<int?>();
+        var returnValue = new OutputParameter<int>();
+
+        await Context.Procedures.DD_stpJob_AddStop_InsertJobAsync(
+            jobID: jobId,
+            newFromAddress: pickUpAddress.FullAddress,
+            newFromAddressLine1: pickUpAddress.AddressLine1,
+            newFromAddressLine2: pickUpAddress.AddressLine2,
+            newFromAddressLine3: pickUpAddress.AddressLine3,
+            newFromAddressLine4: pickUpAddress.AddressLine4,
+            newFromAddressLine5: pickUpAddress.AddressLine5,
+            newFromAddressLine6: pickUpAddress.AddressLine6,
+            newFromAddressLine7: pickUpAddress.AddressLine7,
+            newFromContactName: pickUpAddress.ContactInfo.Name,
+            newFromContactPhone: pickUpAddress.ContactInfo.Phone,
+            newToAddress: deliveryAddress.FullAddress,
+            newToAddressLine1: deliveryAddress.AddressLine1,
+            newToAddressLine2: deliveryAddress.AddressLine2,
+            newToAddressLine3: deliveryAddress.AddressLine3,
+            newToAddressLine4: deliveryAddress.AddressLine4,
+            newToAddressLine5: deliveryAddress.AddressLine5,
+            newToAddressLine6: deliveryAddress.AddressLine6,
+            newToAddressLine7: deliveryAddress.AddressLine7,
+            newToContactName: deliveryAddress.ContactInfo.Name,
+            newToContactPhone: deliveryAddress.ContactInfo.Phone,
+            jobStopID: jobStopId,
+            returnValue: returnValue
+        );
+
+        return jobStopId.Value ?? 0;
+    }
 }
