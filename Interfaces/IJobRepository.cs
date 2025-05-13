@@ -354,28 +354,7 @@ public interface IJobRepository
         DateTime booked
     );
 
-    Task RateJobUsAsync(
-        int jobId,
-        int clientId,
-        int speed,
-        string fromZip,
-        string toZip,
-        decimal totalMiles,
-        decimal fromMiles,
-        decimal toMiles,
-        int weight,
-        DateTime booked,
-        int size,
-        bool dangerousGoods,
-        int totalPallets,
-        int extraStopOffs,
-        int dryIceWeight,
-        int waitTime,
-        int? fromAgentId,
-        int? fromAirportId,
-        int? toAgentId,
-        int? toAirportId
-    );
+    Task RateJobUsAsync(RateJobUsDto dto);
 
     Task<TucJobType> GetJobTypeById(int speedId);
     Task<TucJobTypeGrouping> GetJobTypeGrouping(int groupingId);
@@ -409,5 +388,5 @@ public interface IJobRepository
     Task<List<TimeZoneSuggestion>> GetTimeZoneOptions();
     Task UpdateDeliverByTime(int jobId, string deliverByTime, int timeZoneId);
     Task UpdatePickUpTime(int jobId, string pickUpTime, int timeZoneId);
-
+    Task<JobRatingDetailsDto> GetJobBookingDetailsForRating(int jobId);
 }

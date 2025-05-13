@@ -1037,7 +1037,6 @@ class NationwideControl extends BaseController {
         try {
             this.mapConfig = this.calculateMapBounds(job);
             console.log('Calculated map bounds!');
-            console.log(this.mapConfig);
         } catch (error) {
             console.error(error);
             this.toastrService.showErrorToast('An unexpected error occured displaying this job on the map');
@@ -1068,14 +1067,25 @@ class NationwideControl extends BaseController {
 
         // Zoom calculation - adjusted for larger distances
         let zoom;
-        if (maxDiff > 40) zoom = 3; else if (maxDiff > 20) zoom = 4; else if (maxDiff > 10) zoom = 5; else if (maxDiff > 5) zoom = 6; else if (maxDiff > 2) zoom = 7; else if (maxDiff > 1) zoom = 8; else if (maxDiff > 0.5) zoom = 9; else if (maxDiff > 0.1) zoom = 10; else zoom = 12;
+        if (maxDiff > 40) zoom = 3; else if (maxDiff > 20) zoom = 4;
+        else if (maxDiff > 10) zoom = 5; else if (maxDiff > 5) zoom = 6;
+        else if (maxDiff > 2) zoom = 7; else if (maxDiff > 1) zoom = 8;
+        else if (maxDiff > 0.5) zoom = 9; else if (maxDiff > 0.1) zoom = 10; else zoom = 12;
 
         return {
             center: {
-                lat: centerLat, lng: centerLng
-            }, zoom: zoom, job: {
-                id: job.id, pickup: pickupCoords, delivery: deliveryCoords, childJobs: {}
-            }, selectedJobIndex: 0
+                lat: centerLat,
+                lng: centerLng
+            },
+            zoom: zoom,
+            job: {
+                id: job.id,
+                pickup: pickupCoords,
+                delivery: deliveryCoords,
+                childJobs: {},
+                flight: job.speedId === 415,
+            },
+            selectedJobIndex: 0
         };
     }
 
@@ -1186,7 +1196,7 @@ class NationwideControl extends BaseController {
             if (this.lastDepartureTime) {
                 departureDate = moment(this.lastDepartureTime);
             } else if (this.currentJob.booked) {
-                departureDate = moment(this.currentJob.booked); 
+                departureDate = moment(this.currentJob.booked);
             } else {
                 departureDate = now;
             }

@@ -1078,57 +1078,36 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         return curAmount.Value ?? 0;
     }
 
-    public async Task RateJobUsAsync(
-        int jobId,
-        int clientId,
-        int speed,
-        string fromZip,
-        string toZip,
-        decimal totalMiles,
-        decimal fromMiles,
-        decimal toMiles,
-        int weight,
-        DateTime booked,
-        int size,
-        bool dangerousGoods,
-        int totalPallets,
-        int extraStopOffs,
-        int dryIceWeight,
-        int waitTime,
-        int? fromAgentId,
-        int? fromAirportId,
-        int? toAgentId,
-        int? toAirportId
-    )
+    public async Task RateJobUsAsync(RateJobUsDto dto)
     {
         var rate = new OutputParameter<decimal?>();
         var description = new OutputParameter<string>();
         var returnValue = new OutputParameter<int>();
 
         await Context.Procedures.DD_stpJob_Rate_DescribedAsync(
-            clientID: clientId,
-            speedID: speed,
-            fromZipCode: string.IsNullOrEmpty(fromZip) ? null : int.Parse(fromZip),
+            clientID: dto.ClientId,
+            speedID: dto.Speed,
+            fromZipCode: string.IsNullOrEmpty(dto.FromZip) ? null : int.Parse(dto.FromZip),
             fromState: null,
-            toZipCode: string.IsNullOrEmpty(toZip) ? null : int.Parse(toZip),
+            toZipCode: string.IsNullOrEmpty(dto.ToZip) ? null : int.Parse(dto.ToZip),
             toState: null,
-            totalDistance: totalMiles,
-            fromMiles: fromMiles,
-            toMiles: toMiles,
-            totalWeight: weight,
-            quantity: null,
-            cubic: null,
-            totalPallets: totalPallets,
-            extraStopOffs: extraStopOffs,
-            booked: booked,
-            vehicleSizeID: size,
-            dangerousGoods: dangerousGoods,
-            dryIceWeight: dryIceWeight,
-            waitTime: waitTime,
-            fromAgentId: fromAgentId,
-            fromAirportId: fromAirportId,
-            toAgentId: toAgentId,
-            toAirportId: toAirportId,
+            totalDistance: dto.TotalMiles,
+            fromMiles: dto.FromMiles,
+            toMiles: dto.ToMiles,
+            totalWeight: dto.Weight,
+            quantity: dto.Quantity,
+            cubic: dto.Cubic,
+            totalPallets: dto.TotalPallets,
+            extraStopOffs: dto.ExtraStopOffs,
+            booked: dto.Booked,
+            vehicleSizeID: dto.Size,
+            dangerousGoods: dto.DangerousGoods,
+            dryIceWeight: dto.DryIceWeight,
+            waitTime: dto.WaitTime,
+            fromAgentId: dto.FromAgentId,
+            fromAirportId: dto.FromAirportId,
+            toAgentId: dto.ToAgentId,
+            toAirportId: dto.ToAirportId,
             description: description,
             rate: rate,
             returnValue: returnValue
@@ -1136,7 +1115,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
         Log.Information("Pricing breakdown is: {DescriptionValue}", description.Value);
 
-        var effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
+        var effectiveJobId = await GetJobRelationshipInfoAsync(dto.JobId);
 
         await Context.Procedures.DD_InsertPricingBreakdownAsync(
             jobID: effectiveJobId,
@@ -1146,7 +1125,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         );
 
         var printableRate = rate.Value ?? 0;
-        await SaveNoteAsync(jobId, $"Repriced to {printableRate}", true);
+        await SaveNoteAsync(dto.JobId, $"Repriced to {printableRate}", true);
     }
 
     public async Task<TucJobType> GetJobTypeById(int speedId)
@@ -1770,7 +1749,6 @@ public async Task<JobRatingDetailsDto> GetJobDetailsForRating(int jobId)
 {
     try
     {
-        // Use a single LINQ query with eager loading to fetch all related data
         var jobDetails = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Include(j => j.UcjbClient)                   // Include client info
@@ -1803,7 +1781,7 @@ public async Task<JobRatingDetailsDto> GetJobDetailsForRating(int jobId)
                 DeliveryLat = job.DeliveryLatitude ?? 0,
                 DeliveryLong = job.DeliveryLongitude ?? 0,
 
-                // US specific properties
+                // US-specific properties
                 FromZip = job.PickupAddressLine7,
                 ToZip = job.DeliveryAddressLine7,
                 DangerousGoods = job.Dgdocument ?? false,
@@ -1812,7 +1790,7 @@ public async Task<JobRatingDetailsDto> GetJobDetailsForRating(int jobId)
                 DryIceWeight = job.DryIceWeight ?? 0,
                 WaitTime = 0,
 
-                // Flight specific properties
+                // Flight-specific properties
                 FromAirportId = job.FromAirportId,
                 ToAirportId = job.ToAirportId,
                 FromAgentId = job.FromAirport != null ? job.FromAirport.AgentId : null,
@@ -1820,6 +1798,76 @@ public async Task<JobRatingDetailsDto> GetJobDetailsForRating(int jobId)
 
                 // Client-specific rate information
                 ClientDiscount = job.UcjbClient.Discount,
+                Cubic = job.TucJobItems.Sum(i => i.Cubic),
+                IsManuallyRated = job.RatedManually
+            })
+            .FirstOrDefaultAsync();
+
+        ArgumentNullException.ThrowIfNull(jobDetails);
+
+        return jobDetails;
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Error retrieving job details for rating. Job ID: {JobId}", jobId);
+        throw new ApplicationException($"Failed to retrieve job details for rating: {ex.Message}", ex);
+    }
+}
+
+public async Task<JobRatingDetailsDto> GetJobBookingDetailsForRating(int jobId)
+{
+    try
+    {
+        var jobDetails = await Context.TucJobBookings
+            .Where(j => j.UcbkId == jobId)
+            .Include(j => j.UcbkClient)                   // Include client info
+            .Include(j => j.UcbkSpeedNavigation)                // Include job type info
+            .Select(job => new JobRatingDetailsDto
+            {
+                // Map the entity properties to our model
+                JobId = job.UcbkId,
+                ClientId = job.UcbkClientId ?? 0,
+                FromId = (int)job.UcbkFrom,
+                ToId = (int)job.UcbkTo,
+                SpeedId = job.UcbkSpeed ?? 0,
+                IsPedal = job.UcbkCbd ?? false,
+                IsVan = job.UcbkVan,
+                IsReturnJob = job.UcbkReturn,
+                Weight = job.UcbkWeight ?? 0,
+                SizeId = job.UcbkSize ?? 0,
+                IncludeFuelSurcharge = false,
+                IsDirect = job.Direct,
+                AcceptedJobTypeId = job.AcceptedJobTypeId ?? 0,
+                OurRef = job.UcbkOurRef,
+                RefA = job.UcbkClientRefa,
+                RefB = job.UcbkClientRefb,
+                Quantity = job.Quantity.HasValue ? (int)job.Quantity : 0,
+                BookedDate = job.UcbkDate ?? DateTime.MinValue,
+
+                // Coordinates
+                PickupLat = job.PickUpLatitude ?? 0,
+                PickupLong = job.PickUpLongitude ?? 0,
+                DeliveryLat = job.DeliveryLatitude ?? 0,
+                DeliveryLong = job.DeliveryLongitude ?? 0,
+
+                // US-specific properties
+                FromZip = job.PickupAddressLine7,
+                ToZip = job.DeliveryAddressLine7,
+                DangerousGoods = job.Dgdocument ?? false,
+                TotalPallets = job.TucJobBookingItems.Count,
+                ExtraStopOffs = 0,
+                DryIceWeight = job.DryIceWeight ?? 0,
+                WaitTime = 0,
+
+                // Flight-specific properties
+                FromAirportId = job.FromAirportId,
+                ToAirportId = job.ToAirportId,
+                FromAgentId = job.FromAirport != null ? job.FromAirport.AgentId : null,
+                ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
+
+                // Client-specific rate information
+                ClientDiscount = job.UcbkClient.Discount,
+                Cubic = job.TucJobBookingItems.Sum(i => i.Cubic),
             })
             .FirstOrDefaultAsync();
 

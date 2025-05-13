@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using Microsoft.EntityFrameworkCore;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
@@ -17,12 +15,5 @@ public class BaseRepository(IDbContextFactory<DespatchContext> contextFactory):I
     public void Dispose()
     {
         _context?.Dispose();
-    }
-
-    protected async Task<TimeZoneInfo> GetTimeZoneInfoByIdAsync(int timeZoneId)
-    {
-        var timeZone = await Context.TimeZones.Select(tz => tz.Name).FirstOrDefaultAsync();
-        var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timeZone);
-        return timeZoneInfo;
     }
 }

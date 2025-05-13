@@ -239,6 +239,8 @@
     <_ContentIncludedByDefault Remove="wwwroot\app\components\prebooks\prebook.service.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\common\warning-card\warning-card.component.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\common\warning-card\warning-card.template.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\autocomplete\angular-auto-complete.css" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\autocomplete\angular-auto-complete.js" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
@@ -251,10 +253,6 @@
     <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.template.html" />
     <None Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.html" />
     <None Include="wwwroot\css\udispatch.less" />
-    <None Include="wwwroot\lib\material-time-picker\md-time-picker.css" />
-    <None Include="wwwroot\lib\material-time-picker\md-time-picker.js" />
-    <None Include="wwwroot\lib\material-time-picker\md-time-picker.min.css" />
-    <None Include="wwwroot\lib\material-time-picker\md-time-picker.min.js" />
     <None Include="wwwroot\lib\ng-material-floating-button\mfb\dist\lib\modernizr.touch.js" />
     <None Include="wwwroot\lib\ng-material-floating-button\mfb\dist\mfb.css" />
     <None Include="wwwroot\lib\ng-material-floating-button\mfb\dist\mfb.css.map" />

@@ -20,55 +20,6 @@ public class RateJobService(
 {
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient("HereMaps");
 
-    public async Task<JobRateResult> CalculateJobRateUs(JobRateRequest request)
-    {
-        var speed = await jobRepository.GetJobTypeById(request.SpeedId);
-        var speedGrouping = await jobRepository.GetJobTypeGrouping(speed.GroupingId);
-
-        var result = new JobRateResult
-        {
-            TotalMiles = 0,
-            FromMiles = 0,
-            ToMiles = 0
-        };
-
-        if (speedGrouping.GroupingName != "Flight")
-        {
-            result.TotalMiles = await CalculateRoadDistance(
-                request.PickupLat,
-                request.PickupLong,
-                request.DeliveryLat,
-                request.DeliveryLong);
-        }
-        else
-        {
-            // Get closest airports
-            var closestFromAirports = await jobRepository.GetClosestAirports(
-                request.PickupLat ?? 0,
-                request.PickupLong ?? 0);
-            var closestToAirports = await jobRepository.GetClosestAirports(
-                request.DeliveryLat ?? 0,
-                request.DeliveryLong ?? 0);
-
-            result.FromAirport = closestFromAirports.First();
-            result.ToAirport = closestToAirports.First();
-
-            result.FromMiles = await CalculateRoadDistance(
-                request.PickupLat,
-                request.PickupLong,
-                result.FromAirport.Latitude,
-                result.FromAirport.Longitude);
-
-            result.ToMiles = await CalculateRoadDistance(
-                result.ToAirport.Latitude,
-                result.ToAirport.Longitude,
-                request.DeliveryLat,
-                request.DeliveryLong);
-        }
-
-        return result;
-    }
-
     public async Task<decimal> RateJob(JobRatingDetailsDto jobDetails)
     {
         try
@@ -102,8 +53,6 @@ public class RateJobService(
         }
     }
 
-    // Keep the old method for backward compatibility
-
     public async Task RateJobUs(JobRatingDetailsDto jobDetails)
     {
         try
@@ -121,28 +70,31 @@ public class RateJobService(
             );
 
             // Calculate final rate
-            await jobRepository.RateJobUsAsync(
-                jobDetails.JobId,
-                jobDetails.ClientId,
-                jobDetails.SpeedId,
-                jobDetails.FromZip,
-                jobDetails.ToZip,
-                (decimal)distanceResult.TotalMiles, // Used for non-flight jobs
-                (decimal)distanceResult.FromMiles, // Used for flight jobs
-                (decimal)distanceResult.ToMiles, // Used for flight jobs
-                (int)jobDetails.Weight,
-                jobDetails.BookedDate,
-                jobDetails.SizeId,
-                jobDetails.DangerousGoods,
-                jobDetails.TotalPallets,
-                jobDetails.ExtraStopOffs,
-                (int)jobDetails.DryIceWeight,
-                jobDetails.WaitTime,
-                distanceResult.FromAirport?.AgentId ?? jobDetails.FromAgentId,
-                distanceResult.FromAirport?.AirportId ?? jobDetails.FromAirportId,
-                distanceResult.ToAirport?.AgentId ?? jobDetails.ToAgentId,
-                distanceResult.ToAirport?.AirportId ?? jobDetails.ToAirportId
-            );
+            await jobRepository.RateJobUsAsync(new RateJobUsDto
+            {
+                JobId = jobDetails.JobId,
+                ClientId = jobDetails.ClientId,
+                Speed = jobDetails.SpeedId,
+                FromZip = jobDetails.FromZip,
+                ToZip = jobDetails.ToZip,
+                TotalMiles = (decimal)distanceResult.TotalMiles, // Used for non-flight jobs
+                FromMiles = (decimal)distanceResult.FromMiles, // Used for flight jobs
+                ToMiles = (decimal)distanceResult.ToMiles, // Used for flight jobs
+                Weight = (int)jobDetails.Weight,
+                Booked = jobDetails.BookedDate,
+                Size = jobDetails.SizeId,
+                DangerousGoods = jobDetails.DangerousGoods,
+                TotalPallets = jobDetails.TotalPallets,
+                ExtraStopOffs = jobDetails.ExtraStopOffs,
+                DryIceWeight = (int)jobDetails.DryIceWeight,
+                WaitTime = jobDetails.WaitTime,
+                FromAgentId = distanceResult.FromAirport?.AgentId ?? jobDetails.FromAgentId,
+                FromAirportId = distanceResult.FromAirport?.AirportId ?? jobDetails.FromAirportId,
+                ToAgentId = distanceResult.ToAirport?.AgentId ?? jobDetails.ToAgentId,
+                ToAirportId = distanceResult.ToAirport?.AirportId ?? jobDetails.ToAirportId,
+                Quantity = jobDetails.Quantity,
+                Cubic = jobDetails.Cubic
+            });
         }
         catch (Exception ex)
         {
@@ -150,7 +102,56 @@ public class RateJobService(
             throw new ApplicationException($"Failed to calculate US job rate for job ID {jobDetails.JobId}", ex);
         }
     }
-    
+
+     private async Task<JobRateResult> CalculateJobRateUs(JobRateRequest request)
+        {
+            var speed = await jobRepository.GetJobTypeById(request.SpeedId);
+            var speedGrouping = await jobRepository.GetJobTypeGrouping(speed.GroupingId);
+
+            var result = new JobRateResult
+            {
+                TotalMiles = 0,
+                FromMiles = 0,
+                ToMiles = 0
+            };
+
+            if (speedGrouping.GroupingName != "Flight")
+            {
+                result.TotalMiles = await CalculateRoadDistance(
+                    request.PickupLat,
+                    request.PickupLong,
+                    request.DeliveryLat,
+                    request.DeliveryLong);
+            }
+            else
+            {
+                // Get closest airports
+                var closestFromAirports = await jobRepository.GetClosestAirports(
+                    request.PickupLat ?? 0,
+                    request.PickupLong ?? 0);
+                var closestToAirports = await jobRepository.GetClosestAirports(
+                    request.DeliveryLat ?? 0,
+                    request.DeliveryLong ?? 0);
+
+                result.FromAirport = closestFromAirports.First();
+                result.ToAirport = closestToAirports.First();
+
+                result.FromMiles = await CalculateRoadDistance(
+                    request.PickupLat,
+                    request.PickupLong,
+                    result.FromAirport.Latitude,
+                    result.FromAirport.Longitude);
+
+                result.ToMiles = await CalculateRoadDistance(
+                    result.ToAirport.Latitude,
+                    result.ToAirport.Longitude,
+                    request.DeliveryLat,
+                    request.DeliveryLong);
+            }
+
+            return result;
+        }
+
     private async Task<double> CalculateRoadDistance(decimal? fromLatitude, decimal? fromLongitude, decimal? toLatitude,
         decimal? toLongitude)
     {

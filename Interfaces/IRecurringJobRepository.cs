@@ -23,8 +23,6 @@ public interface IRecurringJobRepository
 
     Task<List<PrebookListViewModel>> PreBookJobListAsync();
 
-    Task UpdateTucJobRecurring(int jobId, string fieldName, string value);
-
     Task UpdateTucJobRecurring(int jobId, JobProperty property, string value);
     Task<List<TucNoteViewModel>> GetRecurringNotesByJobIdAsync(int jobId);
     void Dispose();
