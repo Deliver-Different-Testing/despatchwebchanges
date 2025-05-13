@@ -1907,7 +1907,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         }
     }
 
-    public async Task<int> AddStopToJobAsync(int jobId, EditAddressDialogViewModel pickUpAddress, EditAddressDialogViewModel deliveryAddress)
+    public async Task<int> AddStopToJobAsync(int jobId,
+        EditAddressDialogViewModel pickUpAddress, EditAddressDialogViewModel deliveryAddress)
     {
         var jobStopId = new OutputParameter<int?>();
         var returnValue = new OutputParameter<int>();
@@ -1922,8 +1923,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             newFromAddressLine5: pickUpAddress.AddressLine5,
             newFromAddressLine6: pickUpAddress.AddressLine6,
             newFromAddressLine7: pickUpAddress.AddressLine7,
-            newFromContactName: pickUpAddress.ContactInfo.Name,
-            newFromContactPhone: pickUpAddress.ContactInfo.Phone,
+            newFromContactName: pickUpAddress.ContactInfo?.Name ?? string.Empty,
+            newFromContactPhone: pickUpAddress.ContactInfo?.Phone ?? string.Empty,
             newToAddress: deliveryAddress.FullAddress,
             newToAddressLine1: deliveryAddress.AddressLine1,
             newToAddressLine2: deliveryAddress.AddressLine2,
@@ -1932,8 +1933,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             newToAddressLine5: deliveryAddress.AddressLine5,
             newToAddressLine6: deliveryAddress.AddressLine6,
             newToAddressLine7: deliveryAddress.AddressLine7,
-            newToContactName: deliveryAddress.ContactInfo.Name,
-            newToContactPhone: deliveryAddress.ContactInfo.Phone,
+            newToContactName: deliveryAddress.ContactInfo?.Name ?? string.Empty,
+            newToContactPhone: deliveryAddress.ContactInfo?.Phone ?? string.Empty,
             jobStopID: jobStopId,
             returnValue: returnValue
         );
