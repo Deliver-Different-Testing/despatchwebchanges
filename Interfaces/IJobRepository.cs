@@ -389,4 +389,5 @@ public interface IJobRepository
     Task UpdateDeliverByTime(int jobId, string deliverByTime, int timeZoneId);
     Task UpdatePickUpTime(int jobId, string pickUpTime, int timeZoneId);
     Task<JobRatingDetailsDto> GetJobBookingDetailsForRating(int jobId);
+    Task<int> AddStopToJobAsync(int jobId, EditAddressDialogViewModel pickUpAddress, EditAddressDialogViewModel deliveryAddress);
 }

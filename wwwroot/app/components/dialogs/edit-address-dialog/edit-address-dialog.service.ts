@@ -1,7 +1,7 @@
 import {AddressViewModel, EditAddressDialogViewModel} from "../../../interfaces/job.interface";
-import EditAddressDialogController from "./edit-address-dialog.controller";
-import {bindAllMethods} from "../../../bindAllMethods";
+import EditAddressDialogController from "./edit-address-dialog.controller";;
 import {IDocumentService, IServiceProvider, material} from "angular";
+import {bindAllMethods} from "../../../functions/bindAllMethods";
 
 export class EditAddressDialogService implements IServiceProvider {
     static $inject = [
@@ -21,7 +21,9 @@ export class EditAddressDialogService implements IServiceProvider {
         return this;
     }
 
-    async openEditAddressDialog($event: MouseEvent, addressDetails: AddressViewModel, title: string = 'Edit Address', submitLabel: string = 'Save') {
+    async openEditAddressDialog(addressDetails: AddressViewModel, $event?: MouseEvent,
+                                title: string = 'Edit Address', submitLabel: string = 'Save',
+                                showContactInfo: boolean = false): Promise<EditAddressDialogViewModel | undefined> {
         try {
             const newAddress: EditAddressDialogViewModel = await this.$mdDialog.show({
                 controller: EditAddressDialogController,
@@ -34,14 +36,15 @@ export class EditAddressDialogService implements IServiceProvider {
                 locals: {
                     addressDetails,
                     title,
-                    submitLabel
+                    submitLabel,
+                    showContactInfo
                 }
             });
 
             console.log('EditAddressDialogService: newAddress', newAddress);
             return newAddress;
         } catch (error) {
-            if(error === undefined) {
+            if (error === undefined) {
                 return;
             }
 

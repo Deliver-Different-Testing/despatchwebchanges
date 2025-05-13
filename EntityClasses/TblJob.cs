@@ -378,4 +378,8 @@ public partial class TblJob
     public decimal? SubContractorFuelPercentage { get; set; }
 
     public decimal? SubContractorBonusPercentage { get; set; }
+
+    public int? PickRunOrder { get; set; }
+
+    public bool? Archived { get; set; }
 }

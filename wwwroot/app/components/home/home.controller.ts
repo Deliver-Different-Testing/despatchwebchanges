@@ -2142,7 +2142,7 @@ class HomeController extends BaseController {
         try {
             if (!currentJob.deliveryAddress) return;
 
-            const newAddress = await this.editAddressDialogService.openEditAddressDialog($event, currentJob.deliveryAddress)
+            const newAddress = await this.editAddressDialogService.openEditAddressDialog(currentJob.deliveryAddress, $event)
             if (!newAddress) return;
 
             await this.handleNewAddressForSplitJobs(newAddress, currentJob);

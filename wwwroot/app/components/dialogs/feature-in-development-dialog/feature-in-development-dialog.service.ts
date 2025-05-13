@@ -1,6 +1,6 @@
 import FeatureInDevelopmentDialogController from "./feature-in-development-dialog.controller";
 import {IDocumentService, material} from "angular";
-import {bindAllMethods} from "../../../bindAllMethods";
+import {bindAllMethods} from "../../../functions/bindAllMethods";
 
 export class FeatureInDevelopmentDialogService {
     static $inject = [

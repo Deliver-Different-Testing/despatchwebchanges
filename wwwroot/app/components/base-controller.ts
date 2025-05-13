@@ -1,4 +1,4 @@
-import {bindAllMethods} from "../bindAllMethods";
+import {bindAllMethods} from "../functions/bindAllMethods";
 
 class BaseController implements angular.IController {
     protected eventDeregistrations: Array<() => void> = [];

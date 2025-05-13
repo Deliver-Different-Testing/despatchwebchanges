@@ -1,5 +1,6 @@
 import {IJobNote, INoteType} from "../interfaces/job.interface";
 import moment from "moment";
+import {bindAllMethods} from "../functions/bindAllMethods";
 
 class NoteService {
     static $inject = [
@@ -9,6 +10,7 @@ class NoteService {
     constructor(
         private $http: angular.IHttpService
     ) {
+        bindAllMethods(this);
         console.log('Notes service initialized');
     }
 

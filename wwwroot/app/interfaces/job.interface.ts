@@ -214,6 +214,12 @@ export interface AddressViewModel {
 
 export interface EditAddressDialogViewModel extends AddressViewModel {
     stateAbbreviation?: string;
+    contactInfo?: ContactInfo;
+}
+
+export interface ContactInfo {
+    name: string;
+    mobile: string;
 }
 
 export interface Suggestion {

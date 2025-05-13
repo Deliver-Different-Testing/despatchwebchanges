@@ -1,4 +1,4 @@
-import {EditAddressDialogViewModel} from "../../../interfaces/job.interface";
+import {ContactInfo, EditAddressDialogViewModel} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
@@ -10,6 +10,7 @@ class EditAddressDialogController extends BaseController {
     static $inject = [
         "$scope",
         "$timeout",
+        "$interval",
         "$mdDialog",
         "DispatchData",
         "toastrService",
@@ -18,7 +19,8 @@ class EditAddressDialogController extends BaseController {
         "UsStatesService",
         "addressDetails",
         "title",
-        "submitLabel"
+        "submitLabel",
+        "showContactInfo",
     ];
 
     private readonly useUsFormat: boolean;
@@ -31,24 +33,35 @@ class EditAddressDialogController extends BaseController {
     marker!: google.maps.Marker;
     usStateList: IStateInfo[];
 
+    // Contact Card
+    isContactCardExpanded: boolean;
+    contactInfo: ContactInfo;
+
     constructor(
         private $scope: angular.IScope,
-        private $timeout: angular.ITimeoutService,
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
         private $mdDialog: angular.material.IDialogService,
         private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
         private NgMap: angular.map.INgMap,
-        APP_CONFIG: AppConfig,
+        appConfig: AppConfig,
         private UsStatesService: UsStatesService,
         public addressDetails: EditAddressDialogViewModel,
         public title: string,
-        public submitLabel: string
+        public submitLabel: string,
+        public showContactInfo: boolean,
     ) {
         super();
-        this.isLoading = false;
+        this.initServices($timeout, $interval);
 
-        this.useUsFormat = APP_CONFIG.US_Customer;
+        this.isLoading = false;
+        this.useUsFormat = appConfig.US_Customer;
         this.addressSearchText = this.addressDetails.fullAddress || '';
+
+        // Contact Card
+        this.contactInfo = {name: '', mobile: ''};
+        this.isContactCardExpanded = false;
 
         this.usStateList = this.UsStatesService.getStates();
         if (this.addressDetails.addressLine6 && !this.addressDetails.stateAbbreviation) {
@@ -58,18 +71,13 @@ class EditAddressDialogController extends BaseController {
             }
         }
 
-        this._initializeMap();
-    }
-
-    private _initializeMap(): void {
-        this.$timeout(() => {
+        this.registerTimeout(() => {
             this.mapDisplay = true;
         }, 500);
 
         this.NgMap.getMap().then((map: google.maps.Map) => {
             console.log("Loading Map!");
             this.map = map;
-            ``
             const mapMarkers = map.get('markers') || [];
             console.log("Map markers:", mapMarkers);
 
@@ -93,7 +101,7 @@ class EditAddressDialogController extends BaseController {
         });
     }
 
-    private _transformSuggestions(data: any): Array<{ id: string, text: string }> {
+    private transformSuggestions(data: any): Array<{ id: string, text: string }> {
         return data.suggestions.map((obj: any) => ({
             id: obj.locationId, text: obj.label.split(", ").reverse().join(", ")
         }))
@@ -102,7 +110,7 @@ class EditAddressDialogController extends BaseController {
     async addressSearchAutocomplete(searchText: string) {
         try {
             const suggestions = await this.DispatchData.autocompleteAddressSearch(searchText);
-            return this._transformSuggestions(suggestions);
+            return this.transformSuggestions(suggestions);
         } catch (error: any) {
             this.toastrService.showErrorToast(error.message);
         }
@@ -117,15 +125,15 @@ class EditAddressDialogController extends BaseController {
             console.log(`Suburb/City = ${returnedLocation.Address.District}`);
             console.log(`PostCode/ZIP = ${returnedLocation.Address.PostalCode}`);
 
-            this._handleUsFormatAddress(returnedLocation);
-            this._updateAddressDetails(returnedLocation);
+            this.handleUsFormatAddress(returnedLocation);
+            this.updateAddressDetails(returnedLocation);
             this.updateMapMarker(returnedLocation);
         } catch (error) {
             console.log("Error: ", error);
         }
     }
 
-    private _handleUsFormatAddress(returnedLocation: any) {
+    private handleUsFormatAddress(returnedLocation: any): void {
         this.addressDetails.addressLine1 = returnedLocation.Address.Place;
         this.addressDetails.addressLine2 = returnedLocation.Address.Subunit;
         this.addressDetails.addressLine3 = returnedLocation.Address.HouseNumber;
@@ -140,13 +148,13 @@ class EditAddressDialogController extends BaseController {
         }
     }
 
-    private _updateAddressDetails(returnedLocation: any) {
+    private updateAddressDetails(returnedLocation: any): void {
         this.addressDetails.latitude = returnedLocation.DisplayPosition.Latitude;
         this.addressDetails.longitude = returnedLocation.DisplayPosition.Longitude;
         this.addressDetails.fullAddress = returnedLocation.Address.Label;
     }
 
-    updateMapMarker(returnedLocation: any) {
+    updateMapMarker(returnedLocation: any): void {
         const latLng = new google.maps.LatLng(returnedLocation.DisplayPosition.Latitude, returnedLocation.DisplayPosition.Longitude);
 
         console.log("Setting map center to:", latLng.toString());
@@ -159,7 +167,7 @@ class EditAddressDialogController extends BaseController {
         this.marker.setVisible(true);
     }
 
-    async submit(addressDetails: EditAddressDialogViewModel) {
+    async submit(addressDetails: EditAddressDialogViewModel): Promise<void> {
         console.log("Starting submit with address details:", addressDetails);
         this.isLoading = true;
 
@@ -167,7 +175,7 @@ class EditAddressDialogController extends BaseController {
             console.log("Using US Format:", this.useUsFormat);
 
             console.log("Processing US address submission");
-            if (!this._validateUsAddress(addressDetails)) {
+            if (!this.validateUsAddress(addressDetails)) {
                 console.warn("US address validation failed");
                 this.isLoading = false;
                 return;
@@ -187,12 +195,16 @@ class EditAddressDialogController extends BaseController {
             addressDetails.addressLine6 = stateObj?.name ?? "";
             console.log("Updated address details with full state name:", addressDetails);
 
-            // Ensure fullAddress is up-to-date
+            // Ensure the fullAddress is up to date
             addressDetails.fullAddress = this.constructFullAddress(addressDetails);
             console.log("Constructed full address:", addressDetails.fullAddress);
 
             this.isLoading = false;
-            console.log("Submitting result to dialog");
+
+            // Add contact info
+            addressDetails.contactInfo = this.contactInfo;
+
+            // Return new address
             this.$mdDialog.hide(addressDetails);
             console.log("Dialog submission complete");
         } catch (error) {
@@ -204,7 +216,7 @@ class EditAddressDialogController extends BaseController {
         }
     }
 
-    private _validateUsAddress(addressDetails: EditAddressDialogViewModel) {
+    private validateUsAddress(addressDetails: EditAddressDialogViewModel): boolean {
         if (!addressDetails.addressLine4 || !addressDetails.addressLine5 || !addressDetails.stateAbbreviation) {
             alert("Please fill in all required fields (Street, City, and State)");
             return false;
@@ -223,11 +235,7 @@ class EditAddressDialogController extends BaseController {
         return [addressDetails.addressLine1, addressDetails.addressLine2, addressDetails.addressLine3, addressDetails.addressLine4, addressDetails.addressLine5, addressDetails.addressLine6, addressDetails.addressLine7, addressDetails.addressLine8].filter(line => line && line.trim() !== "").join(", ");
     }
 
-    copyGpsAddress(address: string) {
-        this.addressSearchText = address;
-    }
-
-    moveMarker(event: google.maps.MapMouseEvent) {
+    moveMarker(event: google.maps.MapMouseEvent): void {
         if (event.latLng) {
             this.addressDetails.latitude = event.latLng.lat();
             this.addressDetails.longitude = event.latLng.lng();
@@ -235,7 +243,7 @@ class EditAddressDialogController extends BaseController {
         }
     };
 
-    markerDragend(event: google.maps.MapMouseEvent) {
+    markerDragend(event: google.maps.MapMouseEvent): void {
         // Get the marker's new position
         const location = event.latLng;
         if (!location) return;
@@ -258,7 +266,7 @@ class EditAddressDialogController extends BaseController {
         }
     }
 
-    placeChanged(place: google.maps.places.PlaceResult) {
+    placeChanged(place: google.maps.places.PlaceResult): void {
         try {
             if (!place.geometry?.location) {
                 this.toastrService.showErrorToast("An error occurred while retrieving address information. Please try again or contact support");
@@ -273,7 +281,11 @@ class EditAddressDialogController extends BaseController {
         }
     }
 
-    cancel() {
+    toggleContactCard(): void {
+        this.isContactCardExpanded = !this.isContactCardExpanded;
+    }
+
+    cancel(): void {
         this.$mdDialog.cancel();
     }
 }

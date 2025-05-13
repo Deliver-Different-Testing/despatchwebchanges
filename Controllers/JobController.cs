@@ -2639,19 +2639,18 @@ public class JobController(
         }
     }
 
-    #region Single use Api models
-
-    public class ClientItemsModel
+    [HttpPost]
+    public async Task<IActionResult> AddStopToJob(int jobId, EditAddressDialogViewModel pickUpAddress, EditAddressDialogViewModel deliveryAddress)
     {
-        public List<int> ServiceIds { get; init; }
-        public decimal TotalCost { get; init; }
+        try
+        {
+            var jobStopId = await jobRepository.AddStopToJobAsync(jobId, pickUpAddress, deliveryAddress);
+            return Json(jobStopId);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error updating job read status");
+            return StatusCode(500, ex.Message);
+        }
     }
-
-    public class UpdateJobPackagesRequest
-    {
-        public int JobId { get; init; }
-        public List<ParcelDimensions> Parcels { get; init; }
-    }
-
-    #endregion
 }

@@ -1,6 +1,6 @@
 import {IDispatchJob, IJob} from "../../../interfaces/job.interface";
 import AddEventDialogController from "./add-event-dialog.controller";
-import {bindAllMethods} from "../../../bindAllMethods";
+import {bindAllMethods} from "../../../functions/bindAllMethods";
 
 class AddEventDialogService implements angular.IServiceProvider {
     static $inject = [

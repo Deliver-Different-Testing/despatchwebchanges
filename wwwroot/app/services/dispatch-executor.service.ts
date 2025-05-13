@@ -2,7 +2,7 @@ import {IDispatchJob, JobQueryParams} from "../interfaces/job.interface";
 import {ActiveCourierViewModel} from "../interfaces/courier.interface";
 import {JobListResponse} from "../interfaces/job-list-response.interface";
 import DispatchCoreService from "./dispatch-core.service";
-import {bindAllMethods} from "../bindAllMethods";
+import {bindAllMethods} from "../functions/bindAllMethods";
 import moment from "moment";
 import ToastrService from "./toastr.service";
 import {ContactID} from "../contants";

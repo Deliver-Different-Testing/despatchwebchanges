@@ -89,6 +89,7 @@ import JobSearchComponent from "./components/jobSearch/jobSearch.controller";
 import FlightDetailsDialogService from "./components/dialogs/flight-details-dialog/flight-details-dialog.service";
 import FlightDetailsDialogController from "./components/dialogs/flight-details-dialog/flight-details-dialog.component";
 import AutoCompleteDialogService from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.service";
+import JobAddStopService from "./services/job-add-stop.service";
 
 const app = angular.module("uDispatch", [
     "ui.router",
@@ -290,5 +291,6 @@ app.service("editParcelDimensionsDialogService", EditParcelDimensionsDialogServi
 app.service("uCSData", JobSearchService);
 app.service("flightDetailsDialogService", FlightDetailsDialogService);
 app.service("autoCompleteDialogService", AutoCompleteDialogService);
+app.service("jobAddStopService", JobAddStopService);
 
 export default app;
