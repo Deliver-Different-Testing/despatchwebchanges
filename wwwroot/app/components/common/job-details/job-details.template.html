@@ -30,7 +30,8 @@
                             <div ng-click="ctrl.switchToRelatedJob($index)">
                                 Job #{{relatedJob.job.text}}
                                 <md-icon md-font-set="material-symbols-outlined"
-                                ng-if="relatedJob.subJobs.length > 0">arrow_drop_down</md-icon>
+                                         ng-if="relatedJob.subJobs.length > 0">arrow_drop_down
+                                </md-icon>
                             </div>
                         </md-tab-label>
                     </md-tab>
@@ -106,7 +107,8 @@
                             <md-icon aria-label="start time" md-font-set="material-symbols-outlined">timer</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">Start Time:</span>
-                                <span class="timing-value">{{ctrl.job.time ? (ctrl.job.time | momentFormat:'HH:mm') + ' (' + ((ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort) + ')' : 'N/A'}}</span>                            </div>
+                                <span class="timing-value">{{ctrl.job.time ? (ctrl.job.time | momentFormat:'HH:mm') + ' (' + ((ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort) + ')' : 'N/A'}}</span>
+                            </div>
                         </md-list-item>
                     </md-list>
                 </div>
@@ -351,7 +353,8 @@
                             <div ng-repeat="segment in ctrl.job.assignedFlight.flightSegments" class="segment-item">
                                 <div class="segment-content">
                                     <div class="segment-number">
-                                        Segment {{$index + 1}} of {{ctrl.job.assignedFlight.flightSegments.length}} - {{segment.carrierFsCode}}{{segment.flightNumber}}
+                                        Segment {{$index + 1}} of {{ctrl.job.assignedFlight.flightSegments.length}} -
+                                        {{segment.carrierFsCode}}{{segment.flightNumber}}
                                     </div>
 
                                     <div class="segment-info" layout="row" layout-align="space-between center">
@@ -360,7 +363,7 @@
                                             <div class="time">
                                                 {{segment.departureTime | date: 'MM/dd/yyyy HH:mm'}}
                                                 <span ng-if="segment.departureAirportTimeZone">
-                                                    ({{segment.departureAirportTimeZone| timezoneShort}})
+                                                    ({{segment.departureAirportTimeZone | timezoneShort}})
                                                 </span>
                                             </div>
                                             <div class="airport-code">
@@ -391,7 +394,7 @@
                                             <div class="time">
                                                 {{segment.arrivalTime | date: 'MM/dd/yyyy HH:mm'}}
                                                 <span ng-if="segment.arrivalAirportTimeZone">
-                                                    ({{segment.arrivalAirportTimeZone| timezoneShort}})
+                                                    ({{segment.arrivalAirportTimeZone | timezoneShort}})
                                                 </span>
                                             </div>
                                             <div class="airport-code">
@@ -406,7 +409,8 @@
 
                                 <!-- Layover/Connection time - show between segments -->
                                 <div class="layover-info" ng-if="!$last">
-                                    <md-icon md-font-set="material-symbols-outlined" class="layover-icon">schedule</md-icon>
+                                    <md-icon md-font-set="material-symbols-outlined" class="layover-icon">schedule
+                                    </md-icon>
                                     <span class="layover-text">
                                         {{ctrl.getConnectionTime(segment, ctrl.job.assignedFlight.flightSegments[$index + 1])}} layover
                                     </span>
@@ -1119,7 +1123,8 @@
             </div>
 
             <div style="display: flex; gap: 8px;">
-                <md-button aria-label="Upload POD Photos" class="md-icon-button" ng-click="ctrl.openPodUploadDialog($event, ctrl.job)">
+                <md-button aria-label="Upload POD Photos" class="md-icon-button"
+                           ng-click="ctrl.openPodUploadDialog($event, ctrl.job)">
                     <md-icon md-font-set="material-symbols-outlined">upload</md-icon>
                     <md-tooltip>Upload POD Photos</md-tooltip>
                 </md-button>
@@ -1139,7 +1144,8 @@
              ng-src="{{'data:image/png;base64,' +ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].url}}">
 
         <div class="pod-photo-info">
-            <p class="timestamp">{{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].timestamp | date:'medium'}}</p>
+            <p class="timestamp"> {{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].timestamp | date:'medium'}}
+                ({{ctrl.job.deliveryTimeZone.text | timezoneShort}}) </p>
             <p class="uploader">Delivered by {{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].uploadedBy}}</p>
             <p class="coordinates" ng-if="ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].coordinates">
                 Location: {{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].coordinates.lat}},
@@ -1169,7 +1175,7 @@
                           ng-repeat="photo in ctrl.formattedPodPhotos track by $index">
                 <img alt="Photo {{$index + 1}}" ng-src="{{'data:image/png;base64,' +photo.url}}">
                 <md-grid-tile-footer>
-                    <h3>{{photo.timestamp | date:'shortTime'}}</h3>
+                    <h3>{{photo.timestamp | date:'shortTime'}} ({{ctrl.job.deliveryTimeZone.text | timezoneShort}})</h3>
                 </md-grid-tile-footer>
             </md-grid-tile>
         </md-grid-list>
@@ -1207,5 +1213,6 @@
         is-open="ctrl.isPodViewerOpen"
         ng-if="ctrl.formattedPodPhotos.length > 0"
         on-close="ctrl.closePodViewer()"
-        photos="ctrl.formattedPodPhotos">
+        photos="ctrl.formattedPodPhotos" ,
+        time-zone="ctrl.job.deliveryTimeZone.text">
 </pod-photo-viewer>
