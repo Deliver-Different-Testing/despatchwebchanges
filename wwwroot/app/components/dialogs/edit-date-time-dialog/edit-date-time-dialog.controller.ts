@@ -1,11 +1,11 @@
 import "./edit-date-time-dialog.less";
 import ToastrService from "../../../services/toastr.service";
-import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interfaces";
+import { IDialogDateTimeResult } from "../../../interfaces/dialog-result.interfaces";
 import moment from "moment";
 import DispatchCoreService from "../../../services/dispatch-core.service";
-import {Suggestion, TimeZoneSuggestion} from "../../../interfaces/job.interface";
+import { Suggestion, TimeZoneSuggestion } from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
-import {JobProperty} from "../../../enums/job-property.enum";
+import { JobProperty } from "../../../enums/job-property.enum";
 
 export class EditDateTimeDialogController extends BaseController {
     static $inject = [
@@ -43,9 +43,6 @@ export class EditDateTimeDialogController extends BaseController {
         super();
 
         this.timeZone = TimeZone;
-    }
-
-    $onInit() {
         console.log('EditDateTimeDialogController: Controller instantiated');
         // Initialize with the current date /time if not provided
         if (!this.dateTime) {
@@ -59,15 +56,17 @@ export class EditDateTimeDialogController extends BaseController {
         this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
         // Get a list of time zones if needed
-        if (this.showTimeZoneSelector) {
-            this.DispatchData.getTimeZoneOptions().then((data: TimeZoneSuggestion[]) => {
-                this.timeZones = data;
 
-                if (this.defaultTimeZone) {
-                    this.selectedTimeZone = data.find(tz => tz.id === this.defaultTimeZone?.id);
-                }
-            });
-        }
+        this.DispatchData.getTimeZoneOptions().then((data: TimeZoneSuggestion[]) => {
+            this.timeZones = data;
+
+            if (this.defaultTimeZone) {
+                this.selectedTimeZone = data.find(tz => tz.id === this.defaultTimeZone?.id);
+            } else {
+                this.selectedTimeZone = data.find(tz => tz.timeZoneIana === TimeZone);
+            }
+        });
+
 
         this.isLoading = false;
     }

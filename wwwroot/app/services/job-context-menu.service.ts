@@ -82,7 +82,7 @@ class JobContextMenuService implements angular.IServiceProvider {
             });
         }
 
-        // Add Stop
+       /* // Add Stop
         if (isDeliveryJob(job)) {
             menuOptions.push({
                 text: 'Add Stop',
@@ -90,7 +90,7 @@ class JobContextMenuService implements angular.IServiceProvider {
                 click: () => this.addStopToJob(job, callbacks.onRefresh),
                 hasBottomDivider: true
             });
-        }
+        }*/
 
         // Reprice Job
         if (job.internalStatusId
