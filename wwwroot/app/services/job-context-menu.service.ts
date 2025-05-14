@@ -83,14 +83,14 @@ class JobContextMenuService implements angular.IServiceProvider {
         }
 
         // Add Stop
-      /*  if (isDeliveryJob(job)) {
+        if (isDeliveryJob(job)) {
             menuOptions.push({
                 text: 'Add Stop',
                 icon: 'pin_drop',
                 click: () => this.addStopToJob(job, callbacks.onRefresh),
                 hasBottomDivider: true
             });
-        }*/
+        }
 
         // Reprice Job
         if (job.internalStatusId

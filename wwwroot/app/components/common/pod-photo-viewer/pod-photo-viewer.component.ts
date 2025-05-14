@@ -5,6 +5,7 @@ import BaseController from "../../base-controller";
 
 class PODPhotoViewerController extends BaseController {
     photos: PodPhoto[] = [];
+    timeZone?: string;
     isOpen: boolean = false;
     initialPhotoIndex: number = 0;
     onClose: () => void = () => {
@@ -42,6 +43,7 @@ export const PodPhotoViewerComponent: IComponentOptions = {
     template: require("./pod-photo-viewer.template.html"),
     bindings: {
         photos: '<',
+        timeZone: '<',
         isOpen: '<',
         initialPhotoIndex: '<',
         onClose: '&'
