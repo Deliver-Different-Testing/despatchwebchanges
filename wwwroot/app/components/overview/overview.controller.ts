@@ -1,6 +1,5 @@
 import OverviewService from "./overview.service";
 import ToastrService from "../../services/toastr.service";
-import GreetingService from "../../services/greeting.service";
 import NavigationService from "../../services/navigation.service";
 import OverviewFiltersService from "./services/overview-filters.service";
 import {OverviewTableChildJob, OverviewTableParentJob} from "./overview.interfaces";
@@ -8,6 +7,7 @@ import "./overview.styles.less";
 import BaseController from "../base-controller";
 import {Suggestion} from "../../interfaces/job.interface";
 import moment from "moment";
+import greetUser from "../../functions/greetUser";
 
 class OverviewController extends BaseController {
     static $inject = [
@@ -19,7 +19,6 @@ class OverviewController extends BaseController {
         "toastrService",
         "$state",
         "$window",
-        "greetingService",
         "navigationService",
         "overviewFiltersService",
         "$document"
@@ -66,7 +65,6 @@ class OverviewController extends BaseController {
         private toastrService: ToastrService,
         private $state: angular.ui.IStateService,
         private $window: angular.IWindowService,
-        greetingService: GreetingService,
         private navigationService: NavigationService,
         private overviewFiltersService: OverviewFiltersService,
         private $document: angular.IDocumentService
@@ -75,7 +73,7 @@ class OverviewController extends BaseController {
 
         // Initialize properties
         this.isLoading = false;
-        this.greeting = greetingService.greetUser((FirstName as any) as string);
+        this.greeting = greetUser(FirstName);
         this.statistics = {active: 0, inactive: 0, completed: 0};
         this.query = {
             order: "jobName",

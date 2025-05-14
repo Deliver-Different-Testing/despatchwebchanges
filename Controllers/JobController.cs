@@ -2545,7 +2545,7 @@ public class JobController(
             // Get job details for rating
             var jobDetails = await jobRepository.GetJobDetailsForRating(request.JobId);
 
-            // Update job details with new delivery address
+            // Update job details with a new delivery address
             jobDetails.ToZip = request.Address.AddressLine7;
             jobDetails.DeliveryLat = request.Address.Latitude ?? 0;
             jobDetails.DeliveryLong = request.Address.Longitude ?? 0;
@@ -2607,7 +2607,7 @@ public class JobController(
             // Get job details for rating
             var jobDetails = await jobRepository.GetJobDetailsForRating(request.JobId);
 
-            // Update job details with new pickup address
+            // Update job details with a new pickup address
             jobDetails.FromZip = request.Address.AddressLine7;
             jobDetails.PickupLat = request.Address.Latitude ?? 0;
             jobDetails.PickupLong = request.Address.Longitude ?? 0;

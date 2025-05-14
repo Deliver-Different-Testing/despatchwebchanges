@@ -90,5 +90,5 @@ public class DispatchJobViewModel
     public List<Suggestion> RelatedJobs { get; set; }
 
     // Dictionary for additional properties (equivalent to [key: string]: any in TypeScript)
-    public Dictionary<string, object> AdditionalProperties { get; set; } = new Dictionary<string, object>();
+    public Dictionary<string, object> AdditionalProperties { get; set; } = new();
 }

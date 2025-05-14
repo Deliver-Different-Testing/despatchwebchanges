@@ -1,5 +1,4 @@
 import JobSearchService from "./jobSearch.service";
-import GreetingService from "../../services/greeting.service";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
 import ToastrService from "../../services/toastr.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
@@ -21,7 +20,6 @@ class JobSearchController extends BaseController {
         '$state',
         '$filter',
         '$mdDialog',
-        'greetingService',
         '$document',
         '$timeout',
         '$interval',
@@ -110,7 +108,6 @@ class JobSearchController extends BaseController {
         private $state: angular.ui.IStateService,
         private $filter: angular.IFilterService,
         private $mdDialog: angular.material.IDialogService,
-        private greetingService: GreetingService,
         private $document: angular.IDocumentService,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
@@ -539,7 +536,7 @@ class JobSearchController extends BaseController {
 
 
     greetUser() {
-        return this.greetingService.greetUser(FirstName);
+        return greetUser(FirstName);
     }
 
     async selectAndDispatchJob($event: MouseEvent, job: IDispatchJob) {

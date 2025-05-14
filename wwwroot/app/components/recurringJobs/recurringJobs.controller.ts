@@ -1,4 +1,3 @@
-import GreetingService from "../../services/greeting.service";
 import {AppConfig} from "../../interfaces/app-config.interface";
 import {IDispatchJob, IJob} from "../../interfaces/job.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
@@ -10,7 +9,6 @@ import ToastrService from "../../services/toastr.service";
 
 class RecurringJobsController extends BaseController {
     static $inject = [
-        'greetingService',
         '$mdDialog',
         '$scope',
         '$state',
@@ -97,7 +95,6 @@ class RecurringJobsController extends BaseController {
     timeZone: string = TimeZone;
 
     constructor(
-        private greetingService: GreetingService,
         private $mdDialog: angular.material.IDialogService,
         private $scope: angular.IScope,
         private $state: angular.ui.IStateService,
@@ -239,7 +236,7 @@ class RecurringJobsController extends BaseController {
     }
 
     greetUser(): string {
-        return this.greetingService.greetUser(FirstName);
+        return greetUser(FirstName);
     }
 
     toggleSidenav(): void {

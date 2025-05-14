@@ -1,5 +1,4 @@
 import "./home.styles.less";
-import GreetingService from "../../services/greeting.service";
 import ToastrService from "../../services/toastr.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
@@ -39,11 +38,11 @@ import {IJobReadChanged} from "../../interfaces/event-interfaces";
 import {JobProperty} from "../../enums/job-property.enum";
 import NavigationService from "../../services/navigation.service";
 import JobSearchService from "../jobSearch/jobSearch.service";
+import greetUser from "../../functions/greetUser";
 
 class HomeController extends BaseController {
     static $inject = [
         '$document',
-        'greetingService',
         '$mdDialog',
         '$scope',
         '$window',
@@ -141,7 +140,6 @@ class HomeController extends BaseController {
 
     constructor(
         private $document: angular.IDocumentService,
-        private greetingService: GreetingService,
         private $mdDialog: angular.material.IDialogService,
         private $scope: angular.IScope,
         private $window: angular.IWindowService,
@@ -661,7 +659,7 @@ class HomeController extends BaseController {
     }
 
     greetUser() {
-        return this.greetingService.greetUser(FirstName);
+        return greetUser(FirstName);
     }
 
     async loadPageViews() {

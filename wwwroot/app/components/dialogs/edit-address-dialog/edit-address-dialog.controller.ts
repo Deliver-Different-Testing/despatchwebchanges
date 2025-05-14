@@ -1,4 +1,4 @@
-import {ContactInfo, EditAddressDialogViewModel} from "../../../interfaces/job.interface";
+import {ShipmentDetails, EditAddressDialogViewModel} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
@@ -35,7 +35,7 @@ class EditAddressDialogController extends BaseController {
 
     // Contact Card
     isContactCardExpanded: boolean;
-    contactInfo: ContactInfo;
+    shipmentDetails?: ShipmentDetails;
 
     constructor(
         private $scope: angular.IScope,
@@ -58,9 +58,6 @@ class EditAddressDialogController extends BaseController {
         this.isLoading = false;
         this.useUsFormat = appConfig.US_Customer;
         this.addressSearchText = this.addressDetails.fullAddress || '';
-
-        // Contact Card
-        this.contactInfo = {name: '', mobile: ''};
         this.isContactCardExpanded = false;
 
         this.usStateList = this.UsStatesService.getStates();
@@ -115,7 +112,6 @@ class EditAddressDialogController extends BaseController {
             this.toastrService.showErrorToast(error.message);
         }
     }
-
 
     async addressSearchItemSelected(item: any) {
         try {
@@ -202,9 +198,9 @@ class EditAddressDialogController extends BaseController {
             this.isLoading = false;
 
             // Add contact info
-            addressDetails.contactInfo = this.contactInfo;
+            addressDetails.shipmentDetails = this.shipmentDetails;
 
-            // Return new address
+            // Return a new address
             this.$mdDialog.hide(addressDetails);
             console.log("Dialog submission complete");
         } catch (error) {
@@ -212,7 +208,7 @@ class EditAddressDialogController extends BaseController {
             console.error("Error in submit function:", error);
             console.error("Error occurred with address details:", addressDetails);
             this.toastrService.showErrorToast("Error updating address. Please try again or contact support");
-            throw error; // Re-throw to maintain error chain
+            throw error; // Re-throw to maintain an error chain
         }
     }
 

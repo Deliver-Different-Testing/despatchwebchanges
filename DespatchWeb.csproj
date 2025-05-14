@@ -367,8 +367,10 @@
     <TypeScriptCompile Include="wwwroot\app\enums\late-event-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\bindAllMethods.ts" />
+    <TypeScriptCompile Include="wwwroot\app\functions\greetUser.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\isDeliveryJob.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\isFlightJob.ts" />
+    <TypeScriptCompile Include="wwwroot\app\functions\sortRelatedJobs.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\app-config.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\apiConfig.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\context-menu-option.interface.ts" />
@@ -377,6 +379,7 @@
     <TypeScriptCompile Include="wwwroot\app\interfaces\dialog-result.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\event-group-view-model.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\event-interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\hereMapsAppConfig.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\job-field.types.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\job-list-response.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\job.interface.ts" />
@@ -389,7 +392,6 @@
     <TypeScriptCompile Include="wwwroot\app\services\config.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\dispatch-executor.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\getUsStates.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\services\greeting.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\job-add-stop.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\job-context-menu.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\notes.service.ts" />

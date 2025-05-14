@@ -1,4 +1,5 @@
 import ApiConfig from "../interfaces/apiConfig.interface";
+import HereMapsAppConfig from "../interfaces/hereMapsAppConfig";
 
 class ConfigService implements angular.IServiceProvider {
     static $inject = ["$http"];
@@ -21,6 +22,11 @@ class ConfigService implements angular.IServiceProvider {
     async getHereMapsKey(): Promise<string> {
         const response = await this.$http.get<ApiConfig>("/config/GetHereMapsKey");
         return response.data.apiKey;
+    }
+
+    async getHereMapsConfig(): Promise<HereMapsAppConfig> {
+        const response = await this.$http.get<HereMapsAppConfig>("/config/GetHereMapsConfig");
+        return response.data;
     }
 
     async getGoogleMapsKey(): Promise<string> {

@@ -27,11 +27,13 @@ import {bindAllMethods} from "../functions/bindAllMethods";
 import {TaskTableFiltersRequest, TaskViewModel} from "../components/task-dashboard/task-dashboard.interfaces";
 import {JobProperty} from "../enums/job-property.enum";
 import moment from "moment";
+import ConfigService from "./config.service";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [
         "$http",
         "APP_CONFIG",
+        "configService",
     ];
 
     private readonly isUsCustomer: boolean;
@@ -40,6 +42,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     constructor(
         private $http: angular.IHttpService,
         private appConfig: AppConfig,
+        private configService: ConfigService,
     ) {
         this.isUsCustomer = this.appConfig.US_Customer;
         this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -635,12 +638,18 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async autocompleteAddressSearch(text: string) {
+        const hereMapsConfig = await this.configService.getHereMapsConfig();
+
         const response = await this.$http({
-            url: "https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json", method: "GET", params: {
+            url: "https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json",
+            method: "GET",
+            params: {
                 query: text,
-                app_id: "bBPfh2x8Cauun3ygLMAx",
-                app_code: "yjfwTdkin_R2rGXYTrwWVg",
-                country: this.isUsCustomer ? "USA" : "NZL"
+                app_id: hereMapsConfig.appId,
+                app_code: hereMapsConfig.appCode,
+                country: this.isUsCustomer ? "USA" : "NZL",
+                resultType: "areas,categories,chains,streets,localities,houseNumber",
+                maxresults: 10
             }
         });
 
@@ -650,7 +659,9 @@ class DispatchCoreService implements angular.IServiceProvider {
     async getGeoCodeInformation(item: Suggestion) {
         const response = await this.$http.get("https://geocoder.cit.api.here.com/6.2/geocode.json", {
             params: {
-                app_id: "bBPfh2x8Cauun3ygLMAx", app_code: "yjfwTdkin_R2rGXYTrwWVg", locationId: item.id
+                app_id: hereMapsConfig.appId,
+                app_code: hereMapsConfig.appCode,
+                locationId: item.id
             }
         });
 
@@ -660,8 +671,8 @@ class DispatchCoreService implements angular.IServiceProvider {
     async retrieveAddresses(lat: number, long: number) {
         const response = await this.$http.get("https://reverse.geocoder.api.here.com/6.2/reversegeocode.json", {
             params: {
-                app_id: "bBPfh2x8Cauun3ygLMAx",
-                app_code: "yjfwTdkin_R2rGXYTrwWVg",
+                app_id: hereMapsConfig.appId,
+                app_code: hereMapsConfig.appCode,
                 mode: "retrieveAddresses",
                 prox: lat.toString() + "," + long.toString() + "," + "250"
             }
@@ -806,7 +817,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
     }
 
-    async addStopToJob(jobId: number, pickUpAddress: EditAddressDialogViewModel, deliveryAddress: EditAddressDialogViewModel): Promise<number> {
+    async addStopToJob(jobId: number, pickUpAddress?: EditAddressDialogViewModel, deliveryAddress?: EditAddressDialogViewModel): Promise<number> {
         try {
             const response = await this.$http.post<number>('job/AddStopToJob', {
                 jobId: jobId,

@@ -172,7 +172,7 @@ public class AssignedFlight
     public DateTime? ExpectedArrival { get; set; }
     public string ArrivalTimeZone { get; set; }
     public string Notes { get; set; }
-    public List<FlightSegmentViewModel> FlightSegments { get; set; } = new List<FlightSegmentViewModel>();
+    public List<FlightSegmentViewModel> FlightSegments { get; set; } = new();
 }
 
 public class PalletInfo
@@ -238,13 +238,16 @@ public class AddressViewModel
 
 public class EditAddressDialogViewModel : AddressViewModel
 {
-    public ContactInfo ContactInfo { get; set; }
+    public ShipmentDetails ShipmentDetails { get; set; }
 }
 
-public class ContactInfo
+public class ShipmentDetails
 {
-    public string Name { get; set; }
-    public string Phone { get; set; }
+    public string ContactName { get; set; }
+    public string ContactPhone { get; set; }
+    public double Weight { get; set; }
+    public int Quantity { get; set; }
+    public string JobNotes { get; set; }
 }
 
 public class Suggestion

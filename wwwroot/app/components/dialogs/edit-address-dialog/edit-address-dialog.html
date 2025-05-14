@@ -99,7 +99,7 @@
 
                 <div layout-gt-sm="row" ng-if="ctrl.useUsFormat">
                     <md-input-container class="md-block" flex-gt-sm>
-                        <label for="addressLine1">Building/Complex</label>
+                        <label for="addressLine1">Company/Building/Complex</label>
                         <input id="addressLine1" ng-model="ctrl.addressDetails.addressLine1">
                     </md-input-container>
 
@@ -122,8 +122,8 @@
                 <md-card ng-if="ctrl.showContactInfo" class="contact-info-card" style="margin-bottom: 15px;">
                     <md-toolbar>
                         <div class="md-toolbar-tools">
-                            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">person_add</md-icon>
-                            <h2>Contact Information</h2>
+                            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">description</md-icon>
+                            <h2>Shipment Details</h2>
                             <span flex></span>
                             <md-button class="md-icon-button" ng-click="ctrl.toggleContactCard()">
                                 <md-icon md-font-set="material-symbols-outlined">
@@ -134,17 +134,39 @@
                     </md-toolbar>
 
                     <md-card-content ng-show="ctrl.isContactCardExpanded">
-                        <div layout="column">
-                            <md-input-container class="md-block">
-                                <label>Name</label>
-                                <md-icon md-font-set="material-symbols-outlined">person</md-icon>
-                                <input ng-model="ctrl.contactInfo.name" type="text" required>
+                        <div layout-gt-sm="row">
+                            <md-input-container class="md-block" flex-gt-sm>
+                                <label for="contactName">Contact Name</label>
+                                <input id="contactName" ng-model="ctrl.shipmentDetails.contactName">
                             </md-input-container>
 
+                            <md-input-container class="md-block" flex-gt-sm>
+                                <label for="contactPhone">Contact Phone</label>
+                                <input id="contactPhone" ng-model="ctrl.shipmentDetails.contactMobile">
+                            </md-input-container>
+                        </div>
+
+                        <div layout-gt-sm="row">
+                            <md-input-container class="md-block" flex-gt-sm>
+                                <label for="weight">Weight</label>
+                                <input id="weight" ng-model="ctrl.shipmentDetails.weight">
+                            </md-input-container>
+
+                            <md-input-container class="md-block" flex-gt-sm>
+                                <label for="quantity">Quantity</label>
+                                <input id="quantity" ng-model="ctrl.shipmentDetails.quantity">
+                            </md-input-container>
+                        </div>
+
+                        <div layout-gt-sm="row">
+                            <div flex></div>
                             <md-input-container class="md-block">
-                                <label>Mobile</label>
-                                <md-icon md-font-set="material-symbols-outlined">phone</md-icon>
-                                <input ng-model="ctrl.contactInfo.mobile" type="tel" required>
+                                <label for="jobNotes">Notes</label>
+                                <textarea id="jobNotes"
+                                          md-maxlength="150"
+                                          md-select-on-focus
+                                          ng-model="ctrl.shipmentDetails.jobNotes"
+                                          rows="3"></textarea>
                             </md-input-container>
                         </div>
                     </md-card-content>

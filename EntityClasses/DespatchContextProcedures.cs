@@ -341,7 +341,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<List<DD_stpJob_AddStop_InsertJobResult>> DD_stpJob_AddStop_InsertJobAsync(int? jobID, string newFromAddress, string newFromAddressLine1, string newFromAddressLine2, string newFromAddressLine3, string newFromAddressLine4, string newFromAddressLine5, string newFromAddressLine6, string newFromAddressLine7, string newFromContactName, string newFromContactPhone, string newToAddress, string newToAddressLine1, string newToAddressLine2, string newToAddressLine3, string newToAddressLine4, string newToAddressLine5, string newToAddressLine6, string newToAddressLine7, string newToContactName, string newToContactPhone, OutputParameter<int?> jobStopID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<DD_stpJob_AddStop_InsertJobResult>> DD_stpJob_AddStop_InsertJobAsync(int? jobID, string newFromAddress, string newFromAddressLine1, string newFromAddressLine2, string newFromAddressLine3, string newFromAddressLine4, string newFromAddressLine5, string newFromAddressLine6, string newFromAddressLine7, string newFromContactName, string newFromContactPhone, string newToAddress, string newToAddressLine1, string newToAddressLine2, string newToAddressLine3, string newToAddressLine4, string newToAddressLine5, string newToAddressLine6, string newToAddressLine7, string newToContactName, string newToContactPhone, int? newQuantity, double? newWeight, string newNotes, OutputParameter<int?> jobStopID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterJobStopID = new SqlParameter
             {
@@ -505,10 +505,29 @@ namespace DespatchWeb.EntityClasses
                     Value = newToContactPhone ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 },
+                new SqlParameter
+                {
+                    ParameterName = "NewQuantity",
+                    Value = newQuantity ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "NewWeight",
+                    Value = newWeight ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Float,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "NewNotes",
+                    Size = 8000,
+                    Value = newNotes ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
                 parameterJobStopID,
                 parameterreturnValue,
             };
-            var _ = await _context.SqlQueryAsync<DD_stpJob_AddStop_InsertJobResult>("EXEC @returnValue = [dbo].[DD_stpJob_AddStop_InsertJob] @JobID = @JobID, @NewFromAddress = @NewFromAddress, @NewFromAddressLine1 = @NewFromAddressLine1, @NewFromAddressLine2 = @NewFromAddressLine2, @NewFromAddressLine3 = @NewFromAddressLine3, @NewFromAddressLine4 = @NewFromAddressLine4, @NewFromAddressLine5 = @NewFromAddressLine5, @NewFromAddressLine6 = @NewFromAddressLine6, @NewFromAddressLine7 = @NewFromAddressLine7, @NewFromContactName = @NewFromContactName, @NewFromContactPhone = @NewFromContactPhone, @NewToAddress = @NewToAddress, @NewToAddressLine1 = @NewToAddressLine1, @NewToAddressLine2 = @NewToAddressLine2, @NewToAddressLine3 = @NewToAddressLine3, @NewToAddressLine4 = @NewToAddressLine4, @NewToAddressLine5 = @NewToAddressLine5, @NewToAddressLine6 = @NewToAddressLine6, @NewToAddressLine7 = @NewToAddressLine7, @NewToContactName = @NewToContactName, @NewToContactPhone = @NewToContactPhone, @JobStopID = @JobStopID OUTPUT", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<DD_stpJob_AddStop_InsertJobResult>("EXEC @returnValue = [dbo].[DD_stpJob_AddStop_InsertJob] @JobID = @JobID, @NewFromAddress = @NewFromAddress, @NewFromAddressLine1 = @NewFromAddressLine1, @NewFromAddressLine2 = @NewFromAddressLine2, @NewFromAddressLine3 = @NewFromAddressLine3, @NewFromAddressLine4 = @NewFromAddressLine4, @NewFromAddressLine5 = @NewFromAddressLine5, @NewFromAddressLine6 = @NewFromAddressLine6, @NewFromAddressLine7 = @NewFromAddressLine7, @NewFromContactName = @NewFromContactName, @NewFromContactPhone = @NewFromContactPhone, @NewToAddress = @NewToAddress, @NewToAddressLine1 = @NewToAddressLine1, @NewToAddressLine2 = @NewToAddressLine2, @NewToAddressLine3 = @NewToAddressLine3, @NewToAddressLine4 = @NewToAddressLine4, @NewToAddressLine5 = @NewToAddressLine5, @NewToAddressLine6 = @NewToAddressLine6, @NewToAddressLine7 = @NewToAddressLine7, @NewToContactName = @NewToContactName, @NewToContactPhone = @NewToContactPhone, @NewQuantity = @NewQuantity, @NewWeight = @NewWeight, @NewNotes = @NewNotes, @JobStopID = @JobStopID OUTPUT", sqlParameters, cancellationToken);
 
             jobStopID?.SetValue(parameterJobStopID.Value);
             returnValue?.SetValue(parameterreturnValue.Value);

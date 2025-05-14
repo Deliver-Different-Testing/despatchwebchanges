@@ -6,6 +6,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
+using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Helpers;
 
@@ -125,13 +126,13 @@ public static class JobMappings
                     .SelectMany(childJob => childJob.TucJobNationwides)
                     .Select(nj => new AssignedFlight
                     {
-                        FlightNumber = nj.UcnwFlightNo,
+                        FlightNumber = nj.UcnwFlightNo
                     })
                     .FirstOrDefault()
                 : j.TucJobNationwides
                     .Select(nj => new AssignedFlight
                     {
-                        FlightNumber = nj.UcnwFlightNo,
+                        FlightNumber = nj.UcnwFlightNo
                     })
                     .FirstOrDefault(),
 
@@ -140,9 +141,9 @@ public static class JobMappings
                 j.Agent != null
                     ? new AgentViewModel
                     {
-                        AgentName = j.Agent.UcagName,
+                        AgentName = j.Agent.UcagName
                     }
-                    : null,
+                    : null
         };
 
     public static readonly Expression<Func<TucJob, JobViewModel>> JobMapping =
@@ -301,7 +302,7 @@ public static class JobMappings
                 FlightNumber = nj.UcnwFlightNo,
                 Notes = nj.UcnwNotes,
                 // Check if there are any flight segments
-                FlightSegments = j.TucJobNationwides.Any() == true
+                FlightSegments = j.TucJobNationwides.Count != 0 == true
                     ? j.TucJobNationwides
                         .OrderBy(f => f.UcnwLegNumber)
                         .Select(segment => new FlightSegmentViewModel

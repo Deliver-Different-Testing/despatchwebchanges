@@ -1,6 +1,5 @@
 import './nationwide.styles.less';
 import NationwideService from "./nationwide.service";
-import GreetingService from "../../services/greeting.service";
 import ToastrService from "../../services/toastr.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import {AppPages} from "../../enums/app-pages.enum";
@@ -32,13 +31,13 @@ import NationwideBoxes from "./enums/NationwideBoxes";
 import JobAddStopService from "../../services/job-add-stop.service";
 import {isDeliveryJob} from "../../functions/isDeliveryJob";
 import {isFlightJob} from "../../functions/isFlightJob";
+import greetUser from '../../functions/greetUser';
 
 class NationwideControl extends BaseController {
     static $inject = [
         '$scope',
         'NWData',
         '$timeout',
-        'greetingService',
         '$mdDialog',
         '$document',
         'toastrService',
@@ -55,7 +54,8 @@ class NationwideControl extends BaseController {
         'navigationService',
         'configService',
         'autoCompleteDialogService',
-        'jobAddStopService'
+        'jobAddStopService',
+        '$stateParams',
     ];
 
     readonly nationwidePageId: number = AppPages.Domestic;
@@ -157,7 +157,6 @@ class NationwideControl extends BaseController {
         private $scope: angular.IScope,
         private nationwideService: NationwideService,
         $timeout: angular.ITimeoutService,
-        private greetingService: GreetingService,
         private $mdDialog: angular.material.IDialogService,
         private $document: angular.IDocumentService,
         private toastrService: ToastrService,
@@ -175,9 +174,9 @@ class NationwideControl extends BaseController {
         private configService: ConfigService,
         private autoCompleteDialogService: AutoCompleteDialogService,
         private jobAddStopService: JobAddStopService,
+        private $stateParams: angular.ui.IStateParamsService,
     ) {
         super();
-
         this.initServices($timeout, $interval);
 
         this.isUsCustomer = this.appConfig.US_Customer;
@@ -466,6 +465,27 @@ class NationwideControl extends BaseController {
         };
     }
 
+    $onInit() {
+        const jobId = this.$stateParams.jobId;
+        if (jobId) {
+            return this.getData()
+                .then(() => {
+                    if (!this.jobList) return;
+
+                    const job = this.jobList.find((j) => j.id === jobId);
+                    if (!job) return;
+
+                    return this.selectJob(job);
+                })
+                .catch((error) => {
+                    console.error("Error loading initial job:", error);
+                    this.toastrService.showErrorToast("Error loading job details");
+                });
+        } else {
+            return this.getData();
+        }
+    }
+
     private updateBoxMetrics() {
         if (!this.layout || !this.layout.columns) return;
 
@@ -538,7 +558,7 @@ class NationwideControl extends BaseController {
     }
 
     greetUser() {
-        return this.greetingService.greetUser(FirstName);
+        return greetUser(FirstName);
     }
 
     async loadPageViews() {
@@ -2085,6 +2105,9 @@ class NationwideControl extends BaseController {
 const NationwideComponent: angular.IComponentOptions = {
     template: require('./nationwide.template.html'),
     controller: NationwideControl,
-    controllerAs: "ctrl"
+    controllerAs: "ctrl",
+    bindings: {
+        jobId: '<'
+    }
 }
 export default NationwideComponent;
