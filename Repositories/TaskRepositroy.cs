@@ -19,8 +19,7 @@ public class TaskRepository(
     {
         var today = filters?.Date ?? infoService.GetCurrentTenantTime().AddDays(1);
 
-        var query = Context.TucEvents
-            .Where(e => e.UcevDueTime.Date <= today.Date);
+        var query = Context.TucEvents.AsQueryable();
 
         if (filters != null) query = ApplyFilters(query, filters);
 
@@ -219,6 +218,9 @@ public class TaskRepository(
         TaskTableFiltersRequest filters
     )
     {
+        if (filters.Date.HasValue)
+            query = query.Where(e => e.UcevDueTime.Date <= filters.Date);
+
         if (filters.JobId.HasValue)
             query = query.Where(e => e.UcevJobId == filters.JobId.Value
                                      || e.UcevJob.ParentId == filters.JobId.Value
