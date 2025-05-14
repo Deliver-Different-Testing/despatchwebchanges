@@ -3,7 +3,7 @@ import {
     EditAddressDialogViewModel,
     IDispatchJob,
     IJob,
-    InternalStatus,
+    InternalStatus, JobGroup,
     Suggestion
 } from "../../../interfaces/job.interface";
 import {ContactID, FirstName} from "../../../contants";
@@ -29,6 +29,7 @@ import {DaysOfWeek} from "../../../enums/days-of-week.enum";
 import AutoCompleteDialogService from "../../dialogs/auto-complete-dialog/auto-complete-dialog.service";
 import JobFileUploadDialogService from "../../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import {FileUploadType} from "../../../enums/file-upload-type.enum";
+import sortRelatedJobs from "../../../functions/sortRelatedJobs";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -43,6 +44,7 @@ class JobDetailController extends BaseController {
         "editParcelDimensionsDialogService",
         "$rootScope",
         "$timeout",
+        "$interval",
         "$filter",
         "autoCompleteDialogService",
         "jobFileUploadDialogService",
@@ -65,6 +67,7 @@ class JobDetailController extends BaseController {
     selectedTabIndex: number = 0;
     processingTabChange: boolean = false;
     timeZone: string;
+    jobGroups: JobGroup[] = [];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -77,12 +80,14 @@ class JobDetailController extends BaseController {
         appConfig: AppConfig,
         private editParcelDimensionsDialogService: EditParcelDimensionsDialogService,
         private $rootScope: angular.IRootScopeService,
-        private $timeout: angular.ITimeoutService,
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
         private $filter: angular.IFilterService,
         private autoCompleteDialogService: AutoCompleteDialogService,
         private jobFileUploadDialogService: JobFileUploadDialogService,
     ) {
         super();
+        this.initServices($timeout, $interval);
 
         this.isUsCustomer = appConfig.US_Customer;
         this.timeZone = TimeZone;
@@ -197,16 +202,18 @@ class JobDetailController extends BaseController {
 
             this.initializeJobData();
 
-            if (this.job.relatedJobs && this.job.relatedJobs.length > 0) {
-                const currentJobIndex = this.job.relatedJobs.findIndex(
-                    relatedJob => relatedJob.id === jobId
-                );
+                if (this.job && this.job.relatedJobs && this.job.relatedJobs.length > 0) {
+                    this.jobGroups = sortRelatedJobs(this.job.relatedJobs);
 
-                if (currentJobIndex !== -1) {
-                    console.log(`[JobDetailController] Setting selectedTabIndex to ${currentJobIndex}`);
-                    this.selectedTabIndex = currentJobIndex;
+                    const currentJobIndex = this.jobGroups.findIndex(
+                        relatedJob => relatedJob.job.id === jobId
+                    );
+
+                    if (currentJobIndex !== -1) {
+                        console.log(`[JobDetailController] Setting selectedTabIndex to ${currentJobIndex}`);
+                        this.selectedTabIndex = currentJobIndex;
+                    }
                 }
-            }
 
             this.isLoading = false;
 

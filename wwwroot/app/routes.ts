@@ -38,6 +38,12 @@ class RouterConfig {
         this.$stateProvider.state("nw", {
             url: "/Nationwide",
             component: "nationwideComponent",
+            params: {
+                jobId: {
+                    value: null,
+                    squash: true
+                }
+            }
         });
         return this;
     }
@@ -82,4 +88,5 @@ class RouterConfig {
         return this;
     }
 }
+
 export default RouterConfig;

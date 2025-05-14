@@ -1710,20 +1710,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         return jobInfo.EffectiveJobId;
     }
 
-    protected async Task<int> GetJobArchiveRelationshipInfoAsync(int jobId)
-    {
-        var jobInfo = await Context.TucJobArchives
-            .Where(j => j.UcjbId == jobId)
-            .Select(j => new
-            {
-                EffectiveJobId = j.ParentId ?? j.UcjbId,
-            })
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
-
-        return jobInfo.EffectiveJobId;
-    }
-
     protected static string GetTrackingName(int trackingMethodId)
     {
         return trackingMethodId switch
@@ -1893,7 +1879,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             var job = await Context.TucJobs.FindAsync(jobId);
             ArgumentNullException.ThrowIfNull(job);
 
-            // Update job with a new rate
+            // Update a job with a new rate
             job.UcjbAmount = rate;
             await Context.SaveChangesAsync();
 
@@ -1908,37 +1894,52 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     }
 
     public async Task<int> AddStopToJobAsync(int jobId,
-        EditAddressDialogViewModel pickUpAddress, EditAddressDialogViewModel deliveryAddress)
+        EditAddressDialogViewModel pickUpAddress = null, EditAddressDialogViewModel deliveryAddress = null)
     {
         var jobStopId = new OutputParameter<int?>();
         var returnValue = new OutputParameter<int>();
 
+        // Get extras from a pickup or delivery address
+        var extras = pickUpAddress?.ShipmentDetails ?? deliveryAddress?.ShipmentDetails;
+
         await Context.Procedures.DD_stpJob_AddStop_InsertJobAsync(
             jobID: jobId,
-            newFromAddress: pickUpAddress.FullAddress,
-            newFromAddressLine1: pickUpAddress.AddressLine1,
-            newFromAddressLine2: pickUpAddress.AddressLine2,
-            newFromAddressLine3: pickUpAddress.AddressLine3,
-            newFromAddressLine4: pickUpAddress.AddressLine4,
-            newFromAddressLine5: pickUpAddress.AddressLine5,
-            newFromAddressLine6: pickUpAddress.AddressLine6,
-            newFromAddressLine7: pickUpAddress.AddressLine7,
-            newFromContactName: pickUpAddress.ContactInfo?.Name ?? string.Empty,
-            newFromContactPhone: pickUpAddress.ContactInfo?.Phone ?? string.Empty,
-            newToAddress: deliveryAddress.FullAddress,
-            newToAddressLine1: deliveryAddress.AddressLine1,
-            newToAddressLine2: deliveryAddress.AddressLine2,
-            newToAddressLine3: deliveryAddress.AddressLine3,
-            newToAddressLine4: deliveryAddress.AddressLine4,
-            newToAddressLine5: deliveryAddress.AddressLine5,
-            newToAddressLine6: deliveryAddress.AddressLine6,
-            newToAddressLine7: deliveryAddress.AddressLine7,
-            newToContactName: deliveryAddress.ContactInfo?.Name ?? string.Empty,
-            newToContactPhone: deliveryAddress.ContactInfo?.Phone ?? string.Empty,
+
+            // Pickup address fields
+            newFromAddress: pickUpAddress != null ? TruncateAddress(pickUpAddress.FullAddress) : null,
+            newFromAddressLine1: pickUpAddress?.AddressLine1,
+            newFromAddressLine2: pickUpAddress?.AddressLine2,
+            newFromAddressLine3: pickUpAddress?.AddressLine3,
+            newFromAddressLine4: pickUpAddress?.AddressLine4,
+            newFromAddressLine5: pickUpAddress?.AddressLine5,
+            newFromAddressLine6: pickUpAddress?.AddressLine6,
+            newFromAddressLine7: pickUpAddress?.AddressLine7,
+            newFromContactName: pickUpAddress?.ShipmentDetails?.ContactName ?? string.Empty,
+            newFromContactPhone: pickUpAddress?.ShipmentDetails?.ContactPhone ?? string.Empty,
+
+            // Delivery address fields
+            newToAddress: deliveryAddress != null ? TruncateAddress(deliveryAddress.FullAddress) : null,
+            newToAddressLine1: deliveryAddress?.AddressLine1,
+            newToAddressLine2: deliveryAddress?.AddressLine2,
+            newToAddressLine3: deliveryAddress?.AddressLine3,
+            newToAddressLine4: deliveryAddress?.AddressLine4,
+            newToAddressLine5: deliveryAddress?.AddressLine5,
+            newToAddressLine6: deliveryAddress?.AddressLine6,
+            newToAddressLine7: deliveryAddress?.AddressLine7,
+            newToContactName: deliveryAddress?.ShipmentDetails?.ContactName ?? string.Empty,
+            newToContactPhone: deliveryAddress?.ShipmentDetails?.ContactPhone ?? string.Empty,
+
+            // Other parameters
+            newQuantity: extras?.Quantity > 0 ? extras.Quantity : null,
+            newWeight: extras?.Weight > 0 ? extras.Weight : null,
+            newNotes: extras?.JobNotes,
             jobStopID: jobStopId,
             returnValue: returnValue
         );
 
         return jobStopId.Value ?? 0;
     }
+
+    private static string TruncateAddress(string address) =>
+        !string.IsNullOrEmpty(address) && address.Length > 150 ? address[..150] : address;
 }

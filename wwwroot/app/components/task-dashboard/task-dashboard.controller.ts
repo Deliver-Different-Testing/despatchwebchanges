@@ -1,6 +1,5 @@
 import "./task-dashboard.styles.less";
 import {ExtendedTask, TaskTableFiltersRequest, TaskViewModel} from "./task-dashboard.interfaces";
-import GreetingService from "../../services/greeting.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import {IDispatchJob, Suggestion} from "../../interfaces/job.interface";
 import {ViewMode} from "./enums/view-mode";
@@ -8,10 +7,10 @@ import BaseController from "../base-controller";
 import {ITaskListItemConfig} from "../common/task-item-component/task-item.interfaces";
 import {StatusFilter} from "./enums/status-filter";
 import moment from "moment/moment";
+import greetUser from "../../functions/greetUser";
 
 class TaskDashboardController extends BaseController {
     static $inject = [
-        "greetingService",
         "$mdSidenav",
         "$filter",
         "DispatchData",
@@ -81,7 +80,6 @@ class TaskDashboardController extends BaseController {
     browserTimeZone: string;
 
     constructor(
-        greetingService: GreetingService,
         private $mdSidenav: angular.material.ISidenavService,
         private $filter: angular.IFilterService,
         private DispatchService: DispatchCoreService,
@@ -93,7 +91,7 @@ class TaskDashboardController extends BaseController {
 
         this.initServices($timeout, $interval);
 
-        this.greeting = greetingService.greetUser(FirstName);
+        this.greeting = greetUser(FirstName);
         this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         this.timeZone = TimeZone;
 

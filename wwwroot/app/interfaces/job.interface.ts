@@ -214,12 +214,15 @@ export interface AddressViewModel {
 
 export interface EditAddressDialogViewModel extends AddressViewModel {
     stateAbbreviation?: string;
-    contactInfo?: ContactInfo;
+    shipmentDetails?: ShipmentDetails;
 }
 
-export interface ContactInfo {
-    name: string;
-    mobile: string;
+export interface ShipmentDetails {
+    contactName?: string;
+    contactMobile?: string;
+    weight?: number;
+    quantity?: number;
+    jobNotes?: string;
 }
 
 export interface Suggestion {
@@ -527,4 +530,9 @@ export interface BulkScanDetail {
     scanDateTime: Date;
     scanDetail: string;
     courier: string;
+}
+
+export interface JobGroup {
+    job: Suggestion;
+    subJobs: Suggestion[];
 }

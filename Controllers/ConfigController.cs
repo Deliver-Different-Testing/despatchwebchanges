@@ -23,6 +23,15 @@ public class ConfigController(IWebHostEnvironment environment) : Controller
     }
 
     [HttpGet]
+    public IActionResult GetHereMapsConfig()
+    {
+        var appId = Environment.GetEnvironmentVariable("HereMapsID");
+        var appCode = Environment.GetEnvironmentVariable("HereMapsCode");
+
+        return Json(new { appId, appCode });
+    }
+
+    [HttpGet]
     public IActionResult GetGoogleMapsKey()
     {
         var apiKey = new ApiKeyResponse(

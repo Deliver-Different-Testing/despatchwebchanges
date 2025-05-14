@@ -1,10 +1,11 @@
 import DispatchCoreService from "./dispatch-core.service";
 import {EditAddressDialogService} from "../components/dialogs/edit-address-dialog/edit-address-dialog.service";
-import {ContactInfo, IDispatchJob} from "../interfaces/job.interface";
+import {IDispatchJob} from "../interfaces/job.interface";
 import ToastrService from "./toastr.service";
 import JobSuffix from "../enums/job-suffix.enum";
 import NavigationService from "./navigation.service";
 import {bindAllMethods} from "../functions/bindAllMethods";
+import IOpenJobOptions from "../interfaces/open-job-options.interface";
 
 class JobAddStopService implements angular.IServiceProvider {
     static $inject = [
@@ -53,9 +54,10 @@ class JobAddStopService implements angular.IServiceProvider {
             $event, "Add Pick Up Stop", "Add Stop", true);
         if(!newPickUpAddress) return;
 
-        // Add a stop job and open on dispatch
-        const stopJobId = await this.DispatchData.addStopToJob(job.id, newPickUpAddress, job.deliveryAddress);
-        this.navigationService.openJobDetail(stopJobId);
+        // Add a stop job
+        const stopJobId = await this.DispatchData.addStopToJob(job.id, newPickUpAddress, undefined);
+
+        this.openJobDetail(stopJobId);
     }
 
     private async addDeliveryStop(job: IDispatchJob, $event?: MouseEvent) {
@@ -65,9 +67,19 @@ class JobAddStopService implements angular.IServiceProvider {
             $event, "Add Delivery Stop", "Add Stop", true);
         if(!newDeliveryAddress) return;
 
-        // Add a stop job and open on dispatch
-        const stopJobId = await this.DispatchData.addStopToJob(job.id, newDeliveryAddress, job.pickupAddress);
-        this.navigationService.openJobDetail(stopJobId);
+        // Add a stop job
+        const stopJobId = await this.DispatchData.addStopToJob(job.id, undefined, newDeliveryAddress);
+
+        this.openJobDetail(stopJobId);
+    }
+
+    private openJobDetail(stopJobId: number) {
+        const options: IOpenJobOptions = {
+            stateName: "nw",
+            target: "_blank"
+        };
+
+        this.navigationService.openJobDetail(stopJobId, options);
     }
 }
 

@@ -28,7 +28,7 @@ public class FlightViewModel
     public int ElapsedTime { get; set; }
     public int Score { get; set; }
     public string ConnectionId { get; set; }
-    public List<FlightSegmentViewModel> FlightSegments { get; set; } = new List<FlightSegmentViewModel>();
+    public List<FlightSegmentViewModel> FlightSegments { get; set; } = [];
 }
 
 public class FlightSegmentViewModel: ScheduledFlight
