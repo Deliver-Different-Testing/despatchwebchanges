@@ -21,9 +21,9 @@ export class EditDateTimeDialogController extends BaseController {
         "showTime",
     ];
 
-    momentDateTime: moment.Moment;
-    isLoading: boolean;
-    browserTimeZone: string;
+    momentDateTime!: moment.Moment;
+    isLoading?: boolean;
+    browserTimeZone?: string;
     selectedTimeZone?: TimeZoneSuggestion;
     timeZones?: TimeZoneSuggestion[];
     timeZone: string;
@@ -43,7 +43,10 @@ export class EditDateTimeDialogController extends BaseController {
         super();
 
         this.timeZone = TimeZone;
+    }
 
+    $onInit() {
+        console.log('EditDateTimeDialogController: Controller instantiated');
         // Initialize with the current date /time if not provided
         if (!this.dateTime) {
             this.dateTime = new Date();
@@ -88,8 +91,9 @@ export class EditDateTimeDialogController extends BaseController {
         try {
             this.isLoading = true;
 
-            if (!this.momentDateTime.isValid()) {
+            if (!this.momentDateTime || !this.momentDateTime.isValid()) {
                 this.toastrService.showWarningToast("Please select a valid date and time.");
+                return;
             }
 
             console.log('EditDateTimeDialogController: Submitting', this.getFormattedDate(this.momentDateTime));
