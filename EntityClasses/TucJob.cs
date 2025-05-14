@@ -427,11 +427,11 @@ public partial class TucJob
 
     public string Connote { get; set; }
 
+    public int? PickupTimeZoneId { get; set; }
+
     public int? PickUpWindowMins { get; set; }
 
     public int? DeliverByWindowMins { get; set; }
-
-    public int? PickupTimeZoneId { get; set; }
 
     public decimal? TotalDistance { get; set; }
 

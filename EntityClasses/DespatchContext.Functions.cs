@@ -16,6 +16,12 @@ namespace DespatchWeb.EntityClasses
             return FromExpression(() => UTL_fncClearList_Other());
         }
 
+        [DbFunction("UTL_fncJob_HasChildren", "dbo")]
+        public static bool? UTL_fncJob_HasChildren(int? JobID)
+        {
+            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
+        }
+
         [DbFunction("UTL_fncSuburb_FromNameWithPostCode", "dbo")]
         public static int? UTL_fncSuburb_FromNameWithPostCode(string Suburb, int? SiteID, int? PostCode)
         {
