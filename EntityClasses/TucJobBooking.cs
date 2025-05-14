@@ -72,6 +72,8 @@ public partial class TucJobBooking
 
     public DateTime? UcbkNextDue { get; set; }
 
+    public string UcbkDays { get; set; }
+
     public string UcbkClientRefa { get; set; }
 
     public string UcbkClientRefb { get; set; }
@@ -344,14 +346,14 @@ public partial class TucJobBooking
 
     public decimal? CourierFuel { get; set; }
 
-    public string UcbkDays { get; set; }
+    public int UcbkDaysInt { get; set; }
 
     /// <summary>
     /// Frequency of job recurrence (Weekly=1, Fortnightly=2, FirstOfMonth=4, etc.)
     /// </summary>
     public int? UcbkFrequency { get; set; }
 
-    public int UcbkDaysInt { get; set; }
+    public int? PickupTimeZoneId { get; set; }
 
     /// <summary>
     /// 0 = Don&apos;t Book (default), 1 = Deliver Next Day
@@ -361,8 +363,6 @@ public partial class TucJobBooking
     public int? PickUpWindowMins { get; set; }
 
     public int? DeliverByWindowMins { get; set; }
-
-    public int? PickupTimeZoneId { get; set; }
 
     public decimal? TotalDistance { get; set; }
 

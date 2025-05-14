@@ -158,8 +158,9 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         string clientIds
     )
     {
-        // Remove parent jobs     
-        query = query.Where(j => j.ParentId != null);
+        //// Remove parent jobs     
+        //query = query.Where(j => j.ParentId != null); 
+        query = query.Where(j => j.ParentId != j.UcjbId && !j.InverseParent.Any());
 
         // Filter dates
         if (queryParams.StartDate != null) query = query.Where(j => j.UcjbDate >= queryParams.StartDate);
