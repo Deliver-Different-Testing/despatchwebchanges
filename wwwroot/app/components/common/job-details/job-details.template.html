@@ -22,7 +22,7 @@
                 <md-tabs
                         md-border-bottom
                         md-center-tabs="true"
-                        md-no-pagination="ctrl.jobGroups.length <= 5"
+                        md-no-pagination="ctrl.jobGroups.length <= 2"
                         md-selected="ctrl.selectedTabIndex"
                         md-swipe-content>
                     <md-tab ng-repeat="relatedJob in ctrl.jobGroups track by relatedJob.job.id">
@@ -73,6 +73,23 @@
                 </md-icon>
                 {{ctrl.job.statusName}}
             </md-chip>
+        </div>
+
+        <div class="subjobs-container" ng-if="ctrl.selectedRelatedJob && ctrl.selectedRelatedJob.subJobs && ctrl.selectedRelatedJob.subJobs.length > 0">
+            <md-tabs
+                    md-border-bottom
+                    md-center-tabs="true"
+                    md-no-pagination="ctrl.selectedRelatedJob.subJobs.length <= 3"
+                    md-selected="ctrl.selectedSubJobIndex"
+                    md-swipe-content>
+                <md-tab ng-repeat="subJob in ctrl.selectedRelatedJob.subJobs track by subJob.id">
+                    <md-tab-label>
+                        <div ng-click="ctrl.switchToSubJob($index)">
+                            {{subJob.text}}
+                        </div>
+                    </md-tab-label>
+                </md-tab>
+            </md-tabs>
         </div>
 
         <!-- Timing Section -->

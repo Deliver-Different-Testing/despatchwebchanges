@@ -30,7 +30,7 @@ function sortRelatedJobs(relatedJobs: Suggestion[]): JobGroup[] {
     const result: JobGroup[] = [];
 
     // Process each group
-    jobMap.forEach((jobs, baseJob) => {
+    jobMap.forEach((jobs: Suggestion[], baseJob: string) => {
         // Sort jobs - main job first (no suffix), then others alphabetically
         jobs.sort((a, b) => {
             const suffixA = a.text.replace(baseJob, '');
