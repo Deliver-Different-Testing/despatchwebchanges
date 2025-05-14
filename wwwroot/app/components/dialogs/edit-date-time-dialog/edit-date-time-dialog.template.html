@@ -15,7 +15,13 @@
             <!-- Date Picker -->
             <div class="date-time-field" ng-if="ctrl.showDate">
                 <md-input-container class="md-block">
-                    <label for="date">Date ({{(ctrl.selectedTimeZone.timeZoneIana || ctrl.timeZone) | timezoneShort}})</label>
+                    <label for="date">
+                        <span ng-if="ctrl.selectedTimeZone.timeZoneIana">Date ({{ctrl.selectedTimeZone.timeZoneIana | timezoneShort}})</span>
+                        <span ng-if="!ctrl.selectedTimeZone.timeZoneIana">
+                            Date
+                            <md-progress-circular md-mode="indeterminate" md-diameter="15" class="md-accent md-hue-1" style="display: inline-block; vertical-align: middle;"></md-progress-circular>
+                        </span>
+                    </label>
                     <input class="dtp-no-msclear dtp-input md-input"
                            id="date"
                            name="date"
@@ -39,7 +45,13 @@
             <!-- Time Picker -->
             <div class="date-time-field" ng-if="ctrl.showTime">
                 <md-input-container class="md-block">
-                    <label for="time">Time ({{(ctrl.selectedTimeZone.timeZoneIana || ctrl.timeZone) | timezoneShort}})</label>
+                    <label for="time">
+                        <span ng-if="ctrl.selectedTimeZone.timeZoneIana">Time ({{ctrl.selectedTimeZone.timeZoneIana | timezoneShort}})</span>
+                        <span ng-if="!ctrl.selectedTimeZone.timeZoneIana">
+                            Time
+                            <md-progress-circular md-mode="indeterminate" md-diameter="15" class="md-accent md-hue-1" style="display: inline-block; vertical-align: middle;"></md-progress-circular>
+                        </span>
+                    </label>
                     <input class="dtp-no-msclear dtp-input md-input"
                            id="time"
                            name="time"
