@@ -85,6 +85,7 @@ class NationwideControl extends BaseController {
     agentMessage?: string;
     views: DfrntPageViewModel[] = [];
     selectedViews: DfrntPageViewModel[] = [];
+    viewsInitialized: boolean = false;
     showInput: Record<string, boolean> = {};
     inputWidth: Record<string, number> = {};
     jobListLoading: boolean = false;
@@ -468,7 +469,7 @@ class NationwideControl extends BaseController {
     $onInit() {
         const jobId = this.$stateParams.jobId;
         if (jobId) {
-            return this.getData()
+            return this.loadPageViews()
                 .then(() => {
                     if (!this.jobList) return;
 
@@ -482,7 +483,7 @@ class NationwideControl extends BaseController {
                     this.toastrService.showErrorToast("Error loading job details");
                 });
         } else {
-            return this.getData();
+            return this.loadPageViews();
         }
     }
 
@@ -592,29 +593,50 @@ class NationwideControl extends BaseController {
                     this.selectedViews.push(this.views[0]);
                     this.saveViewsToStorage(this.selectedViews);
                 }
+
+                this.viewsInitialized = true;
             }
         });
     }
+
+    //async toggleView(view: DfrntPageViewModel) {
+    //    this.registerTimeout(() => {
+    //        if (view.selected) {
+    //            if (!this.selectedViews.some((v: DfrntPageViewModel) => v.id === view.id)) {
+    //                this.selectedViews.push(view);
+    //            }
+    //        } else {
+    //            const index = this.selectedViews.findIndex((v: DfrntPageViewModel) => v.id === view.id);
+    //            if (index > -1) {
+    //                this.selectedViews.splice(index, 1);
+    //            }
+    //        }
+
+    //        this.saveViewsToStorage(this.selectedViews);
+    //    });
+
+    //    await this.getData();
+    //}
 
     async toggleView(view: DfrntPageViewModel) {
-        this.registerTimeout(() => {
-            if (view.selected) {
-                if (!this.selectedViews.some((v: DfrntPageViewModel) => v.id === view.id)) {
-                    this.selectedViews.push(view);
-                }
-            } else {
-                const index = this.selectedViews.findIndex((v: DfrntPageViewModel) => v.id === view.id);
-                if (index > -1) {
-                    this.selectedViews.splice(index, 1);
-                }
+        // Update the selectedViews array immediately instead of in a timeout
+        if (view.selected) {
+            if (!this.selectedViews.some((v: DfrntPageViewModel) => v.id === view.id)) {
+                this.selectedViews.push(view);
             }
+        } else {
+            const index = this.selectedViews.findIndex((v: DfrntPageViewModel) => v.id === view.id);
+            if (index > -1) {
+                this.selectedViews.splice(index, 1);
+            }
+        }
 
-            this.saveViewsToStorage(this.selectedViews);
-        });
+        // Save to storage after the changes
+        this.saveViewsToStorage(this.selectedViews);
 
+        // Now get data with the updated selectedViews
         await this.getData();
     }
-
 
     async jobRecordSearch(searchText: string) {
         if (!this.jobList) return;
@@ -1509,6 +1531,18 @@ class NationwideControl extends BaseController {
     }
 
     async getJobList(dataTypes: JobDataType | JobDataType[] = JobDataType.ALL): Promise<void> {
+
+        // Ensure views are initialized before proceeding
+        if (!this.viewsInitialized && this.selectedViews.length === 0) {
+            console.log('Views not initialized yet, loading defaults');
+            this.selectedViews = this.loadViewsFromStorage();
+
+            // If still no views, add at least one default view
+            if (this.selectedViews.length === 0 && this.views.length > 0) {
+                this.selectedViews = [this.views[0]];
+            }
+        }
+
         const selectedClients = this.pickService.clients.map((a: { id: number }) => a.id);
 
         // Convert input to an array of types

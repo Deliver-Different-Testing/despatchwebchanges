@@ -92,6 +92,7 @@ class HomeController extends BaseController {
     hasAttachedFile: boolean;
     views: DfrntPageViewModel[];
     selectedViews: DfrntPageViewModel[];
+    viewsInitialized: boolean = false;
     mapCenter: Coordinates;
     autoZoomEnabled: boolean;
     selected: any;
@@ -691,6 +692,9 @@ class HomeController extends BaseController {
                 this.selectedViews.push(this.views[0]);
                 this.saveViewsToStorage(this.selectedViews);
             }
+
+            // Set the flag to indicate views are initialized
+            this.viewsInitialized = true;
         }
     }
 
@@ -1993,6 +1997,17 @@ class HomeController extends BaseController {
 
     async getJobList() {
         try {
+            // Ensure views are initialized before proceeding
+            if (!this.viewsInitialized && this.selectedViews.length === 0) {
+                console.log('Views not initialized yet, loading defaults');
+                this.selectedViews = this.loadViewsFromStorage();
+
+                // If still no views, add at least one default view
+                if (this.selectedViews.length === 0 && this.views.length > 0) {
+                    this.selectedViews = [this.views[0]];
+                }
+            }
+
             if (Modernizr.localstorage) {
                 localStorage.setItem("disp-filters-" + ContactID, JSON.stringify(this.queryParams));
             }
