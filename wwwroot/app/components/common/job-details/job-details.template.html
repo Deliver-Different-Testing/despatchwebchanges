@@ -190,7 +190,7 @@
                             <md-icon aria-label="POD time" md-font-set="material-symbols-outlined">verified</md-icon>
                             <div class="timing-detail">
                                 <span class="timing-label">POD Time:</span>
-                                <span class="timing-value">{{ctrl.job.completedTime ? (ctrl.job.completedTime | momentFormat:'MM/DD HH:mm') + ' (' + (ctrl.timeZone | timezoneShort) + ')' : 'N/A'}}</span>
+                                <span class="timing-value">{{ctrl.job.completedTime ? (ctrl.job.completedTime | momentFormat:'MM/DD HH:mm') + ' (' + (ctrl.job.deliveryTimeZone.text | timezoneShort) + ')' : 'N/A'}}</span>
                             </div>
                         </md-list-item>
 
