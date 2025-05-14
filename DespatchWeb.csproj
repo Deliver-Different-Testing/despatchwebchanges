@@ -241,6 +241,7 @@
     <_ContentIncludedByDefault Remove="wwwroot\app\components\common\warning-card\warning-card.template.html" />
     <_ContentIncludedByDefault Remove="wwwroot\lib\autocomplete\angular-auto-complete.css" />
     <_ContentIncludedByDefault Remove="wwwroot\lib\autocomplete\angular-auto-complete.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\add-pallet-dialog\add-pallet-dialog.controller.js" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
@@ -298,6 +299,8 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-event-dialog\add-event-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-event-dialog\add-event-dialog.service.ts" />

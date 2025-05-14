@@ -657,6 +657,8 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getGeoCodeInformation(item: Suggestion) {
+        const hereMapsConfig = await this.configService.getHereMapsConfig();
+
         const response = await this.$http.get("https://geocoder.cit.api.here.com/6.2/geocode.json", {
             params: {
                 app_id: hereMapsConfig.appId,
@@ -669,6 +671,8 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async retrieveAddresses(lat: number, long: number) {
+        const hereMapsConfig = await this.configService.getHereMapsConfig();
+
         const response = await this.$http.get("https://reverse.geocoder.api.here.com/6.2/reversegeocode.json", {
             params: {
                 app_id: hereMapsConfig.appId,
