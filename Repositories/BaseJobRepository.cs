@@ -169,11 +169,11 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         // Apply window pane viewFilters
         query = windowPane switch
         {
-            //NationwideWidget.JobList => query.Where(j =>
-            //    j.InternalStatus == (int)InternalJobStatus.NewJobs
-            //    || (j.InternalStatus == null && j.UcjbStatus != (int)JobStatus.AwaitingPod)
-            //),
-    
+            NationwideWidget.JobList => query.Where(j =>
+                j.InternalStatus == (int)InternalJobStatus.NewJobs
+                || (j.InternalStatus == null && j.UcjbStatus != (int)JobStatus.AwaitingPod)
+            ),
+
             NationwideWidget.Pod => query.Where(j =>
                 j.InternalStatus == (int)InternalJobStatus.AwaitingPod || j.UcjbStatus == (int)JobStatus.AwaitingPod
             ),
