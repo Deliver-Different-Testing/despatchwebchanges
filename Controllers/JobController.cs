@@ -236,12 +236,14 @@ public class JobController(
 
             var chargeId = await jobRepository.AddJobPriceBreakdownAsync(breakdown, staffId);
 
-            await taskRepository.AddEventAsync(
+            if (breakdown.JobId.HasValue) {
+                await taskRepository.AddEventAsync(
                 jobId ?? 0,
                 staffId,
                 despatcherName,
                 "Manually rated price",
                 (int)EventType.ChangePrice);
+            }
             return Json(chargeId);
         }
         catch (Exception ex)
@@ -266,12 +268,14 @@ public class JobController(
 
             await jobRepository.UpdateJobPriceBreakdownAsync(breakdown, staffId);
 
-            await taskRepository.AddEventAsync(
-                jobId ?? 0,
-                staffId,
-                despatcherName,
-                "Manually rated price",
-                (int)EventType.ChangePrice);
+            if (breakdown.JobId.HasValue) {
+                await taskRepository.AddEventAsync(
+                    jobId ?? 0,
+                    staffId,
+                    despatcherName,
+                    "Manually rated price",
+                    (int)EventType.ChangePrice);
+            }
             return Ok();
         }
         catch (Exception ex)
