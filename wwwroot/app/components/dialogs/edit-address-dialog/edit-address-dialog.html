@@ -26,8 +26,8 @@
             class="md-block"
             flex-gt-xs
             md-floating-label="{{ ctrl.useUsFormat ? 'Street Address' : 'Address' }}"
-            md-item-text="item.text"
-            md-items="item in ctrl.addressSearchAutocomplete(ctrl.addressSearchText)"
+            md-item-text="item.address.label"
+            md-items="item in ctrl.autocompleteAddressSearch(ctrl.addressSearchText)"
             md-min-length="3"
             md-search-text="ctrl.addressSearchText"
             md-selected-item-change="ctrl.addressSearchItemSelected(item)"
@@ -37,7 +37,7 @@
               <span
                 md-highlight-flags="^i"
                 md-highlight-text="ctrl.addressSearchText"
-                >{{item.text}}</span
+                >{{item.address.label}}</span
               >
             </md-item-template>
             <md-not-found>
@@ -263,7 +263,7 @@
           >
             <ng-map
               center="{{ctrl.addressDetails.latitude}}, {{ctrl.addressDetails.longitude}}"
-              id="map"
+              id="dispatchMap"
               map-type-id="roadmap"
               on-rightclick="ctrl.moveMarker($event)"
               zoom="15"
@@ -307,7 +307,7 @@
         ng-click="ctrl.submit(ctrl.addressDetails)"
         ng-show="!ctrl.isLoading"
       >
-        SAVE
+        {{ ctrl.submitLabel || 'SAVE' }}
       </md-button>
     </md-dialog-actions>
   </form>
