@@ -23,7 +23,7 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
 
     async openPriceBreakdownDialog($event: MouseEvent, jobId: number, isPrebook: boolean = false) {
         try {
-            const priceBreakdown: PriceBreakdown[] = await this.DispatchData.getPriceBreakdown(jobId);
+            const priceBreakdown: PriceBreakdown[] = await this.DispatchData.getPriceBreakdown(jobId, isPrebook);
 
             await this.$mdDialog.show({
                 controller: PriceBreakdownDialogController,

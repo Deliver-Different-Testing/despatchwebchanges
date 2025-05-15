@@ -173,7 +173,7 @@ public interface IJobRepository
         double truckHours
     );
 
-    Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId);
+    Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId, bool isPrebook);
 
     Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel, int staffId);
     Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel, int staffId);

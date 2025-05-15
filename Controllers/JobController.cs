@@ -207,12 +207,12 @@ public class JobController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetPricingBreakdown(int jobId)
+    public async Task<IActionResult> GetPricingBreakdown(int jobId, bool isPrebook)
     {
         try
         {
-            Log.Information("Getting price breakdown for job {JobId}", jobId);
-            var priceComponents = await jobRepository.GetJobPriceBreakdownAsync(jobId);
+            Log.Information("Getting price breakdown for job {JobId} (prebook {isPrebook})", jobId, isPrebook);
+            var priceComponents = await jobRepository.GetJobPriceBreakdownAsync(jobId, isPrebook);
             return Json(priceComponents);
         }
         catch (Exception ex)

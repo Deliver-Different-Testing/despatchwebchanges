@@ -1719,6 +1719,20 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         return jobInfo.EffectiveJobId;
     }
 
+    protected async Task<int> GetJobBookingRelationshipInfoAsync(int jobId)
+    {
+        var jobInfo = await Context.TucJobBookings
+            .Where(j => j.UcbkId == jobId)
+            .Select(j => new
+            {
+                EffectiveJobId = j.ParentId ?? j.UcbkId,
+            })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        return jobInfo.EffectiveJobId;
+    }
+
     protected static string GetTrackingName(int trackingMethodId)
     {
         return trackingMethodId switch

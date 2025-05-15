@@ -740,8 +740,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
     }
 
-    async getPriceBreakdown(jobId: number): Promise<PriceBreakdown[]> {
-        const response = await this.$http.get<PriceBreakdown[]>(`job/GetPricingBreakdown?jobId=${jobId}`);
+    async getPriceBreakdown(jobId: number, isPrebook: boolean): Promise<PriceBreakdown[]> {
+        const response = await this.$http.get<PriceBreakdown[]>(`job/GetPricingBreakdown?jobId=${jobId}&isPrebook=${isPrebook}`);
         return response.data;
     }
 

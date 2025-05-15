@@ -1466,11 +1466,27 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         return (string)outputDescriptionParam.Value;
     }
 
-    public async Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId)
+    public async Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId, bool isPrebook)
     {
-        var effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
-
-        return await Context.PricingBreakdowns
+        var effectivePrebookId = 0;
+        var effectiveJobId = 0;
+        if (isPrebook) {
+            effectivePrebookId = await GetJobBookingRelationshipInfoAsync(jobId);
+            return await Context.PricingBreakdowns
+            .Where(p => p.PrebookJobId == effectivePrebookId)
+            .Select(p => new ChargeViewModel
+            {
+                ChargeId = p.PricingBreakdownId,
+                Amount = p.ChargeAmount,
+                Name = p.ChargeName,
+                JobId = p.JobId,
+                PrebookJobId = p.PrebookJobId
+            })
+            .AsNoTracking()
+            .ToListAsync();
+        } else {
+            effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
+            return await Context.PricingBreakdowns
             .Where(p => p.JobId == effectiveJobId)
             .Select(p => new ChargeViewModel
             {
@@ -1482,6 +1498,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             })
             .AsNoTracking()
             .ToListAsync();
+        }
     }
 
     public async Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel, int staffId)
