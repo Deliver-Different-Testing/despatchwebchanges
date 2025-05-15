@@ -828,7 +828,9 @@ public static class JobMappings
             // References and amounts
             RefA = j.UcbkClientRefa,
             RefB = j.UcbkClientRefb,
-            Charge = $"${j.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}",
+            Charge = j.ParentId == null
+                ? $"${j.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}"
+                : $"${j.BookingParent.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}",
             OurRef = j.UcbkOurRef,
 
             // Size - has navigation in archive
