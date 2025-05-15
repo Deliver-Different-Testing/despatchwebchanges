@@ -283,9 +283,13 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
             var currentDate = _infoService.GetCurrentTenantTime();
             var isDepartureAirportAgent = job.FromAirportId != null && job.ToAirportId == null;
+            bool isGroundJob = !string.IsNullOrEmpty(job.UcjbNumber) && !char.IsDigit(job.UcjbNumber.Last());
 
             job.AgentId = agentId;
-            job.UcjbStatus = isDepartureAirportAgent ? (int)JobStatus.InboundAgentAssigned : (int)JobStatus.OutboundAgentAssigned;
+            job.UcjbStatus = isGroundJob ? (int)JobStatus.GroundAgentAssigned
+                                                : isDepartureAirportAgent? (int)JobStatus.InboundAgentAssigned
+                                                                         : (int)JobStatus.OutboundAgentAssigned;
+            
             job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
             job.UcjbDispDate = currentDate;
             job.UcjbDispTime = currentDate;
@@ -303,7 +307,6 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             return false;
         }
     }
-
 
     public async Task<List<DispatchJobViewModel>> NationwideJobListAsync(JobQueryParams queryParams, bool isInternal,
         bool isUsTenant,
@@ -325,11 +328,28 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
     private async Task<NationwideJobDetail> GetJobDetailsAsync(int jobId)
     {
+        // First check if we need to find a nearby airport
+        var airportId = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => j.FromAirportId ?? j.ToAirportId)
+            .FirstOrDefaultAsync();
+
+        // If no airport ID found, get the closest one
+        if (airportId == null)
+        {
+            var nearbyAirports = await GetNearbyAirportsAsync(jobId);
+            if (nearbyAirports.Any())
+            {
+                airportId = nearbyAirports.First().Id;
+                Log.Information("Using nearest airport {AirportId} for job {JobId}", airportId, jobId);
+            }
+        }
+
         return await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Select(j => new NationwideJobDetail
             {
-                AirPortId = j.FromAirportId ?? j.ToAirportId,
+                AirPortId = airportId, 
                 VehicleSizeId = j.UcjbSize,
                 ClientId = j.UcjbClientId,
                 FromZipCode = j.PickupAddressLine7,

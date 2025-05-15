@@ -23,4 +23,5 @@ public enum JobStatus
     Preassigned = 18,
     OutboundAgentAssigned = 103,
     InboundAgentAssigned = 104,
+    GroundAgentAssigned = 105
 }
