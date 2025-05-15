@@ -10,7 +10,8 @@ public static class DistanceCalculator
         decimal pickupLat,
         decimal pickupLong,
         decimal dropOffLat,
-        decimal dropOffLong)
+        decimal dropOffLong
+    )
     {
         var latitude1 = ToRadians(pickupLat);
         var longitude1 = ToRadians(pickupLong);
@@ -22,7 +23,8 @@ public static class DistanceCalculator
             longitude1,
             latitude2,
             longitude2,
-            EarthRadiusInMiles);
+            EarthRadiusInMiles
+        );
 
         return Math.Round(distance, 2);
     }
@@ -32,14 +34,18 @@ public static class DistanceCalculator
         double longitude1,
         double latitude2,
         double longitude2,
-        double earthRadius)
+        double earthRadius
+    )
     {
         var latitudeDifference = latitude2 - latitude1;
         var longitudeDifference = longitude2 - longitude1;
 
-        var haversine = Math.Sin(latitudeDifference / 2) * Math.Sin(latitudeDifference / 2) +
-                        Math.Cos(latitude1) * Math.Cos(latitude2) *
-                        Math.Sin(longitudeDifference / 2) * Math.Sin(longitudeDifference / 2);
+        var haversine =
+            Math.Sin(latitudeDifference / 2) * Math.Sin(latitudeDifference / 2)
+            + Math.Cos(latitude1)
+                * Math.Cos(latitude2)
+                * Math.Sin(longitudeDifference / 2)
+                * Math.Sin(longitudeDifference / 2);
 
         var centralAngle = 2 * Math.Asin(Math.Sqrt(haversine));
 

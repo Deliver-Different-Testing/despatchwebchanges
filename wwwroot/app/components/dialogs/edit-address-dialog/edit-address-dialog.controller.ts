@@ -32,10 +32,10 @@ class EditAddressDialogController extends BaseController {
 
   isLoading: boolean;
   addressSearchText: string;
-  googleMapsUrl: string | null = null;
+  googleMapsUrl?: string;
   mapDisplay?: boolean;
-  map!: google.maps.Map;
-  marker!: google.maps.Marker;
+  map?: google.maps.Map;
+  marker?: google.maps.Marker;
   usStateList: IStateInfo[];
 
   // Contact Card
@@ -79,7 +79,7 @@ class EditAddressDialogController extends BaseController {
       }
     }
 
-    this.registerTimeout(() => {
+  this.registerTimeout(() => {
       this.mapDisplay = true;
     }, 500);
 
@@ -119,6 +119,7 @@ class EditAddressDialogController extends BaseController {
         );
       });
   }
+
 
   private transformSuggestions(data: any): Array<{ id: string; text: string }> {
     return data.suggestions.map((obj: any) => ({
@@ -184,13 +185,13 @@ class EditAddressDialogController extends BaseController {
     );
 
     console.log("Setting map center to:", latLng.toString());
-    this.map.setCenter(latLng);
+    this.map?.setCenter(latLng);
 
     console.log("Marker before setPosition:", this.marker);
-    this.marker.setPosition(latLng);
+    this.marker?.setPosition(latLng);
     console.log("Marker after setPosition:", this.marker);
 
-    this.marker.setVisible(true);
+    this.marker?.setVisible(true);
   }
 
   async submit(addressDetails: EditAddressDialogViewModel): Promise<void> {
@@ -338,7 +339,7 @@ class EditAddressDialogController extends BaseController {
 
       this.addressDetails.latitude = place.geometry.location.lat();
       this.addressDetails.longitude = place.geometry.location.lng();
-      this.map.setCenter(place.geometry.location);
+      this.map?.setCenter(place.geometry.location);
     } catch (error) {
       this.toastrService.showErrorToast(
         "An error occurred while retrieving address information. Please try again or contact support"

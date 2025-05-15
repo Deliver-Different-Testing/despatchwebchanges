@@ -36,7 +36,7 @@
           md-selected="ctrl.selectedTabIndex"
           md-swipe-content
         >
-          <md-tab
+        <md-tab ng-disabled="ctrl.processingTabChange"
             ng-repeat="relatedJob in ctrl.jobGroups track by relatedJob.job.id"
           >
             <md-tab-label>
@@ -109,11 +109,13 @@
       <md-tabs
         md-border-bottom
         md-center-tabs="true"
-        md-no-pagination="ctrl.selectedRelatedJob.subJobs.length <= 3"
+        md-no-pagination="ctrl.selectedRelatedJob.subJobs.length <= 2"
         md-selected="ctrl.selectedSubJobIndex"
         md-swipe-content
       >
-        <md-tab
+
+        <!-- Subjob tabs -->
+        <md-tab ng-disabled="ctrl.processingTabChange"
           ng-repeat="subJob in ctrl.selectedRelatedJob.subJobs track by subJob.id"
         >
           <md-tab-label>
