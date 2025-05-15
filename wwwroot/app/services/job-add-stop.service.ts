@@ -3,23 +3,19 @@ import {EditAddressDialogService} from "../components/dialogs/edit-address-dialo
 import {IDispatchJob} from "../interfaces/job.interface";
 import ToastrService from "./toastr.service";
 import JobSuffix from "../enums/job-suffix.enum";
-import NavigationService from "./navigation.service";
 import {bindAllMethods} from "../functions/bindAllMethods";
-import IOpenJobOptions from "../interfaces/open-job-options.interface";
 
 class JobAddStopService implements angular.IServiceProvider {
     static $inject = [
         "DispatchData",
         "editAddressDialogService",
         "toastrService",
-        "navigationService"
     ];
 
     constructor(
         private DispatchData: DispatchCoreService,
         private editAddressDialogService: EditAddressDialogService,
         private toastrService: ToastrService,
-        private navigationService: NavigationService,
     ) {
         bindAllMethods(this);
         console.log("JobAddStop service initialized");
@@ -34,16 +30,16 @@ class JobAddStopService implements angular.IServiceProvider {
 
         switch (lastChar) {
             case JobSuffix.Pickup:
-                return this.addPickUpStop(job, $event);
+                return await this.addPickUpStop(job, $event);
             case JobSuffix.Delivery:
-                return this.addDeliveryStop(job, $event);
+                return await this.addDeliveryStop(job, $event);
             default:
                 this.toastrService.showWarningToast("Cannot add stop to this job");
                 return;
         }
     }
 
-    private getJobSuffix(jobNo: string | number): string {
+    private getJobSuffix(jobNo: string): string {
         return jobNo.toString().slice(-1);
     }
 
@@ -55,9 +51,7 @@ class JobAddStopService implements angular.IServiceProvider {
         if(!newPickUpAddress) return;
 
         // Add a stop job
-        const stopJobId = await this.DispatchData.addStopToJob(job.id, newPickUpAddress, undefined);
-
-        this.openJobDetail(stopJobId);
+        await this.DispatchData.addStopToJob(job.id, newPickUpAddress, undefined);
     }
 
     private async addDeliveryStop(job: IDispatchJob, $event?: MouseEvent) {
@@ -68,18 +62,7 @@ class JobAddStopService implements angular.IServiceProvider {
         if(!newDeliveryAddress) return;
 
         // Add a stop job
-        const stopJobId = await this.DispatchData.addStopToJob(job.id, undefined, newDeliveryAddress);
-
-        this.openJobDetail(stopJobId);
-    }
-
-    private openJobDetail(stopJobId: number) {
-        const options: IOpenJobOptions = {
-            stateName: "nw",
-            target: "_blank"
-        };
-
-        this.navigationService.openJobDetail(stopJobId, options);
+        await this.DispatchData.addStopToJob(job.id, undefined, newDeliveryAddress);
     }
 }
 

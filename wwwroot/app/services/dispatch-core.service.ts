@@ -2,7 +2,8 @@ import {AppConfig} from "../interfaces/app-config.interface";
 import {
     AddressViewModel,
     ClearListViewModel,
-    ClientItemsViewModel, EditAddressDialogViewModel,
+    ClientItemsViewModel,
+    EditAddressDialogViewModel,
     IClearListEnvelope,
     IDispatchJob,
     IJob,
@@ -19,22 +20,18 @@ import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
     ActiveCourierViewModel,
     AvailableCourierPosition,
-    TruckCourierStatusViewModel
+    TruckCourierStatusViewModel,
 } from "../interfaces/courier.interface";
 import {EventGroupViewModel} from "../interfaces/event-group-view-model.interface";
-import {ClearListEnvelopeViewModel, DfrntPageViewModel} from "../interfaces/dfrnt-page-view-model.interface";
+import {ClearListEnvelopeViewModel, DfrntPageViewModel,} from "../interfaces/dfrnt-page-view-model.interface";
 import {bindAllMethods} from "../functions/bindAllMethods";
-import {TaskTableFiltersRequest, TaskViewModel} from "../components/task-dashboard/task-dashboard.interfaces";
+import {TaskTableFiltersRequest, TaskViewModel,} from "../components/task-dashboard/task-dashboard.interfaces";
 import {JobProperty} from "../enums/job-property.enum";
 import moment from "moment";
 import ConfigService from "./config.service";
 
 class DispatchCoreService implements angular.IServiceProvider {
-    static $inject = [
-        "$http",
-        "APP_CONFIG",
-        "configService",
-    ];
+    static $inject = ["$http", "APP_CONFIG", "configService"];
 
     private readonly isUsCustomer: boolean;
     browserTimeZone: string;
@@ -42,7 +39,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     constructor(
         private $http: angular.IHttpService,
         private appConfig: AppConfig,
-        private configService: ConfigService,
+        private configService: ConfigService
     ) {
         this.isUsCustomer = this.appConfig.US_Customer;
         this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -54,7 +51,9 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getSelectedViews(userId: number, pageId: number) {
-        const response = await this.$http.get<DfrntPageViewModel[]>(`home/GetPageViews?userid=${userId}&pageid=${pageId}`);
+        const response = await this.$http.get<DfrntPageViewModel[]>(
+            `home/GetPageViews?userid=${userId}&pageid=${pageId}`
+        );
         return response.data;
     }
 
@@ -69,32 +68,38 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getEventTypeGroups(eventGroupId: number) {
-        const response = await this.$http.get<EventGroupViewModel[]>("task/GetEventTypeGroups?eventGroupId=" + eventGroupId);
+        const response = await this.$http.get<EventGroupViewModel[]>(
+            "task/GetEventTypeGroups?eventGroupId=" + eventGroupId
+        );
         return response.data;
     }
 
     async getActiveStaff() {
-        const response = await this.$http.get<Suggestion[]>('task/GetStaff');
+        const response = await this.$http.get<Suggestion[]>("task/GetStaff");
         return response.data;
     }
 
     async getTimeZoneOptions(): Promise<TimeZoneSuggestion[]> {
-        const response = await this.$http.get<TimeZoneSuggestion[]>('job/GetTimeZoneOptions');
+        const response = await this.$http.get<TimeZoneSuggestion[]>(
+            "job/GetTimeZoneOptions"
+        );
         return response.data;
     }
 
     async isJobParent(jobId: number) {
-        const response = await this.$http.get<boolean>('job/IsJobParent?jobId=' + jobId);
+        const response = await this.$http.get<boolean>(
+            "job/IsJobParent?jobId=" + jobId
+        );
         return response.data;
     }
 
     async addRestoreEvent(jobId: number) {
-       await this.$http.post("job/AddRestoreEvent", null, {
+        await this.$http.post("job/AddRestoreEvent", null, {
             params: {
                 jobId,
                 staffId: ContactID,
-                despatcherName: FirstName
-            }
+                despatcherName: FirstName,
+            },
         });
     }
 
@@ -103,30 +108,38 @@ class DispatchCoreService implements angular.IServiceProvider {
             params: {
                 jobId,
                 ContactID,
-                FirstName
-            }
+                FirstName,
+            },
         });
 
         return response.data;
     }
 
-    async allocateJobs(courierId: number, dispatcherId: number, jobIds: number[]) {
+    async allocateJobs(
+        courierId: number,
+        dispatcherId: number,
+        jobIds: number[]
+    ) {
         await this.$http.post("job/Allocate", null, {
             params: {
                 courierId,
                 dispId: dispatcherId,
-                jobIds
-            }
+                jobIds,
+            },
         });
     }
 
-    async reAllocateJobs(courierId: number, dispatcherId: number, jobIds: number[]) {
+    async reAllocateJobs(
+        courierId: number,
+        dispatcherId: number,
+        jobIds: number[]
+    ) {
         await this.$http.post("job/ReAllocate", null, {
             params: {
                 courierId,
                 dispId: dispatcherId,
-                jobIds
-            }
+                jobIds,
+            },
         });
     }
 
@@ -134,23 +147,31 @@ class DispatchCoreService implements angular.IServiceProvider {
         await this.$http.post("job/SetFirstJob", null, {
             params: {
                 jobId,
-                courierId
-            }
+                courierId,
+            },
         });
     }
 
     async truckCourierStatus(courierId: number) {
-        const response = await this.$http.get<TruckCourierStatusViewModel>(`courier/TruckCourierStatus?courierId=${courierId}`);
+        const response = await this.$http.get<TruckCourierStatusViewModel>(
+            `courier/TruckCourierStatus?courierId=${courierId}`
+        );
         return response.data;
     }
 
     async validateSwapPOD(jobNumber: string) {
-        const response = await this.$http.post(`Job/ValidateSwapPOD?job=${jobNumber}`, null);
+        const response = await this.$http.post(
+            `Job/ValidateSwapPOD?job=${jobNumber}`,
+            null
+        );
         return response.data;
     }
 
     async swapPOD(jobNumber1: string, jobNumber2: string) {
-        const response = await this.$http.post(`Job/SwapPOD?job1=${jobNumber1}&job2=${jobNumber2}`, null);
+        const response = await this.$http.post(
+            `Job/SwapPOD?job1=${jobNumber1}&job2=${jobNumber2}`,
+            null
+        );
         return response.data;
     }
 
@@ -167,27 +188,40 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async resendJobs(jobIds: number[]) {
-        const response = await this.$http.post(`job/ResendSelected?jobIds=${jobIds}`, null);
+        const response = await this.$http.post(
+            `job/ResendSelected?jobIds=${jobIds}`,
+            null
+        );
         return response.data;
     }
 
     async resendAllJobs(courierId: number) {
-        const response = await this.$http.post(`job/ResendAll?courierId=${courierId}`, null);
+        const response = await this.$http.post(
+            `job/ResendAll?courierId=${courierId}`,
+            null
+        );
         return response.data;
     }
 
     async reAssignJobs(jobIds: number[]) {
-        const response = await this.$http.post(`job/ReAssignSelected?jobIds=${jobIds}`, null);
+        const response = await this.$http.post(
+            `job/ReAssignSelected?jobIds=${jobIds}`,
+            null
+        );
         return response.data;
     }
 
     async sendPOD(jobId: number, email: string) {
-        const response = await this.$http.get(`job/SendPOD?jobId=${jobId}&toEmail=${email}`);
+        const response = await this.$http.get(
+            `job/SendPOD?jobId=${jobId}&toEmail=${email}`
+        );
         return response.data;
     }
 
     async hasClientItemsAvailable(clientId: number, speedId: number) {
-        const response = await this.$http.get(`job/HasClientItemsAvailable?clientId=${clientId}&speedId=${speedId}`);
+        const response = await this.$http.get(
+            `job/HasClientItemsAvailable?clientId=${clientId}&speedId=${speedId}`
+        );
         return response.data;
     }
 
@@ -196,49 +230,63 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-  async getRecurringJobDetail(jobId: number) {
-        const response = await this.$http.get<IJob>(`job/RecurringJobDetail?jobId=${jobId}`);
+    async getRecurringJobDetail(jobId: number) {
+        const response = await this.$http.get<IJob>(
+            `job/RecurringJobDetail?jobId=${jobId}`
+        );
         return response.data;
     }
 
     async getRelatedJobs(parentId: number, clientId: number) {
-        const response = await this.$http.get<Suggestion[]>(`/Job/Related?parentId=${parentId}&clientId=${clientId}`);
+        const response = await this.$http.get<Suggestion[]>(
+            `/Job/Related?parentId=${parentId}&clientId=${clientId}`
+        );
         return response.data;
     }
 
     async getJobsCurrent(courierId: number, done: boolean) {
-        const response = await this.$http.get<IDispatchJob[]>(`job/current?courierId=${courierId}&done=${done}`);
+        const response = await this.$http.get<IDispatchJob[]>(
+            `job/current?courierId=${courierId}&done=${done}`
+        );
         return response.data;
     }
 
     async getDriverLocations(selectedViews: DfrntPageViewModel[]) {
-        const filteredViews = selectedViews.filter(view => view.selected);
+        const filteredViews = selectedViews.filter((view) => view.selected);
         const despatchViewIds = this._prepareViewIdsForRequest(filteredViews);
 
         const params = new URLSearchParams();
 
-        despatchViewIds.forEach(id => {
+        despatchViewIds.forEach((id) => {
             params.append("despatchViewIds", id.toString());
         });
 
-        const response = await this.$http.get<ClearListViewModel>(`courier?${params.toString()}&isUsTenant=${this.isUsCustomer}`);
+        const response = await this.$http.get<ClearListViewModel>(
+            `courier?${params.toString()}&isUsTenant=${this.isUsCustomer}`
+        );
         return response.data;
     }
 
     async getDriverDestinationEnvelope(clearListId: number) {
         const countryId = this.isUsCustomer ? 2 : 1;
 
-        const response = await this.$http.get<ClearListEnvelopeViewModel>(`courier/ClearListEnvelope?clearListId=${clearListId}&countryId=${countryId}`);
+        const response = await this.$http.get<ClearListEnvelopeViewModel>(
+            `courier/ClearListEnvelope?clearListId=${clearListId}&countryId=${countryId}`
+        );
         return response.data;
     }
 
     async getActiveCouriers() {
-        const response = await this.$http.get<ActiveCourierViewModel[]>("courier/active");
+        const response = await this.$http.get<ActiveCourierViewModel[]>(
+            "courier/active"
+        );
         return response.data;
     }
 
     async getAllCouriers() {
-        const response = await this.$http.get<ActiveCourierViewModel[]>("courier/AllActive");
+        const response = await this.$http.get<ActiveCourierViewModel[]>(
+            "courier/AllActive"
+        );
         return response.data;
     }
 
@@ -248,12 +296,16 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getClientContacts(contactId: number) {
-        const response = await this.$http.get(`home/ClientContacts?contactId=${contactId}`);
+        const response = await this.$http.get(
+            `home/ClientContacts?contactId=${contactId}`
+        );
         return response.data;
     }
 
     async getPotentialCouriers(jobId: number) {
-        const response = await this.$http.get(`courier/PotentialCouriers?jobId=${jobId}`);
+        const response = await this.$http.get(
+            `courier/PotentialCouriers?jobId=${jobId}`
+        );
         return response.data;
     }
 
@@ -263,12 +315,21 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getCourierById(courierId: number) {
-        const response = await this.$http.get<ActiveCourierViewModel>(`courier/GetCourier?courierId=${courierId}`);
+        const response = await this.$http.get<ActiveCourierViewModel>(
+            `courier/GetCourier?courierId=${courierId}`
+        );
         return response.data;
     }
 
-    async getAvailableCourierLocation(minLng: number, minLat: number, maxLng: number, maxLat: number) {
-        const response = await this.$http.get<AvailableCourierPosition[]>(`courier/AvailableCourierLocation?minLng=${minLng}&minLat=${minLat}&maxLng=${maxLng}&maxLat=${maxLat}&isUsTenant=${this.isUsCustomer}`);
+    async getAvailableCourierLocation(
+        minLng: number,
+        minLat: number,
+        maxLng: number,
+        maxLat: number
+    ) {
+        const response = await this.$http.get<AvailableCourierPosition[]>(
+            `courier/AvailableCourierLocation?minLng=${minLng}&minLat=${minLat}&maxLng=${maxLng}&maxLat=${maxLat}&isUsTenant=${this.isUsCustomer}`
+        );
         return response.data;
     }
 
@@ -283,7 +344,9 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getContactList(clientId: number) {
-        const response = await this.$http.get<Suggestion[]>(`job/ContactList?clientId=${clientId}`);
+        const response = await this.$http.get<Suggestion[]>(
+            `job/ContactList?clientId=${clientId}`
+        );
         return response.data;
     }
 
@@ -298,7 +361,9 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getInternalStatusList() {
-        const response = await this.$http.get<InternalStatus[]>("job/InternalStatusList");
+        const response = await this.$http.get<InternalStatus[]>(
+            "job/InternalStatusList"
+        );
         return response.data;
     }
 
@@ -311,45 +376,75 @@ class DispatchCoreService implements angular.IServiceProvider {
         const url = "job/LateCall";
 
         try {
-            await this.$http.post(url, lateCallRequest, {headers: {'Content-Type': "application/json"}});
+            await this.$http.post(url, lateCallRequest, {
+                headers: {"Content-Type": "application/json"},
+            });
         } catch (error) {
             console.error("Error in lateCall:", error);
             throw error;
         }
     }
 
-
     async ppdExclusiveAmount(clientId: number, amount: number): Promise<number> {
-        const response = await this.$http.get<number>(`job/PPDExclusiveAmount?clientId=${clientId}&amount=${amount}`);
+        const response = await this.$http.get<number>(
+            `job/PPDExclusiveAmount?clientId=${clientId}&amount=${amount}`
+        );
         return response.data;
     }
 
-    async getServices(clientId: number, speedId: number, jobId: number): Promise<IPaginatedResponse<ClientItemsViewModel>> {
+    async getServices(
+        clientId: number,
+        speedId: number,
+        jobId: number
+    ): Promise<IPaginatedResponse<ClientItemsViewModel>> {
         const url = "job/GetAllClientItems";
-        const response = await this.$http.get<IPaginatedResponse<ClientItemsViewModel>>(url + "?clientId=" + clientId + "&speedId=" + speedId + "&jobId=" + jobId);
+        const response = await this.$http.get<
+            IPaginatedResponse<ClientItemsViewModel>
+        >(
+            url + "?clientId=" + clientId + "&speedId=" + speedId + "&jobId=" + jobId
+        );
 
         return response.data;
     }
 
-    async addServicesToJob(jobId: number, serviceIds: number[], totalCost: number) {
-        const url = "job/AddClientItemsToJob"
+    async addServicesToJob(
+        jobId: number,
+        serviceIds: number[],
+        totalCost: number
+    ) {
+        const url = "job/AddClientItemsToJob";
 
         await this.$http({
-            method: "POST", url: url + "?jobId=" + jobId, data: {serviceIds, totalCost}
+            method: "POST",
+            url: url + "?jobId=" + jobId,
+            data: {serviceIds, totalCost},
         });
     }
 
     async splitJob(jobId: number, despatcherName: string) {
-        await this.$http.post(`job/splitJob?jobId=${jobId}&despatcherName=${despatcherName}`, null);
+        await this.$http.post(
+            `job/splitJob?jobId=${jobId}&despatcherName=${despatcherName}`,
+            null
+        );
     }
 
     async finishSplitJobProcess(jobId: number, despatcherName: string) {
-        await this.$http.post(`job/finishSplitJobProcess?jobId=${jobId}&despatcherName=${despatcherName}`, null);
+        await this.$http.post(
+            `job/finishSplitJobProcess?jobId=${jobId}&despatcherName=${despatcherName}`,
+            null
+        );
     }
 
-    async updatePODDetail(jobId: number, jobStatus: number, podName: string, podTime: Date) {
+    async updatePODDetail(
+        jobId: number,
+        jobStatus: number,
+        podName: string,
+        podTime: Date
+    ) {
         const formattedDate = moment(podTime).utc().format();
-        console.log(`[DispatchCoreService] Updating POD details - Job: ${jobId}, Status: ${jobStatus}, POD Name: ${podName}, POD Time: ${formattedDate}`);
+        console.log(
+            `[DispatchCoreService] Updating POD details - Job: ${jobId}, Status: ${jobStatus}, POD Name: ${podName}, POD Time: ${formattedDate}`
+        );
 
         try {
             await this.$http.post(
@@ -360,15 +455,28 @@ class DispatchCoreService implements angular.IServiceProvider {
                 null
             );
 
-            console.log(`[DispatchCoreService] Successfully updated POD details for job ${jobId}`);
+            console.log(
+                `[DispatchCoreService] Successfully updated POD details for job ${jobId}`
+            );
         } catch (error) {
-            console.error(`[DispatchCoreService] Error updating POD details for job ${jobId}:`, error);
+            console.error(
+                `[DispatchCoreService] Error updating POD details for job ${jobId}:`,
+                error
+            );
             throw error;
         }
     }
 
-    async sendSMS(courierId: number, staffId: number, despatcherName: string, message: string) {
-        const response = await this.$http.post(`job/SendSMS?courierId=${courierId}&dispId=${staffId}&despatcherName=${despatcherName}&message=${message}`, null);
+    async sendSMS(
+        courierId: number,
+        staffId: number,
+        despatcherName: string,
+        message: string
+    ) {
+        const response = await this.$http.post(
+            `job/SendSMS?courierId=${courierId}&dispId=${staffId}&despatcherName=${despatcherName}&message=${message}`,
+            null
+        );
         return response.data;
     }
 
@@ -376,9 +484,16 @@ class DispatchCoreService implements angular.IServiceProvider {
         await this.$http.post(`job/ReRateSplitJob?jobId=${jobId}`, null);
     }
 
-    async updateDeliveryAddress(jobId: number, despatcherName: string, prebook: boolean, addressData: AddressViewModel) {
+    async updateDeliveryAddress(
+        jobId: number,
+        despatcherName: string,
+        prebook: boolean,
+        addressData: AddressViewModel
+    ) {
         try {
-            let endpoint = prebook ? "job/UpdateBookingDeliveryAddress" : "job/UpdateDeliveryAddress";
+            let endpoint = prebook
+                ? "job/UpdateBookingDeliveryAddress"
+                : "job/UpdateDeliveryAddress";
             console.log(`Using endpoint: ${endpoint}`);
 
             let requestBody;
@@ -390,7 +505,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                     suburbId: addressData.toSuburbId,
                     cbd: addressData.cbd,
                     latitude: addressData.latitude,
-                    longitude: addressData.longitude
+                    longitude: addressData.longitude,
                 };
                 endpoint += "Nz";
             } else {
@@ -406,8 +521,8 @@ class DispatchCoreService implements angular.IServiceProvider {
                         addressLine6: addressData.addressLine6,
                         addressLine7: addressData.addressLine7,
                         latitude: addressData.latitude,
-                        longitude: addressData.longitude
-                    }
+                        longitude: addressData.longitude,
+                    },
                 };
                 endpoint += "Us";
             }
@@ -419,9 +534,16 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
     }
 
-    async updatePickupAddress(jobId: number, despatcherName: string, prebook: boolean, addressData: AddressViewModel) {
+    async updatePickupAddress(
+        jobId: number,
+        despatcherName: string,
+        prebook: boolean,
+        addressData: AddressViewModel
+    ) {
         try {
-            let endpoint = prebook ? "job/UpdateBookingPickupAddress" : "job/UpdatePickupAddress";
+            let endpoint = prebook
+                ? "job/UpdateBookingPickupAddress"
+                : "job/UpdatePickupAddress";
             console.log(`Using endpoint: ${endpoint}`);
 
             let requestBody;
@@ -433,14 +555,14 @@ class DispatchCoreService implements angular.IServiceProvider {
                     suburbId: addressData.toSuburbId,
                     cbd: addressData.cbd,
                     latitude: addressData.latitude,
-                    longitude: addressData.longitude
+                    longitude: addressData.longitude,
                 };
                 endpoint += "Nz";
             } else {
                 requestBody = {
                     jobId: jobId,
                     despatcherName: despatcherName,
-                    address: addressData
+                    address: addressData,
                 };
                 endpoint += "Us";
             }
@@ -452,22 +574,36 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
     }
 
-    async updateSplitJobAddress(jobId: number, toSuburbId: number, address: string, lat: number, lng: number) {
-        await this.$http.post(`job/UpdateSplitJobAddress?jobId=${jobId}&toSuburbId=${toSuburbId}&address=${address}&deliveryLat=${lat}&deliveryLng=${lng}`, null);
+    async updateSplitJobAddress(
+        jobId: number,
+        toSuburbId: number,
+        address: string,
+        lat: number,
+        lng: number
+    ) {
+        await this.$http.post(
+            `job/UpdateSplitJobAddress?jobId=${jobId}&toSuburbId=${toSuburbId}&address=${address}&deliveryLat=${lat}&deliveryLng=${lng}`,
+            null
+        );
     }
 
-    async updateDeliverByTime(jobId: number, field: JobProperty,  dateTime: string, selectedTimeZoneId?: number) {
+    async updateDeliverByTime(
+        jobId: number,
+        field: JobProperty,
+        dateTime: string,
+        selectedTimeZoneId?: number
+    ) {
         const params = new URLSearchParams({
             jobId: String(jobId),
             dateTime: dateTime,
-            timeZoneId: String(selectedTimeZoneId)
+            timeZoneId: String(selectedTimeZoneId),
         });
 
         let functionUrl;
-        if(field === JobProperty.DeliverBy) {
+        if (field === JobProperty.DeliverBy) {
             functionUrl = "job/UpdateDeliverByTime";
-        } else if (field === JobProperty.Time)  {
-            functionUrl =  "job/UpdatePickUpTime";
+        } else if (field === JobProperty.Time) {
+            functionUrl = "job/UpdatePickUpTime";
         } else {
             return;
         }
@@ -481,26 +617,36 @@ class DispatchCoreService implements angular.IServiceProvider {
         field: JobProperty | string,
         value: string | Date | number | boolean,
         isRecurring: boolean,
-        selectedTimeZoneId?: number, // For DateTime Conversions
+        selectedTimeZoneId?: number // For DateTime Conversions
     ) {
         console.log("Starting updateJobDetail:", {
-            jobId, field, initialValue: value, preBook: isRecurring
+            jobId,
+            field,
+            initialValue: value,
+            preBook: isRecurring,
         });
 
-        if(field === JobProperty.DeliverBy || field === JobProperty.Time) {
-            return await this.updateDeliverByTime(jobId, field, String(value), selectedTimeZoneId)
+        if (field === JobProperty.DeliverBy || field === JobProperty.Time) {
+            return await this.updateDeliverByTime(
+                jobId,
+                field,
+                String(value),
+                selectedTimeZoneId
+            );
         }
 
-        if(value instanceof Date) {
+        if (value instanceof Date) {
             value = moment(value).format();
         }
 
-        const method: string = isRecurring ? "job/UpdateRecurringJob" : "job/UpdateJob";
+        const method: string = isRecurring
+            ? "job/UpdateRecurringJob"
+            : "job/UpdateJob";
 
         const params = new URLSearchParams({
             jobId: String(jobId),
             field: String(field),
-            value: String(value ?? '')
+            value: String(value ?? ""),
         });
 
         const url = `${method}?${params.toString()}`;
@@ -508,19 +654,26 @@ class DispatchCoreService implements angular.IServiceProvider {
         try {
             const response = await this.$http.post(url, null);
             console.log("API response received:", {
-                data: response.data
+                data: response.data,
             });
             return response.data;
         } catch (error) {
             console.error("API request failed:", {
-                error: error instanceof Error ? error.message : 'Unknown error',
-                parameters: {jobId, field: field, value: value}
+                error: error instanceof Error ? error.message : "Unknown error",
+                parameters: {jobId, field: field, value: value},
             });
             throw error;
         }
     }
 
-    async updateBulkJobDetail(bulkJobId: number, field: string, value: string | number | Date | boolean, rate: number | string , despatcherName: string, staffId: number) {
+    async updateBulkJobDetail(
+        bulkJobId: number,
+        field: string,
+        value: string | number | Date | boolean,
+        rate: number | string,
+        despatcherName: string,
+        staffId: number
+    ) {
         // Handle time fields
         if (field === JobProperty.Time || field === JobProperty.CompletedTime) {
             if (value instanceof Date) {
@@ -539,13 +692,20 @@ class DispatchCoreService implements angular.IServiceProvider {
                 );
 
                 // Format to YYYY-MM-DD HH:mm:ss
-                value =  moment(combined).utc().format();
+                value = moment(combined).utc().format();
             }
         }
 
         // Handle date fields
-        if (field === JobProperty.Date || field === JobProperty.StopDate || field === JobProperty.RestartDate || field === JobProperty.InActiveDate ||
-            field === JobProperty.FirstDue || field === JobProperty.LastDone || field === JobProperty.NextDue) {
+        if (
+            field === JobProperty.Date ||
+            field === JobProperty.StopDate ||
+            field === JobProperty.RestartDate ||
+            field === JobProperty.InActiveDate ||
+            field === JobProperty.FirstDue ||
+            field === JobProperty.LastDone ||
+            field === JobProperty.NextDue
+        ) {
             if (value instanceof Date) {
                 value = moment(value).utc().format();
             }
@@ -584,7 +744,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             orderDirection: String(queryParams.orderDirection ?? "asc"),
             isInternal: String(internal),
             cid: String(ContactID),
-            clientIds: selectedClients.length ? selectedClients.join(',') : ''
+            clientIds: selectedClients.length ? selectedClients.join(",") : "",
         };
 
         // Add date filter parameters - handle all options
@@ -605,12 +765,14 @@ class DispatchCoreService implements angular.IServiceProvider {
 
         // Add despatch view IDs as separate parameters
         if (despatchViewIds.length) {
-            despatchViewIds.forEach(id => {
-                params.append('despatchViewIds', String(id));
+            despatchViewIds.forEach((id) => {
+                params.append("despatchViewIds", String(id));
             });
         }
 
-        const response = await this.$http.get<IDispatchJob[]>(`job?${params.toString()}`);
+        const response = await this.$http.get<IDispatchJob[]>(
+            `job?${params.toString()}`
+        );
         return response.data;
     }
 
@@ -624,32 +786,47 @@ class DispatchCoreService implements angular.IServiceProvider {
         const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
 
         const defaultParams = {
-            order: 'time',
-            orderDirection: 'asc'
+            order: "time",
+            orderDirection: "asc",
         };
 
         // Build query parameters
         const params = new URLSearchParams();
 
         // Add JobQueryParams
-        params.append('order', queryParams.order ?? defaultParams.order);
-        params.append('asc', queryParams.orderDirection ?? defaultParams.orderDirection);
+        params.append("order", queryParams.order ?? defaultParams.order);
+        params.append(
+            "asc",
+            queryParams.orderDirection ?? defaultParams.orderDirection
+        );
 
         // Add basic parameters
-        params.append('isInternal', internal.toString());
-        params.append('cid', ContactID.toString());
-        params.append('clientIds', selectedClients.join(','));
+        params.append("isInternal", internal.toString());
+        params.append("cid", ContactID.toString());
+        params.append("clientIds", selectedClients.join(","));
 
         // Add despatchViewIds as repeated parameters
-        despatchViewIds.forEach(id => {
-            params.append('despatchViewIds', id.toString());
+        despatchViewIds.forEach((id) => {
+            params.append("despatchViewIds", id.toString());
         });
 
         // Add ClearListEnvelope properties as query parameters
-        params.append('clearListEnvelope.minimumLatitude', selectedClearList.minimumLatitude.toString());
-        params.append('clearListEnvelope.maximumLatitude', selectedClearList.maximumLatitude.toString());
-        params.append('clearListEnvelope.minimumLongitude', selectedClearList.minimumLongitude.toString());
-        params.append('clearListEnvelope.maximumLongitude', selectedClearList.maximumLongitude.toString());
+        params.append(
+            "clearListEnvelope.minimumLatitude",
+            selectedClearList.minimumLatitude.toString()
+        );
+        params.append(
+            "clearListEnvelope.maximumLatitude",
+            selectedClearList.maximumLatitude.toString()
+        );
+        params.append(
+            "clearListEnvelope.minimumLongitude",
+            selectedClearList.minimumLongitude.toString()
+        );
+        params.append(
+            "clearListEnvelope.maximumLongitude",
+            selectedClearList.maximumLongitude.toString()
+        );
 
         // Make the request
         const response = await this.$http.get<IDispatchJob[]>(
@@ -660,82 +837,102 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async autocompleteAddressSearch(text: string) {
-        const hereMapsConfig = await this.configService.getHereMapsConfig();
+        try {
+            const hereMapsKey = await this.configService.getHereMapsKey();
 
-        const response = await this.$http({
-            url: "https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json",
-            method: "GET",
-            params: {
-                query: text,
-                app_id: hereMapsConfig.appId,
-                app_code: hereMapsConfig.appCode,
-                country: this.isUsCustomer ? "USA" : "NZL",
-                resultType: "areas,categories,chains,streets,localities,houseNumber",
-                maxresults: 10
-            }
-        });
+            const response = await this.$http.get(
+                "https://autocomplete.search.hereapi.com/v1/autocomplete",
+                {
+                    params: {
+                        q: text,
+                        apiKey: hereMapsKey,
+                        in: `countryCode:${this.isUsCustomer ? "USA" : "NZL"}`,
+                        limit: 10,
+                        types: "address,place,businessPlace"
+                    }
+                });
 
-        return response.data;
+            return response.data;
+        } catch (error) {
+            console.error('Error in autocompleteAddressSearch:', error);
+            throw error;
+        }
     }
 
     async getGeoCodeInformation(item: Suggestion) {
-        const hereMapsConfig = await this.configService.getHereMapsConfig();
+        try {
+            const hereMapsKey = await this.configService.getHereMapsKey();
 
-        const response = await this.$http.get("https://geocoder.cit.api.here.com/6.2/geocode.json", {
-            params: {
-                app_id: hereMapsConfig.appId,
-                app_code: hereMapsConfig.appCode,
-                locationId: item.id
-            }
-        });
+            const response = await this.$http.get("https://geocode.search.hereapi.com/v1/geocode", {
+                params: {
+                    apiKey: hereMapsKey,
+                    qq: `locationId=${item.id}`
+                }
+            });
 
-        return response.data;
+            return response.data;
+        } catch (error) {
+            console.error('Error in getGeoCodeInformation:', error);
+            throw error;
+        }
     }
 
     async retrieveAddresses(lat: number, long: number) {
-        const hereMapsConfig = await this.configService.getHereMapsConfig();
+        try {
+            const hereMapsKey = await this.configService.getHereMapsKey();
 
-        const response = await this.$http.get("https://reverse.geocoder.api.here.com/6.2/reversegeocode.json", {
-            params: {
-                app_id: hereMapsConfig.appId,
-                app_code: hereMapsConfig.appCode,
-                mode: "retrieveAddresses",
-                prox: lat.toString() + "," + long.toString() + "," + "250"
-            }
-        });
+            const response = await this.$http.get("https://revgeocode.search.hereapi.com/v1/revgeocode", {
+                params: {
+                    apiKey: hereMapsKey,
+                    at: `${lat},${long}`,
+                    limit: 10,
+                    radius: 250
+                }
+            });
 
-        return response.data;
+            return response.data;
+        } catch (error) {
+            console.error('Error in retrieveAddresses:', error);
+            throw error;
+        }
     }
 
-    async autocompleteSearch(searchTerm: string, url: string): Promise<Suggestion[]> {
+    async autocompleteSearch(
+        searchTerm: string,
+        url: string
+    ): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>(url, {
             params: {
-                searchTerm: searchTerm
-            }
+                searchTerm: searchTerm,
+            },
         });
 
         return response.data;
     }
 
     async isFilesAttachedToJob(jobId: number) {
-        const response = await this.$http.get<boolean>(`job/IsFilesAttachedToJob/${jobId}`);
+        const response = await this.$http.get<boolean>(
+            `job/IsFilesAttachedToJob/${jobId}`
+        );
         return response.data;
     }
 
     async getVehicleSizes(): Promise<Suggestion[]> {
-        const response = await this.$http.get<Suggestion[]>(`courier/GetVehicleSizes`);
+        const response = await this.$http.get<Suggestion[]>(
+            `courier/GetVehicleSizes`
+        );
         return response.data;
     }
 
     async updatePackages(jobId: number, parcels: ParcelDimensions[]) {
         try {
-            const response = await this.$http.post('job/UpdateJobPackages', {
+            const response = await this.$http.post("job/UpdateJobPackages", {
                 jobId: jobId,
-                parcels: parcels
+                parcels: parcels,
             });
             return response.data;
         } catch (error) {
-            console.error('Error updating packages:', error);
+            console.error("Error updating packages:", error);
             throw error;
         }
     }
@@ -752,11 +949,14 @@ class DispatchCoreService implements angular.IServiceProvider {
                 despatcherName: String(FirstName),
             }).toString();
 
-            const response = await this.$http.post<number>(`job/AddPriceComponent?${queryParams}`, breakdown);
+            const response = await this.$http.post<number>(
+                `job/AddPriceComponent?${queryParams}`,
+                breakdown
+            );
 
             return response.data;
         } catch (error) {
-            console.error('Error adding price component:', error);
+            console.error("Error adding price component:", error);
             throw error;
         }
     }
@@ -768,9 +968,12 @@ class DispatchCoreService implements angular.IServiceProvider {
                 despatcherName: String(FirstName),
             }).toString();
 
-            await this.$http.post(`job/UpdatePriceComponent?${queryParams}`, breakdown);
+            await this.$http.post(
+                `job/UpdatePriceComponent?${queryParams}`,
+                breakdown
+            );
         } catch (error) {
-            console.error('Error updating price breakdown:', error);
+            console.error("Error updating price breakdown:", error);
             throw error;
         }
     }
@@ -781,38 +984,50 @@ class DispatchCoreService implements angular.IServiceProvider {
                 chargeId: String(chargeId),
                 jobId: String(jobId),
                 staffId: String(ContactID),
-                despatcherName: String(FirstName)
+                despatcherName: String(FirstName),
             }).toString();
 
             await this.$http.post(`job/DeletePriceComponent?${queryParams}`, null);
         } catch (error) {
-            console.error('Error deleting price breakdown:', error);
+            console.error("Error deleting price breakdown:", error);
             throw error;
         }
     }
 
-    async getJobDeliveryPhotosAndSignature(jobId: number, year: number, month: number) {
-        const response = await this.$http.get<any>(`/Job/GetJobDeliveryPhotosAndSignature?jobId=${jobId}&year=${year}&month=${month}`);
+    async getJobDeliveryPhotosAndSignature(
+        jobId: number,
+        year: number,
+        month: number
+    ) {
+        const response = await this.$http.get<any>(
+            `/Job/GetJobDeliveryPhotosAndSignature?jobId=${jobId}&year=${year}&month=${month}`
+        );
         return response.data;
     }
 
     async getAllTasks(filters?: TaskTableFiltersRequest) {
         try {
-            let url = '/Task/GetAllTasks';
+            let url = "/Task/GetAllTasks";
 
             if (filters) {
                 const queryParams = new URLSearchParams();
 
-                if (filters.jobId) queryParams.append('jobId', filters.jobId.toString());
-                if (filters.staffId) queryParams.append('staffId', filters.staffId.toString());
-                if (filters.courierId) queryParams.append('courierId', filters.courierId.toString());
-                if (filters.eventTypeId) queryParams.append('eventTypeId', filters.eventTypeId.toString());
-                if (filters.searchText) queryParams.append('searchText', filters.searchText);
-                if (filters.date) queryParams.append('date', filters.date);
-                if (filters.showCompleted != undefined) queryParams.append('showCompleted', filters.showCompleted.toString());
-                if (filters.orderBy) queryParams.append('orderBy', filters.orderBy);
-                if (filters.orderDirection)  queryParams.append('orderDirection', filters.orderDirection);
-
+                if (filters.jobId)
+                    queryParams.append("jobId", filters.jobId.toString());
+                if (filters.staffId)
+                    queryParams.append("staffId", filters.staffId.toString());
+                if (filters.courierId)
+                    queryParams.append("courierId", filters.courierId.toString());
+                if (filters.eventTypeId)
+                    queryParams.append("eventTypeId", filters.eventTypeId.toString());
+                if (filters.searchText)
+                    queryParams.append("searchText", filters.searchText);
+                if (filters.date) queryParams.append("date", filters.date);
+                if (filters.showCompleted != undefined)
+                    queryParams.append("showCompleted", filters.showCompleted.toString());
+                if (filters.orderBy) queryParams.append("orderBy", filters.orderBy);
+                if (filters.orderDirection)
+                    queryParams.append("orderDirection", filters.orderDirection);
 
                 const queryString = queryParams.toString();
                 if (queryString) {
@@ -824,7 +1039,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             const response = await this.$http.get<TaskViewModel[]>(url);
             return response.data;
         } catch (error) {
-            console.error('Error fetching tasks:', error);
+            console.error("Error fetching tasks:", error);
             return [];
         }
     }
@@ -833,33 +1048,39 @@ class DispatchCoreService implements angular.IServiceProvider {
         try {
             const queryParams = new URLSearchParams({
                 jobId: String(jobId),
-                hasBeenRead: String(hasBeenRead)
+                hasBeenRead: String(hasBeenRead),
             }).toString();
 
             await this.$http.post(`job/UpdateJobReadStatus?${queryParams}`, null);
         } catch (error) {
-            console.error('Error updating job read status:', error);
+            console.error("Error updating job read status:", error);
             throw error;
         }
     }
 
-    async addStopToJob(jobId: number, pickUpAddress?: EditAddressDialogViewModel, deliveryAddress?: EditAddressDialogViewModel): Promise<number> {
+    async addStopToJob(
+        jobId: number,
+        pickUpAddress?: EditAddressDialogViewModel,
+        deliveryAddress?: EditAddressDialogViewModel
+    ): Promise<number> {
         try {
-            const response = await this.$http.post<number>('job/AddStopToJob', {
+            const response = await this.$http.post<number>("job/AddStopToJob", {
                 jobId: jobId,
                 pickUpAddress: pickUpAddress,
-                deliveryAddress: deliveryAddress
+                deliveryAddress: deliveryAddress,
             });
 
             return response.data;
         } catch (error) {
-            console.error('Error updating packages:', error);
+            console.error("Error updating packages:", error);
             throw error;
         }
     }
 
-    private _prepareViewIdsForRequest(selectedAreas: DfrntPageViewModel[] | Suggestion[]): number[] {
-        return selectedAreas.map(area => {
+    private _prepareViewIdsForRequest(
+        selectedAreas: DfrntPageViewModel[] | Suggestion[]
+    ): number[] {
+        return selectedAreas.map((area) => {
             return typeof area === "object" && area.id ? area.id : 0;
         });
     }
