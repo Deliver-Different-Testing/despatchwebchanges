@@ -913,9 +913,8 @@ public static class JobMappings
                     j.PickUpLatitude ?? 0,
                     j.PickUpLongitude ?? 0,
                     j.DeliveryLatitude ?? 0,
-                    j.DeliveryLongitude ?? 0
-                )
-                : (double)j.TotalDistance,
+                    j.DeliveryLongitude ?? 0)
+                : (j.TotalDistance.HasValue ? (double)j.TotalDistance : 0),
 
         // Added recurring job fields
         InActiveBy =
