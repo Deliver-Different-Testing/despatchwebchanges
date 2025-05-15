@@ -1506,7 +1506,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         if (viewModel.JobId is null && viewModel.PrebookJobId is null)
             return 0;
 
-        var effectiveJobId = await GetJobRelationshipInfoAsync(viewModel.JobId ?? viewModel.PrebookJobId ?? 0);
+        var effectiveJobId = await GetJobRelationshipInfoAsync(viewModel.JobId ?? 0);
+        var effectiveJobBookingId = await GetJobBookingRelationshipInfoAsync(viewModel.PrebookJobId ?? 0);
         var isPrebook = viewModel.PrebookJobId.HasValue;
 
         var item = new PricingBreakdown
@@ -1514,7 +1515,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             ChargeAmount = viewModel.Amount,
             ChargeName = viewModel.Name,
             JobId = !isPrebook ? effectiveJobId : null,
-            PrebookJobId = isPrebook ? effectiveJobId : null
+            PrebookJobId = isPrebook ? effectiveJobBookingId : null
         };
 
         var note = $"Added price component: {viewModel.Name} for ${viewModel.Amount:F2}";
@@ -1600,7 +1601,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         var job = await Context.TucJobBookings.FirstOrDefaultAsync(j => j.UcbkId == prebookJobId);
         job.RatedManually = true;
 
-        await SaveNoteAsync(prebookJobId, note);
+        await SaveNoteAsync(prebookJobId, note, false, true);
         Context.Update(job);
     }
 

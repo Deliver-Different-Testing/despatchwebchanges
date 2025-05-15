@@ -1437,7 +1437,9 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     public async Task<int> SaveNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
-        ArgumentNullException.ThrowIfNull(viewModel.JobId, nameof(viewModel.JobId));
+        if (viewModel.JobBookingId == null) {
+            ArgumentNullException.ThrowIfNull(viewModel.JobId, nameof(viewModel.JobId));
+        }
 
         var staffId = infoService.GetStaffId();
         var currentTime = infoService.GetCurrentTenantTime();
@@ -1454,7 +1456,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
         var viewModel = new TucNoteViewModel
         {
-            JobId = jobId,
+            JobId = isRecurringJob ? null : jobId,
+            JobBookingId = isRecurringJob ? jobId : null,
             NoteText = noteText,
             IsImportant = isImportant,
             NoteTypeId = (int)NoteType.InternalNote
@@ -1493,11 +1496,21 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             .FirstOrDefaultAsync();
     }
 
+    private async Task<int> GetEffectiveJobBookingId(int jobBookingId)
+    {
+        return await Context.TucJobBookings
+            .Where(j => j.UcbkId == jobBookingId)
+            .Select(j => j.ParentId ?? j.UcbkId)
+            .FirstOrDefaultAsync();
+    }
+
     // Note Create/Update Operations
     private async Task<int> CreateNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime,
         CancellationToken cancellationToken = default)
     {
-        var isArchived = await IsJobArchived(viewModel.JobId.Value) && !viewModel.JobBookingId.HasValue;
+
+        var isArchived = viewModel.JobId.HasValue && await IsJobArchived(viewModel.JobId.Value) && !viewModel.JobBookingId.HasValue;
+        var isPrebook = viewModel.JobBookingId.HasValue;
 
         if (isArchived)
         {
@@ -1518,8 +1531,16 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             activeNote.CreatedDate = currentTime;
             activeNote.CreatedBy = staffId;
 
-            var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
-            activeNote.JobId = effectiveJobId;
+            var effectiveJobBookingId = 0;
+            var effectiveJobId = 0;
+
+            if (isPrebook) {
+                effectiveJobBookingId = await GetEffectiveJobBookingId(viewModel.JobBookingId.Value);
+                activeNote.JobBookingId = effectiveJobBookingId;
+            } else {
+                effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
+                activeNote.JobId = effectiveJobId;
+            }
 
             await Context.TucNotes.AddAsync(activeNote, cancellationToken);
             await Context.SaveChangesAsync(cancellationToken);
@@ -1530,7 +1551,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     private async Task<int> UpdateNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime,
         CancellationToken cancellationToken = default)
     {
-        var isArchived = await IsJobArchived(viewModel.JobId.Value);
+        var isArchived = viewModel.JobId.HasValue && await IsJobArchived(viewModel.JobId.Value);
+        var isPrebook = viewModel.JobBookingId.HasValue;
 
         if (isArchived)
         {
@@ -1563,8 +1585,19 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             activeNote.UpdatedDate = currentTime;
             activeNote.UpdatedBy = staffId;
 
-            var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
-            activeNote.JobId = effectiveJobId;
+            var effectiveJobBookingId = 0;
+            var effectiveJobId = 0;
+
+            if (isPrebook)
+            {
+                effectiveJobBookingId = await GetEffectiveJobBookingId(viewModel.JobBookingId.Value);
+                activeNote.JobBookingId = effectiveJobBookingId;
+            }
+            else
+            {
+                effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
+                activeNote.JobId = effectiveJobId;
+            }
 
             Context.TucNotes.Update(activeNote);
             await Context.SaveChangesAsync(cancellationToken);
@@ -1707,30 +1740,38 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
     protected async Task<int> GetJobRelationshipInfoAsync(int jobId)
     {
-        var jobInfo = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Select(j => new
-            {
-                EffectiveJobId = j.ParentId ?? j.UcjbId,
-            })
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
+        if (jobId != 0) {
+            var jobInfo = await Context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .Select(j => new
+                {
+                    EffectiveJobId = j.ParentId ?? j.UcjbId,
+                })
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
 
-        return jobInfo.EffectiveJobId;
+            return jobInfo.EffectiveJobId;
+        } else {
+            return 0;
+        }
     }
 
-    protected async Task<int> GetJobBookingRelationshipInfoAsync(int jobId)
+    protected async Task<int> GetJobBookingRelationshipInfoAsync(int bookingId)
     {
-        var jobInfo = await Context.TucJobBookings
-            .Where(j => j.UcbkId == jobId)
-            .Select(j => new
-            {
-                EffectiveJobId = j.ParentId ?? j.UcbkId,
-            })
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
+        if (bookingId != 0) {
+            var jobInfo = await Context.TucJobBookings
+                .Where(j => j.UcbkId == bookingId)
+                .Select(j => new
+                {
+                    EffectiveJobId = j.ParentId ?? j.UcbkId,
+                })
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
 
-        return jobInfo.EffectiveJobId;
+            return jobInfo.EffectiveJobId;
+        } else {
+            return 0;
+        }
     }
 
     protected static string GetTrackingName(int trackingMethodId)

@@ -247,7 +247,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error adding price breakdown for job {JobId}",
-                breakdown.JobId);
+                breakdown.JobId ?? breakdown.PrebookJobId);
             return StatusCode(500, "An error occurred while adding the pricing breakdown");
         }
     }
@@ -277,7 +277,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error updating price breakdown for job {JobId}",
-                breakdown.JobId);
+                breakdown.JobId ?? breakdown.PrebookJobId);
             return StatusCode(500, "An error occurred while updating the pricing breakdown");
         }
     }
