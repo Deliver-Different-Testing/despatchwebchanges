@@ -236,7 +236,7 @@ class RecurringJobsController extends BaseController {
     }
 
     greetUser(): string {
-        return greetUser(FirstName);
+        return this.greetUser(FirstName);
     }
 
     toggleSidenav(): void {
