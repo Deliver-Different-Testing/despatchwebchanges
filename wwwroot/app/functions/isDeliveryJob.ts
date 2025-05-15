@@ -4,5 +4,13 @@ export function isDeliveryJob(job: IDispatchJob): boolean {
     if (!job || !job.jobNo) return false;
 
     const jobNumber = job.jobNo;
-    return jobNumber.charAt(jobNumber.length - 1) === '1' || jobNumber.charAt(jobNumber.length - 1) === '3';
+
+    // Original logic - check if last character is '1' or '3'
+    const lastChar = jobNumber.charAt(jobNumber.length - 1);
+    if (lastChar === '1' || lastChar === '3') return true;
+
+    // New logic - if the last character is not a digit, it's a delivery job
+    if (isNaN(parseInt(lastChar))) return true;
+
+    return false;
 }
