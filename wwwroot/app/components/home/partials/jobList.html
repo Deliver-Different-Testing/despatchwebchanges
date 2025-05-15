@@ -1,32 +1,5 @@
 <div class="md-table-footer-container">
     <div class="md-table-footer-content">
-        <div class="date-selector" layout="row" layout-align="start center">
-            <md-datepicker
-                    ng-model="ctrl.jobCutoffDate"
-                    ng-change="ctrl.applyJobCutoffDate()"
-                    md-placeholder="Select date"
-                    md-hide-icons="triangle"
-                    md-open-on-focus="true"
-                    class="calendar-only-picker">
-            </md-datepicker>
-
-            <md-button class="md-icon-button" ng-click="ctrl.changeJobCutoffDate(-1)" aria-label="Previous day">
-                <md-icon md-font-set="material-symbols-outlined">chevron_left</md-icon>
-            </md-button>
-
-            <div layout="column" layout-align="center center">
-                <span class="cutoff-date">{{ctrl.jobCutoffDate | momentFormat:'dddd, MMMM D, YYYY'}} ({{ctrl.browserTimeZone | timezoneShort}})</span>
-                <md-button class="md-small today-button" ng-click="ctrl.resetJobCutoffDate()"
-                           aria-label="Reset filter">
-                    Today
-                </md-button>
-            </div>
-
-            <md-button class="md-icon-button" ng-click="ctrl.changeJobCutoffDate(1)" aria-label="Next day">
-                <md-icon md-font-set="material-symbols-outlined">chevron_right</md-icon>
-            </md-button>
-        </div>
-
         <div flex></div>
 
         <!-- Right side with status chips -->
