@@ -836,65 +836,52 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async autocompleteAddressSearch(text: string) {
-        try {
-            const hereMapsKey = await this.configService.getHereMapsKey();
+   async autocompleteAddressSearch(text: string) {
+        const hereMapsConfig = await this.configService.getHereMapsConfig();
 
-            const response = await this.$http.get(
-                "https://autocomplete.search.hereapi.com/v1/autocomplete",
-                {
-                    params: {
-                        q: text,
-                        apiKey: hereMapsKey,
-                        in: `countryCode:${this.isUsCustomer ? "USA" : "NZL"}`,
-                        limit: 10,
-                        types: "address,place,businessPlace"
-                    }
-                });
+        const response = await this.$http({
+            url: "https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json",
+            method: "GET",
+            params: {
+                query: text,
+                app_id: hereMapsConfig.appId,
+                app_code: hereMapsConfig.appCode,
+                country: this.isUsCustomer ? "USA" : "NZL",
+                resultType: "areas,categories,chains,streets,localities,houseNumber",
+                maxresults: 10
+            }
+        });
 
-            return response.data;
-        } catch (error) {
-            console.error('Error in autocompleteAddressSearch:', error);
-            throw error;
-        }
+        return response.data;
     }
 
     async getGeoCodeInformation(item: Suggestion) {
-        try {
-            const hereMapsKey = await this.configService.getHereMapsKey();
+        const hereMapsConfig = await this.configService.getHereMapsConfig();
 
-            const response = await this.$http.get("https://geocode.search.hereapi.com/v1/geocode", {
-                params: {
-                    apiKey: hereMapsKey,
-                    qq: `locationId=${item.id}`
-                }
-            });
+        const response = await this.$http.get("https://geocoder.cit.api.here.com/6.2/geocode.json", {
+            params: {
+                app_id: hereMapsConfig.appId,
+                app_code: hereMapsConfig.appCode,
+                locationId: item.id
+            }
+        });
 
-            return response.data;
-        } catch (error) {
-            console.error('Error in getGeoCodeInformation:', error);
-            throw error;
-        }
+        return response.data;
     }
 
     async retrieveAddresses(lat: number, long: number) {
-        try {
-            const hereMapsKey = await this.configService.getHereMapsKey();
+        const hereMapsConfig = await this.configService.getHereMapsConfig();
 
-            const response = await this.$http.get("https://revgeocode.search.hereapi.com/v1/revgeocode", {
-                params: {
-                    apiKey: hereMapsKey,
-                    at: `${lat},${long}`,
-                    limit: 10,
-                    radius: 250
-                }
-            });
+        const response = await this.$http.get("https://reverse.geocoder.api.here.com/6.2/reversegeocode.json", {
+            params: {
+                app_id: hereMapsConfig.appId,
+                app_code: hereMapsConfig.appCode,
+                mode: "retrieveAddresses",
+                prox: lat.toString() + "," + long.toString() + "," + "250"
+            }
+        });
 
-            return response.data;
-        } catch (error) {
-            console.error('Error in retrieveAddresses:', error);
-            throw error;
-        }
+        return response.data;
     }
 
     async autocompleteSearch(

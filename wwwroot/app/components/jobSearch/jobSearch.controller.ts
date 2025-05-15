@@ -11,6 +11,7 @@ import {ContactID} from "../../contants";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {JobProperty} from "../../enums/job-property.enum";
 import NavigationService from "../../services/navigation.service";
+import greetUser from "../../functions/greetUser";
 
 class JobSearchController extends BaseController {
 

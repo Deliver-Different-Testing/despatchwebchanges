@@ -6,6 +6,7 @@ import {ClientInternal, ContactID} from "../../contants";
 import RecurringJobsService from "./recurringJobs.service";
 import {IRecurringJobQuery} from "./recurringJobs.interface";
 import ToastrService from "../../services/toastr.service";
+import greetUser from "../../functions/greetUser";
 
 class RecurringJobsController extends BaseController {
     static $inject = [
@@ -235,8 +236,8 @@ class RecurringJobsController extends BaseController {
         }
     }
 
-    greetUser(): string {
-        return this.greetUser(FirstName);
+    greetUser(FirstName: string): string {
+        return greetUser(FirstName);
     }
 
     toggleSidenav(): void {
