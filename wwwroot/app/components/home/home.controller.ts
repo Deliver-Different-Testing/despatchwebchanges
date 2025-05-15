@@ -24,6 +24,7 @@ import AdditionalServicesDialogService from "../dialogs/additional-services-dial
 import {EditAddressDialogService} from "../dialogs/edit-address-dialog/edit-address-dialog.service";
 import {AppPages} from "../../enums/app-pages.enum";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
+import moment from "moment";
 import AddEventDialogService from "../dialogs/add-event-dialog/add-event-dialog.service";
 import {JobNoteType} from "../../enums/job-note-type.enum";
 import NoteService from "../../services/notes.service";
@@ -137,7 +138,10 @@ class HomeController extends BaseController {
         onTaskClick: true
     };
     timeZone: string;
-    browserTimeZone: string
+    browserTimeZone: string;
+    dateSearchRange: number = 1;
+    startDate: Date = moment(new Date(0)).toDate();
+    endDate: Date = moment().add(24, 'hours').toDate();
 
     constructor(
         private $document: angular.IDocumentService,
@@ -402,6 +406,12 @@ class HomeController extends BaseController {
 
         this.loadPageViews().then(async () => {
             console.log("Loaded Page Views and Data!");
+
+            this.dateSearchRange = 1; // Default to 24 Hours
+            this.startDate = moment(new Date(0)).toDate(); // Unix epoch start date
+            this.endDate = moment().add(24, 'hours').toDate(); // 24 hours from now
+            this.jobCutoffDate = new Date(); // Current date for backward compatibility
+
 
             const jobId = this.$stateParams.jobId;
             if (jobId) {
@@ -2028,7 +2038,16 @@ class HomeController extends BaseController {
                 dateCutoff: this.jobCutoffDate
             };
 
-            console.log('Params:', params);
+            // Apply date filters based on dateSearchRange
+            if (this.dateSearchRange == 1) {
+                // 24 Hours mode - use startDate and endDate for 24-hour range
+                params.startDate = moment(new Date(0)).toDate(); // Unix epoch start date
+                params.endDate = moment().add(24, 'hours').toDate(); // 24 hours from now
+            } else if (this.dateSearchRange == 2) {
+                // Custom range mode - use startDate and endDate
+                params.startDate = this.startDate;
+                params.endDate = this.endDate;
+            }
 
             this.jobListPromise = this.dispatchJobService.getJobListWithCourierData(
                 params,
@@ -2074,10 +2093,22 @@ class HomeController extends BaseController {
         newDate.setDate(newDate.getDate() + days);
 
         this.jobCutoffDate = newDate;
+
+        // If we're in custom date mode, update the end date
+        if (this.dateSearchRange == 2) {
+            this.endDate = newDate;
+        }
+
         await this.applyJobCutoffDate();
     }
 
     async resetJobCutoffDate() {
+        //this.jobCutoffDate = new Date();
+        this.dateSearchRange = 1;
+        this.startDate = moment(new Date(0)).toDate();
+        this.endDate = moment().add(24, 'hours').toDate();
+
+        // For backward compatibility
         this.jobCutoffDate = new Date();
 
         if (Modernizr.localstorage) {
@@ -2095,7 +2126,13 @@ class HomeController extends BaseController {
             return;
         }
 
-        this.queryParams.dateCutoff = this.jobCutoffDate;
+        // If we're in custom date mode (2), update the end date
+        if (this.dateSearchRange == 2) {
+            this.endDate = this.jobCutoffDate;
+        } else {
+            // Otherwise, use the jobCutoffDate directly
+            this.queryParams.dateCutoff = this.jobCutoffDate;
+        }
         await this.getJobList();
     }
 
@@ -2603,6 +2640,21 @@ class HomeController extends BaseController {
 
     async openHubUrl() {
         await this.navigationService.openHubUrl();
+    }
+
+    async onSearchRangeChange(optionSelected: number) {
+        this.dateSearchRange = optionSelected;
+
+        if (optionSelected == 1) {
+            // 24 Hours mode - reset to defaults
+            this.startDate = moment(new Date(0)).toDate();
+            this.endDate = moment().add(24, 'hours').toDate();
+
+            // Use current date for dateCutoff (backward compatibility)
+            this.jobCutoffDate = new Date();
+        }
+
+        await this.getData();
     }
 }
 

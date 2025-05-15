@@ -61,14 +61,25 @@ class DispatchExecutorService implements angular.IServiceProvider {
             queryParams,
             clientCount: selectedClients?.length,
             isInternal,
-            selectedAreas
+            selectedAreas,
+            dateCutoff: queryParams.dateCutoff,
+            startDate: queryParams.startDate,
+            endDate: queryParams.endDate
         });
 
         try {
             await this.fetchCouriersData();
 
+            const params = {
+                ...queryParams,
+                // Make sure we're not accidentally setting undefined parameters
+                dateCutoff: queryParams.dateCutoff || undefined,
+                startDate: queryParams.startDate || undefined,
+                endDate: queryParams.endDate || undefined
+            };
+
             const result = await this.DispatchData.getJobsWithFilters(
-                queryParams,
+                params,
                 selectedClients,
                 isInternal,
                 selectedAreas

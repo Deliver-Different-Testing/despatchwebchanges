@@ -570,14 +570,36 @@ class DispatchCoreService implements angular.IServiceProvider {
     ): Promise<IDispatchJob[]> {
         const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
 
-        const paramObject = {
+        //const paramObject = {
+        //    order: String(queryParams.order ?? "time"),
+        //    orderDirection: String(queryParams.orderDirection ?? "asc"),
+        //    dateCutoff: String(queryParams.dateCutoff ? moment(queryParams.dateCutoff).format() : moment().format()),
+        //    isInternal: String(internal),
+        //    cid: String(ContactID),
+        //    clientIds: selectedClients.length ? selectedClients.join(',') : ''
+        //};
+
+        const paramObject: Record<string, string> = {
             order: String(queryParams.order ?? "time"),
             orderDirection: String(queryParams.orderDirection ?? "asc"),
-            dateCutoff: String(queryParams.dateCutoff ? moment(queryParams.dateCutoff).format() : moment().format()),
             isInternal: String(internal),
             cid: String(ContactID),
             clientIds: selectedClients.length ? selectedClients.join(',') : ''
         };
+
+        // Add date filter parameters - handle all options
+        if (queryParams.dateCutoff) {
+            paramObject.dateCutoff = moment(queryParams.dateCutoff).format();
+        }
+
+        // Add start and end date parameters if present
+        if (queryParams.startDate) {
+            paramObject.startDate = moment(queryParams.startDate).format();
+        }
+
+        if (queryParams.endDate) {
+            paramObject.endDate = moment(queryParams.endDate).format();
+        }
 
         const params = new URLSearchParams(paramObject);
 

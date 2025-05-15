@@ -57,6 +57,14 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     if (queryParams.DateCutoff.HasValue)
                         query = query.Where(j => j.UcjbDate <= queryParams.DateCutoff.Value.Date);
 
+                    // Add support for start date and end date filters
+                    if (queryParams.StartDate.HasValue)
+                        query = query.Where(j => j.UcjbDate >= queryParams.StartDate.Value.Date);
+
+                    if (queryParams.EndDate.HasValue)
+                        query = query.Where(j => j.UcjbDate <= queryParams.EndDate.Value.Date);
+
+
                     // Sorting
                     query = ApplyDashboardSpecificOrdering(
                         query,
