@@ -8,8 +8,7 @@ using Serilog;
 
 namespace DespatchWeb.Controllers;
 
-public class TaskController(
-    ITaskRepository taskRepository) : Controller
+public class TaskController(ITaskRepository taskRepository) : Controller
 {
     [HttpGet]
     public async Task<IActionResult> GetAllTasks(TaskTableFiltersRequest filters)
@@ -27,10 +26,7 @@ public class TaskController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> MarkTaskAsClosed(
-        int eventId,
-        bool closed
-    )
+    public async Task<IActionResult> MarkTaskAsClosed(int eventId, bool closed)
     {
         try
         {
@@ -45,10 +41,7 @@ public class TaskController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdateTaskDate(
-        int eventId,
-        string date
-    )
+    public async Task<IActionResult> UpdateTaskDate(int eventId, string date)
     {
         try
         {
@@ -63,10 +56,7 @@ public class TaskController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdateTaskTime(
-        int eventId,
-        string time
-    )
+    public async Task<IActionResult> UpdateTaskTime(int eventId, string time)
     {
         try
         {
@@ -117,7 +107,10 @@ public class TaskController(
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            await taskRepository.CreateEventsForJobAsync(request.JobId, request.EventGroupViewModels);
+            await taskRepository.CreateEventsForJobAsync(
+                request.JobId,
+                request.EventGroupViewModels
+            );
             return Ok();
         }
         catch (Exception ex)

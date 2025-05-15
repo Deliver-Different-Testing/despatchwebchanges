@@ -6,7 +6,7 @@ import {bindAllMethods} from "../../../functions/bindAllMethods";
 export class EditAddressDialogService implements IServiceProvider {
     static $inject = [
         '$mdDialog',
-        "$document"
+        "$document",
     ];
 
     constructor(
@@ -48,7 +48,7 @@ export class EditAddressDialogService implements IServiceProvider {
                 return;
             }
 
-            // Error occured
+            // Error occurred
             console.error('EditAddressDialogService: Error in openEditAddressDialog', error);
             throw error;
         }
