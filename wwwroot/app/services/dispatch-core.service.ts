@@ -591,11 +591,13 @@ class DispatchCoreService implements angular.IServiceProvider {
         jobId: number,
         field: JobProperty,
         dateTime: string,
+        isRecurring: boolean,
         selectedTimeZoneId?: number
     ) {
         const params = new URLSearchParams({
             jobId: String(jobId),
             dateTime: dateTime,
+            isRecurring: String(isRecurring),
             timeZoneId: String(selectedTimeZoneId),
         });
 
@@ -631,6 +633,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 jobId,
                 field,
                 String(value),
+                isRecurring,
                 selectedTimeZoneId
             );
         }
