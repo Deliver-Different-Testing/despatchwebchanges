@@ -178,7 +178,7 @@ angular.module('hereMapTracking.components', [])
                         routeLine = HereMapService.drawRouteLine(job.pickup.lat,
                             job.pickup.lng,
                             job.delivery.lat,
-                            job.delivery.lng, routeLine, job, mapInstance.map, platform);
+                            job.delivery.lng, routeLine, job, mapInstance.map, platform, job.flight);
                     }
                 };
         }]
