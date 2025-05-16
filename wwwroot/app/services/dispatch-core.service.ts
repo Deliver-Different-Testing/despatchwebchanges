@@ -1015,6 +1015,10 @@ class DispatchCoreService implements angular.IServiceProvider {
                 if (filters.orderBy) queryParams.append("orderBy", filters.orderBy);
                 if (filters.orderDirection)
                     queryParams.append("orderDirection", filters.orderDirection);
+                if (filters.startDate)
+                    queryParams.append("startDate", filters.startDate);
+                if (filters.endDate)
+                    queryParams.append("endDate", filters.endDate);
 
                 const queryString = queryParams.toString();
                 if (queryString) {

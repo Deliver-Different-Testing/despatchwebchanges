@@ -78,6 +78,9 @@ class TaskDashboardController extends BaseController {
 
     timeZone: string;
     browserTimeZone: string;
+    dateSearchRange: number = 1;
+    startDate: Date = moment(new Date(0)).toDate();
+    endDate: Date = moment().add(24, 'hours').toDate();
 
     constructor(
         private $mdSidenav: angular.material.ISidenavService,
@@ -206,8 +209,18 @@ class TaskDashboardController extends BaseController {
             filters.searchText = this.searchQuery;
         }
 
-        // Set the date filter
-        filters.date = moment(this.selectedDate).format();
+        //// Set the date filter
+        //filters.date = moment(this.selectedDate).format();
+
+        // Set the date filter based on dateSearchRange
+        if (this.dateSearchRange == 1) {
+            // 24 Hours mode - use selectedDate
+            filters.date = moment(this.selectedDate).format();
+        } else if (this.dateSearchRange == 2) {
+            // Custom range mode - use startDate and endDate
+            filters.startDate = moment(this.startDate).format();
+            filters.endDate = moment(this.endDate).format();
+        }
 
         return filters;
     }
@@ -347,11 +360,32 @@ class TaskDashboardController extends BaseController {
         const newDate = new Date(this.selectedDate);
         newDate.setDate(newDate.getDate() + days);
         this.selectedDate = newDate;
+
+        // If we're in custom date range mode, we should extend the range if needed
+        if (this.dateSearchRange == 2) {
+            if (this.selectedDate < this.startDate) {
+                this.startDate = moment(this.selectedDate).startOf('day').toDate();
+            } else if (this.selectedDate > this.endDate) {
+                this.endDate = moment(this.selectedDate).endOf('day').toDate();
+            }
+        }
+
         await this.refreshDashboard();
     }
 
     async goToToday() {
         this.selectedDate = new Date();
+
+        // If we're in custom date range mode, make sure today is in the range
+        if (this.dateSearchRange == 2) {
+            const today = moment().startOf('day');
+            if (today.isBefore(moment(this.startDate)) || today.isAfter(moment(this.endDate))) {
+                // Adjust the range to include today
+                this.startDate = moment().subtract(3, 'days').startOf('day').toDate();
+                this.endDate = moment().add(3, 'days').endOf('day').toDate();
+            }
+        }
+
         await this.refreshDashboard();
     }
 
@@ -363,6 +397,43 @@ class TaskDashboardController extends BaseController {
     selectTaskJobDetail(task: ExtendedTask) {
         this.currentJobId = task.jobId;
         this.currentSelection = "for Job " + task.jobNumber;
+    }
+
+    async onSearchRangeChange(optionSelected: number) {
+        console.log(`Search range changed to: ${optionSelected}`);
+
+        this.dateSearchRange = optionSelected;
+
+        if (optionSelected === 1) {
+            // 24 Hours mode - reset to defaults
+            this.startDate = moment(new Date(0)).toDate(); // Unix epoch start date
+            this.endDate = moment().add(24, 'hours').toDate(); // 24 hours from now
+
+            // Use current date for selectedDate
+            this.selectedDate = new Date();
+
+            console.log('24 Hours mode: Reset dates to defaults', {
+                startDate: moment(this.startDate).format('YYYY-MM-DD HH:mm:ss'),
+                endDate: moment(this.endDate).format('YYYY-MM-DD HH:mm:ss'),
+                selectedDate: moment(this.selectedDate).format('YYYY-MM-DD HH:mm:ss')
+            });
+        } else {
+            // Custom mode - If dates aren't set, initialize them to reasonable defaults
+            if (!this.startDate) {
+                this.startDate = moment().subtract(7, 'days').toDate(); // 7 days ago
+            }
+
+            if (!this.endDate) {
+                this.endDate = moment().add(1, 'days').toDate(); // tomorrow
+            }
+
+            console.log('Custom mode: Set custom date range', {
+                startDate: moment(this.startDate).format('YYYY-MM-DD HH:mm:ss'),
+                endDate: moment(this.endDate).format('YYYY-MM-DD HH:mm:ss')
+            });
+        }
+
+        await this.refreshDashboard();
     }
 }
 
