@@ -182,7 +182,7 @@ class JobDetailController extends BaseController {
       if (targetJob && targetJob.id && targetJob.id !== this.jobId) {
         console.log(
           `[JobDetailController] Loading related job: ${targetJob.id} (${targetJob.text})`
-        );
+          );
 
         this.selectedTabIndex = index;
         this.jobId = targetJob.id;
@@ -223,7 +223,7 @@ class JobDetailController extends BaseController {
 
         const currentJobIndex = this.jobGroups.findIndex(
           (relatedJob) => relatedJob.job.id === jobId
-        );
+          );
 
         if (currentJobIndex !== -1) {
           console.log(

@@ -5,7 +5,8 @@ namespace DespatchWeb.Enums;
 public enum HolidayDeliveryOptions
 {
     DontBook = 0, // Default option
-    DeliverNextDay = 1
+    DeliverNextDay = 1,
+    BookAnyway = 2
 }
 
 public static class HolidayDeliveryOptionsExtensions
@@ -14,6 +15,7 @@ public static class HolidayDeliveryOptionsExtensions
     {
         HolidayDeliveryOptions.DontBook => "Don't Book",
         HolidayDeliveryOptions.DeliverNextDay => "Deliver Next Day",
+        HolidayDeliveryOptions.BookAnyway => "Book Anyway",
         _ => options.ToString()
     };
 
@@ -41,6 +43,8 @@ public static class HolidayDeliveryOptionsExtensions
             case "dont book":
             case "don't book":
                 return HolidayDeliveryOptions.DontBook;
+            case "book anyway":
+                return HolidayDeliveryOptions.BookAnyway;
             default:
             {
                 if (Enum.TryParse<HolidayDeliveryOptions>(optionString, true, out var option))
@@ -58,6 +62,7 @@ public static class HolidayDeliveryOptionsExtensions
         {
             HolidayDeliveryOptions.DontBook => null, // No booking
             HolidayDeliveryOptions.DeliverNextDay => holidayDate.AddDays(1), // Move to next day
+            HolidayDeliveryOptions.BookAnyway => holidayDate, //Book anyway
             _ => null // Default is DontBook
         };
     }
@@ -68,6 +73,7 @@ public static class HolidayDeliveryOptionsExtensions
         {
             HolidayDeliveryOptions.DontBook => "No deliveries will be booked on holidays",
             HolidayDeliveryOptions.DeliverNextDay => "Deliveries will be rescheduled to the next day",
+            HolidayDeliveryOptions.BookAnyway => "Deliveries will be booked on the holiday",
             _ => "No deliveries will be booked on holidays" // Default
         };
     }
