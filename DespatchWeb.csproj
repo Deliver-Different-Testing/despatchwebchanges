@@ -3,6 +3,7 @@
     <Exec Command="npm run build" WorkingDirectory="$(ProjectDir)" />
   </Target>
   <PropertyGroup Label="Globals">
+    <LangVersion>latestmajor</LangVersion>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <TypeScriptTarget>ES2021</TypeScriptTarget>
@@ -375,6 +376,7 @@
     <TypeScriptCompile Include="wwwroot\app\functions\isDeliveryJob.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\isFlightJob.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\sortRelatedJobs.ts" />
+    <TypeScriptCompile Include="wwwroot\app\functions\usStates.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\app-config.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\apiConfig.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\context-menu-option.interface.ts" />
@@ -396,7 +398,6 @@
     <TypeScriptCompile Include="wwwroot\app\routes.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\config.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\dispatch-executor.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\services\getUsStates.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\job-add-stop.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\job-context-menu.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\notes.service.ts" />

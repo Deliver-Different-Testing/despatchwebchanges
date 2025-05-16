@@ -26,7 +26,6 @@ import {
 import ConfigService from "./services/config.service";
 import DispatchCoreService from "./services/dispatch-core.service";
 import DispatchExecutorService from "./services/dispatch-executor.service";
-import UsStatesService from "./services/getUsStates.service";
 import NavigationService from "./services/navigation.service";
 import ToastrService from "./services/toastr.service";
 import {SelectDialogService} from "./components/dialogs/select-dialog/select-dialog.service";
@@ -265,7 +264,6 @@ app.controller("flightDetailsDialogController", FlightDetailsDialogController);
 app.service("configService", ConfigService);
 app.service("DispatchData", DispatchCoreService);
 app.service("dispatchJobService", DispatchExecutorService);
-app.service("UsStatesService", UsStatesService);
 app.service("navigationService", NavigationService);
 app.service("toastrService", ToastrService);
 app.service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService);

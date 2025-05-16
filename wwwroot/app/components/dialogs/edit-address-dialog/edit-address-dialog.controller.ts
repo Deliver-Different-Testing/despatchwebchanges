@@ -1,557 +1,544 @@
-import {
-  ShipmentDetails,
-  EditAddressDialogViewModel,
-} from "../../../interfaces/job.interface";
+import {EditAddressDialogViewModel, ShipmentDetails,} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
-import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
-import { AppConfig } from "../../../interfaces/app-config.interface";
-import UsStatesService from "../../../services/getUsStates.service";
+import {AppConfig} from "../../../interfaces/app-config.interface";
 import IStateInfo from "../../../interfaces/state-info.interface";
 import ConfigService from "../../../services/config.service";
-import {
-  HereMapsLocationResult,
-  Position,
-} from "../../../interfaces/heremaps-autocomplete.interfaces";
-import {
-  HereMapsLookupResponse,
-  HereMapsLookupOptions,
-} from "../../../interfaces/hereMapsLookUp.interfaces";
+import {HereMapsLocationResult, Position,} from "../../../interfaces/heremaps-autocomplete.interfaces";
+import {HereMapsLookupOptions, HereMapsLookupResponse,} from "../../../interfaces/hereMapsLookUp.interfaces";
+import {getStateByAbbreviation, getStateByName, getStates} from "../../../functions/usStates";
 
 class EditAddressDialogController extends BaseController {
-  static $inject = [
-    "$scope",
-    "$timeout",
-    "$interval",
-    "$mdDialog",
-    "DispatchData",
-    "toastrService",
-    "NgMap",
-    "APP_CONFIG",
-    "UsStatesService",
-    "configService",
-    "$http",
-    "addressDetails",
-    "title",
-    "submitLabel",
-    "showContactInfo",
-  ];
+    static $inject = [
+        "$scope",
+        "$timeout",
+        "$interval",
+        "$mdDialog",
+        "toastrService",
+        "NgMap",
+        "APP_CONFIG",
+        "configService",
+        "$http",
+        "addressDetails",
+        "title",
+        "submitLabel",
+        "showContactInfo",
+    ];
+    isLoading: boolean;
+    addressSearchText: string;
+    googleMapsUrl?: string;
+    mapDisplay?: boolean;
+    map?: google.maps.Map;
+    marker?: google.maps.Marker;
+    usStateList: IStateInfo[];
+    addressSearchResults: HereMapsLocationResult[] = [];
+    selectedAddressId?: string;
+    // Contact Card
+    isContactCardExpanded: boolean = false;
+    shipmentDetails?: ShipmentDetails;
+    private readonly useUsFormat: boolean;
+    private readonly isUsCustomer: boolean;
 
-  private readonly useUsFormat: boolean;
-  private readonly isUsCustomer: boolean;
-
-  isLoading: boolean;
-  addressSearchText: string;
-  googleMapsUrl?: string;
-  mapDisplay?: boolean;
-  map?: google.maps.Map;
-  marker?: google.maps.Marker;
-  usStateList: IStateInfo[];
-  addressSearchResults: HereMapsLocationResult[] = [];
-  selectedAddressId?: string;
-
-  // Contact Card
-  isContactCardExpanded: boolean;
-  shipmentDetails?: ShipmentDetails;
-
-  constructor(
-    private $scope: angular.IScope,
-    $timeout: angular.ITimeoutService,
-    $interval: angular.IIntervalService,
-    private $mdDialog: angular.material.IDialogService,
-    private DispatchData: DispatchCoreService,
-    private toastrService: ToastrService,
-    private NgMap: angular.map.INgMap,
-    appConfig: AppConfig,
-    private UsStatesService: UsStatesService,
-    private configService: ConfigService,
-    private $http: angular.IHttpService,
-    public addressDetails: EditAddressDialogViewModel,
-    public title: string,
-    public submitLabel: string,
-    public showContactInfo: boolean
-  ) {
-    super();
-    this.initServices($timeout, $interval);
-
-    this.isLoading = false;
-    this.useUsFormat = appConfig.US_Customer;
-    this.isUsCustomer = appConfig.US_Customer;
-    this.addressSearchText = this.addressDetails.fullAddress || "";
-    this.isContactCardExpanded = false;
-
-    this.usStateList = this.UsStatesService.getStates();
-    if (
-      this.addressDetails.addressLine6 &&
-      !this.addressDetails.stateAbbreviation
+    constructor(
+        private $scope: angular.IScope,
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
+        private $mdDialog: angular.material.IDialogService,
+        private toastrService: ToastrService,
+        private NgMap: angular.map.INgMap,
+        appConfig: AppConfig,
+        private configService: ConfigService,
+        private $http: angular.IHttpService,
+        public addressDetails: EditAddressDialogViewModel,
+        public title: string,
+        public submitLabel: string,
+        public showContactInfo: boolean
     ) {
-      const stateByName = this.UsStatesService.getStateByName(
-        this.addressDetails.addressLine6
-      );
-      if (stateByName) {
-        this.addressDetails.stateAbbreviation = stateByName.abbreviation;
-      }
+        super();
+        this.initServices($timeout, $interval);
+
+        this.isLoading = false;
+        this.useUsFormat = appConfig.US_Customer;
+        this.isUsCustomer = appConfig.US_Customer;
+        this.addressSearchText = this.addressDetails.fullAddress || "";
+
+        if(this.showContactInfo) {
+            this.isContactCardExpanded = true;
+        }
+
+        this.usStateList = getStates();
+
+        if (
+            this.addressDetails.addressLine6 &&
+            !this.addressDetails.stateAbbreviation
+        ) {
+            const stateByName = getStateByName(
+                this.addressDetails.addressLine6
+            );
+            if (stateByName) {
+                this.addressDetails.stateAbbreviation = stateByName.abbreviation;
+            }
+        }
+
+        this.registerTimeout(() => {
+            this.mapDisplay = true;
+        }, 500);
+
+        this.configService
+            .getGoogleMapsKey()
+            .then((apiKey: string) => {
+                this.googleMapsUrl = `https://maps.google.com/maps/api/js?key=${apiKey}&libraries=places`;
+
+                return this.registerTimeout(() => {
+                    return this.NgMap.getMap({id: "dispatchMap"});
+                }, 1000);
+            })
+            .then((map) => {
+                console.log("Loading Map!");
+                this.map = map;
+                const mapMarkers = map.get("markers") || [];
+                console.log("Map markers:", mapMarkers);
+
+                if (!mapMarkers.length) {
+                    console.log("No markers found. Creating a new one.");
+                    this.marker = new google.maps.Marker({
+                        position: new google.maps.LatLng(
+                            this.addressDetails.latitude ?? 0,
+                            this.addressDetails.longitude ?? 0
+                        ),
+                        map: this.map,
+                        visible: true,
+                    });
+                } else {
+                    this.marker = mapMarkers[0];
+                }
+
+                console.log("Marker initialized:", this.marker);
+            });
     }
 
-    this.registerTimeout(() => {
-      this.mapDisplay = true;
-    }, 500);
+    async autocompleteAddressSearch(
+        text: string
+    ): Promise<HereMapsLocationResult[]> {
+        try {
+            if (!text || text.length < 3) {
+                return [];
+            }
 
-    this.configService
-      .getGoogleMapsKey()
-      .then((apiKey: string) => {
-        this.googleMapsUrl = `https://maps.google.com/maps/api/js?key=${apiKey}&libraries=places`;
+            const hereMapsKey = await this.configService.getHereMapsKey();
 
-        return this.registerTimeout(() => {
-          return this.NgMap.getMap({ id: "dispatchMap" });
-        }, 1000);
-      })
-      .then((map) => {
-        console.log("Loading Map!");
-        this.map = map;
-        const mapMarkers = map.get("markers") || [];
-        console.log("Map markers:", mapMarkers);
+            const response = await this.$http.get<{
+                items: HereMapsLocationResult[];
+            }>("https://geocode.search.hereapi.com/v1/geocode", {
+                params: {
+                    addressNamesMode: "matched",
+                    q: text,
+                    apiKey: hereMapsKey,
+                    in: `countryCode:${this.isUsCustomer ? "USA" : "NZL"}`,
+                    limit: 10,
+                    types: "address,houseNumber,place",
+                },
+            });
 
-        if (!mapMarkers.length) {
-          console.log("No markers found. Creating a new one.");
-          this.marker = new google.maps.Marker({
-            position: new google.maps.LatLng(
-              this.addressDetails.latitude ?? 0,
-              this.addressDetails.longitude ?? 0
-            ),
-            map: this.map,
-            visible: true,
-          });
+            this.addressSearchResults = response.data.items;
+            return this.addressSearchResults;
+        } catch (error: any) {
+            this.toastrService.showErrorToast(
+                error.message || "Error searching for addresses"
+            );
+            console.error("Error in autocompleteAddressSearch:", error);
+            return [];
+        }
+    }
+
+    async addressSearchItemSelected(
+        selectedItem: HereMapsLocationResult
+    ): Promise<void> {
+        try {
+            console.log("Selected address item:", selectedItem);
+
+            if (!selectedItem || !selectedItem.id) {
+                console.warn("No valid address item selected");
+                return;
+            }
+
+            this.selectedAddressId = selectedItem.id;
+
+            // Get detailed information about the location using the ID
+            const detailedLocation = await this.getLocationDetailsById(
+                selectedItem.id
+            );
+
+            if (detailedLocation) {
+                // Update address based on detailed HereMaps data
+                this.handleAddressFieldsFromLookup(detailedLocation);
+                this.updateMapMarker({
+                    lat: detailedLocation.position.lat,
+                    lng: detailedLocation.position.lng,
+                });
+            } else {
+                this.updateMapMarker(selectedItem.position);
+            }
+
+            // Update the full address display
+            this.addressDetails.fullAddress = selectedItem.address.label;
+        } catch (error: any) {
+            console.error("Error processing selected address:", error);
+            this.toastrService.showErrorToast(
+                "An error occurred while processing the selected address. Please try again."
+            );
+        }
+    }
+
+    async getLocationDetailsById(
+        id: string
+    ): Promise<HereMapsLookupResponse | null> {
+        try {
+            this.isLoading = true;
+            const hereMapsKey = await this.configService.getHereMapsKey();
+
+            const options: HereMapsLookupOptions = {
+                id: id,
+                show: ["countryInfo", "streetInfo"],
+            };
+
+            const response = await this.$http.get<HereMapsLookupResponse>(
+                "https://lookup.search.hereapi.com/v1/lookup",
+                {
+                    params: {
+                        id: options.id,
+                        apiKey: hereMapsKey,
+                        show: options.show?.join(","),
+                    },
+                    headers: {
+                        "X-Request-ID": this.generateRequestId(),
+                    },
+                }
+            );
+
+            this.isLoading = false;
+            return response.data;
+        } catch (error) {
+            this.isLoading = false;
+            console.error("Error fetching location details by ID:", error);
+            this.toastrService.showErrorToast(
+                "An error occurred while retrieving address details. Please try again."
+            );
+            return null;
+        }
+    }
+
+    updateMapMarker(position: Position): void {
+        const latLng = new google.maps.LatLng(position.lat, position.lng);
+
+        console.log("Setting map center to:", latLng.toString());
+        this.map?.setCenter(latLng);
+
+        console.log("Marker before setPosition:", this.marker);
+        this.marker?.setPosition(latLng);
+        console.log("Marker after setPosition:", this.marker);
+
+        this.marker?.setVisible(true);
+    }
+
+    async submit(addressDetails: EditAddressDialogViewModel): Promise<void> {
+        console.log("Starting submit with address details:", addressDetails);
+        this.isLoading = true;
+
+        try {
+            console.log("Using US Format:", this.useUsFormat);
+
+            if (this.useUsFormat) {
+                console.log("Processing US address submission");
+                if (!this.validateUsAddress(addressDetails)) {
+                    console.warn("US address validation failed");
+                    this.isLoading = false;
+                    return;
+                }
+
+                // Get the full state name from the abbreviation
+                console.log(
+                    "Getting state info for abbreviation:",
+                    addressDetails.stateAbbreviation
+                );
+
+                if (!addressDetails.stateAbbreviation) {
+                    alert("Please select a valid US state");
+                    return;
+                }
+
+                const stateObj = getStateByAbbreviation(
+                    addressDetails.stateAbbreviation
+                );
+                console.log("Retrieved state object:", stateObj);
+
+                addressDetails.addressLine6 = stateObj?.name ?? "";
+                console.log(
+                    "Updated address details with full state name:",
+                    addressDetails
+                );
+            }
+
+            // Ensure the fullAddress is up to date
+            addressDetails.fullAddress = this.constructFullAddress(addressDetails);
+            console.log("Constructed full address:", addressDetails.fullAddress);
+
+            this.isLoading = false;
+
+            // Add contact info
+            addressDetails.shipmentDetails = this.shipmentDetails;
+
+            // Return a new address
+            this.$mdDialog.hide(addressDetails);
+            console.log("Dialog submission complete");
+        } catch (error) {
+            this.isLoading = false;
+            console.error("Error in submit function:", error);
+            console.error("Error occurred with address details:", addressDetails);
+            this.toastrService.showErrorToast(
+                "Error updating address. Please try again or contact support"
+            );
+            throw error; // Re-throw to maintain an error chain
+        }
+    }
+
+    constructFullAddress(addressDetails: EditAddressDialogViewModel): string {
+        return [
+            addressDetails.addressLine1,
+            addressDetails.addressLine2,
+            addressDetails.addressLine3,
+            addressDetails.addressLine4,
+            addressDetails.addressLine5,
+            addressDetails.addressLine6,
+            addressDetails.addressLine7,
+            addressDetails.addressLine8,
+        ]
+            .filter((line) => line && line.trim() !== "")
+            .join(", ");
+    }
+
+    moveMarker(event: google.maps.MapMouseEvent): void {
+        if (event.latLng) {
+            this.addressDetails.latitude = event.latLng.lat();
+            this.addressDetails.longitude = event.latLng.lng();
+            this.$scope.$apply();
+        }
+    }
+
+    markerDragend(event: google.maps.MapMouseEvent): void {
+        // Get the marker's new position
+        const location = event.latLng;
+        if (!location) return;
+
+        try {
+            // Use the nearest address search with HereMaps
+            const lat = location.lat();
+            const lng = location.lng();
+
+            this.fetchNearestAddress(lat, lng);
+        } catch (error) {
+            this.toastrService.showErrorToast(
+                "An error occurred while retrieving address information. Please try again or contact support"
+            );
+        }
+    }
+
+    async fetchNearestAddress(lat: number, lng: number): Promise<void> {
+        try {
+            const hereMapsKey = await this.configService.getHereMapsKey();
+
+            const response = await this.$http.get<{
+                items: HereMapsLocationResult[];
+            }>("https://revgeocode.search.hereapi.com/v1/revgeocode", {
+                params: {
+                    at: `${lat},${lng}`,
+                    apiKey: hereMapsKey,
+                    limit: 1,
+                },
+            });
+
+            if (response.data.items && response.data.items.length > 0) {
+                const location = response.data.items[0];
+                this.selectedAddressId = location.id;
+
+                // Update address fields
+                this.addressDetails.fullAddress = location.address.label;
+
+                // Apply changes to the UI
+                this.$scope.$apply();
+            }
+        } catch (error) {
+            console.error("Error fetching reverse geocode:", error);
+            this.toastrService.showErrorToast(
+                "An error occurred while retrieving address information. Please try again."
+            );
+        }
+    }
+
+    placeChanged(place: google.maps.places.PlaceResult): void {
+        try {
+            if (!place.geometry?.location) {
+                this.toastrService.showErrorToast(
+                    "An error occurred while retrieving address information. Please try again or contact support"
+                );
+                return;
+            }
+
+            this.addressDetails.latitude = place.geometry.location.lat();
+            this.addressDetails.longitude = place.geometry.location.lng();
+            this.map?.setCenter(place.geometry.location);
+        } catch (error) {
+            this.toastrService.showErrorToast(
+                "An error occurred while retrieving address information. Please try again or contact support"
+            );
+        }
+    }
+
+    toggleContactCard(): void {
+        this.isContactCardExpanded = !this.isContactCardExpanded;
+    }
+
+    cancel(): void {
+        this.$mdDialog.cancel();
+    }
+
+    /**
+     * Generates a UUID v4 string for request correlation
+     */
+    private generateRequestId(): string {
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+            /[xy]/g,
+            function (c) {
+                const r = (Math.random() * 16) | 0;
+                const v = c === "x" ? r : (r & 0x3) | 0x8;
+                return v.toString(16);
+            }
+        );
+    }
+
+    /**
+     * Handle address fields when data comes from the Lookup API
+     */
+    private handleAddressFieldsFromLookup(
+        location: HereMapsLookupResponse
+    ): void {
+        // Update address fields based on HereMaps data
+        if (this.useUsFormat) {
+            this.handleUsFormatAddressFromLookup(location);
         } else {
-          this.marker = mapMarkers[0];
+            // Handle non-US format if needed
+            this.handleNonUsFormatAddressFromLookup(location);
         }
 
-        console.log("Marker initialized:", this.marker);
-      });
-  }
-
-  async autocompleteAddressSearch(
-    text: string
-  ): Promise<HereMapsLocationResult[]> {
-    try {
-      if (!text || text.length < 3) {
-        return [];
-      }
-
-      const hereMapsKey = await this.configService.getHereMapsKey();
-
-      const response = await this.$http.get<{
-        items: HereMapsLocationResult[];
-      }>("https://geocode.search.hereapi.com/v1/geocode", {
-        params: {
-          addressNamesMode: "matched",
-          q: text,
-          apiKey: hereMapsKey,
-          in: `countryCode:${this.isUsCustomer ? "USA" : "NZL"}`,
-          limit: 10,
-          types: "address,houseNumber,place",
-        },
-      });
-
-      this.addressSearchResults = response.data.items;
-      return this.addressSearchResults;
-    } catch (error: any) {
-      this.toastrService.showErrorToast(
-        error.message || "Error searching for addresses"
-      );
-      console.error("Error in autocompleteAddressSearch:", error);
-      return [];
-    }
-  }
-
-  async addressSearchItemSelected(
-    selectedItem: HereMapsLocationResult
-  ): Promise<void> {
-    try {
-      console.log("Selected address item:", selectedItem);
-
-      if (!selectedItem || !selectedItem.id) {
-        console.warn("No valid address item selected");
-        return;
-      }
-
-      this.selectedAddressId = selectedItem.id;
-
-      // Get detailed information about the location using the ID
-      const detailedLocation = await this.getLocationDetailsById(
-        selectedItem.id
-      );
-
-      if (detailedLocation) {
-        // Update address based on detailed HereMaps data
-        this.handleAddressFieldsFromLookup(detailedLocation);
-        this.updateMapMarker({
-          lat: detailedLocation.position.lat,
-          lng: detailedLocation.position.lng,
-        });
-      } else {
-        this.updateMapMarker(selectedItem.position);
-      }
-
-      // Update the full address display
-      this.addressDetails.fullAddress = selectedItem.address.label;
-    } catch (error: any) {
-      console.error("Error processing selected address:", error);
-      this.toastrService.showErrorToast(
-        "An error occurred while processing the selected address. Please try again."
-      );
-    }
-  }
-
-  async getLocationDetailsById(
-    id: string
-  ): Promise<HereMapsLookupResponse | null> {
-    try {
-      this.isLoading = true;
-      const hereMapsKey = await this.configService.getHereMapsKey();
-
-      const options: HereMapsLookupOptions = {
-        id: id,
-        show: ["countryInfo", "streetInfo"],
-      };
-
-      const response = await this.$http.get<HereMapsLookupResponse>(
-        "https://lookup.search.hereapi.com/v1/lookup",
-        {
-          params: {
-            id: options.id,
-            apiKey: hereMapsKey,
-            show: options.show?.join(","),
-          },
-          headers: {
-            "X-Request-ID": this.generateRequestId(),
-          },
-        }
-      );
-
-      this.isLoading = false;
-      return response.data;
-    } catch (error) {
-      this.isLoading = false;
-      console.error("Error fetching location details by ID:", error);
-      this.toastrService.showErrorToast(
-        "An error occurred while retrieving address details. Please try again."
-      );
-      return null;
-    }
-  }
-
-  /**
-   * Generates a UUID v4 string for request correlation
-   */
-  private generateRequestId(): string {
-    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
-      /[xy]/g,
-      function (c) {
-        const r = (Math.random() * 16) | 0;
-        const v = c === "x" ? r : (r & 0x3) | 0x8;
-        return v.toString(16);
-      }
-    );
-  }
-
-  /**
-   * Handle address fields when data comes from the Lookup API
-   */
-  private handleAddressFieldsFromLookup(
-    location: HereMapsLookupResponse
-  ): void {
-    // Update address fields based on HereMaps data
-    if (this.useUsFormat) {
-      this.handleUsFormatAddressFromLookup(location);
-    } else {
-      // Handle non-US format if needed
-      this.handleNonUsFormatAddressFromLookup(location);
+        // Update coordinates
+        this.addressDetails.latitude = location.position.lat;
+        this.addressDetails.longitude = location.position.lng;
     }
 
-    // Update coordinates
-    this.addressDetails.latitude = location.position.lat;
-    this.addressDetails.longitude = location.position.lng;
-  }
+    private handleUsFormatAddressFromLookup(
+        location: HereMapsLookupResponse
+    ): void {
+        const address = location.address;
 
-  private handleUsFormatAddressFromLookup(
-    location: HereMapsLookupResponse
-  ): void {
-    const address = location.address;
+        // Map HereMaps fields to the address lines with more detailed information
+        this.addressDetails.addressLine1 = ""; // Company/Building/Complex - not directly available
+        this.addressDetails.addressLine2 = ""; // Unit/Suite - not directly available
+        this.addressDetails.addressLine3 = address.houseNumber || ""; // House Number
+        this.addressDetails.addressLine4 = address.street || ""; // Street
+        this.addressDetails.addressLine5 = address.city || ""; // City
+        this.addressDetails.addressLine6 = address.state || ""; // State full name
 
-    // Map HereMaps fields to the address lines with more detailed information
-    this.addressDetails.addressLine1 = ""; // Company/Building/Complex - not directly available
-    this.addressDetails.addressLine2 = ""; // Unit/Suite - not directly available
-    this.addressDetails.addressLine3 = address.houseNumber || ""; // House Number
-    this.addressDetails.addressLine4 = address.street || ""; // Street
-    this.addressDetails.addressLine5 = address.city || ""; // City
-    this.addressDetails.addressLine6 = address.state || ""; // State full name
-
-    // Handle ZIP+4 format by extracting just the 5-digit ZIP code
-    if (address.postalCode) {
-      // Extract the first 5 digits if it's in the 'XXXXX-XXXX' format
-      const zipMatch = address.postalCode.match(/^(\d{5})/);
-      this.addressDetails.addressLine7 = zipMatch
-        ? zipMatch[1]
-        : address.postalCode;
-    } else {
-      this.addressDetails.addressLine7 = "";
-    }
-
-    // Set state abbreviation - the lookup API provides both stateCode and state
-    if (address.stateCode) {
-      this.addressDetails.stateAbbreviation = address.stateCode;
-    } else if (address.state) {
-      const stateByName = this.UsStatesService.getStateByName(address.state);
-      if (stateByName) {
-        this.addressDetails.stateAbbreviation = stateByName.abbreviation;
-      }
-    }
-
-    // If we have countryInfo, use it to ensure we have the proper country code
-    if (location.countryInfo) {
-      console.log("Country info from lookup:", location.countryInfo);
-    }
-
-    // If we have streetInfo, we can use it to populate street address more accurately
-    if (location.streetInfo && location.streetInfo.length > 0) {
-      const streetInfo = location.streetInfo[0];
-      console.log("Street info from lookup:", streetInfo);
-
-      // You can use the streetInfo to construct a more detailed street address if needed
-      // Example: Combining prefix + baseName + streetType in the correct order
-      let formattedStreet = "";
-
-      if (streetInfo.prefix) {
-        formattedStreet += streetInfo.prefix + " ";
-      }
-
-      if (streetInfo.streetTypePrecedes && streetInfo.streetType) {
-        formattedStreet += streetInfo.streetType + " ";
-      }
-
-      formattedStreet += streetInfo.baseName;
-
-      if (!streetInfo.streetTypePrecedes && streetInfo.streetType) {
-        formattedStreet += " " + streetInfo.streetType;
-      }
-
-      if (streetInfo.suffix) {
-        formattedStreet += " " + streetInfo.suffix;
-      }
-
-      if (formattedStreet) {
-        this.addressDetails.addressLine4 = formattedStreet.trim();
-      }
-    }
-  }
-
-  private handleNonUsFormatAddressFromLookup(
-    location: HereMapsLookupResponse
-  ): void {
-    const address = location.address;
-
-    // For non-US format, map accordingly with more detailed information
-    this.addressDetails.addressLine5 = address.district || address.city || ""; // Suburb field
-    // Set other non-US specific fields if needed
-  }
-
-  updateMapMarker(position: Position): void {
-    const latLng = new google.maps.LatLng(position.lat, position.lng);
-
-    console.log("Setting map center to:", latLng.toString());
-    this.map?.setCenter(latLng);
-
-    console.log("Marker before setPosition:", this.marker);
-    this.marker?.setPosition(latLng);
-    console.log("Marker after setPosition:", this.marker);
-
-    this.marker?.setVisible(true);
-  }
-
-  async submit(addressDetails: EditAddressDialogViewModel): Promise<void> {
-    console.log("Starting submit with address details:", addressDetails);
-    this.isLoading = true;
-
-    try {
-      console.log("Using US Format:", this.useUsFormat);
-
-      if (this.useUsFormat) {
-        console.log("Processing US address submission");
-        if (!this.validateUsAddress(addressDetails)) {
-          console.warn("US address validation failed");
-          this.isLoading = false;
-          return;
+        // Handle ZIP+4 format by extracting just the 5-digit ZIP code
+        if (address.postalCode) {
+            // Extract the first 5 digits if it's in the 'XXXXX-XXXX' format
+            const zipMatch = address.postalCode.match(/^(\d{5})/);
+            this.addressDetails.addressLine7 = zipMatch
+                ? zipMatch[1]
+                : address.postalCode;
+        } else {
+            this.addressDetails.addressLine7 = "";
         }
 
-        // Get the full state name from the abbreviation
-        console.log(
-          "Getting state info for abbreviation:",
-          addressDetails.stateAbbreviation
-        );
-
-        if (!addressDetails.stateAbbreviation) {
-          alert("Please select a valid US state");
-          return;
+        // Set state abbreviation - the lookup API provides both stateCode and state
+        if (address.stateCode) {
+            this.addressDetails.stateAbbreviation = address.stateCode;
+        } else if (address.state) {
+            const stateByName = getStateByName(address.state);
+            if (stateByName) {
+                this.addressDetails.stateAbbreviation = stateByName.abbreviation;
+            }
         }
 
-        const stateObj = this.UsStatesService.getStateByAbbreviation(
-          addressDetails.stateAbbreviation
+        // If we have countryInfo, use it to ensure we have the proper country code
+        if (location.countryInfo) {
+            console.log("Country info from lookup:", location.countryInfo);
+        }
+
+        // If we have streetInfo, we can use it to populate street address more accurately
+        if (location.streetInfo && location.streetInfo.length > 0) {
+            const streetInfo = location.streetInfo[0];
+            console.log("Street info from lookup:", streetInfo);
+
+            // You can use the streetInfo to construct a more detailed street address if needed
+            // Example: Combining prefix + baseName + streetType in the correct order
+            let formattedStreet = "";
+
+            if (streetInfo.prefix) {
+                formattedStreet += streetInfo.prefix + " ";
+            }
+
+            if (streetInfo.streetTypePrecedes && streetInfo.streetType) {
+                formattedStreet += streetInfo.streetType + " ";
+            }
+
+            formattedStreet += streetInfo.baseName;
+
+            if (!streetInfo.streetTypePrecedes && streetInfo.streetType) {
+                formattedStreet += " " + streetInfo.streetType;
+            }
+
+            if (streetInfo.suffix) {
+                formattedStreet += " " + streetInfo.suffix;
+            }
+
+            if (formattedStreet) {
+                this.addressDetails.addressLine4 = formattedStreet.trim();
+            }
+        }
+    }
+
+    private handleNonUsFormatAddressFromLookup(
+        location: HereMapsLookupResponse
+    ): void {
+        const address = location.address;
+
+        // For non-US format, map accordingly with more detailed information
+        this.addressDetails.addressLine5 = address.district || address.city || ""; // Suburb field
+        // Set other non-US specific fields if needed
+    }
+
+    private validateUsAddress(
+        addressDetails: EditAddressDialogViewModel
+    ): boolean {
+        if (
+            !addressDetails.addressLine4 ||
+            !addressDetails.addressLine5 ||
+            !addressDetails.stateAbbreviation
+        ) {
+            alert("Please fill in all required fields (Street, City, and State)");
+            return false;
+        }
+
+        const stateObj = getStateByAbbreviation(
+            addressDetails.stateAbbreviation
         );
-        console.log("Retrieved state object:", stateObj);
+        if (!stateObj) {
+            alert("Please select a valid US state");
+            return false;
+        }
 
-        addressDetails.addressLine6 = stateObj?.name ?? "";
-        console.log(
-          "Updated address details with full state name:",
-          addressDetails
-        );
-      }
-
-      // Ensure the fullAddress is up to date
-      addressDetails.fullAddress = this.constructFullAddress(addressDetails);
-      console.log("Constructed full address:", addressDetails.fullAddress);
-
-      this.isLoading = false;
-
-      // Add contact info
-      addressDetails.shipmentDetails = this.shipmentDetails;
-
-      // Return a new address
-      this.$mdDialog.hide(addressDetails);
-      console.log("Dialog submission complete");
-    } catch (error) {
-      this.isLoading = false;
-      console.error("Error in submit function:", error);
-      console.error("Error occurred with address details:", addressDetails);
-      this.toastrService.showErrorToast(
-        "Error updating address. Please try again or contact support"
-      );
-      throw error; // Re-throw to maintain an error chain
+        return true;
     }
-  }
-
-  private validateUsAddress(
-    addressDetails: EditAddressDialogViewModel
-  ): boolean {
-    if (
-      !addressDetails.addressLine4 ||
-      !addressDetails.addressLine5 ||
-      !addressDetails.stateAbbreviation
-    ) {
-      alert("Please fill in all required fields (Street, City, and State)");
-      return false;
-    }
-
-    const stateObj = this.UsStatesService.getStateByAbbreviation(
-      addressDetails.stateAbbreviation
-    );
-    if (!stateObj) {
-      alert("Please select a valid US state");
-      return false;
-    }
-
-    return true;
-  }
-
-  constructFullAddress(addressDetails: EditAddressDialogViewModel): string {
-    return [
-      addressDetails.addressLine1,
-      addressDetails.addressLine2,
-      addressDetails.addressLine3,
-      addressDetails.addressLine4,
-      addressDetails.addressLine5,
-      addressDetails.addressLine6,
-      addressDetails.addressLine7,
-      addressDetails.addressLine8,
-    ]
-      .filter((line) => line && line.trim() !== "")
-      .join(", ");
-  }
-
-  moveMarker(event: google.maps.MapMouseEvent): void {
-    if (event.latLng) {
-      this.addressDetails.latitude = event.latLng.lat();
-      this.addressDetails.longitude = event.latLng.lng();
-      this.$scope.$apply();
-    }
-  }
-
-  markerDragend(event: google.maps.MapMouseEvent): void {
-    // Get the marker's new position
-    const location = event.latLng;
-    if (!location) return;
-
-    try {
-      // Use the nearest address search with HereMaps
-      const lat = location.lat();
-      const lng = location.lng();
-
-      this.fetchNearestAddress(lat, lng);
-    } catch (error) {
-      this.toastrService.showErrorToast(
-        "An error occurred while retrieving address information. Please try again or contact support"
-      );
-    }
-  }
-
-  async fetchNearestAddress(lat: number, lng: number): Promise<void> {
-    try {
-      const hereMapsKey = await this.configService.getHereMapsKey();
-
-      const response = await this.$http.get<{
-        items: HereMapsLocationResult[];
-      }>("https://revgeocode.search.hereapi.com/v1/revgeocode", {
-        params: {
-          at: `${lat},${lng}`,
-          apiKey: hereMapsKey,
-          limit: 1,
-        },
-      });
-
-      if (response.data.items && response.data.items.length > 0) {
-        const location = response.data.items[0];
-        this.selectedAddressId = location.id;
-
-        // Update address fields
-        this.addressDetails.fullAddress = location.address.label;
-
-        // Apply changes to the UI
-        this.$scope.$apply();
-      }
-    } catch (error) {
-      console.error("Error fetching reverse geocode:", error);
-      this.toastrService.showErrorToast(
-        "An error occurred while retrieving address information. Please try again."
-      );
-    }
-  }
-
-  placeChanged(place: google.maps.places.PlaceResult): void {
-    try {
-      if (!place.geometry?.location) {
-        this.toastrService.showErrorToast(
-          "An error occurred while retrieving address information. Please try again or contact support"
-        );
-        return;
-      }
-
-      this.addressDetails.latitude = place.geometry.location.lat();
-      this.addressDetails.longitude = place.geometry.location.lng();
-      this.map?.setCenter(place.geometry.location);
-    } catch (error) {
-      this.toastrService.showErrorToast(
-        "An error occurred while retrieving address information. Please try again or contact support"
-      );
-    }
-  }
-
-  toggleContactCard(): void {
-    this.isContactCardExpanded = !this.isContactCardExpanded;
-  }
-
-  cancel(): void {
-    this.$mdDialog.cancel();
-  }
 }
 
 export default EditAddressDialogController;

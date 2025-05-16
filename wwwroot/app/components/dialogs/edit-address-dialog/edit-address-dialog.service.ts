@@ -1,5 +1,5 @@
 import {AddressViewModel, EditAddressDialogViewModel} from "../../../interfaces/job.interface";
-import EditAddressDialogController from "./edit-address-dialog.controller";;
+import EditAddressDialogController from "./edit-address-dialog.controller";
 import {IDocumentService, IServiceProvider, material} from "angular";
 import {bindAllMethods} from "../../../functions/bindAllMethods";
 

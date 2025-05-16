@@ -1,11 +1,17 @@
 import "./map-dialog.styles.less"
 import OverviewService from "../../overview/overview.service";
 import ConfigService from "../../../services/config.service";
-import app from "../../../app";
 import {MapConfig, OverviewTableParentJob} from "../../overview/overview.interfaces";
+import {AppConfig} from "../../../interfaces/app-config.interface";
 
 export class MapDialogController implements angular.IController {
-    static $inject = ["$mdDialog", "overviewService", "configService", "delivery"];
+    static $inject = [
+        "$mdDialog",
+        "overviewService",
+        "configService",
+        "APP_CONFIG",
+        "delivery"
+    ];
 
     title: string;
     loading: boolean;
@@ -17,6 +23,7 @@ export class MapDialogController implements angular.IController {
         private $mdDialog: angular.material.IDialogService,
         private overviewService: OverviewService,
         private configService: ConfigService,
+        private appConfig: AppConfig,
         private delivery: OverviewTableParentJob) {
 
         this.title = `${delivery.jobName} Map`;
@@ -28,17 +35,15 @@ export class MapDialogController implements angular.IController {
         };
 
         this.mapConfig = {
-            center: {lat: 39.8097343, lng: -98.5556199},
+            center: this.appConfig.US_Customer
+                ? this.appConfig.US_Coordinates_Center
+                : this.appConfig.NZ_Coordinates_Center,
             zoom: 5,
             job: null,
             selectedJobIndex: 0, // Default to parent job view
             courierLocation: null
         };
 
-        this.loading = false;
-    }
-
-    $onInit(): void {
         this.configService.getHereMapsKey()
             .then((apiKey) => {
                 this.hereCredentials.apiKey = apiKey;
@@ -49,10 +54,9 @@ export class MapDialogController implements angular.IController {
             })
             .catch((error) => {
                 console.error("Error initializing map:", error);
-            })
-            .finally(() => {
-                this.loading = false;
             });
+
+        this.loading = false;
     }
 
     async getJob(jobId: number): Promise<MapConfig> {

@@ -2,10 +2,9 @@ import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import DispatchExecutorService from "../../../services/dispatch-executor.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
-import UsStatesService from "../../../services/getUsStates.service";
 import {AddressViewModel, JobCreateViewModel, SelectOption, Suggestion} from "../../../interfaces/job.interface";
-import app from "../../../app";
 import BaseController from "../../base-controller";
+import {getStateByAbbreviation, getStates} from "../../../functions/usStates";
 
 interface CreateJobDialogControllerScope extends angular.IScope {
     jobForm: angular.IFormController;
@@ -29,7 +28,6 @@ export class CreateJobDialogController extends BaseController {
         "staffId",
         "despatcherName",
         "APP_CONFIG",
-        "UsStatesService"
     ];
 
     private readonly useUsFormat: boolean;
@@ -62,7 +60,6 @@ export class CreateJobDialogController extends BaseController {
         public staffId: number,
         public despatcherName: string,
         APP_CONFIG: AppConfig,
-        public UsStatesService: UsStatesService
     ) {
         super();
 
@@ -72,7 +69,7 @@ export class CreateJobDialogController extends BaseController {
 
         this.useUsFormat = APP_CONFIG.US_Customer;
         if (this.useUsFormat) {
-            this.states = this.UsStatesService.getStates();
+            this.states = getStates();
         }
     }
 
@@ -212,7 +209,7 @@ export class CreateJobDialogController extends BaseController {
                 addressDetails.addressLine6 = returnedLocation.Address.State;
                 addressDetails.addressLine7 = returnedLocation.Address.PostalCode;
 
-                const stateObj = this.UsStatesService.getStateByAbbreviation(returnedLocation.Address.State);
+                const stateObj = getStateByAbbreviation(returnedLocation.Address.State);
                 if (stateObj) {
                     addressDetails.stateName = stateObj.name;
                 }
