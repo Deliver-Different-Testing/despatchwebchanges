@@ -8,25 +8,41 @@ namespace DespatchWeb.Repositories;
 
 public partial class JobRepository
 {
-    public async Task UpdateDeliverByTime(int jobId, string deliverByTime, int timeZoneId)
+    public async Task UpdateDeliverByTime(int jobId, string deliverByTime, bool isRecurring, int timeZoneId)
     {
-        var job = await Context.TucJobs.FindAsync(jobId);
-        ArgumentNullException.ThrowIfNull(job);
+        if (isRecurring) {
+            var jobBooking = await Context.TucJobBookings.FindAsync(jobId);
+            ArgumentNullException.ThrowIfNull(jobBooking);
 
-        job.DeliverByTime = DateTime.Parse(deliverByTime);
-        job.DeliverByTimeZoneId = timeZoneId;
+            jobBooking.DeliverByTime = DateTime.Parse(deliverByTime);
+            jobBooking.DeliverByTimeZoneId = timeZoneId;
+        } else {
+            var job = await Context.TucJobs.FindAsync(jobId);
+            ArgumentNullException.ThrowIfNull(job);
+
+            job.DeliverByTime = DateTime.Parse(deliverByTime);
+            job.DeliverByTimeZoneId = timeZoneId;
+        }
 
         await Context.SaveChangesAsync();
     }
 
 
-    public async Task UpdatePickUpTime(int jobId, string pickUpTime, int timeZoneId)
+    public async Task UpdatePickUpTime(int jobId, string pickUpTime, bool isRecurring, int timeZoneId)
     {
-        var job = await Context.TucJobs.FindAsync(jobId);
-        ArgumentNullException.ThrowIfNull(job);
+        if (isRecurring) {
+            var jobBooking = await Context.TucJobBookings.FindAsync(jobId);
+            ArgumentNullException.ThrowIfNull(jobBooking);
 
-        job.UcjbTime = DateTime.Parse(pickUpTime);
-        job.PickupTimeZoneId = timeZoneId;
+            jobBooking.UcbkTime = DateTime.Parse(pickUpTime);
+            jobBooking.PickupTimeZoneId = timeZoneId;
+        } else {
+            var job = await Context.TucJobs.FindAsync(jobId);
+            ArgumentNullException.ThrowIfNull(job);
+
+            job.UcjbTime = DateTime.Parse(pickUpTime);
+            job.PickupTimeZoneId = timeZoneId;
+        }
         await Context.SaveChangesAsync();
     }
 
