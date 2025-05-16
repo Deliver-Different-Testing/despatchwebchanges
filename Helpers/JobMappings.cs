@@ -760,6 +760,13 @@ public static class JobMappings
         JobNo = j.UcbkJobNumber,
         Time = j.UcbkTime,
         RootParentId = j.RootParentId,
+        RelatedJobs = j
+                .BookingParent.InverseBookingParent.Select(p => new Suggestion
+                {
+                    Id = p.UcbkId,
+                    Text = p.UcbkJobNumber,
+                })
+                .ToList(),
         Date = j.UcbkDate.HasValue ? j.UcbkDate.Value.ToString("MM/dd/yyyy") : null,
         Booked = j.UcbkDate.HasValue
             ? CombineDateAndTime(j.UcbkDate.Value, j.UcbkTime)
