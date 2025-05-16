@@ -7,6 +7,55 @@
 
             <span flex></span>
 
+            <md-menu>
+                <md-button aria-label="Open date filter menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
+                    <md-icon md-font-set="material-symbols-outlined">calendar_today</md-icon>
+                    <md-tooltip md-direction="bottom">Date</md-tooltip>
+                </md-button>
+                <md-menu-content style="width: 300px; overflow: hidden;">
+                    <div class="md-padding" md-prevent-menu-close>
+                        <label id="dateRange" class="label-padding">Date Filter: ({{ctrl.browserTimeZone | timezoneShort}})</label>
+                        <md-radio-group ng-change="ctrl.onSearchRangeChange(ctrl.dateSearchRange)" ng-model="ctrl.dateSearchRange"
+                                        aria-labelledby="dateRange" layout="row" layout-align="center center">
+                            <md-radio-button value="1">24 Hours</md-radio-button>
+                            <md-radio-button value="2">Custom</md-radio-button>
+                        </md-radio-group>
+
+                        <md-divider style="margin: 10px;"></md-divider>
+
+                        <div layout="column" layout-align="center end" ng-if="ctrl.dateSearchRange == 2">
+                            <div>
+                                <label id="from-datepicker-header">From: </label>
+                                <md-datepicker md-date-locale="{ firstDayOfWeek: 1 }"
+                                               input-aria-describedby="from-datepicker-description"
+                                               input-aria-labelledby="from-datepicker-header"
+                                               md-placeholder="Enter date"
+                                               ng-model-options="{ debounce: 500 }"
+                                               ng-change="ctrl.refreshDashboard()"
+                                               ng-model="ctrl.startDate"></md-datepicker>
+                                <p id="from-datepicker-description" style="display: none">
+                                    Start date search
+                                </p>
+                            </div>
+
+                            <div>
+                                <label id="to-datepicker-header">To: </label>
+                                <md-datepicker md-date-locale="{ firstDayOfWeek: 1 }"
+                                               input-aria-describedby="to-datepicker-description"
+                                               input-aria-labelledby="to-datepicker-header"
+                                               md-placeholder="Enter date"
+                                               ng-model-options="{ debounce: 500 }"
+                                               ng-change="ctrl.refreshDashboard()"
+                                               ng-model="ctrl.endDate"></md-datepicker>
+                                <p id="to-datepicker-description" style="display: none">
+                                    End date search
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </md-menu-content>
+            </md-menu>
+
             <span style="font-size: medium;">{{ctrl.greeting}}</span>
 
             <md-button aria-label="Menu" class="md-icon-button" ng-mouseover="ctrl.toggleSidenav()">
@@ -59,7 +108,7 @@
                         Done: {{ctrl.getStatusCounts().done}}
                     </md-button>
                 </div>
-                <div layout="row" layout-align="center center" class="date-navigation">
+                <!--<div layout="row" layout-align="center center" class="date-navigation">
                     <md-button class="md-icon-button" ng-click="ctrl.changeDate(-1)"
                                aria-label="Previous day">
                         <md-icon md-font-set="material-symbols-outlined">chevron_left</md-icon>
@@ -77,7 +126,7 @@
                                aria-label="Next day">
                         <md-icon md-font-set="material-symbols-outlined">chevron_right</md-icon>
                     </md-button>
-                </div>
+                </div>-->
             </div>
         </md-card-content>
     </md-card>

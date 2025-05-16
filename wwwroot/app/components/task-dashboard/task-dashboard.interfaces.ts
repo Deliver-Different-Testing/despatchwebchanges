@@ -23,6 +23,8 @@ export interface TaskTableFiltersRequest {
     orderBy?: string;
     orderDirection?: string;
     date?: string;
+    startDate?: string;
+    endDate?: string;
     showCompleted?: boolean;
     courierId?: number;
     jobId?: number;

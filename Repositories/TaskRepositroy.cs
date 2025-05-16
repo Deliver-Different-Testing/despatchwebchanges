@@ -218,8 +218,28 @@ public class TaskRepository(
         TaskTableFiltersRequest filters
     )
     {
-        if (filters.Date.HasValue)
+        // Apply date filters based on the available parameters
+            if (filters.StartDate.HasValue && filters.EndDate.HasValue)
+        {
+            // If both start and end dates are provided, filter for events within that range
+            query = query.Where(e => e.UcevDueTime >= filters.StartDate.Value &&
+                                    e.UcevDueTime <= filters.EndDate.Value);
+        }
+        else if (filters.StartDate.HasValue)
+        {
+            // If only startDate is provided, filter for events on or after that date
+            query = query.Where(e => e.UcevDueTime >= filters.StartDate.Value);
+        }
+        else if (filters.EndDate.HasValue)
+        {
+            // If only endDate is provided, filter for events on or before that date
+            query = query.Where(e => e.UcevDueTime <= filters.EndDate.Value);
+        }
+        else if (filters.Date.HasValue)
+        {
+            // Fall back to the original date filter if no range is specified
             query = query.Where(e => e.UcevDueTime.Date <= filters.Date);
+        }
 
         if (filters.JobId.HasValue)
             query = query.Where(e => e.UcevJobId == filters.JobId.Value
