@@ -193,7 +193,7 @@ angular.module("hereMapTracking.services")
                 map.getViewModel().setLookAtData({ bounds: expandedBoundingBox });
             };
 
-            service.drawRouteLine = function (fromLat, fromLong, toLat, toLong, routeLine, job, map, platform) {
+            service.drawRouteLine = function (fromLat, fromLong, toLat, toLong, routeLine, job, map, platform, flight) {
                 //Draws a single routeline
                 var routingParameters = {
                     routingMode: 'fast',
@@ -209,18 +209,40 @@ angular.module("hereMapTracking.services")
                     // ensure that at least one route was found
                     if (result.routes.length) {
                         result.routes[0].sections.forEach((section) => {
-                            // Create a linestring to use as a point source for the route line
-                            var linestring = H.geo.LineString.fromFlexiblePolyline(section.polyline);
+                            if (flight) {
+                                // Create a linestring to use as a point source for the route line and add start and end points with curved line
+                                const lineString = new H.geo.LineString();
+                                const startPoint = { lat: fromLat, lng: fromLong };
+                                const endPoint = { lat: toLat, lng: toLong };
 
-                            // Create a polyline to display the route:
-                            routeLine = new H.map.Polyline(linestring, {
-                                style: { strokeColor: 'black', lineWidth: 3 }
-                            });
+                                const curvePoints = service.createCurvedPath(startPoint, endPoint, 0.1);
 
-                            routeLine.id = 'route';
+                                curvePoints.forEach(point => {
+                                    lineString.pushPoint(point);
+                                });
 
-                            // Add the route polyline (potentially multiple parts):
-                            map.addObject(routeLine);
+                                var curvedLine = new H.map.Polyline(lineString, {
+                                    style: { lineWidth: 4 }
+                                });
+
+                                curvedLine.id = 'route';
+
+                                // Add the route polyline:
+                                map.addObject(curvedLine);
+                            } else {
+                                // Create a linestring to use as a point source for the route line
+                                var linestring = H.geo.LineString.fromFlexiblePolyline(section.polyline);
+
+                                // Create a polyline to display the route:
+                                routeLine = new H.map.Polyline(linestring, {
+                                    style: { strokeColor: 'black', lineWidth: 3 }
+                                });
+
+                                routeLine.id = 'route';
+
+                                // Add the route polyline (potentially multiple parts):
+                                map.addObject(routeLine);
+                            }
                         });
 
                         if (result.routes[0].sections.length > 1) {
