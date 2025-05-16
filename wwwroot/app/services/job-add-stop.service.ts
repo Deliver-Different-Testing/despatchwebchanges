@@ -1,6 +1,6 @@
 import DispatchCoreService from "./dispatch-core.service";
 import {EditAddressDialogService} from "../components/dialogs/edit-address-dialog/edit-address-dialog.service";
-import {IDispatchJob} from "../interfaces/job.interface";
+import {AddressViewModel, IDispatchJob} from "../interfaces/job.interface";
 import ToastrService from "./toastr.service";
 import JobSuffix from "../enums/job-suffix.enum";
 import {bindAllMethods} from "../functions/bindAllMethods";
@@ -46,23 +46,37 @@ class JobAddStopService implements angular.IServiceProvider {
     private async addPickUpStop(job: IDispatchJob, $event?: MouseEvent) {
         if(!job.pickupAddress || !job.deliveryAddress) return;
 
-        const newPickUpAddress = await this.editAddressDialogService.openEditAddressDialog(job.pickupAddress,
+        const newAddress = this.generateBlankAddress();
+        const newPickUpAddress = await this.editAddressDialogService.openEditAddressDialog(newAddress,
             $event, "Add Pick Up Stop", "Add Stop", true);
         if(!newPickUpAddress) return;
 
-        // Add a stop job
         await this.DispatchData.addStopToJob(job.id, newPickUpAddress, undefined);
     }
 
     private async addDeliveryStop(job: IDispatchJob, $event?: MouseEvent) {
         if(!job.pickupAddress || !job.deliveryAddress) return;
 
-        const newDeliveryAddress = await this.editAddressDialogService.openEditAddressDialog(job.deliveryAddress,
+        const newAddress = this.generateBlankAddress();
+        const newDeliveryAddress = await this.editAddressDialogService.openEditAddressDialog(newAddress,
             $event, "Add Delivery Stop", "Add Stop", true);
         if(!newDeliveryAddress) return;
 
-        // Add a stop job
         await this.DispatchData.addStopToJob(job.id, undefined, newDeliveryAddress);
+    }
+
+    private generateBlankAddress(): AddressViewModel {
+        return {
+            addressLine1: "",
+            addressLine2: "",
+            addressLine3: "",
+            addressLine4: "",
+            addressLine5: "",
+            addressLine6: "",
+            addressLine7: "",
+            addressLine8: "",
+            fullAddress: ""
+        }
     }
 }
 
