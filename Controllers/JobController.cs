@@ -700,29 +700,19 @@ public class JobController(
         return Json(result);
     }
 
-    public async Task<IActionResult> PodSearch(
-        int? courierId,
-        int? clientId,
-        string wild,
-        string job,
-        DateTime fromDate,
-        DateTime toDate,
-        int pageIndex,
-        int pageSize
-    )
+    [HttpGet]
+    public async Task<IActionResult> PodSearch(PodSearchRequest data)
     {
-        var result = await jobRepository.PodSearch(
-            courierId,
-            wild ?? "",
-            job ?? "",
-            fromDate.ResetTimeToStartOfDay(),
-            toDate.ResetTimeToEndOfDay(),
-            clientId,
-            pageIndex,
-            pageSize
-        );
-
-        return Json(result);
+        try
+        {
+            var result = await jobRepository.PodSearch(data);
+            return Json(result);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, e.Message);
+        }
     }
 
     public async Task<IActionResult> PodSearchDownload(
@@ -949,16 +939,21 @@ public class JobController(
     public async Task<IActionResult> ValidateSwapPod(string job)
     {
         var fromDate = DateTime.Today;
-        var result = await jobRepository.PodSearch(
-            null,
-            "",
-            job,
-            fromDate.ResetTimeToStartOfDay(),
-            fromDate.ResetTimeToEndOfDay(),
-            null,
-            1,
-            5
-        );
+
+        // Create a PodSearchRequest object that matches the repository method parameter
+        var searchRequest = new PodSearchRequest
+        {
+            CourierId = null,
+            ClientId = null,
+            Wild = "",  // You were passing an empty string to what appears to be the Wild parameter
+            Job = job,
+            FromDate = fromDate.ResetTimeToStartOfDay(),
+            ToDate = fromDate.ResetTimeToEndOfDay(),
+            PageIndex = 1,
+            PageSize = 5
+        };
+
+        var result = await jobRepository.PodSearch(searchRequest);
 
         return result.Item1 == 0 ? Json(false) : Json(result.Item2.First().Id);
     }

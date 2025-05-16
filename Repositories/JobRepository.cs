@@ -274,132 +274,103 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         return Tuple.Create(total, jobList);
     }
 
-    public async Task<Tuple<int, List<JobViewModel>>> PodSearch(
-        int? courierId,
-        string wild,
-        string job,
-        DateTime fromDate,
-        DateTime toDate,
-        int? clientId,
-        int pageIndex,
-        int pageSize
-    )
-    {
-        var clientSet = clientId.HasValue;
-        var courierSet = courierId.HasValue;
-        var jobParam = $"%{job}%";
-        var wildParam = $"%{wild}%";
-
-        var jobsQuery =
-            from j in Context.TblJobs
-            join c in Context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
-            from co in courierJoin.DefaultIfEmpty()
-            join y in Context.TucSuburbs on j.FromSuburbId equals y.UcsuId into fromJoin
-            from fs in fromJoin.DefaultIfEmpty()
-            join z in Context.TucSuburbs on j.ToSuburbId equals z.UcsuId into toJoin
-            from ts in toJoin.DefaultIfEmpty()
-            join t in Context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
-            from speed in speedJoin.DefaultIfEmpty()
-            join s in Context.TucJobStatuses on j.Status equals s.UcjsId into statusJoin
-            from status in statusJoin.DefaultIfEmpty()
-            join nw in Context.TucJobNationwides on j.JobId equals nw.UcnwJobId into nationwideJoin
-            from nationwide in nationwideJoin.DefaultIfEmpty()
-            where
-                j.Date >= fromDate
-                && j.Date <= toDate
-                && (!clientSet || j.ClientId == clientId)
-                && (!courierSet || j.CourierId == courierId)
-                && (job == "" || EF.Functions.Like(j.Number.ToLower(), jobParam))
+    public async Task<Tuple<int, List<JobViewModel>>> PodSearch(PodSearchRequest data)
+    { 
+        
+        var clientSet = data.ClientId.HasValue;
+        var courierSet = data.CourierId.HasValue;
+        var jobParam = $"%{data.Job}%";
+        var wildParam = $"%{data.Wild}%";
+        
+     var activeJobsQuery = Context.TucJobs
+        .Where(j => j.UcjbDate >= data.FromDate
+                && j.UcjbDate <= data.ToDate
+                && (!clientSet || j.UcjbClientId == data.ClientId)
+                && (!courierSet || j.UcjbCourierId == data.CourierId)
+                && (data.Job == "" || EF.Functions.Like(j.UcjbNumber.ToLower(), jobParam))
                 && (
-                    wild == ""
-                    || EF.Functions.Like(nationwide.UcnwFlightNo, wildParam)
+                    data.Wild == ""
+                    || EF.Functions.Like(j.TucJobNationwides.FirstOrDefault().UcnwFlightNo, wildParam)
                     || EF.Functions.Like(
-                        j.FromAddress
+                        j.UcjbFromAddr
                         + " "
                         + j.PickupFromContact
                         + " "
-                        + fs.UcsuName
+                        + j.UcjbFromNavigation.UcsuName
                         + " "
-                        + j.ToAddress
+                        + j.UcjbToNavigation.UcsuName
                         + " "
                         + j.DeliverToContact
                         + " "
-                        + ts.UcsuName
+                        + j.ToAddressStreetName
                         + " "
-                        + (j.ClientReferenceA ?? "")
+                        + (j.UcjbClientRefa ?? "")
                         + " "
-                        + (j.ClientReferenceB ?? "")
+                        + (j.UcjbClientRefb ?? "")
                         + " "
-                        + (j.OurRef ?? "")
+                        + (j.UcjbOurRef ?? "")
                         + " "
-                        + j.Number.ToLower(),
+                        + j.UcjbNumber.ToLower(),
                         wildParam
-                    )
-                )
-            select new JobViewModel
-            {
-                Id = j.JobId,
-                Time = j.Time,
-                ClientId = j.ClientId,
-                Client = j.ClientCode,
-                From = fs.UcsuName,
-                FromSuburbId = j.FromSuburbId,
-                To = ts.UcsuName,
-                ToSuburbId = j.ToSuburbId,
-                JobNo = j.Number,
-                FromAddress = j.FromAddress,
-                ToAddress = j.ToAddress,
-                PickupAddress = new AddressViewModel
-                {
-                    AddressLine1 = j.PickupAddressLine1,
-                    AddressLine2 = j.PickupAddressLine2,
-                    AddressLine3 = j.PickupAddressLine3,
-                    AddressLine4 = j.PickupAddressLine4,
-                    AddressLine5 = j.PickupAddressLine5,
-                    AddressLine6 = j.PickupAddressLine6,
-                    AddressLine7 = j.PickupAddressLine7,
-                    AddressLine8 = j.PickupAddressLine8,
-                    Latitude = j.PickUpLatitude,
-                    Longitude = j.PickUpLongitude
-                },
-                DeliveryAddress = new AddressViewModel
-                {
-                    AddressLine1 = j.DeliveryAddressLine1,
-                    AddressLine2 = j.DeliveryAddressLine2,
-                    AddressLine3 = j.DeliveryAddressLine3,
-                    AddressLine4 = j.DeliveryAddressLine4,
-                    AddressLine5 = j.DeliveryAddressLine5,
-                    AddressLine6 = j.DeliveryAddressLine6,
-                    AddressLine7 = j.DeliveryAddressLine7,
-                    AddressLine8 = j.DeliveryAddressLine8,
-                    Latitude = j.DeliveryLatitude,
-                    Longitude = j.DeliveryLongitude
-                },
-                Courier = co.Code,
-                StatusId = j.Status,
-                Status = status.UcjsCode,
-                Speed = speed.ShortName,
-                SpeedId = j.Speed,
-                PreBook = false,
-                PickUpLatitude = j.PickUpLatitude,
-                PickUpLongitude = j.PickUpLongitude,
-                DeliveryLatitude = j.DeliveryLatitude,
-                DeliveryLongitude = j.DeliveryLongitude,
-                BookedDate = j.Date,
-                Booked = DateTime.Parse(
-                    j.Date.Value.ToString("yyyy-MM-dd") + " " + j.Time.Value.ToString("HH:mm:ss")
-                )
-            };
+                    )));
 
-        var orderedQuery = jobsQuery
-            .OrderBy(a => a.BookedDate)
-            .ThenBy(v => v.Time);
+    // Create base query for archived jobs without projection
+    var archivedJobsQuery = Context.TucJobArchives
+        .Where(j => j.UcjbDate >= data.FromDate
+                    && j.UcjbDate <= data.ToDate
+                    && (!clientSet || j.UcjbClientId == data.ClientId)
+                    && (!courierSet || j.UcjbCourierId == data.CourierId)
+                    && (data.Job == "" || EF.Functions.Like(j.UcjbNumber.ToLower(), jobParam))
+                    && (
+                        data.Wild == ""
+                        || EF.Functions.Like(
+                            j.UcjbFromAddr
+                            + " "
+                            + j.PickUpFromContact
+                            + " "
+                            + j.DeliverToContact
+                            + " "
+                            + j.ToAddressStreetName
+                            + " "
+                            + (j.UcjbClientRefa ?? "")
+                            + " "
+                            + (j.UcjbClientRefb ?? "")
+                            + " "
+                            + (j.UcjbOurRef ?? "")
+                            + " "
+                            + j.UcjbNumber.ToLower(),
+                            wildParam
+                        )));
 
-        var total = orderedQuery.Count();
+    // Get the total count first (in separate queries)
+    var activeCount = await activeJobsQuery.CountAsync();
+    var archivedCount = await archivedJobsQuery.CountAsync();
+    var total = activeCount + archivedCount;
 
-        var jobs = await orderedQuery.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
+    // For the actual data, materialize with pagination applied to each query before projection
+    var activeJobsPage = await activeJobsQuery
+        .OrderBy(j => j.UcjbDate)
+        .ThenBy(j => j.UcjbTime)
+        .Take(data.PageSize) // Approximate - we'll re-paginate after combining
+        .Select(JobMappings.JobMapping)
+        .ToListAsync();
 
-        return Tuple.Create(total, jobs);
+    var archivedJobsPage = await archivedJobsQuery
+        .OrderBy(j => j.UcjbDate)
+        .ThenBy(j => j.UcjbTime)
+        .Take(data.PageSize) // Approximate - we'll re-paginate after combining
+        .Select(JobMappings.JobArchiveMapping)
+        .ToListAsync();
+
+    // Combine, re-order and re-paginate in memory
+    var paginatedJobs = activeJobsPage.Concat(archivedJobsPage)
+        .OrderBy(j => j.Booked)
+        .ThenBy(j => j.Time)
+        .Skip((data.PageIndex - 1) * data.PageSize)
+        .Take(data.PageSize)
+        .ToList();
+
+    return Tuple.Create(total, paginatedJobs);
     }
 
     public async Task UpdateManualPriceAsync(List<JobManualPriceModel> data)

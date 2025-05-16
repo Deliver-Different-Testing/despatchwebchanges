@@ -1,4 +1,5 @@
 import {IJob} from "../../interfaces/job.interface";
+import PodSearchResponse from "./enums/podSearchResponse";
 
 class JobSearchService implements angular.IServiceProvider {
     static $inject = [
@@ -45,10 +46,22 @@ class JobSearchService implements angular.IServiceProvider {
         toDate: Date,
         pageIndex: number,
         pageSize: number
-    ) {
-        const response = await this.$http.get(
-            `/Job/PODSearch?courierId=${courierId}&clientId=${clientId}&wild=${wild}&job=${job}&fromDate=${fromDate.toISOString()}&toDate=${toDate.toISOString()}&pageIndex=${pageIndex}&pageSize=${pageSize}`
+    ): Promise<PodSearchResponse> {
+        const response = await this.$http.get<PodSearchResponse>(
+            `/Job/PODSearch`, {
+                params: {
+                    courierId: courierId,
+                    clientId: clientId,
+                    wild: wild,
+                    job: job,
+                    fromDate: fromDate.toISOString(),
+                    toDate: toDate.toISOString(),
+                    pageIndex: pageIndex,
+                    pageSize: pageSize
+                }
+            }
         );
+
         return response.data;
     }
 
@@ -91,22 +104,6 @@ class JobSearchService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async searchPreBookJobs(
-        courierId: number,
-        clientId: number,
-        wild: string,
-        job: string,
-        fromDate: Date,
-        toDate: Date,
-        pageIndex: number,
-        pageSize: number
-    ) {
-        const response = await this.$http.get(
-            `/Job/PreBookSearch?courierId=${courierId}&clientId=${clientId}&wild=${wild}&job=${job}&fromDate=${fromDate.toISOString()}&toDate=${toDate.toISOString()}&pageIndex=${pageIndex}&pageSize=${pageSize}`
-        );
-        return response.data;
-    }
-
     async getCourierRoute(code: string, start: Date, end: Date) {
         const response = await this.$http.get(
             `/courier/route?code=${code}&start=${start.toISOString()}&end=${end.toISOString()}`
@@ -128,11 +125,6 @@ class JobSearchService implements angular.IServiceProvider {
         const response = await this.$http.get(
             `/Job/ScanJobDetail?runDate=${runDate.toISOString()}&scan=${scan}`
         );
-        return response.data;
-    }
-
-    async getPreBookDetail(preBookJobId: number) {
-        const response = await this.$http.get(`/Job/PreBookDetail?preBookJobId=${preBookJobId}`);
         return response.data;
     }
 

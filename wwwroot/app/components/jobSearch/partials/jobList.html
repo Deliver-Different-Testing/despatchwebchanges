@@ -4,25 +4,28 @@
                md-order="ctrl.jobQuery.order">
         <tr md-dense md-row>
             <th md-column md-order-by="booked">
-                <span>{{ctrl.jobHeaders[0].label}}</span>
+                <span>Booked</span>
             </th>
             <th md-column>
-                <span>{{ctrl.jobHeaders[1].label}}</span>
+                <span>Is Archived</span>
+            </th>
+            <th md-column>
+                <span>Status</span>
             </th>
             <th md-column md-order-by="speed">
-                <span>{{ctrl.jobHeaders[2].label}}</span>
+                <span>Speed</span>
             </th>
             <th md-column md-order-by="jobNo">
-                <span>{{ctrl.jobHeaders[3].label}}</span>
+                <span>Job</span>
             </th>
             <th md-column md-order-by="client">
-                <span>{{ctrl.jobHeaders[4].label}}</span>
+                <span>Client</span>
             </th>
             <th md-column md-order-by="from">
-                <span>{{ctrl.jobHeaders[5].label}}</span>
+                <span>From</span>
             </th>
             <th md-column md-order-by="to">
-                <span>{{ctrl.jobHeaders[6].label}}</span>
+                <span>To</span>
             </th>
         </tr>
         </thead>
@@ -36,7 +39,21 @@
             ng-repeat="job in ctrl.jobList | filter: box.searchBox | orderBy: ctrl.jobQuery.order | limitTo: ctrl.jobQuery.limit : (ctrl.jobQuery.page - 1) * ctrl.jobQuery.limit">
 
             <td md-cell>{{job.booked | momentFormat:"DD/MM/YY HH:mm"}} ({{ctrl.timeZone | timezoneShort}})</td>
-            <td class="status" md-cell ng-class="job.status">{{job.status}}</td>
+
+            <td md-cell>
+                <md-checkbox
+                        ng-disabled="true"
+                        ng-model="job.isArchived"
+                        aria-label="is job archived">
+                </md-checkbox>
+            </td>
+
+            <td md-cell>
+                <md-chip class="status {{job.statusName | lowercase | replace:' ':'-'}}">
+                    {{job.status}}
+                </md-chip>
+            </td>
+
             <td md-cell>{{job.speed}}</td>
             <td md-cell>{{job.jobNo}}</td>
             <td md-cell>{{job.client}}</td>

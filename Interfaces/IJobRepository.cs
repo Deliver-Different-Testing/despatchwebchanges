@@ -27,16 +27,7 @@ public interface IJobRepository
         int pageSize
     );
 
-    Task<Tuple<int, List<JobViewModel>>> PodSearch(
-        int? courierId,
-        string wild,
-        string job,
-        DateTime fromDate,
-        DateTime toDate,
-        int? clientId,
-        int pageIndex,
-        int pageSize
-    );
+    Task<Tuple<int, List<JobViewModel>>> PodSearch(PodSearchRequest data);
 
     Task UpdateManualPriceAsync(List<JobManualPriceModel> data);
 

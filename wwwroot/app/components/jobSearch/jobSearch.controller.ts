@@ -65,7 +65,6 @@ class JobSearchController extends BaseController {
     jobPromise: any;
     bulkJobPromise: any;
     scanPromise: any;
-    jobHeaders: any;
     options: any;
     boxes: any;
 
@@ -77,7 +76,7 @@ class JobSearchController extends BaseController {
     timeZone: string = TimeZone;
     userName: any;
     selectJob: any;
-    jobList?: IDispatchJob[];
+    jobList?: IJob[];
     pickRegions?: Suggestion[];
     currentJob?: IJob;
     jobListLoading: any;
@@ -189,14 +188,6 @@ class JobSearchController extends BaseController {
         this.jobPromise = null;
         this.bulkJobPromise = null;
         this.scanPromise = null;
-
-        this.jobHeaders = [{key: 'booked', label: 'Booked'}, {key: 'status', label: 'Status'}, {
-            key: 'speed',
-            label: 'Speed'
-        }, {key: 'jobNo', label: 'Job'}, {key: 'client', label: 'Client'}, {key: 'from', label: 'From'}, {
-            key: 'to',
-            label: 'To'
-        }, {key: 'street', label: 'Street'}];
 
         this.options = {
             "detail": {
