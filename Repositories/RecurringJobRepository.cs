@@ -382,11 +382,13 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
 
         public async Task<List<TucNoteViewModel>> GetRecurringNotesByJobIdAsync(int jobId)
         {
+            var effectivePrebookId = await GetJobBookingRelationshipInfoAsync(jobId);
+
             return await Context.TucNotes
                 .Include(x => x.NoteType)
                 .Include(x => x.CreatedByNavigation)
                 .Include(x => x.UpdatedByNavigation)
-                .Where(x => x.JobBookingId == jobId)
+                .Where(x => x.JobBookingId == effectivePrebookId)
                 .AsNoTracking()
                 .Select(x => new TucNoteViewModel(x))
                 .ToListAsync();

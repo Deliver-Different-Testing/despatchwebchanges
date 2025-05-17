@@ -444,11 +444,11 @@ class RecurringJobsController extends BaseController {
 
     async voidPrebookJob(jobId: number): Promise<void> {
         const confirmMessage =
-            "This will void TODAY'S copy of this prebook but not cancel it for good. " +
+            "This will void this recurring job. " +
             "Please confirm that you wish to do this?";
 
         const confirm = this.$mdDialog.confirm()
-            .title("Void Prebook")
+            .title("Void Recurring Job")
             .textContent(confirmMessage)
             .ok("Yes")
             .cancel("No");
@@ -465,20 +465,20 @@ class RecurringJobsController extends BaseController {
             await this.$mdDialog.show(
                 this.$mdDialog.alert()
                     .title("Success")
-                    .textContent("The prebook job has been successfully voided for today.")
+                    .textContent("The recurring job has been successfully voided.")
                     .ok("OK")
             );
         } catch (error) {
             if (!error) {
                 console.log("User Canceled");
             } else {
-                console.log("Error voiding prebook job:", error);
+                console.log("Error voiding recurring job:", error);
 
                 // Show an error dialog to the user
                 await this.$mdDialog.show(
                     this.$mdDialog.alert()
                         .title("Error")
-                        .textContent("An error occurred while voiding the prebook job. Please try again.")
+                        .textContent("An error occurred while voiding the recurring job. Please try again.")
                         .ok("OK")
                 );
             }
