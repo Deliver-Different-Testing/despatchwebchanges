@@ -162,9 +162,9 @@
               <div class="timing-detail">
                 <span class="timing-label">Booked:</span>
                 <span class="timing-value"
-                  >{{ctrl.job.createdDate ? (ctrl.job.createdDate |
-                  momentFormat:'MM/DD') + ' (' + (ctrl.timeZone | timezoneShort)
-                  + ')' : 'N/A'}}</span
+                  >{{ctrl.job.createdDate ? (ctrl.job.createdDate | momentFormat:'MM/DD') + '
+                  (' + ((ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text
+                  : ctrl.timeZone) | timezoneShort) + ')' : 'N/A'}}</span
                 >
               </div>
             </md-list-item>
