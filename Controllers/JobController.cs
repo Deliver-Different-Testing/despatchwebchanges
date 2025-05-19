@@ -694,9 +694,10 @@ public class JobController(
         return Json(result);
     }
 
-    public async Task<IActionResult> PreBookJobs()
+    [HttpGet]
+    public async Task<IActionResult> PreBookJobs(bool active)
     {
-        var result = await recurringJobRepository.PreBookJobListAsync();
+        var result = await recurringJobRepository.PreBookJobListAsync(active);
         return Json(result);
     }
 

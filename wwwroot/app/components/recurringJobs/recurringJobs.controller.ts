@@ -57,6 +57,7 @@ class RecurringJobsController extends BaseController {
             templateUrl: "app/components/recurringJobs/partials/jobList.html",
             showSearch: 1,
             showRefresh: 1,
+            showFilter: 1,
         },
         jobDetail: {
             title: "Detail",
@@ -94,6 +95,7 @@ class RecurringJobsController extends BaseController {
     sort: Record<string, string> = {};
     currentLayoutName?: string;
     timeZone: string = TimeZone;
+    activeFilter: boolean = true;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -340,9 +342,10 @@ class RecurringJobsController extends BaseController {
         }
     }
 
-    async refreshData(): Promise<IJob[]> {
+    async refreshData(active = this.activeFilter): Promise<IJob[]> {
         try {
-            this.promise = this.uPBData.getPreBookJobs();
+            this.activeFilter = active;
+            this.promise = this.uPBData.getPreBookJobs(active);
 
             this.jobList = await this.promise;
             this.updateTable();
@@ -396,11 +399,11 @@ class RecurringJobsController extends BaseController {
         const selectedPrebookCount = jobIds.length;
 
         const confirmMessage =
-            `This will void TODAY's copy of all ${selectedPrebookCount} selected prebooks, ` +
+            `This will inactivate all ${selectedPrebookCount} selected recurring jobs, ` +
             `but not cancel them for good. Please confirm that you wish to do this?`;
 
         const confirm = this.$mdDialog.confirm()
-            .title("Accelerate Prebooks")
+            .title("Inactivate Recurring Jobs")
             .textContent(confirmMessage)
             .ok("Yes")
             .cancel("No");
@@ -421,20 +424,20 @@ class RecurringJobsController extends BaseController {
             this.$mdDialog.show(
                 this.$mdDialog.alert()
                     .title("Success")
-                    .textContent(`Successfully voided ${selectedPrebookCount} prebook(s).`)
+                    .textContent(`Successfully inactivated ${selectedPrebookCount} recurring job(s).`)
                     .ok("OK")
             );
         } catch (error) {
             if (!error) {
                 console.log("User Canceled");
             } else {
-                console.log("Error voiding prebook jobs:", error);
+                console.log("Error inactivating recurring jobs:", error);
 
                 // Show an error dialog to the user
                 this.$mdDialog.show(
                     this.$mdDialog.alert()
                         .title("Error")
-                        .textContent("An error occurred while voiding the prebook jobs. Please try again.")
+                        .textContent("An error occurred while inactivating the recurring jobs. Please try again.")
                         .ok("OK")
                 );
             }
@@ -444,11 +447,11 @@ class RecurringJobsController extends BaseController {
 
     async voidPrebookJob(jobId: number): Promise<void> {
         const confirmMessage =
-            "This will void this recurring job. " +
+            "This will inactivate this recurring job. " +
             "Please confirm that you wish to do this?";
 
         const confirm = this.$mdDialog.confirm()
-            .title("Void Recurring Job")
+            .title("Inactivate Recurring Job")
             .textContent(confirmMessage)
             .ok("Yes")
             .cancel("No");
@@ -465,20 +468,20 @@ class RecurringJobsController extends BaseController {
             await this.$mdDialog.show(
                 this.$mdDialog.alert()
                     .title("Success")
-                    .textContent("The recurring job has been successfully voided.")
+                    .textContent("The recurring job has been successfully inactivated.")
                     .ok("OK")
             );
         } catch (error) {
             if (!error) {
                 console.log("User Canceled");
             } else {
-                console.log("Error voiding recurring job:", error);
+                console.log("Error inactivating recurring job:", error);
 
                 // Show an error dialog to the user
                 await this.$mdDialog.show(
                     this.$mdDialog.alert()
                         .title("Error")
-                        .textContent("An error occurred while voiding the recurring job. Please try again.")
+                        .textContent("An error occurred while inactivating the recurring job. Please try again.")
                         .ok("OK")
                 );
             }

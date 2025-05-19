@@ -10,8 +10,8 @@ class RecurringJobsService {
     ) {
     }
 
-    async getPreBookJobs() {
-        const response = await this.$http.get<IPrebookListModel[]>("/Job/PreBookJobs");
+    async getPreBookJobs(active: boolean) {
+        const response = await this.$http.get<IPrebookListModel[]>(`/Job/PreBookJobs?active=${active}`);
         return response.data;
     }
 

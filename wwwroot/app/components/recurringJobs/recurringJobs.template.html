@@ -94,14 +94,36 @@
                                     <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
                                 </md-button>
 
+                                <!--Inactive Filter-->
+                                <md-menu ng-if="ctrl.boxes[box.name].showFilter">
+                                    <md-button class="md-icon-button md-primary"
+                                               ng-click="$mdMenu.open($event)">
+                                        <md-icon md-font-set="material-symbols-outlined">filter_list</md-icon>
+                                    </md-button>
+                                    <md-menu-content width="2">
+                                        <md-menu-item>
+                                            <md-button ng-click="ctrl.refreshData(true)">
+                                                <md-icon md-font-set="material-symbols-outlined">toggle_on</md-icon>
+                                                Active
+                                            </md-button>
+                                        </md-menu-item>
+                                        <md-menu-item>
+                                            <md-button ng-click="ctrl.refreshData(false)">
+                                                <md-icon md-font-set="material-symbols-outlined">toggle_off</md-icon>
+                                                Inactive
+                                            </md-button>
+                                        </md-menu-item>
+                                    </md-menu-content>
+                                </md-menu>                    
+
                                 <div ng-if="box.name == 'eventList'">
-                                    <input ng-model="ctrl.searchBox" placeholder="Search Events..." type="text"/>
+                                    <input ng-model="ctrl.searchBox" placeholder="Search Events..." type="text" />
                                     <div class="results" ng-if="ctrl.searchBox">
                                         <ul>
                                             <li class="result"
                                                 ng-mousedown="ctrl.selectEvent(event)"
                                                 ng-repeat="event in filteredEvents = (ctrl.allEvents | filter: ctrl.searchBox) | limitTo:10">
-                                                {{event.jobNumber}}<br/>
+                                                {{event.jobNumber}}<br />
                                                 <small class="address">{{event.courierName}} {{event.courierCode}}</small>
                                             </li>
                                         </ul>
@@ -152,10 +174,12 @@
                                      ng-if="ctrl.boxes[box.name].showSearch">
                                     <md-button class="md-icon-button" ng-click="ctrl.openSearch(box.name, $index)">
                                         <md-icon md-font-set="material-symbols-outlined"
-                                                 ng-if="!ctrl.showInput[box.name + '-' + $index]">search
+                                                 ng-if="!ctrl.showInput[box.name + '-' + $index]">
+                                            search
                                         </md-icon>
                                         <md-icon md-font-set="material-symbols-outlined"
-                                                 ng-if="ctrl.showInput[box.name + '-' + $index]">close
+                                                 ng-if="ctrl.showInput[box.name + '-' + $index]">
+                                            close
                                         </md-icon>
                                     </md-button>
 
