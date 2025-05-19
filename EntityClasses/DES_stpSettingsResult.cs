@@ -235,5 +235,13 @@ namespace DespatchWeb.EntityClasses
         public double? DefaultCourierPercentage { get; set; }
         [Column("DefaultCourierWithholdingTaxPercentage", TypeName = "decimal(8,2)")]
         public decimal? DefaultCourierWithholdingTaxPercentage { get; set; }
+        [StringLength(50)]
+        public string DefaultRevenueAccount { get; set; }
+        [StringLength(50)]
+        public string DefaultClass { get; set; }
+        [StringLength(50)]
+        public string DefaultItemCode { get; set; }
+        [StringLength(50)]
+        public string DefaultItemCodeFuel { get; set; }
     }
 }

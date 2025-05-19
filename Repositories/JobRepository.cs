@@ -604,6 +604,16 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
         var query =
             from j in Context.TblJobs
+            join c in Context.TucClients on j.ClientId equals c.UcclId into clientJoin
+            from client in clientJoin.DefaultIfEmpty()
+            join s in Context.TucJobStatuses on j.Status equals s.UcjsId into statusJoin
+            from status in statusJoin.DefaultIfEmpty()
+            join nj in Context.TucJobNationwides on j.JobId equals nj.UcnwJobId into nationwideJoin
+            from nationwide in nationwideJoin.DefaultIfEmpty()
+            join a in Context.TucAgents on j.AgentId equals a.UcagId into agentJoin
+            from agent in agentJoin.DefaultIfEmpty()
+            join inv in Context.TucInvoiceNos on j.InvoiceNo equals inv.UcinId into invoiceJoin
+            from invoice in invoiceJoin.DefaultIfEmpty()
             where ids.Contains(j.JobId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value))
             orderby j.Number
             select new JobDownloadModel
@@ -611,18 +621,25 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 Id = j.JobId,
                 ParentId = j.ParentId,
                 JobNumber = j.Number,
+                CustomerName = client.UcclName,
                 BookDate = DateTime.Parse(
                     $"{j.Date.Value:yyyy-MM-dd} {j.Time.Value:HH:mm:ss}"
                 ),
+                PickedUpDate = j.PickUpTime,
+                DeliveredDate = j.CompletedTime,
                 Amount = j.Amount,
+                //ExtraCharges =  ??,
                 Fuel = j.FuelSurchargeAmount,
                 Ppd = j.Ppdexclusiveamount,
+                AgentAirlineName = nationwide != null ? nationwide.UcnwAirlineName : agent.UcagName,
+                AWB = nationwide != null ? nationwide.UcnwFlightNo : null,
                 CourierPayment = j.CourierPayment,
                 CourierFuel = j.CourierFuel,
                 CourierBonus = j.CourierBonus,
                 Quantity = j.Quantity,
                 Weight = j.Weight,
                 Size = j.Size,
+                StatusName = status.UcjsName,
                 PickupAddressLine1 = j.PickupAddressLine1,
                 PickupAddressLine2 = j.PickupAddressLine2,
                 PickupAddressLine3 = j.PickupAddressLine3,
@@ -641,7 +658,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 DeliveryAddressLine8 = j.DeliveryAddressLine8,
                 ClientReferenceA = j.ClientReferenceA,
                 ClientReferenceB = j.ClientReferenceB,
-                ClientReferenceC = j.ClientReferenceC
+                ClientReferenceC = j.ClientReferenceC,
+                InvoiceNumber = j.InvoiceNo,
+                InvoiceDate = invoice.Created
             };
 
         var result = await query.ToListAsync();

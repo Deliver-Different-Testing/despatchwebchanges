@@ -345,7 +345,7 @@ public partial class DeswebQryDespatch
 
     public string FlightNumber { get; set; }
 
-    public DateTime? FlightNotes { get; set; }
+    public string FlightNotes { get; set; }
 
     public int? AgentId { get; set; }
 

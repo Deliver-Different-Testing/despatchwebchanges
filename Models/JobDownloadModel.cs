@@ -36,4 +36,13 @@ public class JobDownloadModel
     public string ClientReferenceA { get; set; }
     public string ClientReferenceB { get; set; }
     public string ClientReferenceC { get; set; }
+    public string CustomerName { get; set; }
+    public DateTime? PickedUpDate { get; set; }
+    public DateTime? DeliveredDate { get; set; }
+    public string AgentAirlineName { get; set; }
+    public string AWB { get; set; }
+    public string StatusName { get; set; }
+    //public bool? IsRecurring { get; set; }
+    public int? InvoiceNumber { get; set; }
+    public DateTime? InvoiceDate { get; set; }
 }

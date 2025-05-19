@@ -121,6 +121,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TucEventTypeGroup> TucEventTypeGroups { get; set; }
 
+    public virtual DbSet<TucInvoiceNo> TucInvoiceNos { get; set; }
+
     public virtual DbSet<TucJob> TucJobs { get; set; }
 
     public virtual DbSet<TucJobArchive> TucJobArchives { get; set; }
@@ -424,7 +426,7 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(50)
                 .HasColumnName("FDCourierCode");
             entity.Property(e => e.FdcourierId).HasColumnName("FDCourierID");
-            entity.Property(e => e.FlightNotes).HasColumnType("datetime");
+            entity.Property(e => e.FlightNotes).HasColumnType("text");
             entity.Property(e => e.FlightNumber)
                 .HasMaxLength(10)
                 .IsUnicode(false);
@@ -3878,6 +3880,55 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<TucInvoiceNo>(entity =>
+        {
+            entity.HasKey(e => e.UcinId)
+                .IsClustered(false)
+                .HasAnnotation("SqlServer:FillFactor", 80);
+
+            entity.ToTable("tucInvoiceNo");
+
+            entity.HasIndex(e => e.InvoiceTemplateId, "IX_InvoiceTemplateId");
+
+            entity.HasIndex(e => e.XeroId, "IX_XeroId");
+
+            entity.HasIndex(e => e.ProcessId, "ProcessID");
+
+            entity.HasIndex(e => e.StatementId, "StatementID");
+
+            entity.HasIndex(e => e.UcinClientId, "ucinClientID");
+
+            entity.HasIndex(e => e.UcinDate, "ucinDate");
+
+            entity.Property(e => e.UcinId).HasColumnName("ucinID");
+            entity.Property(e => e.Created).HasColumnType("datetime");
+            entity.Property(e => e.DiscountTotal).HasColumnType("numeric(18, 2)");
+            entity.Property(e => e.DueDate).HasPrecision(3);
+            entity.Property(e => e.ExternalJournalHeaderId).HasColumnName("ExternalJournalHeaderID");
+            entity.Property(e => e.PostedOa)
+                .HasColumnType("datetime")
+                .HasColumnName("PostedOA");
+            entity.Property(e => e.Ppd).HasColumnType("numeric(18, 2)");
+            entity.Property(e => e.PpdTax).HasColumnType("numeric(18, 2)");
+            entity.Property(e => e.ProcessId).HasColumnName("ProcessID");
+            entity.Property(e => e.Sent).HasPrecision(3);
+            entity.Property(e => e.StatementId).HasColumnName("StatementID");
+            entity.Property(e => e.Subtotal).HasColumnType("numeric(18, 2)");
+            entity.Property(e => e.TaxTotal).HasColumnType("numeric(18, 2)");
+            entity.Property(e => e.Total).HasColumnType("numeric(18, 2)");
+            entity.Property(e => e.UcinClientId).HasColumnName("ucinClientID");
+            entity.Property(e => e.UcinDate)
+                .HasColumnType("datetime")
+                .HasColumnName("ucinDate");
+            entity.Property(e => e.UcinDateGenerated)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("ucinDateGenerated");
+            entity.Property(e => e.UcinLocked).HasColumnName("ucinLocked");
+            entity.Property(e => e.XeroId).HasMaxLength(50);
+            entity.Property(e => e.XeroIdPpdCancellation).HasMaxLength(50);
         });
 
         modelBuilder.Entity<TucJob>(entity =>

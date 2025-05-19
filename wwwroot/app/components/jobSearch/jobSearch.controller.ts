@@ -977,12 +977,12 @@ class JobSearchController extends BaseController {
     }
 
     uploadJobList() {
-        const element: any = angular.element("jobListUpload");
+        const element: any = angular.element("#jobListUpload");
         element.trigger('click');
     }
 
     async onUploadJobList() {
-        const fileElement: any = angular.element("jobListUpload");
+        const fileElement: any = angular.element("#jobListUpload");
         const files = fileElement[0].files;
         if (!files || files.length !== 1) {
             fileElement.val(null);
