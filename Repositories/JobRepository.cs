@@ -608,7 +608,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 )
             )
         )
-            throw new ArgumentException("Invalid Values.");
+            throw new ArgumentException("Invalid Values. Please check whether the Total is less than all other amounts");
 
         var jobIds = data.Select(j => j.Id).Distinct().ToList();
 
@@ -631,15 +631,24 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
         var dbData = await Context
             .TucJobs.Where(j =>
-                ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value))
+                (ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value)))
+                 && (j.UcjbLocked != true)
             )
             .ToListAsync();
 
         var dbDataArchive = await Context
             .TucJobArchives.Where(j =>
-                ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value))
+                (ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value))) 
+                && (j.UcjbLocked != 1 || !j.UcjbInvoiceNo.HasValue)
             )
             .ToListAsync();
+
+
+        // Log counts for diagnostics
+        Log.Information($"Processing {dbData.Count} active jobs and {dbDataArchive.Count} archived jobs");
+        // Keep track of jobs with changed prices
+        var jobsWithChangedPrices = new HashSet<int>();
+        var processedJobIds = new HashSet<int>();
 
         // Process individual jobs and save in batches
         foreach (var d in data)
@@ -656,38 +665,36 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
             try
             {
-                // Apply updates cautiously
-                match.UcjbAmount = Math.Round(d.Amount.Value, 4, MidpointRounding.AwayFromZero);
-                match.FuelSurchargeAmount = Math.Round(d.Fuel.Value, 4, MidpointRounding.AwayFromZero);
-                match.PpdexclusiveAmount = Math.Round(d.Ppd.Value, 4, MidpointRounding.AwayFromZero);
-                match.CourierPercentage = null; // This is explicitly set to null
+                // Check if price is actually changing
+                bool priceChanged = Math.Round(match.UcjbAmount ?? 0, 4) != Math.Round(d.Amount.Value, 4) ||
+                                   Math.Round(match.FuelSurchargeAmount ?? 0, 4) != Math.Round(d.Fuel.Value, 4) ||
+                                   Math.Round(match.PpdexclusiveAmount ?? 0, 4) != Math.Round(d.Ppd.Value, 4);
+
+                if (priceChanged)
+                {
+                    // Apply updates cautiously
+                    match.UcjbAmount = Math.Round(d.Amount.Value, 4, MidpointRounding.AwayFromZero);
+                    match.FuelSurchargeAmount = Math.Round(d.Fuel.Value, 4, MidpointRounding.AwayFromZero);
+                    match.PpdexclusiveAmount = Math.Round(d.Ppd.Value, 4, MidpointRounding.AwayFromZero);
+                    match.RawBaseAmount = match.UcjbAmount - match.FuelSurchargeAmount - match.PpdexclusiveAmount;
+                    // Mark this job for pricing breakdown update
+                    jobsWithChangedPrices.Add(d.Id);
+                    Log.Information($"Job {d.Id} has price change - updating");
+                }
+                else
+                {
+                    Log.Information($"Job {d.Id} price unchanged - skipping pricing breakdown update");
+                }
+
+                // Always update these fields, regardless of price change
+                match.CourierPercentage = null;
                 match.CourierPayment = Math.Round(d.CourierPayment.Value, 4, MidpointRounding.AwayFromZero);
                 match.CourierFuel = Math.Round(d.CourierFuel.Value, 4, MidpointRounding.AwayFromZero);
                 match.CourierBonus = Math.Round(d.CourierBonus.Value, 4, MidpointRounding.AwayFromZero);
-
-                // This calculation could be causing issues - make sure all values are valid decimals
-                decimal baseAmount = match.UcjbAmount;
-
-                if (match.FuelSurchargeAmount != null)
-                    baseAmount -= match.FuelSurchargeAmount;
-
-                if (match.PpdexclusiveAmount != null)
-                    baseAmount -= match.PpdexclusiveAmount;
-
-                match.RawBaseAmount = baseAmount;
+             
+                processedJobIds.Add(d.Id);
 
                 // Save changes for this specific job immediately
-                try
-                {
-                    await Context.SaveChangesAsync();
-                    Log.Information($"Successfully updated job {d.Id}");
-                }
-                catch (Exception ex)
-                {
-                    Log.Error($"Error saving job {d.Id}: {ex.Message}");
-                    // Reset the context state for this entity
-                    Context.Entry(match).State = EntityState.Unchanged;
-                }
             }
             catch (Exception ex)
             {
@@ -732,31 +739,33 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 if (childJobs.Count == 0)
                     continue;
 
-                // Calculate sums first to inspect values
-                decimal sumAmount = childJobs.Sum(j => j.UcjbAmount);
-                decimal sumFuel = childJobs.Sum(j => j.FuelSurchargeAmount);
-                decimal sumPpd = childJobs.Sum(j => j.PpdexclusiveAmount);
+                decimal totalAmount = childJobs.Sum(j => j.UcjbAmount);
+                decimal totalFuel = childJobs.Sum(j => j.FuelSurchargeAmount);
+                decimal totalPpd = childJobs.Sum(j => j.PpdexclusiveAmount);
 
-                Log.Information($"Parent job {x.Key}: Amount={sumAmount}, Fuel={sumFuel}, Ppd={sumPpd}");
+                // Check if parent job's price is actually changing
+                bool parentPriceChanged = Math.Round(parentJob.UcjbAmount ?? 0, 4) != Math.Round(totalAmount, 4) ||
+                                         Math.Round(parentJob.FuelSurchargeAmount ?? 0, 4) != Math.Round(totalFuel, 4) ||
+                                         Math.Round(parentJob.PpdexclusiveAmount ?? 0, 4) != Math.Round(totalPpd, 4);
 
-                // Apply sums to parent job
-                parentJob.UcjbAmount = sumAmount;
-                parentJob.FuelSurchargeAmount = sumFuel;
-                parentJob.PpdexclusiveAmount = sumPpd;
-                parentJob.RawBaseAmount = sumAmount - sumFuel - sumPpd;
-
-                // Save changes for this specific parent job
-                try
+                if (parentPriceChanged)
                 {
-                    await Context.SaveChangesAsync();
-                    Log.Information($"Successfully updated parent job {x.Key}");
+                    parentJob.UcjbAmount = totalAmount;
+                    parentJob.FuelSurchargeAmount = totalFuel;
+                    parentJob.PpdexclusiveAmount = totalPpd;
+                    parentJob.RawBaseAmount = totalAmount - totalFuel - totalPpd;
+
+                    // Mark this parent job for pricing breakdown update
+                    jobsWithChangedPrices.Add(x.Key);
+                    Log.Information($"Parent job {x.Key} has price change - updating");
                 }
-                catch (Exception ex)
+                else
                 {
-                    Log.Error($"Error saving parent job {x.Key}: {ex.Message}");
-                    // Reset context state for this entity
-                    Context.Entry(parentJob).State = EntityState.Unchanged;
+                    Log.Information($"Parent job {x.Key} price unchanged - skipping pricing breakdown update");
                 }
+
+                processedJobIds.Add(x.Key);
+
             }
             catch (Exception ex)
             {
@@ -764,25 +773,86 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             }
         }
 
+        // Only update pricing breakdowns for jobs with changed prices
+        if (jobsWithChangedPrices.Any())
+        {
+            // Get existing pricing breakdowns just for jobs with changed prices
+            var existingBreakdowns = await Context.PricingBreakdowns
+                .Where(pb =>
+                    jobsWithChangedPrices.Contains(pb.JobId ?? 0) ||
+                    jobsWithChangedPrices.Contains(pb.PrebookJobId ?? 0))
+                .ToListAsync();
+
+            if (existingBreakdowns.Any())
+            {
+                Log.Information($"Removing {existingBreakdowns.Count} existing pricing breakdowns for {jobsWithChangedPrices.Count} jobs with changed prices");
+                Context.PricingBreakdowns.RemoveRange(existingBreakdowns);
+            }
+
+            // Create new pricing breakdowns for jobs with changed prices
+            foreach (var jobId in jobsWithChangedPrices)
+            {
+                var jobFromDb = dbData.FirstOrDefault(j => j.UcjbId == jobId);
+                var jobFromArchive = dbDataArchive.FirstOrDefault(j => j.UcjbId == jobId);
+
+                decimal amount = 0;
+                if (jobFromDb != null)
+                {
+                    amount = jobFromDb.UcjbAmount ?? 0;
+                }
+                else if (jobFromArchive != null)
+                {
+                    amount = jobFromArchive.UcjbAmount ?? 0;
+                }
+                else
+                {
+                    continue; // Skip if job not found
+                }
+
+                var newBreakdown = new PricingBreakdown
+                {
+                    JobId = jobId,
+                    PrebookJobId = null,
+                    ChargeName = "Manually Rated",
+                    ChargeAmount = amount,
+                    Total = null,
+                    Included = null,
+                    Charged = null
+                };
+
+                await Context.PricingBreakdowns.AddAsync(newBreakdown);
+                Log.Information($"Added new pricing breakdown for job {jobId} with amount {amount}");
+
+            }
+        }
+        else
+        {
+            Log.Information("No jobs with changed prices - skipping pricing breakdown updates");
+        }
+
         // Finally, update all jobs to locked state
+        foreach (var d in dbData.Where(j => processedJobIds.Contains(j.UcjbId)))
+        {
+            d.UcjbLocked = true;
+        }
+
+        foreach (var d in dbDataArchive.Where(j => processedJobIds.Contains(j.UcjbId)))
+        {
+            d.UcjbLocked = 1;
+        }
+
         try
         {
-            foreach (var d in dbData)
-            {
-                d.UcjbLocked = true;
-            }
-
-            foreach (var d in dbDataArchive)
-            {
-                d.UcjbLocked = 1;
-            }
-
-            await Context.SaveChangesAsync();
-            Log.Information("Successfully locked all jobs");
+            // Save all changes at once
+            var changesCount = await Context.SaveChangesAsync();
+            Log.Information($"Successfully saved {changesCount} changes");
         }
-        catch (Exception ex)
+        catch (DbUpdateException ex)
         {
-            Log.Error($"Error locking jobs: {ex.Message}");
+            Log.Error($"Error saving changes: {ex.Message}");
+            if (ex.InnerException != null)
+                Log.Error($"Inner exception: {ex.InnerException.Message}");
+
             throw;
         }
     }
