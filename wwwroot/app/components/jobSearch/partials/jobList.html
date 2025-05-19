@@ -36,7 +36,7 @@
             context-menu-on="contextmenu"
             context-menu-class="job-context-menu"
             ng-click="ctrl.selectJobDetail(job.id)"
-            ng-repeat="job in ctrl.jobList | filter: box.searchBox | orderBy: ctrl.jobQuery.order | limitTo: ctrl.jobQuery.limit : (ctrl.jobQuery.page - 1) * ctrl.jobQuery.limit">
+            ng-repeat="job in ctrl.jobList | filter: box.searchBox">
 
             <td md-cell>{{job.booked | momentFormat:"DD/MM/YY HH:mm"}} ({{ctrl.timeZone | timezoneShort}})</td>
 
@@ -76,7 +76,7 @@
 <md-table-pagination
         ng-if="ctrl.jobList && ctrl.jobList.length > 0"
         md-limit="ctrl.jobQuery.limit"
-        md-limit-options="[5, 10, 25, 50]"
+        md-limit-options="[5, 10, 25, 50, 75, 100, 200]"
         md-on-paginate="ctrl.jobPageChanged"
         md-page="ctrl.jobQuery.page"
         md-page-select
