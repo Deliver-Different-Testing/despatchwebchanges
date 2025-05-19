@@ -199,6 +199,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucInvoiceNo]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucJob]",
          "ObjectType": 0
       },
