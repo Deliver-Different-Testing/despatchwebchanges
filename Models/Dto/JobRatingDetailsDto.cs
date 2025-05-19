@@ -52,4 +52,5 @@ public class JobRatingDetailsDto
 
     public decimal? Cubic { get; set; }
     public bool IsManuallyRated { get; set; }
+    public bool? IsPrebook { get; set; }
 }

@@ -93,7 +93,8 @@ public class RateJobService(
                 ToAgentId = distanceResult.ToAirport?.AgentId ?? jobDetails.ToAgentId,
                 ToAirportId = distanceResult.ToAirport?.AirportId ?? jobDetails.ToAirportId,
                 Quantity = jobDetails.Quantity,
-                Cubic = jobDetails.Cubic
+                Cubic = jobDetails.Cubic,
+                IsPrebook = jobDetails.IsPrebook ?? false
             });
         }
         catch (Exception ex)

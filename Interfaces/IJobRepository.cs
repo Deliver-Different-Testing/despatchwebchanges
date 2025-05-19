@@ -200,6 +200,8 @@ public interface IJobRepository
     Task<TruckItemsSummary> TruckJobItemsAsync(int jobId, int truckWeightLimit);
     Task UpdateDeliveryAddressNzAsync(UpdateAddressRequestNz request);
     Task UpdateDeliveryAddressUsAsync(UpdateAddressRequestUs request);
+    Task UpdateBookingDeliveryAddressNzAsync(UpdateAddressRequestNz request);
+    Task UpdateBookingDeliveryAddressUsAsync(UpdateAddressRequestUs request);
 
     Task UpdateBulkDeliveryAddressAsync(
         int bulkJobId,
@@ -213,6 +215,8 @@ public interface IJobRepository
 
     Task UpdatePickupAddressNzAsync(UpdateAddressRequestNz request);
     Task UpdatePickupAddressUsAsync(UpdateAddressRequestUs request);
+    Task UpdateBookingPickupAddressNzAsync(UpdateAddressRequestNz request);
+    Task UpdateBookingPickupAddressUsAsync(UpdateAddressRequestUs request);
     Task UpdateJobTypeAsync(int jobId, int jobType, string despatcher);
 
     Task UpdateBulkPickupAddressAsync(
@@ -222,28 +226,6 @@ public interface IJobRepository
         string address,
         decimal pickupLat,
         decimal pickupLng,
-        string despatcher
-    );
-
-    Task UpdateBookingDeliveryAddressAsync(
-        int jobId,
-        int toSuburbId,
-        string address,
-        decimal deliveryLat,
-        decimal deliveryLng,
-        bool cbd,
-        decimal rate,
-        string despatcher
-    );
-
-    Task UpdateBookingPickupAddressAsync(
-        int jobId,
-        int fromSuburbId,
-        string address,
-        decimal pickupLat,
-        decimal pickupLng,
-        bool cbd,
-        decimal rate,
         string despatcher
     );
 

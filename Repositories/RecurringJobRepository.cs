@@ -23,6 +23,13 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
             .AsNoTracking()
             .FirstOrDefaultAsync();
 
+        jobRecurringViewModel.RelatedJobs = Context.TucJobBookings.Where(x => x.ParentId == jobRecurringViewModel.Id || (x.ParentId == null && x.UcbkId == jobRecurringViewModel.Id))
+            .Select(p => new Suggestion
+            {
+                Id = p.UcbkId,
+                Text = p.UcbkJobNumber,
+            }).ToList();
+
         return jobRecurringViewModel;
     }
 
@@ -151,7 +158,7 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
     {
         var prebooks = await Context
             .TucJobBookings
-            .Where(j => j.UcbkOneOff == false)
+            .Where(j => j.UcbkOneOff == false && (j.ParentId == null || j.ParentId == j.UcbkId))
             .OrderBy(j => j.UcbkDate)
             .ThenBy(j => j.UcbkTime)
             .ThenBy(j => j.UcbkJobNumber)
