@@ -1125,14 +1125,23 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
         Log.Information("Pricing breakdown is: {DescriptionValue}", description.Value);
 
-        var effectiveJobId = await GetJobRelationshipInfoAsync(dto.JobId);
-
-        await Context.Procedures.DD_InsertPricingBreakdownAsync(
+        if (dto.IsPrebook) {
+            var effectiveJobBookingId = await GetJobBookingRelationshipInfoAsync(dto.JobId);
+            await Context.Procedures.DD_InsertPricingBreakdownAsync(
+                jobID: null,
+                prebookJobID: effectiveJobBookingId,
+                pricingBreakdown: description.Value,
+                returnValue: returnValue
+            );
+        } else {
+            var effectiveJobId = await GetJobRelationshipInfoAsync(dto.JobId);
+            await Context.Procedures.DD_InsertPricingBreakdownAsync(
             jobID: effectiveJobId,
-            prebookJobID: null,
-            pricingBreakdown: description.Value,
-            returnValue: returnValue
-        );
+                prebookJobID: null,
+                pricingBreakdown: description.Value,
+                returnValue: returnValue
+            );
+        }
 
         var printableRate = rate.Value ?? 0;
         await SaveNoteAsync(dto.JobId, $"Repriced to {printableRate}", true);

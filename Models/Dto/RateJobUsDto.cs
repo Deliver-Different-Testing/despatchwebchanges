@@ -46,4 +46,5 @@ public class RateJobUsDto
 
     public int? Quantity { get; set; }
     public decimal? Cubic { get; set; }
+    public bool IsPrebook { get; set; }
 }

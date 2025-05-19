@@ -1811,30 +1811,6 @@ public class JobController(
         return Ok();
     }
 
-    public async Task<IActionResult> UpdateBookingPickupAddress(
-        int jobId,
-        int fromSuburbId,
-        string address,
-        decimal pickupLat,
-        decimal pickupLng,
-        bool cbd,
-        decimal rate,
-        string despatcherName
-    )
-    {
-        await jobRepository.UpdateBookingPickupAddressAsync(
-            jobId,
-            fromSuburbId,
-            address,
-            pickupLat,
-            pickupLng,
-            cbd,
-            rate,
-            despatcherName
-        );
-        return Ok();
-    }
-
     [HttpPost]
     public async Task<IActionResult> UpdateRecurringJob(
         int jobId,
@@ -2621,6 +2597,132 @@ public class JobController(
             jobDetails.FromZip = request.Address.AddressLine7;
             jobDetails.PickupLat = request.Address.Latitude ?? 0;
             jobDetails.PickupLong = request.Address.Longitude ?? 0;
+
+            // Calculate new rate
+            await rateJobService.RateJobUs(jobDetails);
+
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error updating pickup address for job {JobId}", request.JobId);
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    public async Task<IActionResult> UpdateBookingPickupAddressNZ([FromBody] UpdateAddressRequestNz request)
+    {
+        try
+        {
+            // First update the address
+            await jobRepository.UpdateBookingPickupAddressNzAsync(request);
+
+            // Get job details for rating
+            var jobDetails = await jobRepository.GetJobBookingDetailsForRating(request.JobId);
+
+            // Update job details with new pickup address
+            jobDetails.FromId = request.SuburbId;
+            jobDetails.PickupLat = request.Latitude;
+            jobDetails.PickupLong = request.Longitude;
+            jobDetails.IsPrebook = true;
+
+            // Calculate new rate
+            var rate = await rateJobService.RateJob(jobDetails);
+
+            // Create note text
+            var noteText = $"Changed Pickup Address to {request.Address}. Rate recalculated: {rate:C}";
+
+            // Update job rate and add note
+            await jobRepository.UpdateJobRateAsync(request.JobId, rate, noteText);
+
+            return Ok(new { message = "Pickup address updated successfully", newRate = rate });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error updating pickup address for job {JobId}", request.JobId);
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> UpdateBookingPickupAddressUs([FromBody] UpdateAddressRequestUs request)
+    {
+        try
+        {
+            // First update the address
+            await jobRepository.UpdateBookingPickupAddressUsAsync(request);
+
+            // Get job details for rating
+            var jobDetails = await jobRepository.GetJobBookingDetailsForRating(request.JobId);
+
+            // Update job details with a new pickup address
+            jobDetails.FromZip = request.Address.AddressLine7;
+            jobDetails.PickupLat = request.Address.Latitude ?? 0;
+            jobDetails.PickupLong = request.Address.Longitude ?? 0;
+            jobDetails.IsPrebook = true;
+
+            // Calculate new rate
+            await rateJobService.RateJobUs(jobDetails);
+
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error updating pickup address for job {JobId}", request.JobId);
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    public async Task<IActionResult> UpdateBookingDeliveryAddressNZ([FromBody] UpdateAddressRequestNz request)
+    {
+        try
+        {
+            // First update the address
+            await jobRepository.UpdateBookingDeliveryAddressNzAsync(request);
+
+            // Get job details for rating
+            var jobDetails = await jobRepository.GetJobBookingDetailsForRating(request.JobId);
+
+            // Update job details with new pickup address
+            jobDetails.ToId = request.SuburbId;
+            jobDetails.DeliveryLat = request.Latitude;
+            jobDetails.DeliveryLong = request.Longitude;
+            jobDetails.IsPrebook = true;
+
+            // Calculate new rate
+            var rate = await rateJobService.RateJob(jobDetails);
+
+            // Create note text
+            var noteText = $"Changed Delivery Address to {request.Address}. Rate recalculated: {rate:C}";
+
+            // Update job rate and add note
+            await jobRepository.UpdateJobRateAsync(request.JobId, rate, noteText);
+
+            return Ok(new { message = "Delivery address updated successfully", newRate = rate });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error updating delivery address for job {JobId}", request.JobId);
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> UpdateBookingDeliveryAddressUs([FromBody] UpdateAddressRequestUs request)
+    {
+        try
+        {
+            // First update the address
+            await jobRepository.UpdateBookingDeliveryAddressUsAsync(request);
+
+            // Get job details for rating
+            var jobDetails = await jobRepository.GetJobBookingDetailsForRating(request.JobId);
+
+            // Update job details with a new pickup address
+            jobDetails.ToZip = request.Address.AddressLine7;
+            jobDetails.DeliveryLat = request.Address.Latitude ?? 0;
+            jobDetails.DeliveryLong = request.Address.Longitude ?? 0;
+            jobDetails.IsPrebook = true;
 
             // Calculate new rate
             await rateJobService.RateJobUs(jobDetails);

@@ -432,7 +432,7 @@ public static class JobMappings
         DgClass = j.Dgclass,
         DgDocumentation = j.Dgdocument,
         ParcelDimensions =
-            j.ParentId == null
+            j.ParentId == null || j.ParentId == j.UcjbId
                 ? j
                     .TucJobItems.Select(p => new ParcelDimensions
                     {
@@ -480,7 +480,7 @@ public static class JobMappings
         RefA = j.UcjbClientRefa,
         RefB = j.UcjbClientRefb,
         Charge =
-            j.ParentId == null
+            j.ParentId == null || j.ParentId == j.UcjbId
                 ? $"${j.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}"
                 : $"${j.Parent.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}",
         OurRef = j.UcjbOurRef,
@@ -872,7 +872,7 @@ public static class JobMappings
             // References and amounts
             RefA = j.UcbkClientRefa,
             RefB = j.UcbkClientRefb,
-            Charge = j.ParentId == null
+            Charge = j.ParentId == null || j.ParentId == j.UcbkId
                 ? $"${j.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}"
                 : $"${j.BookingParent.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}",
             OurRef = j.UcbkOurRef,
@@ -892,7 +892,7 @@ public static class JobMappings
         Attention = j.UcbkAttention,
 
         ParcelDimensions =
-            j.ParentId == null
+            j.ParentId == null || j.ParentId == j.UcbkId
                 ? j
                     .TucJobBookingItems.Select(p => new ParcelDimensions
                     {
