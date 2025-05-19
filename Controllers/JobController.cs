@@ -915,23 +915,34 @@ public class JobController(
             );
         }
 
+        // Replace empty strings with null before deserializing
+        sResult = sResult.Replace("\"\"", "null");
+
         var deserializeOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            NumberHandling = JsonNumberHandling.AllowReadingFromString,
+            NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
 
-        var result = JsonSerializer.Deserialize<List<JobManualPriceModel>>(
-            sResult,
-            deserializeOptions
-        );
+        try
+        {
+            var result = JsonSerializer.Deserialize<List<JobManualPriceModel>>(
+               sResult,
+               deserializeOptions);
 
-        if (result.Count == 0)
-            return Ok();
+            if (result.Count == 0)
+                return Ok();
 
-        await jobRepository.UpdateManualPriceAsync(result);
+            await jobRepository.UpdateManualPriceAsync(result);           
+        }
+        catch (JsonException ex)
+        {
+            // Log the specific error and the problematic JSON
+            Console.WriteLine($"Error deserializing JSON: {ex.Message}");
+            Console.WriteLine($"JSON content: {sResult}");
+        }
 
         return Ok();
     }

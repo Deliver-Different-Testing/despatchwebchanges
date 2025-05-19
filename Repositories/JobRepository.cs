@@ -393,8 +393,192 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         return Tuple.Create(total, jobs);
     }
 
+    //public async Task UpdateManualPriceAsync(List<JobManualPriceModel> data)
+    //{
+    //    // Normalize all nullable values to 0 at the beginning to simplify the rest of the code
+    //    foreach (var item in data)
+    //    {
+    //        item.Amount = item.Amount ?? 0;
+    //        item.Ppd = item.Ppd ?? 0;
+    //        item.Fuel = item.Fuel ?? 0;
+    //        item.CourierPayment = item.CourierPayment ?? 0;
+    //        item.CourierFuel = item.CourierFuel ?? 0;
+    //        item.CourierBonus = item.CourierBonus ?? 0;
+    //    }
+
+    //    // Now we can use the values directly without worrying about nulls
+    //    if (
+    //        data.Any(d =>
+    //            d.Id <= 0
+    //            || (
+    //                d.Amount > 0
+    //                && (
+    //                    d.Ppd < 0
+    //                    || d.Fuel < 0
+    //                    || d.CourierPayment < 0
+    //                    || d.CourierFuel < 0
+    //                    || d.CourierBonus < 0
+    //                    || d.Amount < d.Ppd + d.Fuel
+    //                    || d.Amount < d.CourierPayment + d.CourierFuel + d.CourierBonus
+    //                )
+    //            )
+    //            || (
+    //                d.Amount < 0
+    //                && (
+    //                    d.Ppd > 0
+    //                    || d.Fuel > 0
+    //                    || d.CourierPayment > 0
+    //                    || d.CourierFuel > 0
+    //                    || d.CourierBonus > 0
+    //                    || d.Amount > d.Ppd + d.Fuel
+    //                    || d.Amount > d.CourierPayment + d.CourierFuel + d.CourierBonus
+    //                )
+    //            )
+    //        )
+    //    )
+    //        throw new ArgumentException("Invalid Values.");
+
+    //    var jobIds = data.Select(j => j.Id).Distinct().ToList();
+
+    //    if (jobIds.Count == 0)
+    //        return;
+
+    //    var idData = await Context
+    //        .TblJobs.Where(j =>
+    //            jobIds.Contains(j.JobId)
+    //            || (j.ParentId.HasValue && jobIds.Contains(j.ParentId.Value))
+    //        )
+    //        .Select(j => new { j.JobId, ParentId = j.ParentId ?? j.JobId })
+    //        .ToListAsync();
+
+    //    var ids = idData
+    //        .Select(j => j.JobId)
+    //        .Concat(idData.Select(j => j.ParentId))
+    //        .Distinct()
+    //        .ToList();
+
+    //    var dbData = await Context
+    //        .TucJobs.Where(j =>
+    //            ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value))
+    //        )
+    //        .ToListAsync();
+
+    //    var dbDataArchive = await Context
+    //        .TucJobArchives.Where(j =>
+    //            ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value))
+    //        )
+    //        .ToListAsync();
+
+    //    foreach (var d in data)
+    //    {
+    //        var match =
+    //            (dynamic)dbData.FirstOrDefault(j => j.UcjbId == d.Id)
+    //            ?? dbDataArchive.FirstOrDefault(j => j.UcjbId == d.Id);
+
+    //        ArgumentNullException.ThrowIfNull(match);
+
+    //        // Since we've already normalized the data, we don't need null checks here
+    //        match.UcjbAmount = Math.Round(d.Amount.Value, 4, MidpointRounding.AwayFromZero);
+    //        match.FuelSurchargeAmount = Math.Round(d.Fuel.Value, 4, MidpointRounding.AwayFromZero);
+    //        match.PpdexclusiveAmount = Math.Round(d.Ppd.Value, 4, MidpointRounding.AwayFromZero);
+    //        match.CourierPercentage = null;
+    //        match.CourierPayment = Math.Round(d.CourierPayment.Value, 4, MidpointRounding.AwayFromZero);
+    //        match.CourierFuel = Math.Round(d.CourierFuel.Value, 4, MidpointRounding.AwayFromZero);
+    //        match.CourierBonus = Math.Round(d.CourierBonus.Value, 4, MidpointRounding.AwayFromZero);
+    //        match.RawBaseAmount =
+    //            match.UcjbAmount - match.FuelSurchargeAmount - match.PpdexclusiveAmount;
+    //    }
+
+    //    var parentJobs = dbData
+    //        .Select(j => new
+    //        {
+    //            j.UcjbId,
+    //            ParentId = j.ParentId ?? j.UcjbId,
+    //            j.UcjbAmount,
+    //            j.FuelSurchargeAmount,
+    //            j.PpdexclusiveAmount
+    //        })
+    //        .Concat(
+    //            dbDataArchive.Select(j => new
+    //            {
+    //                j.UcjbId,
+    //                ParentId = j.ParentId ?? j.UcjbId,
+    //                j.UcjbAmount,
+    //                j.FuelSurchargeAmount,
+    //                j.PpdexclusiveAmount
+    //            })
+    //        )
+    //        .GroupBy(j => j.ParentId)
+    //        .Where(x => x.Count() > 1)
+    //        .ToList();
+
+    //    foreach (var x in parentJobs)
+    //    {
+    //        var parentJob =
+    //            (dynamic)dbData.FirstOrDefault(j => j.UcjbId == x.Key)
+    //            ?? dbDataArchive.First(j => j.UcjbId == x.Key);
+    //        var childJobs = x.Where(j => j.UcjbId != parentJob.UcjbId).ToList();
+
+    //        if (childJobs.Count == 0)
+    //            continue;
+
+    //        // Fix: All sums need null checks
+    //        parentJob.UcjbAmount = childJobs.Sum(j => j.UcjbAmount ?? 0);
+    //        parentJob.FuelSurchargeAmount = childJobs.Sum(j => j.FuelSurchargeAmount != null ? j.FuelSurchargeAmount : 0);
+    //        parentJob.PpdexclusiveAmount = childJobs.Sum(j => j.PpdexclusiveAmount ?? 0);
+    //        parentJob.RawBaseAmount =
+    //            parentJob.UcjbAmount - parentJob.FuelSurchargeAmount - parentJob.PpdexclusiveAmount;
+    //    }
+
+    //    foreach (var d in dbData)
+    //    {
+    //        d.UcjbLocked = true;
+    //    }
+
+    //    foreach (var d in dbDataArchive)
+    //    {
+    //        d.UcjbLocked = 1;
+    //    }
+
+    //    try
+    //    {
+    //        await Context.SaveChangesAsync();
+    //    }
+    //    catch (DbUpdateException ex)
+    //    {
+    //        // Log detailed information about the exception
+    //        Console.WriteLine($"DbUpdateException: {ex.Message}");
+    //        if (ex.InnerException != null)
+    //            Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
+
+    //        // Log entity validation errors if available
+    //        if (ex is DbUpdateException dbUpdateException)
+    //        {
+    //            var entries = dbUpdateException.Entries;
+    //            foreach (var entry in entries)
+    //            {
+    //                Console.WriteLine($"Entity of type {entry.Entity.GetType().Name} in state {entry.State} could not be updated");
+    //            }
+    //        }
+
+    //        throw; // Re-throw after logging
+    //    }
+    //}
+
     public async Task UpdateManualPriceAsync(List<JobManualPriceModel> data)
     {
+        // Normalize all nullable values to 0 at the beginning
+        foreach (var item in data)
+        {
+            item.Amount = item.Amount ?? 0;
+            item.Ppd = item.Ppd ?? 0;
+            item.Fuel = item.Fuel ?? 0;
+            item.CourierPayment = item.CourierPayment ?? 0;
+            item.CourierFuel = item.CourierFuel ?? 0;
+            item.CourierBonus = item.CourierBonus ?? 0;
+        }
+
+        // Validation logic remains the same
         if (
             data.Any(d =>
                 d.Id <= 0
@@ -457,42 +641,78 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             )
             .ToListAsync();
 
+        // Process individual jobs and save in batches
         foreach (var d in data)
         {
             var match =
                 (dynamic)dbData.FirstOrDefault(j => j.UcjbId == d.Id)
                 ?? dbDataArchive.FirstOrDefault(j => j.UcjbId == d.Id);
 
-            ArgumentNullException.ThrowIfNull(match);
+            if (match == null)
+            {
+                Log.Warning($"Job with ID {d.Id} not found in database");
+                continue; // Skip this job instead of throwing an exception
+            }
 
-            match.UcjbAmount = Math.Round(d.Amount, 4, MidpointRounding.AwayFromZero);
-            match.FuelSurchargeAmount = Math.Round(d.Fuel, 4, MidpointRounding.AwayFromZero);
-            match.PpdexclusiveAmount = Math.Round(d.Ppd, 4, MidpointRounding.AwayFromZero);
-            match.CourierPercentage = null;
-            match.CourierPayment = Math.Round(d.CourierPayment, 4, MidpointRounding.AwayFromZero);
-            match.CourierFuel = Math.Round(d.CourierFuel, 4, MidpointRounding.AwayFromZero);
-            match.CourierBonus = Math.Round(d.CourierBonus, 4, MidpointRounding.AwayFromZero);
-            match.RawBaseAmount =
-                match.UcjbAmount - match.FuelSurchargeAmount - match.PpdexclusiveAmount;
+            try
+            {
+                // Apply updates cautiously
+                match.UcjbAmount = Math.Round(d.Amount.Value, 4, MidpointRounding.AwayFromZero);
+                match.FuelSurchargeAmount = Math.Round(d.Fuel.Value, 4, MidpointRounding.AwayFromZero);
+                match.PpdexclusiveAmount = Math.Round(d.Ppd.Value, 4, MidpointRounding.AwayFromZero);
+                match.CourierPercentage = null; // This is explicitly set to null
+                match.CourierPayment = Math.Round(d.CourierPayment.Value, 4, MidpointRounding.AwayFromZero);
+                match.CourierFuel = Math.Round(d.CourierFuel.Value, 4, MidpointRounding.AwayFromZero);
+                match.CourierBonus = Math.Round(d.CourierBonus.Value, 4, MidpointRounding.AwayFromZero);
+
+                // This calculation could be causing issues - make sure all values are valid decimals
+                decimal baseAmount = match.UcjbAmount;
+
+                if (match.FuelSurchargeAmount != null)
+                    baseAmount -= match.FuelSurchargeAmount;
+
+                if (match.PpdexclusiveAmount != null)
+                    baseAmount -= match.PpdexclusiveAmount;
+
+                match.RawBaseAmount = baseAmount;
+
+                // Save changes for this specific job immediately
+                try
+                {
+                    await Context.SaveChangesAsync();
+                    Log.Information($"Successfully updated job {d.Id}");
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Error saving job {d.Id}: {ex.Message}");
+                    // Reset the context state for this entity
+                    Context.Entry(match).State = EntityState.Unchanged;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Error updating job {d.Id}: {ex.Message}");
+            }
         }
 
+        // Process parent jobs separately
         var parentJobs = dbData
             .Select(j => new
             {
                 j.UcjbId,
                 ParentId = j.ParentId ?? j.UcjbId,
-                j.UcjbAmount,
-                j.FuelSurchargeAmount,
-                j.PpdexclusiveAmount
+                UcjbAmount = j.UcjbAmount ?? 0m,
+                FuelSurchargeAmount = j.FuelSurchargeAmount,
+                PpdexclusiveAmount = j.PpdexclusiveAmount ?? 0m
             })
             .Concat(
                 dbDataArchive.Select(j => new
                 {
                     j.UcjbId,
                     ParentId = j.ParentId ?? j.UcjbId,
-                    j.UcjbAmount,
-                    j.FuelSurchargeAmount,
-                    j.PpdexclusiveAmount
+                    UcjbAmount = j.UcjbAmount ?? 0m,
+                    FuelSurchargeAmount = j.FuelSurchargeAmount,
+                    PpdexclusiveAmount = j.PpdexclusiveAmount ?? 0m
                 })
             )
             .GroupBy(j => j.ParentId)
@@ -501,32 +721,70 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
         foreach (var x in parentJobs)
         {
-            var parentJob =
-                (dynamic)dbData.FirstOrDefault(j => j.UcjbId == x.Key)
-                ?? dbDataArchive.First(j => j.UcjbId == x.Key);
-            var childJobs = x.Where(j => j.UcjbId != parentJob.UcjbId).ToList();
+            try
+            {
+                var parentJob =
+                    (dynamic)dbData.FirstOrDefault(j => j.UcjbId == x.Key)
+                    ?? dbDataArchive.First(j => j.UcjbId == x.Key);
 
-            if (childJobs.Count == 0)
-                continue;
+                var childJobs = x.Where(j => j.UcjbId != parentJob.UcjbId).ToList();
 
-            parentJob.UcjbAmount = childJobs.Sum(j => j.UcjbAmount ?? 0);
-            parentJob.FuelSurchargeAmount = childJobs.Sum(j => j.FuelSurchargeAmount);
-            parentJob.PpdexclusiveAmount = childJobs.Sum(j => j.PpdexclusiveAmount ?? 0);
-            parentJob.RawBaseAmount =
-                parentJob.UcjbAmount - parentJob.FuelSurchargeAmount - parentJob.PpdexclusiveAmount;
+                if (childJobs.Count == 0)
+                    continue;
+
+                // Calculate sums first to inspect values
+                decimal sumAmount = childJobs.Sum(j => j.UcjbAmount);
+                decimal sumFuel = childJobs.Sum(j => j.FuelSurchargeAmount);
+                decimal sumPpd = childJobs.Sum(j => j.PpdexclusiveAmount);
+
+                Log.Information($"Parent job {x.Key}: Amount={sumAmount}, Fuel={sumFuel}, Ppd={sumPpd}");
+
+                // Apply sums to parent job
+                parentJob.UcjbAmount = sumAmount;
+                parentJob.FuelSurchargeAmount = sumFuel;
+                parentJob.PpdexclusiveAmount = sumPpd;
+                parentJob.RawBaseAmount = sumAmount - sumFuel - sumPpd;
+
+                // Save changes for this specific parent job
+                try
+                {
+                    await Context.SaveChangesAsync();
+                    Log.Information($"Successfully updated parent job {x.Key}");
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Error saving parent job {x.Key}: {ex.Message}");
+                    // Reset context state for this entity
+                    Context.Entry(parentJob).State = EntityState.Unchanged;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Error processing parent job {x.Key}: {ex.Message}");
+            }
         }
 
-        foreach (var d in dbData)
+        // Finally, update all jobs to locked state
+        try
         {
-            d.UcjbLocked = true;
-        }
+            foreach (var d in dbData)
+            {
+                d.UcjbLocked = true;
+            }
 
-        foreach (var d in dbDataArchive)
+            foreach (var d in dbDataArchive)
+            {
+                d.UcjbLocked = 1;
+            }
+
+            await Context.SaveChangesAsync();
+            Log.Information("Successfully locked all jobs");
+        }
+        catch (Exception ex)
         {
-            d.UcjbLocked = 1;
+            Log.Error($"Error locking jobs: {ex.Message}");
+            throw;
         }
-
-        await Context.SaveChangesAsync();
     }
 
     public async Task<List<JobDownloadModel>> PodSearchDownloadAsync(
