@@ -30,6 +30,14 @@ export class PriceBreakdownDialogController extends BaseController {
         return this.priceBreakdown.reduce((sum, item) => sum + (item.amount || 0), 0);
     }
 
+    get totalCostAmount(): number {
+        if (!this.priceBreakdown || this.priceBreakdown.length === 0) {
+            return 0;
+        }
+
+        return this.priceBreakdown.reduce((sum, item) => sum + (item.amount || 0), 0);
+    }
+
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
