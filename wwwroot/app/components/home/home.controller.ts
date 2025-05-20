@@ -1783,7 +1783,7 @@ class HomeController extends BaseController {
 
             // If not found locally, fetch from database
             if (!attachedJob) {
-                attachedJob = await this.DispatchData.getJobDetail(task.jobId) as IDispatchJob;
+                attachedJob = await this.DispatchData.getDispatchJobDetail(task.jobId);
             }
 
             if (!attachedJob) {

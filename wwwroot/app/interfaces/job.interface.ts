@@ -468,8 +468,12 @@ export interface IDispatchJob {
     assignedFlight?: AssignedFlight;
     assignedAgent?: IAgent;
 
-    // Search helper property
-    [key: string]: any;
+    conNote?: string;
+    followupTime: Date;
+    fromAirportId?: number;
+    toAirportId?: number;
+    van?: boolean;
+    truck?: boolean;
 }
 
 export interface IClearListEnvelope {

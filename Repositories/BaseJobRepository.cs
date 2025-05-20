@@ -166,8 +166,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         string clientIds
     )
     {
-        //// Remove parent jobs     
-        //query = query.Where(j => j.ParentId != null); 
         query = query.Where(j => j.ParentId != j.UcjbId && !j.InverseParent.Any());
 
         // Filter dates
@@ -2011,6 +2009,16 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         );
 
         return jobStopId.Value ?? 0;
+    }
+
+    public async Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId)
+    {
+        var job = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(JobMappings.JobDispatchMapping)
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+ return job;
     }
 
     private static string TruncateAddress(string address) =>

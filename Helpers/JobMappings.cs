@@ -139,7 +139,12 @@ public static class JobMappings
             // Assigned agent
             AssignedAgent =
                 j.Agent != null ? new AgentViewModel { AgentName = j.Agent.UcagName } : null,
-            Locked = j.UcjbLocked ?? false
+            Locked = j.UcjbLocked ?? false,
+
+            ConNote = j.ParentId != null ? j.Parent.Connote : j.Connote,
+            FollowupTime = j.FollowupTime,
+            Van = j.UcjbVan,
+            Truck = j.Truck ?? false,
         };
 
     public static readonly Expression<Func<TucJob, JobViewModel>> JobMapping = j => new JobViewModel

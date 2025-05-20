@@ -364,4 +364,5 @@ public interface IJobRepository
     Task<JobRatingDetailsDto> GetJobBookingDetailsForRating(int jobId);
 
     Task<int> AddStopToJobAsync(int jobId, EditAddressDialogViewModel pickUpAddress = null, EditAddressDialogViewModel deliveryAddress = null);
+    Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId);
 }

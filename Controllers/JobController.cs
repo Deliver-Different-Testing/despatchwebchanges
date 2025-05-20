@@ -655,11 +655,27 @@ public class JobController(
         }
     }
 
+    [HttpGet]
     public async Task<IActionResult> Detail(int jobId)
     {
         try
         {
             var job = await jobRepository.GetJobByIdAsync(jobId);
+            return Json(job);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An unexpected error occured");
+            return StatusCode(500, ex.Message);
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> DispatchJobDetail(int jobId)
+    {
+        try
+        {
+            var job = await jobRepository.GetDispatchJobDetailAsync(jobId);
             return Json(job);
         }
         catch (Exception ex)
