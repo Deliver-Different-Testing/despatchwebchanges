@@ -380,7 +380,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 Booked = DateTime.Parse(
                     j.Date.Value.ToString("yyyy-MM-dd") + " " + j.Time.Value.ToString("HH:mm:ss")
                 ),
-                IsArchived = j.Archived ?? false
+                IsArchived = j.Archived ?? false,
+                Locked = j.Locked.HasValue ? (bool?)(j.Locked != 0) : null
             };
 
         var orderedQuery = jobsQuery
