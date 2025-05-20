@@ -359,8 +359,8 @@ public interface IJobRepository
     Task<JobRatingDetailsDto> GetJobDetailsForRating(int jobId);
     Task UpdateJobRateAsync(int jobId, decimal rate, string noteText);
     Task<List<TimeZoneSuggestion>> GetTimeZoneOptions();
-    Task UpdateDeliverByTime(int jobId, string deliverByTime, bool isRecurring, int timeZoneId);
-    Task UpdatePickUpTime(int jobId, string pickUpTime, bool isRecurring, int timeZoneId);
+    Task UpdateDeliverByTime(UpdateJobTimeRequest data);
+    Task UpdatePickUpTime(UpdateJobTimeRequest data);
     Task<JobRatingDetailsDto> GetJobBookingDetailsForRating(int jobId);
 
     Task<int> AddStopToJobAsync(int jobId, EditAddressDialogViewModel pickUpAddress = null, EditAddressDialogViewModel deliveryAddress = null);

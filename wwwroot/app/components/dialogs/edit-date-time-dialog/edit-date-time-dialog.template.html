@@ -16,11 +16,7 @@
             <div class="date-time-field" ng-if="ctrl.showDate">
                 <md-input-container class="md-block">
                     <label for="date">
-                        <span ng-if="ctrl.selectedTimeZone.timeZoneIana">Date ({{ctrl.selectedTimeZone.timeZoneIana | timezoneShort}})</span>
-                        <span ng-if="!ctrl.selectedTimeZone.timeZoneIana">
-                            Date
-                            <md-progress-circular md-mode="indeterminate" md-diameter="15" class="md-accent md-hue-1" style="display: inline-block; vertical-align: middle;"></md-progress-circular>
-                        </span>
+                        <span>Date ({{ctrl.selectedTimeZone.timeZoneIana | timezoneShort}})</span>
                     </label>
                     <input class="dtp-no-msclear dtp-input md-input"
                            id="date"
@@ -46,11 +42,7 @@
             <div class="date-time-field" ng-if="ctrl.showTime">
                 <md-input-container class="md-block">
                     <label for="time">
-                        <span ng-if="ctrl.selectedTimeZone.timeZoneIana">Time ({{ctrl.selectedTimeZone.timeZoneIana | timezoneShort}})</span>
-                        <span ng-if="!ctrl.selectedTimeZone.timeZoneIana">
-                            Time
-                            <md-progress-circular md-mode="indeterminate" md-diameter="15" class="md-accent md-hue-1" style="display: inline-block; vertical-align: middle;"></md-progress-circular>
-                        </span>
+                        <span>Time ({{ctrl.selectedTimeZone.timeZoneIana | timezoneShort}})</span>
                     </label>
                     <input class="dtp-no-msclear dtp-input md-input"
                            id="time"
@@ -73,19 +65,16 @@
 
             <!-- Timezone Selector -->
             <div ng-if="ctrl.showTimeZoneSelector">
-                <md-divider class="date-time-divider" ng-show="(ctrl.showDate || ctrl.showTime)"></md-divider>
+                <md-divider class="date-time-divider" ng-if="(ctrl.showDate || ctrl.showTime)"></md-divider>
 
                 <div class="date-time-field">
                     <label class="timezone-label md-body-1">Timezone</label>
                     <md-select ng-model="ctrl.selectedTimeZone"
-                               placeholder="Select timezone"
                                class="md-block timezone-select"
-                               ng-change="ctrl.updateTimeZone(ctrl.selectedTimeZone)"
-                               aria-label="Select timezone"
-                               required>
-                        <md-option ng-repeat="timezone in ctrl.timeZones"
-                                   ng-value="timezone">
-                            {{ timezone.text }}
+                               aria-label="Selected timezone"
+                               disabled>
+                        <md-option ng-value="ctrl.selectedTimeZone">
+                            {{ ctrl.selectedTimeZone.text }}
                         </md-option>
                     </md-select>
                     <div class="timezone-info md-caption" ng-if="ctrl.selectedTimeZone">
@@ -98,18 +87,18 @@
 
     <md-dialog-actions layout="row">
         <span flex></span>
-        <md-button class="md-button" ng-click="ctrl.cancel()" ng-show="!ctrl.isLoading">
+        <md-button class="md-button" ng-click="ctrl.cancel()" ng-if="!ctrl.isLoading">
             Cancel
         </md-button>
         <md-progress-circular class="md-primary"
                               md-diameter="20"
                               md-mode="indeterminate"
-                              ng-show="ctrl.isLoading">
+                              ng-if="ctrl.isLoading">
         </md-progress-circular>
         <md-button class="md-raised md-primary"
                    ng-click="ctrl.submit()"
                    ng-disabled="!ctrl.isValid()"
-                   ng-show="!ctrl.isLoading">
+                   ng-if="!ctrl.isLoading">
             Save
         </md-button>
     </md-dialog-actions>

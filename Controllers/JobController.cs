@@ -936,7 +936,7 @@ public class JobController(
             if (result.Count == 0)
                 return Ok();
 
-            await jobRepository.UpdateManualPriceAsync(result);           
+            await jobRepository.UpdateManualPriceAsync(result);
         }
         catch (JsonException ex)
         {
@@ -1848,11 +1848,11 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdateDeliverByTime(int jobId, string dateTime, bool isRecurring, int timeZoneId)
+    public async Task<IActionResult> UpdateDeliverByTime(UpdateJobTimeRequest requestData)
     {
         try
         {
-            await jobRepository.UpdateDeliverByTime(jobId, dateTime, isRecurring, timeZoneId);
+            await jobRepository.UpdateDeliverByTime(requestData);
             return Ok();
         }
         catch (Exception ex)
@@ -1863,11 +1863,11 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdatePickUpTime(int jobId, string dateTime, bool isRecurring, int timeZoneId)
+    public async Task<IActionResult> UpdatePickUpTime(UpdateJobTimeRequest requestData)
     {
         try
         {
-            await jobRepository.UpdatePickUpTime(jobId, dateTime, isRecurring, timeZoneId);
+            await jobRepository.UpdatePickUpTime(requestData);
             return Ok();
         }
         catch (Exception ex)

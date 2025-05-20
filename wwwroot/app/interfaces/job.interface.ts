@@ -314,26 +314,6 @@ export interface PriceBreakdown {
     prebookJobId?: number;
 }
 
-export interface JobRateDetails {
-    jobId: number;
-    clientId: number;
-    speed: number;
-    fromZipCode: string;
-    toZipCode: string;
-    weight: number;
-    booked: Date;
-    size: number;
-    dangerousGoods: boolean;
-    totalPallets: number;
-    extraStopOffs: number;
-    dryIceWeight: number;
-    waitTime: number;
-    fromLat: number;
-    fromLong: number;
-    toLat: number;
-    toLong: number;
-}
-
 export interface DfrntEvent {
     id: number;
     jobNumber: string;
