@@ -2,7 +2,6 @@
 import "../css/udispatch.less";
 import "../css/toasts.less";
 import "../lib/ng-material-floating-button/mfb/dist/mfb.css";
-import "../lib/pickdate/angular-pickadate.css";
 import "angular-resizable/angular-resizable.min.css";
 import "ng-material-datetimepicker/css/material-datetimepicker.css";
 import "angular-material-data-table/dist/md-data-table.css";
@@ -21,8 +20,6 @@ import "@uirouter/angularjs";
 import "bootstrap";
 
 // Npm packages
-import "moment";
-import "moment-timezone";
 import "angular-ui-bootstrap/dist/ui-bootstrap-tpls";
 import "ngmap";
 import "ng-file-upload";
@@ -32,25 +29,41 @@ import "ng-material-datetimepicker/js/angular-material-datetimepicker";
 import "angular-material-data-table";
 import "angular-hotkeys/build/hotkeys";
 import "angular-bootstrap-contextmenu/contextMenu";
-import "angularjs-dropdown-multiselect/dist/src/angularjs-dropdown-multiselect";
 
 // Local libs
 import "../lib/ModernizerLocalStorage";
 import "../lib/angular-heremaps";
-import "../lib/pickdate/angular-pickadate";
 import "../lib/ng-material-floating-button/src/mfb-directive";
 import "../lib/ng-material-floating-button/mfb/dist/mfb";
-import "../lib/timepickerdirective.min";
 import "../lib/angular-fixed-table-header/fixed-table-header";
-import "../lib/ng-map-autocomplete";
 
 // Custom here maps
 import "../lib/here-map-tracking/here-map-tracking.module";
 import "../lib/here-map-tracking/here-map-tracking.service";
 import "../lib/here-map-tracking/here-map-tracking.component";
 
-// Dispatch Web app
-import "./app";
+const app = angular.module("uDispatch", [
+    "ui.router",
+    "angularResizable",
+    "ui.sortable",
+    "ui.bootstrap",
+    "ui.bootstrap.pagination",
+    "ui.bootstrap.contextMenu",
+    "cfp.hotkeys",
+    "ngMap",
+    "heremaps",
+    "ngAnimate",
+    "ngMessages",
+    "ngSanitize",
+    "ngMaterial",
+    "ng-mfb",
+    "md.data.table",
+    "ngFileUpload",
+    "hereMapTracking.services",
+    "hereMapTracking.components",
+    "fixed.table.header",
+    "ngMaterialDatePicker",
+]);
 
-// Service imports
-import "./components/dialogs/index";
+// Make the module available globally
+(window as any).uDispatchApp = app;

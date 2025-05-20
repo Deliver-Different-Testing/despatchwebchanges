@@ -1,0 +1,35 @@
+<md-dialog aria-label="Assignment Dialog">
+    <form ng-cloak>
+        <md-toolbar>
+            <div class="md-toolbar-tools">
+                <h2>{{ctrl.dialogTitle}}</h2>
+                <span flex></span>
+                <md-button class="md-icon-button" ng-click="ctrl.cancel()">
+                    <md-icon aria-label="Close dialog">close</md-icon>
+                </md-button>
+            </div>
+        </md-toolbar>
+
+        <md-dialog-content>
+            <div class="md-dialog-content">
+                <p ng-if="ctrl.flight">You are assigning Job {{ctrl.jobNumber}} to Flight {{ctrl.flight.flightNumber}} ({{ctrl.flight.departureAirport}} - {{ctrl.flight.arrivalAirport}}). Please confirm this is correct.</p>
+                <p ng-if="ctrl.agent">You are assigning Job {{ctrl.jobNumber}} to Agent {{ctrl.agent.text}}. Please confirm this is correct.</p>
+
+                <md-input-container class="md-block" ng-if="ctrl.flight">
+                    <label for="awb">Air Waybill (AWB)</label>
+                    <input id="awb" ng-model="ctrl.awb" ng-disabled="ctrl.isAwbDisabled" type="text" required>
+                </md-input-container>
+            </div>
+        </md-dialog-content>
+
+        <md-dialog-actions layout="row">
+            <span flex></span>
+            <md-button ng-click="ctrl.cancel()">
+                Cancel
+            </md-button>
+            <md-button ng-click="ctrl.confirm()" class="md-primary" ng-disabled="ctrl.flight && !ctrl.awb">
+                Confirm
+            </md-button>
+        </md-dialog-actions>
+    </form>
+</md-dialog>

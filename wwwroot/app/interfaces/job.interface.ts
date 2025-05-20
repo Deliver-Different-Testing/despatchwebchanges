@@ -285,19 +285,6 @@ export interface IAgent {
     agentNotes: string;
 }
 
-export interface Pallet {
-    id: number;
-    quantity: number;
-    weight: number;
-    length: number;
-    depth: number;
-    height: number;
-    pu: boolean;
-    do: boolean;
-    dgClass: string;
-    notes: string;
-}
-
 export interface JobQueryParams {
     order?: string;
     orderDirection?: string;

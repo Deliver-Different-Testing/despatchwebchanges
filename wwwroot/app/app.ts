@@ -1,3 +1,5 @@
+import "moment";
+import "moment-timezone";
 import {AppConfig} from "./interfaces/app-config.interface";
 import {AppPages} from "./enums/app-pages.enum";
 import {PodPhotoViewerComponent} from "./components/common/pod-photo-viewer/pod-photo-viewer.component";
@@ -88,33 +90,13 @@ import FlightDetailsDialogService from "./components/dialogs/flight-details-dial
 import FlightDetailsDialogController from "./components/dialogs/flight-details-dialog/flight-details-dialog.component";
 import AutoCompleteDialogService from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.service";
 import JobAddStopService from "./services/job-add-stop.service";
+import "./components/dialogs/index";
+import FlightAgentConfirmationDialogService
+    from "./components/dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.service";
+import FlightAgentConformationDialogController
+    from "./components/dialogs/flight-agent-conformation-dialog/flight-agent-conformation-dialog.controller";
 
-const app = angular.module("uDispatch", [
-    "ui.router",
-    "angularResizable",
-    "ui.sortable",
-    "ui.bootstrap",
-    "ui.bootstrap.pagination",
-    "ui.bootstrap.contextMenu",
-    "cfp.hotkeys",
-    "ui.timepicker",
-    "pickadate",
-    "ngMap",
-    "ngMapAutocomplete",
-    "angularjs-dropdown-multiselect",
-    "heremaps",
-    "ngAnimate",
-    "ngMessages",
-    "ngSanitize",
-    "ngMaterial",
-    "ng-mfb",
-    "md.data.table",
-    "ngFileUpload",
-    "hereMapTracking.services",
-    "hereMapTracking.components",
-    "fixed.table.header",
-    "ngMaterialDatePicker",
-]);
+const app = (window as any).uDispatchApp;
 
 // Constants
 app
@@ -259,6 +241,7 @@ app.controller("jobFileUploadController", JobFileUploadController);
 app.controller("jobNoteEditorDialogController", NoteManagementDialogController);
 app.controller("InterCourierChargeDialog", InterCourierChargeDialogController);
 app.controller("flightDetailsDialogController", FlightDetailsDialogController);
+app.controller("flightAgentConformationDialogController", FlightAgentConformationDialogController);
 
 // Services
 app.service("configService", ConfigService);
@@ -288,5 +271,6 @@ app.service("uCSData", JobSearchService);
 app.service("flightDetailsDialogService", FlightDetailsDialogService);
 app.service("autoCompleteDialogService", AutoCompleteDialogService);
 app.service("jobAddStopService", JobAddStopService);
+app.service("flightAgentConfirmationDialogService", FlightAgentConfirmationDialogService)
 
 export default app;

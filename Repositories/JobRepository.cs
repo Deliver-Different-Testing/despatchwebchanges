@@ -639,7 +639,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
         var dbDataArchive = await Context
             .TucJobArchives.Where(j =>
-                (ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value))) 
+                (ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value)))
                 && (j.UcjbLocked != 1 || !j.UcjbInvoiceNo.HasValue)
             )
             .ToListAsync();
@@ -692,7 +692,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 match.CourierPayment = Math.Round(d.CourierPayment.Value, 4, MidpointRounding.AwayFromZero);
                 match.CourierFuel = Math.Round(d.CourierFuel.Value, 4, MidpointRounding.AwayFromZero);
                 match.CourierBonus = Math.Round(d.CourierBonus.Value, 4, MidpointRounding.AwayFromZero);
-             
+
                 processedJobIds.Add(d.Id);
 
                 // Save changes for this specific job immediately
@@ -1127,20 +1127,20 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             .ExecuteStoredNonQueryAsync();
     }
 
-    public async Task UpdatePodDetails(int jobId, int jobStatus, string podName, DateTime podTime)
+    public async Task UpdatePodDetails(UpdatePodDetailsRequest data)
     {
         // Find if job is in active or archive table
-        var activeJob = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
+        var activeJob = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
         var isArchived = activeJob == null;
         int? parentId;
 
         // Determine parent ID based on job location
         if (isArchived)
         {
-            var archivedJob = await Context.TucJobArchives.FirstOrDefaultAsync(j => j.UcjbId == jobId);
+            var archivedJob = await Context.TucJobArchives.FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
             if (archivedJob == null)
             {
-                // Job not found in either table
+                // Job isn't found in either table
                 return;
             }
 
@@ -1154,17 +1154,17 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         // Check for uncompleted sibling jobs (child jobs with same parent)
         var hasUncompletedSiblings = await Context.TucJobs
             .AnyAsync(j => (j.ParentId == parentId || j.ParentId == null) &&
-                           j.UcjbId != jobId &&
+                           j.UcjbId != data.JobId &&
                            j.UcjbId != parentId &&
                            j.UcjbJobDone == false &&
                            j.UcjbVoid == false);
 
         // Update job record with completion details
         await UpdateJobCompletionDetails(
-            jobId,
-            jobStatus,
-            podName,
-            podTime,
+            data.JobId,
+            data.JobStatus,
+            data.PodName,
+            data.PodTime,
             isArchived);
 
         // Update parent job if all siblings are complete
@@ -1172,9 +1172,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         {
             await UpdateParentJobCompletionDetails(
                 parentId.Value,
-                jobStatus,
-                podName,
-                podTime,
+                data.JobStatus,
+                data.PodName,
+                data.PodTime,
                 isArchived);
         }
 
@@ -1185,7 +1185,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         int jobId,
         int jobStatus,
         string podName,
-        DateTime podTime,
+        string podTime,
         bool isArchived)
     {
         if (isArchived)
@@ -1197,8 +1197,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             {
                 archivedJob.UcjbJobDone = true;
                 archivedJob.UcjbStatus = jobStatus;
-                archivedJob.UcjbPodname = podName;
-                archivedJob.UcjbComplTime = _infoService.ConvertUtcToTenantTime(podTime);
+                archivedJob.UcjbPodname ??= podName;
+                archivedJob.UcjbComplTime ??= DateTime.Parse(podTime);
                 archivedJob.InternalStatus = (int)InternalJobStatus.Reprice;
             }
         }
@@ -1211,8 +1211,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             {
                 activeJob.UcjbJobDone = true;
                 activeJob.UcjbStatus = jobStatus;
-                activeJob.UcjbPodname = podName;
-                activeJob.UcjbComplTime = _infoService.ConvertUtcToTenantTime(podTime);
+                activeJob.UcjbPodname ??= podName;
+                activeJob.UcjbComplTime ??= DateTime.Parse(podTime);
                 activeJob.InternalStatus = (int)InternalJobStatus.Reprice;
             }
         }
@@ -1222,7 +1222,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         int parentId,
         int jobStatus,
         string podName,
-        DateTime podTime,
+        string podTime,
         bool isArchived)
     {
         if (isArchived)
@@ -1236,8 +1236,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             {
                 parentJob.UcjbJobDone = true;
                 parentJob.UcjbStatus = jobStatus;
-                parentJob.UcjbPodname = podName;
-                parentJob.UcjbComplTime = _infoService.ConvertUtcToTenantTime(podTime);
+                parentJob.UcjbPodname ??= podName;
+                parentJob.UcjbComplTime ??= DateTime.Parse(podTime);
             }
         }
         else
@@ -1251,8 +1251,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             {
                 parentJob.UcjbJobDone = true;
                 parentJob.UcjbStatus = jobStatus;
-                parentJob.UcjbPodname = podName;
-                parentJob.UcjbComplTime = _infoService.ConvertUtcToTenantTime(podTime);
+                parentJob.UcjbPodname ??= podName;
+                parentJob.UcjbComplTime ??= DateTime.Parse(podTime);
             }
         }
     }

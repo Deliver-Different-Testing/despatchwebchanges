@@ -6,6 +6,10 @@
             </md-icon>
             <h2>{{ctrl.isPODUpload() ? 'POD Photos' : 'Attached Files'}}</h2>
             <span flex></span>
+            <md-button class="md-button" ng-click="ctrl.skip()">
+                <md-tooltip md-direction="bottom">Skip File Upload</md-tooltip>
+                Skip
+            </md-button>
             <md-button class="md-icon-button" ng-click="ctrl.cancel()">
                 <md-tooltip md-direction="bottom">Close</md-tooltip>
                 <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">close</md-icon>
@@ -257,4 +261,11 @@
             </div>
         </div>
     </md-dialog-content>
+
+    <md-dialog-actions layout="row">
+        <span flex></span>
+        <md-button class="md-raised md-primary" ng-click="ctrl.cancel()">
+            {{ctrl.isPODUpload() ? 'Skip' : 'Close'}}
+        </md-button>
+    </md-dialog-actions>
 </md-dialog>

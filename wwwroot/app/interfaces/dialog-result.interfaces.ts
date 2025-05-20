@@ -11,3 +11,8 @@ export interface IDialogDateTimeResult {
     value: string;
     selectedTimeZoneId?: number;
 }
+
+export interface FlightAgentConfirmationDialogResult {
+  shouldAssign: boolean;
+  awb?: string;
+}

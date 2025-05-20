@@ -52,14 +52,6 @@ export interface FlightSegmentViewModel {
     airlineName?: string;
 }
 
-export interface IFlightPagination {
-    items: IFlightViewModel[];
-    totalCount: number;
-    pageIndex: number;
-    pageSize: number;
-    lastDepartureTime: Date | null;
-}
-
 export interface HereMapsConfig {
     center: Coordinates;
     zoom: number;

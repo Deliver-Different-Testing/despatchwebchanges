@@ -32,6 +32,8 @@ import JobAddStopService from "../../services/job-add-stop.service";
 import {isDeliveryJob} from "../../functions/isDeliveryJob";
 import {isFlightJob} from "../../functions/isFlightJob";
 import greetUser from '../../functions/greetUser';
+import FlightAgentConfirmationDialogService
+    from "../dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.service";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -56,6 +58,7 @@ class NationwideControl extends BaseController {
         'autoCompleteDialogService',
         'jobAddStopService',
         '$stateParams',
+        'flightAgentConfirmationDialogService',
     ];
 
     readonly nationwidePageId: number = AppPages.Domestic;
@@ -176,6 +179,7 @@ class NationwideControl extends BaseController {
         private autoCompleteDialogService: AutoCompleteDialogService,
         private jobAddStopService: JobAddStopService,
         private $stateParams: angular.ui.IStateParamsService,
+        private flightAgentConfirmationDialogService: FlightAgentConfirmationDialogService,
     ) {
         super();
         this.initServices($timeout, $interval);
@@ -1220,20 +1224,6 @@ class NationwideControl extends BaseController {
             const now = moment();
             let departureDate;
 
-            //if (this.lastDepartureTime) {
-            //    // Use lastDepartureTime if available
-            //    departureDate = this.lastDepartureTime;
-            //} else if (this.currentJob.booked) {
-            //    // Parse the booked ISO datetime string
-            //    const jobDateTime = new Date(this.currentJob.booked);
-
-            //    // Only use job datetime if it's valid and in the future
-            //    departureDate = (!isNaN(jobDateTime.getTime()) && jobDateTime > now) ?
-            //        jobDateTime : now;
-            //} else {
-            //    departureDate = now;
-            //}
-
             if (this.lastDepartureTime) {
                 departureDate = moment(this.lastDepartureTime);
             } else if (this.currentJob.booked) {
@@ -1323,15 +1313,9 @@ class NationwideControl extends BaseController {
 
     async addFlightToJob($event: MouseEvent, flight: IFlightViewModel, job: IDispatchJob) {
         try {
-            const confirm = this.$mdDialog.confirm()
-                .title('Assign Flight')
-                .textContent(`You are assigning to Job ${job.jobNo} to ${flight.flightNumber}. Please confirm this is correct.`)
-                .ariaLabel('confirm assign flight to job')
-                .targetEvent($event)
-                .ok('Confirm')
-                .cancel('Cancel');
+            const result = await this.flightAgentConfirmationDialogService.flightConfirmationDialog($event, job, flight)
+            if(!result.shouldAssign) return;
 
-            await this.$mdDialog.show(confirm);
             console.log('Assigning to job');
 
             const previousInternalStatusId = job.internalStatusId ?? InternalJobStatus.NewJobs;
@@ -1348,6 +1332,10 @@ class NationwideControl extends BaseController {
                 flight.departureTime,
                 flight  // Pass the entire flight object with all segments
             );
+
+            if(result.awb) {
+                await this.DispatchData.updateJobDetail(job.id, JobProperty.ConNote, result.awb ?? '', false);
+            }
 
             await this.getJobList(Array.from(listsToRefresh));
 
@@ -1382,18 +1370,16 @@ class NationwideControl extends BaseController {
 
     async addSelectedAgentToJob($event: MouseEvent, agent: Suggestion, job: IDispatchJob) {
         try {
-            const confirm = this.$mdDialog.confirm()
-                .title('Assign Agent')
-                .textContent(`You are assigning Job ${job.jobNo} to ${agent.text}. Please confirm this is correct.`)
-                .ariaLabel('confirm assign flight to job')
-                .targetEvent($event)
-                .ok('Confirm')
-                .cancel('Cancel');
+            const result = await this.flightAgentConfirmationDialogService.agentConfirmationDialog($event, job, agent)
+            if(!result.shouldAssign) return;
 
-            await this.$mdDialog.show(confirm);
             console.log('Assigning to job');
 
             await this.nationwideService.assignAgentToJob(job.id, agent.id);
+
+            if(result.awb) {
+                await this.DispatchData.updateJobDetail(job.id, JobProperty.ConNote, result.awb, false);
+            }
 
             await this.getJobList([JobDataType.NEW, JobDataType.POD]);
 

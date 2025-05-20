@@ -11,6 +11,8 @@ export class EditDateTimeDialogController extends BaseController {
     static $inject = [
         "$mdDialog",
         "toastrService",
+        "$timeout",
+        "$interval",
         "title",
         "fieldName",
         "dateTime",
@@ -20,48 +22,52 @@ export class EditDateTimeDialogController extends BaseController {
         "showTime",
     ];
 
-    momentDateTime!: moment.Moment;
     isLoading?: boolean;
     browserTimeZone?: string;
     selectedTimeZone?: TimeZoneSuggestion;
-    timeZone: string;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
         public readonly title: string,
         public readonly fieldName: JobProperty,
-        public dateTime: Date,
+        public dateTime?: Date,
         public showTimeZoneSelector: boolean = false,
         private defaultTimeZone?: Suggestion,
         public showDate: boolean = true,
         public showTime: boolean = true,
     ) {
         super();
+        this.initServices($timeout, $interval);
 
-        this.timeZone = TimeZone;
         console.log('EditDateTimeDialogController: Controller instantiated');
-        if (!this.dateTime) {
-            this.dateTime = new Date();
-        }
 
-        this.momentDateTime = moment(this.dateTime);
-        this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        // Ensure we have a valid date to start with
+        this.registerTimeout(() => {
+            if (!this.dateTime || !moment(this.dateTime).isValid()) {
+                this.dateTime = moment().toDate();
+            }
+        })
 
-        if(this.showTimeZoneSelector && this.defaultTimeZone) {
+        const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        this.browserTimeZone = findWindows(browserTimeZone)[0];
+
+        if (this.showTimeZoneSelector && this.defaultTimeZone) {
             this.selectedTimeZone = {
                 id: this.defaultTimeZone?.id,
                 text: findWindows(this.defaultTimeZone?.text)[0],
                 timeZoneIana: this.defaultTimeZone?.text
             }
+            console.log('Selected timezone:', this.selectedTimeZone);
         }
 
         this.isLoading = false;
     }
 
     isValid(): boolean {
-        // Check if we have a valid moment
-        if (!this.momentDateTime || !this.momentDateTime.isValid()) {
+        if (!this.dateTime || !moment(this.dateTime).isValid()) {
             return false;
         }
 
@@ -75,52 +81,37 @@ export class EditDateTimeDialogController extends BaseController {
     }
 
     async submit(): Promise<void> {
+        if(this.dateTime === undefined) {
+            this.toastrService.showWarningToast('Invalid date/time');
+            return;
+        }
+
         try {
             this.isLoading = true;
-
-            if (!this.momentDateTime || !this.momentDateTime.isValid()) {
-                this.toastrService.showWarningToast("Please select a valid date and time.");
-                return;
-            }
-
-            console.log('EditDateTimeDialogController: Submitting', this.getFormattedDate(this.momentDateTime));
-
             // Create result object
             const result: IDialogDateTimeResult = {
                 fieldName: this.fieldName,
-                value: this.getFormattedDate(this.momentDateTime),
+                value: this.getFormattedDate(this.dateTime),
                 selectedTimeZoneId: this.selectedTimeZone?.id
             };
 
+            console.log('Submitting result:', result);
             this.$mdDialog.hide(result);
         } catch (error: any) {
+            console.error('Error submitting date/time:', error);
             this.toastrService.showErrorToast(error.message);
         } finally {
             this.isLoading = false;
         }
     }
 
-    getFormattedDate(dateTime: moment.Moment): string {
-        return dateTime.format('YYYY-MM-DD HH:mm');
-    }
-
-    updateDateTime(type: 'date' | 'time', value: string): void {
-        const currentValue = moment(this.momentDateTime);
-
-        if (type === 'date') {
-            const [year, month, day] = value.split('-').map(Number);
-            currentValue.year(year).month(month - 1).date(day);
-        } else if (type === 'time') {
-            const [hours, minutes] = value.split(':').map(Number);
-            currentValue.hours(hours).minutes(minutes);
+    getFormattedDate(dateTime: Date): string {
+        if (dateTime === undefined) {
+            this.toastrService.showErrorToast('Invalid date/time');
+            return '';
         }
 
-        this.momentDateTime = currentValue;
-    }
-
-    updateTimeZone(timezone: TimeZoneSuggestion): void {
-        // Just store the selected timezone - no conversion needed
-        this.selectedTimeZone = timezone;
+        return moment(dateTime).format('YYYY-MM-DD HH:mm');
     }
 
     cancel(): void {

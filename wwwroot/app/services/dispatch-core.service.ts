@@ -29,7 +29,7 @@ import {TaskTableFiltersRequest, TaskViewModel,} from "../components/task-dashbo
 import {JobProperty} from "../enums/job-property.enum";
 import moment from "moment";
 import ConfigService from "./config.service";
-import {UpdateJobTimeRequest} from "../interfaces/requests.interfaces";
+import {UpdateJobTimeRequest, UpdatePodDetailsRequest} from "../interfaces/requests.interfaces";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = ["$http", "APP_CONFIG", "configService"];
@@ -436,32 +436,16 @@ class DispatchCoreService implements angular.IServiceProvider {
         );
     }
 
-    async updatePODDetail(
-        jobId: number,
-        jobStatus: number,
-        podName: string,
-        podTime: Date
-    ) {
-        const formattedDate = moment(podTime).utc().format();
-        console.log(
-            `[DispatchCoreService] Updating POD details - Job: ${jobId}, Status: ${jobStatus}, POD Name: ${podName}, POD Time: ${formattedDate}`
-        );
-
+    async updatePODDetail(requestData: UpdatePodDetailsRequest) {
         try {
-            await this.$http.post(
-                `job/UpdatePODDetails?jobId=${jobId}` +
-                `&jobStatus=${jobStatus}` +
-                `&podName=${encodeURIComponent(podName)}` +
-                `&podTime=${encodeURIComponent(formattedDate)}`,
-                null
-            );
+            await this.$http.post("job/UpdatePODDetails", requestData);
 
             console.log(
-                `[DispatchCoreService] Successfully updated POD details for job ${jobId}`
+                `[DispatchCoreService] Successfully updated POD details for job ${requestData.jobId}`
             );
         } catch (error) {
             console.error(
-                `[DispatchCoreService] Error updating POD details for job ${jobId}:`,
+                `[DispatchCoreService] Error updating POD details for job ${requestData.jobId}:`,
                 error
             );
             throw error;
@@ -610,7 +594,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         } else {
             return;
         }
-;
+        ;
         await this.$http.post(functionUrl, requestData);
     }
 
@@ -839,7 +823,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-   async autocompleteAddressSearch(text: string) {
+    async autocompleteAddressSearch(text: string) {
         const hereMapsConfig = await this.configService.getHereMapsConfig();
 
         const response = await this.$http({
