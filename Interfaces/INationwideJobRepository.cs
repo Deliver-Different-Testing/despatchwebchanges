@@ -31,4 +31,5 @@ public interface INationwideJobRepository
     Task RestoreNationwideJobAsync(int jobId);
     Task<List<Suggestion>> GetAllAgentOptionsBySearchAsync(string searchTerm);
     Task<List<string>> GetFlightWebhookIdByJobIdAsync(int jobId);
+    Task<string> GetAirportTimezoneAsync(int airportId);
 }

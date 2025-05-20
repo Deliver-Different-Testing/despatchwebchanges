@@ -177,6 +177,59 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .FirstOrDefaultAsync();
     }
 
+    public async Task<string> GetAirportTimezoneAsync(int airportId)
+    {
+        try
+        {
+            var airport = await Context.TblAirports
+                .Where(a => a.AirportId == airportId)
+                .Select(a => new
+                {
+                    a.Timezone,
+                    a.AirportCode,
+                    a.Name
+                })
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+
+            if (airport == null)
+            {
+                Log.Warning("Airport with ID {AirportId} not found", airportId);
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(airport.Timezone))
+            {
+                // Try to get timezone from TimeZones table based on airport details
+                var timeZone = await Context.TimeZones
+                    .Where(tz => tz.Code == airport.Timezone)
+                    .Select(tz => tz.Name)
+                    .FirstOrDefaultAsync();
+
+                if (!string.IsNullOrEmpty(timeZone))
+                {
+                    Log.Information("Found timezone {TimeZone} for airport {AirportCode} in TimeZones table",
+                        timeZone, airport.AirportCode);
+                    return timeZone;
+                }
+
+                Log.Warning("No timezone found for airport {AirportName} ({AirportCode}), ID: {AirportId}",
+                    airport.Name, airport.AirportCode, airportId);
+                return null;
+            }
+
+            Log.Information("Retrieved timezone {Timezone} for airport {AirportName} ({AirportCode}), ID: {AirportId}",
+                airport.Timezone, airport.Name, airport.AirportCode, airportId);
+
+            return airport.Timezone;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error retrieving timezone for airport {AirportId}", airportId);
+            return null;
+        }
+    }
+
     public async Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId)
     {
         const double maxDistanceMiles = 250;

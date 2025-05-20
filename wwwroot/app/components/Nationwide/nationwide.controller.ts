@@ -1308,7 +1308,7 @@ class NationwideControl extends BaseController {
             nextDay.setDate(nextDay.getDate() + 1);
             this.lastDepartureTime = nextDay;
         } else {
-            const tomorrow = new Date();
+            const tomorrow = new Date(this.currentJob.booked);
             tomorrow.setDate(tomorrow.getDate() + 1);
             tomorrow.setHours(0, 0, 0, 0);
             this.lastDepartureTime = tomorrow;

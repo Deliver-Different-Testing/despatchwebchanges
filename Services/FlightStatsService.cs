@@ -148,11 +148,7 @@ public class FlightStatsService(
         ArgumentException.ThrowIfNullOrEmpty(departureAirportCode);
         ArgumentException.ThrowIfNullOrEmpty(destinationAirportCode);
 
-        var tenantTime = infoService.GetCurrentTenantTime();
-
-        var flightsFrom = departureDateTime == null || departureDateTime < tenantTime
-            ? tenantTime
-            : departureDateTime;
+        var flightsFrom = departureDateTime; 
         flightsFrom = flightsFrom.Value.AddMinutes(flightBuffer);
 
         var (year, month, day, hour, minute) = SplitDate(flightsFrom.Value);
@@ -167,6 +163,8 @@ public class FlightStatsService(
         query["maxResults"] = "100";
         query["includeCodeshares"] = "false";
         query["maxConnections"] = "1"; //default are 2
+        query["numHours"] = "24"; //How many hours flights after the dateTime to search default are 6
+        query["minimumConnectTime"] = minimumLayoverMinutes.ToString(); 
 
         // Filter by specific airline if airlineId is provided
         if (airlineId is > 0)
@@ -219,33 +217,33 @@ public class FlightStatsService(
         // Pre-filter connections to avoid processing unnecessary data
         var connections = flightStatusResponse.Connections;
 
-        // Filter out connections with layover times less than the minimum
-        if (minimumLayoverMinutes > 0)
-        {
-            // First filter connections based on layover times
-            connections = connections.Where(conn =>
-            {
-                // Skip connections with only one flight (no layovers)
-                if (conn.ScheduledFlight.Count <= 1)
-                    return true;
+        //// Filter out connections with layover times less than the minimum
+        //if (minimumLayoverMinutes > 0)
+        //{
+        //    // First filter connections based on layover times
+        //    connections = connections.Where(conn =>
+        //    {
+        //        // Skip connections with only one flight (no layovers)
+        //        if (conn.ScheduledFlight.Count <= 1)
+        //            return true;
 
-                // Check layover times between each segment
-                for (int i = 0; i < conn.ScheduledFlight.Count - 1; i++)
-                {
-                    var currentFlight = conn.ScheduledFlight[i];
-                    var nextFlight = conn.ScheduledFlight[i + 1];
+        //        // Check layover times between each segment
+        //        for (int i = 0; i < conn.ScheduledFlight.Count - 1; i++)
+        //        {
+        //            var currentFlight = conn.ScheduledFlight[i];
+        //            var nextFlight = conn.ScheduledFlight[i + 1];
 
-                    // Calculate layover time in minutes
-                    var layoverMinutes = (int)(nextFlight.DepartureTime - currentFlight.ArrivalTime).TotalMinutes;
+        //            // Calculate layover time in minutes
+        //            var layoverMinutes = (int)(nextFlight.DepartureTime - currentFlight.ArrivalTime).TotalMinutes;
 
-                    // If any layover is less than minimum, exclude this connection
-                    if (layoverMinutes < minimumLayoverMinutes)
-                        return false;
-                }
+        //            // If any layover is less than minimum, exclude this connection
+        //            if (layoverMinutes < minimumLayoverMinutes)
+        //                return false;
+        //        }
 
-                return true;
-            }).ToList();
-        }
+        //        return true;
+        //    }).ToList();
+        //}
 
         var flightOptions = await Task.WhenAll(connections
             .Where(conn => conn.ScheduledFlight.Count != 0)
