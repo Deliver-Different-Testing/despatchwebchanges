@@ -35,7 +35,7 @@ export class PriceBreakdownDialogController extends BaseController {
             return 0;
         }
 
-        return this.priceBreakdown.reduce((sum, item) => sum + (item.amount || 0), 0);
+        return this.priceBreakdown.reduce((sum, item) => sum + (item.costAmount || 0), 0);
     }
 
     constructor(
