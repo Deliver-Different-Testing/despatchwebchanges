@@ -1292,6 +1292,11 @@ class NationwideControl extends BaseController {
     }
 
     async loadNextDayFlights() {
+        if(!this.currentJob) {
+            this.toastrService.showWarningToast("Please select a job to view flight options");
+            return;
+        }
+
         if (this.lastDepartureTime) {
             const nextDay = new Date(this.lastDepartureTime);
             nextDay.setHours(0, 0, 0, 0);
@@ -1831,7 +1836,7 @@ class NationwideControl extends BaseController {
 
             // If not found locally, fetch from a database
             if (!attachedJob) {
-                attachedJob = await this.DispatchData.getJobDetail(task.jobId) as IDispatchJob;
+                attachedJob = await this.DispatchData.getDispatchJobDetail(task.jobId);
             }
 
             if (!attachedJob) {

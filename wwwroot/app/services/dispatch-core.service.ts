@@ -221,33 +221,65 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async hasClientItemsAvailable(clientId: number, speedId: number) {
         const response = await this.$http.get(
-            `job/HasClientItemsAvailable?clientId=${clientId}&speedId=${speedId}`
+            `job/HasClientItemsAvailable`, {
+                params: {
+                    clientId,
+                    speedId,
+                },
+            }
         );
         return response.data;
     }
 
     async getJobDetail(jobId: number) {
-        const response = await this.$http.get<IJob>(`job/Detail?jobId=${jobId}`);
+        const response = await this.$http.get<IJob>(`job/Detail`, {
+            params: {
+                jobId,
+            },
+        });
+        return response.data;
+    }
+
+    async getDispatchJobDetail(jobId: number) {
+        const response = await this.$http.get<IDispatchJob>(`job/DispatchJobDetail`, {
+            params: {
+                jobId
+            }
+        });
         return response.data;
     }
 
     async getRecurringJobDetail(jobId: number) {
         const response = await this.$http.get<IJob>(
-            `job/RecurringJobDetail?jobId=${jobId}`
+            `job/RecurringJobDetail`, {
+                params: {
+                    jobId,
+                },
+            }
         );
         return response.data;
     }
 
     async getRelatedJobs(parentId: number, clientId: number) {
         const response = await this.$http.get<Suggestion[]>(
-            `/Job/Related?parentId=${parentId}&clientId=${clientId}`
+            `job/Related`, {
+                params: {
+                    parentId,
+                    clientId,
+                },
+            }
         );
         return response.data;
     }
 
     async getJobsCurrent(courierId: number, done: boolean) {
         const response = await this.$http.get<IDispatchJob[]>(
-            `job/current?courierId=${courierId}&done=${done}`
+            `job/current`, {
+                params: {
+                    courierId,
+                    done,
+                },
+            }
         );
         return response.data;
     }

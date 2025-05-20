@@ -1,4 +1,4 @@
-<md-dialog aria-label="Assignment Dialog" class="md-whiteframe-5dp">
+<md-dialog aria-label="Assignment Dialog" class="md-whiteframe-5dp" class="flight-agent-confirmation-dialog">
     <form ng-cloak>
         <md-toolbar class="md-primary">
             <div class="md-toolbar-tools">
@@ -13,18 +13,18 @@
         <md-dialog-content>
             <div class="md-dialog-content" layout="column" layout-padding>
                 <div class="assignment-info md-subhead" ng-if="ctrl.flight">
-                    <md-icon class="material-icons md-accent">flight</md-icon>
+                    <md-icon md-font-set="material-symbols-outlined" class="md-accent">flight</md-icon>
                     <span>You are assigning Job <strong>{{ctrl.jobNumber}}</strong> to Flight <strong>{{ctrl.flight.flightNumber}}</strong></span>
                 </div>
 
                 <div class="flight-details" ng-if="ctrl.flight" layout="row" layout-align="start center">
                     <div class="airport-code">{{ctrl.flight.departureAirport}}</div>
-                    <md-icon>arrow_forward</md-icon>
+                    <md-icon md-font-set="material-symbols-outlined">arrow_forward</md-icon>
                     <div class="airport-code">{{ctrl.flight.arrivalAirport}}</div>
                 </div>
 
                 <div class="assignment-info md-subhead" ng-if="ctrl.agent">
-                    <md-icon class="material-icons md-accent">person</md-icon>
+                    <md-icon md-font-set="material-symbols-outlined" class="md-accent">person</md-icon>
                     <span>You are assigning Job <strong>{{ctrl.jobNumber}}</strong> to Agent <strong>{{ctrl.agent.text}}</strong></span>
                 </div>
 
@@ -32,7 +32,7 @@
 
                 <md-input-container class="md-block">
                     <label for="awb">Air Waybill (AWB)</label>
-                    <input id="awb" ng-model="ctrl.awb" ng-disabled="ctrl.isAwbDisabled" type="text" required>
+                    <input id="awb" ng-model="ctrl.awb" ng-disabled="ctrl.isAwbDisabled" type="text">
                     <div class="md-errors-spacer"></div>
                 </md-input-container>
             </div>

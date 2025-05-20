@@ -89,6 +89,7 @@ public class DispatchJobViewModel
     public string SearchText { get; set; }
     public List<Suggestion> RelatedJobs { get; set; }
 
-    // Dictionary for additional properties (equivalent to [key: string]: any in TypeScript)
-    public Dictionary<string, object> AdditionalProperties { get; set; } = new();
-}
+    public string ConNote {get;set;}
+    public DateTime? FollowupTime { get; set; }
+    public bool Van { get; set; }
+    public bool Truck { get; set; } }
