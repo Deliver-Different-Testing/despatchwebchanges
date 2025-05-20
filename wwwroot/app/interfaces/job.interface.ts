@@ -312,6 +312,7 @@ export interface PriceBreakdown {
     amount: number;
     jobId?: number;
     prebookJobId?: number;
+    costAmount?: number;
 }
 
 export interface DfrntEvent {
