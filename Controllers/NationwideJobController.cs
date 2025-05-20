@@ -121,30 +121,30 @@ public class NationwideJobController(
 
             var finalDepartureDate = departureDate;
 
-            var airportTimezone = await repository.GetAirportTimezoneAsync(departureAirportId.Value);
+            //var airportTimezone = await repository.GetAirportTimezoneAsync(departureAirportId.Value);
 
-            if (!string.IsNullOrEmpty(airportTimezone))
-            {
-                // Get the current time in the airport timezone
-                var nowInAirportTime = TimeZoneInfo.ConvertTimeFromUtc(
-                    DateTime.UtcNow,
-                    TimeZoneInfo.FindSystemTimeZoneById(airportTimezone));
+            //if (!string.IsNullOrEmpty(airportTimezone))
+            //{
+            //    // Get the current time in the airport timezone
+            //    var nowInAirportTime = TimeZoneInfo.ConvertTimeFromUtc(
+            //        DateTime.UtcNow,
+            //        TimeZoneInfo.FindSystemTimeZoneById(airportTimezone));
 
-                Log.Information(
-                    "Current time in airport timezone {AirportTimezone}: {CurrentAirportTime}, Requested departure: {DepartureTime}",
-                    airportTimezone, nowInAirportTime, departureDate);
+            //    Log.Information(
+            //        "Current time in airport timezone {AirportTimezone}: {CurrentAirportTime}, Requested departure: {DepartureTime}",
+            //        airportTimezone, nowInAirportTime, departureDate);
 
-                // Check if the departure date is in the past relative to the current airport time
-                if (departureDate < nowInAirportTime)
-                {
-                    Log.Information(
-                        "Requested departure time {DepartureTime} is in the past in airport timezone. Using current airport time {CurrentAirportTime} instead.",
-                        departureDate, nowInAirportTime);
+            //    // Check if the departure date is in the past relative to the current airport time
+            //    if (departureDate < nowInAirportTime)
+            //    {
+            //        Log.Information(
+            //            "Requested departure time {DepartureTime} is in the past in airport timezone. Using current airport time {CurrentAirportTime} instead.",
+            //            departureDate, nowInAirportTime);
 
-                    // Use current airport time as the departure time
-                    finalDepartureDate = nowInAirportTime;
-                }
-            }
+            //        // Use current airport time as the departure time
+            //        finalDepartureDate = nowInAirportTime;
+            //    }
+            //}
 
             var flights = await flightService.GetFlightsAsync(
             jobId,
