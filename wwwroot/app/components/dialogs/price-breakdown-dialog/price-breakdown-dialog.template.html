@@ -39,6 +39,7 @@
                             <tr md-row>
                                 <th md-column>Item Name</th>
                                 <th md-column>Amount</th>
+                                <th md-column>Cost</th>
                                 <th md-column>Actions</th>
                             </tr>
                             </thead>
@@ -46,6 +47,7 @@
                             <tr md-row ng-repeat="item in ctrl.priceBreakdown">
                                 <td md-cell>{{item.name}}</td>
                                 <td md-cell>{{item.amount | currency}}</td>
+                                <td md-cell>{{item.costAmount | currency}}</td>
                                 <td md-cell>
                                     <div layout="row">
                                         <md-button class="md-icon-button" ng-click="ctrl.editItem(item)">
@@ -75,8 +77,8 @@
                             <!-- Total row -->
                             <tr md-row class="total-row" ng-if="ctrl.priceBreakdown.length > 0">
                                 <td md-cell class="total-label"><strong>Total</strong></td>
-                                <td md-cell class="total-amount"><strong>{{ctrl.totalAmount | currency}}</strong>
-                                </td>
+                                <td md-cell class="total-amount"><strong>{{ctrl.totalAmount | currency}}</strong></td>
+                                <td md-cell></td>
                                 <td md-cell></td>
                             </tr>
                             </tbody>
@@ -97,10 +99,11 @@
 
                         <md-input-container class="md-block">
                             <label for="name">Item Name</label>
-                            <md-icon md-font-set="material-symbols-outlined" style="margin-right: 8px">label
+                            <md-icon md-font-set="material-symbols-outlined" style="margin-right: 8px">
+                                label
                             </md-icon>
                             <input id="name" name="name" type="text" ng-model="ctrl.selectedPriceBreakdown.name"
-                                   required/>
+                                   required />
                             <div ng-messages="ctrl.priceBreakdownForm.name.$error">
                                 <div ng-message="required">Please enter an item name.</div>
                             </div>
@@ -112,10 +115,23 @@
                                 attach_money
                             </md-icon>
                             <input id="amount" name="amount" type="number" step="0.01" min="0"
-                                   ng-model="ctrl.selectedPriceBreakdown.amount" required/>
+                                   ng-model="ctrl.selectedPriceBreakdown.amount" required />
                             <div ng-messages="ctrl.priceBreakdownForm.amount.$error">
                                 <div ng-message="required">Please enter an amount.</div>
                                 <div ng-message="min">Amount cannot be negative.</div>
+                            </div>
+                        </md-input-container>
+
+                        <md-input-container class="md-block" style="margin-top: 10px">
+                            <label for="cost">Cost ($)</label>
+                            <md-icon md-font-set="material-symbols-outlined" style="margin-right: 8px">
+                                attach_money
+                            </md-icon>
+                            <input id="cost" name="cost" type="number" step="0.01" min="0"
+                                   ng-model="ctrl.selectedPriceBreakdown.costAmount" required />
+                            <div ng-messages="ctrl.priceBreakdownForm.costAmount.$error">
+                                <div ng-message="required">Please enter an cost.</div>
+                                <div ng-message="min">Cost cannot be negative.</div>
                             </div>
                         </md-input-container>
 
@@ -129,7 +145,8 @@
                                     <md-progress-circular ng-if="ctrl.isSaving" md-mode="indeterminate" md-diameter="18"
                                                           style="margin-right: 8px;"
                                                           class="md-accent"></md-progress-circular>
-                                    <md-icon ng-if="!ctrl.isSaving" md-font-set="material-symbols-outlined">save
+                                    <md-icon ng-if="!ctrl.isSaving" md-font-set="material-symbols-outlined">
+                                        save
                                     </md-icon>
                                     <span>Save Item</span>
                                 </div>

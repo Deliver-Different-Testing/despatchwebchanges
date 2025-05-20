@@ -23,6 +23,8 @@ public partial class PricingBreakdown
 
     public decimal? Charged { get; set; }
 
+    public decimal? CostAmount { get; set; }
+
     public virtual TucJob Job { get; set; }
 
     public virtual TucJobBooking PrebookJob { get; set; }

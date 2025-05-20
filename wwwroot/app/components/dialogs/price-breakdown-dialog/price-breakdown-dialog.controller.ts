@@ -67,6 +67,7 @@ export class PriceBreakdownDialogController extends BaseController {
             chargeId: 0,
             name: '',
             amount: 0,
+            costAmount: 0,
         };
 
         // Set the appropriate job ID
@@ -100,7 +101,8 @@ export class PriceBreakdownDialogController extends BaseController {
                     name: this.selectedPriceBreakdown.name,
                     amount: this.selectedPriceBreakdown.amount,
                     jobId: this.isPrebook ? undefined : this.jobId,
-                    prebookJobId: this.isPrebook ? this.jobId : undefined
+                    prebookJobId: this.isPrebook ? this.jobId : undefined,
+                    costAmount: this.selectedPriceBreakdown.costAmount,
                 };
 
                 const chargeId = await this.addPriceBreakdown(newBreakdown);

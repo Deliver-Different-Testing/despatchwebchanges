@@ -1819,7 +1819,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 Amount = p.ChargeAmount,
                 Name = p.ChargeName,
                 JobId = p.JobId,
-                PrebookJobId = p.PrebookJobId
+                PrebookJobId = p.PrebookJobId,
+                CostAmount = p.CostAmount
             })
             .AsNoTracking()
             .ToListAsync();
@@ -1833,7 +1834,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 Amount = p.ChargeAmount,
                 Name = p.ChargeName,
                 JobId = p.JobId,
-                PrebookJobId = p.PrebookJobId
+                PrebookJobId = p.PrebookJobId,
+                CostAmount = p.CostAmount
             })
             .AsNoTracking()
             .ToListAsync();
@@ -1854,7 +1856,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             ChargeAmount = viewModel.Amount,
             ChargeName = viewModel.Name,
             JobId = !isPrebook ? effectiveJobId : null,
-            PrebookJobId = isPrebook ? effectiveJobBookingId : null
+            PrebookJobId = isPrebook ? effectiveJobBookingId : null,
+            CostAmount = viewModel.CostAmount,
         };
 
         var note = $"Added price component: {viewModel.Name} for ${viewModel.Amount:F2}";
@@ -1883,6 +1886,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
         breakdown.ChargeAmount = viewModel.Amount;
         breakdown.ChargeName = viewModel.Name;
+        breakdown.CostAmount = viewModel.CostAmount;
 
         var note = $"Updated price breakdown: {viewModel.Name} charge amount changed to {viewModel.Amount:C}";
 
