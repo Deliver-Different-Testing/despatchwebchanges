@@ -481,10 +481,10 @@ public static class JobMappings
         // References and amounts
         RefA = j.UcjbClientRefa,
         RefB = j.UcjbClientRefb,
-        Charge =
-            j.ParentId == null || j.ParentId == j.UcjbId
+        Charge = j.UcjbAmount.HasValue ? $"{j.UcjbAmount:C}" : null,
+        /*j.ParentId == null || j.ParentId == j.UcjbId
                 ? $"${j.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}"
-                : $"${j.Parent.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}",
+                : $"${j.Parent.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}",*/
         OurRef = j.UcjbOurRef,
 
         // Status
@@ -878,9 +878,10 @@ public static class JobMappings
             // References and amounts
             RefA = j.UcbkClientRefa,
             RefB = j.UcbkClientRefb,
-            Charge = j.ParentId == null || j.ParentId == j.UcbkId
+            Charge = j.UcbkAmount.HasValue ? $"{j.UcbkAmount:C}" : null,
+        /*j.ParentId == null || j.ParentId == j.UcbkId
                 ? $"${j.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}"
-                : $"${j.BookingParent.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}",
+                : $"${j.BookingParent.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}",*/
             OurRef = j.UcbkOurRef,
 
         // Size - has navigation in archive
