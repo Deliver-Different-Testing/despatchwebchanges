@@ -1,33 +1,50 @@
-<md-dialog aria-label="Assignment Dialog">
+<md-dialog aria-label="Assignment Dialog" class="md-whiteframe-5dp">
     <form ng-cloak>
-        <md-toolbar>
+        <md-toolbar class="md-primary">
             <div class="md-toolbar-tools">
-                <h2>{{ctrl.dialogTitle}}</h2>
+                <h2 class="md-title">{{ctrl.dialogTitle}}</h2>
                 <span flex></span>
-                <md-button class="md-icon-button" ng-click="ctrl.cancel()">
-                    <md-icon aria-label="Close dialog">close</md-icon>
+                <md-button class="md-icon-button" ng-click="ctrl.cancel()" aria-label="Close dialog">
+                    <md-icon>close</md-icon>
                 </md-button>
             </div>
         </md-toolbar>
 
         <md-dialog-content>
-            <div class="md-dialog-content">
-                <p ng-if="ctrl.flight">You are assigning Job {{ctrl.jobNumber}} to Flight {{ctrl.flight.flightNumber}} ({{ctrl.flight.departureAirport}} - {{ctrl.flight.arrivalAirport}}). Please confirm this is correct.</p>
-                <p ng-if="ctrl.agent">You are assigning Job {{ctrl.jobNumber}} to Agent {{ctrl.agent.text}}. Please confirm this is correct.</p>
+            <div class="md-dialog-content" layout="column" layout-padding>
+                <div class="assignment-info md-subhead" ng-if="ctrl.flight">
+                    <md-icon class="material-icons md-accent">flight</md-icon>
+                    <span>You are assigning Job <strong>{{ctrl.jobNumber}}</strong> to Flight <strong>{{ctrl.flight.flightNumber}}</strong></span>
+                </div>
 
-                <md-input-container class="md-block" ng-if="ctrl.flight">
+                <div class="flight-details" ng-if="ctrl.flight" layout="row" layout-align="start center">
+                    <div class="airport-code">{{ctrl.flight.departureAirport}}</div>
+                    <md-icon>arrow_forward</md-icon>
+                    <div class="airport-code">{{ctrl.flight.arrivalAirport}}</div>
+                </div>
+
+                <div class="assignment-info md-subhead" ng-if="ctrl.agent">
+                    <md-icon class="material-icons md-accent">person</md-icon>
+                    <span>You are assigning Job <strong>{{ctrl.jobNumber}}</strong> to Agent <strong>{{ctrl.agent.text}}</strong></span>
+                </div>
+
+                <p class="md-body-1">Please confirm this is correct.</p>
+
+                <md-input-container class="md-block">
                     <label for="awb">Air Waybill (AWB)</label>
                     <input id="awb" ng-model="ctrl.awb" ng-disabled="ctrl.isAwbDisabled" type="text" required>
+                    <div class="md-errors-spacer"></div>
                 </md-input-container>
             </div>
         </md-dialog-content>
 
-        <md-dialog-actions layout="row">
-            <span flex></span>
-            <md-button ng-click="ctrl.cancel()">
+        <md-divider></md-divider>
+
+        <md-dialog-actions layout="row" layout-align="end center" layout-padding>
+            <md-button ng-click="ctrl.cancel()" class="md-button">
                 Cancel
             </md-button>
-            <md-button ng-click="ctrl.confirm()" class="md-primary" ng-disabled="ctrl.flight && !ctrl.awb">
+            <md-button ng-click="ctrl.confirm()" class="md-raised md-primary">
                 Confirm
             </md-button>
         </md-dialog-actions>

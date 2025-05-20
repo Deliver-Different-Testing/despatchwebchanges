@@ -1,0 +1,45 @@
+// Variables
+@dialog-border-radius: 8px;
+@primary-text-color: rgba(0, 0, 0, 0.7);
+@standard-padding: 16px;
+@large-padding: 24px;
+
+// Styles
+.assignment-info {
+  margin: @standard-padding 0 8px 0;
+  display: flex;
+  align-items: center;
+
+  md-icon {
+    margin-right: 12px;
+  }
+}
+
+.flight-details {
+  margin: 8px 0 @standard-padding 0;
+  padding-left: 36px;
+  color: @primary-text-color;
+}
+
+.airport-code {
+  font-weight: 500;
+  font-size: @standard-padding;
+}
+
+md-dialog {
+  max-width: 500px;
+  border-radius: @dialog-border-radius;
+
+  .md-dialog-content {
+    padding: @standard-padding @large-padding;
+  }
+}
+
+md-toolbar {
+  border-top-left-radius: @dialog-border-radius;
+  border-top-right-radius: @dialog-border-radius;
+}
+
+md-dialog-actions {
+  padding: 8px @standard-padding;
+}
