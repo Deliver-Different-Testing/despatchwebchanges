@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net.Sockets;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
@@ -138,6 +139,7 @@ public static class JobMappings
             // Assigned agent
             AssignedAgent =
                 j.Agent != null ? new AgentViewModel { AgentName = j.Agent.UcagName } : null,
+            Locked = j.UcjbLocked ?? false
         };
 
     public static readonly Expression<Func<TucJob, JobViewModel>> JobMapping = j => new JobViewModel
@@ -569,6 +571,8 @@ public static class JobMappings
             j.DeliverByTimeZone != null
                 ? new Suggestion { Id = j.DeliverByTimeZone.Id, Text = j.DeliverByTimeZone.Name }
                 : null,
+
+        Locked = j.UcjbLocked ?? false
     };
 
     public static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping =
@@ -749,6 +753,8 @@ public static class JobMappings
                         Text = j.DeliverByTimeZone.Name,
                     }
                     : null,
+
+            Locked = j.UcjbLocked.HasValue ? (bool?)(j.UcjbLocked != 0) : null
         };
 
     public static readonly Expression<
