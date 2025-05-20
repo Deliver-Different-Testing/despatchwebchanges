@@ -1,6 +1,7 @@
+import "./flight-agent-confirmation-dialog.layout.less";
 import BaseController from "../../base-controller";
 import {IFlightViewModel} from "../../Nationwide/nationwide.interfaces";
-import {IAgent, IJob, Suggestion} from "../../../interfaces/job.interface";
+import {Suggestion} from "../../../interfaces/job.interface";
 
 class FlightAgentConformationDialogController extends BaseController {
     static $inject = [
