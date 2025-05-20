@@ -1802,7 +1802,7 @@ class JobDetailController extends BaseController {
         // Get the formatted timezone using the filter
         let timezone: string;
         if (isPickup) {
-            timezone = TimeZone;
+            timezone = this.job?.pickUpTimeZone?.text ?? TimeZone;
         } else {
             timezone = this.job?.deliveryTimeZone?.text ?? TimeZone;
         }

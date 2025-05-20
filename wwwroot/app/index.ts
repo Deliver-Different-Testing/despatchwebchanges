@@ -2,6 +2,7 @@
 import "../css/udispatch.less";
 import "../css/toasts.less";
 import "../lib/ng-material-floating-button/mfb/dist/mfb.css";
+import "../lib/pickdate/angular-pickadate.css";
 import "angular-resizable/angular-resizable.min.css";
 import "ng-material-datetimepicker/css/material-datetimepicker.css";
 import "angular-material-data-table/dist/md-data-table.css";
@@ -31,13 +32,17 @@ import "ng-material-datetimepicker/js/angular-material-datetimepicker";
 import "angular-material-data-table";
 import "angular-hotkeys/build/hotkeys";
 import "angular-bootstrap-contextmenu/contextMenu";
+import "angularjs-dropdown-multiselect/dist/src/angularjs-dropdown-multiselect";
 
 // Local libs
 import "../lib/ModernizerLocalStorage";
 import "../lib/angular-heremaps";
+import "../lib/pickdate/angular-pickadate";
 import "../lib/ng-material-floating-button/src/mfb-directive";
 import "../lib/ng-material-floating-button/mfb/dist/mfb";
+import "../lib/timepickerdirective.min";
 import "../lib/angular-fixed-table-header/fixed-table-header";
+import "../lib/ng-map-autocomplete";
 
 // Custom here maps
 import "../lib/here-map-tracking/here-map-tracking.module";
