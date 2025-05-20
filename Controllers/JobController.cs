@@ -1306,16 +1306,11 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdatePodDetails(
-        int jobId,
-        int jobStatus,
-        string podName,
-        DateTime podTime
-    )
+    public async Task<IActionResult> UpdatePodDetails([FromBody] UpdatePodDetailsRequest requestData)
     {
         try
         {
-            await jobRepository.UpdatePodDetails(jobId, jobStatus, podName, podTime);
+            await jobRepository.UpdatePodDetails(requestData);
             return Ok();
         }
         catch (Exception e)

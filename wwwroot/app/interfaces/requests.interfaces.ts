@@ -4,3 +4,10 @@ export interface UpdateJobTimeRequest {
     isRecurring: boolean;
     timeZoneId: number;
 }
+
+export interface UpdatePodDetailsRequest {
+    jobId: number;
+    jobStatus: string;
+    podName: string;
+    podTime: string;
+}

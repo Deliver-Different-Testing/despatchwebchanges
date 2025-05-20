@@ -60,7 +60,10 @@ class Bundler {
 
     private getCommonConfig(): esbuild.BuildOptions {
         return {
-            entryPoints: [path.join(this.rootDir, "wwwroot/app/index.ts")],
+            entryPoints: {
+                vendor: path.join(this.rootDir, "wwwroot/app/index.ts"),
+                app: path.join(this.rootDir, "wwwroot/app/app.ts")
+            },
             bundle: true,
             sourcemap: this.isDev,
             minify: !this.isDev,
@@ -103,11 +106,11 @@ class Bundler {
     }
 
     private async buildDev(): Promise<void> {
-        console.log("[DEV] Building development bundle with file watching...");
+        console.log("[DEV] Building development bundles with file watching...");
 
         const devConfig: esbuild.BuildOptions = {
             ...this.getCommonConfig(),
-            outfile: path.join(this.distPath, "bundle.js"),
+            outdir: this.distPath,
         };
 
         // Create context for watching
@@ -117,9 +120,11 @@ class Bundler {
         await ctx.watch();
 
         // Create manifest
-        const manifest = {
-            "bundle.js": "bundle.js",
-            "styles.css": "bundle.css",
+        const manifest: Record<string, string> = {
+            "vendor.js": "vendor.js",
+            "app.js": "app.js",
+            "vendor.css": "vendor.css",
+            "app.css": "app.css"
         };
 
         fs.writeFileSync(
@@ -132,68 +137,106 @@ class Bundler {
         console.log("[DEV] Serve these files with IIS for debugging");
 
         // Keep the process running for watching
-        await new Promise(() => {
-        });
+        await new Promise(() => {});
     }
 
     private async buildProd(): Promise<void> {
-        console.log("[PROD] Building production bundle...");
+        console.log("[PROD] Building production bundles...");
+        const startTime = Date.now();
 
-        const tempResult = await esbuild.build({
+        // First, build the vendor bundle with a consistent filename
+        console.log("[PROD] Building vendor bundle...");
+        const vendorResult = await esbuild.build({
             ...this.getCommonConfig(),
-            write: false,
-            outfile: path.join(this.distPath, "bundle.js"),
+            entryPoints: [path.join(this.rootDir, "wwwroot/app/index.ts")],
+            outfile: path.join(this.distPath, "vendor.js"),
+            metafile: true,
         });
 
-        const outputFiles = tempResult.outputFiles!;
-        const jsContent = outputFiles.find((f) => f.path.endsWith(".js"))!.contents;
-        const contentHash = this.generateHash(jsContent);
-
-        const jsFilename = `bundle.${contentHash}.js`;
-        const cssFilename = `bundle.${contentHash}.css`;
-
-        const distributionPath = this.distPath;
-
-        await esbuild.build({
-            ...this.getCommonConfig(),
-            outfile: path.join(this.distPath, jsFilename),
-            write: true,
-            plugins: [
-                ...this.getCommonConfig().plugins!,
-                {
-                    name: "css-output",
-                    setup(build: esbuild.PluginBuild) {
-                        build.onEnd((result) => {
-                            if (result.outputFiles) {
-                                const cssContent = result.outputFiles
-                                    .filter((file) => file.path.endsWith(".css"))
-                                    .map((file) => file.text)
-                                    .join("\n");
-
-                                if (cssContent) {
-                                    fs.writeFileSync(
-                                        path.join(distributionPath, cssFilename),
-                                        cssContent
-                                    );
-                                }
-                            }
-                        });
-                    },
-                },
-            ],
+        // Extract vendor CSS with a consistent filename
+        Object.keys(vendorResult.metafile.outputs).forEach(file => {
+            if (file.endsWith('.css')) {
+                const cssPath = path.join(this.distPath, "vendor.css");
+                // Copy the CSS file to a consistent name
+                fs.copyFileSync(file, cssPath);
+            }
         });
 
-        const manifest = {
-            "bundle.js": jsFilename,
-            "styles.css": cssFilename,
+        // Now build the app bundle with hash in the filename
+        console.log("[PROD] Building app bundle...");
+        const appResult = await esbuild.build({
+            ...this.getCommonConfig(),
+            entryPoints: [path.join(this.rootDir, "wwwroot/app/app.ts")],
+            outfile: path.join(this.distPath, "app.temp.js"), // Temporary name
+            metafile: true,
+        });
+
+        // Get app JS and generate hash
+        const appJsFile = Object.keys(appResult.metafile.outputs).find(file =>
+            file.endsWith('.js')
+        );
+
+        if (!appJsFile) {
+            throw new Error("App JS file not found in build output");
+        }
+
+        const appJsContent = fs.readFileSync(appJsFile);
+        const appHash = this.generateHash(appJsContent);
+        const appJsFilename = `app.${appHash}.js`;
+
+        // Write app JS with hash
+        fs.writeFileSync(
+            path.join(this.distPath, appJsFilename),
+            appJsContent
+        );
+
+        // Remove a temporary app file
+        if (fs.existsSync(path.join(this.distPath, "app.temp.js"))) {
+            fs.unlinkSync(path.join(this.distPath, "app.temp.js"));
+        }
+
+        // Handle app CSS if any
+        let appCssFilename = null;
+        const appCssFile = Object.keys(appResult.metafile.outputs).find(file =>
+            file.endsWith('.css')
+        );
+
+        if (appCssFile) {
+            const appCssContent = fs.readFileSync(appCssFile);
+            appCssFilename = `app.${appHash}.css`;
+
+            // Write app CSS with hash
+            fs.writeFileSync(
+                path.join(this.distPath, appCssFilename),
+                appCssContent
+            );
+
+            // Remove a temporary app CSS file
+            if (fs.existsSync(path.join(this.distPath, "app.temp.css"))) {
+                fs.unlinkSync(path.join(this.distPath, "app.temp.css"));
+            }
+        }
+
+        // Create manifest
+        const manifest: Record<string, string> = {
+            "vendor.js": "vendor.js",
+            "app.js": appJsFilename,
+            "vendor.css": "vendor.css"
         };
+
+        if (appCssFilename) {
+            manifest["app.css"] = appCssFilename;
+        }
 
         fs.writeFileSync(
             path.join(this.distPath, "manifest.json"),
             JSON.stringify(manifest, null, 2)
         );
 
-        console.log(`[PROD] Output: ${jsFilename}, ${cssFilename}`);
+        const buildTime = ((Date.now() - startTime) / 1000).toFixed(2);
+        console.log(`[PROD] Build completed in ${buildTime}s`);
+        console.log(`[PROD] Vendor bundle: vendor.js, vendor.css (not hashed)`);
+        console.log(`[PROD] App bundle: ${appJsFilename}${appCssFilename ? `, ${appCssFilename}` : ''} (hashed)`);
     }
 
     async build(): Promise<void> {

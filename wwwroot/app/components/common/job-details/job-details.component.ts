@@ -31,6 +31,7 @@ import AutoCompleteDialogService from "../../dialogs/auto-complete-dialog/auto-c
 import JobFileUploadDialogService from "../../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import {FileUploadType} from "../../../enums/file-upload-type.enum";
 import sortRelatedJobs from "../../../functions/sortRelatedJobs";
+import {UpdatePodDetailsRequest} from "../../../interfaces/requests.interfaces";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -661,9 +662,8 @@ class JobDetailController extends BaseController {
         );
 
         // Begin a job-done process
-        const refreshedJob = this.job;
-        if (!refreshedJob) return;
-        await this.markJobAsDone($event, refreshedJob);
+        if (this.job === undefined) return;
+        await this.markJobAsDone($event, this.job);
     }
 
     async editFollowUpTime($event: MouseEvent, job: IJob) {
@@ -1430,19 +1430,26 @@ class JobDetailController extends BaseController {
 
     async markJobAsDone($event: MouseEvent, job: IJob) {
         try {
-            if (!job.completedTime) {
+            let completedTime: string | undefined;
+            if (job.completedTime === undefined) {
                 const result =
                     await this.editDateTimeDialogService.showEditDateAndTimeDialog(
                         $event,
-                        "Completed Time",
+                        "POD Time",
                         JobProperty.CompletedTime,
-                        job.completedTime
+                        job.completedTime,
+                        job.deliveryTimeZone
                     );
 
-                if (!result.value) return;
-                job.completedTime = new Date(result.value);
+                if (result.value === undefined) {
+                    this.toastrService.showWarningToast("A POD time needs to be provided to close this job.");
+                    return;
+                }
+
+                completedTime = result.value;
             }
 
+            let podName: string | undefined;
             if (!job.podName) {
                 const prompt = this.$mdDialog
                     .prompt()
@@ -1455,8 +1462,11 @@ class JobDetailController extends BaseController {
                     .ok("Complete Job")
                     .cancel("Cancel");
 
-                job.podName = await this.$mdDialog.show(prompt);
-                if (!job.podName) return;
+                podName = await this.$mdDialog.show(prompt);
+                if (podName === undefined) {
+                    this.toastrService.showWarningToast("A POD name needs to be provided to close this job.");
+                    return;
+                }
             }
 
             try {
@@ -1470,19 +1480,21 @@ class JobDetailController extends BaseController {
                     this.toastrService.showErrorToast(
                         "Oops an error occurred uploading POD photos."
                     );
+
                     return;
                 }
-
-                // Do nothing as dialog was closed
             }
 
             console.log("[JobDetailsComponentController] Marking job as done]");
-            await this.DispatchData.updatePODDetail(
-                job.id,
-                JobStatus.Completed,
-                job.podName,
-                job.completedTime
-            );
+
+            const requestData: UpdatePodDetailsRequest = {
+                jobId: job.id,
+                jobStatus: JobStatus.Completed.toString(),
+                podName: podName ?? '',
+                podTime: completedTime ?? moment(job.completedTime).format('YYYY-MM-DD HH:mm')
+            }
+
+            await this.DispatchData.updatePODDetail(requestData);
 
             this.toastrService.showSuccessToast(`${job.jobNo} Completed`);
             await this.refreshJobDetails(job.id);

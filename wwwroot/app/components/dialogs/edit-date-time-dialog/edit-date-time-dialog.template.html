@@ -12,11 +12,35 @@
 
     <md-dialog-content>
         <div class="md-dialog-content date-time-content">
-            <!-- Date Picker -->
-            <div class="date-time-field" ng-if="ctrl.showDate">
+            <div class="date-time-field" ng-if="ctrl.showDate && ctrl.showTime">
                 <md-input-container class="md-block">
                     <label for="date">
-                        <span>Date ({{ctrl.selectedTimeZone.timeZoneIana | timezoneShort}})</span>
+                        <span>Date{{ctrl.selectedTimeZone.timeZoneIana ? ' (' + (ctrl.selectedTimeZone.timeZoneIana | timezoneShort) + ')' : ''}}</span>
+                    </label>
+                    <input class="dtp-no-msclear dtp-input md-input"
+                           id="dateTime"
+                           name="date"
+                           mdc-datetime-picker
+                           date="true"
+                           time="true"
+                           type="text"
+                           placeholder="YYYY-MM-DD HH:MM"
+                           edit-input="true"
+                           minutes="true"
+                           short-time="true"
+                           show-icon="true"
+                           show-todays-date
+                           ng-model="ctrl.dateTime"
+                           required>
+                </md-input-container>
+            </div>
+
+
+            <!-- Date Picker -->
+            <div class="date-time-field" ng-if="ctrl.showDate && !ctrl.showTime">
+                <md-input-container class="md-block">
+                    <label for="date">
+                        <span>Date{{ctrl.selectedTimeZone.timeZoneIana ? ' (' + (ctrl.selectedTimeZone.timeZoneIana | timezoneShort) + ')' : ''}}</span>
                     </label>
                     <input class="dtp-no-msclear dtp-input md-input"
                            id="date"
@@ -25,24 +49,22 @@
                            date="true"
                            time="false"
                            type="text"
-                           format="YYYY-MM-DD"
                            edit-input="true"
                            minutes="true"
                            short-time="false"
                            show-icon="true"
                            show-todays-date
-                           on-change="ctrl.updateDateTime('date', $value)"
                            placeholder="YYYY-MM-DD"
-                           ng-model="ctrl.momentDateTime._d"
+                           ng-model="ctrl.dateTime"
                            required>
                 </md-input-container>
             </div>
 
             <!-- Time Picker -->
-            <div class="date-time-field" ng-if="ctrl.showTime">
+            <div class="date-time-field" ng-if="ctrl.showTime && !ctrl.showDate">
                 <md-input-container class="md-block">
                     <label for="time">
-                        <span>Time ({{ctrl.selectedTimeZone.timeZoneIana | timezoneShort}})</span>
+                        <span>Time{{ctrl.selectedTimeZone.timeZoneIana ? ' (' + (ctrl.selectedTimeZone.timeZoneIana | timezoneShort) + ')' : ''}}</span>
                     </label>
                     <input class="dtp-no-msclear dtp-input md-input"
                            id="time"
@@ -51,22 +73,18 @@
                            date="false"
                            time="true"
                            type="text"
-                           format="HH:mm"
                            edit-input="true"
                            minutes="true"
                            short-time="false"
                            show-icon="true"
-                           on-change="ctrl.updateDateTime('time', $value)"
                            placeholder="HH:MM"
-                           ng-model="ctrl.momentDateTime._d"
+                           ng-model="ctrl.dateTime"
                            required>
                 </md-input-container>
             </div>
 
             <!-- Timezone Selector -->
             <div ng-if="ctrl.showTimeZoneSelector">
-                <md-divider class="date-time-divider" ng-if="(ctrl.showDate || ctrl.showTime)"></md-divider>
-
                 <div class="date-time-field">
                     <label class="timezone-label md-body-1">Timezone</label>
                     <md-select ng-model="ctrl.selectedTimeZone"
