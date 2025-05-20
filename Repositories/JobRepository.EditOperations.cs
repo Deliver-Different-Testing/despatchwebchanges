@@ -2,46 +2,47 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
+using DespatchWeb.Models.RequestModels;
 using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories;
 
 public partial class JobRepository
 {
-    public async Task UpdateDeliverByTime(int jobId, string deliverByTime, bool isRecurring, int timeZoneId)
+    public async Task UpdateDeliverByTime(UpdateJobTimeRequest data)
     {
-        if (isRecurring) {
-            var jobBooking = await Context.TucJobBookings.FindAsync(jobId);
+        if (data.IsRecurring) {
+            var jobBooking = await Context.TucJobBookings.FindAsync(data.JobId);
             ArgumentNullException.ThrowIfNull(jobBooking);
 
-            jobBooking.DeliverByTime = DateTime.Parse(deliverByTime);
-            jobBooking.DeliverByTimeZoneId = timeZoneId;
+            jobBooking.DeliverByTime = DateTime.Parse(data.DateTime);
+            jobBooking.DeliverByTimeZoneId = data.TimeZoneId;
         } else {
-            var job = await Context.TucJobs.FindAsync(jobId);
+            var job = await Context.TucJobs.FindAsync(data.JobId);
             ArgumentNullException.ThrowIfNull(job);
 
-            job.DeliverByTime = DateTime.Parse(deliverByTime);
-            job.DeliverByTimeZoneId = timeZoneId;
+            job.DeliverByTime = DateTime.Parse(data.DateTime);
+            job.DeliverByTimeZoneId = data.TimeZoneId;
         }
 
         await Context.SaveChangesAsync();
     }
 
 
-    public async Task UpdatePickUpTime(int jobId, string pickUpTime, bool isRecurring, int timeZoneId)
+    public async Task UpdatePickUpTime(UpdateJobTimeRequest data)
     {
-        if (isRecurring) {
-            var jobBooking = await Context.TucJobBookings.FindAsync(jobId);
+        if (data.IsRecurring) {
+            var jobBooking = await Context.TucJobBookings.FindAsync(data.JobId);
             ArgumentNullException.ThrowIfNull(jobBooking);
 
-            jobBooking.UcbkTime = DateTime.Parse(pickUpTime);
-            jobBooking.PickupTimeZoneId = timeZoneId;
+            jobBooking.UcbkTime = DateTime.Parse(data.DateTime);
+            jobBooking.PickupTimeZoneId = data.TimeZoneId;
         } else {
-            var job = await Context.TucJobs.FindAsync(jobId);
+            var job = await Context.TucJobs.FindAsync(data.JobId);
             ArgumentNullException.ThrowIfNull(job);
 
-            job.UcjbTime = DateTime.Parse(pickUpTime);
-            job.PickupTimeZoneId = timeZoneId;
+            job.UcjbTime = DateTime.Parse(data.DateTime);
+            job.PickupTimeZoneId = data.TimeZoneId;
         }
         await Context.SaveChangesAsync();
     }

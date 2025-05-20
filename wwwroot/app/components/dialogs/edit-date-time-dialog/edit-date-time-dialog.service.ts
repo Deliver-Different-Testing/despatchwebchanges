@@ -36,8 +36,8 @@ export class EditDateTimeDialogService implements angular.IServiceProvider {
                 title,
                 fieldName,
                 dateTime,
+                showTimeZone,
                 defaultTimeZone,
-                showTimeZone
             }
         };
     }

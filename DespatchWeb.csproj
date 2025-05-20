@@ -244,6 +244,9 @@
     <_ContentIncludedByDefault Remove="wwwroot\lib\autocomplete\angular-auto-complete.css" />
     <_ContentIncludedByDefault Remove="wwwroot\lib\autocomplete\angular-auto-complete.js" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\add-pallet-dialog\add-pallet-dialog.controller.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\pickdate\angular-pickadate.css" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\pickdate\angular-pickadate.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\pickdate\angular-pickadate.min.js" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
@@ -394,6 +397,7 @@
     <TypeScriptCompile Include="wwwroot\app\interfaces\layout.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\open-job-options.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\paginated-response.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\requests.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\state-info.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\materialTheme.ts" />
     <TypeScriptCompile Include="wwwroot\app\routes.ts" />

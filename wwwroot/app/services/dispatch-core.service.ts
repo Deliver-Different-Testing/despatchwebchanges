@@ -29,6 +29,7 @@ import {TaskTableFiltersRequest, TaskViewModel,} from "../components/task-dashbo
 import {JobProperty} from "../enums/job-property.enum";
 import moment from "moment";
 import ConfigService from "./config.service";
+import {UpdateJobTimeRequest} from "../interfaces/requests.interfaces";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = ["$http", "APP_CONFIG", "configService"];
@@ -587,19 +588,19 @@ class DispatchCoreService implements angular.IServiceProvider {
         );
     }
 
-    async updateDeliverByTime(
+    async updateJobTime(
         jobId: number,
         field: JobProperty,
         dateTime: string,
         isRecurring: boolean,
-        selectedTimeZoneId?: number
+        selectedTimeZoneId: number
     ) {
-        const params = new URLSearchParams({
-            jobId: String(jobId),
+        const requestData: UpdateJobTimeRequest = {
+            jobId: jobId,
             dateTime: dateTime,
-            isRecurring: String(isRecurring),
-            timeZoneId: String(selectedTimeZoneId),
-        });
+            isRecurring: isRecurring,
+            timeZoneId: selectedTimeZoneId,
+        };
 
         let functionUrl;
         if (field === JobProperty.DeliverBy) {
@@ -609,9 +610,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         } else {
             return;
         }
-
-        const url = `${functionUrl}?${params.toString()}`;
-        await this.$http.post(url, null);
+;
+        await this.$http.post(functionUrl, requestData);
     }
 
     async updateJobDetail(
@@ -629,12 +629,12 @@ class DispatchCoreService implements angular.IServiceProvider {
         });
 
         if (field === JobProperty.DeliverBy || field === JobProperty.Time) {
-            return await this.updateDeliverByTime(
+            return await this.updateJobTime(
                 jobId,
                 field,
                 String(value),
                 isRecurring,
-                selectedTimeZoneId
+                selectedTimeZoneId ?? 0
             );
         }
 

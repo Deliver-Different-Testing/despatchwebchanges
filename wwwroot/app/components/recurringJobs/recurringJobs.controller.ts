@@ -238,7 +238,7 @@ class RecurringJobsController extends BaseController {
         }
     }
 
-    greetUser(FirstName: string): string {
+    greetUser(): string {
         return greetUser(FirstName);
     }
 

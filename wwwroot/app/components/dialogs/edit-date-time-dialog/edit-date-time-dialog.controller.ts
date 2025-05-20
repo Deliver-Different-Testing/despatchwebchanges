@@ -1,22 +1,21 @@
 import "./edit-date-time-dialog.less";
 import ToastrService from "../../../services/toastr.service";
-import { IDialogDateTimeResult } from "../../../interfaces/dialog-result.interfaces";
+import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interfaces";
 import moment from "moment";
-import DispatchCoreService from "../../../services/dispatch-core.service";
-import { Suggestion, TimeZoneSuggestion } from "../../../interfaces/job.interface";
+import {Suggestion, TimeZoneSuggestion} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
-import { JobProperty } from "../../../enums/job-property.enum";
+import {JobProperty} from "../../../enums/job-property.enum";
+import {findWindows} from "windows-iana";
 
 export class EditDateTimeDialogController extends BaseController {
     static $inject = [
         "$mdDialog",
         "toastrService",
-        "DispatchData",
         "title",
         "fieldName",
         "dateTime",
-        "defaultTimeZone",
         "showTimeZone",
+        "defaultTimeZone",
         "showDate",
         "showTime",
     ];
@@ -25,18 +24,16 @@ export class EditDateTimeDialogController extends BaseController {
     isLoading?: boolean;
     browserTimeZone?: string;
     selectedTimeZone?: TimeZoneSuggestion;
-    timeZones?: TimeZoneSuggestion[];
     timeZone: string;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
-        private DispatchData: DispatchCoreService,
         public readonly title: string,
         public readonly fieldName: JobProperty,
         public dateTime: Date,
-        private defaultTimeZone?: Suggestion,
         public showTimeZoneSelector: boolean = false,
+        private defaultTimeZone?: Suggestion,
         public showDate: boolean = true,
         public showTime: boolean = true,
     ) {
@@ -44,29 +41,20 @@ export class EditDateTimeDialogController extends BaseController {
 
         this.timeZone = TimeZone;
         console.log('EditDateTimeDialogController: Controller instantiated');
-        // Initialize with the current date /time if not provided
         if (!this.dateTime) {
             this.dateTime = new Date();
         }
 
-        // Convert to a moment object for easier manipulation
         this.momentDateTime = moment(this.dateTime);
-
-        // Get browser timezone
         this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-        // Get a list of time zones if needed
-
-        this.DispatchData.getTimeZoneOptions().then((data: TimeZoneSuggestion[]) => {
-            this.timeZones = data;
-
-            if (this.defaultTimeZone) {
-                this.selectedTimeZone = data.find(tz => tz.id === this.defaultTimeZone?.id);
-            } else {
-                this.selectedTimeZone = data.find(tz => tz.timeZoneIana === TimeZone);
+        if(this.showTimeZoneSelector && this.defaultTimeZone) {
+            this.selectedTimeZone = {
+                id: this.defaultTimeZone?.id,
+                text: findWindows(this.defaultTimeZone?.text)[0],
+                timeZoneIana: this.defaultTimeZone?.text
             }
-        });
-
+        }
 
         this.isLoading = false;
     }
