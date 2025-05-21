@@ -751,6 +751,15 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 AgentName = a.UcagName,
                 AgentNotes = a.UcagNotes,
                 AgentRanking = a.Ranking != null ? a.Ranking.AgentRankingName : string.Empty,
+                Address = new AddressViewModel(
+                    a.AddressLine1,
+                    a.AddressLine2,
+                    a.AddressLine3,
+                    a.AddressLine4,
+                    a.AddressLine5,
+                    a.AddressLine6,
+                    a.AddressLine7,
+                    a.AddressLine8),
                 Airports = a.AgentVehicles.Count != 0 ? a.AgentVehicles.Select(av => new AirportViewModel
                 {
                     Name = av.Airport.Name,

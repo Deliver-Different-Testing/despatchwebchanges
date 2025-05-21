@@ -16,4 +16,5 @@ public class AgentViewModel
 public class AgentInfoDialogViewModel: AgentViewModel
 {
     public List<AirportViewModel> Airports { get; set; }
+    public AddressViewModel Address { get; set; }
 }
