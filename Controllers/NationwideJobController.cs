@@ -435,4 +435,19 @@ public class NationwideJobController(
             return StatusCode(500, e.Message);
         }
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAgentInfo(int agentId)
+    {
+        try
+        {
+            var agentInfo = await repository.GetAgentInfoForDialogAsync(agentId);
+            return Json(agentInfo);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An error occured getting all agents");
+            return StatusCode(500, e.Message);
+        }
+    }
 }

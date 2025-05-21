@@ -95,6 +95,8 @@ import FlightAgentConfirmationDialogService
     from "./components/dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.service";
 import FlightAgentConformationDialogController
     from "./components/dialogs/flight-agent-conformation-dialog/flight-agent-conformation-dialog.controller";
+import AgentInfoDialogController from "./components/dialogs/agent-info-dialog/agent-info-dialog.controller";
+import AgentInfoDialogService from "./components/dialogs/agent-info-dialog/agent-info-dialog.service";
 
 const app = (window as any).uDispatchApp;
 
@@ -242,6 +244,7 @@ app.controller("jobNoteEditorDialogController", NoteManagementDialogController);
 app.controller("InterCourierChargeDialog", InterCourierChargeDialogController);
 app.controller("flightDetailsDialogController", FlightDetailsDialogController);
 app.controller("flightAgentConformationDialogController", FlightAgentConformationDialogController);
+app.controller("agentInfoDialogController", AgentInfoDialogController);
 
 // Services
 app.service("configService", ConfigService);
@@ -272,5 +275,6 @@ app.service("flightDetailsDialogService", FlightDetailsDialogService);
 app.service("autoCompleteDialogService", AutoCompleteDialogService);
 app.service("jobAddStopService", JobAddStopService);
 app.service("flightAgentConfirmationDialogService", FlightAgentConfirmationDialogService)
+app.service("agentInfoDialogService", AgentInfoDialogService)
 
 export default app;

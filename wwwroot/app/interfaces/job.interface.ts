@@ -4,6 +4,7 @@ import {DaysOfWeek} from "../enums/days-of-week.enum";
 import {Frequency} from "../enums/frequency.enum";
 import {HolidayDeliveryOptions} from "../enums/holiday-delivery-options.enum";
 import {FlightSegmentViewModel } from "../components/Nationwide/nationwide.interfaces";
+import {AirportViewModel} from "../components/dialogs/flight-details-dialog/flight-details-dialog.interfaces";
 export interface IJob {
     id: number;
     rootParentId?: number;
@@ -283,6 +284,12 @@ export interface IAgent {
     agentRate: number;
     agentRanking: string;
     agentNotes: string;
+    agentPhone?: string;
+    agentEmail?: string;
+}
+
+export interface IAgentInfoDialog extends  IAgent {
+    airports?: AirportViewModel[];
 }
 
 export interface JobQueryParams {
