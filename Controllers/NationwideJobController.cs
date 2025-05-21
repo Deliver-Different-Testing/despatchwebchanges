@@ -26,7 +26,8 @@ public class NationwideJobController(
     {
         try
         {
-            if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds); var isUsTenant = countryService.IsUsTenant();
+            if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
+            var isUsTenant = countryService.IsUsTenant();
 
             var result = await repository.NationwideJobListAsync(queryParams, isInternal, isUsTenant, clientIds,
                 NationwideWidget.JobList, despatchViewIds);
@@ -119,42 +120,29 @@ public class NationwideJobController(
                 "Flight search requested for job {JobId} with departure {DepartureDate}, airline {AirlineId}",
                 jobId, departureDate, airlineId);
 
-            var finalDepartureDate = departureDate;
-
-            //var airportTimezone = await repository.GetAirportTimezoneAsync(departureAirportId.Value);
-
-            //if (!string.IsNullOrEmpty(airportTimezone))
-            //{
-            //    // Get the current time in the airport timezone
-            //    var nowInAirportTime = TimeZoneInfo.ConvertTimeFromUtc(
-            //        DateTime.UtcNow,
-            //        TimeZoneInfo.FindSystemTimeZoneById(airportTimezone));
-
-            //    Log.Information(
-            //        "Current time in airport timezone {AirportTimezone}: {CurrentAirportTime}, Requested departure: {DepartureTime}",
-            //        airportTimezone, nowInAirportTime, departureDate);
-
-            //    // Check if the departure date is in the past relative to the current airport time
-            //    if (departureDate < nowInAirportTime)
-            //    {
-            //        Log.Information(
-            //            "Requested departure time {DepartureTime} is in the past in airport timezone. Using current airport time {CurrentAirportTime} instead.",
-            //            departureDate, nowInAirportTime);
-
-            //        // Use current airport time as the departure time
-            //        finalDepartureDate = nowInAirportTime;
-            //    }
-            //}
-
             var flights = await flightService.GetFlightsAsync(
-            jobId,
-            finalDepartureDate,
-            airlineId,
-            departureAirportId,
-            flightBuffer: 0,
-            codeType: null,
-            extendedOptions: null,
-            minimumLayoverMinutes: minimumLayoverMinutes);
+                jobId,
+                departureDate,
+                airlineId,
+                departureAirportId,
+                flightBuffer: 0,
+                codeType: null,
+                extendedOptions: null,
+                minimumLayoverMinutes: minimumLayoverMinutes);
+
+
+            // Get the rates
+            foreach (var flight in flights)
+            {
+                // Get amount from stored proc
+                var amount = await repository.GetCarrierFlightRateByJobIdAsync(
+                    jobId,
+                    flight.AirlineCode,
+                    flight.FlightSegments.Count != 0,
+                    flight.DepartureTime);
+
+                flight.Amount = amount;
+            }
 
             stopwatch.Stop();
             Log.Information(
@@ -189,7 +177,9 @@ public class NationwideJobController(
                 flight = new AddFlightToJobDto
                 {
                     AirlineName = request.FlightSegments.First().AirlineName ??
-                                  (request.FlightSegments.First().CarrierFsCode != null ? $"{request.FlightSegments.First().CarrierFsCode} Airlines" : null),
+                                  (request.FlightSegments.First().CarrierFsCode != null
+                                      ? $"{request.FlightSegments.First().CarrierFsCode} Airlines"
+                                      : null),
                     ArrivalTime = request.FlightSegments.First().ArrivalTime,
                     CarrierFsCode = request.FlightSegments.First().CarrierFsCode,
                     DepartureTime = request.FlightSegments.First().DepartureTime,
@@ -210,6 +200,7 @@ public class NationwideJobController(
                     return StatusCode(500, ex.Message);
                 }
             }
+
             // Get airport codes
             string departureAirportCode;
             try
@@ -311,7 +302,8 @@ public class NationwideJobController(
 
             try
             {
-                var addToDb = await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value, jobRequestModel.JobId.Value);
+                var addToDb =
+                    await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value, jobRequestModel.JobId.Value);
                 if (!addToDb)
                     return BadRequest("An error occurred while assigning the agent to the job.");
 
@@ -347,8 +339,8 @@ public class NationwideJobController(
         }
         catch (Exception e)
         {
-           Log.Error(e, "An error occured getting the active airlines");
-           return StatusCode(500, e.Message);
+            Log.Error(e, "An error occured getting the active airlines");
+            return StatusCode(500, e.Message);
         }
     }
 
@@ -391,7 +383,8 @@ public class NationwideJobController(
     {
         try
         {
-            var flightConnections = await flightService.GetFlightDetailByFlightNumberDetailDialog(flightNumber, departureDate);
+            var flightConnections =
+                await flightService.GetFlightDetailByFlightNumberDetailDialog(flightNumber, departureDate);
             return Json(flightConnections);
         }
         catch (Exception e)
@@ -426,8 +419,8 @@ public class NationwideJobController(
     {
         try
         {
-           var agents = await repository.GetAllAgentOptionsBySearchAsync(searchTerm);
-           return Json(agents);
+            var agents = await repository.GetAllAgentOptionsBySearchAsync(searchTerm);
+            return Json(agents);
         }
         catch (Exception e)
         {

@@ -7,6 +7,7 @@ namespace DespatchWeb.Models;
 public class FlightViewModel
 {
     public string Airline { get; set; }
+    public string AirlineCode { get; set; }
     public string FlightNumber { get; set; }
     public DateTime DepartureTime { get; set; }
     public DateTime ArrivalTime { get; set; }

@@ -50,4 +50,6 @@ public partial class TucInvoiceNo
     public DateTime? Sent { get; set; }
 
     public DateTime? DueDate { get; set; }
+
+    public virtual TucClient UcinClient { get; set; }
 }

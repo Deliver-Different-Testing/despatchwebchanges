@@ -805,6 +805,7 @@ public partial class DespatchContext : DbContext
                 .IsRequired()
                 .HasMaxLength(100);
             entity.Property(e => e.Charged).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.CostAmount).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.Included).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.JobId).HasColumnName("JobID");
             entity.Property(e => e.PrebookJobId).HasColumnName("PrebookJobID");
@@ -989,7 +990,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TblBulkJobs)
                 .HasForeignKey(d => d.PickupTimeZoneId)
-                .HasConstraintName("FK__tblBulkJo__Picku__0C91969C");
+                .HasConstraintName("FK__tblBulkJo__Picku__3652C63E");
 
             entity.HasOne(d => d.Region).WithMany(p => p.TblBulkJobs)
                 .HasForeignKey(d => d.RegionId)
@@ -2798,7 +2799,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TimeZone>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__TimeZone__3214EC0703D693F2");
+            entity.HasKey(e => e.Id).HasName("PK__TimeZone__3214EC072CB4AFDD");
 
             entity.ToTable("TimeZone");
 
@@ -3841,7 +3842,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucEventTypeEventTypeGroup>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__TucEvent__3214EC070ADA90A4");
+            entity.HasKey(e => e.Id).HasName("PK__TucEvent__3214EC07566A90D1");
 
             entity.ToTable("TucEventType_EventTypeGroups");
 
@@ -3867,7 +3868,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucEventTypeGroup>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__TucEvent__3214EC07881626BD");
+            entity.HasKey(e => e.Id).HasName("PK__TucEvent__3214EC07D5CBF0B4");
 
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
@@ -3929,6 +3930,11 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcinLocked).HasColumnName("ucinLocked");
             entity.Property(e => e.XeroId).HasMaxLength(50);
             entity.Property(e => e.XeroIdPpdCancellation).HasMaxLength(50);
+
+            entity.HasOne(d => d.UcinClient).WithMany(p => p.TucInvoiceNos)
+                .HasForeignKey(d => d.UcinClientId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_tucInvoiceNo_tucClient");
         });
 
         modelBuilder.Entity<TucJob>(entity =>
@@ -4368,7 +4374,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TucJobPickupTimeZones)
                 .HasForeignKey(d => d.PickupTimeZoneId)
-                .HasConstraintName("FK__tucJob__PickupTi__09B529F1");
+                .HasConstraintName("FK__tucJob__PickupTi__33765993");
 
             entity.HasOne(d => d.Source).WithMany(p => p.TucJobs)
                 .HasForeignKey(d => d.SourceId)
@@ -4797,9 +4803,17 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("WhenPODNotificationSent");
             entity.Property(e => e.WhenSpeedChangeNotificationSent).HasColumnType("datetime");
 
+            entity.HasOne(d => d.Agent).WithMany(p => p.TucJobArchives)
+                .HasForeignKey(d => d.AgentId)
+                .HasConstraintName("FK_tucJobArchive_Agent");
+
             entity.HasOne(d => d.DeliverByTimeZone).WithMany(p => p.TucJobArchiveDeliverByTimeZones)
                 .HasForeignKey(d => d.DeliverByTimeZoneId)
                 .HasConstraintName("FK_tucJobArchive_TimeZone");
+
+            entity.HasOne(d => d.FromAirport).WithMany(p => p.TucJobArchiveFromAirports)
+                .HasForeignKey(d => d.FromAirportId)
+                .HasConstraintName("FK_tucJobArchive_FromAirport");
 
             entity.HasOne(d => d.MasterCourier).WithMany(p => p.TucJobArchives)
                 .HasForeignKey(d => d.MasterCourierId)
@@ -4807,7 +4821,11 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TucJobArchivePickupTimeZones)
                 .HasForeignKey(d => d.PickupTimeZoneId)
-                .HasConstraintName("FK__tucJobArc__Picku__0AA94E2A");
+                .HasConstraintName("FK__tucJobArc__Picku__346A7DCC");
+
+            entity.HasOne(d => d.ToAirport).WithMany(p => p.TucJobArchiveToAirports)
+                .HasForeignKey(d => d.ToAirportId)
+                .HasConstraintName("FK_tucJobArchive_ToAirport");
 
             entity.HasOne(d => d.UcjbSizeNavigation).WithMany(p => p.TucJobArchives).HasForeignKey(d => d.UcjbSize);
         });
@@ -5018,12 +5036,7 @@ public partial class DespatchContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("ucbkDateDone");
             entity.Property(e => e.UcbkDay).HasColumnName("ucbkDay");
-            entity.Property(e => e.UcbkDays)
-                .HasMaxLength(9)
-                .IsUnicode(false)
-                .HasDefaultValueSql("((0))")
-                .IsFixedLength()
-                .HasColumnName("ucbkDays");
+            entity.Property(e => e.UcbkDays).HasDefaultValueSql("((0))");
             entity.Property(e => e.UcbkDone)
                 .HasDefaultValue(false)
                 .HasColumnName("ucbkDone");
@@ -5031,7 +5044,9 @@ public partial class DespatchContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("ucbkFirstDue");
             entity.Property(e => e.UcbkFortnight).HasColumnName("ucbkFortnight");
-            entity.Property(e => e.UcbkFrequency).HasComment("Frequency of job recurrence (Weekly=1, Fortnightly=2, FirstOfMonth=4, etc.)");
+            entity.Property(e => e.UcbkFrequency)
+                .HasDefaultValue(0)
+                .HasComment("Frequency of job recurrence (Weekly=1, Fortnightly=2, FirstOfMonth=4, etc.)");
             entity.Property(e => e.UcbkFrom).HasColumnName("ucbkFrom");
             entity.Property(e => e.UcbkFromAddr)
                 .HasMaxLength(150)
@@ -5119,7 +5134,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TucJobBookingPickupTimeZones)
                 .HasForeignKey(d => d.PickupTimeZoneId)
-                .HasConstraintName("FK__tucJobBoo__Picku__0B9D7263");
+                .HasConstraintName("FK__tucJobBoo__Picku__355EA205");
 
             entity.HasOne(d => d.Source).WithMany(p => p.TucJobBookings)
                 .HasForeignKey(d => d.SourceId)
@@ -5465,7 +5480,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucNote>(entity =>
         {
-            entity.HasKey(e => e.NoteId).HasName("PK__tucNote__EACE357F5A012EBD");
+            entity.HasKey(e => e.NoteId).HasName("PK__tucNote__EACE357FF13C671E");
 
             entity.ToTable("tucNote");
 
@@ -5511,7 +5526,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucNoteArchive>(entity =>
         {
-            entity.HasKey(e => e.NoteId).HasName("PK__tucNoteA__EACE357FD3035F92");
+            entity.HasKey(e => e.NoteId).HasName("PK__tucNoteA__EACE357F9C2F0B4B");
 
             entity.ToTable("tucNoteArchive");
 
@@ -5530,7 +5545,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucNoteType>(entity =>
         {
-            entity.HasKey(e => e.NoteTypeId).HasName("PK__tucNoteT__28ABD5CF3BBBB23E");
+            entity.HasKey(e => e.NoteTypeId).HasName("PK__tucNoteT__28ABD5CFC7BB1CD0");
 
             entity.ToTable("tucNoteType");
 
@@ -5900,8 +5915,6 @@ public partial class DespatchContext : DbContext
             entity.HasKey(e => e.ZipPolygonId).HasName("PK__ZipPolyg__6A8AEEE3127F7A1C");
 
             entity.ToTable("ZipPolygon");
-
-            entity.HasIndex(e => e.Zip, "IX_ZipPolygon_Zip");
 
             entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
             entity.Property(e => e.Latitude).HasColumnType("decimal(18, 8)");

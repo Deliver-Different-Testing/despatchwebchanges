@@ -21,7 +21,7 @@ public interface INationwideJobRepository
 
     Task<bool> AddAgentToJobAsync(int agentId, int jobId);
 
-    Task<decimal> GetCarrierFlightRateByJobIdAsync(int jobId, string carrierName, bool extraStopOffs,
+    Task<decimal> GetCarrierFlightRateByJobIdAsync(int jobId, string carrierCode, bool extraStopOffs,
         DateTime? bookTime);
 
     Task<List<Suggestion>> GetActiveAirlineOptionsAsync();
