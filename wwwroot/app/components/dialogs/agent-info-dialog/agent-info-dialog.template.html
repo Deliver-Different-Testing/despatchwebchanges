@@ -2,6 +2,7 @@
 <md-dialog aria-label="Agent Information" class="agent-info-dialog">
     <md-toolbar>
         <div class="md-toolbar-tools">
+            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">engineering</md-icon>
             <h2>Agent Details: {{ctrl.agent.agentName}}</h2>
             <span flex></span>
             <md-button class="md-icon-button" ng-click="ctrl.cancel()">
@@ -69,11 +70,14 @@
                         <md-list>
                             <md-list-item class="airport-item" ng-repeat="airport in ctrl.agent.airports">
                                 <div class="md-list-item-text">
-                                    <h4>{{airport.code}} - {{airport.name}}</h4>
+                                    <h4>
+                                        <md-icon md-font-set="material-symbols-outlined">airport_shuttle</md-icon>
+                                        {{airport.code}} - {{airport.name}}
+                                    </h4>
+
                                     <p>{{airport.city}}, {{airport.country}}</p>
                                     <p class="airport-details">
                                         <md-icon md-font-set="material-symbols-outlined">access_time</md-icon> {{airport.timezone}}
-                                        <md-icon md-font-set="material-symbols-outlined">terrain</md-icon> {{airport.elevation}}m
                                     </p>
                                     <p class="airport-coordinates">
                                         <md-icon md-font-set="material-symbols-outlined">place</md-icon> {{ctrl.formatCoordinates(airport.latitude, airport.longitude)}}
@@ -84,7 +88,7 @@
                         </md-list>
 
                         <div class="no-airports" ng-if="!ctrl.agent.airports || ctrl.agent.airports.length === 0">
-                            <p>No airports assigned to this agent.</p>
+                            <p>No airports are assigned to this agent.</p>
                         </div>
                     </md-card-content>
                 </md-card>

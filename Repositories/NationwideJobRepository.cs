@@ -759,6 +759,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                     Country = av.Airport.AddressLine8,
                     Latitude = (double)av.Airport.Latitude,
                     Longitude = (double)av.Airport.Longitude,
+                    Timezone = av.Airport.Timezone
                 }).ToList() :
                     new List<AirportViewModel>()
             })
