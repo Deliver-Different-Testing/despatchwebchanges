@@ -18,12 +18,6 @@
                 <md-card>
                     <md-card-content>
                         <h3 class="md-title">Basic Information</h3>
-
-                        <div class="info-row">
-                            <span class="info-label">Agent ID:</span>
-                            <span class="info-value">{{ctrl.agent.agentId}}</span>
-                        </div>
-
                         <div class="info-row">
                             <span class="info-label">Name:</span>
                             <span class="info-value">{{ctrl.agent.agentName}}</span>
@@ -37,22 +31,28 @@
                         <div class="info-row">
                             <span class="info-label">Ranking:</span>
                             <span class="info-value">
-                <md-icon md-font-set="material-symbols-outlined" ng-repeat="i in ctrl.getRankingArray(ctrl.agent.agentRanking) track by $index">star</md-icon>
+                <md-icon md-font-set="material-symbols-outlined"
+                         ng-repeat="i in ctrl.getRankingArray(ctrl.agent.agentRanking) track by $index">star</md-icon>
               </span>
                         </div>
 
-                        <div class="info-row" ng-if="ctrl.agent.agentPhone">
+                        <div class="info-row">
                             <span class="info-label">Phone:</span>
                             <span class="info-value">
                 <a href="tel:{{ctrl.agent.agentPhone}}">{{ctrl.formatPhone(ctrl.agent.agentPhone)}}</a>
               </span>
                         </div>
 
-                        <div class="info-row" ng-if="ctrl.agent.agentEmail">
+                        <div class="info-row">
                             <span class="info-label">Email:</span>
                             <span class="info-value">
                 <a href="mailto:{{ctrl.agent.agentEmail}}">{{ctrl.agent.agentEmail}}</a>
               </span>
+                        </div>
+
+                        <div class="info-row">
+                            <span class="info-label">Address:</span>
+                            <span class="info-value">{{ctrl.agent.address.fullAddress}}</span>
                         </div>
 
                         <h3 class="md-title notes-title">Notes</h3>
@@ -70,17 +70,17 @@
                         <md-list>
                             <md-list-item class="airport-item" ng-repeat="airport in ctrl.agent.airports">
                                 <div class="md-list-item-text">
-                                    <h4>
-                                        <md-icon md-font-set="material-symbols-outlined">airport_shuttle</md-icon>
-                                        {{airport.code}} - {{airport.name}}
+                                    <h4> {{airport.code}} - {{airport.name}}
                                     </h4>
 
                                     <p>{{airport.city}}, {{airport.country}}</p>
                                     <p class="airport-details">
-                                        <md-icon md-font-set="material-symbols-outlined">access_time</md-icon> {{airport.timezone}}
+                                        <md-icon md-font-set="material-symbols-outlined">access_time</md-icon>
+                                        {{airport.timezone}}
                                     </p>
                                     <p class="airport-coordinates">
-                                        <md-icon md-font-set="material-symbols-outlined">place</md-icon> {{ctrl.formatCoordinates(airport.latitude, airport.longitude)}}
+                                        <md-icon md-font-set="material-symbols-outlined">place</md-icon>
+                                        {{ctrl.formatCoordinates(airport.latitude, airport.longitude)}}
                                     </p>
                                 </div>
                                 <md-divider ng-if="!$last"></md-divider>
@@ -95,11 +95,4 @@
             </div>
         </div>
     </md-dialog-content>
-
-    <md-dialog-actions layout="row">
-        <span flex></span>
-        <md-button class="md-raised" ng-click="ctrl.cancel()">
-            Close
-        </md-button>
-    </md-dialog-actions>
 </md-dialog>

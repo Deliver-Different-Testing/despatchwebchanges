@@ -5,6 +5,7 @@ import {Frequency} from "../enums/frequency.enum";
 import {HolidayDeliveryOptions} from "../enums/holiday-delivery-options.enum";
 import {FlightSegmentViewModel } from "../components/Nationwide/nationwide.interfaces";
 import {AirportViewModel} from "../components/dialogs/flight-details-dialog/flight-details-dialog.interfaces";
+import {Address} from "./heremaps-autocomplete.interfaces";
 export interface IJob {
     id: number;
     rootParentId?: number;
@@ -290,6 +291,7 @@ export interface IAgent {
 
 export interface IAgentInfoDialog extends  IAgent {
     airports?: AirportViewModel[];
+    address?: AddressViewModel;
 }
 
 export interface JobQueryParams {
