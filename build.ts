@@ -35,6 +35,45 @@ class Bundler {
         return path.relative(this.rootDir, filePath);
     }
 
+    private get htmlMinifierPlugin(): esbuild.Plugin {
+        const isDev = this.isDev;
+
+        return {
+            name: "html-minifier",
+            setup(build: esbuild.PluginBuild) {
+                build.onLoad({ filter: /\.html$/ }, async (args) => {
+                    const html = await fs.promises.readFile(args.path, 'utf8');
+
+                    let minified = html;
+                    if (!isDev) {
+                        try {
+                            const { minify } = require('html-minifier-terser');
+                            minified = await minify(html, {
+                                collapseWhitespace: true,
+                                removeComments: true,
+                                minifyCSS: true,
+                                minifyJS: true,
+                                removeRedundantAttributes: true,
+                                removeScriptTypeAttributes: true,
+                                removeStyleLinkTypeAttributes: true,
+                                conservativeCollapse: true,
+                                preserveLineBreaks: false,
+                                preventAttributesEscaping: true
+                            });
+                        } catch (e) {
+                            console.error(`Error minifying HTML in ${args.path}:`, e);
+                        }
+                    }
+
+                    return {
+                        contents: minified,
+                        loader: 'text'
+                    };
+                });
+            },
+        };
+    }
+
     private get errorReportingPlugin(): esbuild.Plugin {
         const toRelativePath = this.toRelativePath.bind(this);
 
@@ -81,6 +120,7 @@ class Bundler {
                 lessLoader({
                     math: "always",
                 }),
+                this.htmlMinifierPlugin,
                 this.errorReportingPlugin,
             ],
             define: {
