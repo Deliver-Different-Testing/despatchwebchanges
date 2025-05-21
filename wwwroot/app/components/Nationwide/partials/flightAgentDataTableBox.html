@@ -433,7 +433,7 @@
                 <tr md-row
                     ng-repeat="agent in ctrl.agentOptions | filter: box.searchBox | orderBy: ctrl.agentTableQuery.order">
                     <td md-cell>{{agent.agentName}}</td>
-                    <td md-cell>{{agent.agentRate}}</td>
+                    <td md-cell>{{agent.agentRate | currency}}</td>
                     <td md-cell>{{agent.agentRanking}}</td>
                     <td md-cell md-truncate>{{agent.agentNotes}}</td>
                     <td class="actions" md-cell>

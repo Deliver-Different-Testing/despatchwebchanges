@@ -514,7 +514,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
             var returnValue = new OutputParameter<int>();
 
-            var results = await Context.Procedures.DD_stpGetCarrierFlightRateAsync(
+            await Context.Procedures.DD_stpGetCarrierFlightRateAsync(
                 clientID: job.UcjbClientId,
                 fromCity: job.PickupAddressLine4,
                 fromState: job.PickupAddressLine5,
@@ -533,7 +533,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 waitTime: null,
                 returnValue: returnValue);
 
-            return results.Count != 0 ? results.Select(r => r.Rate ?? 0).FirstOrDefault() : 0;
+            return returnValue.Value;
         }
         catch (Exception ex)
         {
@@ -613,8 +613,6 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             UcmmStaffId = staffId,
             SendToEmailAddress = agentEmail
         };
-
-        // ToDo: Add mobile sending
 
         Context.TucManualMessages.Add(request);
         await Context.SaveChangesAsync();
