@@ -1,4 +1,4 @@
-import {IAgent, IDispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
+import {IAgent, IAgentInfoDialog, IDispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
 import {IFlightViewModel} from "./nationwide.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {FlightDetailsViewModel} from "../dialogs/flight-details-dialog/flight-details-dialog.interfaces";
@@ -10,7 +10,7 @@ class NationwideService implements angular.IServiceProvider {
         "$http",
     ];
 
-    private flightCache: Map<string, {timestamp: number, data: any}> = new Map();
+    private flightCache: Map<string, { timestamp: number, data: any }> = new Map();
     private CACHE_DURATION = 5 * 60 * 1000;
 
     constructor(
@@ -24,11 +24,19 @@ class NationwideService implements angular.IServiceProvider {
     }
 
     async addEvent(eventData: JobEventData): Promise<void> {
-            await this.$http.post('job/addEvent', eventData);
+        await this.$http.post('job/addEvent', eventData);
     }
 
     async exsalerateActivity(eventName: string, notes: string, clientId: number, jobNumber: string, despatcherName: string) {
-        await this.$http.post(`job/ExsalerateActivity?eventName=${eventName}&notes=${notes}&clientId=${clientId}&jobNumber=${jobNumber}&despatcherName=${despatcherName}`, null);
+        await this.$http.post(`job/ExsalerateActivity`,
+            null, {
+                params: {
+                    eventName,
+                    notes, clientId,
+                    jobNumber,
+                    despatcherName,
+                }
+            });
     }
 
     async getNationwideJobs(
@@ -233,6 +241,15 @@ class NationwideService implements angular.IServiceProvider {
         await this.$http.post("nationwideJob/RestoreJob", {
             jobId,
         });
+    }
+
+    async getAgentInfoForDialog(agentId: number) {
+        const response = await this.$http.get<IAgentInfoDialog>("nationwideJob/GetAgentInfo", {
+            params: {
+                agentId,
+            }
+        });
+        return response.data;
     }
 
     private _prepareViewIdsForRequest(selectedAreas: DfrntPageViewModel[] | Suggestion[]): number[] {

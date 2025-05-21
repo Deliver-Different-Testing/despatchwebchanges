@@ -138,7 +138,14 @@ public static class JobMappings
 
             // Assigned agent
             AssignedAgent =
-                j.Agent != null ? new AgentViewModel { AgentName = j.Agent.UcagName } : null,
+                j.Agent != null
+                    ? new AgentViewModel
+                    {
+                        AgentName = j.Agent.UcagName,
+                        AgentEmail = j.Agent.UcagFax,
+                        AgentPhone = j.Agent.UcagPhone,
+                    }
+                    : null,
             Locked = j.UcjbLocked ?? false,
 
             ConNote = j.ParentId != null ? j.Parent.Connote : j.Connote,
@@ -382,6 +389,8 @@ public static class JobMappings
                     AgentName = j.Agent.UcagName,
                     AgentRanking =
                         j.Agent.Ranking != null ? j.Agent.Ranking.AgentRankingName : null,
+                    AgentEmail = j.Agent.UcagFax,
+                    AgentPhone = j.Agent.UcagPhone,
                 }
                 : null,
 
@@ -577,7 +586,7 @@ public static class JobMappings
                 ? new Suggestion { Id = j.DeliverByTimeZone.Id, Text = j.DeliverByTimeZone.Name }
                 : null,
 
-        Locked = j.UcjbLocked ?? false
+        Locked = j.UcjbLocked ?? false,
     };
 
     public static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping =
@@ -649,7 +658,13 @@ public static class JobMappings
 
             AssignedAgent =
                 j.Agent != null
-                    ? new AgentViewModel { AgentId = j.Agent.UcagId, AgentName = j.Agent.UcagName }
+                    ? new AgentViewModel
+                    {
+                        AgentId = j.Agent.UcagId,
+                        AgentName = j.Agent.UcagName,
+                        AgentEmail = j.Agent.UcagFax,
+                        AgentPhone = j.Agent.UcagPhone,
+                    }
                     : null,
 
             FromSuburbId = j.UcjbFrom,
@@ -759,7 +774,7 @@ public static class JobMappings
                     }
                     : null,
 
-            Locked = j.UcjbLocked.HasValue ? (bool?)(j.UcjbLocked != 0) : null
+            Locked = j.UcjbLocked.HasValue ? (bool?)(j.UcjbLocked != 0) : null,
         };
 
     public static readonly Expression<
@@ -772,12 +787,12 @@ public static class JobMappings
         Time = j.UcbkTime,
         RootParentId = j.RootParentId,
         RelatedJobs = j
-                .BookingParent.InverseBookingParent.Select(p => new Suggestion
-                {
-                    Id = p.UcbkId,
-                    Text = p.UcbkJobNumber,
-                })
-                .ToList(),
+            .BookingParent.InverseBookingParent.Select(p => new Suggestion
+            {
+                Id = p.UcbkId,
+                Text = p.UcbkJobNumber,
+            })
+            .ToList(),
         Date = j.UcbkDate.HasValue ? j.UcbkDate.Value.ToString("MM/dd/yyyy") : null,
         Booked = j.UcbkDate.HasValue
             ? CombineDateAndTime(j.UcbkDate.Value, j.UcbkTime)
@@ -880,14 +895,14 @@ public static class JobMappings
         NotifiedJobTypeId = j.NotifiedJobTypeId,
         AcceptedJobTypeId = j.AcceptedJobTypeId,
 
-            // References and amounts
-            RefA = j.UcbkClientRefa,
-            RefB = j.UcbkClientRefb,
-            Charge = j.UcbkAmount.HasValue ? $"{j.UcbkAmount:C}" : null,
+        // References and amounts
+        RefA = j.UcbkClientRefa,
+        RefB = j.UcbkClientRefb,
+        Charge = j.UcbkAmount.HasValue ? $"{j.UcbkAmount:C}" : null,
         /*j.ParentId == null || j.ParentId == j.UcbkId
                 ? $"${j.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}"
                 : $"${j.BookingParent.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}",*/
-            OurRef = j.UcbkOurRef,
+        OurRef = j.UcbkOurRef,
 
         // Size - has navigation in archive
         Size =
@@ -932,7 +947,8 @@ public static class JobMappings
                     j.PickUpLatitude ?? 0,
                     j.PickUpLongitude ?? 0,
                     j.DeliveryLatitude ?? 0,
-                    j.DeliveryLongitude ?? 0)
+                    j.DeliveryLongitude ?? 0
+                )
                 : (j.TotalDistance.HasValue ? (double)j.TotalDistance : 0),
 
         // Added recurring job fields

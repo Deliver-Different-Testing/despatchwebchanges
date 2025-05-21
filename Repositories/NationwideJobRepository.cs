@@ -342,7 +342,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             job.UcjbStatus = isGroundJob ? (int)JobStatus.GroundAgentAssigned
                                                 : isDepartureAirportAgent? (int)JobStatus.InboundAgentAssigned
                                                                          : (int)JobStatus.OutboundAgentAssigned;
-            
+
             job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
             job.UcjbDispDate = currentDate;
             job.UcjbDispTime = currentDate;
@@ -402,7 +402,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .Where(j => j.UcjbId == jobId)
             .Select(j => new NationwideJobDetail
             {
-                AirPortId = airportId, 
+                AirPortId = airportId,
                 VehicleSizeId = j.UcjbSize,
                 ClientId = j.UcjbClientId,
                 FromZipCode = j.PickupAddressLine7,
@@ -737,5 +737,34 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .FirstOrDefaultAsync();
 
         return processingTime ?? 60;
+    }
+
+    public async Task<AgentInfoDialogViewModel> GetAgentInfoForDialogAsync(int agentId)
+    {
+        var agentInfo = await Context.TucAgents
+            .Where(a => a.UcagId == agentId)
+            .Select(a => new AgentInfoDialogViewModel
+            {
+                AgentId = a.UcagId,
+                AgentEmail = a.UcagFax,
+                AgentPhone = a.UcagPhone,
+                AgentName = a.UcagName,
+                AgentNotes = a.UcagNotes,
+                AgentRanking = a.Ranking != null ? a.Ranking.AgentRankingName : string.Empty,
+                Airports = a.AgentVehicles.Count != 0 ? a.AgentVehicles.Select(av => new AirportViewModel
+                {
+                    Name = av.Airport.Name,
+                    Code = av.Airport.AirportCode,
+                    City = av.Airport.AddressLine5,
+                    Country = av.Airport.AddressLine8,
+                    Latitude = (double)av.Airport.Latitude,
+                    Longitude = (double)av.Airport.Longitude,
+                }).ToList() :
+                    new List<AirportViewModel>()
+            })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        return agentInfo;
     }
 }

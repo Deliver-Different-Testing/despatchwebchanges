@@ -34,6 +34,7 @@ import {isFlightJob} from "../../functions/isFlightJob";
 import greetUser from '../../functions/greetUser';
 import FlightAgentConfirmationDialogService
     from "../dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.service";
+import AgentInfoDialogService from "../dialogs/agent-info-dialog/agent-info-dialog.service";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -59,6 +60,7 @@ class NationwideControl extends BaseController {
         'jobAddStopService',
         '$stateParams',
         'flightAgentConfirmationDialogService',
+        'agentInfoDialogService',
     ];
 
     readonly nationwidePageId: number = AppPages.Domestic;
@@ -180,6 +182,7 @@ class NationwideControl extends BaseController {
         private jobAddStopService: JobAddStopService,
         private $stateParams: angular.ui.IStateParamsService,
         private flightAgentConfirmationDialogService: FlightAgentConfirmationDialogService,
+        private agentInfoDialogService: AgentInfoDialogService,
     ) {
         super();
         this.initServices($timeout, $interval);
@@ -901,13 +904,13 @@ class NationwideControl extends BaseController {
         if (job.van) {
             temp += "VAN ";
         }
-        if (job.truck || job.speedID === 45) {
+        if (job.truck || job.speedId === 45) {
             temp += "TRUCK ";
         }
         if (job.return) {
             temp += "RTN ";
         }
-        if (job.size?.id === 2 && !job.van && !job.truck && job.speedID !== 45) {
+        if (job.size?.id === 2 && !job.van && !job.truck && job.speedId !== 45) {
             temp = "CAR " + temp;
         }
         if (job.size?.id === 5) {
@@ -2124,6 +2127,10 @@ class NationwideControl extends BaseController {
 
     async addStopToJob($event: MouseEvent, job: IDispatchJob) {
         await this.jobAddStopService.addNewStop(job, $event);
+    }
+
+    async openAgentMoreInfo($event: MouseEvent, agent: IAgent) {
+        await this.agentInfoDialogService.openAgentInfoDialog($event, agent.agentId);
     }
 }
 
