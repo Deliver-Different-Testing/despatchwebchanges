@@ -153,7 +153,7 @@ public class FlightStatsService(
         query["appId"] = _appId;
         query["appKey"] = _appKey;
         query["payloadType"] = "cargo";
-        query["maxResults"] = "100";
+        query["maxResults"] = "30";
         query["includeCodeshares"] = "false";
         query["maxConnections"] = "1"; //default is 2
         query["numHours"] = "24"; //How many hours flights after the dateTime to search default are 6
@@ -210,19 +210,12 @@ public class FlightStatsService(
         // Pre-filter connections to avoid processing unnecessary data
         var connections = flightStatusResponse.Connections;
 
-        var flightOptions = await Task.WhenAll(connections
+        var flightOptions = connections
             .Where(conn => conn.ScheduledFlight.Count != 0)
-            .Select(async conn =>
+            .Select(conn =>
             {
                 var firstFlight = conn.ScheduledFlight.First();
                 var lastFlight = conn.ScheduledFlight.Last();
-
-                // Get amount from stored proc
-                var amount = await repository.GetCarrierFlightRateByJobIdAsync(
-                    jobId,
-                    firstFlight.CarrierFsCode,
-                    conn.ScheduledFlight.Count != 0,
-                    firstFlight.DepartureTime);
 
                 // Map flight segments with detailed info from appendix
                 var segments = conn.ScheduledFlight
@@ -279,6 +272,7 @@ public class FlightStatsService(
                     Airline = flightStatusResponse.Appendix?.Airlines
                         .FirstOrDefault(a => a.Fs == firstFlight.CarrierFsCode)
                         ?.Name,
+                    AirlineCode = firstFlight.CarrierFsCode,
                     FlightNumber = firstFlight.CarrierFsCode + firstFlight.FlightNumber,
                     DepartureTime = firstFlight.DepartureTime,
                     ArrivalTime = lastFlight.ArrivalTime,
@@ -291,7 +285,7 @@ public class FlightStatsService(
                         ?.Name,
                     ServiceClasses = firstFlight.ServiceClasses,
                     IsCodeShare = firstFlight.IsCodeShare,
-                    Amount = amount,
+                    Amount = 0, // Will fill this in on the next step
                     CodeShareAirline = firstFlight.IsCodeShare ? firstFlight.CarrierFsCode : null,
 
                       // Add new properties for multi-segment support
@@ -303,7 +297,7 @@ public class FlightStatsService(
                     // Add flight segments
                     FlightSegments = segments
                 };
-            }));
+            });
 
         return flightOptions.OrderBy(flight => flight.DepartureTime).ToList();
     }

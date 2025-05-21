@@ -503,7 +503,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .FirstOrDefault();
     }
 
-    public async Task<decimal> GetCarrierFlightRateByJobIdAsync(int jobId, string carrierName, bool extraStopOffs,
+    public async Task<decimal> GetCarrierFlightRateByJobIdAsync(int jobId, string carrierCode, bool extraStopOffs,
         DateTime? bookTime)
     {
         try
@@ -514,13 +514,13 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
             var returnValue = new OutputParameter<int>();
 
-            await Context.Procedures.DD_stpGetCarrierFlightRateAsync(
+            var rates = await Context.Procedures.DD_stpGetCarrierFlightRateAsync(
                 clientID: job.UcjbClientId,
-                fromCity: job.PickupAddressLine4,
-                fromState: job.PickupAddressLine5,
-                toCity: job.DeliveryAddressLine4,
-                toState: job.DeliveryAddressLine5,
-                carrierName: carrierName,
+                fromCity: job.PickupAddressLine5,
+                fromState: job.PickupAddressLine6,
+                toCity: job.DeliveryAddressLine5,
+                toState: job.DeliveryAddressLine6,
+                carrierCode: carrierCode,
                 totalWeight: job.UcjbWeight.HasValue ? (decimal)job.UcjbWeight.Value : 0,
                 quantity: job.UcjbQty,
                 cubic: null,
@@ -533,7 +533,9 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 waitTime: null,
                 returnValue: returnValue);
 
-            return returnValue.Value;
+            return rates
+                .Select(r => r.Rate)
+                .FirstOrDefault() ?? 0;
         }
         catch (Exception ex)
         {
