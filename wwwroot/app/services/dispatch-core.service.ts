@@ -437,12 +437,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         const response = await this.$http.get<Suggestion[]>("job/LeaveList");
         return response.data;
     }
-
-    async getUndeliverableList() {
-        const response = await this.$http.get("job/UndeliverableList");
-        return response.data;
-    }
-
+    
     async getInternalStatusList() {
         const response = await this.$http.get<InternalStatus[]>(
             "job/InternalStatusList"
@@ -802,15 +797,6 @@ class DispatchCoreService implements angular.IServiceProvider {
         selectedAreas: Suggestion[]
     ): Promise<IDispatchJob[]> {
         const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
-
-        //const paramObject = {
-        //    order: String(queryParams.order ?? "time"),
-        //    orderDirection: String(queryParams.orderDirection ?? "asc"),
-        //    dateCutoff: String(queryParams.dateCutoff ? moment(queryParams.dateCutoff).format() : moment().format()),
-        //    isInternal: String(internal),
-        //    cid: String(ContactID),
-        //    clientIds: selectedClients.length ? selectedClients.join(',') : ''
-        //};
 
         const paramObject: Record<string, string> = {
             order: String(queryParams.order ?? "time"),
