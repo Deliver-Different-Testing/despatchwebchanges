@@ -4,8 +4,7 @@ import ToastrService from "../../../services/toastr.service";
 import {IJobNote} from "../../../interfaces/job.interface";
 import "./sticky-notes.styles.less";
 import BaseController from "../../base-controller";
-import moment from "moment";
-import {timezoneShortFilter} from "../../../filters";
+import dayjs from "dayjs";
 
 class StickyNoteController extends BaseController {
     private previousJobId?: number;
@@ -141,8 +140,8 @@ class StickyNoteController extends BaseController {
     formatDate(date: Date | string): string {
         if (!date) return '';
 
-        const momentDate = moment(date);
-        const now = moment();
+        const momentDate = dayjs(date);
+        const now = dayjs();
         const diffDays = now.diff(momentDate, 'days');
 
         // Get the formatted timezone using the filter

@@ -6,8 +6,8 @@ import {ViewMode} from "./enums/view-mode";
 import BaseController from "../base-controller";
 import {ITaskListItemConfig} from "../common/task-item-component/task-item.interfaces";
 import {StatusFilter} from "./enums/status-filter";
-import moment from "moment/moment";
 import greetUser from "../../functions/greetUser";
+import dayjs from "dayjs";
 
 class TaskDashboardController extends BaseController {
     static $inject = [
@@ -79,8 +79,8 @@ class TaskDashboardController extends BaseController {
     timeZone: string;
     browserTimeZone: string;
     dateSearchRange: number = 1;
-    startDate: Date = moment(new Date(0)).toDate();
-    endDate: Date = moment().add(24, 'hours').toDate();
+    startDate: Date = dayjs(new Date(0)).toDate();
+    endDate: Date = dayjs().add(24, 'hours').toDate();
 
     constructor(
         private $mdSidenav: angular.material.ISidenavService,
@@ -210,16 +210,16 @@ class TaskDashboardController extends BaseController {
         }
 
         //// Set the date filter
-        //filters.date = moment(this.selectedDate).format();
+        //filters.date = dayjs(this.selectedDate).format();
 
         // Set the date filter based on dateSearchRange
         if (this.dateSearchRange == 1) {
             // 24 Hours mode - use selectedDate
-            filters.date = moment(this.selectedDate).format();
+            filters.date = dayjs(this.selectedDate).format();
         } else if (this.dateSearchRange == 2) {
             // Custom range mode - use startDate and endDate
-            filters.startDate = moment(this.startDate).format();
-            filters.endDate = moment(this.endDate).format();
+            filters.startDate = dayjs(this.startDate).format();
+            filters.endDate = dayjs(this.endDate).format();
         }
 
         return filters;
@@ -242,7 +242,7 @@ class TaskDashboardController extends BaseController {
                 const formattedHours = hours < 10 ? `0${hours}` : `${hours}`;
 
                 task.dueTimeStr = `${formattedHours}:${roundedMinutes === 0 ? '00' : roundedMinutes}`;
-                task.dueDate = moment(dueDate).format();
+                task.dueDate = dayjs(dueDate).format();
             } catch (error) {
                 console.error(`Error processing dueDate for task:`, task, error);
                 task.dueTimeStr = "00:00";
@@ -326,10 +326,10 @@ class TaskDashboardController extends BaseController {
     }
 
     getTasksByDate(date: Date): ExtendedTask[] {
-        const dateStr = moment(date).format();
+        const dateStr = dayjs(date).format();
 
         return this.filteredTasks.filter(task => {
-            const taskDate = moment(task.dueDate).format();
+            const taskDate = dayjs(task.dueDate).format();
             return taskDate === dateStr;
         });
     }
@@ -364,9 +364,9 @@ class TaskDashboardController extends BaseController {
         // If we're in custom date range mode, we should extend the range if needed
         if (this.dateSearchRange == 2) {
             if (this.selectedDate < this.startDate) {
-                this.startDate = moment(this.selectedDate).startOf('day').toDate();
+                this.startDate = dayjs(this.selectedDate).startOf('day').toDate();
             } else if (this.selectedDate > this.endDate) {
-                this.endDate = moment(this.selectedDate).endOf('day').toDate();
+                this.endDate = dayjs(this.selectedDate).endOf('day').toDate();
             }
         }
 
@@ -378,11 +378,11 @@ class TaskDashboardController extends BaseController {
 
         // If we're in custom date range mode, make sure today is in the range
         if (this.dateSearchRange == 2) {
-            const today = moment().startOf('day');
-            if (today.isBefore(moment(this.startDate)) || today.isAfter(moment(this.endDate))) {
+            const today = dayjs().startOf('day');
+            if (today.isBefore(dayjs(this.startDate)) || today.isAfter(dayjs(this.endDate))) {
                 // Adjust the range to include today
-                this.startDate = moment().subtract(3, 'days').startOf('day').toDate();
-                this.endDate = moment().add(3, 'days').endOf('day').toDate();
+                this.startDate = dayjs().subtract(3, 'days').startOf('day').toDate();
+                this.endDate = dayjs().add(3, 'days').endOf('day').toDate();
             }
         }
 
@@ -406,30 +406,30 @@ class TaskDashboardController extends BaseController {
 
         if (optionSelected === 1) {
             // 24 Hours mode - reset to defaults
-            this.startDate = moment(new Date(0)).toDate(); // Unix epoch start date
-            this.endDate = moment().add(24, 'hours').toDate(); // 24 hours from now
+            this.startDate = dayjs(new Date(0)).toDate(); // Unix epoch start date
+            this.endDate = dayjs().add(24, 'hours').toDate(); // 24 hours from now
 
             // Use current date for selectedDate
             this.selectedDate = new Date();
 
             console.log('24 Hours mode: Reset dates to defaults', {
-                startDate: moment(this.startDate).format('YYYY-MM-DD HH:mm:ss'),
-                endDate: moment(this.endDate).format('YYYY-MM-DD HH:mm:ss'),
-                selectedDate: moment(this.selectedDate).format('YYYY-MM-DD HH:mm:ss')
+                startDate: dayjs(this.startDate).format('YYYY-MM-DD HH:mm:ss'),
+                endDate: dayjs(this.endDate).format('YYYY-MM-DD HH:mm:ss'),
+                selectedDate: dayjs(this.selectedDate).format('YYYY-MM-DD HH:mm:ss')
             });
         } else {
             // Custom mode - If dates aren't set, initialize them to reasonable defaults
             if (!this.startDate) {
-                this.startDate = moment().subtract(7, 'days').toDate(); // 7 days ago
+                this.startDate = dayjs().subtract(7, 'days').toDate(); // 7 days ago
             }
 
             if (!this.endDate) {
-                this.endDate = moment().add(1, 'days').toDate(); // tomorrow
+                this.endDate = dayjs().add(1, 'days').toDate(); // tomorrow
             }
 
             console.log('Custom mode: Set custom date range', {
-                startDate: moment(this.startDate).format('YYYY-MM-DD HH:mm:ss'),
-                endDate: moment(this.endDate).format('YYYY-MM-DD HH:mm:ss')
+                startDate: dayjs(this.startDate).format('YYYY-MM-DD HH:mm:ss'),
+                endDate: dayjs(this.endDate).format('YYYY-MM-DD HH:mm:ss')
             });
         }
 

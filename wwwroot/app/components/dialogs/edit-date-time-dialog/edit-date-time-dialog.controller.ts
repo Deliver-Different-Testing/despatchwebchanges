@@ -1,11 +1,11 @@
 import "./edit-date-time-dialog.less";
 import ToastrService from "../../../services/toastr.service";
 import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interfaces";
-import moment from "moment";
 import {Suggestion, TimeZoneSuggestion} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import {JobProperty} from "../../../enums/job-property.enum";
 import {findWindows} from "windows-iana";
+import dayjs from "dayjs";
 
 export class EditDateTimeDialogController extends BaseController {
     static $inject = [
@@ -46,8 +46,8 @@ export class EditDateTimeDialogController extends BaseController {
 
         // Ensure we have a valid date to start with
         this.registerTimeout(() => {
-            if (!this.dateTime || !moment(this.dateTime).isValid()) {
-                this.dateTime = moment().toDate();
+            if (!this.dateTime || !dayjs(this.dateTime).isValid()) {
+                this.dateTime = dayjs().toDate();
             }
         })
 
@@ -67,7 +67,7 @@ export class EditDateTimeDialogController extends BaseController {
     }
 
     isValid(): boolean {
-        if (!this.dateTime || !moment(this.dateTime).isValid()) {
+        if (!this.dateTime || !dayjs(this.dateTime).isValid()) {
             return false;
         }
 
@@ -111,7 +111,7 @@ export class EditDateTimeDialogController extends BaseController {
             return '';
         }
 
-        return moment(dateTime).format('YYYY-MM-DD HH:mm');
+        return dayjs(dateTime).format('YYYY-MM-DD HH:mm');
     }
 
     cancel(): void {

@@ -3,7 +3,8 @@ import OverviewFiltersService from "../services/overview-filters.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import {DriverViewModel, OpenJobResponse, OverviewQueryParams, ViewJob} from "../overview.interfaces";
 import BaseController from "../../base-controller";
-import moment from "moment";
+import dayjs from "dayjs";
+import duration from 'dayjs/plugin/duration';
 
 class OpenJobsWidgetController extends BaseController {
     static $inject = [
@@ -37,6 +38,8 @@ class OpenJobsWidgetController extends BaseController {
         private $filter: angular.IFilterService,
     ) {
         super();
+
+        dayjs.extend(duration);
 
         this.isUsCustomer = APP_CONFIG.US_Customer;
         this.sortBy = "jobId";
@@ -157,7 +160,7 @@ class OpenJobsWidgetController extends BaseController {
     }
 
     private _formatTime(timestamp: Date): string {
-        return moment(timestamp).format("HH:mm");
+        return dayjs(timestamp).format("HH:mm");
     }
 
     compareJobs(a: ViewJob, b: ViewJob): number {
@@ -170,12 +173,12 @@ class OpenJobsWidgetController extends BaseController {
 
             switch (field) {
                 case "pickup":
-                    comparison = moment(a.pickup.time).valueOf() -
-                        moment(b.pickup.time).valueOf();
+                    comparison = dayjs(a.pickup.time).valueOf() -
+                        dayjs(b.pickup.time).valueOf();
                     break;
                 case "delivery":
-                    comparison = moment(a.delivery.time).valueOf() -
-                        moment(b.delivery.time).valueOf();
+                    comparison = dayjs(a.delivery.time).valueOf() -
+                        dayjs(b.delivery.time).valueOf();
                     break;
                 case "driverName":
                     comparison = (a.driverName || '').localeCompare(b.driverName || '');
@@ -238,15 +241,15 @@ class OpenJobsWidgetController extends BaseController {
         const timezoneShort = this.$filter<(timezone: string) => string>('timezoneShort')(TimeZone);
         const timezoneDisplay = timezoneShort ? ` (${timezoneShort})` : '';
 
-        return moment(timestamp).format(format) + timezoneDisplay;
+        return dayjs(timestamp).format(format) + timezoneDisplay;
     }
 
     getTimeSinceLastCompleted(lastCompletedTime: string): number {
         if (lastCompletedTime === "N/A") return 0;
 
-        const lastCompleted = moment(lastCompletedTime, "HH:mm");
-        const now = moment();
-        const duration = moment.duration(now.diff(lastCompleted));
+        const lastCompleted = dayjs(lastCompletedTime, "HH:mm");
+        const now = dayjs();
+        const duration = dayjs.duration(dayjs(now).diff(lastCompleted));
 
         return Math.round(duration.asMinutes());
     }

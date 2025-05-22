@@ -13,7 +13,6 @@ import BaseController from "../base-controller";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import JobDataType from "./enums/JobDataType";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
-import moment from "moment";
 import AddEventDialogService from "../dialogs/add-event-dialog/add-event-dialog.service";
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 import JobContextMenuService from "../../services/job-context-menu.service";
@@ -35,6 +34,7 @@ import greetUser from '../../functions/greetUser';
 import FlightAgentConfirmationDialogService
     from "../dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.service";
 import AgentInfoDialogService from "../dialogs/agent-info-dialog/agent-info-dialog.service";
+import dayjs from "dayjs";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -63,8 +63,8 @@ class NationwideControl extends BaseController {
         'agentInfoDialogService',
     ];
 
-    readonly nationwidePageId: number = AppPages.Domestic;
-    readonly isUsCustomer: boolean = false;
+    public readonly nationwidePageId: number = AppPages.Domestic;
+    public readonly isUsCustomer: boolean = false;
 
     layouts: any[] = [];
     defaultLayout?: any;
@@ -114,7 +114,7 @@ class NationwideControl extends BaseController {
     pickClients: any;
     boxSortableOptions: angular.ui.SortableOptions<any>;
     hereCredentials?: ApiConfig;
-    mapConfig?: HereMapsConfig;
+    mapConfig?: any;
     currentSelection?: string;
     agentsLoading: boolean = false;
     agentListPromise?: Promise<{ agents: IAgent[], message: string | null }>;
@@ -156,8 +156,8 @@ class NationwideControl extends BaseController {
 
     browserTimeZone: string;
     dateSearchRange: number = 1;
-    startDate: Date = moment(new Date(0)).toDate();
-    endDate: Date = moment().add(24, 'hours').toDate();
+    startDate: Date = dayjs(new Date(0)).toDate();
+    endDate: Date = dayjs().add(24, 'hours').toDate();
 
     constructor(
         private $scope: angular.IScope,
@@ -546,7 +546,7 @@ class NationwideControl extends BaseController {
     }
 
     initHereMaps() {
-        this.configService.getHereMapsKey().then((response) => {
+        this.configService.getHereMapsKey().then((response: string) => {
             this.hereCredentials = {
                 apiKey: response
             };
@@ -605,25 +605,6 @@ class NationwideControl extends BaseController {
             }
         });
     }
-
-    //async toggleView(view: DfrntPageViewModel) {
-    //    this.registerTimeout(() => {
-    //        if (view.selected) {
-    //            if (!this.selectedViews.some((v: DfrntPageViewModel) => v.id === view.id)) {
-    //                this.selectedViews.push(view);
-    //            }
-    //        } else {
-    //            const index = this.selectedViews.findIndex((v: DfrntPageViewModel) => v.id === view.id);
-    //            if (index > -1) {
-    //                this.selectedViews.splice(index, 1);
-    //            }
-    //        }
-
-    //        this.saveViewsToStorage(this.selectedViews);
-    //    });
-
-    //    await this.getData();
-    //}
 
     async toggleView(view: DfrntPageViewModel) {
         // Update the selectedViews array immediately instead of in a timeout
@@ -1023,6 +1004,8 @@ class NationwideControl extends BaseController {
         try {
             if (!job) return;
 
+            console.log(`Selecting job ${job.jobNo}`);
+
             this.markJobReadStatus(job.id, true);
 
             this.currentJob = job;
@@ -1031,16 +1014,27 @@ class NationwideControl extends BaseController {
             // Set isDeliveryJobType flag
             this.isDeliveryJobType = this.isDeliveryJob(job);
 
-            // Pass job directly to updateUIState
+            // Update UI first
             this.updateUIState(job);
-
             this.updateCurrentSelection(job.jobNo);
+
+            // Display job on map before loading related data
+            // Creating a slight delay can help ensure the UI is ready
+            this.registerTimeout(() => {
+                this.displayJobOnMap(job);
+            }, 50);
+
+            // Then load related data asynchronously
             await this.handleJobSelectionRelatedData(job);
 
+            // Force another map update after all data is loaded
             this.registerTimeout(() => {
                 console.log('Final UI update after job selection completed');
                 this.updateUIState(job);
-            });
+
+                // Update map again to ensure it's displaying correctly
+                this.displayJobOnMap(job);
+            }, 100);
         } catch (error) {
             console.error("Error in selectJob:", error);
         }
@@ -1085,21 +1079,50 @@ class NationwideControl extends BaseController {
             await this.processAgents(job);
         }
 
-        this.displayJobOnMap(job);
         this.updateUIState(job);
     }
 
     private displayJobOnMap(job: IDispatchJob) {
         try {
+            if (!job) {
+                console.warn('No job provided to displayJobOnMap');
+                return;
+            }
+
+            console.log(`Displaying job ${job.jobNo} on map`);
+
+            // Create a completely new mapConfig object
             this.mapConfig = this.calculateMapBounds(job);
-            console.log('Calculated map bounds!');
+
+            // Force Angular to detect the change with $applyAsync
+            this.$scope.$applyAsync(() => {
+                console.log('Map config updated:', this.mapConfig);
+            });
         } catch (error) {
-            console.error(error);
-            this.toastrService.showErrorToast('An unexpected error occured displaying this job on the map');
+            console.error('Error in displayJobOnMap:', error);
+            this.toastrService.showErrorToast('An unexpected error occurred displaying this job on the map');
         }
     }
 
     private calculateMapBounds(job: IDispatchJob) {
+        // Early validation
+        if (!job || !job.pickupAddress || !job.deliveryAddress) {
+            console.warn('Invalid job data in calculateMapBounds', {
+                hasJob: !!job,
+                hasPickupAddress: job ? !!job.pickupAddress : false,
+                hasDeliveryAddress: job ? !!job.deliveryAddress : false
+            });
+
+            // Return default map config
+            return {
+                center: this.appConfig.US_Customer ?
+                    this.appConfig.US_Coordinates_Center :
+                    this.appConfig.NZ_Coordinates_Center,
+                zoom: 7,
+                selectedJobIndex: 0
+            };
+        }
+
         const pickupCoords: Coordinates = {
             lat: job.pickupAddress?.latitude ?? 0,
             lng: job.pickupAddress?.longitude ?? 0
@@ -1140,6 +1163,7 @@ class NationwideControl extends BaseController {
                 delivery: deliveryCoords,
                 childJobs: {},
                 flight: job.speedId === 415,
+                timestamp: Date.now()
             },
             selectedJobIndex: 0
         };
@@ -1224,13 +1248,13 @@ class NationwideControl extends BaseController {
         });
 
         try {
-            const now = moment();
+            const now = dayjs();
             let departureDate;
 
             if (this.lastDepartureTime) {
-                departureDate = moment(this.lastDepartureTime);
+                departureDate = dayjs(this.lastDepartureTime);
             } else if (this.currentJob.booked) {
-                departureDate = moment(this.currentJob.booked);
+                departureDate = dayjs(this.currentJob.booked);
             } else {
                 departureDate = now;
             }
@@ -1295,7 +1319,7 @@ class NationwideControl extends BaseController {
     }
 
     async loadNextDayFlights() {
-        if(!this.currentJob) {
+        if (!this.currentJob) {
             this.toastrService.showWarningToast("Please select a job to view flight options");
             return;
         }
@@ -1322,7 +1346,7 @@ class NationwideControl extends BaseController {
     async addFlightToJob($event: MouseEvent, flight: IFlightViewModel, job: IDispatchJob) {
         try {
             const result = await this.flightAgentConfirmationDialogService.flightConfirmationDialog($event, job, flight)
-            if(!result.shouldAssign) return;
+            if (!result.shouldAssign) return;
 
             console.log('Assigning to job');
 
@@ -1341,7 +1365,7 @@ class NationwideControl extends BaseController {
                 flight  // Pass the entire flight object with all segments
             );
 
-            if(result.awb) {
+            if (result.awb) {
                 await this.DispatchData.updateJobDetail(job.id, JobProperty.ConNote, result.awb ?? '', false);
             }
 
@@ -1379,13 +1403,13 @@ class NationwideControl extends BaseController {
     async addSelectedAgentToJob($event: MouseEvent, agent: Suggestion, job: IDispatchJob) {
         try {
             const result = await this.flightAgentConfirmationDialogService.agentConfirmationDialog($event, job, agent)
-            if(!result.shouldAssign) return;
+            if (!result.shouldAssign) return;
 
             console.log('Assigning to job');
 
             await this.nationwideService.assignAgentToJob(job.id, agent.id);
 
-            if(result.awb) {
+            if (result.awb) {
                 await this.DispatchData.updateJobDetail(job.id, JobProperty.ConNote, result.awb, false);
             }
 
@@ -1590,15 +1614,15 @@ class NationwideControl extends BaseController {
             const fetchPromises = [];
 
             if (requestedTypes.includes(JobDataType.NEW) && this.jobListPromise) {
-                fetchPromises.push(this.jobListPromise.then(data => ({ type: JobDataType.NEW, data })));
+                fetchPromises.push(this.jobListPromise.then(data => ({type: JobDataType.NEW, data})));
             }
 
             if (requestedTypes.includes(JobDataType.POD) && this.podListPromise) {
-                fetchPromises.push(this.podListPromise.then(data => ({ type: JobDataType.POD, data })));
+                fetchPromises.push(this.podListPromise.then(data => ({type: JobDataType.POD, data})));
             }
 
             if (requestedTypes.includes(JobDataType.REPRICE) && this.repriceListPromise) {
-                fetchPromises.push(this.repriceListPromise.then(data => ({ type: JobDataType.REPRICE, data })));
+                fetchPromises.push(this.repriceListPromise.then(data => ({type: JobDataType.REPRICE, data})));
             }
 
             // Execute in parallel
@@ -1606,7 +1630,7 @@ class NationwideControl extends BaseController {
             const results = await Promise.all(fetchPromises);
 
             // Update state with results
-            results.forEach(({ type, data }) => {
+            results.forEach(({type, data}) => {
                 this.registerTimeout(() => {
                     if (type === JobDataType.NEW) {
                         this.jobList = data || [];
@@ -1671,8 +1695,8 @@ class NationwideControl extends BaseController {
             return '';
         }
 
-        const followupTime = moment(job.followupTime);
-        const now = moment();
+        const followupTime = dayjs(job.followupTime);
+        const now = dayjs();
         const diffMinutes = followupTime.diff(now, 'minutes');
 
         if (diffMinutes > 30) {
@@ -1999,8 +2023,8 @@ class NationwideControl extends BaseController {
         if (!firstSegment || !secondSegment) return '';
 
         // Calculate time difference in minutes
-        const firstArrival = moment(firstSegment.arrivalTime);
-        const secondDeparture = moment(secondSegment.departureTime);
+        const firstArrival = dayjs(firstSegment.arrivalTime);
+        const secondDeparture = dayjs(secondSegment.departureTime);
         const diffMinutes = secondDeparture.diff(firstArrival, 'minutes');
 
         // Format as hours and minutes
@@ -2110,17 +2134,16 @@ class NationwideControl extends BaseController {
                 await this.getJobList(JobDataType.POD);
                 break;
             default:
-                // Add a default case if needed
                 break;
         }
     }
 
     async onSearchRangeChange(optionSelected: number) {
-        if(optionSelected != 1) return;
+        if (optionSelected != 1) return;
 
         // Set for 24 hours
-        this.startDate = moment(new Date(0)).toDate();
-        this.endDate = moment().add(24, 'hours').toDate();
+        this.startDate = dayjs(new Date(0)).toDate();
+        this.endDate = dayjs().add(24, 'hours').toDate();
 
         await this.getData();
     }
@@ -2131,6 +2154,15 @@ class NationwideControl extends BaseController {
 
     async openAgentMoreInfo($event: MouseEvent, agent: IAgent) {
         await this.agentInfoDialogService.openAgentInfoDialog($event, agent.agentId);
+    }
+
+    refreshMap() {
+        if (this.currentJob) {
+            console.log('Manually refreshing map for current job');
+            this.displayJobOnMap(this.currentJob);
+        } else {
+            console.warn('No current job to display on map');
+        }
     }
 }
 

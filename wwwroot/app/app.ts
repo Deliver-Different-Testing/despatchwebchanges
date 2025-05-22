@@ -1,5 +1,3 @@
-import "moment";
-import "moment-timezone";
 import {AppConfig} from "./interfaces/app-config.interface";
 import {AppPages} from "./enums/app-pages.enum";
 import {PodPhotoViewerComponent} from "./components/common/pod-photo-viewer/pod-photo-viewer.component";
@@ -49,11 +47,9 @@ import AdditionalServicesDialogService
 import AdditionalServicesDialogController
     from "./components/dialogs/additional-services-dialog/additional-services-dialog.controller";
 import JobDetailComponent from "./components/common/job-details/job-details.component";
-import NoDataComponent from "./components/common/no-data/no-data.component";
 import JobFileUploadController from "./components/dialogs/job-file-upload-dialog/job-file-upload.controller";
 import JobFileUploadDialogService from "./components/dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import NationwideComponent from "./components/Nationwide/nationwide.controller";
-import moment from "moment";
 import NoteManagementDialogService from "./components/dialogs/note-management-dialog/note-management.dialog.service";
 import NoteManagementDialogController
     from "./components/dialogs/note-management-dialog/note-management-dialog.component";
@@ -98,6 +94,9 @@ import FlightAgentConformationDialogController
 import AgentInfoDialogController from "./components/dialogs/agent-info-dialog/agent-info-dialog.controller";
 import AgentInfoDialogService from "./components/dialogs/agent-info-dialog/agent-info-dialog.service";
 import AddressLookupService from "./services/address-lookup.service";
+import dayjs from "dayjs";
+import 'dayjs/locale/en';
+import NoDataComponent from "./components/common/no-data/no-data.component"; // or your preferred locale
 
 const app = (window as any).uDispatchApp;
 
@@ -158,29 +157,62 @@ app
         APP_CONFIG: AppConfig) => {
         if (!APP_CONFIG.US_Customer) {
             // Set locale to New Zealand English
-            moment.locale("en-nz");
+            dayjs().locale("en-nz");
 
-            $mdDateLocaleProvider.formatDate = (date: Date) => moment(date).format("DD/MM/YYYY");
+            $mdDateLocaleProvider.formatDate = (date: Date) => dayjs(date).format("DD/MM/YYYY");
 
             $mdDateLocaleProvider.parseDate = (dateString: string) => {
-                const m = moment(dateString, "DD/MM/YYYY", true);
+                const m = dayjs(dateString, "DD/MM/YYYY", true);
                 return m.isValid() ? m.toDate() : new Date();
             };
 
             // First day of the week is Monday (1) in New Zealand
             $mdDateLocaleProvider.firstDayOfWeek = 1;
 
-            // Define month names
-            $mdDateLocaleProvider.months = moment.months();
+// Helper function to get all month names
+            function getAllMonthNames() {
+                const months = [];
+                for (let i = 0; i < 12; i++) {
+                    months.push(dayjs().month(i).format('MMMM'));
+                }
+                return months;
+            }
 
-            // Define day names (start with Monday)
-            $mdDateLocaleProvider.days = moment.weekdays(true);
+// Helper function to get all weekday names (starting with Monday if true)
+            function getAllWeekdays(startWithMonday = false) {
+                const weekdays = [];
+                let startDay = startWithMonday ? 1 : 0; // 0 = Sunday, 1 = Monday
 
-            // Define short day names (start with Monday)
-            $mdDateLocaleProvider.shortDays = moment.weekdaysShort(true);
+                for (let i = 0; i < 7; i++) {
+                    const day = (startDay + i) % 7;
+                    weekdays.push(dayjs().day(day).format('dddd'));
+                }
+                return weekdays;
+            }
+
+// Helper function to get short weekday names
+            function getShortWeekdays(startWithMonday = false) {
+                const shortDays = [];
+                let startDay = startWithMonday ? 1 : 0;
+
+                for (let i = 0; i < 7; i++) {
+                    const day = (startDay + i) % 7;
+                    shortDays.push(dayjs().day(day).format('ddd'));
+                }
+                return shortDays;
+            }
+
+// Define month names
+            $mdDateLocaleProvider.months = getAllMonthNames();
+
+// Define day names (start with Monday)
+            $mdDateLocaleProvider.days = getAllWeekdays(true);
+
+// Define short day names (start with Monday)
+            $mdDateLocaleProvider.shortDays = getShortWeekdays(true);
 
             // Month header formatter
-            $mdDateLocaleProvider.monthHeaderFormatter = (date: Date) => moment(date).format("MMMM YYYY");
+            $mdDateLocaleProvider.monthHeaderFormatter = (date: Date) => dayjs(date).format("MMMM YYYY");
 
             // Week number formatter
             $mdDateLocaleProvider.weekNumberFormatter = (weekNumber: number) => `Week ${weekNumber}`;

@@ -1,5 +1,5 @@
 import {AppConfig} from "../../interfaces/app-config.interface";
-import {IDispatchJob, IJob} from "../../interfaces/job.interface";
+import {IJob} from "../../interfaces/job.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import {ClientInternal, ContactID} from "../../contants";
@@ -85,7 +85,6 @@ class RecurringJobsController extends BaseController {
     pagedData: IJob[] = [];
     searchText: string = "";
     promise: angular.IPromise<any> | null = null;
-    currentSelection?: string;
     showInput: Record<string, boolean> = {};
     jobRecordSearchText: string = "";
     cancelledSelected?: boolean;
@@ -113,10 +112,6 @@ class RecurringJobsController extends BaseController {
         this.isUsCustomer = appConfig.US_Customer;
         this.isAdmin = ClientInternal;
 
-        this.$scope.$on('jobChanged', (_, newJob: IDispatchJob) => {
-            this.updateCurrentSelection(newJob.jobNo);
-        });
-
         this._initializeLayout();
     }
 
@@ -129,10 +124,6 @@ class RecurringJobsController extends BaseController {
 
         // Initial data load
         this.refreshData().then(() => console.log("Data Refreshed"));
-    }
-
-    private updateCurrentSelection(jobNo: string): void {
-        this.currentSelection = ` for Job ${jobNo}`;
     }
 
     saveLayout() {

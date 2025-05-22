@@ -206,9 +206,11 @@ public class FlightStatsService(
 
         var content = await response.Content.ReadAsStringAsync();
         var flightStatusResponse = JsonSerializer.Deserialize<FlightConnectionsResponse>(content);
+        ArgumentNullException.ThrowIfNull(flightStatusResponse);
 
         // Pre-filter connections to avoid processing unnecessary data
         var connections = flightStatusResponse.Connections;
+        if(connections is null) return [];
 
         var flightOptions = connections
             .Where(conn => conn.ScheduledFlight.Count != 0)
@@ -247,7 +249,7 @@ public class FlightStatsService(
                             ElapsedTime = segment.ElapsedTime,
                             StopsInSegment = segment.Stops,
 
-                            // Additional details from appendix
+                            // Additional details from the appendix
                             DepartureAirportName = depAirport?.Name,
                             DepartureAirportCity = depAirport?.City,
                             DepartureAirportCountry = depAirport?.CountryName,

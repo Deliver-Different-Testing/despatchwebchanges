@@ -1,9 +1,8 @@
 import {IAgent, IAgentInfoDialog, IDispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
 import {IFlightViewModel} from "./nationwide.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
-import {FlightDetailsViewModel} from "../dialogs/flight-details-dialog/flight-details-dialog.interfaces";
 import {JobEventData} from "../dialogs/add-event-dialog/add-event-dialog.interfaces";
-import moment from "moment";
+import dayjs from "dayjs";
 
 class NationwideService implements angular.IServiceProvider {
     static $inject = [
@@ -57,8 +56,8 @@ class NationwideService implements angular.IServiceProvider {
         const paramObject = {
             order: String(queryParams.order ?? defaultParams.order),
             orderDirection: String(queryParams.orderDirection ?? defaultParams.orderDirection),
-            startDate: String(queryParams.startDate ? moment(queryParams.startDate).format() : null),
-            dateCutoff: String(queryParams.dateCutoff ? moment(queryParams.dateCutoff).format() : null),
+            startDate: String(queryParams.startDate ? dayjs(queryParams.startDate).format() : null),
+            dateCutoff: String(queryParams.dateCutoff ? dayjs(queryParams.dateCutoff).format() : null),
             isInternal: String(internal),
             cid: String(ContactID),
             clientIds: selectedClients.length ? selectedClients.join(',') : '',
@@ -101,7 +100,7 @@ class NationwideService implements angular.IServiceProvider {
         lastDepartureTime: Date | null;
     }> {
         const startTime = performance.now();
-        const formattedDate = moment(departureDate).format('YYYY-MM-DDTHH:mm:ss');
+        const formattedDate = dayjs(departureDate).format('YYYY-MM-DDTHH:mm:ss');
 
         // Create a cache key based on the parameters
         const cacheKey = `flights_${jobId}_${formattedDate}_${airlineId || 'all'}_${departureAirportId || 'default'}`;
@@ -214,19 +213,6 @@ class NationwideService implements angular.IServiceProvider {
                 jobId,
             }
         });
-        return response.data;
-    }
-
-    async getFlightConnectionsInfoForDialog(flightNumber: string, departureDate: Date): Promise<FlightDetailsViewModel[]> {
-        const formattedDate = moment(departureDate).format();
-
-        const response = await this.$http.get<FlightDetailsViewModel[]>("nationwideJob/GetFlightInfo", {
-            params: {
-                flightNumber: flightNumber,
-                departureDate: formattedDate
-            }
-        });
-
         return response.data;
     }
 

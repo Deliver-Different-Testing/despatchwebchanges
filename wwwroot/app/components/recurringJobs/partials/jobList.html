@@ -1,10 +1,9 @@
 <md-table-container class="table-scroll-with-pagination">
-    <table md-progress="ctrl.promise" md-row-select md-table multiple ng-model="ctrl.selectedPrebooks">
+    <table md-progress="ctrl.promise" md-row-select md-table ng-model="ctrl.selectedPrebooks">
         <thead fix-head md-head md-order="ctrl.jobQuery.order">
         <tr md-row>
             <th md-column md-order-by="booked">Booked</th>
             <th md-column md-order-by="speed">Speed</th>
-            <th md-column md-order-by="jobNo">Job</th>
             <th md-column md-order-by="client">Client</th>
             <th md-column md-order-by="from">From</th>
             <th md-column md-order-by="to">To</th>
@@ -21,7 +20,6 @@
 
             <td md-cell>{{job.booked | momentFormat:"HH:mm"}} ({{ctrl.timeZone | timezoneShort}})</td>
             <td md-cell>{{job.speed}}</td>
-            <td md-cell>{{job.jobNo}}</td>
             <td md-cell>{{job.client}}</td>
             <td md-cell>
                 <span> {{ctrl.isUsCustomer ? job.pickupAddress.fullAddress : job.fromAddress}}</span>
