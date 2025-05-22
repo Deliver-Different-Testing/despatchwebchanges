@@ -567,6 +567,8 @@ public partial class TucClient
 
     public string PurchaseOrderNumber { get; set; }
 
+    public virtual ICollection<TblAfterHour> TblAfterHours { get; set; } = new List<TblAfterHour>();
+
     public virtual ICollection<TblBulkRunSchedule> TblBulkRunSchedules { get; set; } = new List<TblBulkRunSchedule>();
 
     public virtual ICollection<TblClientAvailableSpeed> TblClientAvailableSpeeds { get; set; } = new List<TblClientAvailableSpeed>();

@@ -269,6 +269,10 @@ public partial class TucCourier
 
     public virtual TblCourierLogInOut CourierLogInOut { get; set; }
 
+    public virtual ICollection<TblAfterHour> TblAfterHours { get; set; } = new List<TblAfterHour>();
+
+    public virtual ICollection<TblHoliday> TblHolidays { get; set; } = new List<TblHoliday>();
+
     public virtual ICollection<TucEvent> TucEvents { get; set; } = new List<TucEvent>();
 
     public virtual ICollection<TucJobArchive> TucJobArchives { get; set; } = new List<TucJobArchive>();

@@ -130,9 +130,6 @@ builder.Services.AddHttpClient("HereMaps", client =>
 });
 builder.Services.AddHttpContextAccessor();
 
-
-
-
 builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<INationwideJobRepository, NationwideJobRepository>();
 builder.Services.AddScoped<ICourierRepository, CourierRepository>();
@@ -146,6 +143,7 @@ builder.Services.AddScoped<IClientAccessValidatorService, ClientAccessValidatorS
 builder.Services.AddScoped<IRateJobService, RateJobService>();
 builder.Services.AddScoped<ICountryService, CountryService>();
 builder.Services.AddScoped<ITenantInfoService, TenantInfoService>();
+builder.Services.AddScoped<IFlightRateService, FlightRateService>();
 
 // Register DespatchContext with a dummy connection string
 builder.Services.AddDbContextFactory<DespatchContext>(options =>

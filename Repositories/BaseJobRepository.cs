@@ -28,7 +28,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         return result.Entity;
     }
 
-    protected async Task<T> Get<T>(int id)
+    public async Task<T> GetByIdAsync<T>(int id)
         where T : class => await Context.Set<T>().FindAsync(id);
 
     protected async Task<List<DispatchJobViewModel>> DespatchQry(
