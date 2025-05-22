@@ -392,7 +392,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         if (airportId == null)
         {
             var nearbyAirports = await GetNearbyAirportsAsync(jobId);
-            if (nearbyAirports.Any())
+            if (nearbyAirports.Count != 0)
             {
                 airportId = nearbyAirports.First().Id;
                 Log.Information("Using nearest airport {AirportId} for job {JobId}", airportId, jobId);

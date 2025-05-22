@@ -131,6 +131,11 @@ public class NationwideJobController(
                 extendedOptions: null,
                 minimumLayoverMinutes: minimumLayoverMinutes);
 
+            if (flights is null || flights.Count == 0)
+            {
+                stopwatch.Stop();
+                return Json(new List<FlightViewModel>());
+            }
 
             // Get the rates
             foreach (var flight in flights)
@@ -167,12 +172,12 @@ public class NationwideJobController(
         try
         {
             if (request is null)
-                return BadRequest("Oops, no flight data was provided. Unable to assign to job.");
+                return BadRequest("No flight data was provided. Unable to assign to job.");
 
             // Get flight details
             AddFlightToJobDto flight;
 
-            if (request.FlightSegments != null && request.FlightSegments.Any())
+            if (request.FlightSegments != null && request.FlightSegments.Count != 0)
             {
                 // Map flight segments from request
                 flight = new AddFlightToJobDto
@@ -232,13 +237,6 @@ public class NationwideJobController(
                         webhookIds.Add(webhookId);
                     }
                 }
-
-                //// Create a webhook for each flight segment using the segment counts
-                //// This is a temporary solution until the actual webhook creation is implemented
-                //for (int i = 0; i < flight.FlightSegments.Count; i++)
-                //{
-                //    webhookIds.Add( "WebhookID for Segment:" + i.ToString());
-                //}
             }
             catch (Exception ex)
             {

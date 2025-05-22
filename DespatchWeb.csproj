@@ -292,7 +292,6 @@
   <ItemGroup>
     <TypeScriptCompile Include="wwwroot\app\components\base-controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\common\no-data\no-data.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\pod-photo-viewer\pod-photo-viewer.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\side-nav\side-nav.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\side-nav\side-nav.interfaces.ts" />

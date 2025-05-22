@@ -8,7 +8,7 @@
                 <span>{{ctrl.jobList.length || 0}}</span>
                 <span class="status-label">Total</span>
             </md-button>
-            <md-button class="md-button status-chip unread" ng-click="ctrl.filterByStatus('unread')">
+            <md-button class="md-button status-chip unread" ng-click="ctrl.filterNewJobsByStatus('unread')">
                 <md-icon md-font-set="material-symbols-outlined">mark_email_unread</md-icon>
                 <span>{{ctrl.getUnreadNewCount()}}</span>
                 <span class="status-label">Unread</span>

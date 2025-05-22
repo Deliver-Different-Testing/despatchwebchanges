@@ -8,7 +8,6 @@ import {ITaskListItemConfig} from "./task-item.interfaces";
 import ToastrService from "../../../services/toastr.service";
 import "./task-item.styles.less";
 import {AppConfig} from "../../../interfaces/app-config.interface";
-import moment from "moment";
 
 export class TaskListItemController extends BaseController {
     readonly isUsCustomer: boolean = false;

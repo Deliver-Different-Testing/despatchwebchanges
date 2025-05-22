@@ -775,7 +775,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         }
 
         // Only update pricing breakdowns for jobs with changed prices
-        if (jobsWithChangedPrices.Any())
+        if (jobsWithChangedPrices.Count != 0)
         {
             // Get existing pricing breakdowns just for jobs with changed prices
             var existingBreakdowns = await Context.PricingBreakdowns
@@ -784,7 +784,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     jobsWithChangedPrices.Contains(pb.PrebookJobId ?? 0))
                 .ToListAsync();
 
-            if (existingBreakdowns.Any())
+            if (existingBreakdowns.Count != 0)
             {
                 Log.Information($"Removing {existingBreakdowns.Count} existing pricing breakdowns for {jobsWithChangedPrices.Count} jobs with changed prices");
                 Context.PricingBreakdowns.RemoveRange(existingBreakdowns);

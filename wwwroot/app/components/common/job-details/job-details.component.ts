@@ -18,7 +18,6 @@ import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interface
 import {EditAddressDialogService} from "../../dialogs/edit-address-dialog/edit-address-dialog.service";
 import PriceBreakdownDialogService from "../../dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
 import BaseController from "../../base-controller";
-import moment from "moment";
 import {AppPages} from "../../../enums/app-pages.enum";
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import {JobStatus} from "../../../enums/job-status.enum";
@@ -32,6 +31,7 @@ import JobFileUploadDialogService from "../../dialogs/job-file-upload-dialog/job
 import {FileUploadType} from "../../../enums/file-upload-type.enum";
 import sortRelatedJobs from "../../../functions/sortRelatedJobs";
 import {UpdatePodDetailsRequest} from "../../../interfaces/requests.interfaces";
+import dayjs from "dayjs";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -52,7 +52,6 @@ class JobDetailController extends BaseController {
         "jobFileUploadDialogService",
     ];
 
-    readonly appPage: AppPages = AppPages.Dispatch;
     readonly isRecurringJob: boolean = false;
     readonly isUsCustomer: boolean = false;
     jobId?: number;
@@ -263,8 +262,8 @@ class JobDetailController extends BaseController {
         if (!firstSegment || !secondSegment) return "";
 
         // Calculate time difference in minutes
-        const firstArrival = moment(firstSegment.arrivalTime);
-        const secondDeparture = moment(secondSegment.departureTime);
+        const firstArrival = dayjs(firstSegment.arrivalTime);
+        const secondDeparture = dayjs(secondSegment.departureTime);
         const diffMinutes = secondDeparture.diff(firstArrival, "minutes");
 
         // Format as hours and minutes
@@ -287,7 +286,7 @@ class JobDetailController extends BaseController {
         console.log(`Loading POD photos for job: ${this.job.id}`);
 
         try {
-            const completedTime = moment(this.job?.completedTime);
+            const completedTime = dayjs(this.job?.completedTime);
             const month = completedTime.month() + 1;
             const year = completedTime.year();
 
@@ -311,7 +310,7 @@ class JobDetailController extends BaseController {
                                     const podPhoto: PodPhoto = {
                                         url: photoData,
                                         timestamp: this.job?.completedTime
-                                            ? moment(this.job.completedTime).format(
+                                            ? dayjs(this.job.completedTime).format(
                                                 "MM/DD/YYYY HH:mm"
                                             )
                                             : undefined,
@@ -1491,7 +1490,7 @@ class JobDetailController extends BaseController {
                 jobId: job.id,
                 jobStatus: JobStatus.Completed.toString(),
                 podName: podName ?? '',
-                podTime: completedTime ?? moment(job.completedTime).format('YYYY-MM-DD HH:mm')
+                podTime: completedTime ?? dayjs(job.completedTime).format('YYYY-MM-DD HH:mm')
             }
 
             await this.DispatchData.updatePODDetail(requestData);
@@ -1823,15 +1822,15 @@ class JobDetailController extends BaseController {
             this.$filter<(timezone: string) => string>("timezoneShort")(timezone);
         const timezoneDisplay = timezoneShort ? ` (${timezoneShort})` : "";
 
-        const baseTimeFormatted = moment(baseTime).format("MM/DD HH:mm");
+        const baseTimeFormatted = dayjs(baseTime).format("MM/DD HH:mm");
 
         if (!windowMins || windowMins <= 0) {
             return baseTimeFormatted + timezoneDisplay;
         }
 
-        const endTime = moment(baseTime).add(windowMins, "minutes");
+        const endTime = dayjs(baseTime).add(windowMins, "minutes");
 
-        if (moment(baseTime).format("MM/DD") === endTime.format("MM/DD")) {
+        if (dayjs(baseTime).format("MM/DD") === endTime.format("MM/DD")) {
             return `${baseTimeFormatted} - ${endTime.format(
                 "HH:mm"
             )}${timezoneDisplay}`;

@@ -7,7 +7,7 @@ import NoteService from "../../../services/notes.service";
 import {JobNoteType} from "../../../enums/job-note-type.enum";
 import {EventType} from "../../../enums/event-type";
 import {JobEventData} from "./add-event-dialog.interfaces";
-import moment from "moment";
+import dayjs from "dayjs";
 
 class AddEventDialogController extends BaseController {
     static $inject = [
@@ -128,7 +128,7 @@ class AddEventDialogController extends BaseController {
                 despatcherName: this.dispatcherName,
                 notes: event.notes ?? '',
                 eventTypeId: eventId,
-                eventDueDate: moment(event.eventDate).utc().format()
+                eventDueDate: dayjs(event.eventDate).utc().format()
             }
 
             await this.NWData.addEvent(eventData);

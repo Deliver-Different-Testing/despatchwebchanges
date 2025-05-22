@@ -1,6 +1,6 @@
 import {IJobNote, INoteType} from "../interfaces/job.interface";
-import moment from "moment";
 import {bindAllMethods} from "../functions/bindAllMethods";
+import dayjs from "dayjs";
 
 class NoteService {
     static $inject = [
@@ -22,8 +22,8 @@ class NoteService {
         try {
             const formattedViewModel = {
                 ...noteViewModel,
-                createdDate: moment(noteViewModel.createdDate).format(),
-                updatedDate: noteViewModel.updatedDate ? moment(noteViewModel.updatedDate).format() : undefined
+                createdDate: dayjs(noteViewModel.createdDate).format(),
+                updatedDate: noteViewModel.updatedDate ? dayjs(noteViewModel.updatedDate).format() : undefined
             };
 
             const response = await this.$http.post<IJobNote>('note/CreateNote', formattedViewModel);
@@ -38,8 +38,8 @@ class NoteService {
         try {
             const formattedViewModel = {
                 ...noteViewModel,
-                createdDate: moment(noteViewModel.createdDate).format(),
-                updatedDate: noteViewModel.updatedDate ? moment(noteViewModel.updatedDate).format() : undefined
+                createdDate: dayjs(noteViewModel.createdDate).format(),
+                updatedDate: noteViewModel.updatedDate ? dayjs(noteViewModel.updatedDate).format() : undefined
             };
 
             await this.$http.post('note/UpdateNote', formattedViewModel, {

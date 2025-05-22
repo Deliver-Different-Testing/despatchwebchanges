@@ -68,7 +68,6 @@
 
                                 <span class="md-headline-title" flex style="margin-left: 8px;">
                                     {{ctrl.boxes[box.name].title}}
-                                    <span ng-if="box.name == 'jobDetail'">{{ctrl.currentSelection}}</span>
                                 </span>
 
                                 <!--Send all-->
@@ -114,7 +113,7 @@
                                             </md-button>
                                         </md-menu-item>
                                     </md-menu-content>
-                                </md-menu>                    
+                                </md-menu>
 
                                 <div ng-if="box.name == 'eventList'">
                                     <input ng-model="ctrl.searchBox" placeholder="Search Events..." type="text" />

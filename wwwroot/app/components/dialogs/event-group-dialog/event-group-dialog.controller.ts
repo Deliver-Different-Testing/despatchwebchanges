@@ -3,7 +3,7 @@ import {Suggestion} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
 import {EventGroupViewModel} from "../../../interfaces/event-group-view-model.interface";
 import BaseController from "../../base-controller";
-import moment from "moment";
+import dayjs from "dayjs";
 
 export class EventGroupDialogController extends BaseController{
     searchText?: string;
@@ -59,7 +59,7 @@ export class EventGroupDialogController extends BaseController{
 
             activeEvents.forEach(event => {
                 if (event.dueTime !== undefined) {
-                    event.dueTime = moment(event.dueTime).utc().format();
+                    event.dueTime = dayjs(event.dueTime).utc().format();
                 }
             })
 

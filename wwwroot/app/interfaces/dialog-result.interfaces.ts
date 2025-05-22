@@ -1,7 +1,7 @@
 import {JobProperty} from "../enums/job-property.enum";
 
 export interface ISelectDialogResult {
-    fieldName: JobProperty;
+    fieldName: JobProperty | string;
     value: any;
     checkboxValue?: boolean;
 }

@@ -27,9 +27,9 @@ import {ClearListEnvelopeViewModel, DfrntPageViewModel,} from "../interfaces/dfr
 import {bindAllMethods} from "../functions/bindAllMethods";
 import {TaskTableFiltersRequest, TaskViewModel,} from "../components/task-dashboard/task-dashboard.interfaces";
 import {JobProperty} from "../enums/job-property.enum";
-import moment from "moment";
 import ConfigService from "./config.service";
 import {UpdateJobTimeRequest, UpdatePodDetailsRequest} from "../interfaces/requests.interfaces";
+import dayjs from "dayjs";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = ["$http", "APP_CONFIG", "configService"];
@@ -437,7 +437,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         const response = await this.$http.get<Suggestion[]>("job/LeaveList");
         return response.data;
     }
-    
+
     async getInternalStatusList() {
         const response = await this.$http.get<InternalStatus[]>(
             "job/InternalStatusList"
@@ -700,7 +700,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
 
         if (value instanceof Date) {
-            value = moment(value).format();
+            value = dayjs(value).format();
         }
 
         const method: string = isRecurring
@@ -756,7 +756,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 );
 
                 // Format to YYYY-MM-DD HH:mm:ss
-                value = moment(combined).utc().format();
+                value = dayjs(combined).utc().format();
             }
         }
 
@@ -771,7 +771,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             field === JobProperty.NextDue
         ) {
             if (value instanceof Date) {
-                value = moment(value).utc().format();
+                value = dayjs(value).utc().format();
             }
         }
 
@@ -808,16 +808,16 @@ class DispatchCoreService implements angular.IServiceProvider {
 
         // Add date filter parameters - handle all options
         if (queryParams.dateCutoff) {
-            paramObject.dateCutoff = moment(queryParams.dateCutoff).format();
+            paramObject.dateCutoff = dayjs(queryParams.dateCutoff).format();
         }
 
         // Add start and end date parameters if present
         if (queryParams.startDate) {
-            paramObject.startDate = moment(queryParams.startDate).format();
+            paramObject.startDate = dayjs(queryParams.startDate).format();
         }
 
         if (queryParams.endDate) {
-            paramObject.endDate = moment(queryParams.endDate).format();
+            paramObject.endDate = dayjs(queryParams.endDate).format();
         }
 
         const params = new URLSearchParams(paramObject);

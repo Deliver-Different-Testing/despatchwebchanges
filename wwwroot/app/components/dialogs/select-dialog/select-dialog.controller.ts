@@ -1,9 +1,10 @@
 import ToastrService from "../../../services/toastr.service";
 import {Suggestion} from "../../../interfaces/job.interface";
-import app from "../../../app";
 import {ISelectDialogResult} from "../../../interfaces/dialog-result.interfaces";
+import {JobProperty} from "../../../enums/job-property.enum";
+import BaseController from "../../base-controller";
 
-export class SelectDialogController {
+export class SelectDialogController extends BaseController {
     static $inject = ["$mdDialog", "toastrService", "id", "fieldName", "title", "options", "initialValue", "showCheckbox", "checkboxLabel"];
 
     isLoading: boolean;
@@ -22,11 +23,13 @@ export class SelectDialogController {
         public showCheckbox: boolean,
         public checkboxLabel: string
     ) {
+        super();
+
         this.isLoading = false;
         this.selectedOption = null;
 
         // Warning message
-        this.warningMessage = fieldName === "Status" ?
+        this.warningMessage = fieldName === JobProperty.Status ?
             "Warning: You are about to change the status of a job. Different statuses trigger different notifications and automated workflows. " +
             "While this change can be reversed, it may impact multiple systems and stakeholders. Please ensure you're selecting the correct status."
             : "";

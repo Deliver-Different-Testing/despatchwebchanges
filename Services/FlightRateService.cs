@@ -40,17 +40,16 @@ public class FlightRateService(INationwideJobRepository repository, ITenantInfoS
 
     private async Task<List<FlightRateDto>> CalculateFlightRatesAsync(FlightRateCalculationDto dto)
     {
-        // Set the default book time if not provided
-        dto.BookTime ??= infoService.GetCurrentTenantTime();
+        var bookTime = dto.BookTime ?? infoService.GetCurrentTenantTime();
 
         // Result collection
         var rates = new List<FlightRateDto>();
 
         // Check if the date of a requested job is on a holiday (holiday takes priority)
-        var isHoliday = await repository.IsHolidayAsync(dto.ClientId, dto.BookTime.Value);
+        var isHoliday = await repository.IsHolidayAsync(dto.ClientId, bookTime);
 
         // Check if the date or time of a requested job is after hours
-        var isAfterHours = await repository.IsAfterHoursAsync(dto.ClientId, dto.BookTime.Value, isHoliday);
+        var isAfterHours = await repository.IsAfterHoursAsync(dto.ClientId, bookTime, isHoliday);
 
         // Get carrier ID
         var carrierId = await repository.GetFlightCarrierIdByCodeAsync(dto.CarrierCode);
@@ -173,7 +172,7 @@ public class FlightRateService(INationwideJobRepository repository, ITenantInfoS
                     SaleRate = totalJobAmount + extraRates.DriverPay,
                     Availability = "Available",
                     AvailabilityColour = "#00FF00",
-                    BookDate = dto.BookTime.Value,
+                    BookDate = bookTime,
                     Duration = jobType.Minutes,
                     FlightRate = totalJobAmount
                 });

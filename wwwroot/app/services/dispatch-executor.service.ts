@@ -3,9 +3,9 @@ import {ActiveCourierViewModel} from "../interfaces/courier.interface";
 import {JobListResponse} from "../interfaces/job-list-response.interface";
 import DispatchCoreService from "./dispatch-core.service";
 import {bindAllMethods} from "../functions/bindAllMethods";
-import moment from "moment";
 import ToastrService from "./toastr.service";
 import {ContactID} from "../contants";
+import dayjs from "dayjs";
 
 class DispatchExecutorService implements angular.IServiceProvider {
     static $inject = [
@@ -290,7 +290,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
                 return {isValid: false, message};
             }
 
-            if (moment(courier.dgLicenseExpiry) < moment().add(1, "days")) {
+            if (dayjs(courier.dgLicenseExpiry) < dayjs().add(1, "days")) {
                 const message = `Courier ${courier.id} doesn't have a DGLicense or license has expired.`;
                 console.warn("Job validation failed:", message);
                 return {isValid: false, message};

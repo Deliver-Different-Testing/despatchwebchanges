@@ -1,5 +1,11 @@
-import moment from "moment";
 import {findIana} from "windows-iana";
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+// Register the required plugins
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 /**
  * Returns a unique list of items based on a key property
@@ -112,17 +118,17 @@ export function replaceFilter(input: string, search: string, replacement: string
     if (!input) return input;
     return input.replace(new RegExp(search, "g"), replacement);
 }
-
 /**
- * Formats a date using moment.js
+ * Formats a date using day.js
  */
 export function momentFormatFilter(dateString: string | Date, format: string): string {
     if (!dateString) return '';
-    return moment(dateString).format(format);
+    return dayjs(dateString).format(format);
 }
 
 /**
- * Converts a timezone to its abbreviation using moment-timezone
+ * Gets timezone abbreviation from IANA timezone
+ * Day.js doesn't handle timezone abbreviations well with just the 'z' format
  */
 export function timezoneShortFilter(timezone: string): string {
     if (!timezone) return '';
@@ -135,7 +141,17 @@ export function timezoneShortFilter(timezone: string): string {
             ? ianaTimezones[0]
             : timezone; // If not found, use original (might already be IANA)
 
-        return moment.tz(now, ianaTimezone).format('z');
+        // Create a formatter that can extract timezone information
+        const formatter = new Intl.DateTimeFormat('en', {
+            timeZone: ianaTimezone,
+            timeZoneName: 'short'
+        });
+
+        // Format the date and extract just the timezone abbreviation
+        const formatted = formatter.format(now);
+        const abbreviation = formatted.split(' ').pop();
+
+        return abbreviation || timezone;
     } catch (error) {
         console.error('Error formatting timezone:', error, 'for timezone:', timezone);
         return timezone;

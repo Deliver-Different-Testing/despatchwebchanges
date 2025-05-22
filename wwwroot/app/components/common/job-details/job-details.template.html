@@ -42,7 +42,8 @@
                     >
                         <md-tab-label>
                             <div ng-click="ctrl.switchToRelatedJob($index)">
-                                Job #{{relatedJob.job.text}}
+                                <span ng-if="ctrl.isRecurringJob">Job #{{$index + 1}}</span>
+                                <span ng-if="!ctrl.isRecurringJob">Job #{{relatedJob.job.text}}</span>
                                 <md-icon
                                         md-font-set="material-symbols-outlined"
                                         ng-if="relatedJob.subJobs.length > 0"

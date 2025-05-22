@@ -56,6 +56,7 @@ export interface HereMapsConfig {
     center: Coordinates;
     zoom: number;
     selectedJobIndex: number;
+    timestamp: Date;
 }
 
 export interface StatusChangeEvent {

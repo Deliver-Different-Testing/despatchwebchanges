@@ -22,8 +22,6 @@ class FlightDetailsDialogService implements angular.IServiceProvider {
     }
 
     async openFlightDetailsDialog($event: MouseEvent, flightData: IFlightViewModel) {
-       // const flightConnections = await this.nationwideService.getFlightConnectionsInfoForDialog(flightNumber, departureDate);
-
         // Don't need to make an additional API call since we already have the flight data
         await this.$mdDialog.show({
             controller: FlightDetailsDialogController,

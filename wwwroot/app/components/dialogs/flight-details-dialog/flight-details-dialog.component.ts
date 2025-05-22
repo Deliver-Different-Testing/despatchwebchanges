@@ -1,7 +1,7 @@
 import { IFlightViewModel, FlightSegmentViewModel } from "../../Nationwide/nationwide.interfaces";
 import "./flight-details-dialog.styles.less";
 import BaseController from "../../base-controller";
-import moment from "moment";
+import dayjs from "dayjs";
 
 class FlightDetailsDialogController extends BaseController {
     static $inject = [
@@ -53,11 +53,7 @@ class FlightDetailsDialogController extends BaseController {
         this.selectedTabIndex = index;
 
         // Only change this flag when switching to overview
-        if (index === 0) {
-            this.isDisplayingOverview = true;
-        } else {
-            this.isDisplayingOverview = false;
-        }
+        this.isDisplayingOverview = index === 0;
 
         // Always update the current segment for details display
         if (this.flight.flightSegments && this.flight.flightSegments.length > 0) {
@@ -110,8 +106,8 @@ class FlightDetailsDialogController extends BaseController {
         if (!firstSegment || !secondSegment) return '';
 
         // Calculate time difference in minutes
-        const firstArrival = moment(firstSegment.arrivalTime);
-        const secondDeparture = moment(secondSegment.departureTime);
+        const firstArrival = dayjs(firstSegment.arrivalTime);
+        const secondDeparture = dayjs(secondSegment.departureTime);
         const diffMinutes = secondDeparture.diff(firstArrival, 'minutes');
 
         // Format as hours and minutes

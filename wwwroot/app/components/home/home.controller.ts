@@ -24,7 +24,6 @@ import AdditionalServicesDialogService from "../dialogs/additional-services-dial
 import {EditAddressDialogService} from "../dialogs/edit-address-dialog/edit-address-dialog.service";
 import {AppPages} from "../../enums/app-pages.enum";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
-import moment from "moment";
 import AddEventDialogService from "../dialogs/add-event-dialog/add-event-dialog.service";
 import {JobNoteType} from "../../enums/job-note-type.enum";
 import NoteService from "../../services/notes.service";
@@ -40,6 +39,7 @@ import {JobProperty} from "../../enums/job-property.enum";
 import NavigationService from "../../services/navigation.service";
 import JobSearchService from "../jobSearch/jobSearch.service";
 import greetUser from "../../functions/greetUser";
+import dayjs from "dayjs";
 
 class HomeController extends BaseController {
     static $inject = [
@@ -140,8 +140,8 @@ class HomeController extends BaseController {
     timeZone: string;
     browserTimeZone: string;
     dateSearchRange: number = 1;
-    startDate: Date = moment(new Date(0)).toDate();
-    endDate: Date = moment().add(24, 'hours').toDate();
+    startDate: Date = dayjs(new Date(0)).toDate();
+    endDate: Date = dayjs().add(24, 'hours').toDate();
 
     constructor(
         private $document: angular.IDocumentService,
@@ -408,8 +408,8 @@ class HomeController extends BaseController {
             console.log("Loaded Page Views and Data!");
 
             this.dateSearchRange = 1; // Default to 24 Hours
-            this.startDate = moment(new Date(0)).toDate(); // Unix epoch start date
-            this.endDate = moment().add(24, 'hours').toDate(); // 24 hours from now
+            this.startDate = dayjs(new Date(0)).toDate(); // Unix epoch start date
+            this.endDate = dayjs().add(24, 'hours').toDate(); // 24 hours from now
             this.jobCutoffDate = new Date(); // Current date for backward compatibility
 
 
@@ -2041,8 +2041,8 @@ class HomeController extends BaseController {
             // Apply date filters based on dateSearchRange
             if (this.dateSearchRange == 1) {
                 // 24 Hours mode - use startDate and endDate for 24-hour range
-                params.startDate = moment(new Date(0)).toDate(); // Unix epoch start date
-                params.endDate = moment().add(24, 'hours').toDate(); // 24 hours from now
+                params.startDate = dayjs(new Date(0)).toDate(); // Unix epoch start date
+                params.endDate = dayjs().add(24, 'hours').toDate(); // 24 hours from now
             } else if (this.dateSearchRange == 2) {
                 // Custom range mode - use startDate and endDate
                 params.startDate = this.startDate;
@@ -2105,8 +2105,8 @@ class HomeController extends BaseController {
     async resetJobCutoffDate() {
         //this.jobCutoffDate = new Date();
         this.dateSearchRange = 1;
-        this.startDate = moment(new Date(0)).toDate();
-        this.endDate = moment().add(24, 'hours').toDate();
+        this.startDate = dayjs(new Date(0)).toDate();
+        this.endDate = dayjs().add(24, 'hours').toDate();
 
         // For backward compatibility
         this.jobCutoffDate = new Date();
@@ -2647,8 +2647,8 @@ class HomeController extends BaseController {
 
         if (optionSelected == 1) {
             // 24 Hours mode - reset to defaults
-            this.startDate = moment(new Date(0)).toDate();
-            this.endDate = moment().add(24, 'hours').toDate();
+            this.startDate = dayjs(new Date(0)).toDate();
+            this.endDate = dayjs().add(24, 'hours').toDate();
 
             // Use current date for dateCutoff (backward compatibility)
             this.jobCutoffDate = new Date();

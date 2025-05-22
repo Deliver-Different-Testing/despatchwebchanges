@@ -6,8 +6,8 @@ import {OverviewTableChildJob, OverviewTableParentJob} from "./overview.interfac
 import "./overview.styles.less";
 import BaseController from "../base-controller";
 import {Suggestion} from "../../interfaces/job.interface";
-import moment from "moment";
 import greetUser from "../../functions/greetUser";
+import dayjs from "dayjs";
 
 class OverviewController extends BaseController {
     static $inject = [
@@ -389,7 +389,7 @@ class OverviewController extends BaseController {
     }
 
     formatDate(date: Date | null): string {
-        return date ? moment(date).format("MMM D, YYYY") : "";
+        return date ? dayjs(date).format("MMM D, YYYY") : "";
     }
 
     async clearDateRange($event: MouseEvent | undefined) {
