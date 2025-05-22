@@ -179,52 +179,85 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async validateSwapPOD(jobNumber: string) {
         const response = await this.$http.post(
-            `Job/ValidateSwapPOD?job=${jobNumber}`,
-            null
+            `Job/ValidateSwapPOD`,
+            null, {
+                params: {
+                    job: jobNumber,
+                },
+            }
         );
         return response.data;
     }
 
     async swapPOD(jobNumber1: string, jobNumber2: string) {
         const response = await this.$http.post(
-            `Job/SwapPOD?job1=${jobNumber1}&job2=${jobNumber2}`,
-            null
+            `Job/SwapPOD`,
+            null, {
+                params: {
+                    job1: jobNumber1,
+                    job2: jobNumber2,
+                },
+            }
         );
         return response.data;
     }
 
     async voidJob(jobId: number) {
-        await this.$http.post(`job/Void?jobId=${jobId}`, null);
+        await this.$http.post(`job/Void`, null, {
+            params: {
+                jobId,
+            },
+        });
     }
 
     async restoreJobs(jobIds: number[]) {
-        await this.$http.post(`job/RestoreJobs?jobIds=${jobIds}`, null);
+        await this.$http.post(`job/RestoreJobs`, null, {
+            params: {
+                jobIds,
+            }
+        });
     }
 
     async restoreSplitJobs(jobIds: number[]) {
-        await this.$http.post(`job/RestoreSplitJobs?jobIds=${jobIds}`, null);
+        await this.$http.post(`job/RestoreSplitJobs`, null, {
+            params: {
+                jobIds,
+            }
+        });
     }
 
     async resendJobs(jobIds: number[]) {
         const response = await this.$http.post(
-            `job/ResendSelected?jobIds=${jobIds}`,
-            null
+            `job/ResendSelected`,
+            null, {
+                params: {
+                    jobIds,
+                },
+            }
         );
         return response.data;
     }
 
     async resendAllJobs(courierId: number) {
         const response = await this.$http.post(
-            `job/ResendAll?courierId=${courierId}`,
-            null
+            `job/ResendAll`,
+            null, {
+                params: {
+                    courierId,
+                },
+            }
         );
         return response.data;
     }
 
     async reAssignJobs(jobIds: number[]) {
         const response = await this.$http.post(
-            `job/ReAssignSelected?jobIds=${jobIds}`,
-            null
+            `job/ReAssignSelected`,
+            null, {
+                params: {
+                    jobIds,
+                },
+            }
         );
         return response.data;
     }
@@ -310,14 +343,13 @@ class DispatchCoreService implements angular.IServiceProvider {
         const filteredViews = selectedViews.filter((view) => view.selected);
         const despatchViewIds = this._prepareViewIdsForRequest(filteredViews);
 
-        const params = new URLSearchParams();
-
-        despatchViewIds.forEach((id) => {
-            params.append("despatchViewIds", id.toString());
-        });
-
         const response = await this.$http.get<ClearListViewModel>(
-            `courier?${params.toString()}&isUsTenant=${this.isUsCustomer}`
+            `courier`, {
+                params: {
+                    despatchViewIds: despatchViewIds,
+                    isUsTenant: this.isUsCustomer,
+                }
+            }
         );
         return response.data;
     }
@@ -326,7 +358,12 @@ class DispatchCoreService implements angular.IServiceProvider {
         const countryId = this.isUsCustomer ? 2 : 1;
 
         const response = await this.$http.get<ClearListEnvelopeViewModel>(
-            `courier/ClearListEnvelope?clearListId=${clearListId}&countryId=${countryId}`
+            `courier/ClearListEnvelope`, {
+                params: {
+                    clearListId,
+                    countryId,
+                }
+            }
         );
         return response.data;
     }
@@ -481,10 +518,15 @@ class DispatchCoreService implements angular.IServiceProvider {
         jobId: number
     ): Promise<IPaginatedResponse<ClientItemsViewModel>> {
         const url = "job/GetAllClientItems";
-        const response = await this.$http.get<
-            IPaginatedResponse<ClientItemsViewModel>
-        >(
-            url + "?clientId=" + clientId + "&speedId=" + speedId + "&jobId=" + jobId
+        const response = await this.$http.get<IPaginatedResponse<ClientItemsViewModel>>(
+            url,
+            {
+                params: {
+                    clientId: clientId,
+                    speedId: speedId,
+                    jobId: jobId
+                }
+            }
         );
 
         return response.data;
@@ -497,24 +539,37 @@ class DispatchCoreService implements angular.IServiceProvider {
     ) {
         const url = "job/AddClientItemsToJob";
 
-        await this.$http({
-            method: "POST",
-            url: url + "?jobId=" + jobId,
-            data: {serviceIds, totalCost},
+        await this.$http.post(url, {
+            serviceIds,
+            totalCost,
+        }, {
+            params: {
+                jobId,
+            }
         });
     }
 
     async splitJob(jobId: number, despatcherName: string) {
         await this.$http.post(
-            `job/splitJob?jobId=${jobId}&despatcherName=${despatcherName}`,
-            null
+            `job/splitJob`,
+            null, {
+                params: {
+                    jobId,
+                    despatcherName,
+                }
+            }
         );
     }
 
     async finishSplitJobProcess(jobId: number, despatcherName: string) {
         await this.$http.post(
-            `job/finishSplitJobProcess?jobId=${jobId}&despatcherName=${despatcherName}`,
-            null
+            `job/finishSplitJobProcess`,
+            null, {
+                params: {
+                    jobId,
+                    despatcherName,
+                }
+            }
         );
     }
 
@@ -543,7 +598,11 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async reRateSplitJob(jobId: number) {
-        await this.$http.post(`job/ReRateSplitJob?jobId=${jobId}`, null);
+        await this.$http.post(`job/ReRateSplitJob`, null, {
+            params: {
+                jobId,
+            }
+        });
     }
 
     async updateDeliveryAddress(
@@ -644,8 +703,16 @@ class DispatchCoreService implements angular.IServiceProvider {
         lng: number
     ) {
         await this.$http.post(
-            `job/UpdateSplitJobAddress?jobId=${jobId}&toSuburbId=${toSuburbId}&address=${address}&deliveryLat=${lat}&deliveryLng=${lng}`,
-            null
+            `job/UpdateSplitJobAddress`,
+            null, {
+                params: {
+                    jobId,
+                    toSuburbId,
+                    address,
+                    deliveryLat: lat,
+                    deliveryLng: lng,
+                }
+            }
         );
     }
 
@@ -703,20 +770,19 @@ class DispatchCoreService implements angular.IServiceProvider {
             value = dayjs(value).format();
         }
 
-        const method: string = isRecurring
+        const url: string = isRecurring
             ? "job/UpdateRecurringJob"
             : "job/UpdateJob";
 
-        const params = new URLSearchParams({
-            jobId: String(jobId),
-            field: String(field),
-            value: String(value ?? ""),
-        });
-
-        const url = `${method}?${params.toString()}`;
-
         try {
-            const response = await this.$http.post(url, null);
+            const response = await this.$http.post(url, null, {
+                params: {
+                    jobId,
+                    field,
+                    value,
+                    isRecurring,
+                }
+            });
             console.log("API response received:", {
                 data: response.data,
             });
@@ -789,7 +855,6 @@ class DispatchCoreService implements angular.IServiceProvider {
             }
         );
     }
-
     async getJobsWithFilters(
         queryParams: JobQueryParams,
         selectedClients: string[],
@@ -798,40 +863,33 @@ class DispatchCoreService implements angular.IServiceProvider {
     ): Promise<IDispatchJob[]> {
         const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
 
-        const paramObject: Record<string, string> = {
-            order: String(queryParams.order ?? "time"),
-            orderDirection: String(queryParams.orderDirection ?? "asc"),
-            isInternal: String(internal),
-            cid: String(ContactID),
+        const params: Record<string, any> = {
+            order: queryParams.order ?? "time",
+            orderDirection: queryParams.orderDirection ?? "asc",
+            isInternal: internal,
+            cid: ContactID,
             clientIds: selectedClients.length ? selectedClients.join(",") : "",
+            despatchViewIds: despatchViewIds
         };
 
         // Add date filter parameters - handle all options
         if (queryParams.dateCutoff) {
-            paramObject.dateCutoff = dayjs(queryParams.dateCutoff).format();
+            params.dateCutoff = dayjs(queryParams.dateCutoff).format();
         }
 
         // Add start and end date parameters if present
         if (queryParams.startDate) {
-            paramObject.startDate = dayjs(queryParams.startDate).format();
+            params.startDate = dayjs(queryParams.startDate).format();
         }
 
         if (queryParams.endDate) {
-            paramObject.endDate = dayjs(queryParams.endDate).format();
+            params.endDate = dayjs(queryParams.endDate).format();
         }
 
-        const params = new URLSearchParams(paramObject);
+        const response = await this.$http.get<IDispatchJob[]>("job", {
+            params: params
+        });
 
-        // Add despatch view IDs as separate parameters
-        if (despatchViewIds.length) {
-            despatchViewIds.forEach((id) => {
-                params.append("despatchViewIds", String(id));
-            });
-        }
-
-        const response = await this.$http.get<IDispatchJob[]>(
-            `job?${params.toString()}`
-        );
         return response.data;
     }
 
@@ -849,47 +907,23 @@ class DispatchCoreService implements angular.IServiceProvider {
             orderDirection: "asc",
         };
 
-        // Build query parameters
-        const params = new URLSearchParams();
+        // Create params object
+        const params: Record<string, any> = {
+            order: queryParams.order ?? defaultParams.order,
+            orderDirection: queryParams.orderDirection ?? defaultParams.orderDirection,
+            isInternal: internal,
+            cid: ContactID,
+            clientIds: selectedClients.join(","),
+            despatchViewIds: despatchViewIds,
+            'clearListEnvelope.minimumLatitude': selectedClearList.minimumLatitude,
+            'clearListEnvelope.maximumLatitude': selectedClearList.maximumLatitude,
+            'clearListEnvelope.minimumLongitude': selectedClearList.minimumLongitude,
+            'clearListEnvelope.maximumLongitude': selectedClearList.maximumLongitude
+        };
 
-        // Add JobQueryParams
-        params.append("order", queryParams.order ?? defaultParams.order);
-        params.append(
-            "asc",
-            queryParams.orderDirection ?? defaultParams.orderDirection
-        );
-
-        // Add basic parameters
-        params.append("isInternal", internal.toString());
-        params.append("cid", ContactID.toString());
-        params.append("clientIds", selectedClients.join(","));
-
-        // Add despatchViewIds as repeated parameters
-        despatchViewIds.forEach((id) => {
-            params.append("despatchViewIds", id.toString());
-        });
-
-        // Add ClearListEnvelope properties as query parameters
-        params.append(
-            "clearListEnvelope.minimumLatitude",
-            selectedClearList.minimumLatitude.toString()
-        );
-        params.append(
-            "clearListEnvelope.maximumLatitude",
-            selectedClearList.maximumLatitude.toString()
-        );
-        params.append(
-            "clearListEnvelope.minimumLongitude",
-            selectedClearList.minimumLongitude.toString()
-        );
-        params.append(
-            "clearListEnvelope.maximumLongitude",
-            selectedClearList.maximumLongitude.toString()
-        );
-
-        // Make the request
         const response = await this.$http.get<IDispatchJob[]>(
-            `job/GetJobsByClearListEnvelope?${params.toString()}`
+            'job/GetJobsByClearListEnvelope',
+            { params: params }
         );
 
         return response.data;
@@ -958,7 +992,11 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async isFilesAttachedToJob(jobId: number) {
         const response = await this.$http.get<boolean>(
-            `job/IsFilesAttachedToJob/${jobId}`
+            `job/IsFilesAttachedToJob`, {
+                params: {
+                    jobId: jobId,
+                },
+            }
         );
         return response.data;
     }
@@ -984,20 +1022,26 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async getPriceBreakdown(jobId: number, isPrebook: boolean): Promise<PriceBreakdown[]> {
-        const response = await this.$http.get<PriceBreakdown[]>(`job/GetPricingBreakdown?jobId=${jobId}&isPrebook=${isPrebook}`);
+        const response = await this.$http.get<PriceBreakdown[]>(`job/GetPricingBreakdown`, {
+            params: {
+                jobId,
+                isPrebook,
+            },
+        });
         return response.data;
     }
 
     async addPriceBreakdown(breakdown: PriceBreakdown) {
         try {
-            const queryParams = new URLSearchParams({
-                staffId: String(ContactID),
-                despatcherName: String(FirstName),
-            }).toString();
-
             const response = await this.$http.post<number>(
-                `job/AddPriceComponent?${queryParams}`,
-                breakdown
+                'job/AddPriceComponent',
+                breakdown,
+                {
+                    params: {
+                        staffId: ContactID,
+                        despatcherName: FirstName
+                    }
+                }
             );
 
             return response.data;
@@ -1009,14 +1053,15 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async updatePriceBreakdown(breakdown: PriceBreakdown) {
         try {
-            const queryParams = new URLSearchParams({
-                staffId: String(ContactID),
-                despatcherName: String(FirstName),
-            }).toString();
-
             await this.$http.post(
-                `job/UpdatePriceComponent?${queryParams}`,
-                breakdown
+                'job/UpdatePriceComponent',
+                breakdown,
+                {
+                    params: {
+                        staffId: ContactID,
+                        despatcherName: FirstName
+                    }
+                }
             );
         } catch (error) {
             console.error("Error updating price breakdown:", error);
@@ -1026,14 +1071,18 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async deletePriceBreakdown(chargeId: number, jobId: number) {
         try {
-            const queryParams = new URLSearchParams({
-                chargeId: String(chargeId),
-                jobId: String(jobId),
-                staffId: String(ContactID),
-                despatcherName: String(FirstName),
-            }).toString();
-
-            await this.$http.post(`job/DeletePriceComponent?${queryParams}`, null);
+            await this.$http.post(
+                'job/DeletePriceComponent',
+                null,
+                {
+                    params: {
+                        chargeId: chargeId,
+                        jobId: jobId,
+                        staffId: ContactID,
+                        despatcherName: FirstName
+                    }
+                }
+            );
         } catch (error) {
             console.error("Error deleting price breakdown:", error);
             throw error;
@@ -1046,47 +1095,44 @@ class DispatchCoreService implements angular.IServiceProvider {
         month: number
     ) {
         const response = await this.$http.get<any>(
-            `/Job/GetJobDeliveryPhotosAndSignature?jobId=${jobId}&year=${year}&month=${month}`
+            '/Job/GetJobDeliveryPhotosAndSignature',
+            {
+                params: {
+                    jobId: jobId,
+                    year: year,
+                    month: month
+                }
+            }
         );
         return response.data;
     }
 
     async getAllTasks(filters?: TaskTableFiltersRequest) {
         try {
-            let url = "/Task/GetAllTasks";
+            let params: any = {};
 
             if (filters) {
-                const queryParams = new URLSearchParams();
+                if (filters.jobId) params.jobId = filters.jobId;
+                if (filters.staffId) params.staffId = filters.staffId;
+                if (filters.courierId) params.courierId = filters.courierId;
+                if (filters.eventTypeId) params.eventTypeId = filters.eventTypeId;
+                if (filters.searchText) params.searchText = filters.searchText;
+                if (filters.date) params.date = filters.date;
+                if (filters.showCompleted !== undefined) params.showCompleted = filters.showCompleted;
+                if (filters.orderBy) params.orderBy = filters.orderBy;
+                if (filters.orderDirection) params.orderDirection = filters.orderDirection;
+                if (filters.startDate) params.startDate = filters.startDate;
+                if (filters.endDate) params.endDate = filters.endDate;
 
-                if (filters.jobId)
-                    queryParams.append("jobId", filters.jobId.toString());
-                if (filters.staffId)
-                    queryParams.append("staffId", filters.staffId.toString());
-                if (filters.courierId)
-                    queryParams.append("courierId", filters.courierId.toString());
-                if (filters.eventTypeId)
-                    queryParams.append("eventTypeId", filters.eventTypeId.toString());
-                if (filters.searchText)
-                    queryParams.append("searchText", filters.searchText);
-                if (filters.date) queryParams.append("date", filters.date);
-                if (filters.showCompleted != undefined)
-                    queryParams.append("showCompleted", filters.showCompleted.toString());
-                if (filters.orderBy) queryParams.append("orderBy", filters.orderBy);
-                if (filters.orderDirection)
-                    queryParams.append("orderDirection", filters.orderDirection);
-                if (filters.startDate)
-                    queryParams.append("startDate", filters.startDate);
-                if (filters.endDate)
-                    queryParams.append("endDate", filters.endDate);
-
-                const queryString = queryParams.toString();
-                if (queryString) {
-                    console.log(`Query string: ${queryString}`);
-                    url += `?${queryString}`;
+                if (Object.keys(params).length > 0) {
+                    console.log(`Query params:`, params);
                 }
             }
 
-            const response = await this.$http.get<TaskViewModel[]>(url);
+            const response = await this.$http.get<TaskViewModel[]>('/Task/GetAllTasks', {
+                params: params
+            });
+
             return response.data;
         } catch (error) {
             console.error("Error fetching tasks:", error);
@@ -1096,12 +1142,16 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async updateJobReadStatus(jobId: number, hasBeenRead: boolean) {
         try {
-            const queryParams = new URLSearchParams({
-                jobId: String(jobId),
-                hasBeenRead: String(hasBeenRead),
-            }).toString();
-
-            await this.$http.post(`job/UpdateJobReadStatus?${queryParams}`, null);
+            await this.$http.post(
+                'job/UpdateJobReadStatus',
+                null,
+                {
+                    params: {
+                        jobId: jobId,
+                        hasBeenRead: hasBeenRead
+                    }
+                }
+            );
         } catch (error) {
             console.error("Error updating job read status:", error);
             throw error;
@@ -1115,9 +1165,9 @@ class DispatchCoreService implements angular.IServiceProvider {
     ): Promise<number> {
         try {
             const response = await this.$http.post<number>("job/AddStopToJob", {
-                jobId: jobId,
-                pickUpAddress: pickUpAddress,
-                deliveryAddress: deliveryAddress,
+                jobId,
+                pickUpAddress,
+                deliveryAddress,
             });
 
             return response.data;

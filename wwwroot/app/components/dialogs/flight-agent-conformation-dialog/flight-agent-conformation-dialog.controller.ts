@@ -2,6 +2,7 @@ import "./flight-agent-confirmation-dialog.layout.less";
 import BaseController from "../../base-controller";
 import {IFlightViewModel} from "../../Nationwide/nationwide.interfaces";
 import {Suggestion} from "../../../interfaces/job.interface";
+import getDangerousGoodsClassName from "../../../functions/getDangerousGoodsClassName";
 
 class FlightAgentConformationDialogController extends BaseController {
     static $inject = [
@@ -9,23 +10,30 @@ class FlightAgentConformationDialogController extends BaseController {
         'jobNumber',
         'flight',
         'agent',
-        'existingAwb'
+        'existingAwb',
+        'dgClass'
     ];
 
     isAwbDisabled: boolean = false;
     awb: string = '';
     dialogTitle: string;
+    dgClassName?: string;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         public jobNumber: string,
         public flight?: IFlightViewModel,
         public agent?: Suggestion,
-        existingAwb?: string
+        existingAwb?: string,
+        dgClass?: number,
     ) {
         super();
 
         this.dialogTitle = flight ? 'Assign Flight' : 'Assign Agent';
+
+        if(dgClass !== undefined){
+            this.dgClassName = getDangerousGoodsClassName(dgClass);
+        }
 
         if (existingAwb) {
             this.awb = existingAwb;
