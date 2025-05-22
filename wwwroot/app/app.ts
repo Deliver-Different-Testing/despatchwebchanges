@@ -97,6 +97,7 @@ import FlightAgentConformationDialogController
     from "./components/dialogs/flight-agent-conformation-dialog/flight-agent-conformation-dialog.controller";
 import AgentInfoDialogController from "./components/dialogs/agent-info-dialog/agent-info-dialog.controller";
 import AgentInfoDialogService from "./components/dialogs/agent-info-dialog/agent-info-dialog.service";
+import AddressLookupService from "./services/address-lookup.service";
 
 const app = (window as any).uDispatchApp;
 
@@ -276,5 +277,6 @@ app.service("autoCompleteDialogService", AutoCompleteDialogService);
 app.service("jobAddStopService", JobAddStopService);
 app.service("flightAgentConfirmationDialogService", FlightAgentConfirmationDialogService)
 app.service("agentInfoDialogService", AgentInfoDialogService)
+app.service("addressLookupService", AddressLookupService)
 
 export default app;

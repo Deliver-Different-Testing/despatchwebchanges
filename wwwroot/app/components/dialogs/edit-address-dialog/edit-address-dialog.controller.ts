@@ -5,8 +5,9 @@ import {AppConfig} from "../../../interfaces/app-config.interface";
 import IStateInfo from "../../../interfaces/state-info.interface";
 import ConfigService from "../../../services/config.service";
 import {HereMapsLocationResult, Position,} from "../../../interfaces/heremaps-autocomplete.interfaces";
-import {HereMapsLookupOptions, HereMapsLookupResponse,} from "../../../interfaces/hereMapsLookUp.interfaces";
+import {HereMapsLookupResponse,} from "../../../interfaces/hereMapsLookUp.interfaces";
 import {getStateByAbbreviation, getStateByName, getStates} from "../../../functions/usStates";
+import AddressLookupService from "../../../services/address-lookup.service";
 
 class EditAddressDialogController extends BaseController {
     static $inject = [
@@ -18,7 +19,7 @@ class EditAddressDialogController extends BaseController {
         "NgMap",
         "APP_CONFIG",
         "configService",
-        "$http",
+        "addressLookupService",
         "addressDetails",
         "title",
         "submitLabel",
@@ -37,7 +38,6 @@ class EditAddressDialogController extends BaseController {
     isContactCardExpanded: boolean = false;
     shipmentDetails?: ShipmentDetails;
     private readonly useUsFormat: boolean;
-    private readonly isUsCustomer: boolean;
 
     constructor(
         private $scope: angular.IScope,
@@ -48,21 +48,20 @@ class EditAddressDialogController extends BaseController {
         private NgMap: angular.map.INgMap,
         appConfig: AppConfig,
         private configService: ConfigService,
-        private $http: angular.IHttpService,
+        private addressLookupService: AddressLookupService,
         public addressDetails: EditAddressDialogViewModel,
         public title: string,
         public submitLabel: string,
-        public showContactInfo: boolean
+        public showContactInfo: boolean,
     ) {
         super();
         this.initServices($timeout, $interval);
 
         this.isLoading = false;
         this.useUsFormat = appConfig.US_Customer;
-        this.isUsCustomer = appConfig.US_Customer;
         this.addressSearchText = this.addressDetails.fullAddress || "";
 
-        if(this.showContactInfo) {
+        if (this.showContactInfo) {
             this.isContactCardExpanded = true;
         }
 
@@ -121,27 +120,10 @@ class EditAddressDialogController extends BaseController {
         text: string
     ): Promise<HereMapsLocationResult[]> {
         try {
-            if (!text || text.length < 3) {
-                return [];
-            }
+            const results = await this.addressLookupService.autocompleteAddressSearch(text);
+            this.addressSearchResults = results;
+            return results;
 
-            const hereMapsKey = await this.configService.getHereMapsKey();
-
-            const response = await this.$http.get<{
-                items: HereMapsLocationResult[];
-            }>("https://geocode.search.hereapi.com/v1/geocode", {
-                params: {
-                    addressNamesMode: "matched",
-                    q: text,
-                    apiKey: hereMapsKey,
-                    in: `countryCode:${this.isUsCustomer ? "USA" : "NZL"}`,
-                    limit: 10,
-                    types: "address,houseNumber,place",
-                },
-            });
-
-            this.addressSearchResults = response.data.items;
-            return this.addressSearchResults;
         } catch (error: any) {
             this.toastrService.showErrorToast(
                 error.message || "Error searching for addresses"
@@ -165,7 +147,7 @@ class EditAddressDialogController extends BaseController {
             this.selectedAddressId = selectedItem.id;
 
             // Get detailed information about the location using the ID
-            const detailedLocation = await this.getLocationDetailsById(
+            const detailedLocation = await this.addressLookupService.getLocationDetailsById(
                 selectedItem.id
             );
 
@@ -187,44 +169,6 @@ class EditAddressDialogController extends BaseController {
             this.toastrService.showErrorToast(
                 "An error occurred while processing the selected address. Please try again."
             );
-        }
-    }
-
-    async getLocationDetailsById(
-        id: string
-    ): Promise<HereMapsLookupResponse | null> {
-        try {
-            this.isLoading = true;
-            const hereMapsKey = await this.configService.getHereMapsKey();
-
-            const options: HereMapsLookupOptions = {
-                id: id,
-                show: ["countryInfo", "streetInfo"],
-            };
-
-            const response = await this.$http.get<HereMapsLookupResponse>(
-                "https://lookup.search.hereapi.com/v1/lookup",
-                {
-                    params: {
-                        id: options.id,
-                        apiKey: hereMapsKey,
-                        show: options.show?.join(","),
-                    },
-                    headers: {
-                        "X-Request-ID": this.generateRequestId(),
-                    },
-                }
-            );
-
-            this.isLoading = false;
-            return response.data;
-        } catch (error) {
-            this.isLoading = false;
-            console.error("Error fetching location details by ID:", error);
-            this.toastrService.showErrorToast(
-                "An error occurred while retrieving address details. Please try again."
-            );
-            return null;
         }
     }
 
@@ -325,7 +269,7 @@ class EditAddressDialogController extends BaseController {
         }
     }
 
-    markerDragend(event: google.maps.MapMouseEvent): void {
+    markerDragend(event: google.maps.MapMouseEvent) {
         // Get the marker's new position
         const location = event.latLng;
         if (!location) return;
@@ -335,7 +279,7 @@ class EditAddressDialogController extends BaseController {
             const lat = location.lat();
             const lng = location.lng();
 
-            this.fetchNearestAddress(lat, lng);
+            return this.fetchNearestAddress(lat, lng);
         } catch (error) {
             this.toastrService.showErrorToast(
                 "An error occurred while retrieving address information. Please try again or contact support"
@@ -345,20 +289,10 @@ class EditAddressDialogController extends BaseController {
 
     async fetchNearestAddress(lat: number, lng: number): Promise<void> {
         try {
-            const hereMapsKey = await this.configService.getHereMapsKey();
+            const responseItems = await this.addressLookupService.fetchNearestAddress(lat, lng);
 
-            const response = await this.$http.get<{
-                items: HereMapsLocationResult[];
-            }>("https://revgeocode.search.hereapi.com/v1/revgeocode", {
-                params: {
-                    at: `${lat},${lng}`,
-                    apiKey: hereMapsKey,
-                    limit: 1,
-                },
-            });
-
-            if (response.data.items && response.data.items.length > 0) {
-                const location = response.data.items[0];
+            if (responseItems && responseItems.length > 0) {
+                const location = responseItems[0];
                 this.selectedAddressId = location.id;
 
                 // Update address fields
@@ -402,23 +336,7 @@ class EditAddressDialogController extends BaseController {
         this.$mdDialog.cancel();
     }
 
-    /**
-     * Generates a UUID v4 string for request correlation
-     */
-    private generateRequestId(): string {
-        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
-            /[xy]/g,
-            function (c) {
-                const r = (Math.random() * 16) | 0;
-                const v = c === "x" ? r : (r & 0x3) | 0x8;
-                return v.toString(16);
-            }
-        );
-    }
 
-    /**
-     * Handle address fields when data comes from the Lookup API
-     */
     private handleAddressFieldsFromLookup(
         location: HereMapsLookupResponse
     ): void {
