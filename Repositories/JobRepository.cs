@@ -1038,7 +1038,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         );
     }
 
-    public async Task<TucEvent> GetSupportEventAsync(int eventId) => await Get<TucEvent>(eventId);
+    public async Task<TucEvent> GetSupportEventAsync(int eventId) => await GetByIdAsync<TucEvent>(eventId);
 
     public async Task<int> UpdateSupportEventAsync(TucEvent supportEvent)
     {

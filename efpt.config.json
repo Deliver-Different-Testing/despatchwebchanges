@@ -19,6 +19,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[AirFreightRates]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[ClearListAreaZipPolygon]",
          "ObjectType": 0
       },
@@ -51,7 +55,19 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[ExtraCharges]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[FlightCarriers]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[FlightCarrierZones]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[FlightZoneCombos]",
          "ObjectType": 0
       },
       {
@@ -60,6 +76,10 @@
       },
       {
          "Name": "[dbo].[PricingBreakdown]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblAfterHours]",
          "ObjectType": 0
       },
       {
@@ -116,6 +136,10 @@
       },
       {
          "Name": "[dbo].[tblDespatchView]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblHoliday]",
          "ObjectType": 0
       },
       {
@@ -276,6 +300,14 @@
       },
       {
          "Name": "[dbo].[VehicleSize]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[WeightBreakGroups]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[WeightBreaks]",
          "ObjectType": 0
       },
       {
@@ -545,6 +577,10 @@
       },
       {
          "Name": "[dbo].[UTL_fncClearList_Other]",
+         "ObjectType": 2
+      },
+      {
+         "Name": "[dbo].[UTL_fncJob_ExtraRate]",
          "ObjectType": 2
       },
       {

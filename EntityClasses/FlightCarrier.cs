@@ -22,4 +22,8 @@ public partial class FlightCarrier
     public bool IsActive { get; set; }
 
     public string CarrierCode { get; set; }
+
+    public virtual ICollection<FlightCarrierZone> FlightCarrierZones { get; set; } = new List<FlightCarrierZone>();
+
+    public virtual ICollection<FlightZoneCombo> FlightZoneCombos { get; set; } = new List<FlightZoneCombo>();
 }

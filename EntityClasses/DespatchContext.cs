@@ -15,6 +15,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<AgentVehicle> AgentVehicles { get; set; }
 
+    public virtual DbSet<AirFreightRate> AirFreightRates { get; set; }
+
     public virtual DbSet<ClearListAreaZipPolygon> ClearListAreaZipPolygons { get; set; }
 
     public virtual DbSet<DeliveryPhoto> DeliveryPhotos { get; set; }
@@ -39,11 +41,19 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<DfrntuserPageLayout> DfrntuserPageLayouts { get; set; }
 
+    public virtual DbSet<ExtraCharge> ExtraCharges { get; set; }
+
     public virtual DbSet<FlightCarrier> FlightCarriers { get; set; }
+
+    public virtual DbSet<FlightCarrierZone> FlightCarrierZones { get; set; }
+
+    public virtual DbSet<FlightZoneCombo> FlightZoneCombos { get; set; }
 
     public virtual DbSet<GlobalAddressMapping> GlobalAddressMappings { get; set; }
 
     public virtual DbSet<PricingBreakdown> PricingBreakdowns { get; set; }
+
+    public virtual DbSet<TblAfterHour> TblAfterHours { get; set; }
 
     public virtual DbSet<TblAirport> TblAirports { get; set; }
 
@@ -78,6 +88,8 @@ public partial class DespatchContext : DbContext
     public virtual DbSet<TblCourierLogInOut> TblCourierLogInOuts { get; set; }
 
     public virtual DbSet<TblDespatchView> TblDespatchViews { get; set; }
+
+    public virtual DbSet<TblHoliday> TblHolidays { get; set; }
 
     public virtual DbSet<TblInternetPermission> TblInternetPermissions { get; set; }
 
@@ -165,6 +177,10 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<VehicleSize> VehicleSizes { get; set; }
 
+    public virtual DbSet<WeightBreak> WeightBreaks { get; set; }
+
+    public virtual DbSet<WeightBreakGroup> WeightBreakGroups { get; set; }
+
     public virtual DbSet<ZipPolygon> ZipPolygons { get; set; }
 
     public virtual DbSet<ZoneGroup> ZoneGroups { get; set; }
@@ -206,6 +222,53 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.VehicleSize).WithMany(p => p.AgentVehicles)
                 .HasForeignKey(d => d.VehicleSizeId)
                 .HasConstraintName("FK__AgentVehi__Vehic__68DE460B");
+        });
+
+        modelBuilder.Entity<AirFreightRate>(entity =>
+        {
+            entity.HasKey(e => e.AirFreightRateId).HasName("PK__AirFreig__19F7CB686B1AD212");
+
+            entity.Property(e => e.AirFreightRateId).HasColumnName("AirFreightRateID");
+            entity.Property(e => e.Active).HasDefaultValue(true);
+            entity.Property(e => e.AirFreightFuelSurcharge).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.AirFreightRateName).HasMaxLength(255);
+            entity.Property(e => e.AirlineSecuritySurcharge).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.CargoSurchargeAboveRate).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.CargoSurchargeBelowCharge).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.CargoSurchargeWeightBreakpoint).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.ClientId).HasColumnName("ClientID");
+            entity.Property(e => e.Created)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(255);
+            entity.Property(e => e.CriticalServiceSurcharge).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.ExtraChargeId).HasColumnName("ExtraChargeID");
+            entity.Property(e => e.FlightBaseCharge).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.GroundDistanceRateId).HasColumnName("GroundDistanceRateID");
+            entity.Property(e => e.LastModified)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
+            entity.Property(e => e.RateCardId).HasColumnName("RateCardID");
+            entity.Property(e => e.SpeedId).HasColumnName("SpeedID");
+            entity.Property(e => e.VehicleSizeId).HasColumnName("VehicleSizeID");
+            entity.Property(e => e.WeightBreakGroupId).HasColumnName("WeightBreakGroupID");
+
+            entity.HasOne(d => d.ExtraCharge).WithMany(p => p.AirFreightRates)
+                .HasForeignKey(d => d.ExtraChargeId)
+                .HasConstraintName("FK__AirFreigh__Extra__63256CB5");
+
+            entity.HasOne(d => d.Speed).WithMany(p => p.AirFreightRates)
+                .HasForeignKey(d => d.SpeedId)
+                .HasConstraintName("FK__AirFreigh__Speed__613D2443");
+
+            entity.HasOne(d => d.VehicleSize).WithMany(p => p.AirFreightRates)
+                .HasForeignKey(d => d.VehicleSizeId)
+                .HasConstraintName("FK__AirFreigh__Vehic__6231487C");
+
+            entity.HasOne(d => d.WeightBreakGroup).WithMany(p => p.AirFreightRates)
+                .HasForeignKey(d => d.WeightBreakGroupId)
+                .HasConstraintName("FK__AirFreigh__Weigh__2962DF74");
         });
 
         modelBuilder.Entity<ClearListAreaZipPolygon>(entity =>
@@ -745,6 +808,71 @@ public partial class DespatchContext : DbContext
                 .HasConstraintName("FK_UserPageLayouts_Users");
         });
 
+        modelBuilder.Entity<ExtraCharge>(entity =>
+        {
+            entity.HasKey(e => e.ExtraChargeId).HasName("PK__ExtraCha__23A8435179B3CC52");
+
+            entity.Property(e => e.ExtraChargeId).HasColumnName("ExtraChargeID");
+            entity.Property(e => e.AfterHours).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.AfterHoursDp)
+                .HasColumnType("decimal(18, 4)")
+                .HasColumnName("AfterHoursDP");
+            entity.Property(e => e.ClientId).HasColumnName("ClientID");
+            entity.Property(e => e.Created)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(255);
+            entity.Property(e => e.CubicExcess).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.CubicExcessDp)
+                .HasColumnType("decimal(18, 4)")
+                .HasColumnName("CubicExcessDP");
+            entity.Property(e => e.CubicIncluded).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.CubicIncrement).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.DangerousGoodsCharge).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.DangerousGoodsChargeDp)
+                .HasColumnType("decimal(18, 4)")
+                .HasColumnName("DangerousGoodsChargeDP");
+            entity.Property(e => e.DryIceCharge).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.DryIceChargeDp)
+                .HasColumnType("decimal(18, 4)")
+                .HasColumnName("DryIceChargeDP");
+            entity.Property(e => e.ExtraChargeName).HasMaxLength(255);
+            entity.Property(e => e.ExtraItemMultiplier).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.ExtraStop).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.ExtraStopDp)
+                .HasColumnType("decimal(18, 4)")
+                .HasColumnName("ExtraStopDP");
+            entity.Property(e => e.HolidayCharge).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.HolidayChargeDp)
+                .HasColumnType("decimal(18, 4)")
+                .HasColumnName("HolidayChargeDP");
+            entity.Property(e => e.ItemsExcess).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.ItemsExcessDp)
+                .HasColumnType("decimal(18, 4)")
+                .HasColumnName("ItemsExcessDP");
+            entity.Property(e => e.LastModified)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
+            entity.Property(e => e.PalletExcess).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.PalletExcessDp)
+                .HasColumnType("decimal(18, 4)")
+                .HasColumnName("PalletExcessDP");
+            entity.Property(e => e.PalletsIncluded).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.PickupHoldCharge).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.RateCardId).HasColumnName("RateCardID");
+            entity.Property(e => e.WaitTimeExcess).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.WaitTimeExcessDp)
+                .HasColumnType("decimal(18, 4)")
+                .HasColumnName("WaitTimeExcessDP");
+            entity.Property(e => e.WeightExcess).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.WeightExcessDp)
+                .HasColumnType("decimal(18, 4)")
+                .HasColumnName("WeightExcessDP");
+            entity.Property(e => e.WeightIncluded).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.WeightIncrement).HasColumnType("decimal(18, 4)");
+        });
+
         modelBuilder.Entity<FlightCarrier>(entity =>
         {
             entity.HasKey(e => e.FlightCarrierId).HasName("PK__FlightCa__8DE59C8F1A1745CD");
@@ -767,6 +895,77 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.LastModifiedBy)
                 .IsRequired()
                 .HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<FlightCarrierZone>(entity =>
+        {
+            entity.HasKey(e => e.FlightZoneId).HasName("PK__FlightCa__1D741C65BBC17565");
+
+            entity.HasIndex(e => e.CarrierId, "IX_FlightCarrierZones_CarrierID");
+
+            entity.Property(e => e.FlightZoneId).HasColumnName("FlightZoneID");
+            entity.Property(e => e.CarrierId).HasColumnName("CarrierID");
+            entity.Property(e => e.CityName).HasMaxLength(100);
+            entity.Property(e => e.Created)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.LastModified)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.StateName).HasMaxLength(100);
+            entity.Property(e => e.ZoneName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.HasOne(d => d.Carrier).WithMany(p => p.FlightCarrierZones)
+                .HasForeignKey(d => d.CarrierId)
+                .HasConstraintName("FK__FlightCar__Carri__196181D5");
+        });
+
+        modelBuilder.Entity<FlightZoneCombo>(entity =>
+        {
+            entity.HasKey(e => e.FlightZoneComboId).HasName("PK__FlightZo__0A61E3FE2BAEA15C");
+
+            entity.HasIndex(e => e.AirFreightRateId, "IX_FlightZoneCombos_AirFreightRateID");
+
+            entity.HasIndex(e => e.CarrierId, "IX_FlightZoneCombos_CarrierID");
+
+            entity.Property(e => e.FlightZoneComboId).HasColumnName("FlightZoneComboID");
+            entity.Property(e => e.AirFreightRateId).HasColumnName("AirFreightRateID");
+            entity.Property(e => e.CarrierId).HasColumnName("CarrierID");
+            entity.Property(e => e.Created)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.FromZoneName)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.LastModified)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.ToZoneName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.HasOne(d => d.AirFreightRate).WithMany(p => p.FlightZoneCombos)
+                .HasForeignKey(d => d.AirFreightRateId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__FlightZon__AirFr__1F1A5B2B");
+
+            entity.HasOne(d => d.Carrier).WithMany(p => p.FlightZoneCombos)
+                .HasForeignKey(d => d.CarrierId)
+                .HasConstraintName("FK__FlightZon__Carri__1E2636F2");
         });
 
         modelBuilder.Entity<GlobalAddressMapping>(entity =>
@@ -818,6 +1017,65 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.PrebookJob).WithMany(p => p.PricingBreakdowns)
                 .HasForeignKey(d => d.PrebookJobId)
                 .HasConstraintName("FK__PricingBr__Prebo__1C5DEA11");
+        });
+
+        modelBuilder.Entity<TblAfterHour>(entity =>
+        {
+            entity.HasKey(e => e.AfterHoursId);
+
+            entity.ToTable("tblAfterHours");
+
+            entity.HasIndex(e => e.CourierId, "CourierID");
+
+            entity.HasIndex(e => e.DayName, "DayName");
+
+            entity.HasIndex(e => e.JobEntryType, "JobEntryType");
+
+            entity.HasIndex(e => e.SiteId, "SiteID");
+
+            entity.Property(e => e.AfterHoursId).HasColumnName("AfterHoursID");
+            entity.Property(e => e.Active).HasDefaultValue(true);
+            entity.Property(e => e.AgentId).HasColumnName("AgentID");
+            entity.Property(e => e.Amount).HasColumnType("money");
+            entity.Property(e => e.CanBook).HasDefaultValue(true);
+            entity.Property(e => e.ClientId).HasColumnName("ClientID");
+            entity.Property(e => e.CourierId).HasColumnName("CourierID");
+            entity.Property(e => e.Created).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.DayName).HasMaxLength(50);
+            entity.Property(e => e.EndTime).HasColumnType("datetime");
+            entity.Property(e => e.JobEntryType)
+                .IsRequired()
+                .HasMaxLength(20);
+            entity.Property(e => e.LastModified).HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.Message)
+                .IsRequired()
+                .HasMaxLength(1000);
+            entity.Property(e => e.Notes).HasColumnType("ntext");
+            entity.Property(e => e.SiteId).HasColumnName("SiteID");
+            entity.Property(e => e.SpeedId).HasColumnName("SpeedID");
+            entity.Property(e => e.StartTime).HasColumnType("datetime");
+
+            entity.HasOne(d => d.Agent).WithMany(p => p.TblAfterHours)
+                .HasForeignKey(d => d.AgentId)
+                .HasConstraintName("FK__tblAfterH__Agent__746F28F1");
+
+            entity.HasOne(d => d.Client).WithMany(p => p.TblAfterHours)
+                .HasForeignKey(d => d.ClientId)
+                .HasConstraintName("FK_tblAfterHours_tucClient");
+
+            entity.HasOne(d => d.Courier).WithMany(p => p.TblAfterHours)
+                .HasForeignKey(d => d.CourierId)
+                .HasConstraintName("FK_tblAfterHours_tucCourier");
+
+            entity.HasOne(d => d.Speed).WithMany(p => p.TblAfterHours)
+                .HasForeignKey(d => d.SpeedId)
+                .HasConstraintName("FK_tblAfterHours_tucJobType");
         });
 
         modelBuilder.Entity<TblAirport>(entity =>
@@ -2174,6 +2432,53 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.ZoneGroup).WithMany(p => p.TblDespatchViews)
                 .HasForeignKey(d => d.ZoneGroupId)
                 .HasConstraintName("FK__tblDespat__ZoneG__12B48446");
+        });
+
+        modelBuilder.Entity<TblHoliday>(entity =>
+        {
+            entity.HasKey(e => e.HolidayId);
+
+            entity.ToTable("tblHoliday");
+
+            entity.HasIndex(e => e.CourierId, "CourierID");
+
+            entity.HasIndex(e => e.Date, "Date");
+
+            entity.HasIndex(e => e.JobEntryType, "JobEntryType");
+
+            entity.HasIndex(e => e.SiteId, "SiteID");
+
+            entity.Property(e => e.HolidayId).HasColumnName("HolidayID");
+            entity.Property(e => e.Amount).HasColumnType("money");
+            entity.Property(e => e.CanBook).HasDefaultValue(true);
+            entity.Property(e => e.ClientId).HasColumnName("ClientID");
+            entity.Property(e => e.CourierId).HasColumnName("CourierID");
+            entity.Property(e => e.Created).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.Date).HasColumnType("datetime");
+            entity.Property(e => e.EndTime).HasColumnType("datetime");
+            entity.Property(e => e.JobEntryType)
+                .IsRequired()
+                .HasMaxLength(20);
+            entity.Property(e => e.LastModified).HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.Message).HasMaxLength(1000);
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasDefaultValue("TBA");
+            entity.Property(e => e.Notes).HasColumnType("ntext");
+            entity.Property(e => e.SiteId).HasColumnName("SiteID");
+            entity.Property(e => e.SpeedId).HasColumnName("SpeedID");
+            entity.Property(e => e.StartTime).HasColumnType("datetime");
+
+            entity.HasOne(d => d.Courier).WithMany(p => p.TblHolidays)
+                .HasForeignKey(d => d.CourierId)
+                .HasConstraintName("FK_tblHoliday_tucCourier");
         });
 
         modelBuilder.Entity<TblInternetPermission>(entity =>
@@ -5908,6 +6213,51 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.VehicleName).HasMaxLength(255);
             entity.Property(e => e.VehicleTypeId).HasColumnName("VehicleTypeID");
             entity.Property(e => e.WeightCapacity).HasColumnType("decimal(18, 4)");
+        });
+
+        modelBuilder.Entity<WeightBreak>(entity =>
+        {
+            entity.HasKey(e => e.WeightBreakId).HasName("PK__WeightBr__51EB3B5534D8700A");
+
+            entity.Property(e => e.WeightBreakId).HasColumnName("WeightBreakID");
+            entity.Property(e => e.BaseCharge).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.Created).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(255);
+            entity.Property(e => e.ExtraWeightRate).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.LastModified).HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<WeightBreakGroup>(entity =>
+        {
+            entity.HasKey(e => e.WeightBreakGroupId).HasName("PK__WeightBr__34F02BA4C7CF6726");
+
+            entity.Property(e => e.WeightBreakGroupId).HasColumnName("WeightBreakGroupID");
+            entity.Property(e => e.Created).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(255);
+            entity.Property(e => e.LastModified).HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
+            entity.Property(e => e.WeightBreakGroupName).HasMaxLength(200);
+
+            entity.HasOne(d => d.FifthWeightBreakNavigation).WithMany(p => p.WeightBreakGroupFifthWeightBreakNavigations)
+                .HasForeignKey(d => d.FifthWeightBreak)
+                .HasConstraintName("FK__WeightBre__Fifth__286EBB3B");
+
+            entity.HasOne(d => d.FirstWeightBreakNavigation).WithMany(p => p.WeightBreakGroupFirstWeightBreakNavigations)
+                .HasForeignKey(d => d.FirstWeightBreak)
+                .HasConstraintName("FK__WeightBre__First__249E2A57");
+
+            entity.HasOne(d => d.FourthWeightBreakNavigation).WithMany(p => p.WeightBreakGroupFourthWeightBreakNavigations)
+                .HasForeignKey(d => d.FourthWeightBreak)
+                .HasConstraintName("FK__WeightBre__Fourt__277A9702");
+
+            entity.HasOne(d => d.SecondWeightBreakNavigation).WithMany(p => p.WeightBreakGroupSecondWeightBreakNavigations)
+                .HasForeignKey(d => d.SecondWeightBreak)
+                .HasConstraintName("FK__WeightBre__Secon__25924E90");
+
+            entity.HasOne(d => d.ThirdWeightBreakNavigation).WithMany(p => p.WeightBreakGroupThirdWeightBreakNavigations)
+                .HasForeignKey(d => d.ThirdWeightBreak)
+                .HasConstraintName("FK__WeightBre__Third__268672C9");
         });
 
         modelBuilder.Entity<ZipPolygon>(entity =>

@@ -17,7 +17,8 @@ public class NationwideJobController(
     INationwideJobRepository repository,
     IFlightStatsService flightService,
     IClientAccessValidatorService clientAccessValidator,
-    ICountryService countryService)
+    ICountryService countryService,
+    IFlightRateService flightRateService)
     : Controller
 {
     [HttpGet]
@@ -135,7 +136,7 @@ public class NationwideJobController(
             foreach (var flight in flights)
             {
                 // Get amount from stored proc
-                var amount = await repository.GetCarrierFlightRateByJobIdAsync(
+                var amount = await flightRateService.GetCarrierFlightRateByJobIdAsync(
                     jobId,
                     flight.AirlineCode,
                     flight.FlightSegments.Count != 0,

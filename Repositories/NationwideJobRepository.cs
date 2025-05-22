@@ -163,7 +163,8 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         }
         catch (Exception e)
         {
-            Log.Error(e, "An error occured adding Flight {FlightFlightNumber} to job {JobId}", flights.FlightSegments[0]?.FlightNumber,
+            Log.Error(e, "An error occured adding Flight {FlightFlightNumber} to job {JobId}",
+                flights.FlightSegments[0]?.FlightNumber,
                 jobId);
             throw;
         }
@@ -336,12 +337,12 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
             var currentDate = _infoService.GetCurrentTenantTime();
             var isDepartureAirportAgent = job.FromAirportId != null && job.ToAirportId == null;
-            bool isGroundJob = !string.IsNullOrEmpty(job.UcjbNumber) && !char.IsDigit(job.UcjbNumber.Last());
+            var isGroundJob = !string.IsNullOrEmpty(job.UcjbNumber) && !char.IsDigit(job.UcjbNumber.Last());
 
             job.AgentId = agentId;
             job.UcjbStatus = isGroundJob ? (int)JobStatus.GroundAgentAssigned
-                                                : isDepartureAirportAgent? (int)JobStatus.InboundAgentAssigned
-                                                                         : (int)JobStatus.OutboundAgentAssigned;
+                : isDepartureAirportAgent ? (int)JobStatus.InboundAgentAssigned
+                : (int)JobStatus.OutboundAgentAssigned;
 
             job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
             job.UcjbDispDate = currentDate;
@@ -501,47 +502,6 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         return rates
             .Select(r => r.Rate)
             .FirstOrDefault();
-    }
-
-    public async Task<decimal> GetCarrierFlightRateByJobIdAsync(int jobId, string carrierCode, bool extraStopOffs,
-        DateTime? bookTime)
-    {
-        try
-        {
-            var job = await Context.TucJobs
-                .Include(j => j.TucJobItems)
-                .FirstOrDefaultAsync(j => j.UcjbId == jobId);
-
-            var returnValue = new OutputParameter<int>();
-
-            var rates = await Context.Procedures.DD_stpGetCarrierFlightRateAsync(
-                clientID: job.UcjbClientId,
-                fromCity: job.PickupAddressLine5,
-                fromState: job.PickupAddressLine6,
-                toCity: job.DeliveryAddressLine5,
-                toState: job.DeliveryAddressLine6,
-                carrierCode: carrierCode,
-                totalWeight: job.UcjbWeight.HasValue ? (decimal)job.UcjbWeight.Value : 0,
-                quantity: job.UcjbQty,
-                cubic: null,
-                totalPallets: job.TucJobItems.Count,
-                extraStopOffs: extraStopOffs ? 1 : 0,
-                bookTime: bookTime,
-                vehicleSizeID: job.UcjbSize,
-                dangerousGoods: false,
-                dryIceWeight: job.DryIceWeight,
-                waitTime: null,
-                returnValue: returnValue);
-
-            return rates
-                .Select(r => r.Rate)
-                .FirstOrDefault() ?? 0;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error retrieving carrier flight rates for job {JobId}", jobId);
-            return 0;
-        }
     }
 
     public async Task<List<Suggestion>> GetActiveAirlineOptionsAsync()
@@ -760,21 +720,125 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                     a.AddressLine6,
                     a.AddressLine7,
                     a.AddressLine8),
-                Airports = a.AgentVehicles.Count != 0 ? a.AgentVehicles.Select(av => new AirportViewModel
-                {
-                    Name = av.Airport.Name,
-                    Code = av.Airport.AirportCode,
-                    City = av.Airport.AddressLine5,
-                    Country = av.Airport.AddressLine8,
-                    Latitude = (double)av.Airport.Latitude,
-                    Longitude = (double)av.Airport.Longitude,
-                    Timezone = av.Airport.Timezone
-                }).ToList() :
-                    new List<AirportViewModel>()
+                Airports = a.AgentVehicles.Count != 0
+                    ? a.AgentVehicles.Select(av => new AirportViewModel
+                    {
+                        Name = av.Airport.Name,
+                        Code = av.Airport.AirportCode,
+                        City = av.Airport.AddressLine5,
+                        Country = av.Airport.AddressLine8,
+                        Latitude = (double)av.Airport.Latitude,
+                        Longitude = (double)av.Airport.Longitude,
+                        Timezone = av.Airport.Timezone
+                    }).ToList()
+                    : new List<AirportViewModel>()
             })
             .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return agentInfo;
+    }
+
+    public async Task<bool> IsHolidayAsync(int clientId, DateTime bookTime)
+    {
+        return await Context.TblHolidays
+            .AnyAsync(h => (h.ClientId == clientId || h.ClientId == null) &&
+                           (h.SpeedId == null || h.AllSpeeds) &&
+                           h.Date.Date == bookTime.Date &&
+                           bookTime.TimeOfDay >= h.StartTime.TimeOfDay && bookTime.TimeOfDay <= h.EndTime.TimeOfDay &&
+                           h.JobEntryType == "Local" &&
+                           h.CanBook);
+    }
+
+    public async Task<bool> IsAfterHoursAsync(int clientId, DateTime bookTime, bool isHoliday)
+    {
+        if (isHoliday)
+            return false;
+
+        var dayName = bookTime.DayOfWeek.ToString();
+        return await Context.TblAfterHours
+            .AnyAsync(a => (a.ClientId == clientId || a.ClientId == null) &&
+                           (a.SpeedId == null || a.AllSpeeds) &&
+                           a.JobEntryType == "Local" &&
+                           a.Active &&
+                           bookTime.TimeOfDay >= a.StartTime.TimeOfDay && bookTime.TimeOfDay <= a.EndTime.TimeOfDay &&
+                           (a.DayName == dayName || a.EveryDay) &&
+                           a.CanBook);
+    }
+
+    public async Task<int?> GetFlightCarrierIdByCodeAsync(string carrierCode)
+    {
+        return await Context.FlightCarriers
+            .Where(fc => fc.CarrierCode == carrierCode)
+            .Select(fc => fc.FlightCarrierId)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<string> GetZoneNameAsync(int carrierId, string state, string city)
+    {
+        var zones = await Context.FlightCarrierZones
+            .Where(z => z.CarrierId == carrierId && z.StateName == state &&
+                        (z.CityName == null || z.CityName == city))
+            .ToListAsync();
+
+        // Prefer a city-specific zone if available
+        var cityZone = zones.FirstOrDefault(z => z.CityName == city);
+        if (cityZone != null)
+            return cityZone.ZoneName;
+
+        // Otherwise, return state-level zone
+        var stateZone = zones.FirstOrDefault(z => z.CityName == null);
+        return stateZone?.ZoneName;
+    }
+
+    public async Task<int?> GetAirFreightRateIdFromZoneComboAsync(int carrierId, string fromZoneName, string toZoneName)
+    {
+        return await Context.FlightZoneCombos
+            .Where(c => c.CarrierId == carrierId &&
+                        c.FromZoneName == fromZoneName &&
+                        c.ToZoneName == toZoneName)
+            .Select(c => c.AirFreightRateId)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<List<AirFreightRate>> GetAirFreightRatesAsync(int airFreightRateId)
+    {
+        return await Context.AirFreightRates
+            .Include(r => r.Speed)
+            .Where(r => r.AirFreightRateId == airFreightRateId && r.Active)
+            .ToListAsync();
+    }
+
+    public async Task<ExtraRateResultDto> CalculateExtraRatesAsync(
+        decimal totalWeight, int quantity, decimal cubic, int totalPallets, int extraStopOffs,
+        int vehicleSizeId, bool dangerousGoods, decimal dryIceWeight, int? waitTime,
+        int? extraChargeId, bool isHoliday, bool isAfterHours, decimal fuelSurcharge,
+        int? fromZoneCongestionId = null, int? toZoneCongestionId = null)
+    {
+        var result = await Context.UTL_fncJob_ExtraRate(
+                TotalWeight: totalWeight,
+                Quantity: quantity,
+                Cubic: cubic,
+                TotalPallets: totalPallets,
+                ExtraStopOffs: extraStopOffs,
+                VehicleSizeID: vehicleSizeId,
+                DangerousGoods: dangerousGoods,
+                DryIceWeight: dryIceWeight,
+                WaitTime: waitTime,
+                ExtraChargeID: extraChargeId,
+                Holiday: isHoliday,
+                Afterhours: isAfterHours,
+                FromZoneCongestionID: fromZoneCongestionId,
+                ToZoneCongestionID: toZoneCongestionId,
+                MFV: fuelSurcharge)
+            .FirstOrDefaultAsync();
+
+        if (result == null) return new ExtraRateResultDto { Amount = 0, DriverPay = 0 };
+
+        return new ExtraRateResultDto
+        {
+            Amount = result.Amount ?? 0,
+            DriverPay = result.DriverPay ?? 0
+        };
     }
 }
