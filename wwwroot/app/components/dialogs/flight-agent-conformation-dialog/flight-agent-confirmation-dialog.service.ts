@@ -3,6 +3,7 @@ import {IDispatchJob, Suggestion} from "../../../interfaces/job.interface";
 import FlightAgentConformationDialogController from "./flight-agent-conformation-dialog.controller";
 import {FlightAgentConfirmationDialogResult} from "../../../interfaces/dialog-result.interfaces";
 import {bindAllMethods} from "../../../functions/bindAllMethods";
+import {IFlightAgentConfirmationDialogLocals} from "./flight-agent-conformation-dialog.interfaces";
 
 class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
     static $inject = [
@@ -28,7 +29,7 @@ class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
         return this;
     }
 
-    async flightConfirmationDialog($event: MouseEvent, job: IDispatchJob, flight: IFlightViewModel) {
+    private async showConfirmationDialog($event: MouseEvent, dialogLocals: IFlightAgentConfirmationDialogLocals) {
         const dialogConfig: angular.material.IDialogOptions = {
             controller: FlightAgentConformationDialogController,
             controllerAs: 'ctrl',
@@ -36,54 +37,45 @@ class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
             parent: this.$document.parent(),
             targetEvent: $event,
             clickOutsideToClose: false,
-            locals: {
-                jobNumber: job.jobNo,
-                flight: flight,
-                agent: null,
-                existingAwb: job.conNote
-            }
+            locals: dialogLocals
         };
 
         try {
             const awb: string = await this.$mdDialog.show(dialogConfig);
-
             this.dialogResult.shouldAssign = true;
             this.dialogResult.awb = awb;
-
             return this.dialogResult;
         } catch (error) {
-            console.log('Dialog was cancelled or encountered an error', error);
+            if (error) {
+                console.warn('Dialog was cancelled or encountered an error:', error);
+            } else {
+                console.info('Dialog was dismissed by user');
+            }
+
+            this.dialogResult.shouldAssign = false;
+            this.dialogResult.awb = undefined;
             return this.dialogResult;
         }
     }
 
+    async flightConfirmationDialog($event: MouseEvent, job: IDispatchJob, flight: IFlightViewModel) {
+        return this.showConfirmationDialog($event, {
+            jobNumber: job.jobNo,
+            flight: flight,
+            agent: undefined,
+            existingAwb: job.conNote,
+            dgClass: job.dgClass
+        });
+    }
+
     async agentConfirmationDialog($event: MouseEvent, job: IDispatchJob, agent: Suggestion) {
-        const dialogConfig: angular.material.IDialogOptions = {
-            controller: FlightAgentConformationDialogController,
-            controllerAs: 'ctrl',
-            templateUrl: 'app/components/dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.template.html',
-            parent: this.$document.parent(),
-            targetEvent: $event,
-            clickOutsideToClose: false,
-            locals: {
-                jobNumber: job.jobNo,
-                flight: null,
-                agent: agent,
-                existingAwb: job.conNote
-            }
-        };
-
-        try {
-            const awb: string = await this.$mdDialog.show(dialogConfig);
-
-            this.dialogResult.shouldAssign = true;
-            this.dialogResult.awb = awb;
-
-            return this.dialogResult;
-        } catch (error) {
-            console.log('Dialog was cancelled or encountered an error', error);
-            return this.dialogResult;
-        }
+        return this.showConfirmationDialog($event, {
+            jobNumber: job.jobNo,
+            flight: undefined,
+            agent: agent,
+            existingAwb: job.conNote,
+            dgClass: job.dgClass
+        });
     }
 }
 

@@ -10,7 +10,5 @@ export function isDeliveryJob(job: IDispatchJob): boolean {
     if (lastChar === '1' || lastChar === '3') return true;
 
     // New logic - if the last character is not a digit, it's a delivery job
-    if (isNaN(parseInt(lastChar))) return true;
-
-    return false;
+    return isNaN(parseInt(lastChar));
 }

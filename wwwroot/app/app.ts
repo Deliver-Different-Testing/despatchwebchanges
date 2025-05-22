@@ -96,7 +96,7 @@ import AgentInfoDialogService from "./components/dialogs/agent-info-dialog/agent
 import AddressLookupService from "./services/address-lookup.service";
 import dayjs from "dayjs";
 import 'dayjs/locale/en';
-import NoDataComponent from "./components/common/no-data/no-data.component"; // or your preferred locale
+import NoDataComponent from "./components/common/no-data/no-data.component";
 
 const app = (window as any).uDispatchApp;
 

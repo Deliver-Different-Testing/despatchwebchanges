@@ -65,7 +65,11 @@ class NoteService {
     async getJobNotes(jobId: number, isRecurring: boolean): Promise<IJobNote[]> {
         try {
             const url = isRecurring ? 'note/GetRecurringNotes' : 'note/GetNotes';
-            const response = await this.$http.get<IJobNote[]>(`${url}?jobId=${jobId}`);
+            const response = await this.$http.get<IJobNote[]>(url, {
+                params: {
+                    jobId,
+                }
+            });
             return response.data;
         } catch (error) {
             console.error('Error getting job notes:', error);
@@ -75,7 +79,11 @@ class NoteService {
 
     async getNoteById(noteId: number): Promise<IJobNote | null> {
         try {
-            const response = await this.$http.get<IJobNote>(`note/GetNote?noteId=${noteId}`);
+            const response = await this.$http.get<IJobNote>(`note/GetNote`, {
+                params: {
+                    noteId,
+                }
+            });
             return response.data;
         } catch (error) {
             console.error('Error getting note by ID:', error);

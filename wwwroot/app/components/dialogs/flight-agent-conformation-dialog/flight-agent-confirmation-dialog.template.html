@@ -28,6 +28,12 @@
                     <span>You are assigning Job <strong>{{ctrl.jobNumber}}</strong> to Agent <strong>{{ctrl.agent.text}}</strong></span>
                 </div>
 
+                <div class="assignment-info md-subhead" ng-if="ctrl.dgClassName">
+                    <md-icon md-font-set="material-symbols-outlined" class="md-accent">dangerous</md-icon>
+                    <span>Dangerous Goods Class: <strong>{{ctrl.dgClassName}}</strong></span>
+                </div>
+
+
                 <p class="md-body-1">Please confirm this is correct.</p>
 
                 <md-input-container class="md-block">

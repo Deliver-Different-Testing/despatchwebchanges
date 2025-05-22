@@ -304,6 +304,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\auto-complete-dialog\auto-complete-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-conformation-dialog.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-conformation-dialog.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.service.ts" />
@@ -367,6 +368,7 @@
     <TypeScriptCompile Include="wwwroot\app\contants.ts" />
     <TypeScriptCompile Include="wwwroot\app\directives.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\app-pages.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\dangerous-goods.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\days-of-week.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\event-type.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\file-upload-type.enum.ts" />
@@ -379,6 +381,7 @@
     <TypeScriptCompile Include="wwwroot\app\enums\late-event-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\bindAllMethods.ts" />
+    <TypeScriptCompile Include="wwwroot\app\functions\getDangerousGoodsClassName.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\greetUser.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\isDeliveryJob.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\isFlightJob.ts" />

@@ -152,6 +152,7 @@ public static class JobMappings
             FollowupTime = j.FollowupTime,
             Van = j.UcjbVan,
             Truck = j.Truck ?? false,
+            DgClass = j.Dgclass,
         };
 
     public static readonly Expression<Func<TucJob, JobViewModel>> JobMapping = j => new JobViewModel
@@ -224,32 +225,7 @@ public static class JobMappings
         // Airport information
         ToAirportId = j.ToAirportId,
         FromAirportId = j.FromAirportId,
-
-        //// Assigned flight information
-        //AssignedFlight = j.Parent != null
-        //    ? j.Parent.InverseParent
-        //        .SelectMany(childJob => childJob.TucJobNationwides)
-        //        .Select(nj => new AssignedFlight
-        //        {
-        //            ExpectedArrival = nj.UcnwEta,
-        //            ArrivalTimeZone = nj.UcnwJob.ToAirport.Timezone,
-        //            ExpectedDeparture = nj.UcnwEtd,
-        //            DepartureTimeZone = nj.UcnwJob.FromAirport.Timezone,
-        //            FlightNumber = nj.UcnwFlightNo,
-        //            Notes = nj.UcnwNotes
-        //        })
-        //        .FirstOrDefault()
-        //    : j.TucJobNationwides
-        //        .Select(nj => new AssignedFlight
-        //        {
-        //            ExpectedArrival = nj.UcnwEta,
-        //            ArrivalTimeZone = nj.UcnwJob.ToAirport.Timezone,
-        //            ExpectedDeparture = nj.UcnwEtd,
-        //            DepartureTimeZone = nj.UcnwJob.FromAirport.Timezone,
-        //            FlightNumber = nj.UcnwFlightNo,
-        //            Notes = nj.UcnwNotes
-        //        })
-        //        .FirstOrDefault(),
+        
         AssignedFlight =
             j.Parent != null
                 ? j
