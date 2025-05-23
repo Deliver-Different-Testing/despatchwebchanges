@@ -4,9 +4,52 @@
         <md-toolbar class="md-primary">
             <div class="md-toolbar-tools">
                 <span class="material-symbols-outlined">note</span>
-                <span class="md-headline-title" flex style="margin-left: 8px;">Notes</span>
+                <span class="md-headline-title" flex style="margin-left: 8px;">
+                    Notes
+                    <span ng-if="ctrl.isFilterActive()" class="filter-indicator">
+                        - {{ctrl.getCategoryName()}}
+                    </span>
+                </span>
 
                 <div flex></div>
+
+                <md-menu>
+                    <md-button aria-label="Open note category menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
+                        <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.noteCategories">
+                            {{ctrl.isFilterActive() ? 'filter_alt' : 'category'}}
+                        </md-icon>
+                        <md-tooltip md-direction="bottom">Filter by Category</md-tooltip>
+                        <md-progress-circular md-diameter="18" md-mode="indeterminate"
+                                              ng-if="!ctrl.noteCategories"></md-progress-circular>
+                    </md-button>
+                    <md-menu-content>
+                        <md-menu-item ng-if="ctrl.noteCategories && ctrl.noteCategories.length === 0">
+                            <p>No note categories are available.</p>
+                        </md-menu-item>
+
+                        <md-menu-item ng-if="ctrl.noteCategories && ctrl.noteCategories.length > 0">
+                            <md-button ng-click="ctrl.filterByCategory('all')"
+                                       ng-class="{'md-primary': ctrl.selectedCategory === 'all'}">
+                                <md-icon md-font-set="material-symbols-outlined" md-menu-align-target>topic</md-icon>
+                                All Categories
+                                <span class="category-count">({{ctrl.notes.length}})</span>
+                            </md-button>
+                        </md-menu-item>
+
+                        <md-menu-divider ng-if="ctrl.noteCategories && ctrl.noteCategories.length > 0"></md-menu-divider>
+
+                        <md-menu-item ng-repeat="category in ctrl.noteCategories">
+                            <md-button ng-click="ctrl.filterByCategory(category)"
+                                       ng-class="{'md-primary': ctrl.selectedCategory === category.noteTypeId.toString()}">
+                                <md-icon md-font-set="material-symbols-outlined" md-menu-align-target>topic</md-icon>
+                                {{ category.text }}
+                                <span class="category-count">
+                                    ({{(ctrl.notes | filter: {noteTypeId: category.noteTypeId}).length}})
+                                </span>
+                            </md-button>
+                        </md-menu-item>
+                    </md-menu-content>
+                </md-menu>
 
                 <md-button class="md-icon-button" ng-click="ctrl.addNote($event)">
                     <md-icon md-font-set="material-symbols-outlined">note_add</md-icon>
@@ -22,7 +65,7 @@
         </md-progress-linear>
 
         <div class="sticky-notes-container">
-            <div ng-repeat="note in ctrl.notes"
+            <div ng-repeat="note in ctrl.getDisplayNotes()"
                  class="sticky-note {{note.noteTypeName | lowercase}} {{note.isImportant ? 'important' : ''}}"
                  ng-style="{'transform': 'rotate(' + (-1 + $index % 3) + 'deg)'}"
                  ng-click="ctrl.editNote($event, note)">
@@ -52,10 +95,15 @@
             </div>
 
             <!-- Message when no notes -->
-            <div ng-if="!ctrl.loading && ctrl.notes.length === 0"
+            <div ng-if="!ctrl.loading && ctrl.getDisplayNotes().length === 0"
                  class="empty-state">
                 <md-icon md-font-set="material-symbols-outlined">sticky_note_2</md-icon>
-                <p>No notes available for this job.</p>
+                <p ng-if="ctrl.notes && ctrl.notes.length === 0">No notes available for this job.</p>
+                <p ng-if="ctrl.notes && ctrl.notes.length > 0 && ctrl.isFilterActive()">
+                    No notes found in the "{{ctrl.getCategoryName()}}" category.
+                    <br>
+                    <a href="#" ng-click="ctrl.filterByCategory('all'); $event.preventDefault()">Show all notes</a>
+                </p>
             </div>
         </div>
     </div>

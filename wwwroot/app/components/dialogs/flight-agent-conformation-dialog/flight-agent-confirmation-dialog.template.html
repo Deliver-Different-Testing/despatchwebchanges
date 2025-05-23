@@ -1,11 +1,13 @@
-<md-dialog aria-label="Assignment Dialog" class="md-whiteframe-5dp" class="flight-agent-confirmation-dialog">
+<md-dialog aria-label="Assignment Dialog" class="md-whiteframe-5dp flight-agent-confirmation-dialog">
     <form ng-cloak>
-        <md-toolbar class="md-primary">
+        <md-toolbar>
             <div class="md-toolbar-tools">
+                <md-icon ng-if="ctrl.agent" class="popup-icon" md-font-set="material-symbols-outlined">assignment_ind</md-icon>
+                <md-icon ng-if="ctrl.flight" class="popup-icon" md-font-set="material-symbols-outlined">airplane_ticket</md-icon>
                 <h2 class="md-title">{{ctrl.dialogTitle}}</h2>
                 <span flex></span>
                 <md-button class="md-icon-button" ng-click="ctrl.cancel()" aria-label="Close dialog">
-                    <md-icon>close</md-icon>
+                    <md-icon md-font-set="material-symbols-outlined">close</md-icon>
                 </md-button>
             </div>
         </md-toolbar>
@@ -33,10 +35,9 @@
                     <span>Dangerous Goods Class: <strong>{{ctrl.dgClassName}}</strong></span>
                 </div>
 
+                <p class="md-body-1" layout="row" layout-align="center center">Please confirm this is correct.</p>
 
-                <p class="md-body-1">Please confirm this is correct.</p>
-
-                <md-input-container class="md-block">
+                <md-input-container class="md-block" style="margin-top: 20px;">
                     <label for="awb">Air Waybill (AWB)</label>
                     <input id="awb" class="bold-input" ng-model="ctrl.awb" ng-disabled="ctrl.isAwbDisabled" type="text">
                     <div class="md-errors-spacer"></div>

@@ -1,7 +1,7 @@
 import NoteService from "../../../services/notes.service";
 import NoteManagementDialogService from "../../dialogs/note-management-dialog/note-management.dialog.service";
 import ToastrService from "../../../services/toastr.service";
-import {IJobNote} from "../../../interfaces/job.interface";
+import {IJobNote, INoteType} from "../../../interfaces/job.interface";
 import "./sticky-notes.styles.less";
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
@@ -11,8 +11,11 @@ class StickyNoteController extends BaseController {
     private readonly isRecurringJob: boolean = false;
 
     notes?: IJobNote[] = [];
+    filteredNotes?: IJobNote[] = [];
     jobId?: number;
     loading: boolean = false;
+    noteCategories?: INoteType[];
+    selectedCategory: string = 'all';
 
     static $inject = [
         'noteService',
@@ -30,6 +33,10 @@ class StickyNoteController extends BaseController {
         private $filter: angular.IFilterService,
     ) {
         super();
+
+        this.noteService.getNoteTypes().then((noteTypes: INoteType[]) => {
+            this.noteCategories = noteTypes;
+        })
     }
 
     $onInit() {
@@ -67,6 +74,7 @@ class StickyNoteController extends BaseController {
         this.noteService.getJobNotes(this.jobId, this.isRecurringJob)
             .then(notes => {
                 this.notes = notes;
+                this.applyFilter();
             })
             .catch(error => {
                 console.error('Error loading notes:', error);
@@ -75,6 +83,37 @@ class StickyNoteController extends BaseController {
             .finally(() => {
                 this.loading = false;
             });
+    }
+
+    filterByCategory(category: string | INoteType) {
+        if (typeof category === 'string') {
+            this.selectedCategory = category;
+        } else {
+            this.selectedCategory = category.id?.toString() || 'all';
+        }
+
+        this.applyFilter();
+    }
+
+    private applyFilter() {
+        if (!this.notes) {
+            this.filteredNotes = [];
+            return;
+        }
+
+        if (this.selectedCategory === 'all') {
+            this.filteredNotes = [...this.notes];
+        } else {
+            const categoryId = parseInt(this.selectedCategory);
+            this.filteredNotes = this.notes.filter(note =>
+                note.noteTypeId === categoryId
+            );
+        }
+    }
+
+    getDisplayNotes(): IJobNote[] {
+        // Use filteredNotes if a filter is applied, otherwise use all notes
+        return this.filteredNotes !== undefined ? this.filteredNotes : (this.notes || []);
     }
 
     async addNote($event: MouseEvent) {
@@ -157,6 +196,22 @@ class StickyNoteController extends BaseController {
         } else {
             return momentDate.format('MM/DD/YYYY HH:mm') + timezoneDisplay;
         }
+    }
+
+    isFilterActive(): boolean {
+        return this.selectedCategory !== 'all';
+    }
+
+    getCategoryName(): string {
+        if (this.selectedCategory === 'all') {
+            return 'All Categories';
+        }
+
+        const category = this.noteCategories?.find(cat =>
+            cat.id?.toString() === this.selectedCategory
+        );
+
+        return category?.text || 'Unknown Category';
     }
 }
 
