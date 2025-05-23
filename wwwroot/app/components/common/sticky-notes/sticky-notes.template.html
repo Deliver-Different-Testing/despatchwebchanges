@@ -44,7 +44,7 @@
                                 <md-icon md-font-set="material-symbols-outlined" md-menu-align-target>topic</md-icon>
                                 {{ category.text }}
                                 <span class="category-count">
-                                    ({{(ctrl.notes | filter: {noteTypeId: category.noteTypeId}).length}})
+                                    ({{(ctrl.notes | filter: {noteTypeId: category.id}).length}})
                                 </span>
                             </md-button>
                         </md-menu-item>
