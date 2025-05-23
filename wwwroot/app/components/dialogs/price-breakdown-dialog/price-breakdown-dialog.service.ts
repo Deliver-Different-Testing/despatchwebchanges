@@ -43,7 +43,7 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
 
             console.log('PriceBreakdownDialogService: Dialog closed!');
         } catch (error) {
-            if(!error) {
+            if(error === undefined) {
                 console.log('User closed dialog');
                 return;
             }
