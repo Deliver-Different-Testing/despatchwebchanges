@@ -24,7 +24,6 @@ import {
 } from "../interfaces/courier.interface";
 import {EventGroupViewModel} from "../interfaces/event-group-view-model.interface";
 import {ClearListEnvelopeViewModel, DfrntPageViewModel,} from "../interfaces/dfrnt-page-view-model.interface";
-import {bindAllMethods} from "../functions/bindAllMethods";
 import {TaskTableFiltersRequest, TaskViewModel,} from "../components/task-dashboard/task-dashboard.interfaces";
 import {JobProperty} from "../enums/job-property.enum";
 import ConfigService from "./config.service";
@@ -32,7 +31,11 @@ import {UpdateJobTimeRequest, UpdatePodDetailsRequest} from "../interfaces/reque
 import dayjs from "dayjs";
 
 class DispatchCoreService implements angular.IServiceProvider {
-    static $inject = ["$http", "APP_CONFIG", "configService"];
+    static $inject = [
+        "$http",
+        "APP_CONFIG",
+        "configService"
+    ];
 
     private readonly isUsCustomer: boolean;
     browserTimeZone: string;
@@ -44,7 +47,6 @@ class DispatchCoreService implements angular.IServiceProvider {
     ) {
         this.isUsCustomer = this.appConfig.US_Customer;
         this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        bindAllMethods(this);
     }
 
     $get() {
@@ -738,7 +740,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         } else {
             return;
         }
-        ;
+
         await this.$http.post(functionUrl, requestData);
     }
 
