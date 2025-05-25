@@ -95,6 +95,7 @@
               id="zipCode"
               ng-model="ctrl.addressDetails.addressLine7"
               pattern="[0-9]{5}"
+              type="number"
             />
           </md-input-container>
 
@@ -134,12 +135,12 @@
         <div layout-gt-sm="row">
           <md-input-container class="md-block" flex-gt-sm>
             <label for="lat">Latitude</label>
-            <input id="lat" ng-model="ctrl.addressDetails.latitude" />
+            <input id="lat" ng-model="ctrl.addressDetails.latitude" type="number" />
           </md-input-container>
 
           <md-input-container class="md-block" flex-gt-sm>
             <label for="long">Longitude</label>
-            <input id="long" ng-model="ctrl.addressDetails.longitude" />
+            <input id="long" ng-model="ctrl.addressDetails.longitude" type="number" />
           </md-input-container>
         </div>
 
@@ -165,6 +166,7 @@
             <input
               id="addressLine3"
               ng-model="ctrl.addressDetails.addressLine3"
+              type="number"
             />
           </md-input-container>
         </div>
@@ -207,6 +209,7 @@
                 <input
                   id="contactName"
                   ng-model="ctrl.shipmentDetails.contactName"
+                  type="text"
                 />
               </md-input-container>
 
@@ -215,6 +218,7 @@
                 <input
                   id="contactPhone"
                   ng-model="ctrl.shipmentDetails.contactMobile"
+                  type="number"
                 />
               </md-input-container>
             </div>
@@ -222,12 +226,12 @@
             <div layout-gt-sm="row">
               <md-input-container class="md-block" flex-gt-sm>
                 <label for="weight">Weight</label>
-                <input id="weight" ng-model="ctrl.shipmentDetails.weight" />
+                <input id="weight" ng-model="ctrl.shipmentDetails.weight" type="number" />
               </md-input-container>
 
               <md-input-container class="md-block" flex-gt-sm>
                 <label for="quantity">Quantity</label>
-                <input id="quantity" ng-model="ctrl.shipmentDetails.quantity" />
+                <input id="quantity" ng-model="ctrl.shipmentDetails.quantity" type="number" />
               </md-input-container>
             </div>
 

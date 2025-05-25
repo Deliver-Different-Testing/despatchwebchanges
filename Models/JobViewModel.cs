@@ -245,8 +245,8 @@ public class ShipmentDetails
 {
     public string ContactName { get; set; }
     public string ContactPhone { get; set; }
-    public double Weight { get; set; }
-    public int Quantity { get; set; }
+    public double? Weight { get; set; }
+    public int? Quantity { get; set; }
     public string JobNotes { get; set; }
 }
 

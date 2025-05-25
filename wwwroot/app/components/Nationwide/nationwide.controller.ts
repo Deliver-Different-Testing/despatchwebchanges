@@ -2150,6 +2150,11 @@ class NationwideControl extends BaseController {
 
     async addStopToJob($event: MouseEvent, job: IDispatchJob) {
         await this.jobAddStopService.addNewStop(job, $event);
+
+        // Refresh job
+        this.currentJobId = undefined;
+        this.currentJobId = job.id;
+        this.currentJob = job;
     }
 
     async openAgentMoreInfo($event: MouseEvent, agent: IAgent) {

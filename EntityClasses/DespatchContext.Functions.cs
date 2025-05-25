@@ -28,6 +28,12 @@ namespace DespatchWeb.EntityClasses
             throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
         }
 
+        [DbFunction("UTL_fncS_GetNationwideService_RawPrice", "dbo")]
+        public static decimal? UTL_fncS_GetNationwideService_RawPrice(int? ClientID, int? FromSuburbID, int? ToSuburbID, int? Speed, int? Size, double? Weight, int? Quantity, int? Type)
+        {
+            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
+        }
+
         [DbFunction("UTL_fncSuburb_FromNameWithPostCode", "dbo")]
         public static int? UTL_fncSuburb_FromNameWithPostCode(string Suburb, int? SiteID, int? PostCode)
         {
