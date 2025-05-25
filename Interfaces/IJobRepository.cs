@@ -190,8 +190,6 @@ public interface IJobRepository
         DateTime booked
     );
 
-    Task<DirectToASAPViewModel> DirectToAsap(int jobId);
-    Task<UpdateFirstAvailableSpeedResult> UpdateFirstAvailableSpeed(int jobId);
     Task AddPalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
     Task EditPalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
     Task DeletePalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
@@ -283,8 +281,7 @@ public interface IJobRepository
     Task<DriverStats> GetDriverStatsAsync(int courierId);
     void Dispose();
 
-    Task<T> Add<T>(T entity)
-        where T : class;
+    Task<T> AddEntityAsync<T>(T entity) where T : class;
 
     Task<JobViewModel> GetJobByIdAsync(int jobId);
     Task UpdateJobNoteAsync(int jobId, string note);
@@ -363,6 +360,14 @@ public interface IJobRepository
     Task UpdatePickUpTime(UpdateJobTimeRequest data);
     Task<JobRatingDetailsDto> GetJobBookingDetailsForRating(int jobId);
 
-    Task<int> AddStopToJobAsync(int jobId, EditAddressDialogViewModel pickUpAddress = null, EditAddressDialogViewModel deliveryAddress = null);
     Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId);
+    Task<bool> JobNumberExistsAsync(string jobNumber);
+
+    Task<decimal> GetNationwideServiceRawPriceAsync(int? clientId, int? fromSuburbId,
+        int? toSuburbId, int? speed, int? size, float? weight, int? quantity, int? type);
+
+    Task<T> GetByIdAsync<T>(int id)
+        where T : class;
+
+    Task SaveChangesAsync();
 }

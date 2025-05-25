@@ -392,12 +392,12 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
             var effectivePrebookId = await GetJobBookingRelationshipInfoAsync(jobId);
 
             return await Context.TucNotes
-                .Include(x => x.NoteType)
-                .Include(x => x.CreatedByNavigation)
-                .Include(x => x.UpdatedByNavigation)
-                .Where(x => x.JobBookingId == effectivePrebookId)
+                .Include(n => n.NoteType)
+                .Include(n => n.CreatedByNavigation)
+                .Include(n => n.UpdatedByNavigation)
+                .Where(n => n.JobBookingId == effectivePrebookId)
                 .AsNoTracking()
-                .Select(x => new TucNoteViewModel(x))
+                .Select(n => new TucNoteViewModel(n))
                 .ToListAsync();
         }
 }

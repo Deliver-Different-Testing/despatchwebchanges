@@ -1642,7 +1642,7 @@
             ></span
           >
                     <span class="read-date"
-                    >on {{ctrl.job.readTrackerInfo.readDate | momentFormat:'MM/DD/yyyy
+                    >on {{ctrl.job.readTrackerInfo.readDate | momentFormat:'MM/DD/YYYY
                     mm
                     '}} ({{ctrl.timeZone | timezoneShort}})</span
                     >
@@ -1851,7 +1851,6 @@
 
 <!-- POD Photo -->
 <pod-photo-viewer
-        ,
         initial-photo-index="ctrl.selectedPhotoIndex"
         is-open="ctrl.isPodViewerOpen"
         ng-if="ctrl.formattedPodPhotos.length > 0"

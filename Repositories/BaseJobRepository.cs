@@ -20,7 +20,7 @@ namespace DespatchWeb.Repositories;
 public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory, ITenantInfoService infoService)
     : BaseRepository(contextFactory)
 {
-    public async Task<T> Add<T>(T entity)
+    public async Task<T> AddEntityAsync<T>(T entity)
         where T : class
     {
         var result = await Context.Set<T>().AddAsync(entity);
@@ -28,8 +28,9 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         return result.Entity;
     }
 
-    public async Task<T> GetByIdAsync<T>(int id)
-        where T : class => await Context.Set<T>().FindAsync(id);
+    public async Task<T> GetByIdAsync<T>(int id) where T : class => await Context.Set<T>().FindAsync(id);
+
+    public async Task SaveChangesAsync() => await Context.SaveChangesAsync();
 
     protected async Task<List<DispatchJobViewModel>> DespatchQry(
         AppPage page,
@@ -1123,7 +1124,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
         Log.Information("Pricing breakdown is: {DescriptionValue}", description.Value);
 
-        if (dto.IsPrebook) {
+        if (dto.IsPrebook)
+        {
             var effectiveJobBookingId = await GetJobBookingRelationshipInfoAsync(dto.JobId);
             await Context.Procedures.DD_InsertPricingBreakdownAsync(
                 jobID: null,
@@ -1131,10 +1133,12 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 pricingBreakdown: description.Value,
                 returnValue: returnValue
             );
-        } else {
+        }
+        else
+        {
             var effectiveJobId = await GetJobRelationshipInfoAsync(dto.JobId);
             await Context.Procedures.DD_InsertPricingBreakdownAsync(
-            jobID: effectiveJobId,
+                jobID: effectiveJobId,
                 prebookJobID: null,
                 pricingBreakdown: description.Value,
                 returnValue: returnValue
@@ -1444,7 +1448,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     public async Task<int> SaveNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
-        if (viewModel.JobBookingId == null) {
+        if (viewModel.JobBookingId == null)
+        {
             ArgumentNullException.ThrowIfNull(viewModel.JobId, nameof(viewModel.JobId));
         }
 
@@ -1515,8 +1520,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     private async Task<int> CreateNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime,
         CancellationToken cancellationToken = default)
     {
-
-        var isArchived = viewModel.JobId.HasValue && await IsJobArchived(viewModel.JobId.Value) && !viewModel.JobBookingId.HasValue;
+        var isArchived = viewModel.JobId.HasValue && await IsJobArchived(viewModel.JobId.Value) &&
+                         !viewModel.JobBookingId.HasValue;
         var isPrebook = viewModel.JobBookingId.HasValue;
 
         if (isArchived)
@@ -1541,10 +1546,13 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             var effectiveJobBookingId = 0;
             var effectiveJobId = 0;
 
-            if (isPrebook) {
+            if (isPrebook)
+            {
                 effectiveJobBookingId = await GetEffectiveJobBookingId(viewModel.JobBookingId.Value);
                 activeNote.JobBookingId = effectiveJobBookingId;
-            } else {
+            }
+            else
+            {
                 effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
                 activeNote.JobId = effectiveJobId;
             }
@@ -1747,7 +1755,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
     protected async Task<int> GetJobRelationshipInfoAsync(int jobId)
     {
-        if (jobId != 0) {
+        if (jobId != 0)
+        {
             var jobInfo = await Context.TucJobs
                 .Where(j => j.UcjbId == jobId)
                 .Select(j => new
@@ -1758,14 +1767,15 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 .FirstOrDefaultAsync();
 
             return jobInfo.EffectiveJobId;
-        } else {
-            return 0;
         }
+
+        return 0;
     }
 
     protected async Task<int> GetJobBookingRelationshipInfoAsync(int bookingId)
     {
-        if (bookingId != 0) {
+        if (bookingId != 0)
+        {
             var jobInfo = await Context.TucJobBookings
                 .Where(j => j.UcbkId == bookingId)
                 .Select(j => new
@@ -1776,9 +1786,9 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 .FirstOrDefaultAsync();
 
             return jobInfo.EffectiveJobId;
-        } else {
-            return 0;
         }
+
+        return 0;
     }
 
     protected static string GetTrackingName(int trackingMethodId)
@@ -1964,53 +1974,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         }
     }
 
-    public async Task<int> AddStopToJobAsync(int jobId,
-        EditAddressDialogViewModel pickUpAddress = null, EditAddressDialogViewModel deliveryAddress = null)
-    {
-        var jobStopId = new OutputParameter<int?>();
-        var returnValue = new OutputParameter<int>();
-
-        // Get extras from a pickup or delivery address
-        var extras = pickUpAddress?.ShipmentDetails ?? deliveryAddress?.ShipmentDetails;
-
-        await Context.Procedures.DD_stpJob_AddStop_InsertJobAsync(
-            jobID: jobId,
-
-            // Pickup address fields
-            newFromAddress: pickUpAddress != null ? TruncateAddress(pickUpAddress.FullAddress) : null,
-            newFromAddressLine1: pickUpAddress?.AddressLine1,
-            newFromAddressLine2: pickUpAddress?.AddressLine2,
-            newFromAddressLine3: pickUpAddress?.AddressLine3,
-            newFromAddressLine4: pickUpAddress?.AddressLine4,
-            newFromAddressLine5: pickUpAddress?.AddressLine5,
-            newFromAddressLine6: pickUpAddress?.AddressLine6,
-            newFromAddressLine7: pickUpAddress?.AddressLine7,
-            newFromContactName: pickUpAddress?.ShipmentDetails?.ContactName ?? string.Empty,
-            newFromContactPhone: pickUpAddress?.ShipmentDetails?.ContactPhone ?? string.Empty,
-
-            // Delivery address fields
-            newToAddress: deliveryAddress != null ? TruncateAddress(deliveryAddress.FullAddress) : null,
-            newToAddressLine1: deliveryAddress?.AddressLine1,
-            newToAddressLine2: deliveryAddress?.AddressLine2,
-            newToAddressLine3: deliveryAddress?.AddressLine3,
-            newToAddressLine4: deliveryAddress?.AddressLine4,
-            newToAddressLine5: deliveryAddress?.AddressLine5,
-            newToAddressLine6: deliveryAddress?.AddressLine6,
-            newToAddressLine7: deliveryAddress?.AddressLine7,
-            newToContactName: deliveryAddress?.ShipmentDetails?.ContactName ?? string.Empty,
-            newToContactPhone: deliveryAddress?.ShipmentDetails?.ContactPhone ?? string.Empty,
-
-            // Other parameters
-            newQuantity: extras?.Quantity > 0 ? extras.Quantity : null,
-            newWeight: extras?.Weight > 0 ? extras.Weight : null,
-            newNotes: extras?.JobNotes,
-            jobStopID: jobStopId,
-            returnValue: returnValue
-        );
-
-        return jobStopId.Value ?? 0;
-    }
-
     public async Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId)
     {
         var job = await Context.TucJobs
@@ -2018,9 +1981,27 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             .Select(JobMappings.JobDispatchMapping)
             .AsNoTracking()
             .FirstOrDefaultAsync();
- return job;
+        return job;
     }
 
-    private static string TruncateAddress(string address) =>
-        !string.IsNullOrEmpty(address) && address.Length > 150 ? address[..150] : address;
+    public async Task<bool> JobNumberExistsAsync(string jobNumber) =>
+        await Context.TucJobs.AnyAsync(j => j.UcjbNumber == jobNumber);
+
+    public async Task<decimal> GetNationwideServiceRawPriceAsync(int? clientId, int? fromSuburbId,
+        int? toSuburbId, int? speed, int? size, float? weight, int? quantity, int? type)
+    {
+        var result = await Context.TucJobs
+            .Select(j => DespatchContext.UTL_fncS_GetNationwideService_RawPrice(
+                clientId,
+                fromSuburbId,
+                toSuburbId,
+                speed,
+                size,
+                weight,
+                quantity,
+                type))
+            .FirstOrDefaultAsync();
+
+        return result ?? 0m;
+    }
 }

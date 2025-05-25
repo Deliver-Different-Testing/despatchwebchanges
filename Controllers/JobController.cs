@@ -37,7 +37,8 @@ public class JobController(
     IRateJobService rateJobService,
     ICountryService countryService,
     IRecurringJobRepository recurringJobRepository,
-    ITenantInfoService infoService
+    ITenantInfoService infoService,
+    IAddStopJobService addStopJobService
 ) : Controller
 {
     [HttpGet]
@@ -2622,7 +2623,7 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> UpdateBookingPickupAddressNZ([FromBody] UpdateAddressRequestNz request)
+    public async Task<IActionResult> UpdateBookingPickupAddressNz([FromBody] UpdateAddressRequestNz request)
     {
         try
         {
@@ -2685,7 +2686,7 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> UpdateBookingDeliveryAddressNZ([FromBody] UpdateAddressRequestNz request)
+    public async Task<IActionResult> UpdateBookingDeliveryAddressNz([FromBody] UpdateAddressRequestNz request)
     {
         try
         {
@@ -2768,11 +2769,8 @@ public class JobController(
     {
         try
         {
-            var jobStopId = await jobRepository.AddStopToJobAsync(
-                data.JobId,
-                data.PickUpAddress,
-                data.DeliveryAddress);
-            return Json(jobStopId);
+            await addStopJobService.AddStopInsertJobAsync(data);
+            return Ok();
         }
         catch (Exception ex)
         {
