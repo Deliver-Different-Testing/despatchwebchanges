@@ -857,6 +857,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             }
         );
     }
+
     async getJobsWithFilters(
         queryParams: JobQueryParams,
         selectedClients: string[],
@@ -925,7 +926,7 @@ class DispatchCoreService implements angular.IServiceProvider {
 
         const response = await this.$http.get<IDispatchJob[]>(
             'job/GetJobsByClearListEnvelope',
-            { params: params }
+            {params: params}
         );
 
         return response.data;

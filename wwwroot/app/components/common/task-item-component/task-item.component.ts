@@ -8,6 +8,8 @@ import {ITaskListItemConfig} from "./task-item.interfaces";
 import ToastrService from "../../../services/toastr.service";
 import "./task-item.styles.less";
 import {AppConfig} from "../../../interfaces/app-config.interface";
+import dayjs from "dayjs";
+import TasksService from "../../../services/tasks.service";
 
 export class TaskListItemController extends BaseController {
     readonly isUsCustomer: boolean = false;
@@ -16,10 +18,10 @@ export class TaskListItemController extends BaseController {
         'editDateTimeDialogService',
         'toastrService',
         'DispatchData',
-        '$http',
+        'tasksService',
         '$timeout',
         '$interval',
-        'APP_CONFIG'
+        'APP_CONFIG',
     ];
 
     task?: ExtendedTask;
@@ -33,7 +35,7 @@ export class TaskListItemController extends BaseController {
         private editDateTimeDialogService: EditDateTimeDialogService,
         private toastrService: ToastrService,
         private DispatchService: DispatchCoreService,
-        private $http: angular.IHttpService,
+        private tasksService: TasksService,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
         appConfig: AppConfig
@@ -65,9 +67,9 @@ export class TaskListItemController extends BaseController {
 
         try {
             const result: IDialogDateTimeResult = await this.editDateTimeDialogService.showEditDateDialog(
-                $event, "Due Date", "dueDate", new Date(task.dueDate));
+                $event, "Due Date", "dueDate", dayjs(task.dueDate).toDate());
 
-            await this._updateTaskDate(task.id, result.value);
+            await this.tasksService.updateTaskDate(task.id, result.value);
 
             this.registerTimeout(() => {
                 task.dueDate = result.value;
@@ -78,7 +80,7 @@ export class TaskListItemController extends BaseController {
                 }
             });
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
@@ -88,9 +90,9 @@ export class TaskListItemController extends BaseController {
 
         try {
             const result: IDialogDateTimeResult = await this.editDateTimeDialogService.showEditTimeDialog(
-                $event, "Due Time", "dueDate", new Date(task.dueDate));
+                $event, "Due Time", "dueDate", dayjs(task.dueDate).toDate());
 
-            await this._updateTaskTime(task.id, result.value);
+            await this.tasksService.updateTaskTime(task.id, result.value);
 
             this.registerTimeout(() => {
                 task.dueDate = result.value;
@@ -101,7 +103,7 @@ export class TaskListItemController extends BaseController {
                 }
             });
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
@@ -116,7 +118,7 @@ export class TaskListItemController extends BaseController {
                 task.assignee.id
             );
 
-            await this._reassignTaskToStaff(task.id, result.value);
+            await this.tasksService.reassignTaskToStaff(task.id, result.value);
 
             this.registerTimeout(() => {
                 this.toastrService.showSuccessToast("Task reassigned successfully");
@@ -126,13 +128,13 @@ export class TaskListItemController extends BaseController {
                 }
             });
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
     async handleTaskCompletion(task: TaskViewModel) {
         try {
-            await this.$http.post("Task/MarkTaskAsClosed" + "?eventId=" + task.id + "&closed=" + task.closed, null);
+            await this.tasksService.markTaskAsClosed(task.id, task.closed);
 
             this.registerTimeout(() => {
                 this.toastrService.showSuccessToast("Task completed successfully");
@@ -144,29 +146,17 @@ export class TaskListItemController extends BaseController {
         } catch (error) {
             this.registerTimeout(() => {
                 task.closed = !task.closed;
-                this._handleError(error);
+                this.handleError(error);
             });
         }
     }
 
     isTaskOverdue(task: TaskViewModel): boolean {
         if (task.closed) return false;
-        return new Date(task.dueDate) < new Date();
+        return dayjs(task.dueDate).isBefore(dayjs());
     }
 
-    private async _updateTaskDate(eventId: number, date: string) {
-        await this.$http.post("Task/UpdateTaskDate" + "?eventId=" + eventId + "&date=" + date, null);
-    }
-
-    private async _updateTaskTime(eventId: number, time: string) {
-        await this.$http.post("Task/UpdateTaskTime" + "?eventId=" + eventId + "&time=" + time, null);
-    }
-
-    private async _reassignTaskToStaff(eventId: number, staffId: number) {
-        await this.$http.post("Task/ReassignTask" + "?eventId=" + eventId + "&staffId=" + staffId, null);
-    }
-
-    private _handleError(error: any) {
+    private handleError(error: any) {
         if (!error) {
             console.log("Dialog Closed");
             return;
