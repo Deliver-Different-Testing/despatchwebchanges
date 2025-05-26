@@ -1,43 +1,116 @@
+@import '../../../css/variables.less';
+
 .dfrnt-task-dashboard {
-  background-color: #f5f7fa;
-  color: #333;
+  .list-view-container {
+    gap: 16px;
+    height: calc(100vh - 280px);
 
-  .main-row {
-    display: flex;
-  }
+    .task-list-column {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-right: 8px;
 
-  .main-column {
-    width: 50%;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
+      .filters-container {
+        flex-shrink: 0;
+        margin-bottom: 0;
+      }
 
-    .dashboard-header-card,
-    .filters-container {
-      flex: 0 0 auto;
+      .task-list-card {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        margin-bottom: 0;
+
+        md-card-header {
+          padding: 16px;
+          border-bottom: 1px solid #f0f0f0;
+          flex: 0 0 auto;
+        }
+
+        md-card-content {
+          flex: 1;
+          overflow: hidden;
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          padding: 0;
+
+          md-list {
+            overflow-y: auto;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: 0;
+            padding: 0;
+          }
+        }
+      }
     }
 
-    /* Make task list or calendar view take remaining space */
-    .task-list-card,
-    .calendar-view {
-      flex: 1 1 auto;
-      margin-bottom: 0;
+    .job-detail-column {
+      padding-left: 8px;
+
+      .job-detail-card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 0;
+
+        md-toolbar {
+          flex-shrink: 0;
+
+          .md-toolbar-tools {
+            .md-headline-title {
+              font-size: 16px;
+            }
+          }
+        }
+
+        .job-detail-card-content {
+          flex: 1;
+          overflow-y: auto;
+          padding: 0;
+          height: 100% !important;
+          font-size: 14px;
+        }
+      }
     }
 
-    // Responsive behavior for mobile devices
-    @media (max-width: 768px) {
-      width: 100%;
+    // Responsive behavior
+    @media (max-width: 959px) {
+      flex-direction: column;
+      height: auto;
+
+      .task-list-column,
+      .job-detail-column {
+        padding: 0;
+        width: 100%;
+      }
+
+      .task-list-column {
+        margin-bottom: 16px;
+        height: 500px;
+
+        .task-list-card {
+          height: calc(100% - 200px);
+        }
+      }
+
+      .job-detail-column {
+        .job-detail-card {
+          height: 500px;
+        }
+      }
     }
   }
 
-  .md-list-item-inner {
-    padding: 10px 16px;
-  }
-
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
+  .calendar-view-container {
+    margin-top: 16px;
+    height: calc(100vh - 280px);
   }
 
   .dashboard-header-card {
@@ -69,103 +142,60 @@
       }
     }
 
-    .today-date {
-      font-size: 14px;
-      color: #757575;
-    }
-  }
-
-  .view-toggle-container {
-    background-color: rgba(0, 0, 0, 0.03);
-    border-radius: 24px;
-    padding: 4px 12px;
-    margin-right: 16px;
-
-    .toggle-label {
-      font-size: 14px;
-      font-weight: 500;
-      color: rgba(0, 0, 0, 0.7);
-      margin: 0 8px;
-    }
-
-    .view-toggle-switch {
-      margin: 0;
-
-      .md-thumb {
-        background-color: white;
-      }
-
-      &.md-checked .md-thumb {
-        background-color: #2196f3;
-      }
-    }
-  }
-
-  .filters-container {
-    margin-bottom: 16px;
-
-    .md-headline-title {
-      font-size: 16px;
-      font-weight: 500;
-    }
-
-    md-card-content {
-      padding: 16px;
-    }
-
-    .filter-group {
-      padding: 0 8px;
-    }
-
-    md-input-container {
-      margin: 18px 0 0 0;
-    }
-  }
-
-  .job-detail-card {
-    height: calc(100vh - 200px);
-    overflow-y: auto;
-  }
-
-  .job-detail-card-content {
-    height: 100% !important;
-    padding: 0;
-  }
-
-  .task-list-card {
-    min-height: 200px;
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - 450px);
-
-    md-card-header {
-      padding: 16px;
-      border-bottom: 1px solid #f0f0f0;
-      flex: 0 0 auto;
-    }
-
-    md-card-content {
-      padding: 0;
-      flex: 1 1 auto;
-      overflow: hidden;
-      position: relative;
+    .view-mode-switch-container {
       display: flex;
-      flex-direction: column;
-    }
+      align-items: center;
+      background-color: #f3f4f6;
+      border-radius: 100px;
+      padding: 6px 12px;
+      gap: 8px;
 
-    md-list {
-      overflow-y: auto;
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      margin: 0;
-      padding: 0;
+      md-icon {
+        font-size: 20px;
+        color: #6b7280;
+      }
+
+      .switch-label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #4b5563;
+      }
+
+      .view-mode-switch {
+        margin: 0;
+
+        .md-thumb {
+          background-color: #ffffff;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .md-bar {
+          background-color: rgba(0, 0, 0, 0.2);
+        }
+
+        &.md-checked {
+          .md-bar {
+            background-color: rgba(59, 130, 246, 0.5);
+          }
+
+          .md-thumb {
+            background-color: @primary-color;
+          }
+        }
+      }
     }
   }
 
-  /* Style for scrollbar to make it more visible */
+  // Override old styles
+  .main-row {
+    display: none !important;
+  }
+
+  .main-column {
+    display: none !important;
+  }
+
+  // Ensure proper scrollbar styling
   md-list::-webkit-scrollbar {
     width: 6px;
   }
@@ -178,433 +208,9 @@
   md-list::-webkit-scrollbar-thumb {
     background: #c1c1c1;
     border-radius: 3px;
-  }
 
-  md-list::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-  }
-
-  /* Calendar view adjustments */
-  .calendar-view {
-    .calendar-column {
-      max-height: calc(100vh - 240px);
-      overflow-y: auto;
-    }
-  }
-
-  .task-item {
-    position: relative;
-    padding: 8px 16px;
-    min-height: 56px;
-
-    .priority-indicator {
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 4px;
-
-      &.high {
-        background-color: #f44336;
-      }
-
-      &.medium {
-        background-color: #2196f3;
-      }
-
-      &.low {
-        background-color: #4caf50;
-      }
-    }
-
-    &.completed {
-      background-color: #fafafa;
-    }
-
-    md-checkbox {
-      margin: 0 12px 0 0;
-    }
-
-    .md-list-item-text {
-      margin: 0;
-
-      h3 {
-        font-size: 15px;
-        margin: 0 0 2px;
-        line-height: 1.2;
-        display: flex;
-        align-items: center;
-
-        &.completed-text {
-          text-decoration: line-through;
-          color: #9e9e9e;
-        }
-      }
-
-      p {
-        font-size: 13px;
-        margin: 0 0 4px;
-        line-height: 1.2;
-        max-height: 32px;
-        overflow: hidden;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-
-        &.completed-text {
-          color: #9e9e9e;
-        }
-      }
-    }
-
-    .task-meta {
-      margin-bottom: 4px;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-
-      .meta-item {
-        margin-right: 12px;
-        display: flex;
-        align-items: center;
-
-        md-icon {
-          font-size: 14px;
-          height: 14px;
-          width: 14px;
-          min-height: 14px;
-          min-width: 14px;
-          margin-right: 4px;
-        }
-
-        span {
-          font-size: 12px;
-          color: #757575;
-        }
-      }
-
-      .job-id-chip {
-        height: 20px;
-        line-height: 20px;
-        min-height: 20px;
-        font-size: 11px;
-        padding: 0 8px;
-        background-color: #f5f5f5;
-        color: #616161;
-      }
-    }
-  }
-
-  .task-date-compact {
-    min-width: 140px;
-    max-width: 170px;
-    width: 100%;
-    padding-left: 8px;
-
-    .warning-icon {
-      position: absolute;
-      top: 2px;
-      right: 15px;
-      font-size: 16px;
-      height: 16px;
-      width: 16px;
-      min-height: 16px;
-      min-width: 16px;
-      color: #f44336;
-    }
-
-    .date-chip, .time-chip {
-      width: 100%;
-      height: 28px;
-      margin-bottom: 4px;
-      border-radius: 4px;
-      background-color: #f5f7fa;
-      position: relative;
-      overflow: hidden;
-
-      &.overdue-chip {
-        background-color: #ffebee;
-      }
-
-      .chip-button {
-        width: 100%;
-        min-width: 100%;
-        height: 28px;
-        min-height: 28px;
-        line-height: 28px;
-        margin: 0;
-        padding: 0 8px;
-        text-transform: none;
-        text-align: left;
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        border-radius: 0;
-
-        md-icon {
-          font-size: 14px;
-          height: 14px;
-          width: 14px;
-          min-height: 14px;
-          min-width: 14px;
-          margin-right: 8px;
-          color: rgba(0, 0, 0, 0.54);
-        }
-
-        span {
-          font-size: 12px;
-          font-weight: normal;
-          color: rgba(0, 0, 0, 0.87);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-      }
-
-      &.overdue-chip {
-        .chip-button {
-          md-icon {
-            color: #d32f2f;
-          }
-
-          span {
-            color: #d32f2f;
-          }
-        }
-      }
-    }
-  }
-
-  .status-indicator {
-    font-size: 11px;
-    font-weight: 500;
-    padding: 1px 6px;
-    border-radius: 4px;
-    text-transform: uppercase;
-    margin-left: 8px;
-    display: inline-block;
-
-    &.done {
-      background-color: #e0e0e0;
-      color: #616161;
-    }
-
-    &.overdue {
-      background-color: #ffebee;
-      color: #d32f2f;
-    }
-
-    &.todo {
-      background-color: #e8f5e9;
-      color: #388e3c;
-    }
-  }
-
-  .calendar-view {
-    margin-top: 16px;
-
-    .calendar-header {
-      background-color: #f5f7fa;
-      padding: 12px;
-      text-align: center;
-      font-weight: 500;
-      font-size: 14px;
-      border-radius: 4px 4px 0 0;
-
-      &.today {
-        background-color: #e3f2fd;
-        color: #1976d2;
-        font-weight: 600;
-      }
-
-      &:first-child {
-        background-color: #ffebee;
-        color: #d32f2f;
-      }
-    }
-
-    .calendar-column {
-      background-color: white;
-      min-height: 400px;
-      padding: 8px;
-      border-radius: 0 0 4px 4px;
-
-      &:first-child {
-        background-color: #fff8f8;
-      }
-    }
-
-    .empty-column {
-      padding: 16px;
-      text-align: center;
-      color: #9e9e9e;
-      font-size: 13px;
-    }
-
-    .calendar-task-card {
-      margin-bottom: 8px;
-      border-radius: 2px;
-      position: relative;
-
-      &.high {
-        border-left: 3px solid #f44336;
-      }
-
-      &.medium {
-        border-left: 3px solid #2196f3;
-      }
-
-      &.low {
-        border-left: 3px solid #4caf50;
-      }
-
-      md-card-content {
-        padding: 8px;
-      }
-
-      .task-icon {
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        background-color: #e0e0e0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-right: 8px;
-
-        md-icon {
-          font-size: 14px;
-          color: white;
-        }
-
-        &.high {
-          background-color: #f44336;
-        }
-
-        &.medium {
-          background-color: #2196f3;
-        }
-
-        &.low {
-          background-color: #4caf50;
-        }
-      }
-
-      .task-info {
-        min-width: 0;
-      }
-
-      .task-title {
-        font-size: 13px;
-        font-weight: 500;
-        margin-bottom: 2px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-
-        &.completed {
-          text-decoration: line-through;
-          color: #9e9e9e;
-        }
-      }
-
-      .task-id, .task-time {
-        font-size: 11px;
-        color: #757575;
-      }
-
-      .task-time.overdue {
-        color: #d32f2f;
-        font-weight: 500;
-      }
-
-      .task-description {
-        font-size: 12px;
-        color: #757575;
-        margin-top: 4px;
-      }
-
-      md-checkbox {
-        margin: 0;
-        transform: scale(0.8);
-      }
-    }
-  }
-
-  md-checkbox.md-checked .md-icon {
-    background-color: #4caf50;
-  }
-
-  .empty-list-state {
-    color: #9e9e9e;
-
-    md-icon {
-      margin-right: 8px;
-    }
-  }
-
-  .date-navigation {
-    .selected-date {
-      font-size: 15px;
-      font-weight: 500;
-      color: #333;
-      margin: 0 8px;
-    }
-
-    .today-button {
-      font-size: 12px;
-      line-height: 20px;
-      min-height: 20px;
-      margin: 0;
-      padding: 0 8px;
-      color: #2196f3;
-      text-transform: none;
-    }
-
-    .md-icon-button {
-      margin: 0;
-
-      &:hover {
-        background-color: rgba(158, 158, 158, 0.2);
-      }
-    }
-  }
-}
-
-.date-time-content {
-  md-datepicker.md-datepicker-open {
-    .md-datepicker-input-container {
-      background: transparent;
-    }
-  }
-
-  .md-datepicker-input {
-    font-size: 14px;
-  }
-
-  .date-time-field {
-    margin: 8px 0;
-  }
-
-  .date-time-divider {
-    margin: 16px 0;
-  }
-
-  #task-date-time-dialog {
-    min-width: 340px;
-    max-width: 90%;
-
-    md-toolbar {
-      min-height: 56px;
-
-      .md-toolbar-tools {
-        height: 56px;
-        max-height: 56px;
-
-        .popup-icon {
-          margin-right: 12px;
-        }
-      }
+    &:hover {
+      background: #a8a8a8;
     }
   }
 }

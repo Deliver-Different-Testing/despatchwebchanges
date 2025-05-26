@@ -98,6 +98,7 @@ import dayjs from "dayjs";
 import 'dayjs/locale/en';
 import NoDataComponent from "./components/common/no-data/no-data.component";
 import TasksService from "./services/tasks.service";
+import TaskCalendarViewComponent from "./components/task-dashboard/task-calendar-view/task-calendar-view.component";
 
 const app = (window as any).uDispatchApp;
 
@@ -128,36 +129,21 @@ app.config(["$urlRouterProvider", "$stateProvider",
 app.config(["$mdThemingProvider", "APP_CONFIG",
     (
         $mdThemingProvider: angular.material.IThemingProvider,
-        APP_CONFIG: AppConfig
+        appConfig: AppConfig
     ): void => {
-        const themeConfig = new ThemeConfig($mdThemingProvider, APP_CONFIG);
+        const themeConfig = new ThemeConfig($mdThemingProvider, appConfig);
         themeConfig.configure();
     }
 ]);
 
 // Configs
-app
-    .config(["HereMapsConfigProvider", (HereMapsConfigProvider: any) => {
-        HereMapsConfigProvider.setOptions({
-            'app_id': "bBPfh2x8Cauun3ygLMAx",
-            'app_code': "yjfwTdkin_R2rGXYTrwWVg",
-            'useHTTPS': true,
-            'useCIT': true,
-            'mapTileConfig': {
-                metadataQueryParams: {
-                    'lg2': "ara"
-                }
-            }
-        });
-    }])
-    .config(["$qProvider", ($qProvider: angular.IQProvider) => {
+app.config(["$qProvider", ($qProvider: angular.IQProvider) => {
         $qProvider.errorOnUnhandledRejections(false);
     }])
     .config(["$mdDateLocaleProvider", "APP_CONFIG", (
         $mdDateLocaleProvider: angular.material.IDateLocaleProvider,
-        APP_CONFIG: AppConfig) => {
-        if (!APP_CONFIG.US_Customer) {
-            // Set locale to New Zealand English
+        appConfig: AppConfig) => {
+        if (!appConfig.US_Customer) {
             dayjs().locale("en-nz");
 
             $mdDateLocaleProvider.formatDate = (date: Date) => dayjs(date).format("DD/MM/YYYY");
@@ -167,10 +153,8 @@ app
                 return m.isValid() ? m.toDate() : new Date();
             };
 
-            // First day of the week is Monday (1) in New Zealand
             $mdDateLocaleProvider.firstDayOfWeek = 1;
 
-// Helper function to get all month names
             function getAllMonthNames() {
                 const months = [];
                 for (let i = 0; i < 12; i++) {
@@ -179,7 +163,6 @@ app
                 return months;
             }
 
-// Helper function to get all weekday names (starting with Monday if true)
             function getAllWeekdays(startWithMonday = false) {
                 const weekdays = [];
                 let startDay = startWithMonday ? 1 : 0; // 0 = Sunday, 1 = Monday
@@ -191,7 +174,6 @@ app
                 return weekdays;
             }
 
-// Helper function to get short weekday names
             function getShortWeekdays(startWithMonday = false) {
                 const shortDays = [];
                 let startDay = startWithMonday ? 1 : 0;
@@ -203,21 +185,11 @@ app
                 return shortDays;
             }
 
-// Define month names
             $mdDateLocaleProvider.months = getAllMonthNames();
-
-// Define day names (start with Monday)
             $mdDateLocaleProvider.days = getAllWeekdays(true);
-
-// Define short day names (start with Monday)
             $mdDateLocaleProvider.shortDays = getShortWeekdays(true);
-
-            // Month header formatter
             $mdDateLocaleProvider.monthHeaderFormatter = (date: Date) => dayjs(date).format("MMMM YYYY");
-
-            // Week number formatter
             $mdDateLocaleProvider.weekNumberFormatter = (weekNumber: number) => `Week ${weekNumber}`;
-
             $mdDateLocaleProvider.msgCalendar = "Calendar";
             $mdDateLocaleProvider.msgOpenCalendar = "Open calendar";
         }
@@ -258,6 +230,7 @@ app.component("nationwideComponent", NationwideComponent);
 app.component("stickyNote", StickyNoteComponent);
 app.component("recurringJobsComponent", RecurringJobsComponent);
 app.component("jobSearchComponent", JobSearchComponent);
+app.component("taskCalendarView", TaskCalendarViewComponent);
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);

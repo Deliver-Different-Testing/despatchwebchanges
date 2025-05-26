@@ -363,6 +363,8 @@
     <TypeScriptCompile Include="wwwroot\app\components\recurringJobs\recurringJobs.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\enums\status-filter.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\enums\view-mode.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\task-calendar-view\task-calendar-view.component.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\task-calendar-view\task-calendar-view.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\task-dashboard.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\task-dashboard.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\contants.ts" />

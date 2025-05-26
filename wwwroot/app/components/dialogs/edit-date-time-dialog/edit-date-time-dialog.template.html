@@ -1,7 +1,7 @@
 <md-dialog aria-label="{{ ctrl.title }}" class="date-time-dialog">
     <md-toolbar>
         <div class="md-toolbar-tools">
-            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">schedule</md-icon>
+            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">today</md-icon>
             <h2>{{ ctrl.title }}</h2>
             <span flex></span>
             <md-button class="md-icon-button" ng-click="ctrl.cancel()" aria-label="Close dialog">
@@ -12,19 +12,20 @@
 
     <md-dialog-content>
         <div class="md-dialog-content date-time-content">
+            <!-- Date and Time Picker -->
             <div class="date-time-field" ng-if="ctrl.showDate && ctrl.showTime">
                 <md-input-container class="md-block">
-                    <label for="date">
-                        <span>Date{{ctrl.selectedTimeZone.timeZoneIana ? ' (' + (ctrl.selectedTimeZone.timeZoneIana | timezoneShort) + ')' : ''}}</span>
+                    <label for="dateTime">
+                        <span>Date & Time{{ctrl.selectedTimeZone.timeZoneIana ? ' (' + (ctrl.selectedTimeZone.timeZoneIana | timezoneShort) + ')' : ''}}</span>
                     </label>
                     <input class="dtp-no-msclear dtp-input md-input"
                            id="dateTime"
-                           name="date"
+                           name="dateTime"
                            mdc-datetime-picker
                            date="true"
                            time="true"
                            type="text"
-                           placeholder="YYYY-MM-DD HH:MM"
+                           placeholder="Select date and time"
                            edit-input="true"
                            minutes="true"
                            short-time="true"
@@ -35,8 +36,7 @@
                 </md-input-container>
             </div>
 
-
-            <!-- Date Picker -->
+            <!-- Date Only Picker -->
             <div class="date-time-field" ng-if="ctrl.showDate && !ctrl.showTime">
                 <md-input-container class="md-block">
                     <label for="date">
@@ -54,13 +54,13 @@
                            short-time="false"
                            show-icon="true"
                            show-todays-date
-                           placeholder="YYYY-MM-DD"
+                           placeholder="Select date"
                            ng-model="ctrl.dateTime"
                            required>
                 </md-input-container>
             </div>
 
-            <!-- Time Picker -->
+            <!-- Time Only Picker -->
             <div class="date-time-field" ng-if="ctrl.showTime && !ctrl.showDate">
                 <md-input-container class="md-block">
                     <label for="time">
@@ -77,14 +77,14 @@
                            minutes="true"
                            short-time="false"
                            show-icon="true"
-                           placeholder="HH:MM"
+                           placeholder="Select time"
                            ng-model="ctrl.dateTime"
                            required>
                 </md-input-container>
             </div>
 
             <!-- Timezone Selector -->
-            <div ng-if="ctrl.showTimeZoneSelector">
+            <div ng-if="ctrl.showTimeZoneSelector" class="timezone-section">
                 <div class="date-time-field">
                     <label class="timezone-label md-body-1">Timezone</label>
                     <md-select ng-model="ctrl.selectedTimeZone"
@@ -95,7 +95,7 @@
                             {{ ctrl.selectedTimeZone.text }}
                         </md-option>
                     </md-select>
-                    <div class="timezone-info md-caption" ng-if="ctrl.selectedTimeZone">
+                    <div class="timezone-info" ng-if="ctrl.selectedTimeZone">
                         Local timezone: {{ ctrl.browserTimeZone }}
                     </div>
                 </div>
@@ -109,7 +109,7 @@
             Cancel
         </md-button>
         <md-progress-circular class="md-primary"
-                              md-diameter="20"
+                              md-diameter="24"
                               md-mode="indeterminate"
                               ng-if="ctrl.isLoading">
         </md-progress-circular>

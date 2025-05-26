@@ -20,7 +20,6 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        // Get the parent job with all related data
         var job = await repository.GetByIdAsync<TucJob>(request.JobId);
         ArgumentNullException.ThrowIfNull(job);
 

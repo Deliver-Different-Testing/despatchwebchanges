@@ -7,15 +7,17 @@
 
             <span flex></span>
 
-            <md-menu>
+            <md-menu ng-if="!ctrl.showFullCalendar">
                 <md-button aria-label="Open date filter menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
                     <md-icon md-font-set="material-symbols-outlined">calendar_today</md-icon>
                     <md-tooltip md-direction="bottom">Date</md-tooltip>
                 </md-button>
                 <md-menu-content style="width: 300px; overflow: hidden;">
                     <div class="md-padding" md-prevent-menu-close>
-                        <label id="dateRange" class="label-padding">Date Filter: ({{ctrl.browserTimeZone | timezoneShort}})</label>
-                        <md-radio-group ng-change="ctrl.onSearchRangeChange(ctrl.dateSearchRange)" ng-model="ctrl.dateSearchRange"
+                        <label id="dateRange" class="label-padding">Date Filter:
+                            ({{ctrl.browserTimeZone | timezoneShort}})</label>
+                        <md-radio-group ng-change="ctrl.onSearchRangeChange(ctrl.dateSearchRange)"
+                                        ng-model="ctrl.dateSearchRange"
                                         aria-labelledby="dateRange" layout="row" layout-align="center center">
                             <md-radio-button value="1">24 Hours</md-radio-button>
                             <md-radio-button value="2">Custom</md-radio-button>
@@ -68,92 +70,85 @@
 </div>
 
 <div class="dfrnt-task-dashboard md-padding">
-    <!-- Header with view toggles and status counts -->
     <md-card class="dashboard-header-card">
         <md-card-content>
             <div layout="row" layout-align="space-between center">
                 <div layout="row" layout-align="start center" layout-wrap>
-                    <div layout="row" layout-align="start center" class="view-toggle-container">
-                        <span class="toggle-label">List</span>
+                    <div class="view-mode-switch-container">
+                        <md-icon md-font-set="material-symbols-outlined">view_list</md-icon>
+                        <span class="switch-label">List</span>
                         <md-switch
-                                ng-model="ctrl.calendarViewMode"
-                                ng-change="ctrl.toggleViewMode()"
-                                aria-label="Toggle view mode"
-                                class="view-toggle-switch md-primary">
+                                ng-model="ctrl.showFullCalendar"
+                                ng-change="ctrl.saveViewPreference()"
+                                aria-label="Toggle between list and calendar view"
+                                class="view-mode-switch md-primary">
                         </md-switch>
-                        <span class="toggle-label">Calendar</span>
+                        <span class="switch-label">Calendar</span>
+                        <md-icon md-font-set="material-symbols-outlined">calendar_month</md-icon>
                     </div>
+
+                    <md-divider class="vertical-divider" style="margin: 0 16px; height: 32px;"></md-divider>
+
                     <md-button class="status-pill all"
                                ng-class="{'active': ctrl.statusFilter === 'all'}"
                                ng-click="ctrl.setStatusFilter('all')"
                                aria-label="All tasks">
+                        <md-icon class="md-accent" md-font-set="material-symbols-outlined"
+                                 style="font-size: 16px; margin-right: 4px;">task_alt
+                        </md-icon>
                         Active: {{ctrl.getStatusCounts().active}}
                     </md-button>
                     <md-button class="status-pill overdue"
                                ng-class="{'active': ctrl.statusFilter === 'overdue'}"
                                ng-click="ctrl.setStatusFilter('overdue')"
                                aria-label="Overdue tasks">
+                        <md-icon class="md-accent" md-font-set="material-symbols-outlined"
+                                 style="font-size: 16px; margin-right: 4px;">warning
+                        </md-icon>
                         Overdue: {{ctrl.getStatusCounts().overdue}}
                     </md-button>
                     <md-button class="status-pill todo"
                                ng-class="{'active': ctrl.statusFilter === 'todo'}"
                                ng-click="ctrl.setStatusFilter('todo')"
                                aria-label="Todo tasks">
+                        <md-icon class="md-accent" md-font-set="material-symbols-outlined"
+                                 style="font-size: 16px; margin-right: 4px;">pending_actions
+                        </md-icon>
                         Todo: {{ctrl.getStatusCounts().todo}}
                     </md-button>
                     <md-button class="status-pill done"
                                ng-class="{'active': ctrl.statusFilter === 'done'}"
                                ng-click="ctrl.setStatusFilter('done')"
                                aria-label="Done tasks">
+                        <md-icon class="md-accent" md-font-set="material-symbols-outlined"
+                                 style="font-size: 16px; margin-right: 4px;">check_circle
+                        </md-icon>
                         Done: {{ctrl.getStatusCounts().done}}
                     </md-button>
                 </div>
-                <!--<div layout="row" layout-align="center center" class="date-navigation">
-                    <md-button class="md-icon-button" ng-click="ctrl.changeDate(-1)"
-                               aria-label="Previous day">
-                        <md-icon md-font-set="material-symbols-outlined">chevron_left</md-icon>
-                    </md-button>
-
-                    <div layout="column" layout-align="center center">
-                        <span class="selected-date">{{ctrl.selectedDate | momentFormat:'dddd, MMMM D, YYYY'}} ({{ctrl.browserTimeZone | timezoneShort}})</span>
-                        <md-button class="md-small today-button" ng-click="ctrl.goToToday()"
-                                   aria-label="Go to today">
-                            Today
-                        </md-button>
-                    </div>
-
-                    <md-button class="md-icon-button" ng-click="ctrl.changeDate(1)"
-                               aria-label="Next day">
-                        <md-icon md-font-set="material-symbols-outlined">chevron_right</md-icon>
-                    </md-button>
-                </div>-->
             </div>
         </md-card-content>
     </md-card>
 
-    <div class="main-row">
-        <div class="main-column">
-            <!-- Filters section -->
+    <div ng-show="!ctrl.showFullCalendar" class="list-view-container" layout="row" layout-xs="column">
+        <div flex="60" flex-xs="100" class="task-list-column">
             <md-card class="filters-container">
                 <md-toolbar class="md-accent">
                     <div class="md-toolbar-tools">
                         <span class="material-symbols-outlined">tune</span>
-                        <span class="md-headline-title" flex
-                              style="margin-left: 8px;">Filters</span>
+                        <span class="md-headline-title" flex style="margin-left: 8px;">Filters</span>
                     </div>
                 </md-toolbar>
 
-                <md-card-content>
-                    <!-- Search -->
+                <md-card-content class="md-padding">
                     <md-input-container class="md-block">
                         <label for="search">Search...</label>
                         <md-icon md-font-set="material-symbols-outlined">search</md-icon>
                         <input id="search" ng-model="ctrl.searchQuery" ng-change="ctrl.onFilterChange()">
                     </md-input-container>
 
-                    <div layout="row" layout-wrap>
-                        <!-- Courier Filter -->
-                        <div flex="50" flex-xs="100" class="filter-group">
+                    <div layout="row" layout-wrap style="display: flex; justify-content: center; padding: 20px;">
+                        <div flex="33" flex-xs="100" class="filter-group">
                             <md-input-container class="md-block">
                                 <label>Staff</label>
                                 <md-select ng-model="ctrl.staffFilter" ng-change="ctrl.onFilterChange()">
@@ -166,7 +161,7 @@
                         </div>
 
                         <!-- Task Type filter -->
-                        <div flex="50" flex-xs="100" class="filter-group">
+                        <div flex="33" flex-xs="100" class="filter-group">
                             <md-input-container class="md-block">
                                 <label>Task Type</label>
                                 <md-select ng-model="ctrl.eventTypeFilter" ng-change="ctrl.onFilterChange()">
@@ -182,8 +177,8 @@
                 </md-card-content>
             </md-card>
 
-            <!-- Task List View -->
-            <md-card ng-if="ctrl.viewMode === 'list'" class="task-list-card">
+            <!-- Task List -->
+            <md-card class="task-list-card">
                 <md-toolbar class="md-accent">
                     <div class="md-toolbar-tools">
                         <span class="material-symbols-outlined">task_alt</span>
@@ -218,103 +213,35 @@
                     </md-list>
                 </md-card-content>
             </md-card>
-
-            <!-- Calendar View Section -->
-            <div ng-if="ctrl.viewMode === 'calendar'" class="calendar-view">
-                <div layout="row" layout-align="space-between stretch">
-                    <!-- Calendar Header -->
-                    <div flex="12.5" class="calendar-header md-whiteframe-1dp">
-                        Overdue
-                    </div>
-
-                    <div ng-repeat="date in ctrl.weekDates" flex="12.5"
-                         class="calendar-header md-whiteframe-1dp"
-                         ng-class="{'today': date.toDateString() === ctrl.today.toDateString()}">
-                        {{date | date:'EEE'}} <br>
-                        {{date | date:'MMM d'}}
-                    </div>
-                </div>
-
-                <div layout="row" layout-align="space-between stretch">
-                    <!-- Loading Indicator for Calendar View -->
-                    <div ng-if="ctrl.tasksLoading" class="calendar-loader" layout="row"
-                         layout-align="center center"
-                         style="width: 100%; padding: 24px;">
-                        <md-progress-linear
-                                md-mode="indeterminate"
-                                ng-show="ctrl.tasksLoading"
-                                class="md-primary">
-                        </md-progress-linear>
-                    </div>
-
-                    <!-- Calendar Content (only show when not loading) -->
-                    <div ng-if="!ctrl.tasksLoading" layout="row" style="width: 100%;">
-                        <!-- Overdue Column -->
-                        <div flex="12.5" class="calendar-column md-whiteframe-2dp">
-                            <div class="calendar-content">
-                                <div ng-if="ctrl.getOverdueTasks().length === 0" class="empty-column"
-                                     layout="row"
-                                     layout-align="center center">
-                                    <md-icon md-font-set="material-symbols-outlined">info</md-icon>
-                                    <span style="margin-left: 8px;">No overdue tasks</span>
-                                </div>
-
-                                <!-- Using task-list-item component with calendar config -->
-                                <task-item-component
-                                        ng-repeat="task in ctrl.getTasksByDate(date) track by task.id"
-                                        task="task"
-                                        config="ctrl.calendarTaskConfig"
-                                        on-task-updated="ctrl.refreshTasks()"
-                                        on-task-click="ctrl.selectTaskJobDetail(task)">
-                                </task-item-component>
-                            </div>
-                        </div>
-
-                        <!-- Day Columns -->
-                        <div ng-repeat="date in ctrl.weekDates" flex="12.5"
-                             class="calendar-column md-whiteframe-2dp">
-                            <div class="calendar-content">
-                                <div ng-if="ctrl.getTasksByDate(date).length === 0" class="empty-column"
-                                     layout="row"
-                                     layout-align="center center">
-                                    <md-icon md-font-set="material-symbols-outlined">info</md-icon>
-                                    <span style="margin-left: 8px;">No tasks</span>
-                                </div>
-
-                                <!-- Using task-list-item component with calendar config -->
-                                <task-item-component
-                                        ng-repeat="task in ctrl.getTasksByDate(date) track by task.id"
-                                        task="task"
-                                        config="ctrl.calendarTaskConfig"
-                                        on-status-change="ctrl.handleTaskCompletion(task)"
-                                        on-task-updated="ctrl.refreshTasks()"
-                                        on-task-click="ctrl.selectTaskJobDetail(task)">
-                                </task-item-component>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
-        <!-- Second column -->
-        <div class="main-column">
+
+        <!-- Right column - Job Details (30%) -->
+        <div flex="40" flex-xs="100" class="job-detail-column">
             <md-card class="job-detail-card">
                 <md-toolbar class="md-accent">
                     <div class="md-toolbar-tools">
                         <span class="material-symbols-outlined">info</span>
                         <span class="md-headline-title" flex style="margin-left: 8px;">
-                    Detail {{ctrl.currentSelection}}
-                </span>
+                            Detail {{ctrl.currentSelection}}
+                        </span>
                     </div>
                 </md-toolbar>
 
-                <md-card-content>
-                    <job-detail-widget
-                            job-id="ctrl.currentJobId">
-                    </job-detail-widget>
+                <md-card-content class="job-detail-card-content">
+                    <job-detail-widget job-id="ctrl.currentJobId"></job-detail-widget>
                 </md-card-content>
             </md-card>
         </div>
+    </div>
 
+    <!-- Calendar View (shown when the calendar is active) -->
+    <div ng-show="ctrl.showFullCalendar" class="calendar-view-container">
+        <task-calendar-view
+                tasks="ctrl.filteredTasks"
+                timezone="ctrl.timeZone"
+                on-task-update="ctrl.handleCalendarTaskUpdate()"
+                on-task-click="ctrl.handleCalendarTaskClick(task)"
+                on-task-status-change="ctrl.handleCalendarTaskStatusChange(task)">
+        </task-calendar-view>
     </div>
 </div>

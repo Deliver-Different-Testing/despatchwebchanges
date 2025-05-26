@@ -1,5 +1,4 @@
 import {IJobNote, INoteType} from "../interfaces/job.interface";
-import {bindAllMethods} from "../functions/bindAllMethods";
 import dayjs from "dayjs";
 
 class NoteService {
@@ -10,7 +9,6 @@ class NoteService {
     constructor(
         private $http: angular.IHttpService
     ) {
-        bindAllMethods(this);
         console.log('Notes service initialized');
     }
 
