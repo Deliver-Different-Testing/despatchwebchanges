@@ -97,6 +97,7 @@ import AddressLookupService from "./services/address-lookup.service";
 import dayjs from "dayjs";
 import 'dayjs/locale/en';
 import NoDataComponent from "./components/common/no-data/no-data.component";
+import TasksService from "./services/tasks.service";
 
 const app = (window as any).uDispatchApp;
 
@@ -310,5 +311,6 @@ app.service("jobAddStopService", JobAddStopService);
 app.service("flightAgentConfirmationDialogService", FlightAgentConfirmationDialogService)
 app.service("agentInfoDialogService", AgentInfoDialogService)
 app.service("addressLookupService", AddressLookupService)
+app.service("tasksService", TasksService)
 
 export default app;
