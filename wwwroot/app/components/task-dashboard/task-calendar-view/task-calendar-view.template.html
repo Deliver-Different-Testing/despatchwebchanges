@@ -1,0 +1,189 @@
+<div class="task-calendar-view">
+    <md-toolbar class="calendar-toolbar">
+        <div class="md-toolbar-tools">
+            <div class="view-mode-toggle">
+                <md-button class="md-icon-button md-accent"
+                           ng-class="{'active': cal.viewMode === 'month'}"
+                           ng-click="cal.setViewMode('month')" aria-label="Month view">
+                    <md-icon md-font-set="material-symbols-outlined">calendar_view_month</md-icon>
+                    <md-tooltip md-direction="bottom">Month View</md-tooltip>
+                </md-button>
+                <md-button class="md-icon-button md-accent" ng-class="{'active': cal.viewMode === 'week'}"
+                           ng-click="cal.setViewMode('week')" aria-label="Week view">
+                    <md-icon md-font-set="material-symbols-outlined">view_week</md-icon>
+                    <md-tooltip md-direction="bottom">Week View</md-tooltip>
+                </md-button>
+                <md-button class="md-icon-button md-accent" ng-class="{'active': cal.viewMode === 'day'}"
+                           ng-click="cal.setViewMode('day')" aria-label="Day view">
+                    <md-icon md-font-set="material-symbols-outlined">view_day</md-icon>
+                    <md-tooltip md-direction="bottom">Day View</md-tooltip>
+                </md-button>
+            </div>
+
+            <md-divider class="vertical-divider"></md-divider>
+
+            <div class="navigation-controls" layout="row" layout-align="center center">
+                <md-button class="md-icon-button md-accent" ng-click="cal.previousPeriod()" aria-label="Previous">
+                    <md-icon md-font-set="material-symbols-outlined">chevron_left</md-icon>
+                </md-button>
+
+                <h2 class="period-title">{{cal.formatPeriodTitle()}}</h2>
+
+                <md-button class="md-icon-button md-accent" ng-click="cal.nextPeriod()" aria-label="Next">
+                    <md-icon md-font-set="material-symbols-outlined">chevron_right</md-icon>
+                </md-button>
+            </div>
+
+            <span flex></span>
+
+            <md-button class="md-raised md-primary today-button" ng-click="cal.goToToday()">
+                <md-icon md-font-set="material-symbols-outlined">today</md-icon>
+                <span>Today</span>
+            </md-button>
+        </div>
+    </md-toolbar>
+
+    <!-- Calendar Content Area -->
+    <div class="calendar-content">
+        <!-- Month View -->
+        <div ng-if="cal.viewMode === 'month'" class="month-view">
+            <!-- Day Headers -->
+            <div class="day-headers" layout="row">
+                <div flex="14.28" class="day-header" ng-repeat="day in cal.calendarWeeks[0].days">
+                    {{cal.formatDayHeader(day.date)}}
+                </div>
+            </div>
+
+            <!-- Calendar Grid -->
+            <div class="calendar-grid">
+                <div class="calendar-week" ng-repeat="week in cal.calendarWeeks">
+                    <div class="calendar-day"
+                         ng-repeat="day in week.days"
+                         ng-class="{
+                             'today': day.isToday,
+                             'other-month': !day.isCurrentMonth,
+                             'selected': cal.isSelected(day.date),
+                             'past': cal.isPastDate(day.date)
+                         }"
+                         ng-click="cal.selectDate(day.date)">
+
+                        <div class="day-header">
+                            <span class="day-number">{{day.dayNumber}}</span>
+                            <span class="month-name" ng-if="day.dayNumber === 1">{{day.monthName}}</span>
+                        </div>
+
+                        <div class="day-content">
+                            <!-- Task indicators with priority styling -->
+                            <div class="task-indicators" ng-if="day.tasks.length > 0">
+                                <div class="task-indicator"
+                                     ng-repeat="task in day.tasks | limitTo:3"
+                                     ng-class="cal.getTaskPriorityClass(task)"
+                                     ng-click="cal.handleTaskClick(task); $event.stopPropagation();"
+                                     md-ink-ripple>
+                                    <span class="task-time">{{task.dueDate | date:'h:mm a'}}</span>
+                                    <span class="task-title">{{task.title}}</span>
+                                </div>
+                                <div class="more-tasks" ng-if="day.tasks.length > 3">
+                                    +{{day.tasks.length - 3}} more
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Week View -->
+        <div ng-if="cal.viewMode === 'week'" class="week-view">
+            <div class="week-container">
+                <!-- Time column -->
+                <div class="time-column">
+                    <div class="time-header">&nbsp;</div>
+                    <div class="time-slots">
+                        <div class="time-slot" ng-repeat="time in cal.timeSlots">
+                            {{cal.formatTimeSlot(time)}}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Days columns -->
+                <div flex class="days-container" layout="row">
+                    <div flex class="day-column" ng-repeat="day in cal.weekDays">
+                        <div class="day-header" ng-class="{'today': cal.isToday(day)}">
+                            <div class="day-name">{{cal.formatWeekDayHeader(day)}}</div>
+                        </div>
+
+                        <div class="time-grid">
+                            <div class="time-slot" ng-repeat="time in cal.timeSlots">
+                                <div class="slot-tasks">
+                                    <task-item-component
+                                            ng-repeat="task in cal.getTasksForTimeSlot(day, time) track by task.id"
+                                            task="task"
+                                            config="cal.calendarTaskConfig"
+                                            on-status-change="cal.handleTaskStatusChange({task: task})"
+                                            on-task-updated="cal.handleTaskUpdate()"
+                                            on-task-click="cal.handleTaskClick(task)">
+                                    </task-item-component>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Day View -->
+        <div ng-if="cal.viewMode === 'day'" class="day-view">
+            <div class="day-container">
+                <!-- Time column -->
+                <div class="time-column">
+                    <div class="time-slots">
+                        <div class="time-slot" ng-repeat="time in cal.timeSlots">
+                            {{cal.formatTimeSlot(time)}}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Day content -->
+                <div flex class="day-content-area">
+                    <div class="time-grid">
+                        <div class="time-slot" ng-repeat="time in cal.timeSlots">
+                            <div class="slot-tasks">
+                                <task-item-component
+                                        ng-repeat="task in cal.getTasksForTimeSlot(cal.currentDate, time) track by task.id"
+                                        task="task"
+                                        config="cal.calendarTaskConfig"
+                                        on-status-change="cal.handleTaskStatusChange({task: task})"
+                                        on-task-updated="cal.handleTaskUpdate()"
+                                        on-task-click="cal.handleTaskClick(task)">
+                                </task-item-component>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Overdue tasks sidebar with MD3 card styling -->
+                <div class="overdue-sidebar" ng-if="cal.getOverdueTasks().length > 0">
+                    <md-card>
+                        <md-toolbar class="md-warn">
+                            <div class="md-toolbar-tools">
+                                <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
+                                <h3 class="md-title">Overdue Tasks ({{cal.getOverdueTasks().length}})</h3>
+                            </div>
+                        </md-toolbar>
+                        <md-card-content class="overdue-list">
+                            <task-item-component
+                                    ng-repeat="task in cal.getOverdueTasks() track by task.id"
+                                    task="task"
+                                    config="cal.calendarTaskConfig"
+                                    on-status-change="cal.handleTaskStatusChange({task: task})"
+                                    on-task-updated="cal.handleTaskUpdate()"
+                                    on-task-click="cal.handleTaskClick(task)">
+                            </task-item-component>
+                        </md-card-content>
+                    </md-card>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
