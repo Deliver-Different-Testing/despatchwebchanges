@@ -80,6 +80,12 @@
                                      ng-class="cal.getTaskPriorityClass(task)"
                                      ng-click="cal.handleTaskClick(task); $event.stopPropagation();"
                                      md-ink-ripple>
+                                    <md-checkbox
+                                            ng-checked="task.closed"
+                                            ng-click="$event.stopPropagation(); cal.handleTaskCheckboxChange(task)"
+                                            aria-label="Mark task as complete"
+                                            class="task-checkbox">
+                                    </md-checkbox>
                                     <span class="task-time">{{task.dueDate | date:'h:mm a'}}</span>
                                     <span class="task-title">{{task.title}}</span>
                                 </div>

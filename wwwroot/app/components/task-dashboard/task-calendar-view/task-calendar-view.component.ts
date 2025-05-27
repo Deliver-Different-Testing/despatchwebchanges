@@ -243,6 +243,7 @@ class TaskCalendarViewController extends BaseController {
     }
 
     handleTaskStatusChange(task: ExtendedTask): void {
+        console.log('Task status changed:', task.id, 'closed:', task.closed);
         if (this.onTaskStatusChange) {
             this.onTaskStatusChange({task: task});
         }
@@ -257,6 +258,10 @@ class TaskCalendarViewController extends BaseController {
     handleTaskCheckboxChange(task: ExtendedTask): void {
         task.closed = !task.closed;
         this.handleTaskStatusChange(task);
+
+        this.registerTimeout(() => {
+            this.initializeCalendar();
+        });
     }
 
     formatPeriodTitle(): string {
