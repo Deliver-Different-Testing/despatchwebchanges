@@ -9,7 +9,7 @@ angular.module('hereMapTracking.components', [])
             onMapReady: '&'
         },
         template: '<div class="here-map" id="{{mapId}}"></div>',
-        controller: ['$scope', 'HereMapService', '$rootScope', ($scope, HereMapService, $rootScope) => {
+        controller: ['$scope', 'HereMapService', '$rootScope', '$timeout', ($scope, HereMapService, $rootScope, $timeout) => {
             let platform;
             let mapInstance;
             let fromMarker;
@@ -93,6 +93,11 @@ angular.module('hereMapTracking.components', [])
                     // Check if this is a completely new job (different ID)
                     const isNewJob = newConfig.job && (!oldConfig.job || newConfig.job.id !== oldJob.id);
 
+                    const hasCourierLocationChanges = (newConfig.courierLocation !== oldConfig.courierLocation) ||
+                        (newConfig.courierLocation && oldConfig.courierLocation &&
+                            (newConfig.courierLocation.lat !== oldConfig.courierLocation.lat ||
+                                newConfig.courierLocation.lng !== oldConfig.courierLocation.lng));
+
                     // Check if the job has a timestamp that has changed (for force updates of the same job)
                     const hasNewTimestamp = newConfig.job && oldConfig.job &&
                         newConfig.job.timestamp !== oldJob.timestamp;
@@ -104,10 +109,12 @@ angular.module('hereMapTracking.components', [])
                             newConfig.job.delivery.lat !== oldJob.delivery.lat ||
                             newConfig.job.delivery.lng !== oldJob.delivery.lng);
 
-                    if (isNewJob || hasNewTimestamp || hasCoordinateChanges) {
+                    if (isNewJob || hasNewTimestamp || hasCoordinateChanges || hasCourierLocationChanges) {
                         console.log('Map update triggered:',
                             isNewJob ? 'New job' :
-                                hasNewTimestamp ? 'New timestamp' : 'Coordinate changes');
+                                hasNewTimestamp ? 'New timestamp' :
+                                    hasCoordinateChanges ? 'Coordinate changes' :
+                                        'Courier location changes');
 
                         // Update map for the job
                         $scope.showJobOnMap(newConfig.job, newConfig.courierLocation);
@@ -128,8 +135,9 @@ angular.module('hereMapTracking.components', [])
             $scope.$watch('config.courierLocation', (newValue, oldValue) => {
                 if (newValue && newValue.lat !== null && newValue.lng !== null && (!oldValue ||
                     (newValue.lat !== oldValue.lat && newValue.lng !== oldValue.lng))) {
-                    //don't know flight/latDiff here but shouldn't matter as this is just moving the existing icon - not adding new
                     courierMarker = HereMapService.getHereCourierMarker(newValue.lat, newValue.lng, courierMarker, mapInstance.map, null, null);
+
+                    $scope.autoZoomMapToShowAllPoints();
                 }
             });
 
@@ -251,8 +259,30 @@ angular.module('hereMapTracking.components', [])
                             job.delivery.lat,
                             job.delivery.lng, routeLine, job, mapInstance.map, platform, job.flight);
                     }
+
+                    $timeout(() => {
+                        $scope.autoZoomMapToShowAllPoints();
+                    }, 2000);
                 } catch (error) {
                     console.error('Error in showJobOnMap:', error);
+                }
+            };
+
+            $scope.autoZoomMapToShowAllPoints = () => {
+                if (!mapInstance || !mapInstance.map || !$scope.config || !$scope.config.job) {
+                    return;
+                }
+
+                const allPoints = HereMapService.getAllVisiblePoints(
+                    $scope.config.job,
+                    $scope.config.courierLocation,
+                    extraMarkers
+                );
+
+                if (allPoints.length > 0) {
+                    $timeout(() => {
+                        HereMapService.autoZoomToShowAllPoints(mapInstance.map, allPoints, 0.1);
+                    }, 300);
                 }
             };
         }]

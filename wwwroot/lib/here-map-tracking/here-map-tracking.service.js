@@ -444,5 +444,101 @@ angular.module("hereMapTracking.services")
                 return curvePoints;
             };
 
+            service.autoZoomToShowAllPoints = (map, points, padding = 0.1) => {
+                if (!map || !points || points.length === 0) {
+                    console.warn('Invalid parameters for autoZoomToShowAllPoints');
+                    return;
+                }
+
+                // Filter out invalid points
+                const validPoints = points.filter(point =>
+                    point &&
+                    typeof point.lat === 'number' &&
+                    typeof point.lng === 'number' &&
+                    !isNaN(point.lat) &&
+                    !isNaN(point.lng)
+                );
+
+                if (validPoints.length === 0) {
+                    console.warn('No valid points found for auto zoom');
+                    return;
+                }
+
+                if (validPoints.length === 1) {
+                    // If only one point, center on it with a reasonable zoom
+                    map.setCenter(validPoints[0]);
+                    map.setZoom(12);
+                    return;
+                }
+
+                // Calculate bounding box for all points
+                let minLat = validPoints[0].lat;
+                let maxLat = validPoints[0].lat;
+                let minLng = validPoints[0].lng;
+                let maxLng = validPoints[0].lng;
+
+                validPoints.forEach(point => {
+                    minLat = Math.min(minLat, point.lat);
+                    maxLat = Math.max(maxLat, point.lat);
+                    minLng = Math.min(minLng, point.lng);
+                    maxLng = Math.max(maxLng, point.lng);
+                });
+
+                // Add padding to the bounding box
+                const latDiff = (maxLat - minLat) * padding;
+                const lngDiff = (maxLng - minLng) * padding;
+
+                const boundingBox = new H.geo.Rect(
+                    maxLat + latDiff,    // top
+                    minLng - lngDiff,    // left
+                    minLat - latDiff,    // bottom
+                    maxLng + lngDiff     // right
+                );
+
+                // Set the view to show the bounding box
+                map.getViewModel().setLookAtData({ bounds: boundingBox });
+            };
+
+            service.getAllVisiblePoints = (job, courierLocation, extraMarkers = []) => {
+                const points = [];
+
+                // Add main pickup and delivery points
+                if (job && job.pickup && job.pickup.lat && job.pickup.lng) {
+                    points.push({ lat: job.pickup.lat, lng: job.pickup.lng });
+                }
+                if (job && job.delivery && job.delivery.lat && job.delivery.lng) {
+                    points.push({ lat: job.delivery.lat, lng: job.delivery.lng });
+                }
+
+                // Add child job points
+                if (job && job.childJobs && Array.isArray(job.childJobs)) {
+                    job.childJobs.forEach(childJob => {
+                        if (childJob && childJob.pickup && childJob.pickup.lat && childJob.pickup.lng) {
+                            points.push({ lat: childJob.pickup.lat, lng: childJob.pickup.lng });
+                        }
+                        if (childJob && childJob.delivery && childJob.delivery.lat && childJob.delivery.lng) {
+                            points.push({ lat: childJob.delivery.lat, lng: childJob.delivery.lng });
+                        }
+                    });
+                }
+
+                // Add courier location
+                if (courierLocation && courierLocation.lat && courierLocation.lng) {
+                    points.push({ lat: courierLocation.lat, lng: courierLocation.lng });
+                }
+
+                // Add extra marker points (if they have position data)
+                extraMarkers.forEach(marker => {
+                    if (marker && marker.getGeometry) {
+                        const geometry = marker.getGeometry();
+                        if (geometry) {
+                            points.push({ lat: geometry.lat, lng: geometry.lng });
+                        }
+                    }
+                });
+
+                return points;
+            };
+
             return service;
         }]);

@@ -374,6 +374,12 @@ class TaskDashboardController extends BaseController {
 
     handleCalendarTaskStatusChange(task: ExtendedTask): void {
         console.log('Calendar task status changed:', task);
+
+        const taskIndex = this.tasks.findIndex(t => t.id === task.id);
+        if (taskIndex !== -1) {
+            this.tasks[taskIndex].closed = task.closed;
+        }
+
         this.handleTaskCompletion(task);
     }
 

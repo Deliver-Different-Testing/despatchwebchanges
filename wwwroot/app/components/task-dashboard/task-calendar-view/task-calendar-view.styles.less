@@ -576,6 +576,23 @@
               gap: 4px;
               box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 
+              // Checkbox styling for month view
+              .task-checkbox {
+                margin: 0;
+                padding: 0;
+                min-width: 14px;
+
+                .md-container {
+                  width: 14px;
+                  height: 14px;
+                  margin: 0;
+                }
+
+                .md-label {
+                  display: none;
+                }
+              }
+
               &:hover {
                 transform: translateX(2px);
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -599,6 +616,7 @@
                 font-size: 10px;
                 color: #6b7280;
                 margin-right: 4px;
+                flex-shrink: 0;
               }
 
               .task-title {
@@ -607,6 +625,7 @@
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                flex: 1;
               }
             }
           }
