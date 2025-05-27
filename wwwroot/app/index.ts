@@ -29,10 +29,10 @@ import "ng-material-datetimepicker/js/angular-material-datetimepicker";
 import "angular-material-data-table";
 import "angular-hotkeys/build/hotkeys";
 import "angular-bootstrap-contextmenu/contextMenu";
+import "angular-heremaps/dist/angular-heremaps";
 
 // Local libs
 import "../lib/ModernizerLocalStorage";
-import "../lib/angular-heremaps";
 import "../lib/ng-material-floating-button/src/mfb-directive";
 import "../lib/ng-material-floating-button/mfb/dist/mfb";
 import "../lib/angular-fixed-table-header/fixed-table-header";

@@ -1,7 +1,7 @@
 @import '../../../../css/variables.less';
 
 .task-calendar-view {
-  height: calc(100vh - 250px);
+  height: calc(100vh - 205px);
   display: flex;
   flex-direction: column;
   background-color: #f8f9fa;
@@ -12,11 +12,6 @@
     background-color: #ffffff;
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-
-    .md-toolbar-tools {
-      padding: 0 24px;
-      height: 56px;
-    }
 
     .view-mode-toggle {
       display: flex;
@@ -53,7 +48,6 @@
 
     .navigation-controls {
       .period-title {
-        margin: 0 24px;
         font-size: 18px;
         font-weight: 500;
         color: #1f2937;
@@ -95,7 +89,7 @@
     padding: 16px;
   }
 
-  // Month View with MD3 styling
+  // Month View
   .month-view {
     height: 100%;
     display: flex;
@@ -451,13 +445,8 @@
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 
         md-toolbar {
-          flex-shrink: 0;
           background-color: #fef2f2;
           color: #991b1b;
-
-          .md-toolbar-tools {
-            height: 48px;
-          }
 
           md-icon {
             color: #ef4444;
@@ -465,7 +454,6 @@
 
           .md-title {
             font-size: 16px;
-            margin-left: 12px;
             font-weight: 600;
           }
         }
@@ -487,26 +475,75 @@
   .calendar-task-item {
     background-color: #ffffff;
     border-radius: 8px;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    padding: 10px;
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
     transition: all 0.2s ease;
     border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    min-height: 32px;
 
     &:hover {
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       transform: translateY(-1px);
+      background-color: #f8f9fa;
     }
 
-    .task-title {
+    // Priority-based left border
+    &.priority-high {
+      border-left: 3px solid #ef4444;
+    }
+
+    &.priority-medium {
+      border-left: 3px solid #f59e0b;
+    }
+
+    &.priority-low {
+      border-left: 3px solid #10b981;
+    }
+
+    // Checkbox styling
+    md-checkbox {
+      margin: 0;
+      padding: 0;
+      min-width: 18px;
+      flex-shrink: 0;
+
+      .md-container {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      .md-label {
+        display: none;
+      }
+    }
+
+    // Title styling
+    .event-title {
+      flex: 1;
       font-size: 13px;
       font-weight: 500;
-      margin-bottom: 4px;
       color: #1f2937;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 18px;
+      margin: 0;
+      padding: 0;
     }
 
-    .task-meta {
-      font-size: 11px;
-      color: #6b7280;
+    &.completed {
+      .event-title {
+        text-decoration: line-through;
+        color: #9ca3af;
+      }
     }
   }
 
@@ -521,25 +558,55 @@
     }
 
     .month-view {
-      .calendar-grid {
-        .calendar-day {
-          min-height: 80px;
+      .calendar-day {
+        .day-content {
+          .task-indicators {
+            .task-indicator {
+              background-color: #ffffff;
+              border: 1px solid rgba(0, 0, 0, 0.08);
+              border-radius: 6px;
+              padding: 4px 8px;
+              margin-bottom: 4px;
+              font-size: 11px;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              border-left: 3px solid transparent;
+              display: flex;
+              align-items: center;
+              gap: 4px;
+              box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 
-          .day-header {
-            padding: 8px;
+              &:hover {
+                transform: translateX(2px);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                background-color: #f8f9fa;
+              }
 
-            .day-number {
-              font-size: 14px;
-            }
-          }
+              &.high {
+                border-left-color: #ef4444;
+              }
 
-          .day-content {
-            padding: 0 8px 8px;
+              &.medium {
+                border-left-color: #f59e0b;
+              }
 
-            .task-indicators {
-              .task-indicator {
-                padding: 4px 8px;
-                font-size: 11px;
+              &.low {
+                border-left-color: #10b981;
+              }
+
+              .task-time {
+                font-weight: 500;
+                font-size: 10px;
+                color: #6b7280;
+                margin-right: 4px;
+              }
+
+              .task-title {
+                color: #1f2937;
+                font-weight: 500;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
               }
             }
           }

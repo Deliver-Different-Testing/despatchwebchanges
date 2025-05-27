@@ -7,23 +7,24 @@ import timezone from "dayjs/plugin/timezone";
 import {ExtendedTask, TaskViewModel} from "../task-dashboard.interfaces";
 import {ITaskListItemConfig} from "../../common/task-item-component/task-item.interfaces";
 import {CalendarDay, CalendarWeek} from "./task-calendar-view.interfaces";
+import BaseController from "../../base-controller";
 
 dayjs.extend(isoWeek);
 dayjs.extend(weekday);
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-class TaskCalendarViewController {
+class TaskCalendarViewController extends BaseController {
     static $inject = [
-        "$scope",
         "$timeout",
-        "$mdDialog"
+        "$interval",
     ];
 
     tasks?: ExtendedTask[];
     onTaskUpdate?: () => void;
-    onTaskClick?: (task: ExtendedTask) => void;
-    onTaskStatusChange?: (task: ExtendedTask) => void;
+    onTaskClick?: (params: {task: ExtendedTask}) => void;
+    onTaskStatusChange?: (params: {task: ExtendedTask}) => void;
+    onViewChange?: (viewInfo: { startDate: Date, endDate: Date }) => void;
     timezone: string;
 
     currentDate: dayjs.Dayjs;
@@ -33,31 +34,45 @@ class TaskCalendarViewController {
     selectedDate: dayjs.Dayjs;
 
     calendarTaskConfig: ITaskListItemConfig = {
-        showJobId: true,
+        showJobId: false,
         showAssignee: false,
         showJobType: false,
         showDateTime: false,
-        customClass: 'calendar-task-item',
-        allowCompletion: true,
+        customClass: '',
+        allowCompletion: false,
         showStatusIndicators: false,
         showOverdueWarning: false,
-        onTaskClick: true
+        onTaskClick: false,
     };
 
     timeSlots: string[] = [];
 
-    constructor() {
+    constructor(
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
+    ) {
+        super();
+        this.initServices($timeout, $interval);
+
         this.timezone = TimeZone;
 
         this.currentDate = dayjs();
         this.selectedDate = dayjs();
         this.generateTimeSlots();
-        this.initializeCalendar();
+    }
+
+    $onInit() {
+        this.registerTimeout(() => {
+            this.initializeCalendar();
+            this.emitViewChange();
+        });
     }
 
     $onChanges(changes: angular.IOnChangesObject) {
         if (changes.tasks && !changes.tasks.isFirstChange()) {
-            this.initializeCalendar();
+            this.registerTimeout(() => {
+                this.initializeCalendar();
+            });
         }
     }
 
@@ -177,7 +192,9 @@ class TaskCalendarViewController {
                 this.currentDate = this.currentDate.subtract(1, 'day');
                 break;
         }
+
         this.initializeCalendar();
+        this.emitViewChange();
     }
 
     nextPeriod(): void {
@@ -192,13 +209,17 @@ class TaskCalendarViewController {
                 this.currentDate = this.currentDate.add(1, 'day');
                 break;
         }
+
         this.initializeCalendar();
+        this.emitViewChange();
     }
 
     goToToday(): void {
         this.currentDate = dayjs();
         this.selectedDate = dayjs();
+
         this.initializeCalendar();
+        this.emitViewChange();
     }
 
     selectDate(date: dayjs.Dayjs): void {
@@ -212,17 +233,18 @@ class TaskCalendarViewController {
     setViewMode(mode: 'month' | 'week' | 'day'): void {
         this.viewMode = mode;
         this.initializeCalendar();
+        this.emitViewChange();
     }
 
     handleTaskClick(task: ExtendedTask): void {
         if (this.onTaskClick) {
-            this.onTaskClick(task);
+            this.onTaskClick({task: task});
         }
     }
 
     handleTaskStatusChange(task: ExtendedTask): void {
         if (this.onTaskStatusChange) {
-            this.onTaskStatusChange(task);
+            this.onTaskStatusChange({task: task});
         }
     }
 
@@ -230,6 +252,11 @@ class TaskCalendarViewController {
         if (this.onTaskUpdate) {
             this.onTaskUpdate();
         }
+    }
+
+    handleTaskCheckboxChange(task: ExtendedTask): void {
+        task.closed = !task.closed;
+        this.handleTaskStatusChange(task);
     }
 
     formatPeriodTitle(): string {
@@ -286,6 +313,49 @@ class TaskCalendarViewController {
         if (task.closed) return false;
         return dayjs(task.dueDate).isBefore(dayjs());
     }
+
+    private emitViewChange(): void {
+        if (this.onViewChange) {
+            let startDate: dayjs.Dayjs;
+            let endDate: dayjs.Dayjs;
+
+            switch (this.viewMode) {
+                case 'month':
+                    startDate = this.currentDate.startOf('month').startOf('week');
+                    endDate = this.currentDate.endOf('month').endOf('week');
+                    break;
+                case 'week':
+                    startDate = this.currentDate.startOf('week');
+                    endDate = this.currentDate.endOf('week');
+                    break;
+                case 'day':
+                    startDate = this.currentDate.startOf('day');
+                    endDate = this.currentDate.endOf('day');
+                    break;
+            }
+
+            this.onViewChange({
+                startDate: startDate.toDate(),
+                endDate: endDate.toDate()
+            });
+        }
+    }
+
+    getCalendarTaskTemplate(): string {
+        return `
+        <div class="calendar-task-item" 
+             ng-class="{'completed': task.closed, 'priority-high': cal.isTaskOverdue(task), 'priority-medium': !cal.isTaskOverdue(task)}"
+             ng-click="cal.handleTaskClick(task)">
+            <md-checkbox 
+                ng-model="task.closed" 
+                ng-change="cal.handleTaskStatusChange(task)"
+                ng-click="$event.stopPropagation()"
+                aria-label="Mark task as complete">
+            </md-checkbox>
+            <span class="event-title">{{task.title}}</span>
+        </div>
+    `;
+    }
 }
 
 const TaskCalendarViewComponent: angular.IComponentOptions = {
@@ -297,6 +367,7 @@ const TaskCalendarViewComponent: angular.IComponentOptions = {
         onTaskUpdate: '&',
         onTaskClick: '&',
         onTaskStatusChange: '&',
+        onViewChange: '&',
         timezone: '@'
     }
 }

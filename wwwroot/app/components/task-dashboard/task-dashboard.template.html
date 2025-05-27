@@ -94,7 +94,7 @@
                                ng-click="ctrl.setStatusFilter('all')"
                                aria-label="All tasks">
                         <md-icon class="md-accent" md-font-set="material-symbols-outlined"
-                                 style="font-size: 16px; margin-right: 4px;">task_alt
+                                 style="margin-right: 4px;">task_alt
                         </md-icon>
                         Active: {{ctrl.getStatusCounts().active}}
                     </md-button>
@@ -103,7 +103,7 @@
                                ng-click="ctrl.setStatusFilter('overdue')"
                                aria-label="Overdue tasks">
                         <md-icon class="md-accent" md-font-set="material-symbols-outlined"
-                                 style="font-size: 16px; margin-right: 4px;">warning
+                                 style="margin-right: 4px;">warning
                         </md-icon>
                         Overdue: {{ctrl.getStatusCounts().overdue}}
                     </md-button>
@@ -112,7 +112,7 @@
                                ng-click="ctrl.setStatusFilter('todo')"
                                aria-label="Todo tasks">
                         <md-icon class="md-accent" md-font-set="material-symbols-outlined"
-                                 style="font-size: 16px; margin-right: 4px;">pending_actions
+                                 style="margin-right: 4px;">pending_actions
                         </md-icon>
                         Todo: {{ctrl.getStatusCounts().todo}}
                     </md-button>
@@ -121,7 +121,7 @@
                                ng-click="ctrl.setStatusFilter('done')"
                                aria-label="Done tasks">
                         <md-icon class="md-accent" md-font-set="material-symbols-outlined"
-                                 style="font-size: 16px; margin-right: 4px;">check_circle
+                                 style="margin-right: 4px;">check_circle
                         </md-icon>
                         Done: {{ctrl.getStatusCounts().done}}
                     </md-button>
@@ -130,92 +130,109 @@
         </md-card-content>
     </md-card>
 
-    <div ng-show="!ctrl.showFullCalendar" class="list-view-container" layout="row" layout-xs="column">
-        <div flex="60" flex-xs="100" class="task-list-column">
-            <md-card class="filters-container">
-                <md-toolbar class="md-accent">
-                    <div class="md-toolbar-tools">
-                        <span class="material-symbols-outlined">tune</span>
-                        <span class="md-headline-title" flex style="margin-left: 8px;">Filters</span>
-                    </div>
-                </md-toolbar>
+    <!-- Main content area with persistent job details -->
+    <div layout="row" layout-xs="column">
+        <!-- Left column (60%) - List View or Calendar View -->
+        <div flex="60" flex-xs="100" class="main-content-column">
+            <!-- List View -->
+            <div ng-if="!ctrl.showFullCalendar">
+                <md-card class="filters-container">
+                    <md-toolbar class="md-accent">
+                        <div class="md-toolbar-tools">
+                            <span class="material-symbols-outlined">tune</span>
+                            <span class="md-headline-title" flex style="margin-left: 8px;">Filters</span>
+                        </div>
+                    </md-toolbar>
 
-                <md-card-content class="md-padding">
-                    <md-input-container class="md-block">
-                        <label for="search">Search...</label>
-                        <md-icon md-font-set="material-symbols-outlined">search</md-icon>
-                        <input id="search" ng-model="ctrl.searchQuery" ng-change="ctrl.onFilterChange()">
-                    </md-input-container>
+                    <md-card-content>
+                        <md-input-container class="md-block">
+                            <label for="search">Search...</label>
+                            <md-icon md-font-set="material-symbols-outlined">search</md-icon>
+                            <input id="search" ng-model="ctrl.searchQuery" ng-change="ctrl.onFilterChange()">
+                        </md-input-container>
 
-                    <div layout="row" layout-wrap style="display: flex; justify-content: center; padding: 20px;">
-                        <div flex="33" flex-xs="100" class="filter-group">
-                            <md-input-container class="md-block">
-                                <label>Staff</label>
-                                <md-select ng-model="ctrl.staffFilter" ng-change="ctrl.onFilterChange()">
-                                    <md-option value="all">All Staff</md-option>
-                                    <md-option ng-repeat="staff in ctrl.staffList" value="{{staff.id}}">
-                                        {{staff.text}}
-                                    </md-option>
-                                </md-select>
-                            </md-input-container>
+                        <div layout="row" layout-wrap style="display: flex; justify-content: center;">
+                            <div flex="33" flex-xs="100" class="filter-group">
+                                <md-input-container class="md-block">
+                                    <label>Staff</label>
+                                    <md-select ng-model="ctrl.staffFilter" ng-change="ctrl.onFilterChange()">
+                                        <md-option value="all">All Staff</md-option>
+                                        <md-option ng-repeat="staff in ctrl.staffList" value="{{staff.id}}">
+                                            {{staff.text}}
+                                        </md-option>
+                                    </md-select>
+                                </md-input-container>
+                            </div>
+
+                            <!-- Task Type filter -->
+                            <div flex="33" flex-xs="100" class="filter-group">
+                                <md-input-container class="md-block">
+                                    <label>Task Type</label>
+                                    <md-select ng-model="ctrl.eventTypeFilter" ng-change="ctrl.onFilterChange()">
+                                        <md-option value="all">All Task Types</md-option>
+                                        <md-option ng-repeat="eventType in ctrl.eventTypesList"
+                                                   value="{{eventType.id}}">
+                                            {{eventType.text}}
+                                        </md-option>
+                                    </md-select>
+                                </md-input-container>
+                            </div>
+                        </div>
+                    </md-card-content>
+                </md-card>
+
+                <!-- Task List -->
+                <md-card class="task-list-card">
+                    <md-toolbar class="md-accent">
+                        <div class="md-toolbar-tools">
+                            <span class="material-symbols-outlined">task_alt</span>
+                            <span class="md-headline-title" flex
+                                  style="margin-left: 8px;">Tasks ({{ctrl.filteredTasks.length}})</span>
+                        </div>
+                    </md-toolbar>
+                    <md-card-content>
+                        <md-progress-linear
+                                md-mode="indeterminate"
+                                ng-if="ctrl.tasksLoading"
+                                class="md-primary">
+                        </md-progress-linear>
+
+                        <!-- Empty state -->
+                        <div ng-if="ctrl.filteredTasks.length === 0 && !ctrl.tasksLoading" class="empty-list-state"
+                             layout="row"
+                             layout-align="center center" style="padding: 24px;">
+                            <md-icon md-font-set="material-symbols-outlined">info</md-icon>
+                            <span style="margin-left: 8px;">No tasks match your filters</span>
                         </div>
 
-                        <!-- Task Type filter -->
-                        <div flex="33" flex-xs="100" class="filter-group">
-                            <md-input-container class="md-block">
-                                <label>Task Type</label>
-                                <md-select ng-model="ctrl.eventTypeFilter" ng-change="ctrl.onFilterChange()">
-                                    <md-option value="all">All Task Types</md-option>
-                                    <md-option ng-repeat="eventType in ctrl.eventTypesList"
-                                               value="{{eventType.id}}">
-                                        {{eventType.text}}
-                                    </md-option>
-                                </md-select>
-                            </md-input-container>
-                        </div>
-                    </div>
-                </md-card-content>
-            </md-card>
+                        <md-list ng-if="!ctrl.tasksLoading">
+                            <task-item-component
+                                    ng-repeat="task in ctrl.filteredTasks track by task.id"
+                                    task="task"
+                                    config="ctrl.taskItemConfig"
+                                    on-status-change="ctrl.handleTaskCompletion(task)"
+                                    on-task-updated="ctrl.refreshTasks()"
+                                    on-task-click="ctrl.selectTaskJobDetail(task)">
+                            </task-item-component>
+                        </md-list>
+                    </md-card-content>
+                </md-card>
+            </div>
 
-            <!-- Task List -->
-            <md-card class="task-list-card">
-                <md-toolbar class="md-accent">
-                    <div class="md-toolbar-tools">
-                        <span class="material-symbols-outlined">task_alt</span>
-                        <span class="md-headline-title" flex
-                              style="margin-left: 8px;">Tasks ({{ctrl.filteredTasks.length}})</span>
-                    </div>
-                </md-toolbar>
-                <md-card-content>
-                    <md-progress-linear
-                            md-mode="indeterminate"
-                            ng-show="ctrl.tasksLoading"
-                            class="md-primary">
-                    </md-progress-linear>
-
-                    <!-- Empty state -->
-                    <div ng-if="ctrl.filteredTasks.length === 0 && !ctrl.tasksLoading" class="empty-list-state"
-                         layout="row"
-                         layout-align="center center" style="padding: 24px;">
-                        <md-icon md-font-set="material-symbols-outlined">info</md-icon>
-                        <span style="margin-left: 8px;">No tasks match your filters</span>
-                    </div>
-
-                    <md-list ng-if="!ctrl.tasksLoading">
-                        <task-item-component
-                                ng-repeat="task in ctrl.filteredTasks track by task.id"
-                                task="task"
-                                config="ctrl.taskItemConfig"
-                                on-status-change="ctrl.handleTaskCompletion(task)"
-                                on-task-updated="ctrl.refreshTasks()"
-                                on-task-click="ctrl.selectTaskJobDetail(task)">
-                        </task-item-component>
-                    </md-list>
-                </md-card-content>
-            </md-card>
+            <!-- Calendar View -->
+            <div ng-if="ctrl.showFullCalendar" class="calendar-view-container">
+                <task-calendar-view
+                        tasks="ctrl.filteredTasks"
+                        timezone="ctrl.timeZone"
+                        on-task-update="ctrl.handleCalendarTaskUpdate()"
+                        on-task-click="ctrl.handleCalendarTaskClick(task)"
+                        on-task-status-change="ctrl.handleCalendarTaskStatusChange(task)"
+                        on-view-change="ctrl.handleCalendarViewChange(startDate, endDate)">
+                </task-calendar-view>
+            </div>
         </div>
 
-        <!-- Right column - Job Details (30%) -->
+        <!-- Right column - Job Details (40%) - Always visible -->
         <div flex="40" flex-xs="100" class="job-detail-column">
             <md-card class="job-detail-card">
                 <md-toolbar class="md-accent">
@@ -227,21 +244,8 @@
                     </div>
                 </md-toolbar>
 
-                <md-card-content class="job-detail-card-content">
-                    <job-detail-widget job-id="ctrl.currentJobId"></job-detail-widget>
-                </md-card-content>
+                <job-detail-widget job-id="ctrl.currentJobId"></job-detail-widget>
             </md-card>
         </div>
-    </div>
-
-    <!-- Calendar View (shown when the calendar is active) -->
-    <div ng-show="ctrl.showFullCalendar" class="calendar-view-container">
-        <task-calendar-view
-                tasks="ctrl.filteredTasks"
-                timezone="ctrl.timeZone"
-                on-task-update="ctrl.handleCalendarTaskUpdate()"
-                on-task-click="ctrl.handleCalendarTaskClick(task)"
-                on-task-status-change="ctrl.handleCalendarTaskStatusChange(task)">
-        </task-calendar-view>
     </div>
 </div>
