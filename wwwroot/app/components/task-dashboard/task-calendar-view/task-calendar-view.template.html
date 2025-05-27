@@ -49,22 +49,22 @@
         <div ng-if="cal.viewMode === 'month'" class="month-view">
             <!-- Day Headers -->
             <div class="day-headers" layout="row">
-                <div flex="14.28" class="day-header" ng-repeat="day in cal.calendarWeeks[0].days">
-                    {{cal.formatDayHeader(day.date)}}
+                <div flex class="day-header" ng-repeat="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']">
+                    {{day}}
                 </div>
             </div>
 
             <!-- Calendar Grid -->
             <div class="calendar-grid">
                 <div class="calendar-week" ng-repeat="week in cal.calendarWeeks">
-                    <div class="calendar-day"
+                    <div flex class="calendar-day"
                          ng-repeat="day in week.days"
                          ng-class="{
-                             'today': day.isToday,
-                             'other-month': !day.isCurrentMonth,
-                             'selected': cal.isSelected(day.date),
-                             'past': cal.isPastDate(day.date)
-                         }"
+                 'today': day.isToday,
+                 'other-month': !day.isCurrentMonth,
+                 'selected': cal.isSelected(day.date),
+                 'past': cal.isPastDate(day.date)
+             }"
                          ng-click="cal.selectDate(day.date)">
 
                         <div class="day-header">
@@ -116,14 +116,17 @@
                         <div class="time-grid">
                             <div class="time-slot" ng-repeat="time in cal.timeSlots">
                                 <div class="slot-tasks">
-                                    <task-item-component
-                                            ng-repeat="task in cal.getTasksForTimeSlot(day, time) track by task.id"
-                                            task="task"
-                                            config="cal.calendarTaskConfig"
-                                            on-status-change="cal.handleTaskStatusChange({task: task})"
-                                            on-task-updated="cal.handleTaskUpdate()"
-                                            on-task-click="cal.handleTaskClick(task)">
-                                    </task-item-component>
+                                    <div ng-repeat="task in cal.getTasksForTimeSlot(day, time) track by task.id"
+                                         class="calendar-task-item"
+                                         ng-class="{'completed': task.closed, 'priority-high': cal.isTaskOverdue(task), 'priority-medium': !cal.isTaskOverdue(task)}"
+                                         ng-click="cal.handleTaskClick(task)">
+                                        <md-checkbox
+                                                ng-checked="task.closed"
+                                                ng-click="$event.stopPropagation(); cal.handleTaskCheckboxChange(task)"
+                                                aria-label="Mark task as complete">
+                                        </md-checkbox>
+                                        <span class="event-title">{{task.title}}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -149,23 +152,26 @@
                     <div class="time-grid">
                         <div class="time-slot" ng-repeat="time in cal.timeSlots">
                             <div class="slot-tasks">
-                                <task-item-component
-                                        ng-repeat="task in cal.getTasksForTimeSlot(cal.currentDate, time) track by task.id"
-                                        task="task"
-                                        config="cal.calendarTaskConfig"
-                                        on-status-change="cal.handleTaskStatusChange({task: task})"
-                                        on-task-updated="cal.handleTaskUpdate()"
-                                        on-task-click="cal.handleTaskClick(task)">
-                                </task-item-component>
+                                <div ng-repeat="task in cal.getTasksForTimeSlot(day, time) track by task.id"
+                                     class="calendar-task-item"
+                                     ng-class="{'completed': task.closed, 'priority-high': cal.isTaskOverdue(task), 'priority-medium': !cal.isTaskOverdue(task)}"
+                                     ng-click="cal.handleTaskClick(task)">
+                                    <md-checkbox
+                                            ng-checked="task.closed"
+                                            ng-click="$event.stopPropagation(); cal.handleTaskCheckboxChange(task)"
+                                            aria-label="Mark task as complete">
+                                    </md-checkbox>
+                                    <span class="event-title">{{task.title}}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Overdue tasks sidebar with MD3 card styling -->
+                <!-- Overdue tasks sidebar -->
                 <div class="overdue-sidebar" ng-if="cal.getOverdueTasks().length > 0">
                     <md-card>
-                        <md-toolbar class="md-warn">
+                        <md-toolbar>
                             <div class="md-toolbar-tools">
                                 <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
                                 <h3 class="md-title">Overdue Tasks ({{cal.getOverdueTasks().length}})</h3>

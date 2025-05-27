@@ -24,7 +24,7 @@ class TaskDashboardController extends BaseController {
     greeting: string;
     tasksLoading: boolean = true;
     isFirstLoad: boolean = true;
-    selectedDate: Date = new Date();
+    selectedDate = dayjs().toDate();
 
     // View state
     showFullCalendar: boolean;
@@ -63,8 +63,8 @@ class TaskDashboardController extends BaseController {
     timeZone: string;
     browserTimeZone: string;
     dateSearchRange: number = 1;
-    startDate: Date = dayjs(new Date(0)).toDate();
-    endDate: Date = dayjs().add(24, 'hours').toDate();
+    startDate = dayjs(0).toDate();
+    endDate = dayjs().add(24, 'hours').toDate();
 
     constructor(
         private $mdSidenav: angular.material.ISidenavService,
@@ -86,7 +86,7 @@ class TaskDashboardController extends BaseController {
         this.timeZone = TimeZone;
 
         this.generateTimeOptions();
-        this.selectedDate = new Date();
+        this.selectedDate = dayjs().toDate();
 
         this.loadLists()
             .then(() => this.getTasks())
@@ -96,15 +96,6 @@ class TaskDashboardController extends BaseController {
 
         this.registerEvent($scope, 'jobChanged', (_, newJob: IDispatchJob) => {
             this.currentSelection = ` for Job ${newJob.jobNo}`;
-        });
-
-        $scope.$watch(() => this.showFullCalendar, (newVal, oldVal) => {
-            if (newVal !== oldVal) {
-                console.log('Calendar view changed to:', newVal);
-                this.registerTimeout(() => {
-                    // This forces a refresh on the UI
-                });
-            }
         });
     }
 
@@ -123,7 +114,6 @@ class TaskDashboardController extends BaseController {
         }
     }
 
-    // UI Controls
     toggleSidenav(): void {
         this.$mdSidenav("right").toggle();
     }
@@ -197,21 +187,21 @@ class TaskDashboardController extends BaseController {
     private initializeTaskTimeStrings(): void {
         this.tasks.forEach(task => {
             try {
-                const dueDate = new Date(task.dueDate);
+                const dueDate = dayjs(task.dueDate);
 
-                if (isNaN(dueDate.getTime())) {
+                if (!dueDate.isValid()) {
                     console.warn(`Invalid date for task "${task.title}":`, task.dueDate);
                     task.dueTimeStr = "00:00";
                     return;
                 }
 
-                const hours = dueDate.getHours();
-                const minutes = dueDate.getMinutes();
+                const hours = dueDate.hour();
+                const minutes = dueDate.minute();
                 const roundedMinutes = minutes < 30 ? 0 : 30;
                 const formattedHours = hours < 10 ? `0${hours}` : `${hours}`;
 
                 task.dueTimeStr = `${formattedHours}:${roundedMinutes === 0 ? '00' : roundedMinutes}`;
-                task.dueDate = dayjs(dueDate).format();
+                task.dueDate = dueDate.format();
             } catch (error) {
                 console.error(`Error processing dueDate for task:`, task, error);
                 task.dueTimeStr = "00:00";
@@ -247,7 +237,7 @@ class TaskDashboardController extends BaseController {
         } else if (this.statusFilter === StatusFilter.Done) {
             filteredTasks = this.tasks.filter(task => task.closed);
         } else {
-            filteredTasks = [...this.tasks]; // Default - show all tasks
+            filteredTasks = [...this.tasks];
         }
 
         if (filteredTasks) {
@@ -281,16 +271,15 @@ class TaskDashboardController extends BaseController {
 
     isTaskOverdue(task: TaskViewModel): boolean {
         if (task.closed) return false;
-        return new Date(task.dueDate) < this.selectedDate;
+        return dayjs(task.dueDate).isBefore(dayjs(this.selectedDate));
     }
 
-    formatDate(date: Date): string {
-        return this.$filter('date')(date, 'EEEE (d/MM/yy)');
+    formatDate(date: Date | string): string {
+        return this.$filter('date')(dayjs(date).toDate(), 'EEEE (d/MM/yy)');
     }
 
     formatTime(dateString: string): string {
-        const date = new Date(dateString);
-        return this.$filter('date')(date, 'h:mm a').toLowerCase();
+        return this.$filter('date')(dayjs(dateString).toDate(), 'h:mm a').toLowerCase();
     }
 
     handleTaskCompletion(task: ExtendedTask) {
@@ -307,9 +296,9 @@ class TaskDashboardController extends BaseController {
         this.selectedDate = dayjs(this.selectedDate).add(days, 'day').toDate();
 
         if (this.dateSearchRange == 2) {
-            if (this.selectedDate < this.startDate) {
+            if (dayjs(this.selectedDate).isBefore(dayjs(this.startDate))) {
                 this.startDate = dayjs(this.selectedDate).startOf('day').toDate();
-            } else if (this.selectedDate > this.endDate) {
+            } else if (dayjs(this.selectedDate).isAfter(dayjs(this.endDate))) {
                 this.endDate = dayjs(this.selectedDate).endOf('day').toDate();
             }
         }
@@ -318,9 +307,8 @@ class TaskDashboardController extends BaseController {
     }
 
     async goToToday() {
-        this.selectedDate = new Date();
+        this.selectedDate = dayjs().toDate();
 
-        // If we're in custom date range mode, make sure today is in the range
         if (this.dateSearchRange == 2) {
             const today = dayjs().startOf('day');
             if (today.isBefore(dayjs(this.startDate)) || today.isAfter(dayjs(this.endDate))) {
@@ -348,10 +336,9 @@ class TaskDashboardController extends BaseController {
         this.dateSearchRange = optionSelected;
 
         if (optionSelected === 1) {
-            this.startDate = dayjs(new Date(0)).toDate();
+            this.startDate = dayjs(0).toDate();
             this.endDate = dayjs().add(24, 'hours').toDate();
-
-            this.selectedDate = new Date();
+            this.selectedDate = dayjs().toDate();
 
             console.log('24 Hours mode: Reset dates to defaults', {
                 startDate: dayjs(this.startDate).format('YYYY-MM-DD HH:mm:ss'),
@@ -376,21 +363,30 @@ class TaskDashboardController extends BaseController {
         await this.refreshDashboard();
     }
 
-    // Calendar component callbacks
     handleCalendarTaskClick(task: ExtendedTask): void {
+        console.log('Calendar task clicked:', task);
         this.selectTaskJobDetail(task);
     }
 
-   async handleCalendarTaskUpdate(): Promise<void> {
+    async handleCalendarTaskUpdate(): Promise<void> {
         await this.refreshTasks();
     }
 
     handleCalendarTaskStatusChange(task: ExtendedTask): void {
+        console.log('Calendar task status changed:', task);
         this.handleTaskCompletion(task);
     }
 
-    saveViewPreference(): void {
+    async saveViewPreference(): Promise<void> {
         const viewMode = this.showFullCalendar ? ViewMode.Calendar : ViewMode.List;
+
+        // If switching to list view, reset to 24 hours
+        if (!this.showFullCalendar && this.dateSearchRange === 2) {
+            this.dateSearchRange = 1;
+            this.selectedDate = dayjs().toDate();
+            await this.refreshDashboard();
+        }
+
         if (Modernizr.localstorage) {
             localStorage.setItem(`taskDashboardViewPreference-${ContactID}`, viewMode);
         }
@@ -403,6 +399,17 @@ class TaskDashboardController extends BaseController {
                 this.showFullCalendar = viewMode === ViewMode.Calendar;
             }
         }
+    }
+
+    async updateDateRangeFromCalendar(startDate: Date, endDate: Date): Promise<void> {
+        this.dateSearchRange = 2; // Set to a custom range
+        this.startDate = startDate;
+        this.endDate = endDate;
+        await this.refreshDashboard();
+    }
+
+    async handleCalendarViewChange(startDate: Date, endDate: Date): Promise<void> {
+        await this.updateDateRangeFromCalendar(startDate, endDate);
     }
 }
 

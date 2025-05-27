@@ -1,118 +1,88 @@
 @import '../../../css/variables.less';
 
 .dfrnt-task-dashboard {
-  .list-view-container {
-    gap: 16px;
-    height: calc(100vh - 280px);
+  .main-content-column {
 
-    .task-list-column {
+    .filters-container {
+      margin-bottom: 16px;
+
+      md-card-content {
+        padding: 16px;
+      }
+
+      .filter-group {
+        padding: 0 8px;
+      }
+
+      md-input-container {
+        margin: 18px 0 0 0;
+      }
+    }
+
+    .task-list-card {
+      min-height: 200px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      padding-right: 8px;
+      height: calc(100vh - 440px);
 
-      .filters-container {
-        flex-shrink: 0;
-        margin-bottom: 0;
+      md-card-header {
+        padding: 16px;
+        border-bottom: 1px solid #f0f0f0;
+        flex: 0 0 auto;
       }
 
-      .task-list-card {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        min-height: 0;
-        margin-bottom: 0;
-
-        md-card-header {
-          padding: 16px;
-          border-bottom: 1px solid #f0f0f0;
-          flex: 0 0 auto;
-        }
-
-        md-card-content {
-          flex: 1;
-          overflow: hidden;
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          padding: 0;
-
-          md-list {
-            overflow-y: auto;
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            margin: 0;
-            padding: 0;
-          }
-        }
-      }
-    }
-
-    .job-detail-column {
-      padding-left: 8px;
-
-      .job-detail-card {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        margin-bottom: 0;
-
-        md-toolbar {
-          flex-shrink: 0;
-
-          .md-toolbar-tools {
-            .md-headline-title {
-              font-size: 16px;
-            }
-          }
-        }
-
-        .job-detail-card-content {
-          flex: 1;
-          overflow-y: auto;
-          padding: 0;
-          height: 100% !important;
-          font-size: 14px;
-        }
-      }
-    }
-
-    // Responsive behavior
-    @media (max-width: 959px) {
-      flex-direction: column;
-      height: auto;
-
-      .task-list-column,
-      .job-detail-column {
+      md-card-content {
         padding: 0;
-        width: 100%;
+        flex: 1 1 auto;
+        overflow: hidden;
+        position: relative;
+        display: flex;
+        flex-direction: column;
       }
 
-      .task-list-column {
-        margin-bottom: 16px;
-        height: 500px;
+      md-list {
+        overflow-y: auto;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: 0;
+        padding: 0;
+      }
+    }
 
-        .task-list-card {
-          height: calc(100% - 200px);
+    .calendar-view-container {
+      height: calc(100vh - 280px);
+    }
+  }
+
+  .job-detail-column {
+
+    .job-detail-card {
+      height: calc(100vh - 200px);
+      display: flex;
+      flex-direction: column;
+
+      md-toolbar {
+        flex-shrink: 0;
+
+        .md-toolbar-tools {
+          .md-headline-title {
+            font-size: 16px;
+          }
         }
       }
 
-      .job-detail-column {
-        .job-detail-card {
-          height: 500px;
-        }
+      job-detail-widget {
+        flex: 1;
+        overflow-y: auto;
+        display: block;
       }
     }
   }
 
-  .calendar-view-container {
-    margin-top: 16px;
-    height: calc(100vh - 280px);
-  }
-
+  // Dashboard header styling
   .dashboard-header-card {
     margin-bottom: 16px;
 
@@ -184,18 +154,119 @@
         }
       }
     }
+
+    .vertical-divider {
+      height: 32px;
+      margin: 0 16px;
+      border-right: 1px solid #e0e0e0;
+    }
   }
 
-  // Override old styles
-  .main-row {
-    display: none !important;
+  // Task item styles
+  .task-item {
+    position: relative;
+    padding: 8px 16px;
+    min-height: 56px;
+
+    .priority-indicator {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+
+      &.high {
+        background-color: #f44336;
+      }
+
+      &.medium {
+        background-color: #2196f3;
+      }
+
+      &.low {
+        background-color: #4caf50;
+      }
+    }
+
+    &.completed {
+      background-color: #fafafa;
+    }
+
+    md-checkbox {
+      margin: 0 12px 0 0;
+    }
+
+    .md-list-item-text {
+      margin: 0;
+
+      h3 {
+        font-size: 15px;
+        margin: 0 0 2px;
+        line-height: 1.2;
+        display: flex;
+        align-items: center;
+
+        &.completed-text {
+          text-decoration: line-through;
+          color: #9e9e9e;
+        }
+      }
+
+      p {
+        font-size: 13px;
+        margin: 0 0 4px;
+        line-height: 1.2;
+        max-height: 32px;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+
+        &.completed-text {
+          color: #9e9e9e;
+        }
+      }
+    }
+
+    .task-meta {
+      margin-bottom: 4px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+
+      .meta-item {
+        margin-right: 12px;
+        display: flex;
+        align-items: center;
+
+        md-icon {
+          font-size: 14px;
+          height: 14px;
+          width: 14px;
+          min-height: 14px;
+          min-width: 14px;
+          margin-right: 4px;
+        }
+
+        span {
+          font-size: 12px;
+          color: #757575;
+        }
+      }
+
+      .job-id-chip {
+        height: 20px;
+        line-height: 20px;
+        min-height: 20px;
+        font-size: 11px;
+        padding: 0 8px;
+        background-color: #f5f5f5;
+        color: #616161;
+      }
+    }
   }
 
-  .main-column {
-    display: none !important;
-  }
-
-  // Ensure proper scrollbar styling
+  // Scrollbar styling
   md-list::-webkit-scrollbar {
     width: 6px;
   }
@@ -212,5 +283,37 @@
     &:hover {
       background: #a8a8a8;
     }
+  }
+
+  // Empty state
+  .empty-list-state {
+    color: #9e9e9e;
+
+    md-icon {
+      margin-right: 8px;
+    }
+  }
+
+  // Responsive behavior
+  @media (max-width: 959px) {
+    .main-content-column {
+      padding-right: 0;
+      margin-bottom: 16px;
+    }
+
+    .job-detail-column {
+      padding-left: 0;
+
+      .job-detail-card {
+        height: 500px;
+      }
+    }
+  }
+
+  // Remove old styles
+  .list-view-container,
+  .main-row,
+  .main-column {
+    display: none !important;
   }
 }
