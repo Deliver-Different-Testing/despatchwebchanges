@@ -270,12 +270,10 @@ class EditAddressDialogController extends BaseController {
     }
 
     markerDragend(event: google.maps.MapMouseEvent) {
-        // Get the marker's new position
         const location = event.latLng;
         if (!location) return;
 
         try {
-            // Use the nearest address search with HereMaps
             const lat = location.lat();
             const lng = location.lng();
 
@@ -295,10 +293,8 @@ class EditAddressDialogController extends BaseController {
                 const location = responseItems[0];
                 this.selectedAddressId = location.id;
 
-                // Update address fields
                 this.addressDetails.fullAddress = location.address.label;
 
-                // Apply changes to the UI
                 this.$scope.$apply();
             }
         } catch (error) {
@@ -340,11 +336,9 @@ class EditAddressDialogController extends BaseController {
     private handleAddressFieldsFromLookup(
         location: HereMapsLookupResponse
     ): void {
-        // Update address fields based on HereMaps data
         if (this.useUsFormat) {
             this.handleUsFormatAddressFromLookup(location);
         } else {
-            // Handle non-US format if needed
             this.handleNonUsFormatAddressFromLookup(location);
         }
 
@@ -358,17 +352,15 @@ class EditAddressDialogController extends BaseController {
     ): void {
         const address = location.address;
 
-        // Map HereMaps fields to the address lines with more detailed information
-        this.addressDetails.addressLine1 = ""; // Company/Building/Complex - not directly available
+        this.addressDetails.addressLine1 = location.title ||
+            location.mapReferences?.pointAddress?.buildingName || "";
         this.addressDetails.addressLine2 = ""; // Unit/Suite - not directly available
-        this.addressDetails.addressLine3 = address.houseNumber || ""; // House Number
-        this.addressDetails.addressLine4 = address.street || ""; // Street
-        this.addressDetails.addressLine5 = address.city || ""; // City
-        this.addressDetails.addressLine6 = address.state || ""; // State full name
+        this.addressDetails.addressLine3 = address.houseNumber || "";
+        this.addressDetails.addressLine4 = address.street || "";
+        this.addressDetails.addressLine5 = address.city || "";
+        this.addressDetails.addressLine6 = address.state || "";
 
-        // Handle ZIP+4 format by extracting just the 5-digit ZIP code
         if (address.postalCode) {
-            // Extract the first 5 digits if it's in the 'XXXXX-XXXX' format
             const zipMatch = address.postalCode.match(/^(\d{5})/);
             this.addressDetails.addressLine7 = zipMatch
                 ? zipMatch[1]
@@ -377,7 +369,6 @@ class EditAddressDialogController extends BaseController {
             this.addressDetails.addressLine7 = "";
         }
 
-        // Set state abbreviation - the lookup API provides both stateCode and state
         if (address.stateCode) {
             this.addressDetails.stateAbbreviation = address.stateCode;
         } else if (address.state) {
@@ -387,18 +378,14 @@ class EditAddressDialogController extends BaseController {
             }
         }
 
-        // If we have countryInfo, use it to ensure we have the proper country code
         if (location.countryInfo) {
             console.log("Country info from lookup:", location.countryInfo);
         }
 
-        // If we have streetInfo, we can use it to populate street address more accurately
         if (location.streetInfo && location.streetInfo.length > 0) {
             const streetInfo = location.streetInfo[0];
             console.log("Street info from lookup:", streetInfo);
 
-            // You can use the streetInfo to construct a more detailed street address if needed
-            // Example: Combining prefix + baseName + streetType in the correct order
             let formattedStreet = "";
 
             if (streetInfo.prefix) {
@@ -429,10 +416,7 @@ class EditAddressDialogController extends BaseController {
         location: HereMapsLookupResponse
     ): void {
         const address = location.address;
-
-        // For non-US format, map accordingly with more detailed information
-        this.addressDetails.addressLine5 = address.district || address.city || ""; // Suburb field
-        // Set other non-US specific fields if needed
+        this.addressDetails.addressLine5 = address.district || address.city || "";
     }
 
     private validateUsAddress(

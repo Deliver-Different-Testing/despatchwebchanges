@@ -365,6 +365,23 @@ table.table {
       }
     }
 
+    &.status-warning {
+      background: #ffebee;
+      border-left: 4px solid #f44336;
+
+      &:hover {
+        background-color: #ffcdd2;
+      }
+
+      td {
+        color: #212121;
+      }
+
+      &.direct, &.chilled {
+        background-color: mix(#ffebee, rgba(255, 0, 0, 0.05), 80%);
+      }
+    }
+
     &.status-future {
       background-color: @s-green;
 

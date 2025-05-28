@@ -11,12 +11,12 @@
     </md-toolbar>
 
     <md-dialog-content>
-        <div class="md-dialog-content date-time-content">
+        <div class="md-dialog-content">
             <!-- Date and Time Picker -->
-            <div class="date-time-field" ng-if="ctrl.showDate && ctrl.showTime">
+            <div ng-if="ctrl.showDate && ctrl.showTime">
                 <md-input-container class="md-block">
                     <label for="dateTime">
-                        <span>Date & Time{{ctrl.selectedTimeZone.timeZoneIana ? ' (' + (ctrl.selectedTimeZone.timeZoneIana | timezoneShort) + ')' : ''}}</span>
+                        Date & Time{{ctrl.selectedTimeZone.timeZoneIana ? ' (' + (ctrl.selectedTimeZone.timeZoneIana | timezoneShort) + ')' : ''}}
                     </label>
                     <input class="dtp-no-msclear dtp-input md-input"
                            id="dateTime"
@@ -37,10 +37,10 @@
             </div>
 
             <!-- Date Only Picker -->
-            <div class="date-time-field" ng-if="ctrl.showDate && !ctrl.showTime">
+            <div ng-if="ctrl.showDate && !ctrl.showTime">
                 <md-input-container class="md-block">
                     <label for="date">
-                        <span>Date{{ctrl.selectedTimeZone.timeZoneIana ? ' (' + (ctrl.selectedTimeZone.timeZoneIana | timezoneShort) + ')' : ''}}</span>
+                        Date{{ctrl.selectedTimeZone.timeZoneIana ? ' (' + (ctrl.selectedTimeZone.timeZoneIana | timezoneShort) + ')' : ''}}
                     </label>
                     <input class="dtp-no-msclear dtp-input md-input"
                            id="date"
@@ -61,10 +61,10 @@
             </div>
 
             <!-- Time Only Picker -->
-            <div class="date-time-field" ng-if="ctrl.showTime && !ctrl.showDate">
+            <div ng-if="ctrl.showTime && !ctrl.showDate">
                 <md-input-container class="md-block">
                     <label for="time">
-                        <span>Time{{ctrl.selectedTimeZone.timeZoneIana ? ' (' + (ctrl.selectedTimeZone.timeZoneIana | timezoneShort) + ')' : ''}}</span>
+                        Time{{ctrl.selectedTimeZone.timeZoneIana ? ' (' + (ctrl.selectedTimeZone.timeZoneIana | timezoneShort) + ')' : ''}}
                     </label>
                     <input class="dtp-no-msclear dtp-input md-input"
                            id="time"
@@ -84,32 +84,30 @@
             </div>
 
             <!-- Timezone Selector -->
-            <div ng-if="ctrl.showTimeZoneSelector" class="timezone-section">
-                <div class="date-time-field">
-                    <label class="timezone-label md-body-1">Timezone</label>
+            <div ng-if="ctrl.showTimeZoneSelector">
+                <md-input-container class="md-block">
+                    <label>Timezone</label>
                     <md-select ng-model="ctrl.selectedTimeZone"
-                               class="md-block timezone-select"
                                aria-label="Selected timezone"
                                disabled>
                         <md-option ng-value="ctrl.selectedTimeZone">
                             {{ ctrl.selectedTimeZone.text }}
                         </md-option>
                     </md-select>
-                    <div class="timezone-info" ng-if="ctrl.selectedTimeZone">
-                        Local timezone: {{ ctrl.browserTimeZone }}
-                    </div>
-                </div>
+                </md-input-container>
+                <p ng-if="ctrl.selectedTimeZone" class="md-body-1">
+                    Local timezone: {{ ctrl.browserTimeZone }}
+                </p>
             </div>
         </div>
     </md-dialog-content>
 
     <md-dialog-actions layout="row">
         <span flex></span>
-        <md-button class="md-button" ng-click="ctrl.cancel()" ng-if="!ctrl.isLoading">
+        <md-button ng-click="ctrl.cancel()" ng-if="!ctrl.isLoading">
             Cancel
         </md-button>
-        <md-progress-circular class="md-primary"
-                              md-diameter="24"
+        <md-progress-circular md-diameter="24"
                               md-mode="indeterminate"
                               ng-if="ctrl.isLoading">
         </md-progress-circular>

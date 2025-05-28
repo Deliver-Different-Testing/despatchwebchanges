@@ -1633,7 +1633,15 @@ class NationwideControl extends BaseController {
     }
 
     jobClass(job: IDispatchJob): string {
-        if (!job || !job.followupTime) {
+        if (!job) {
+            return '';
+        }
+
+        if (job.statusId === JobStatus.Warning) {
+            return 'status-warning';
+        }
+
+        if (!job.followupTime) {
             return '';
         }
 

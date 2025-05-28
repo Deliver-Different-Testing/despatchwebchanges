@@ -247,6 +247,9 @@
     <_ContentIncludedByDefault Remove="wwwroot\lib\pickdate\angular-pickadate.css" />
     <_ContentIncludedByDefault Remove="wwwroot\lib\pickdate\angular-pickadate.js" />
     <_ContentIncludedByDefault Remove="wwwroot\lib\pickdate\angular-pickadate.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\parcel-visuailzation\parcel-visualization.component.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\parcel-visuailzation\parcel-visualization.styles.less" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\parcel-visuailzation\parcel-visualization.template.html" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
@@ -325,7 +328,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\parcel-visuailzation\parcel-visualization.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\inter-courier-charge-dialog\inter-courier-charge-dialog.controller.ts" />
