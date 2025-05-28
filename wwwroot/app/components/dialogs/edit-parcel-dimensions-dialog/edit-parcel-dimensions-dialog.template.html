@@ -45,16 +45,12 @@
 
                 <!-- Main content with form and visualization -->
                 <div layout="row" layout-wrap layout-align="space-between start" class="md-padding">
-                    <!-- Left side - Form -->
-                    <div flex-gt-sm="45" flex="100">
                         <form ng-submit="ctrl.submit()">
-                            <!-- Item Name -->
                             <md-input-container class="md-block">
                                 <label for="itemName">Item Name</label>
                                 <input id="itemName" ng-model="ctrl.getCurrentParcel().itemName" type="text" placeholder="Enter item name">
                             </md-input-container>
 
-                            <!-- Dimensions Input Group -->
                             <md-card class="md-padding" md-colors="{background: 'background-hue-1'}">
                                 <h4 class="md-subhead">Dimensions</h4>
 
@@ -79,16 +75,6 @@
                                 </div>
                             </md-card>
                         </form>
-                    </div>
-
-                    <!-- Right side - Visual representation -->
-                    <md-card class="md-padding" flex-gt-sm="50" flex="100" md-colors="{background: 'background-hue-1'}">
-                        <parcel-visualization
-                                height="{{ctrl.getCurrentParcel().height}}"
-                                length="{{ctrl.getCurrentParcel().length}}"
-                                width="{{ctrl.getCurrentParcel().depth}}">
-                        </parcel-visualization>
-                    </md-card>
                 </div>
             </div>
         </md-dialog-content>
@@ -110,7 +96,7 @@
                                        md-colors="{background: 'background-900-0.7', color: 'background-50'}"
                                        aria-label="Delete parcel"
                                        style="display: flex; align-items: center; justify-content: center;">
-                                <md-icon md-font-set="material-symbols-outlined" style="margin: 0; display: block;">close</md-icon>
+                                <md-icon md-font-set="material-symbols-outlined" style="margin: 0; display: block; color: white;">close</md-icon>
                                 <md-tooltip md-direction="top">Delete Parcel</md-tooltip>
                             </md-button>
                         </div>

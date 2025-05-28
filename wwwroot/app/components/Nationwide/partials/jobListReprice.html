@@ -62,18 +62,12 @@
 
         <tbody md-body>
         <tr md-row
-            md-dense
             ng-repeat="job in ctrl.jobListReprice | filter: box.searchBox"
             ng-class="ctrl.jobClass(job)"
             context-menu="ctrl.getContextMenuOptions(job)"
             context-menu-on="contextmenu"
             context-menu-class="job-context-menu"
-            ng-click="ctrl.selectJob(job)"
-            data-jobid="{{job.id}}"
-            data-jobno="{{job.jobNo}}"
-            data-courier="{{job.courier}}"
-            data-allowDispatch="{{job.allowDispatch}}"
-            data-index="{{$index}}">
+            ng-click="ctrl.selectJob(job)">
 
             <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">
                 {{job.booked | momentFormat: (ctrl.isUsCustomer ? "MM/DD/YYYY HH:mm" : "DD/MM/YYYY HH:mm")}}

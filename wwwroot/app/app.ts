@@ -76,8 +76,6 @@ import JobContextMenuService from "./services/job-context-menu.service";
 import StickyNoteComponent from "./components/common/sticky-notes/sticky-notes.component";
 import EditParcelDimensionsDialogService
     from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
-import ParcelVisualizationComponent
-    from "./components/dialogs/edit-parcel-dimensions-dialog/parcel-visuailzation/parcel-visualization.component";
 import RecurringJobsComponent from "./components/recurringJobs/recurringJobs.controller";
 import RecurringJobsService from "./components/recurringJobs/recurringJobs.service";
 import JobSearchService from "./components/jobSearch/jobSearch.service";
@@ -225,7 +223,6 @@ app.component("overviewComponent", OverviewComponent);
 app.component("megaMapComponent", MegaMapComponent);
 app.component("taskDashboardComponent", TaskDashboardComponent);
 app.component("noData", NoDataComponent);
-app.component("parcelVisualization", ParcelVisualizationComponent);
 app.component("nationwideComponent", NationwideComponent);
 app.component("stickyNote", StickyNoteComponent);
 app.component("recurringJobsComponent", RecurringJobsComponent);

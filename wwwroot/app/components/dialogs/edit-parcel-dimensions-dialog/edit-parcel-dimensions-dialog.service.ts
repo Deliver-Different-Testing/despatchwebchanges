@@ -27,7 +27,7 @@ class EditParcelDimensionsDialogService {
             targetEvent: $event,
             template: require("./edit-parcel-dimensions-dialog.template.html"),
             clickOutsideToClose: false,
-            fullscreen: true,
+            fullscreen: false,
             locals: {
                 jobId: job.id,
                 parcels: job.parcelDimensions
