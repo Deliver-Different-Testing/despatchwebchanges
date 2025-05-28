@@ -17,7 +17,6 @@ import { JobProperty } from "../enums/job-property.enum";
 import JobAddStopService from "./job-add-stop.service";
 import { isDeliveryJob } from "../functions/isDeliveryJob";
 import { isFlightJob } from "../functions/isFlightJob";
-import { bindAllMethods } from "../functions/bindAllMethods";
 
 class JobContextMenuService implements angular.IServiceProvider {
   static $inject = [
@@ -46,7 +45,6 @@ class JobContextMenuService implements angular.IServiceProvider {
     private jobAddStopService: JobAddStopService
   ) {
     console.log("JobContextMenuService initialized");
-    bindAllMethods(this);
     this.preloadEventGroups();
   }
 
@@ -259,8 +257,8 @@ class JobContextMenuService implements angular.IServiceProvider {
     await this.performUnassignment(
       job,
       "Unassign Flight?",
-      `Are you sure you wish to unassign flight ${job.flightNumber} from ${job.jobNo} ?`,
-      `${job.flightNumber} unassigned successfully`,
+      `Are you sure you wish to unassign flight ${job.assignedFlight?.flightNumber} from ${job.jobNo} ?`,
+      `${job.assignedFlight?.flightNumber} unassigned successfully`,
       onRefresh
     );
   }
@@ -270,8 +268,8 @@ class JobContextMenuService implements angular.IServiceProvider {
     await this.performUnassignment(
       job,
       "Unassign Agent?",
-      `Are you sure you wish to unassign agent ${job.agentName} from ${job.jobNo} ?`,
-      `${job.flightNumber} unassigned successfully`,
+      `Are you sure you wish to unassign agent ${job.assignedAgent?.agentName} from ${job.jobNo} ?`,
+      `${job.assignedAgent?.agentName} unassigned successfully`,
       onRefresh
     );
   }
@@ -298,7 +296,7 @@ class JobContextMenuService implements angular.IServiceProvider {
       );
 
       this.toastrService.showSuccessToast(
-        `Job ${job.jobNum} marked as Reprice`
+        `Job ${job.jobNo} marked as Reprice`
       );
 
       if (onRefresh) {
