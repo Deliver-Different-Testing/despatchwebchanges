@@ -123,8 +123,13 @@ class EditAddressDialogController extends BaseController {
         try {
             const results = await this.addressLookupService.autocompleteAddressSearch(text);
             this.addressSearchResults = results;
-            return results;
 
+            this.registerTimeout(() => {
+                // Trigger UI refresh
+                console.log("Address search results:", results);
+            });
+
+            return results;
         } catch (error: any) {
             this.toastrService.showErrorToast(
                 error.message || "Error searching for addresses"
@@ -421,6 +426,7 @@ class EditAddressDialogController extends BaseController {
             }
         }
     }
+
 
     private handleNonUsFormatAddressFromLookup(
         location: HereMapsLookupResponse
