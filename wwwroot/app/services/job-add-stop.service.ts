@@ -3,7 +3,6 @@ import {EditAddressDialogService} from "../components/dialogs/edit-address-dialo
 import {AddressViewModel, IDispatchJob} from "../interfaces/job.interface";
 import ToastrService from "./toastr.service";
 import JobSuffix from "../enums/job-suffix.enum";
-import {bindAllMethods} from "../functions/bindAllMethods";
 
 class JobAddStopService implements angular.IServiceProvider {
     static $inject = [
@@ -17,7 +16,6 @@ class JobAddStopService implements angular.IServiceProvider {
         private editAddressDialogService: EditAddressDialogService,
         private toastrService: ToastrService,
     ) {
-        bindAllMethods(this);
         console.log("JobAddStop service initialized");
     }
 

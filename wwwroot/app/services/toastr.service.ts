@@ -1,5 +1,3 @@
-import {bindAllMethods} from "../functions/bindAllMethods";
-
 enum ToastType {
     SUCCESS = 'success',
     ERROR = 'error',
@@ -17,7 +15,6 @@ class ToastrService implements angular.IServiceProvider {
         private $document: angular.IDocumentService
     ) {
         console.log("Toastr service initialized");
-        bindAllMethods(this);
     }
 
     $get() {
