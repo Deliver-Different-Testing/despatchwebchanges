@@ -11,7 +11,6 @@ import AddressLookupService from "../../../services/address-lookup.service";
 
 class EditAddressDialogController extends BaseController {
     static $inject = [
-        "$scope",
         "$timeout",
         "$interval",
         "$mdDialog",
@@ -25,7 +24,10 @@ class EditAddressDialogController extends BaseController {
         "submitLabel",
         "showContactInfo",
     ];
-    isLoading: boolean;
+
+    isLoading: boolean = false;
+    isAddressLoading: boolean = false;
+
     addressSearchText: string;
     googleMapsUrl?: string;
     mapDisplay?: boolean;
@@ -34,13 +36,13 @@ class EditAddressDialogController extends BaseController {
     usStateList: IStateInfo[];
     addressSearchResults: HereMapsLocationResult[] = [];
     selectedAddressId?: string;
+
     // Contact Card
     isContactCardExpanded: boolean = false;
     shipmentDetails?: ShipmentDetails;
     private readonly useUsFormat: boolean;
 
     constructor(
-        private $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
         private $mdDialog: angular.material.IDialogService,
@@ -57,7 +59,6 @@ class EditAddressDialogController extends BaseController {
         super();
         this.initServices($timeout, $interval);
 
-        this.isLoading = false;
         this.useUsFormat = appConfig.US_Customer;
         this.addressSearchText = this.addressDetails.fullAddress || "";
 
@@ -144,15 +145,15 @@ class EditAddressDialogController extends BaseController {
                 return;
             }
 
+            this.isAddressLoading = true;
+
             this.selectedAddressId = selectedItem.id;
 
-            // Get detailed information about the location using the ID
             const detailedLocation = await this.addressLookupService.getLocationDetailsById(
                 selectedItem.id
             );
 
             if (detailedLocation) {
-                // Update address based on detailed HereMaps data
                 this.handleAddressFieldsFromLookup(detailedLocation);
                 this.updateMapMarker({
                     lat: detailedLocation.position.lat,
@@ -162,10 +163,15 @@ class EditAddressDialogController extends BaseController {
                 this.updateMapMarker(selectedItem.position);
             }
 
-            // Update the full address display
             this.addressDetails.fullAddress = selectedItem.address.label;
+
+            this.isAddressLoading = false;
+
         } catch (error: any) {
             console.error("Error processing selected address:", error);
+
+            this.isAddressLoading = false;
+
             this.toastrService.showErrorToast(
                 "An error occurred while processing the selected address. Please try again."
             );
@@ -265,7 +271,6 @@ class EditAddressDialogController extends BaseController {
         if (event.latLng) {
             this.addressDetails.latitude = event.latLng.lat();
             this.addressDetails.longitude = event.latLng.lng();
-            this.$scope.$apply();
         }
     }
 
@@ -287,18 +292,23 @@ class EditAddressDialogController extends BaseController {
 
     async fetchNearestAddress(lat: number, lng: number): Promise<void> {
         try {
+            this.isAddressLoading = true;
+
             const responseItems = await this.addressLookupService.fetchNearestAddress(lat, lng);
 
             if (responseItems && responseItems.length > 0) {
                 const location = responseItems[0];
                 this.selectedAddressId = location.id;
-
                 this.addressDetails.fullAddress = location.address.label;
-
-                this.$scope.$apply();
             }
+
+            this.isAddressLoading = false;
+
         } catch (error) {
             console.error("Error fetching reverse geocode:", error);
+
+            this.isAddressLoading = false;
+
             this.toastrService.showErrorToast(
                 "An error occurred while retrieving address information. Please try again."
             );

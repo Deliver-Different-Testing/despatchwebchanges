@@ -39,11 +39,21 @@ class AddressLookupService implements angular.IServiceProvider {
                 apiKey: hereMapsKey,
                 at: this.appConfig.US_Customer ? "37.09024,-95.712891" : "-40.900557,174.885971", // Center points of USA and NZL
                 in: `countryCode:${this.appConfig.US_Customer ? "USA" : "NZL"}`,
-                limit: 10,
+                limit: 15,
             },
         });
 
-        return response.data.items;
+        return response.data.items.filter(item => {
+            if (!item || !item.address || !item.address.label || item.address.label.trim() === "")
+                return false;
+
+            if (item.resultType) {
+                const excludedTypes = ['categoryQuery', 'chainQuery'];
+                if (excludedTypes.includes(item.resultType)) return false;
+            }
+
+            return true;
+        });
     }
 
     async getLocationDetailsById(

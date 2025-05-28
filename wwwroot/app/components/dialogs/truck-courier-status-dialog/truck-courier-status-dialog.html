@@ -1,7 +1,7 @@
 <md-dialog aria-label="Add event" style="width: 50%;">
     <md-toolbar>
         <div class="md-toolbar-tools">
-            <h2>Truck Loading Status for {{ ctrl.data.courierCode }} {{ ctrl.data.firstName }}</h2>
+            <h2>Truck Loading Status for {{ ctrl.truckCourierStatus.courierCode }} {{ ctrl.truckCourierStatus.firstName }}</h2>
             <span flex></span>
             <md-button class="md-icon-button" ng-click="ctrl.cancel()">
                 <md-tooltip md-direction="bottom">Cancel</md-tooltip>
@@ -18,34 +18,34 @@
                 <div layout-gt-sm="row">
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="maxPallets">Max Pallets</label>
-                        <input disabled id="maxPallets" ng-model="ctrl.data.maxPallets" type="text">
+                        <input disabled id="maxPallets" ng-model="ctrl.truckCourierStatus.maxPallets" type="text">
                     </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="maxPayLoad">Max Weight</label>
-                        <input disabled id="maxPayLoad" ng-model="ctrl.data.maxPayLoad" type="text">
+                        <input disabled id="maxPayLoad" ng-model="ctrl.truckCourierStatus.maxPayLoad" type="text">
                     </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="availablePallets">Available Pallets</label>
-                        <input disabled id="availablePallets" ng-model="ctrl.data.availablePallets" type="text">
+                        <input disabled id="availablePallets" ng-model="ctrl.truckCourierStatus.availablePallets" type="text">
                     </md-input-container>
                 </div>
 
                 <div layout-gt-sm="row">
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="currentPallets">Current Pallets</label>
-                        <input disabled id="currentPallets" ng-model="ctrl.data.currentPallets" type="text">
+                        <input disabled id="currentPallets" ng-model="ctrl.truckCourierStatus.currentPallets" type="text">
                     </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="currentWeight">Current Weight</label>
-                        <input disabled id="currentWeight" ng-model="ctrl.data.currentWeight" type="text">
+                        <input disabled id="currentWeight" ng-model="ctrl.truckCourierStatus.currentWeight" type="text">
                     </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="availableWeight">Available Weight</label>
-                        <input disabled id="availableWeight" ng-model="ctrl.data.availableWeight" type="text">
+                        <input disabled id="availableWeight" ng-model="ctrl.truckCourierStatus.availableWeight" type="text">
                     </md-input-container>
                 </div>
 
