@@ -84,7 +84,6 @@ import FlightDetailsDialogService from "./components/dialogs/flight-details-dial
 import FlightDetailsDialogController from "./components/dialogs/flight-details-dialog/flight-details-dialog.component";
 import AutoCompleteDialogService from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.service";
 import JobAddStopService from "./services/job-add-stop.service";
-import "./components/dialogs/index";
 import FlightAgentConfirmationDialogService
     from "./components/dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.service";
 import FlightAgentConformationDialogController
@@ -97,6 +96,10 @@ import 'dayjs/locale/en';
 import NoDataComponent from "./components/common/no-data/no-data.component";
 import TasksService from "./services/tasks.service";
 import TaskCalendarViewComponent from "./components/task-dashboard/task-calendar-view/task-calendar-view.component";
+import TruckCourierStatusDialogController
+    from "./components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.controller";
+import TruckCourierStatusDialogService
+    from "./components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.service";
 
 const app = (window as any).uDispatchApp;
 
@@ -249,6 +252,7 @@ app.controller("InterCourierChargeDialog", InterCourierChargeDialogController);
 app.controller("flightDetailsDialogController", FlightDetailsDialogController);
 app.controller("flightAgentConformationDialogController", FlightAgentConformationDialogController);
 app.controller("agentInfoDialogController", AgentInfoDialogController);
+app.controller("TruckCourierStatusDialogController", TruckCourierStatusDialogController);
 
 // Services
 app.service("configService", ConfigService);
@@ -282,5 +286,6 @@ app.service("flightAgentConfirmationDialogService", FlightAgentConfirmationDialo
 app.service("agentInfoDialogService", AgentInfoDialogService)
 app.service("addressLookupService", AddressLookupService)
 app.service("tasksService", TasksService)
+app.service("truckCourierStatusDialogService", TruckCourierStatusDialogService)
 
 export default app;

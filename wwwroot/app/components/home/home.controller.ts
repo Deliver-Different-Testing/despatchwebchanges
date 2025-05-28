@@ -40,6 +40,8 @@ import NavigationService from "../../services/navigation.service";
 import JobSearchService from "../jobSearch/jobSearch.service";
 import greetUser from "../../functions/greetUser";
 import dayjs from "dayjs";
+import TruckCourierStatusDialogService
+    from "../dialogs/truck-courier-status-dialog/truck-courier-status-dialog.service";
 
 class HomeController extends BaseController {
     static $inject = [
@@ -64,7 +66,8 @@ class HomeController extends BaseController {
         'jobContextMenuService',
         '$mdEditDialog',
         '$interval',
-        'navigationService'
+        'navigationService',
+        'truckCourierStatusDialogService',
     ];
 
     private readonly DOM_SELECTORS = {
@@ -166,6 +169,7 @@ class HomeController extends BaseController {
         private $mdEditDialog: any,
         private $interval: angular.IIntervalService,
         private navigationService: NavigationService,
+        private truckCourierStatusDialogService: TruckCourierStatusDialogService,
     ) {
         super();
 
@@ -2235,20 +2239,8 @@ class HomeController extends BaseController {
     }
 
     async truckLoadingStatus($event: MouseEvent) {
-        await this.$mdDialog
-            .show({
-                controller: "TruckCourierStatusDialogController",
-                controllerAs: "ctrl",
-                parent: this.$document.parent(),
-                targetEvent: $event,
-                templateUrl: "app/components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.html",
-                clickOutsideToClose: false,
-                fullscreen: true,
-                locals: {
-                    data: Array.isArray(this.truckCourierStatus) ? this.truckCourierStatus[0] : this.truckCourierStatus,
-                },
-                bindToController: true,
-            });
+        if(!this.truckCourierStatus) return;
+        await this.truckCourierStatusDialogService.showTruckLoadingStatus($event, this.truckCourierStatus);
     }
 
     async createNewJob() {
