@@ -486,8 +486,8 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             nationwideJob.ToState,
             nationwideJob.TotalMiles,
             nationwideJob.TotalWeight,
-            nationwideJob.Quantity, // Added missing parameter
-            nationwideJob.Cubic, // Added missing parameter
+            nationwideJob.Quantity,
+            nationwideJob.Cubic,
             nationwideJob.TotalPallets,
             nationwideJob.ExtraStopOffs ? 1 : 0,
             nationwideJob.BookTime,
