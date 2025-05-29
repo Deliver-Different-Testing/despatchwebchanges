@@ -1,24 +1,19 @@
 <md-progress-linear
         class="md-primary"
         md-mode="indeterminate"
-        ng-show="ctrl.isLoading"
->
+        ng-show="ctrl.isLoading">
 </md-progress-linear>
 
 <div class="job-detail-page" ng-if="ctrl.job">
     <md-card
             class="warning-section md-whiteframe-1dp"
-            ng-if="ctrl.job.isArchived || ctrl.job.preBook"
-    >
+            ng-if="ctrl.job.isArchived || ctrl.job.preBook">
         <md-card-content>
             <div layout="row" layout-align="start center">
                 <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
-                <span class="warning-text" ng-if="ctrl.job.isArchived"
-                >Job archived. Some fields can't be edited</span
-                >
+                <span class="warning-text" ng-if="ctrl.job.isArchived">Job archived. Some fields can't be edited</span>
                 <span class="warning-text" ng-if="ctrl.job.preBook"
-                >Recurring job. Some fields may require confirmation</span
-                >
+                >Recurring job. Some fields may require confirmation</span>
             </div>
         </md-card-content>
     </md-card>
