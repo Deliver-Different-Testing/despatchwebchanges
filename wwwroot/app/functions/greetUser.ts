@@ -1,5 +1,7 @@
+import dayjs from 'dayjs';
+
 function greetUser(userName: string): string {
-    const currentHour: number = new Date().getHours();
+    const currentHour: number = dayjs().hour();
     let greeting: string;
 
     if (currentHour < 12) {
