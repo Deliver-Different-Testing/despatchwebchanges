@@ -535,6 +535,207 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
+        public virtual async Task<int> DD_stpJob_NationWideFlight_InsertPartsAsync(int? nationwideJobID, bool? recurring, decimal? fromAgentRate, decimal? fromAgentFuel, decimal? fromAgentDriverPay, decimal? fromAgentDriverFuel, int? fromAgentId, int? fromAirportId, decimal? fromMiles, decimal? flightRate, decimal? flightFuel, decimal? toAgentRate, decimal? toAgentFuel, decimal? toAgentDriverPay, decimal? toAgentDriverFuel, int? toAgentId, int? toAirportId, decimal? toMiles, double? totalWeight, int? agentCourierID, OutputParameter<int?> pickupJobID, OutputParameter<int?> flightJobID, OutputParameter<int?> deliveryJobID, OutputParameter<string> pricingBreakdownString, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterPickupJobID = new SqlParameter
+            {
+                ParameterName = "PickupJobID",
+                Direction = System.Data.ParameterDirection.InputOutput,
+                Value = pickupJobID?._value ?? Convert.DBNull,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+            var parameterFlightJobID = new SqlParameter
+            {
+                ParameterName = "FlightJobID",
+                Direction = System.Data.ParameterDirection.InputOutput,
+                Value = flightJobID?._value ?? Convert.DBNull,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+            var parameterDeliveryJobID = new SqlParameter
+            {
+                ParameterName = "DeliveryJobID",
+                Direction = System.Data.ParameterDirection.InputOutput,
+                Value = deliveryJobID?._value ?? Convert.DBNull,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+            var parameterPricingBreakdownString = new SqlParameter
+            {
+                ParameterName = "PricingBreakdownString",
+                Size = 4000,
+                Direction = System.Data.ParameterDirection.InputOutput,
+                Value = pricingBreakdownString?._value ?? Convert.DBNull,
+                SqlDbType = System.Data.SqlDbType.NVarChar,
+            };
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "NationwideJobID",
+                    Value = nationwideJobID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Recurring",
+                    Value = recurring ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Bit,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "FromAgentRate",
+                    Precision = 19,
+                    Scale = 4,
+                    Value = fromAgentRate ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Money,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "FromAgentFuel",
+                    Precision = 19,
+                    Scale = 4,
+                    Value = fromAgentFuel ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Money,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "FromAgentDriverPay",
+                    Precision = 19,
+                    Scale = 4,
+                    Value = fromAgentDriverPay ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Money,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "FromAgentDriverFuel",
+                    Precision = 19,
+                    Scale = 4,
+                    Value = fromAgentDriverFuel ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Money,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "FromAgentId",
+                    Value = fromAgentId ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "FromAirportId",
+                    Value = fromAirportId ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "FromMiles",
+                    Precision = 18,
+                    Scale = 4,
+                    Value = fromMiles ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Decimal,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "FlightRate",
+                    Precision = 19,
+                    Scale = 4,
+                    Value = flightRate ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Money,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "FlightFuel",
+                    Precision = 19,
+                    Scale = 4,
+                    Value = flightFuel ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Money,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "ToAgentRate",
+                    Precision = 19,
+                    Scale = 4,
+                    Value = toAgentRate ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Money,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "ToAgentFuel",
+                    Precision = 19,
+                    Scale = 4,
+                    Value = toAgentFuel ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Money,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "ToAgentDriverPay",
+                    Precision = 19,
+                    Scale = 4,
+                    Value = toAgentDriverPay ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Money,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "ToAgentDriverFuel",
+                    Precision = 19,
+                    Scale = 4,
+                    Value = toAgentDriverFuel ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Money,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "ToAgentId",
+                    Value = toAgentId ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "ToAirportId",
+                    Value = toAirportId ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "ToMiles",
+                    Precision = 18,
+                    Scale = 4,
+                    Value = toMiles ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Decimal,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "TotalWeight",
+                    Value = totalWeight ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Float,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "AgentCourierID",
+                    Value = agentCourierID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterPickupJobID,
+                parameterFlightJobID,
+                parameterDeliveryJobID,
+                parameterPricingBreakdownString,
+                parameterreturnValue,
+            };
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DD_stpJob_NationWideFlight_InsertParts] @NationwideJobID = @NationwideJobID, @Recurring = @Recurring, @FromAgentRate = @FromAgentRate, @FromAgentFuel = @FromAgentFuel, @FromAgentDriverPay = @FromAgentDriverPay, @FromAgentDriverFuel = @FromAgentDriverFuel, @FromAgentId = @FromAgentId, @FromAirportId = @FromAirportId, @FromMiles = @FromMiles, @FlightRate = @FlightRate, @FlightFuel = @FlightFuel, @ToAgentRate = @ToAgentRate, @ToAgentFuel = @ToAgentFuel, @ToAgentDriverPay = @ToAgentDriverPay, @ToAgentDriverFuel = @ToAgentDriverFuel, @ToAgentId = @ToAgentId, @ToAirportId = @ToAirportId, @ToMiles = @ToMiles, @TotalWeight = @TotalWeight, @AgentCourierID = @AgentCourierID, @PickupJobID = @PickupJobID OUTPUT, @FlightJobID = @FlightJobID OUTPUT, @DeliveryJobID = @DeliveryJobID OUTPUT, @PricingBreakdownString = @PricingBreakdownString OUTPUT", sqlParameters, cancellationToken);
+
+            pickupJobID?.SetValue(parameterPickupJobID.Value);
+            flightJobID?.SetValue(parameterFlightJobID.Value);
+            deliveryJobID?.SetValue(parameterDeliveryJobID.Value);
+            pricingBreakdownString?.SetValue(parameterPricingBreakdownString.Value);
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
         public virtual async Task<int> DD_stpJob_Rate_DescribedAsync(int? clientID, int? speedID, int? fromZipCode, string fromState, int? toZipCode, string toState, decimal? totalDistance, decimal? fromMiles, decimal? toMiles, decimal? totalWeight, int? quantity, decimal? cubic, int? totalPallets, int? extraStopOffs, DateTime? booked, int? vehicleSizeID, bool? dangerousGoods, decimal? dryIceWeight, int? waitTime, int? fromAgentId, int? fromAirportId, int? toAgentId, int? toAirportId, OutputParameter<string> description, OutputParameter<decimal?> rate, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterDescription = new SqlParameter
