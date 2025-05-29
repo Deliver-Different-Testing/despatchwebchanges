@@ -996,7 +996,9 @@ public partial class DespatchContext : DbContext
         {
             entity.HasKey(e => e.PricingBreakdownId).HasName("PK__PricingB__BC8C3D8BE9445FEE");
 
-            entity.ToTable("PricingBreakdown");
+            entity.ToTable("PricingBreakdown", tb => tb.HasTrigger("TR_PricingBreakdown_tucJob_Sync"));
+
+            entity.HasIndex(e => e.ChildJobId, "IX_PricingBreakdown_ChildJobID").HasFilter("([ChildJobID] IS NOT NULL)");
 
             entity.Property(e => e.PricingBreakdownId).HasColumnName("PricingBreakdownID");
             entity.Property(e => e.ChargeAmount).HasColumnType("money");
@@ -1004,13 +1006,18 @@ public partial class DespatchContext : DbContext
                 .IsRequired()
                 .HasMaxLength(100);
             entity.Property(e => e.Charged).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.ChildJobId).HasColumnName("ChildJobID");
             entity.Property(e => e.CostAmount).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.Included).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.JobId).HasColumnName("JobID");
             entity.Property(e => e.PrebookJobId).HasColumnName("PrebookJobID");
             entity.Property(e => e.Total).HasColumnType("decimal(18, 4)");
 
-            entity.HasOne(d => d.Job).WithMany(p => p.PricingBreakdowns)
+            entity.HasOne(d => d.ChildJob).WithMany(p => p.PricingBreakdownChildJobs)
+                .HasForeignKey(d => d.ChildJobId)
+                .HasConstraintName("FK_PricingBreakdown_ChildJobID");
+
+            entity.HasOne(d => d.Job).WithMany(p => p.PricingBreakdownJobs)
                 .HasForeignKey(d => d.JobId)
                 .HasConstraintName("FK__PricingBr__JobID__1B69C5D8");
 
@@ -4250,6 +4257,7 @@ public partial class DespatchContext : DbContext
 
             entity.ToTable("tucJob", tb =>
                 {
+                    tb.HasTrigger("TR_tucJob_PricingBreakdown_Sync");
                     tb.HasTrigger("trg_TucJob_Notes_Update");
                     tb.HasTrigger("tucJob_ChangeAmount");
                     tb.HasTrigger("tucJob_ChangeWeight");
@@ -4363,6 +4371,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.AgentId).HasColumnName("AgentID");
             entity.Property(e => e.AutoDespatch).HasDefaultValue(true);
             entity.Property(e => e.Barcode).HasMaxLength(300);
+            entity.Property(e => e.BookingParentId).HasColumnName("BookingParentID");
             entity.Property(e => e.BulkParentId).HasColumnName("BulkParentID");
             entity.Property(e => e.ClientItemIds).HasMaxLength(100);
             entity.Property(e => e.ClientNotes).HasMaxLength(4000);
@@ -4429,6 +4438,7 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("GSTRate");
             entity.Property(e => e.InformationParentId).HasColumnName("InformationParentID");
             entity.Property(e => e.InternalNotes).HasMaxLength(4000);
+            entity.Property(e => e.IsRecurringJob).HasDefaultValue(false);
             entity.Property(e => e.ItemNotReadyNotificationNotes).HasMaxLength(4000);
             entity.Property(e => e.JobRelationshipTypeId).HasColumnName("JobRelationshipTypeID");
             entity.Property(e => e.LoggedInContactId).HasColumnName("LoggedInContactID");
@@ -4827,6 +4837,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.AgentId).HasColumnName("AgentID");
             entity.Property(e => e.AutoDespatch).HasDefaultValue(true);
             entity.Property(e => e.Barcode).HasMaxLength(300);
+            entity.Property(e => e.BookingParentId).HasColumnName("BookingParentID");
             entity.Property(e => e.BulkParentId).HasColumnName("BulkParentID");
             entity.Property(e => e.ClientItemIds).HasMaxLength(100);
             entity.Property(e => e.ClientNotes).HasMaxLength(4000);
@@ -4900,6 +4911,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.InformationParentId).HasColumnName("InformationParentID");
             entity.Property(e => e.InternalNotes).HasMaxLength(4000);
             entity.Property(e => e.InvoiceProcessId).HasColumnName("InvoiceProcessID");
+            entity.Property(e => e.IsRecurringJob).HasDefaultValue(false);
             entity.Property(e => e.ItemNotReadyNotificationNotes).HasMaxLength(4000);
             entity.Property(e => e.JobRelationshipTypeId).HasColumnName("JobRelationshipTypeID");
             entity.Property(e => e.JobTrackingNotificationHasBeenSent).HasDefaultValue(false);

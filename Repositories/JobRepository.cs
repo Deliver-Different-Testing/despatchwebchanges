@@ -462,7 +462,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         var dbData = await Context
             .TucJobs.Where(j =>
                 (ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value)))
-                 && (j.UcjbLocked != true)
+                 && j.UcjbLocked != true
             )
             .ToListAsync();
 
@@ -475,7 +475,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
 
         // Log counts for diagnostics
-        Log.Information($"Processing {dbData.Count} active jobs and {dbDataArchive.Count} archived jobs");
+        Log.Information("Processing {DbDataCount} active jobs and {Count} archived jobs", dbData.Count, dbDataArchive.Count);
         // Keep track of jobs with changed prices
         var jobsWithChangedPrices = new HashSet<int>();
         var processedJobIds = new HashSet<int>();
@@ -489,7 +489,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
             if (match == null)
             {
-                Log.Warning($"Job with ID {d.Id} not found in database");
+                Log.Warning("Job with ID {DId} not found in database", d.Id);
                 continue; // Skip this job instead of throwing an exception
             }
 
@@ -509,11 +509,11 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     match.RawBaseAmount = match.UcjbAmount - match.FuelSurchargeAmount - match.PpdexclusiveAmount;
                     // Mark this job for pricing breakdown update
                     jobsWithChangedPrices.Add(d.Id);
-                    Log.Information($"Job {d.Id} has price change - updating");
+                    Log.Information("Job {DId} has price change - updating", d.Id);
                 }
                 else
                 {
-                    Log.Information($"Job {d.Id} price unchanged - skipping pricing breakdown update");
+                    Log.Information("Job {DId} price unchanged - skipping pricing breakdown update", d.Id);
                 }
 
                 // Always update these fields, regardless of price change
@@ -528,7 +528,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             }
             catch (Exception ex)
             {
-                Log.Error($"Error updating job {d.Id}: {ex.Message}");
+                Log.Error("Error updating job {DId}: {ExMessage}", d.Id, ex.Message);
             }
         }
 
@@ -539,7 +539,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 j.UcjbId,
                 ParentId = j.ParentId ?? j.UcjbId,
                 UcjbAmount = j.UcjbAmount ?? 0m,
-                FuelSurchargeAmount = j.FuelSurchargeAmount,
+                j.FuelSurchargeAmount,
                 PpdexclusiveAmount = j.PpdexclusiveAmount ?? 0m
             })
             .Concat(
@@ -548,7 +548,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     j.UcjbId,
                     ParentId = j.ParentId ?? j.UcjbId,
                     UcjbAmount = j.UcjbAmount ?? 0m,
-                    FuelSurchargeAmount = j.FuelSurchargeAmount,
+                    j.FuelSurchargeAmount,
                     PpdexclusiveAmount = j.PpdexclusiveAmount ?? 0m
                 })
             )
@@ -569,9 +569,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 if (childJobs.Count == 0)
                     continue;
 
-                decimal totalAmount = childJobs.Sum(j => j.UcjbAmount);
-                decimal totalFuel = childJobs.Sum(j => j.FuelSurchargeAmount);
-                decimal totalPpd = childJobs.Sum(j => j.PpdexclusiveAmount);
+                var totalAmount = childJobs.Sum(j => j.UcjbAmount);
+                var totalFuel = childJobs.Sum(j => j.FuelSurchargeAmount);
+                var totalPpd = childJobs.Sum(j => j.PpdexclusiveAmount);
 
                 // Check if parent job's price is actually changing
                 bool parentPriceChanged = Math.Round(parentJob.UcjbAmount ?? 0, 4) != Math.Round(totalAmount, 4) ||
@@ -587,11 +587,11 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
                     // Mark this parent job for pricing breakdown update
                     jobsWithChangedPrices.Add(x.Key);
-                    Log.Information($"Parent job {x.Key} has price change - updating");
+                    Log.Information("Parent job {XKey} has price change - updating", x.Key);
                 }
                 else
                 {
-                    Log.Information($"Parent job {x.Key} price unchanged - skipping pricing breakdown update");
+                    Log.Information("Parent job {XKey} price unchanged - skipping pricing breakdown update", x.Key);
                 }
 
                 processedJobIds.Add(x.Key);
@@ -599,7 +599,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             }
             catch (Exception ex)
             {
-                Log.Error($"Error processing parent job {x.Key}: {ex.Message}");
+                Log.Error("Error processing parent job {XKey}: {ExMessage}", x.Key, ex.Message);
             }
         }
 
@@ -615,7 +615,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
             if (existingBreakdowns.Count != 0)
             {
-                Log.Information($"Removing {existingBreakdowns.Count} existing pricing breakdowns for {jobsWithChangedPrices.Count} jobs with changed prices");
+                Log.Information("Removing {ExistingBreakdownsCount} existing pricing breakdowns for {Count} jobs with changed prices", existingBreakdowns.Count, jobsWithChangedPrices.Count);
                 Context.PricingBreakdowns.RemoveRange(existingBreakdowns);
             }
 
@@ -625,14 +625,18 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 var jobFromDb = dbData.FirstOrDefault(j => j.UcjbId == jobId);
                 var jobFromArchive = dbDataArchive.FirstOrDefault(j => j.UcjbId == jobId);
 
-                decimal amount = 0;
+                decimal amount;
+                int? childId;
+
                 if (jobFromDb != null)
                 {
                     amount = jobFromDb.UcjbAmount ?? 0;
+                    childId = jobFromDb.ParentId; // Get the ParentId as ChildId
                 }
                 else if (jobFromArchive != null)
                 {
                     amount = jobFromArchive.UcjbAmount ?? 0;
+                    childId = jobFromArchive.ParentId; // Get the ParentId as ChildId
                 }
                 else
                 {
@@ -643,6 +647,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 {
                     JobId = jobId,
                     PrebookJobId = null,
+                    ChildJobId = childId,
                     ChargeName = "Manually Rated",
                     ChargeAmount = amount,
                     Total = null,
@@ -651,8 +656,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 };
 
                 await Context.PricingBreakdowns.AddAsync(newBreakdown);
-                Log.Information($"Added new pricing breakdown for job {jobId} with amount {amount}");
-
+                Log.Information("Added new pricing breakdown for job {JobId} with amount {Amount}", jobId, amount);
             }
         }
         else
@@ -675,13 +679,13 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         {
             // Save all changes at once
             var changesCount = await Context.SaveChangesAsync();
-            Log.Information($"Successfully saved {changesCount} changes");
+            Log.Information("Successfully saved {ChangesCount} changes", changesCount);
         }
         catch (DbUpdateException ex)
         {
-            Log.Error($"Error saving changes: {ex.Message}");
+            Log.Error("Error saving changes: {ExMessage}", ex.Message);
             if (ex.InnerException != null)
-                Log.Error($"Inner exception: {ex.InnerException.Message}");
+                Log.Error("Inner exception: {InnerExceptionMessage}", ex.InnerException.Message);
 
             throw;
         }

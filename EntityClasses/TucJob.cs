@@ -445,6 +445,10 @@ public partial class TucJob
 
     public int? DeliverByTimeZoneId { get; set; }
 
+    public bool? IsRecurringJob { get; set; }
+
+    public int? BookingParentId { get; set; }
+
     public virtual TucJobType AcceptedJobType { get; set; }
 
     public virtual TucAgent Agent { get; set; }
@@ -475,7 +479,9 @@ public partial class TucJob
 
     public virtual TimeZone PickupTimeZone { get; set; }
 
-    public virtual ICollection<PricingBreakdown> PricingBreakdowns { get; set; } = new List<PricingBreakdown>();
+    public virtual ICollection<PricingBreakdown> PricingBreakdownChildJobs { get; set; } = new List<PricingBreakdown>();
+
+    public virtual ICollection<PricingBreakdown> PricingBreakdownJobs { get; set; } = new List<PricingBreakdown>();
 
     public virtual TucSource Source { get; set; }
 

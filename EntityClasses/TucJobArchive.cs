@@ -461,6 +461,10 @@ public partial class TucJobArchive
 
     public int? DeliverByTimeZoneId { get; set; }
 
+    public bool? IsRecurringJob { get; set; }
+
+    public int? BookingParentId { get; set; }
+
     public virtual TucAgent Agent { get; set; }
 
     public virtual TimeZone DeliverByTimeZone { get; set; }
