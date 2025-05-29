@@ -5,5 +5,5 @@ namespace DespatchWeb.Interfaces;
 
 public interface IAddStopJobService
 {
-    Task AddStopInsertJobAsync(AddStopRequest request);
+    Task<int> AddStopInsertJobAsync(AddStopRequest request);
 }

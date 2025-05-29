@@ -11,6 +11,7 @@ import AddressLookupService from "../../../services/address-lookup.service";
 
 class EditAddressDialogController extends BaseController {
     static $inject = [
+        "$scope",
         "$timeout",
         "$interval",
         "$mdDialog",
@@ -43,6 +44,7 @@ class EditAddressDialogController extends BaseController {
     private readonly useUsFormat: boolean;
 
     constructor(
+        private $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
         private $mdDialog: angular.material.IDialogService,
@@ -113,6 +115,7 @@ class EditAddressDialogController extends BaseController {
                     this.marker = mapMarkers[0];
                 }
 
+                this.registerTimeout(() => this.$scope.$apply());
                 console.log("Marker initialized:", this.marker);
             });
     }
@@ -124,11 +127,7 @@ class EditAddressDialogController extends BaseController {
             const results = await this.addressLookupService.autocompleteAddressSearch(text);
             this.addressSearchResults = results;
 
-            this.registerTimeout(() => {
-                // Trigger UI refresh
-                console.log("Address search results:", results);
-            });
-
+           await this.$scope.$applyAsync()
             return results;
         } catch (error: any) {
             this.toastrService.showErrorToast(
@@ -180,6 +179,8 @@ class EditAddressDialogController extends BaseController {
             this.toastrService.showErrorToast(
                 "An error occurred while processing the selected address. Please try again."
             );
+        } finally {
+            await this.$scope.$applyAsync()
         }
     }
 
@@ -194,6 +195,7 @@ class EditAddressDialogController extends BaseController {
         console.log("Marker after setPosition:", this.marker);
 
         this.marker?.setVisible(true);
+        this.registerTimeout(() => this.$scope.$apply());
     }
 
     async submit(addressDetails: EditAddressDialogViewModel): Promise<void> {
@@ -254,6 +256,8 @@ class EditAddressDialogController extends BaseController {
                 "Error updating address. Please try again or contact support"
             );
             throw error; // Re-throw to maintain an error chain
+        } finally {
+            await this.$scope.$applyAsync();
         }
     }
 
@@ -317,6 +321,8 @@ class EditAddressDialogController extends BaseController {
             this.toastrService.showErrorToast(
                 "An error occurred while retrieving address information. Please try again."
             );
+        } finally {
+            await this.$scope.$applyAsync();
         }
     }
 
@@ -346,7 +352,6 @@ class EditAddressDialogController extends BaseController {
     cancel(): void {
         this.$mdDialog.cancel();
     }
-
 
     private handleAddressFieldsFromLookup(
         location: HereMapsLookupResponse
@@ -426,7 +431,6 @@ class EditAddressDialogController extends BaseController {
             }
         }
     }
-
 
     private handleNonUsFormatAddressFromLookup(
         location: HereMapsLookupResponse

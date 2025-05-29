@@ -180,6 +180,10 @@
     <material-sidenav></material-sidenav>
   </div>
 
+  <div ng-if="ctrl.isDataLoading">
+    <md-progress-linear md-mode="indeterminate" class="md-primary" style="padding: 10px;"></md-progress-linear>
+  </div>
+
   <div>
     <div class="columns">
       <div

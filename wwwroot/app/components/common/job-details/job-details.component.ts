@@ -18,7 +18,6 @@ import {IDialogDateTimeResult} from "../../../interfaces/dialog-result.interface
 import {EditAddressDialogService} from "../../dialogs/edit-address-dialog/edit-address-dialog.service";
 import PriceBreakdownDialogService from "../../dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
 import BaseController from "../../base-controller";
-import {AppPages} from "../../../enums/app-pages.enum";
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import {JobStatus} from "../../../enums/job-status.enum";
 import EditParcelDimensionsDialogService

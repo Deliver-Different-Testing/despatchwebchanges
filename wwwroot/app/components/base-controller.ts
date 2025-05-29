@@ -30,12 +30,11 @@ class BaseController implements angular.IController {
         bindAllMethods(this);
     }
 
-    protected initServices($timeout: angular.ITimeoutService, $interval: angular.IIntervalService): void {
+    protected initServices($timeout: angular.ITimeoutService, $interval: angular.IIntervalService, $scope?: angular.IScope): void {
         this.$timeoutService = $timeout;
         this.$intervalService = $interval;
     }
 
-    // EXISTING METHODS (unchanged)
     protected registerEvent<T>(
         scope: angular.IScope,
         eventName: string,

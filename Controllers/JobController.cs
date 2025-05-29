@@ -2696,7 +2696,7 @@ public class JobController(
             // Get job details for rating
             var jobDetails = await jobRepository.GetJobBookingDetailsForRating(request.JobId);
 
-            // Update job details with new pickup address
+            // Update job details with a new pickup address
             jobDetails.ToId = request.SuburbId;
             jobDetails.DeliveryLat = request.Latitude;
             jobDetails.DeliveryLong = request.Longitude;
@@ -2769,8 +2769,8 @@ public class JobController(
     {
         try
         {
-            await addStopJobService.AddStopInsertJobAsync(data);
-            return Ok();
+            var newStopJobId = await addStopJobService.AddStopInsertJobAsync(data);
+            return Json(newStopJobId);
         }
         catch (Exception ex)
         {
