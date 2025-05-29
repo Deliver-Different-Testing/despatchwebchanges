@@ -8,6 +8,7 @@ import {ExtendedTask, TaskViewModel} from "../task-dashboard.interfaces";
 import {ITaskListItemConfig} from "../../common/task-item-component/task-item.interfaces";
 import {CalendarDay, CalendarWeek} from "./task-calendar-view.interfaces";
 import BaseController from "../../base-controller";
+import TasksService from "../../../services/tasks.service";
 
 dayjs.extend(isoWeek);
 dayjs.extend(weekday);
@@ -16,6 +17,8 @@ dayjs.extend(timezone);
 
 class TaskCalendarViewController extends BaseController {
     static $inject = [
+        "$scope",
+        "tasksService",
         "$timeout",
         "$interval",
     ];
@@ -39,7 +42,7 @@ class TaskCalendarViewController extends BaseController {
         showJobType: false,
         showDateTime: false,
         customClass: '',
-        allowCompletion: false,
+        allowCompletion: true,
         showStatusIndicators: false,
         showOverdueWarning: false,
         onTaskClick: false,
@@ -48,6 +51,8 @@ class TaskCalendarViewController extends BaseController {
     timeSlots: string[] = [];
 
     constructor(
+        private $scope: angular.IScope,
+        private tasksService: TasksService,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
     ) {
@@ -62,17 +67,16 @@ class TaskCalendarViewController extends BaseController {
     }
 
     $onInit() {
-        this.registerTimeout(() => {
-            this.initializeCalendar();
-            this.emitViewChange();
-        });
+        this.initializeCalendar();
+        this.emitViewChange();
+
+        this.registerTimeout(() => this.$scope.$apply());
     }
 
     $onChanges(changes: angular.IOnChangesObject) {
         if (changes.tasks && !changes.tasks.isFirstChange()) {
-            this.registerTimeout(() => {
-                this.initializeCalendar();
-            });
+            this.initializeCalendar();
+            this.registerTimeout(() => this.$scope.$apply());
         }
     }
 
@@ -156,7 +160,7 @@ class TaskCalendarViewController extends BaseController {
     }
 
     getTasksForTimeSlot(date: dayjs.Dayjs, timeSlot: string): ExtendedTask[] {
-        if (!this.tasks) return [];
+        if (!this.tasks || !date) return [];
 
         const [hours, minutes] = timeSlot.split(':').map(Number);
         const slotStart = date.hour(hours).minute(minutes);
@@ -255,13 +259,14 @@ class TaskCalendarViewController extends BaseController {
         }
     }
 
-    handleTaskCheckboxChange(task: ExtendedTask): void {
+    async handleTaskCheckboxChange(task: ExtendedTask): Promise<void> {
         task.closed = !task.closed;
+        await this.tasksService.markTaskAsClosed(task.id, task.closed);
+
         this.handleTaskStatusChange(task);
 
-        this.registerTimeout(() => {
-            this.initializeCalendar();
-        });
+        this.initializeCalendar();
+        this.registerTimeout(() => this.$scope.$apply());
     }
 
     formatPeriodTitle(): string {
@@ -345,28 +350,12 @@ class TaskCalendarViewController extends BaseController {
             });
         }
     }
-
-    getCalendarTaskTemplate(): string {
-        return `
-        <div class="calendar-task-item" 
-             ng-class="{'completed': task.closed, 'priority-high': cal.isTaskOverdue(task), 'priority-medium': !cal.isTaskOverdue(task)}"
-             ng-click="cal.handleTaskClick(task)">
-            <md-checkbox 
-                ng-model="task.closed" 
-                ng-change="cal.handleTaskStatusChange(task)"
-                ng-click="$event.stopPropagation()"
-                aria-label="Mark task as complete">
-            </md-checkbox>
-            <span class="event-title">{{task.title}}</span>
-        </div>
-    `;
-    }
 }
 
 const TaskCalendarViewComponent: angular.IComponentOptions = {
     template: require("./task-calendar-view.template.html"),
     controller: TaskCalendarViewController,
-    controllerAs: "cal",
+    controllerAs: "ctrl",
     bindings: {
         tasks: '<',
         onTaskUpdate: '&',

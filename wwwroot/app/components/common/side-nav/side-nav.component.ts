@@ -1,6 +1,7 @@
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import "./side-nav.styles.less";
 import BaseController from "../../base-controller";
+import dayjs from "dayjs";
 
 class MaterialSidenavComponentController extends BaseController {
     static $inject = [
@@ -8,6 +9,7 @@ class MaterialSidenavComponentController extends BaseController {
         "$mdSidenav",
         "$timeout",
         "$interval",
+        "$scope",
         "APP_CONFIG"
     ];
 
@@ -31,28 +33,19 @@ class MaterialSidenavComponentController extends BaseController {
         private $mdSidenav: angular.material.ISidenavService,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
+        private $scope: angular.IScope,
         appConfig: AppConfig
     ) {
         super();
-
-        // Initialize base services
         this.initServices($timeout, $interval);
 
         this.isUsCustomer = appConfig.US_Customer;
         this.userName = FirstName;
-        this.currentYear = new Date().getFullYear();
+        this.currentYear = dayjs().year();
 
         // Format the date
-        const today = new Date();
-        const options: Intl.DateTimeFormatOptions = {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        };
-
-        const locale = appConfig.US_Customer ? 'en-US' : 'en-NZ';
-        this.currentDate = today.toLocaleDateString(locale, options);
+        const locale = appConfig.US_Customer ? 'en' : 'en-nz';
+        this.currentDate = dayjs().locale(locale).format('dddd, MMMM D, YYYY');
     }
 
     $postLink(): void {
@@ -63,10 +56,11 @@ class MaterialSidenavComponentController extends BaseController {
                 if (this.$timeoutService) {
                     this.$timeoutService.cancel(this.timeoutId);
                 }
+
                 this.timeoutId = null;
             }
 
-            this._toggleNav(true);
+            this.toggleNav(true);
         });
 
         this.sidenav.on("mouseleave", () => {
@@ -76,9 +70,8 @@ class MaterialSidenavComponentController extends BaseController {
                 }
             }
 
-            // Use registerTimeout instead of direct $timeout
             this.timeoutId = this.registerTimeout(() => {
-                this._toggleNav(false);
+                this.toggleNav(false);
             }, this.HOVER_DELAY) as angular.IPromise<void>;
         });
 
@@ -94,20 +87,29 @@ class MaterialSidenavComponentController extends BaseController {
         return this.$state.current.name === stateName;
     }
 
-    private _toggleNav(shouldOpen: boolean): void {
+    private toggleNav(shouldOpen: boolean): void {
         if (this.navState.isAnimating) return;
         if (shouldOpen === this.navState.isOpen) return;
 
         this.navState.isAnimating = true;
 
+        this.$scope.$apply();
+
         const sideNav = this.$mdSidenav("right");
         const action = shouldOpen ? sideNav.open() : sideNav.close();
+
         action.then(() => {
             this.navState.isOpen = shouldOpen;
+
+            this.registerTimeout(() => this.$scope.$apply());
 
             this.registerTimeout(() => {
                 this.navState.isAnimating = false;
             }, this.ANIMATION_DURATION);
+        }).catch(() => {
+            this.navState.isAnimating = false;
+        }).finally(() => {
+            this.registerTimeout(() => this.$scope.$apply());
         });
     }
 }

@@ -1829,28 +1829,9 @@ class NationwideControl extends BaseController {
     }
 
     private findJobInLocalLists(jobId: number): IDispatchJob | undefined {
-        // Try lookup maps first (O(1) access)
-        const newJobsMap = this.getLookupMap<number, IDispatchJob>('newJobs');
-        const podJobsMap = this.getLookupMap<number, IDispatchJob>('podJobs');
-        const repriceJobsMap = this.getLookupMap<number, IDispatchJob>('repriceJobs');
-
-        let foundJob = newJobsMap?.get(jobId) ||
-            podJobsMap?.get(jobId) ||
-            repriceJobsMap?.get(jobId);
-
-        if (foundJob) {
-            console.log(`Found job ${jobId} via lookup map`);
-            return foundJob;
-        }
-
-        // Fallback to array search if lookup maps aren't ready yet
-        console.warn(`Falling back to array search for job ${jobId} - lookup maps may not be initialized`);
-
-        foundJob = this.jobList?.find((job) => job.id === jobId) ||
+        return this.jobList?.find((job) => job.id === jobId) ||
             this.jobListPOD?.find((job) => job.id === jobId) ||
             this.jobListReprice?.find((job) => job.id === jobId);
-
-        return foundJob;
     }
 
     private updateCurrentSelection(jobNo: string): void {
