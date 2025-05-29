@@ -16,7 +16,7 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
     private const decimal ExtraStopFuel = 0m;
     private const int MaxAddressLength = 150;
 
-    public async Task AddStopInsertJobAsync(AddStopRequest request)
+    public async Task<int> AddStopInsertJobAsync(AddStopRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -145,6 +145,8 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
 
         // Save changes to a database
         await repository.SaveChangesAsync();
+
+        return newStopJob.UcjbId;
     }
 
     private static string GetSafeAddress(string address, string defaultAddress)

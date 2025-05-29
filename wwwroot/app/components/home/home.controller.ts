@@ -244,10 +244,9 @@ class HomeController extends BaseController {
                 angular.element('.column-sortable').removeClass('ui-sortable-active');
 
                 // Update box metrics and save layout
-                this.registerTimeout(() => {
                     this.updateBoxMetrics();
                     this.saveCurrentLayout();
-                }, 100);
+                this.registerTimeout(() => this.$scope.$apply());
             }
         };
 
@@ -576,13 +575,13 @@ class HomeController extends BaseController {
         this.layout = angular.copy(layout.layout);
 
         // Apply dimensions on next digest cycle
-        this.registerTimeout(() => {
             this.applyLayoutDimensions();
 
             if (Modernizr.localstorage) {
                 localStorage.setItem(`lastActiveLayout-${ContactID}`, layout.name);
             }
-        });
+
+        this.registerTimeout(() => this.$scope.$apply());
     }
 
     saveLayout() {
@@ -1638,9 +1637,8 @@ class HomeController extends BaseController {
 
     async selectCourier(courier: CourierData) {
         try {
-            await this.registerTimeout(() => {
                 this.currentListLoading = true;
-            });
+            this.registerTimeout(() => this.$scope.$apply());
 
             if (!courier || !courier.courierId) return;
             const foundCourier = await this.DispatchData.getCourierById(courier.courierId);
@@ -1669,9 +1667,8 @@ class HomeController extends BaseController {
             console.error("Error selecting courier:", error);
             this.toastrService.showErrorToast("Error loading courier information");
         } finally {
-            await this.registerTimeout(() => {
                 this.currentListLoading = false;
-            });
+            this.registerTimeout(() => this.$scope.$apply());
         }
     }
 
@@ -1938,7 +1935,6 @@ class HomeController extends BaseController {
     }
 
     focusDispatchField(jobId: number) {
-        this.registerTimeout(() => {
             const inputField = angular.element(`#input_${jobId}`);
             if (inputField.length) {
                 const inputElement = inputField.find('input');
@@ -1952,7 +1948,8 @@ class HomeController extends BaseController {
                     }
                 }
             }
-        }, 100);
+
+        this.registerTimeout(() => this.$scope.$apply());
     }
 
     async showJobContextMenu($event: MouseEvent, job: IDispatchJob) {

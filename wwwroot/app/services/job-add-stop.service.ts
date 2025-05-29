@@ -23,7 +23,7 @@ class JobAddStopService implements angular.IServiceProvider {
         return this;
     }
 
-    async addNewStop(job: IDispatchJob, $event?: MouseEvent): Promise<void> {
+    async addNewStop(job: IDispatchJob, $event?: MouseEvent): Promise<number | undefined> {
         const lastChar = this.getJobSuffix(job.jobNo);
 
         switch (lastChar) {
@@ -41,7 +41,7 @@ class JobAddStopService implements angular.IServiceProvider {
         return jobNo.toString().slice(-1);
     }
 
-    private async addPickUpStop(job: IDispatchJob, $event?: MouseEvent) {
+    private async addPickUpStop(job: IDispatchJob, $event?: MouseEvent): Promise<number | undefined> {
         if(!job.pickupAddress || !job.deliveryAddress) return;
 
         const newAddress = this.generateBlankAddress();
@@ -49,10 +49,10 @@ class JobAddStopService implements angular.IServiceProvider {
             $event, "Add Pick Up Stop", "Add Stop", true);
         if(!newPickUpAddress) return;
 
-        await this.DispatchData.addStopToJob(job.id, newPickUpAddress, undefined);
+       return await this.DispatchData.addStopToJob(job.id, newPickUpAddress, undefined);
     }
 
-    private async addDeliveryStop(job: IDispatchJob, $event?: MouseEvent) {
+    private async addDeliveryStop(job: IDispatchJob, $event?: MouseEvent): Promise<number| undefined> {
         if(!job.pickupAddress || !job.deliveryAddress) return;
 
         const newAddress = this.generateBlankAddress();
@@ -60,7 +60,7 @@ class JobAddStopService implements angular.IServiceProvider {
             $event, "Add Delivery Stop", "Add Stop", true);
         if(!newDeliveryAddress) return;
 
-        await this.DispatchData.addStopToJob(job.id, undefined, newDeliveryAddress);
+       return await this.DispatchData.addStopToJob(job.id, undefined, newDeliveryAddress);
     }
 
     private generateBlankAddress(): AddressViewModel {
