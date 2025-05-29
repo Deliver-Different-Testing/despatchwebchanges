@@ -159,6 +159,16 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 }
             }
 
+            var note = new TucNote
+            {
+                JobId = jobId,
+                NoteTypeId = (int)NoteType.FlightUpdate,
+                NoteText = $"Flight {flights.FlightSegments[0]?.FlightNumber} added to job {jobId}",
+                CreatedBy = _infoService.GetStaffId(),
+                CreatedDate = currentTime
+            };
+
+            await Context.AddAsync(note);
             await Context.SaveChangesAsync();
         }
         catch (Exception e)
@@ -176,59 +186,6 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .Where(tz => tz.Name == timeZoneName)
             .Select(tz => tz.Id)
             .FirstOrDefaultAsync();
-    }
-
-    public async Task<string> GetAirportTimezoneAsync(int airportId)
-    {
-        try
-        {
-            var airport = await Context.TblAirports
-                .Where(a => a.AirportId == airportId)
-                .Select(a => new
-                {
-                    a.Timezone,
-                    a.AirportCode,
-                    a.Name
-                })
-                .AsNoTracking()
-                .FirstOrDefaultAsync();
-
-            if (airport == null)
-            {
-                Log.Warning("Airport with ID {AirportId} not found", airportId);
-                return null;
-            }
-
-            if (string.IsNullOrEmpty(airport.Timezone))
-            {
-                // Try to get timezone from TimeZones table based on airport details
-                var timeZone = await Context.TimeZones
-                    .Where(tz => tz.Code == airport.Timezone)
-                    .Select(tz => tz.Name)
-                    .FirstOrDefaultAsync();
-
-                if (!string.IsNullOrEmpty(timeZone))
-                {
-                    Log.Information("Found timezone {TimeZone} for airport {AirportCode} in TimeZones table",
-                        timeZone, airport.AirportCode);
-                    return timeZone;
-                }
-
-                Log.Warning("No timezone found for airport {AirportName} ({AirportCode}), ID: {AirportId}",
-                    airport.Name, airport.AirportCode, airportId);
-                return null;
-            }
-
-            Log.Information("Retrieved timezone {Timezone} for airport {AirportName} ({AirportCode}), ID: {AirportId}",
-                airport.Timezone, airport.Name, airport.AirportCode, airportId);
-
-            return airport.Timezone;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error retrieving timezone for airport {AirportId}", airportId);
-            return null;
-        }
     }
 
     public async Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId)
@@ -348,10 +305,20 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             job.UcjbDispDate = currentDate;
             job.UcjbDispTime = currentDate;
 
-            await Context.SaveChangesAsync();
 
             var agentName = Context.TucAgents.Where(a => a.UcagId == agentId).Select(a => a.UcagName).FirstOrDefault();
-            await SaveNoteAsync(jobId, $"Agent {agentName} assigned");
+
+            var note = new TucNote
+            {
+                JobId = jobId,
+                NoteTypeId = (int)NoteType.AgentUpdate,
+                NoteText = $"Agent {agentName} assigned",
+                CreatedBy = _infoService.GetStaffId(),
+                CreatedDate = currentDate
+            };
+
+            await Context.AddAsync(note);
+            await Context.SaveChangesAsync();
 
             return true;
         }
@@ -649,10 +616,17 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         // Remove read record
         if (job.TucJobReadTracker != null) Context.TucJobReadTrackers.Remove(job.TucJobReadTracker);
 
-        await Context.SaveChangesAsync();
+        var note = new TucNote
+        {
+            JobId = jobId,
+            NoteTypeId = (int)NoteType.FlightUpdate,
+            NoteText = "Job restored",
+            CreatedBy = _infoService.GetStaffId(),
+            CreatedDate = _infoService.GetCurrentTenantTime()
+        };
 
-        // Make a note
-        await SaveNoteAsync(jobId, "Job restored");
+        await Context.AddAsync(note);
+        await Context.SaveChangesAsync();
     }
 
     public async Task<List<Suggestion>> GetAllAgentOptionsBySearchAsync(string searchTerm)

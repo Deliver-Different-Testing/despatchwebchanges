@@ -207,19 +207,6 @@ public class NationwideJobController(
                 }
             }
 
-            // Get airport codes
-            string departureAirportCode;
-            try
-            {
-                var (_, depCode) = await repository.GetAirportCodesByJobIdAsync(request.JobId);
-                departureAirportCode = depCode;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error retrieving airport codes for JobId: {JobId}", request.JobId);
-                return StatusCode(500, "Unable to retrieve airport information");
-            }
-
             // Create webhook
             var webhookIds = new List<string>();
             try
@@ -245,7 +232,7 @@ public class NationwideJobController(
                 return StatusCode(500, ex.Message);
             }
 
-            // Add job
+            // Add a job
             try
             {
                 await repository.AddJobNationwideAsync(request.JobId, flight, webhookIds);
