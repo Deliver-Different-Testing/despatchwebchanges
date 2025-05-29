@@ -193,7 +193,7 @@ class JobDetailController extends BaseController {
                 // Set the selected related job to the current job group
                 this.selectedRelatedJob = targetJobGroup;
 
-                // Important: Reset subjob index but don't auto-load a subjob
+                // Important: Reset subjob index but don't autoload a subjob
                 this.selectedSubJobIndex = -1;
             } else {
                 console.log(
@@ -218,32 +218,14 @@ class JobDetailController extends BaseController {
 
             this.initializeJobData();
 
-            if (this.job && this.job.relatedJobs && this.job.relatedJobs.length > 0) {
-                this.jobGroups = sortRelatedJobs(this.job.relatedJobs);
-
-                const currentJobIndex = this.jobGroups.findIndex(
-                    (relatedJob) => relatedJob.job.id === jobId
-                );
-
-                if (currentJobIndex !== -1) {
-                    console.log(
-                        `[JobDetailController] Setting selectedTabIndex to ${currentJobIndex}`
-                    );
-                    this.selectedTabIndex = currentJobIndex;
-
-                    // Initialize the selected related job
-                    this.selectedRelatedJob = this.jobGroups[currentJobIndex];
-
-                    // Don't auto-select a subjob, set to -1 to indicate no subjob is selected
-                    this.selectedSubJobIndex = -1;
-                }
+            if (this.job?.relatedJobs?.length > 0) {
+                this.setupRelatedJobs(jobId);
             } else {
-                // Clear subJob data when loading a job without related jobs
                 this.selectedRelatedJob = undefined;
                 this.selectedSubJobIndex = -1;
+                this.selectedTabIndex = 0;
+                this.jobGroups = [];
             }
-
-            this.isLoading = false;
 
             this.triggerDigestCycle();
 
@@ -253,8 +235,52 @@ class JobDetailController extends BaseController {
         } catch (error) {
             console.error("Error loading job data:", error);
             this.toastrService.showErrorToast("Failed to load job details");
+        } finally {
             this.isLoading = false;
         }
+    }
+
+    private setupRelatedJobs(jobId: number) {
+        if(!this.job) return;
+
+        this.jobGroups = sortRelatedJobs(this.job.relatedJobs);
+        const { tabIndex, subJobIndex } = this.findJobInGroups(jobId);
+
+        if (tabIndex !== -1) {
+            console.log(`[JobDetailController] Setting selectedTabIndex to ${tabIndex}, subJobIndex to ${subJobIndex}`);
+            this.selectedTabIndex = tabIndex;
+            this.selectedRelatedJob = this.jobGroups[tabIndex];
+            this.selectedSubJobIndex = subJobIndex;
+
+            if (subJobIndex !== -1) {
+                console.log(`[JobDetailController] Current job is a subjob at index ${subJobIndex}`);
+            }
+        } else {
+            this.selectedTabIndex = 0;
+            this.selectedRelatedJob = this.jobGroups[0];
+            this.selectedSubJobIndex = -1;
+        }
+    }
+
+    private findJobInGroups(jobId: number): { tabIndex: number, subJobIndex: number } {
+        const currentJobIndex = this.jobGroups.findIndex(
+            (relatedJob) => relatedJob.job.id === jobId
+        );
+
+        if (currentJobIndex !== -1) {
+            return { tabIndex: currentJobIndex, subJobIndex: -1 };
+        }
+
+        for (let i = 0; i < this.jobGroups.length; i++) {
+            const subJobIndex = this.jobGroups[i].subJobs.findIndex(
+                (subJob) => subJob.id === jobId
+            );
+            if (subJobIndex !== -1) {
+                return { tabIndex: i, subJobIndex };
+            }
+        }
+
+        return { tabIndex: -1, subJobIndex: -1 };
     }
 
     getConnectionTime(firstSegment: any, secondSegment: any): string {
@@ -1865,40 +1891,34 @@ class JobDetailController extends BaseController {
     }
 
     async loadSubJobData(relatedJobIndex: number) {
-        // Set the selected related job based on the index
         this.selectedRelatedJob = this.jobGroups[relatedJobIndex];
 
-        // Reset the selected subjob index
         this.selectedSubJobIndex = 0;
 
-        // If there are subjobs, load the first one by default
         if (
             this.selectedRelatedJob &&
             this.selectedRelatedJob.subJobs &&
             this.selectedRelatedJob.subJobs.length > 0
         ) {
-            // Load the first subjob details
             await this.loadSubJobDetails(0);
         }
     }
 
     async switchToSubJob(subJobIndex: number) {
-        if (subJobIndex === this.selectedSubJobIndex) {
-            return;
-        }
+        if (subJobIndex === this.selectedSubJobIndex) return;
 
-        // Set the selected subjob index
         this.selectedSubJobIndex = subJobIndex;
 
-        // Load the selected subjob details
         await this.loadSubJobDetails(subJobIndex);
+        this.triggerDigestCycle();
     }
 
     private async loadSubJobDetails(subJobIndex: number) {
         if (
             !this.selectedRelatedJob ||
             !this.selectedRelatedJob.subJobs ||
-            subJobIndex >= this.selectedRelatedJob.subJobs.length
+            subJobIndex >= this.selectedRelatedJob.subJobs.length ||
+            subJobIndex < 0
         ) {
             console.warn(
                 "[JobDetailController] Invalid subjob index or no subjobs available"
@@ -1917,19 +1937,27 @@ class JobDetailController extends BaseController {
             // Load the subjob details from the server
             const jobDetails = await this.DispatchData.getJobDetail(subJob.id);
 
-            // Update the job with the subjob details while preserving the related jobs data
-            const relatedJobs = this.job?.relatedJobs;
+            // Preserve the original related jobs data
+            const originalRelatedJobs = this.job?.relatedJobs;
+            const originalJobGroups = this.jobGroups;
+            const originalSelectedRelatedJob = this.selectedRelatedJob;
+            const originalSelectedTabIndex = this.selectedTabIndex;
+
+            // Update the job with the subjob details
             this.job = jobDetails;
 
-            // Keep the related jobs data
-            if (relatedJobs) {
-                this.job.relatedJobs = relatedJobs;
+            // Restore the preserved data
+            if (originalRelatedJobs) {
+                this.job.relatedJobs = originalRelatedJobs;
+                this.jobGroups = originalJobGroups;
+                this.selectedRelatedJob = originalSelectedRelatedJob;
+                this.selectedTabIndex = originalSelectedTabIndex;
             }
 
             this.initializeJobData();
 
+            // Broadcast the subjob change
             this.$rootScope.$broadcast("subJobChanged", this.job);
-            this.triggerDigestCycle();
 
             console.log(
                 `[JobDetailController] Successfully loaded subjob: ${subJob.id}`
@@ -1942,6 +1970,7 @@ class JobDetailController extends BaseController {
             this.toastrService.showErrorToast("Failed to load subjob details");
         } finally {
             this.isLoading = false;
+            this.triggerDigestCycle();
         }
     }
 }

@@ -1024,9 +1024,6 @@ class NationwideControl extends BaseController {
         // Refresh tasks
         await this.loadTasks();
 
-        // Pass job to updateUIState
-        this.updateUIState(job);
-
         // Show flight table
         if (isFlightJob(job)) {
             console.log('[NationwideController] Getting nearby airports');
@@ -1165,7 +1162,6 @@ class NationwideControl extends BaseController {
         // Clear existing agents while loading new ones
         this.agentOptions = [];
         this.agentMessage = undefined;
-
         this.agentsLoading = true;
 
         try {
@@ -1177,18 +1173,13 @@ class NationwideControl extends BaseController {
                 (this.agentOptions.length === 0 ? "No agents available for this job" : undefined);
 
             console.log("Agent options loaded:", this.agentOptions.length);
-            this.agentsLoading = false;
-            this.updateUIState(job);
-
-            this.registerTimeout(() => this.$scope.$apply());
         } catch (error) {
             console.error("Error fetching agents:", error);
             this.agentMessage = "An error occurred while loading agents. Please try again.";
             this.agentOptions = [];
-
+        } finally {
             this.agentsLoading = false;
             this.updateUIState(job);
-
             this.registerTimeout(() => this.$scope.$apply());
         }
     }
@@ -1220,17 +1211,16 @@ class NationwideControl extends BaseController {
                 departureDate = now;
             }
 
-            // Filters
             const airlineId = this.selected?.airline?.id;
             const departureAirportId = this.selectedAirport?.id;
-            const minimumLayoverMinutes = 60; // Set minimum layover minutes
+            const minimumLayoverMinutes = 60;
 
             console.log('Loading flights with params:', {
                 jobId: this.currentJob.id,
                 departureDate: departureDate,
                 airlineId: airlineId,
                 departureAirportId: departureAirportId,
-                minimumLayoverMinutes: minimumLayoverMinutes // Add minimum layover parameter
+                minimumLayoverMinutes: minimumLayoverMinutes
             });
 
             this.flightListPromise = this.nationwideService.getFlightOptions(
@@ -1238,7 +1228,7 @@ class NationwideControl extends BaseController {
                 departureDate.toDate(),
                 airlineId,
                 departureAirportId,
-                minimumLayoverMinutes // Pass minimum layover minutes
+                minimumLayoverMinutes
             );
 
             const result = await this.flightListPromise;
@@ -1249,30 +1239,21 @@ class NationwideControl extends BaseController {
             this.lastDepartureTime = result.lastDepartureTime;
 
             console.log(`Loaded ${this.flightOptions?.length} flights`);
-            this.flightsLoading = false;
-            this.updateUIState(this.currentJob);
-
-            await this.$scope.$applyAsync()
         } catch (error) {
             console.error("Error loading flights:", error);
-
             this.flightMessage = "An error occurred while loading flights. Please try again.";
             this.flightOptions = [];
-
+        } finally {
             this.flightsLoading = false;
             this.updateUIState(this.currentJob);
-
-            await this.$scope.$applyAsync()
+            await this.$scope.$applyAsync();
         }
     }
 
     resetAirportSelection() {
         this.selectedAirport = undefined;
-
-        // Only trigger reload if we have a current job
-        if (this.currentJob) {
-            return this.onAirportSelectionChanged();
-        }
+        if (!this.currentJob) return;
+        return this.onAirportSelectionChanged();
     }
 
     async loadNextDayFlights() {
@@ -1330,20 +1311,17 @@ class NationwideControl extends BaseController {
 
             await this.getJobList(Array.from(listsToRefresh));
 
-            let updatedJob = this.jobListPOD?.find(j => j.id === job.id);
+            const updatedJob = this.jobListPOD?.find(j => j.id === job.id);
 
             if (updatedJob) {
                 await this.selectJob(updatedJob);
             }
 
-            this.isDataLoading = false;
-            this.registerTimeout(() => this.$scope.$apply());
-
             const successMessage = `Successfully assigned flight ${flight.flightNumber} to job ${job.jobNo}`;
             this.toastrService.showSuccessToast(successMessage);
         } catch (error) {
             this.handleError(error);
-
+        } finally {
             this.isDataLoading = false;
             this.registerTimeout(() => this.$scope.$apply());
         }
