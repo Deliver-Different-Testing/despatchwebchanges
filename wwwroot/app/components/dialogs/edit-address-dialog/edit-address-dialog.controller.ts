@@ -59,7 +59,7 @@ class EditAddressDialogController extends BaseController {
         public showContactInfo: boolean,
     ) {
         super();
-        this.initServices($timeout, $interval);
+        this.initServices($timeout, $interval, this.$scope);
 
         this.useUsFormat = appConfig.US_Customer;
         this.addressSearchText = this.addressDetails.fullAddress || "";

@@ -34,6 +34,7 @@ import dayjs from "dayjs";
 
 class JobDetailController extends BaseController {
     static $inject = [
+        "$scope",
         "$mdDialog",
         "toastrService",
         "DispatchData",
@@ -70,8 +71,10 @@ class JobDetailController extends BaseController {
     jobGroups: JobGroup[] = [];
     selectedRelatedJob?: JobGroup;
     selectedSubJobIndex: number = 0;
+    jobAddressIcon: string = "pin_drop";
 
     constructor(
+        private $scope: angular.IScope,
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
@@ -135,6 +138,8 @@ class JobDetailController extends BaseController {
         if (this.jobId) {
             return this.loadJobData(this.jobId);
         }
+
+        this.registerTimeout(() => this.$scope.$apply());
     }
 
     $onChanges(changes: angular.IOnChangesObject) {
@@ -379,6 +384,8 @@ class JobDetailController extends BaseController {
 
         console.log("Initializing job data:", this.job.id);
 
+        this.jobAddressIcon = this.job?.assignedFlight ? "flight_takeoff" : "pin_drop";
+
         if (typeof this.job.daysOfWeek === "number" && this.job.daysOfWeek > 0) {
             console.log("Original daysOfWeek bitmap value:", this.job.daysOfWeek);
 
@@ -416,12 +423,6 @@ class JobDetailController extends BaseController {
             this.job.frequency = Number(this.job.frequency);
             console.log("Set frequency to:", this.job.frequency);
         }
-    }
-
-    getJobAddressIcon() {
-        const icon = this.job?.assignedFlight ? "flight_takeoff" : "pin_drop";
-        console.log(`[getJobAddressIcon] Icon selected: ${icon}`);
-        return icon || "pin_drop";
     }
 
     async showAutocompleteDialog(

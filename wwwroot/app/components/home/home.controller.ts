@@ -70,13 +70,31 @@ class HomeController extends BaseController {
         'truckCourierStatusDialogService',
     ];
 
+    // Debounce methods
+    private debouncedGetData!: () => void;
+    private debouncedSaveLayout!: () => void;
+    private debouncedApplyDimensions!: () => void;
+    private debouncedFetchDriverLocations!: () => void;
+    private debouncedApplyJobCutoffDate!: () => void;
+    private debouncedGetJobList!: () => void;
+    private debouncedLoadSupports!: (filterType: string) => void;
+    private debouncedUpdateViews !: () => void;
+
     private readonly DOM_SELECTORS = {
         areaGroup: "#area-group .btn",
         driverLocations: "#driverLocations .listActive"
     } as const;
 
     private refreshInterval?: angular.IPromise<any>;
+    virtualScrollConfig = {
+        itemHeight: 48, // Height of each row
+        containerHeight: 400, // Height of the scrollable container
+        buffer: 10 // Number of items to render outside visible area
+    };
 
+    showDriverLocationsNoData: boolean = false;
+    showDriverLocationsData: boolean = false;
+    greeting: string;
     mapJobList: IDispatchJob[] = []
     initialViewSet: any;
     currentJob?: IDispatchJob;
@@ -173,8 +191,9 @@ class HomeController extends BaseController {
     ) {
         super();
 
-        this.initServices($timeout, $interval);
+        this.initServices($timeout, $interval, this.$scope);
 
+        this.greeting = greetUser(FirstName);
         this.timeZone = TimeZone;
         this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -182,18 +201,13 @@ class HomeController extends BaseController {
         this.initialViewSet = false;
         this.mapJobList = [];
 
-        $scope.$watch("selectedViews", (newViews) => {
-            if (newViews) {
-                this.initialViewSet = false;
-                this.updateMapForSelectedViews();
-            }
-        }, true);
+        this.watchProperty("selectedViews", () => this.debouncedUpdateViews());
 
-        this.registerEvent(this.$scope, 'jobChanged', (_, newJob: IDispatchJob) => {
+        this.watchEvent('jobChanged', (_, newJob: IDispatchJob) => {
             this.currentSelection = ` for Job ${newJob.jobNo}`;
         });
 
-        this.registerEvent(this.$scope, 'jobReadChanged', (_, data: IJobReadChanged) => {
+        this.watchEvent('jobReadChanged', (_, data: IJobReadChanged) => {
             this.markJobReadStatus(data.jobId, data.isRead);
         });
 
@@ -245,7 +259,7 @@ class HomeController extends BaseController {
 
                 // Update box metrics and save layout
                     this.updateBoxMetrics();
-                    this.saveCurrentLayout();
+                this.debouncedSaveLayout();
                 this.registerTimeout(() => this.$scope.$apply());
             }
         };
@@ -316,51 +330,16 @@ class HomeController extends BaseController {
                 showSearch: 0,
                 showRefresh: 0,
                 showDetailButtons: 1,
-            }, potentialCouriers: {
-                title: "Potential Couriers",
-                icon: "groups",
-                templateUrl: "app/components/home/partials/potentialCouriers.html",
-                showSearch: 1,
             }, currentWork: {
                 title: "Current Work",
                 icon: "local_shipping",
                 templateUrl: "app/components/home/partials/currentWork.html",
                 showSearch: 1,
                 showRefresh: 0,
-            }, couriersMoveThrough: {
-                title: "Couriers Movement Through List",
-                templateUrl: "app/components/home/partials/couriersMovementThroughList.html",
-                showSearch: 1,
-                showRefresh: 0,
-            }, courierMovePickedUp: {
-                title: "Couriers Movement Picked Up Run",
-                templateUrl: "app/components/home/partials/couriersMovementPickedUp.html",
-                showSearch: 1,
-                showRefresh: 0,
-            }, courierMoveClear: {
-                title: "Couriers Movement Clear List",
-                templateUrl: "app/components/home/partials/couriersMovementClearList.html",
-                showSearch: 1,
-                showRefresh: 0,
-            }, areaList: {
-                title: "Area List",
-                templateUrl: "app/components/home/partials/areaList.html",
-                showSearch: 0,
-                showRefresh: 0,
-            }, jobUpdates: {
-                title: "Job Updates",
-                templateUrl: "app/components/home/partials/jobUpdates.html",
-                showSearch: 0,
-                showRefresh: 0,
             }, supports: {
                 title: "Tasks",
                 icon: "support",
                 templateUrl: "app/components/home/partials/supports.html",
-                showSearch: 0,
-                showRefresh: 0,
-            }, lateCalls: {
-                title: "Late Calls",
-                templateUrl: "app/components/home/partials/lateCalls.html",
                 showSearch: 0,
                 showRefresh: 0,
             }, map: {
@@ -402,6 +381,8 @@ class HomeController extends BaseController {
         }, {
             id: "3", label: "Trucks",
         },];
+
+        this.setupDebouncedMethods();
     }
 
     $onInit() {
@@ -434,7 +415,7 @@ class HomeController extends BaseController {
             }
         });
 
-        this.refreshInterval = this.$interval(async () => {
+        /*this.refreshInterval = this.$interval(async () => {
             console.log("[HomeRefresh] - Refreshing tasks and job list");
 
             // Store current state before refresh
@@ -443,11 +424,11 @@ class HomeController extends BaseController {
 
             // Refresh job list
             await this.refreshJobList(currentJobId, currentCourierId);
-        }, 60000);
+        }, 60000);*/
 
         // Set up a watch to apply dimensions when the layout changes
         this.registerWatch(this.$scope, () => this.layout, () => {
-            this.registerTimeout(() => this.applyLayoutDimensions());
+            this.debouncedApplyDimensions();
         }, true);
 
         // Ensure draggingItems container exists
@@ -461,12 +442,28 @@ class HomeController extends BaseController {
         this.currentListLoading = false;
 
         this.filteredSupports = this.supports;
+
+        this.setupVirtualScrollEvents();
     }
 
     $onDestroy() {
         if (this.refreshInterval) {
             this.$interval.cancel(this.refreshInterval);
         }
+    }
+
+    private setupDebouncedMethods(): void {
+        // Existing debounced methods
+        this.debouncedGetData = this.debounce(() => this.getData(), 300, 'getData');
+        this.debouncedSaveLayout = this.debounce(() => this.saveCurrentLayout(), 500, 'saveLayout');
+        this.debouncedApplyDimensions = this.debounce(() => this.applyLayoutDimensions(), 200, 'applyDimensions');
+        this.debouncedFetchDriverLocations = this.debounce(() => this.fetchDriverLocations(), 400, 'fetchDrivers');
+        this.debouncedApplyJobCutoffDate = this.debounce(() => this.applyJobCutoffDate(), 300, 'applyJobCutoff');
+        this.debouncedGetJobList = this.debounce(() => this.getJobList(), 250, 'getJobList');
+        this.debouncedLoadSupports = this.debounce((filterType: string) => this.loadSupports(filterType), 200, 'loadSupports');
+        this.debouncedUpdateViews = this.debounce(() => {
+            this.updateMapForSelectedViews();
+        }, 200, 'updateViews');
     }
 
     private updateBoxMetrics() {
@@ -556,7 +553,7 @@ class HomeController extends BaseController {
         }
 
         // Auto-save changes
-        this.$scope.$watch("layout", (newValue: { columns: IColumn[] }, oldValue: { columns: IColumn[] }) => {
+       this.registerWatch(this.$scope, "layout", (newValue: { columns: IColumn[] }, oldValue: { columns: IColumn[] }) => {
             if (newValue !== oldValue && this.currentLayoutName) {
                 const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
                 if (index !== -1) {
@@ -574,8 +571,7 @@ class HomeController extends BaseController {
         this.currentLayoutName = layout.name;
         this.layout = angular.copy(layout.layout);
 
-        // Apply dimensions on next digest cycle
-            this.applyLayoutDimensions();
+        this.debouncedApplyDimensions();
 
             if (Modernizr.localstorage) {
                 localStorage.setItem(`lastActiveLayout-${ContactID}`, layout.name);
@@ -672,10 +668,6 @@ class HomeController extends BaseController {
         this.$mdSidenav("right").toggle();
     }
 
-    greetUser() {
-        return greetUser(FirstName);
-    }
-
     async loadPageViews() {
         try {
             this.views = await this.DispatchData.getSelectedViews(ContactID, AppPages.Dispatch);
@@ -723,14 +715,11 @@ class HomeController extends BaseController {
             }
         }
 
-        // Save filtered views
         this.saveViewsToStorage(this.selectedViews);
-
-        // Update map bounds for new selection
         this.updateMapForSelectedViews();
 
-        // Run both promises in parallel with filtered views
-        await Promise.all([this.fetchDriverLocations(), this.getData()]);
+        this.debouncedFetchDriverLocations();
+        this.debouncedGetData();
     }
 
     updateMapForSelectedViews() {
@@ -1232,7 +1221,7 @@ class HomeController extends BaseController {
             this.toastrService.showSuccessToast("Jobs resent successfully");
             await this.getData();
 
-            const lastJobElement = activeJobElements[activeJobElements.length - 1];
+            const lastJobElement = (activeJobElements as any)[activeJobElements.length - 1];
             const lastJobId = parseInt(angular.element(lastJobElement).attr("data-jobid") || "0", 10);
             const lastJob = this.jobList.find((job) => job.id === lastJobId);
 
@@ -1939,7 +1928,7 @@ class HomeController extends BaseController {
             if (inputField.length) {
                 const inputElement = inputField.find('input');
                 if (inputElement.length) {
-                    const htmlInputElement = inputElement[0] as HTMLInputElement;
+                    const htmlInputElement = (inputElement as any)[0] as HTMLInputElement;
                     htmlInputElement.focus();
 
                     const job = this.jobList.find(j => j.id === jobId);
@@ -2064,6 +2053,10 @@ class HomeController extends BaseController {
                 if (!this.currentCourier) {
                     this.mapJobList = this.jobList;
                 }
+
+                this.registerTimeout(() => {
+                    this.refreshVirtualScroll();
+                });
             } else {
                 this.jobList = [];
 
@@ -2100,7 +2093,7 @@ class HomeController extends BaseController {
             this.endDate = newDate;
         }
 
-        await this.applyJobCutoffDate();
+        this.debouncedApplyJobCutoffDate();
     }
 
     async resetJobCutoffDate() {
@@ -2170,22 +2163,32 @@ class HomeController extends BaseController {
 
     async fetchDriverLocations() {
         this.driverLocationsLoading = true;
+        this.updateDriverLocationsDisplay();
 
         await this.getDriverLocationsData();
+
         this.driverLocationsLoading = false;
+        this.updateDriverLocationsDisplay();
     }
 
     async getDriverLocationsData() {
         try {
             const selectedViews = this.views.filter((view) => view.selected);
-            if (!selectedViews) return;
+
+            if (!selectedViews || selectedViews.length === 0) {
+                this.driverLocations = { areas: [] };
+                this.updateDriverLocationsDisplay();
+                return;
+            }
 
             this.driverLocations = await this.DispatchData.getDriverLocations(selectedViews);
+            this.updateDriverLocationsDisplay();
 
-            console.log("Driver Locations: ", this.driverLocations);
             await this.activateDrop();
         } catch (error: any) {
-            console.error("Error getting clear lists data:", error);
+            console.error("Error getting driver locations data:", error);
+            this.driverLocations = { areas: [] };
+            this.updateDriverLocationsDisplay();
         }
     }
 
@@ -2392,8 +2395,7 @@ class HomeController extends BaseController {
     async filterByStatus(statusGroup: string) {
         console.log('filterByStatus called with:', statusGroup);
         this.queryParams.order = statusGroup;
-
-        await this.getJobList();
+        this.debouncedGetJobList();
         console.log(`Jobs ordered by status group: ${statusGroup}`);
     }
 
@@ -2493,7 +2495,7 @@ class HomeController extends BaseController {
 
     async filterSupports(filterType: string): Promise<void> {
         this.supportsFilter = filterType;
-        await this.loadSupports(filterType);
+        this.debouncedLoadSupports(filterType);
     }
 
     getContextMenuOptions(job: IDispatchJob) {
@@ -2644,6 +2646,32 @@ class HomeController extends BaseController {
         }
 
         await this.getData();
+    }
+
+    setupVirtualScrollEvents() {
+        this.registerWatch(this.$scope, 'vsRepeatReinitialized', (event, startIndex, endIndex) => {
+            console.log(`Virtual scroll showing items ${startIndex} to ${endIndex}`);
+        });
+
+        this.registerWatch(this.$scope, 'ctrl.jobList.length', (newLength) => {
+            if (newLength !== undefined) {
+                this.$scope.$broadcast('vsRepeatTrigger');
+            }
+        });
+    }
+
+    refreshVirtualScroll() {
+        this.$scope.$broadcast('vsRepeatTrigger');
+    }
+
+    private updateDriverLocationsDisplay() {
+        this.showDriverLocationsNoData = !this.driverLocationsLoading &&
+            (!this.driverLocations || !this.driverLocations.areas || this.driverLocations.areas.length === 0);
+
+        this.showDriverLocationsData = (!this.driverLocationsLoading &&
+            this.driverLocations &&
+            this.driverLocations.areas &&
+            this.driverLocations.areas.length > 0) ?? false;
     }
 }
 

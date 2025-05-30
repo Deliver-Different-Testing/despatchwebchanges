@@ -4,10 +4,25 @@
         class="md-primary">
 </md-progress-linear>
 
+<no-data
+        ng-if="ctrl.showDriverLocationsNoData"
+        title="No Driver Locations"
+        message="Please configure driver locations in Admin Manager to continue."
+        icon="person_pin_circle"
+        show-action="false">
+</no-data>
+
+<!--<div style="background: yellow; padding: 10px; margin: 5px;" ng-if="true">
+    <strong>Debug Info:</strong><br>
+    Loading: {{ctrl.driverLocationsLoading}}<br>
+    driverLocations exists: {{!!ctrl.driverLocations}}<br>
+    areas exists: {{!!ctrl.driverLocations.areas}}<br>
+    areas length: {{ctrl.driverLocations.areas ? ctrl.driverLocations.areas.length : 'N/A'}}
+</div>-->
+
 <div class="basic-box-scroll">
-    <div id="driverLocations"
-         ng-if="!ctrl.driverLocationsLoading && ctrl.driverLocations && ctrl.driverLocations.areas.length > 0">
-        <div class="container-fluid">
+    <div id="driverLocations" ng-if="ctrl.showDriverLocationsData">
+    <div class="container-fluid">
             <div class="row">
                 <div class="col-xs-3" ng-repeat="area in ctrl.driverLocations.areas">
                     <div class="driverLocations-list" ng-style="{ 'height': area.percentHeight + '%' }">
@@ -72,11 +87,3 @@
         </div>
     </div>
 </div>
-
-<no-data
-        ng-if="!ctrl.driverLocations || ctrl.driverLocations.areas.length === 0"
-        title="No Driver Locations"
-        message="Please configure driver locations in Admin Manager to continue."
-        icon="person_pin_circle"
-        show-action="false">
-</no-data>

@@ -1,6 +1,5 @@
 import {IDispatchJob, IJob} from "../../../interfaces/job.interface";
 import AddEventDialogController from "./add-event-dialog.controller";
-import {bindAllMethods} from "../../../functions/bindAllMethods";
 
 class AddEventDialogService implements angular.IServiceProvider {
     static $inject = [
@@ -13,7 +12,6 @@ class AddEventDialogService implements angular.IServiceProvider {
         private $document: angular.IDocumentService,
     ) {
         console.log('EditAddressDialogService: Service instantiated');
-        bindAllMethods(this);
     }
 
     $get() {

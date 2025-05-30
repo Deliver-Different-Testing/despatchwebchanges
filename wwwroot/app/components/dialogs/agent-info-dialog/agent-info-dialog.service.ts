@@ -1,4 +1,3 @@
-import {bindAllMethods} from "../../../functions/bindAllMethods";
 import AgentInfoDialogController from "./agent-info-dialog.controller";
 import NationwideService from "../../Nationwide/nationwide.service";
 
@@ -15,7 +14,6 @@ class AgentInfoDialogService implements angular.IServiceProvider {
         private nationwideService: NationwideService,
     ) {
         console.log('AgentInfoDialogService: Service instantiated');
-        bindAllMethods(this);
     }
 
     $get() {

@@ -14,19 +14,22 @@ class MaterialSidenavComponentController extends BaseController {
     ];
 
     readonly isUsCustomer: boolean;
+    readonly userName?: string;
+    readonly companyName: string = "DFRNT";
+    readonly currentYear: number;
+    readonly currentDate: string;
+
     navState = {
         isOpen: false,
         isAnimating: false
     };
-    userName?: string;
-    companyName: string = "DFRNT";
-    currentYear: number;
-    currentDate: string;
 
     private timeoutId: angular.IPromise<void> | null = null;
     private readonly HOVER_DELAY = 300;
     private readonly ANIMATION_DURATION = 200;
     private sidenav?: JQuery;
+    private sidenavService?: angular.material.ISidenavObject;
+    private readonly debouncedToggle: (shouldOpen: boolean) => void;
 
     constructor(
         private $state: angular.ui.IStateService,
@@ -37,48 +40,42 @@ class MaterialSidenavComponentController extends BaseController {
         appConfig: AppConfig
     ) {
         super();
-        this.initServices($timeout, $interval);
+        this.initServices($timeout, $interval, this.$scope);
 
         this.isUsCustomer = appConfig.US_Customer;
         this.userName = FirstName;
         this.currentYear = dayjs().year();
 
-        // Format the date
         const locale = appConfig.US_Customer ? 'en' : 'en-nz';
         this.currentDate = dayjs().locale(locale).format('dddd, MMMM D, YYYY');
+
+        this.sidenavService = this.$mdSidenav("right");
+
+        this.debouncedToggle = this.debounce(this.toggleNav.bind(this), 50, 'navToggle');
     }
 
     $postLink(): void {
         this.sidenav = angular.element('md-sidenav');
 
-        this.sidenav.on("mouseenter", () => {
-            if (this.timeoutId) {
-                if (this.$timeoutService) {
-                    this.$timeoutService.cancel(this.timeoutId);
-                }
+        const handleMouseEnter = () => {
+            this.cancelPendingTimeout();
+            this.debouncedToggle(true);
+        };
 
-                this.timeoutId = null;
-            }
-
-            this.toggleNav(true);
-        });
-
-        this.sidenav.on("mouseleave", () => {
-            if (this.timeoutId) {
-                if (this.$timeoutService) {
-                    this.$timeoutService.cancel(this.timeoutId);
-                }
-            }
-
+        const handleMouseLeave = () => {
+            this.cancelPendingTimeout();
             this.timeoutId = this.registerTimeout(() => {
-                this.toggleNav(false);
+                this.debouncedToggle(false);
             }, this.HOVER_DELAY) as angular.IPromise<void>;
-        });
+        };
+
+        this.sidenav.on("mouseenter", handleMouseEnter);
+        this.sidenav.on("mouseleave", handleMouseLeave);
 
         this.eventDeregistrations.push(() => {
             if (this.sidenav) {
-                this.sidenav.off("mouseenter");
-                this.sidenav.off("mouseleave");
+                this.sidenav.off("mouseenter", handleMouseEnter);
+                this.sidenav.off("mouseleave", handleMouseLeave);
             }
         });
     }
@@ -87,30 +84,48 @@ class MaterialSidenavComponentController extends BaseController {
         return this.$state.current.name === stateName;
     }
 
+    private cancelPendingTimeout(): void {
+        if (this.timeoutId && this.$timeoutService) {
+            this.$timeoutService.cancel(this.timeoutId);
+            this.timeoutId = null;
+        }
+    }
+
     private toggleNav(shouldOpen: boolean): void {
-        if (this.navState.isAnimating) return;
-        if (shouldOpen === this.navState.isOpen) return;
+        if (this.navState.isAnimating || shouldOpen === this.navState.isOpen) {
+            return;
+        }
 
         this.navState.isAnimating = true;
 
-        this.$scope.$apply();
+        this.$scope.$evalAsync(() => {
+            if (!this.sidenavService) return;
 
-        const sideNav = this.$mdSidenav("right");
-        const action = shouldOpen ? sideNav.open() : sideNav.close();
+            const action = shouldOpen ?
+                this.sidenavService.open() :
+                this.sidenavService.close();
 
-        action.then(() => {
-            this.navState.isOpen = shouldOpen;
+            action
+                .then(() => {
+                    this.navState.isOpen = shouldOpen;
 
-            this.registerTimeout(() => this.$scope.$apply());
-
-            this.registerTimeout(() => {
-                this.navState.isAnimating = false;
-            }, this.ANIMATION_DURATION);
-        }).catch(() => {
-            this.navState.isAnimating = false;
-        }).finally(() => {
-            this.registerTimeout(() => this.$scope.$apply());
+                    this.registerTimeout(() => {
+                        this.navState.isAnimating = false;
+                        this.$scope.$evalAsync();
+                    }, this.ANIMATION_DURATION);
+                })
+                .catch((error) => {
+                    console.warn('Sidenav toggle failed:', error);
+                    this.navState.isAnimating = false;
+                    this.$scope.$evalAsync();
+                });
         });
+    }
+
+    $onDestroy(): void {
+        this.cancelPendingTimeout();
+        this.sidenavService = undefined;
+        super.$onDestroy();
     }
 }
 

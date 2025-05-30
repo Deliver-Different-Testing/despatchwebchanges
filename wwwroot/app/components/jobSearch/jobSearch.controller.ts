@@ -121,7 +121,7 @@ class JobSearchController extends BaseController {
     ) {
         super();
 
-        this.initServices($timeout, $interval);
+        this.initServices($timeout, $interval, this.$scope);
 
         this.isUsCustomer = appConfig.US_Customer;
         this.isAdmin = ClientInternal;
