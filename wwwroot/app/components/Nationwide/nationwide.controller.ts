@@ -66,11 +66,7 @@ class NationwideControl extends BaseController {
     public readonly nationwidePageId: number = AppPages.Domestic;
     public readonly isUsCustomer: boolean = false;
 
-    virtualScrollConfig = {
-        itemHeight: 48, // Height of each row
-        containerHeight: 400, // Height of the scrollable container
-        buffer: 10 // Number of items to render outside visible area
-    };
+ greeting: string;
     isDataLoading: boolean = false;
     layouts: any[] = [];
     defaultLayout?: any;
@@ -193,6 +189,7 @@ class NationwideControl extends BaseController {
         super();
         this.initServices($timeout, $interval, this.$scope);
 
+        this.greeting = greetUser(FirstName);
         this.isUsCustomer = this.appConfig.US_Customer;
         this.timeZone = TimeZone;
         this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -492,8 +489,6 @@ class NationwideControl extends BaseController {
         } else {
             return this.loadPageViews();
         }
-
-        this.setupVirtualScrollEvents();
     }
 
     private updateBoxMetrics() {
@@ -533,20 +528,6 @@ class NationwideControl extends BaseController {
         }
     }
 
-    getJobStyle(assigned: boolean = false) {
-        const normal = {
-            "font-weight": "normal"
-        }, bold = {
-            "font-weight": "bold"
-        };
-
-        if (assigned) {
-            return bold;
-        } else {
-            return normal;
-        }
-    }
-
     initHereMaps() {
         this.configService.getHereMapsKey().then((response: string) => {
             this.hereCredentials = {
@@ -565,10 +546,6 @@ class NationwideControl extends BaseController {
 
     toggleSidenav() {
         this.$mdSidenav('right').toggle();
-    }
-
-    greetUser() {
-        return greetUser(FirstName);
     }
 
     async loadPageViews() {
@@ -2119,35 +2096,6 @@ class NationwideControl extends BaseController {
         } else {
             console.warn('No current job to display on map');
         }
-    }
-
-    setupVirtualScrollEvents() {
-        this.watchEvent('vsRepeatReinitialized', (event, startIndex, endIndex) => {
-            console.log(`Virtual scroll showing items ${startIndex} to ${endIndex}`);
-        });
-
-        // Trigger virtual scroll update when job lists change
-        this.watchProperty('ctrl.jobList.length', (newLength) => {
-            if (newLength !== undefined) {
-                this.$scope.$broadcast('vsRepeatTrigger');
-            }
-        });
-
-        this.watchProperty( 'ctrl.jobListPOD.length', (newLength) => {
-            if (newLength !== undefined) {
-                this.$scope.$broadcast('vsRepeatTrigger');
-            }
-        });
-
-        this.watchProperty('ctrl.jobListReprice.length', (newLength) => {
-            if (newLength !== undefined) {
-                this.$scope.$broadcast('vsRepeatTrigger');
-            }
-        });
-    }
-
-    refreshVirtualScroll() {
-        this.$scope.$broadcast('vsRepeatTrigger');
     }
 }
 

@@ -58,7 +58,7 @@
         </tr>
         </thead>
 
-        <tbody md-body vs-repeat="{size: 48, scrollMargin: 100}" vs-repeat-container=".table-scroll">
+        <tbody md-body>
         <tr md-row
             ng-repeat="job in ctrl.jobList | filter: box.searchBox track by job.id"
             ng-class="ctrl.jobClass(job)"
@@ -91,19 +91,19 @@
             </td>
             <td md-cell>
                     <span ng-if="!job.assignedAgent.agentName && (!job.toAirportId || !job.fromAirportId)"
-                          ng-style="ctrl.getJobStyle(job.courierData.courierID !== null)"
+                          ng-class="{'font-bold': job.courierData.courierID !== null}"
                           class="dispatch-field">
                         {{job.courier || "NA"}}
                     </span>
 
                 <span ng-if="!job.assignedAgent.agentName && job.toAirportId && job.fromAirportId"
-                      ng-style="ctrl.getJobStyle(job.assignedFlight.flightNumber !== null)"
+                      ng-class="{'font-bold': job.assignedFlight.flightNumber !== null}"
                       class="dispatch-field">
                         {{job.assignedFlight.flightNumber || "NA"}}
                     </span>
 
                 <span ng-if="job.assignedAgent.agentName"
-                      ng-style="ctrl.getJobStyle(job.assignedAgent.agentName !== null)"
+                      ng-class="{'font-bold': job.assignedAgent.agentName !== null}"
                       class="dispatch-field">
                         {{job.assignedAgent.agentName || "NA"}}
                     </span>

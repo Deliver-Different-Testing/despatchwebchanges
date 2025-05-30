@@ -30,7 +30,6 @@ import "angular-material-data-table";
 import "angular-hotkeys/build/hotkeys";
 import "angular-bootstrap-contextmenu/contextMenu";
 import "angular-heremaps/dist/angular-heremaps";
-import "angular-vs-repeat/dist/angular-vs-repeat";
 
 // Local libs
 import "../lib/ModernizerLocalStorage";
@@ -64,7 +63,6 @@ const app = angular.module("uDispatch", [
     "hereMapTracking.components",
     "fixed.table.header",
     "ngMaterialDatePicker",
-    "vs-repeat"
 ]);
 
 // Make the module available globally
