@@ -442,8 +442,6 @@ class HomeController extends BaseController {
         this.currentListLoading = false;
 
         this.filteredSupports = this.supports;
-
-        this.setupVirtualScrollEvents();
     }
 
     $onDestroy() {
@@ -1480,8 +1478,11 @@ class HomeController extends BaseController {
         });
 
         (angular.element(".droppable-row") as any).droppable({
-            classes: {"ui-droppable-hover": "active"}, drop: async (event: MouseEvent, ui: any) => {
-                await self.handleDroppedJob(self);
+            classes: {"ui-droppable-hover": "active"},
+            drop: async (event: MouseEvent, ui: any) => {
+                if (self.dispatchState.selectedJobs.size > 0 && event.target) {
+                    await self.handleDroppedJob(angular.element(event.target as Element));
+                }
             },
         });
     }
@@ -1516,13 +1517,25 @@ class HomeController extends BaseController {
     }
 
     async dispatchDroppedJob($element: any) {
-        const courierId = $element.attr("data-courier").replace(/[^\d.-]/g, "");
+        const courierId = parseInt($element.attr("data-courier").replace(/[^\d.-]/g, ""), 10);
+
+        // Validate courier ID
+        if (!courierId || isNaN(courierId)) {
+            console.warn("Invalid courier ID for dispatch");
+            return;
+        }
+
+        // Check if there are jobs selected for dispatch
+        if (this.dispatchState.selectedJobs.size === 0) {
+            console.warn("No jobs selected for dispatch");
+            return;
+        }
 
         try {
             await this.dispatchJobs(courierId);
             console.log("Dispatch complete");
             await this.fetchDriverLocations();
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error in drop handler:", error);
         }
     }
@@ -2053,10 +2066,6 @@ class HomeController extends BaseController {
                 if (!this.currentCourier) {
                     this.mapJobList = this.jobList;
                 }
-
-                this.registerTimeout(() => {
-                    this.refreshVirtualScroll();
-                });
             } else {
                 this.jobList = [];
 
@@ -2646,22 +2655,6 @@ class HomeController extends BaseController {
         }
 
         await this.getData();
-    }
-
-    setupVirtualScrollEvents() {
-        this.registerWatch(this.$scope, 'vsRepeatReinitialized', (event, startIndex, endIndex) => {
-            console.log(`Virtual scroll showing items ${startIndex} to ${endIndex}`);
-        });
-
-        this.registerWatch(this.$scope, 'ctrl.jobList.length', (newLength) => {
-            if (newLength !== undefined) {
-                this.$scope.$broadcast('vsRepeatTrigger');
-            }
-        });
-    }
-
-    refreshVirtualScroll() {
-        this.$scope.$broadcast('vsRepeatTrigger');
     }
 
     private updateDriverLocationsDisplay() {
