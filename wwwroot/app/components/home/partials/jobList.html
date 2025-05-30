@@ -62,14 +62,14 @@
         </tr>
         </thead>
 
-        <tbody md-body>
+        <tbody md-body vs-repeat="{size: 48, scrollMargin: 100}" vs-repeat-container=".table-scroll">
         <tr md-row
             md-dense
             context-menu="ctrl.getContextMenuOptions(job)"
             context-menu-on="contextmenu"
             context-menu-class="job-context-menu"
             ng-click="ctrl.selectJob(job)"
-            ng-repeat="job in ctrl.jobList">
+            ng-repeat="job in ctrl.jobList track by job.id">
 
             <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">{{job.time | momentFormat:"HH:mm"}}
                 ({{ctrl.timeZone | timezoneShort}})

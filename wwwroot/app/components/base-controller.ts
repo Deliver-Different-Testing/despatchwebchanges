@@ -1,20 +1,32 @@
-import {bindAllMethods} from "../functions/bindAllMethods";
-
 class BaseController implements angular.IController {
     protected eventDeregistrations: Array<() => void> = [];
     protected timeouts: Array<angular.IPromise<any>> = [];
     protected intervals: Array<angular.IPromise<any>> = [];
+    protected debounceTimeouts: { [key: string]: angular.IPromise<any> } = {};
 
     protected $timeoutService?: angular.ITimeoutService;
     protected $intervalService?: angular.IIntervalService;
+    protected $scopeService?: angular.IScope;
 
     constructor() {
-        bindAllMethods(this);
+        console.log('BaseController: Controller instantiated');
     }
 
-    protected initServices($timeout: angular.ITimeoutService, $interval: angular.IIntervalService): void {
+    protected initServices(
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
+        $scope: angular.IScope): void {
         this.$timeoutService = $timeout;
         this.$intervalService = $interval;
+        this.$scopeService = $scope;
+    }
+
+    protected watchEvent<T>(
+        eventName: string,
+        listener: (event: angular.IAngularEvent, ...args: T[]) => void
+    ): void {
+        if (this.$scopeService === undefined) throw new Error("Scope is undefined. Make sure you call initServices before using this method.");
+        return this.registerEvent(this.$scopeService, eventName, listener);
     }
 
     protected registerEvent<T>(
@@ -24,6 +36,15 @@ class BaseController implements angular.IController {
     ): void {
         const deregister = scope.$on(eventName, listener);
         this.eventDeregistrations.push(deregister);
+    }
+
+    protected watchProperty<T>(
+        property: string,
+        handler: (newVal: T, oldVal: T) => void,
+        deep: boolean = false
+    ) {
+        if (this.$scopeService === undefined) throw new Error("Scope is undefined. Make sure you call initServices before using this method.");
+        return this.registerWatch(this.$scopeService, property, handler, deep);
     }
 
     protected registerWatch(
@@ -56,7 +77,41 @@ class BaseController implements angular.IController {
         return timeoutPromise;
     }
 
+    protected debounce<T extends (...args: any[]) => any>(
+        func: T,
+        wait: number,
+        key?: string
+    ): (...args: Parameters<T>) => void {
+        if (!this.$timeoutService) {
+            throw new Error('$timeout service not initialized. Call initServices first.');
+        }
+
+        const timeoutKey = key || func.name || `debounce_${Math.random().toString(36).substring(2, 9)}`;
+
+        return (...args: Parameters<T>) => {
+            const existingTimeout = this.debounceTimeouts[timeoutKey];
+            if (existingTimeout) {
+                this.$timeoutService!.cancel(existingTimeout);
+            }
+
+            this.debounceTimeouts[timeoutKey] = this.$timeoutService!(
+                () => {
+                    func.apply(this, args);
+                    delete this.debounceTimeouts[timeoutKey];
+                },
+                wait
+            );
+        };
+    }
+
     $onDestroy(): void {
+        if (this.$timeoutService) {
+            Object.values(this.debounceTimeouts).forEach(timeout => {
+                this.$timeoutService!.cancel(timeout);
+            });
+        }
+        this.debounceTimeouts = {};
+
         // Cancel all timeouts
         if (this.$timeoutService) {
             const timeoutService = this.$timeoutService;

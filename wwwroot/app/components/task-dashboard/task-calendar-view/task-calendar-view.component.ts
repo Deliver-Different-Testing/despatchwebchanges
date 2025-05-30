@@ -57,7 +57,7 @@ class TaskCalendarViewController extends BaseController {
         $interval: angular.IIntervalService,
     ) {
         super();
-        this.initServices($timeout, $interval);
+        this.initServices($timeout, $interval, this.$scope);
 
         this.timezone = TimeZone;
 

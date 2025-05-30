@@ -66,6 +66,11 @@ class NationwideControl extends BaseController {
     public readonly nationwidePageId: number = AppPages.Domestic;
     public readonly isUsCustomer: boolean = false;
 
+    virtualScrollConfig = {
+        itemHeight: 48, // Height of each row
+        containerHeight: 400, // Height of the scrollable container
+        buffer: 10 // Number of items to render outside visible area
+    };
     isDataLoading: boolean = false;
     layouts: any[] = [];
     defaultLayout?: any;
@@ -186,13 +191,13 @@ class NationwideControl extends BaseController {
         private agentInfoDialogService: AgentInfoDialogService,
     ) {
         super();
-        this.initServices($timeout, $interval);
+        this.initServices($timeout, $interval, this.$scope);
 
         this.isUsCustomer = this.appConfig.US_Customer;
         this.timeZone = TimeZone;
         this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-        this.registerEvent(this.$scope, "angular-resizable.resizeEnd", (_, args: {
+        this.watchEvent("angular-resizable.resizeEnd", (_, args: {
             id?: string,
             width: number,
             height: number
@@ -208,11 +213,11 @@ class NationwideControl extends BaseController {
             }
         });
 
-        this.registerEvent<IJobReadChanged>(this.$scope, 'jobReadChanged', (_, data) => {
+        this.watchEvent<IJobReadChanged>('jobReadChanged', (_, data) => {
             this.markJobReadStatus(data.jobId, data.isRead);
         });
 
-        this.registerEvent<IDispatchJob>(this.$scope, 'jobChanged', (_, newJob) => {
+        this.watchEvent<IDispatchJob>('jobChanged', (_, newJob) => {
             if (this.currentJobId === newJob.id) {
                 console.log(`Job ${newJob.jobNo} is already the current job, skipping reload`);
                 return;
@@ -313,7 +318,7 @@ class NationwideControl extends BaseController {
         }
 
         // Auto-save changes
-        this.$scope.$watch("layout", (newValue: { columns: IColumn[] }, oldValue: { columns: IColumn[] }) => {
+       this.registerWatch(this.$scope, "layout", (newValue: { columns: IColumn[] }, oldValue: { columns: IColumn[] }) => {
             if (newValue !== oldValue && this.currentLayoutName) {
                 const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
                 if (index !== -1) {
@@ -487,6 +492,8 @@ class NationwideControl extends BaseController {
         } else {
             return this.loadPageViews();
         }
+
+        this.setupVirtualScrollEvents();
     }
 
     private updateBoxMetrics() {
@@ -2112,6 +2119,35 @@ class NationwideControl extends BaseController {
         } else {
             console.warn('No current job to display on map');
         }
+    }
+
+    setupVirtualScrollEvents() {
+        this.watchEvent('vsRepeatReinitialized', (event, startIndex, endIndex) => {
+            console.log(`Virtual scroll showing items ${startIndex} to ${endIndex}`);
+        });
+
+        // Trigger virtual scroll update when job lists change
+        this.watchProperty('ctrl.jobList.length', (newLength) => {
+            if (newLength !== undefined) {
+                this.$scope.$broadcast('vsRepeatTrigger');
+            }
+        });
+
+        this.watchProperty( 'ctrl.jobListPOD.length', (newLength) => {
+            if (newLength !== undefined) {
+                this.$scope.$broadcast('vsRepeatTrigger');
+            }
+        });
+
+        this.watchProperty('ctrl.jobListReprice.length', (newLength) => {
+            if (newLength !== undefined) {
+                this.$scope.$broadcast('vsRepeatTrigger');
+            }
+        });
+    }
+
+    refreshVirtualScroll() {
+        this.$scope.$broadcast('vsRepeatTrigger');
     }
 }
 

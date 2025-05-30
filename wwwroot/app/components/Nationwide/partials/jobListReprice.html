@@ -60,9 +60,9 @@
         </tr>
         </thead>
 
-        <tbody md-body>
+        <tbody md-body vs-repeat="{size: 48, scrollMargin: 100}" vs-repeat-container=".table-scroll">
         <tr md-row
-            ng-repeat="job in ctrl.jobListReprice | filter: box.searchBox"
+            ng-repeat="job in ctrl.jobListReprice | filter: box.searchBox track by job.id"
             ng-class="ctrl.jobClass(job)"
             context-menu="ctrl.getContextMenuOptions(job)"
             context-menu-on="contextmenu"

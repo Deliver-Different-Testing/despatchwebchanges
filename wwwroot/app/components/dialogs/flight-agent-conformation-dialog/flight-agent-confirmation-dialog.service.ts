@@ -2,7 +2,6 @@ import {IFlightViewModel} from "../../Nationwide/nationwide.interfaces";
 import {IDispatchJob, Suggestion} from "../../../interfaces/job.interface";
 import FlightAgentConformationDialogController from "./flight-agent-conformation-dialog.controller";
 import {FlightAgentConfirmationDialogResult} from "../../../interfaces/dialog-result.interfaces";
-import {bindAllMethods} from "../../../functions/bindAllMethods";
 import {IFlightAgentConfirmationDialogLocals} from "./flight-agent-conformation-dialog.interfaces";
 
 class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
@@ -18,7 +17,6 @@ class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
         private $document: angular.IDocumentService,
     ) {
         console.log('FlightAgentConfirmationDialogService: Service instantiated');
-        bindAllMethods(this);
 
         this.dialogResult = {
             shouldAssign: false
