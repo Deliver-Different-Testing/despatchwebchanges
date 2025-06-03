@@ -38,13 +38,13 @@ class BaseController implements angular.IController {
         this.eventDeregistrations.push(deregister);
     }
 
-    protected watchProperty<T>(
-        property: string,
-        handler: (newVal: T, oldVal: T) => void,
-        deep: boolean = false
-    ) {
-        if (this.$scopeService === undefined) throw new Error("Scope is undefined. Make sure you call initServices before using this method.");
-        return this.registerWatch(this.$scopeService, property, handler, deep);
+    protected watchScope(
+        watchExpression: string | Function | ((scope: angular.IScope) => any),
+        listener: (newValue: any, oldValue: any, scope: angular.IScope) => void,
+        objectEquality: boolean = false
+    ): () => void {
+        if(this.$scopeService === undefined) throw new Error("Scope is undefined. Make sure you call initServices before using this method.");
+        return this.registerWatch(this.$scopeService, watchExpression, listener, objectEquality);
     }
 
     protected registerWatch(

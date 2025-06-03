@@ -1,13 +1,13 @@
 <md-list-item class="task-item"
-              ng-class="{'completed': ctrl.task.closed, 'clickable': ctrl.config.onTaskClick, 'compact': ctrl.config.compactView}"
-              ng-click="ctrl.config.onTaskClick && ctrl.handleTaskClick($event)">
+              ng-class="{'clickable': ::ctrl.config.onTaskClick, 'compact': ::ctrl.config.compactView}"
+              ng-click="::ctrl.config.onTaskClick && ctrl.handleTaskClick($event)">
 
     <!-- Priority indicator -->
     <div class="priority-indicator" ng-class="ctrl.task.priority"></div>
 
     <!-- Task checkbox -->
     <md-checkbox class="task-checkbox"
-                 ng-if="ctrl.config.allowCompletion !== false"
+                 ng-if="::ctrl.config.allowCompletion !== false"
                  ng-model="ctrl.task.closed"
                  ng-change="ctrl.handleTaskCompletion(ctrl.task)"
                  ng-click="$event.stopPropagation()"
@@ -17,13 +17,13 @@
     <div class="md-list-item-text task-content" flex>
         <!-- Task title -->
         <h2 class="task-title" ng-class="{'completed-text': ctrl.task.closed}">
-            {{ctrl.task.title}}
+            {{::ctrl.task.title}}
             <!-- Status chips -->
-            <span ng-if="ctrl.config.showStatusIndicators !== false && ctrl.task.closed"
+            <span ng-if="::ctrl.config.showStatusIndicators !== false && ctrl.task.closed"
                   class="status-chip done">Done</span>
-            <span ng-if="ctrl.config.showStatusIndicators !== false && !ctrl.task.closed && ctrl.isTaskOverdue(ctrl.task)"
+            <span ng-if="::ctrl.config.showStatusIndicators !== false && !ctrl.task.closed && ctrl.isTaskOverdue(ctrl.task)"
                   class="status-chip overdue">Overdue</span>
-            <span ng-if="ctrl.config.showStatusIndicators !== false && !ctrl.task.closed && !ctrl.isTaskOverdue(ctrl.task)"
+            <span ng-if="::ctrl.config.showStatusIndicators !== false && !ctrl.task.closed && !ctrl.isTaskOverdue(ctrl.task)"
                   class="status-chip todo">To do</span>
         </h2>
 
@@ -31,14 +31,14 @@
         <p class="task-description"
            ng-if="ctrl.config.showDescription !== false"
            ng-class="{'completed-text': ctrl.task.closed}">
-            {{ctrl.task.description}}
+            {{::ctrl.task.description}}
         </p>
 
         <!-- Task metadata -->
         <div class="task-meta">
             <!-- Assignee -->
             <md-button
-                    ng-if="ctrl.config.showAssignee !== false"
+                    ng-if="::ctrl.config.showAssignee !== false"
                        class="assignee-button"
                        ng-class="{'overdue-button': ctrl.isTaskOverdue(ctrl.task)}"
                        ng-click="$event.stopPropagation(); ctrl.reassignTask($event, ctrl.task)">
@@ -48,22 +48,22 @@
 
             <!-- Job ID -->
             <div
-                    ng-if="ctrl.config.showJobId !== false"
+                    ng-if="::ctrl.config.showJobId !== false"
                     class="job-id-chip"
                     ng-class="{'overdue-button': ctrl.isTaskOverdue(ctrl.task)}">
-                Job #{{ctrl.task.jobNumber}}
+                Job #{{::ctrl.task.jobNumber}}
             </div>
 
             <!-- Job type -->
-            <div ng-if="ctrl.config.showJobType !== false" class="meta-item job-type">
+            <div ng-if="::ctrl.config.showJobType !== false" class="meta-item job-type">
                 <md-icon class="icon" md-font-set="material-symbols-outlined">label</md-icon>
-                <span>{{ctrl.task.eventType.charAt(0).toUpperCase() + ctrl.task.eventType.slice(1)}}</span>
+                <span>{{::ctrl.task.eventType.charAt(0).toUpperCase() + ctrl.task.eventType.slice(1)}}</span>
             </div>
         </div>
     </div>
 
     <!-- Date/time section -->
-    <div ng-if="ctrl.config.showDateTime !== false"
+    <div ng-if="::ctrl.config.showDateTime !== false"
          class="task-date-compact">
 
         <!-- Date button -->
@@ -71,7 +71,7 @@
                 ng-class="{'overdue-button': ctrl.isTaskOverdue(ctrl.task)}"
                 ng-click="$event.stopPropagation(); ctrl.openDateDialog($event, ctrl.task)">
             <md-icon class="icon" md-font-set="material-symbols-outlined">calendar_today</md-icon>
-            <span>{{ctrl.isUsCustomer ? (ctrl.task.dueDate | momentFormat:'MM/DD/YYYY') : (ctrl.task.dueDate | momentFormat:'DD/MM/YYYY')}} ({{ctrl.timeZone | timezoneShort}})</span>
+            <span>{{::ctrl.isUsCustomer ? (ctrl.task.dueDate | momentFormat:'MM/DD/YYYY') : (ctrl.task.dueDate | momentFormat:'DD/MM/YYYY')}} ({{::ctrl.timeZone | timezoneShort}})</span>
         </button>
 
         <!-- Time button -->
@@ -79,7 +79,7 @@
                 ng-class="{'overdue-button': ctrl.isTaskOverdue(ctrl.task)}"
                 ng-click="$event.stopPropagation(); ctrl.openTimeDialog($event, ctrl.task)">
             <md-icon class="icon" md-font-set="material-symbols-outlined">schedule</md-icon>
-            <span>{{ctrl.task.dueDate | momentFormat:'HH:mm'}} ({{ctrl.timeZone | timezoneShort}})</span>
+            <span>{{ctrl.task.dueDate | momentFormat:'HH:mm'}} ({{::ctrl.timeZone | timezoneShort}})</span>
         </button>
     </div>
 

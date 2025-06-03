@@ -75,6 +75,8 @@ class HomeController extends BaseController {
         driverLocations: "#driverLocations .listActive"
     } as const;
 
+    private isLoadingData: boolean = false;
+
     showDriverLocationsNoData: boolean = false;
     showDriverLocationsData: boolean = false;
     greeting: string;
@@ -1920,6 +1922,8 @@ class HomeController extends BaseController {
 
     async getJobList() {
         try {
+            this.isLoadingData = true; // Set flag before loading
+
             // Ensure views are initialized before proceeding
             if (!this.viewsInitialized && this.selectedViews.length === 0) {
                 console.log('Views not initialized yet, loading defaults');
@@ -1994,6 +1998,10 @@ class HomeController extends BaseController {
             if (!this.currentCourier) {
                 this.mapJobList = [];
             }
+        } finally {
+            this.registerTimeout(() => {
+                this.isLoadingData = false;
+            }, 100);
         }
     }
 

@@ -62,7 +62,8 @@ class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
             flight: flight,
             agent: undefined,
             existingAwb: job.conNote,
-            dgClass: job.dgClass
+            dgClass: job.dgClass,
+            stopJobCount: undefined
         });
     }
 

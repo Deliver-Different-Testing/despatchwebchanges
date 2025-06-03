@@ -8,7 +8,7 @@
 
                 <span flex></span>
 
-                <span style="font-size: medium;">{{ctrl.greeting}}</span>
+                <span style="font-size: medium;">{{::ctrl.greeting}}</span>
 
                 <md-button aria-label="Menu" class="md-icon-button" ng-mouseover="ctrl.toggleSidenav()">
                     <md-icon md-font-set="material-symbols-outlined">menu</md-icon>
@@ -47,11 +47,11 @@
                                 <div layout="row" layout-align="space-between center">
                                     <div layout="row" layout-align="start center">
                                         <md-icon md-font-set="material-symbols-outlined">
-                                            {{ctrl.hasDateFilter() ? 'calendar_month' : 'date_range'}}
+                                            {{::ctrl.hasDateFilter() ? 'calendar_month' : 'date_range'}}
                                         </md-icon>
                                         <span class="date-label" ng-if="!ctrl.hasDateFilter()">Select Dates</span>
                                         <span class="date-label"
-                                              ng-if="ctrl.hasDateFilter()">{{ctrl.getDateRangeDisplay()}}</span>
+                                              ng-if="ctrl.hasDateFilter()">{{::ctrl.getDateRangeDisplay()}}</span>
                                     </div>
                                     <md-icon class="clear-icon" md-font-set="material-symbols-outlined"
                                              ng-click="ctrl.clearDateRange($event)"
@@ -258,7 +258,7 @@
                                         <md-progress-linear
                                                 class="progress-status"
                                                 md-mode="determinate"
-                                                ng-class="ctrl.getProgressClass(delivery.completion)"
+                                                ng-class="::ctrl.getProgressClass(delivery.completion)"
                                                 value="{{delivery.completion}}">
                                         </md-progress-linear>
                                     </td>

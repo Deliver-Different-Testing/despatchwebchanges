@@ -7,11 +7,11 @@
                     <md-icon md-font-set="material-symbols-outlined">account_circle</md-icon>
                 </div>
                 <div class="account-details">
-                    <span class="md-title">{{ctrl.userName}}</span>
-                    <span class="md-caption">{{ctrl.companyName}}</span>
+                    <span class="md-title">{{::ctrl.userName}}</span>
+                    <span class="md-caption">{{::ctrl.companyName}}</span>
                 </div>
                 <div class="date-container">
-                    <span class="date-display">{{ctrl.currentDate}}</span>
+                    <span class="date-display">{{::ctrl.currentDate}}</span>
                 </div>
             </div>
         </div>
@@ -38,8 +38,8 @@
                               ui-sref="nw">
                     <div class="nav-item-content">
                         <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
-                        <p ng-if="ctrl.isUsCustomer">Domestic</p>
-                        <p ng-if="!ctrl.isUsCustomer">Nationwide</p>
+                        <p ng-if="::ctrl.isUsCustomer">Domestic</p>
+                        <p ng-if="::!ctrl.isUsCustomer">Nationwide</p>
                     </div>
                     <div class="nav-indicator"></div>
                 </md-list-item>
@@ -93,7 +93,7 @@
         <!-- Footer with copyright -->
         <div class="nav-footer">
             <div class="copyright-text">
-                <p>&copy; {{ctrl.currentYear}} Deliver Different. All rights reserved.</p>
+                <p>&copy; {{::ctrl.currentYear}} Deliver Different. All rights reserved.</p>
                 <div class="nz-made">
                     <md-icon md-font-set="material-symbols-outlined">favorite</md-icon>
                     <span>Made with aroha in New Zealand</span>
