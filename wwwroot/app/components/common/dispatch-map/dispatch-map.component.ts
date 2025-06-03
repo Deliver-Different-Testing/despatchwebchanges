@@ -70,6 +70,13 @@ class DispatchMapController extends BaseController {
     ) {
         super();
         this.initServices($timeout, $interval);
+        this.bindMethods();
+    }
+
+    private bindMethods() {
+        this.onBoundsChanged = this.onBoundsChanged.bind(this);
+        this.refreshCourierLocations = this.refreshCourierLocations.bind(this);
+        this.toggleAutoZoom = this.toggleAutoZoom.bind(this);
     }
 
     $onInit() {
@@ -444,6 +451,8 @@ class DispatchMapController extends BaseController {
 
             console.log(`[DispatchMapController] Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(jobs.length/batchSize)} (${batch.length} jobs)`);
 
+            this.isUpdating = true;
+
             batch.forEach((job: IJob) => {
                 if (this.isValidCoordinates(
                     job.pickupAddress?.latitude,
@@ -472,6 +481,14 @@ class DispatchMapController extends BaseController {
         }
 
         console.log(`[DispatchMapController] Completed batched marker addition: ${totalMarkersAdded} markers from ${jobs.length} jobs`);
+
+        await new Promise<void>(resolve => {
+            this.registerTimeout(() => {
+                this.isUpdating = false;
+                resolve();
+            }, 500);
+        });
+
         return totalMarkersAdded;
     }
 
@@ -580,12 +597,12 @@ class DispatchMapController extends BaseController {
         marker.addListener("mouseover", () => {
             marker.setIcon(hoverIcon);
             const content = `
-            <div style="padding: 8px;">
-                <strong>Job ${job.jobNo}</strong>${isCurrentJob ? ' <span style="color: #1976D2;">(Current Job)</span>' : ''}<br>
-                ${locationType} Location<br>
-                <small style="color: #666;">Click to open job details</small>
-            </div>
-        `;
+        <div style="padding: 8px;">
+            <strong>Job ${job.jobNo}</strong>${isCurrentJob ? ' <span style="color: #1976D2;">(Current Job)</span>' : ''}<br>
+            ${locationType} Location<br>
+            <small style="color: #666;">Click to open job details</small>
+        </div>
+    `;
             this.tooltip!.setContent(content);
             this.tooltip!.open(this.mapInstance, marker);
         });
@@ -596,8 +613,8 @@ class DispatchMapController extends BaseController {
         });
 
         marker.addListener("click", () => {
-            if (this.isUpdating) {
-                console.log('Ignoring marker click during map update');
+             if (this.isUpdating) {
+                console.log('[DispatchMapController] Ignoring marker click during map update');
                 return;
             }
 
@@ -616,11 +633,11 @@ class DispatchMapController extends BaseController {
                 this.mapInstance!.setZoom(currentZoom);
             }
 
-            this.debounce(() => {
-                if (this.onMarkerClick) {
+            this.registerTimeout(() => {
+                if (this.onMarkerClick && !this.isUpdating) {
                     this.onMarkerClick({job: job});
                 }
-            }, 200, `marker-click-${job.id}`);
+            }, 100);
         });
     }
 
