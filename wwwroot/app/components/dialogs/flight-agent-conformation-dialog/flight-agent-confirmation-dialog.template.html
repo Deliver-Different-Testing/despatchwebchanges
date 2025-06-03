@@ -2,8 +2,11 @@
     <form ng-cloak>
         <md-toolbar>
             <div class="md-toolbar-tools">
-                <md-icon ng-if="ctrl.agent" class="popup-icon" md-font-set="material-symbols-outlined">assignment_ind</md-icon>
-                <md-icon ng-if="ctrl.flight" class="popup-icon" md-font-set="material-symbols-outlined">airplane_ticket</md-icon>
+                <md-icon ng-if="ctrl.agent" class="popup-icon" md-font-set="material-symbols-outlined">assignment_ind
+                </md-icon>
+                <md-icon ng-if="ctrl.flight" class="popup-icon" md-font-set="material-symbols-outlined">
+                    airplane_ticket
+                </md-icon>
                 <h2 class="md-title">{{ctrl.dialogTitle}}</h2>
                 <span flex></span>
                 <md-button class="md-icon-button" ng-click="ctrl.cancel()" aria-label="Close dialog">
@@ -42,6 +45,15 @@
                     <input id="awb" class="bold-input" ng-model="ctrl.awb" ng-disabled="ctrl.isAwbDisabled" type="text">
                     <div class="md-errors-spacer"></div>
                 </md-input-container>
+
+                <div ng-if="ctrl.showIncludeStopJobs" style="margin-top: 20px;">
+                    <md-checkbox
+                            ng-model="ctrl.assignToStopJobs"
+                            class="md-primary"
+                            aria-label="include stop jobs">
+                        Include Stop Jobs?
+                    </md-checkbox>
+                </div>
             </div>
         </md-dialog-content>
 

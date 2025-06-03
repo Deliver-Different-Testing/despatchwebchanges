@@ -245,10 +245,8 @@ class HomeController extends BaseController {
                 ui.item.removeClass('dragging');
                 angular.element('.column-sortable').removeClass('ui-sortable-active');
 
-                // Update box metrics and save layout
-                this.updateBoxMetrics();
-                this.saveLayout();
-                this.registerTimeout(() => this.$scope.$apply());
+                // Updated the saved laout
+                this.saveCurrentLayout();
             }
         };
 
@@ -676,10 +674,11 @@ class HomeController extends BaseController {
         // Update map bounds for new selection
         this.updateMapForSelectedViews();
 
-        this.debounce(async () => {
-            await this.getData();
-            await this.fetchDriverLocations();
-        }, 500);
+        // Run both promises in parallel without debouncing
+        await Promise.all([
+            this.getData(),
+            this.fetchDriverLocations()
+        ]);
     }
 
     updateMapForSelectedViews() {
@@ -1462,30 +1461,6 @@ class HomeController extends BaseController {
         return this.$mdDialog.show(confirm);
     }
 
-    async activateDrop() {
-        const self = this;
-        this.registerTimeout(() => console.log("Activated drop"), 0);
-        await new Promise((resolve) => {
-            this.$document.ready(resolve);
-        });
-
-        (angular.element(".droppable-row") as any).droppable({
-            classes: {"ui-droppable-hover": "active"}, drop: async (event: MouseEvent, ui: any) => {
-                await self.handleDroppedJob(self);
-            },
-        });
-    }
-
-    async handleDroppedJob($element: any) {
-        const parentOffset = $element.parents(".box").offset();
-        const rowOffset = $element.offset();
-
-        if (this.isWithinDropZone(parentOffset, rowOffset, $element)) {
-            await this.animateDroppedJob($element);
-            await this.dispatchDroppedJob($element);
-        }
-    }
-
     isWithinDropZone(parentOffset: any, rowOffset: any, $element: any) {
         const parentTop = parentOffset.top;
         const parentBottom = parentTop + $element.parents(".box").outerHeight();
@@ -1508,23 +1483,11 @@ class HomeController extends BaseController {
     async dispatchDroppedJob($element: any) {
         const courierId = $element.attr("data-courier").replace(/[^\d.-]/g, "");
 
-        // Validate courier ID
-        if (!courierId || isNaN(courierId)) {
-            console.warn("Invalid courier ID for dispatch");
-            return;
-        }
-
-        // Check if there are jobs selected for dispatch
-        if (this.dispatchState.selectedJobs.size === 0) {
-            console.warn("No jobs selected for dispatch");
-            return;
-        }
-
         try {
             await this.dispatchJobs(courierId);
             console.log("Dispatch complete");
             await this.fetchDriverLocations();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error in drop handler:", error);
         }
     }
@@ -1532,8 +1495,6 @@ class HomeController extends BaseController {
     async getPotentialCouriers(jobId: number) {
         try {
             this.potentialCouriers = await this.DispatchData.getPotentialCouriers(jobId);
-
-            await this.activateDrop();
         } catch (error: any) {
             console.error("Error getting potential couriers:", error);
         }
@@ -1694,7 +1655,6 @@ class HomeController extends BaseController {
         }
 
         this.jobsCurrentList = data;
-        await this.activateDrop();
     }
 
     private isValidCoordinates(lat: number, lng: number) {
@@ -1724,8 +1684,6 @@ class HomeController extends BaseController {
                 console.log(`No jobs found for courier ${courierId}`);
                 this.mapJobList = [];
             }
-
-            await this.activateDrop();
         } catch (error: any) {
             console.error("Error getting current jobs:", error);
             this.jobsCurrentList = [];
@@ -2181,8 +2139,6 @@ class HomeController extends BaseController {
 
             this.driverLocations = await this.DispatchData.getDriverLocations(selectedViews);
             this.updateDriverLocationsDisplay();
-
-            await this.activateDrop();
         } catch (error: any) {
             console.error("Error getting driver locations data:", error);
             this.driverLocations = {areas: []};

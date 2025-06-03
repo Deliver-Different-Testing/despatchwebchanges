@@ -2,7 +2,8 @@ import {IFlightViewModel} from "../../Nationwide/nationwide.interfaces";
 import {IDispatchJob, Suggestion} from "../../../interfaces/job.interface";
 import FlightAgentConformationDialogController from "./flight-agent-conformation-dialog.controller";
 import {FlightAgentConfirmationDialogResult} from "../../../interfaces/dialog-result.interfaces";
-import {IFlightAgentConfirmationDialogLocals} from "./flight-agent-conformation-dialog.interfaces";
+import {IFlightAgentConfirmationDialogLocals,} from "./flight-agent-conformation-dialog.interfaces";
+import countSubJobs from "../../../functions/countSubJobs";
 
 class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
     static $inject = [
@@ -39,9 +40,8 @@ class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
         };
 
         try {
-            const awb: string = await this.$mdDialog.show(dialogConfig);
+            this.dialogResult = await this.$mdDialog.show(dialogConfig);
             this.dialogResult.shouldAssign = true;
-            this.dialogResult.awb = awb;
             return this.dialogResult;
         } catch (error) {
             if (error) {
@@ -67,12 +67,15 @@ class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
     }
 
     async agentConfirmationDialog($event: MouseEvent, job: IDispatchJob, agent: Suggestion) {
+      const stopJobCount = job.relatedJobs ? countSubJobs(job.jobNo, job.relatedJobs) : 0;
+
         return this.showConfirmationDialog($event, {
             jobNumber: job.jobNo,
             flight: undefined,
             agent: agent,
             existingAwb: job.conNote,
-            dgClass: job.dgClass
+            dgClass: job.dgClass,
+            stopJobCount
         });
     }
 }
