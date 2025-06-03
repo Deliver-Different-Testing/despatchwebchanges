@@ -539,7 +539,6 @@ class NationwideControl extends BaseController {
         this.refreshAction = this.refreshAction.bind(this);
     }
 
-
     $onInit() {
         const jobId = this.$stateParams.jobId;
         if (jobId) {

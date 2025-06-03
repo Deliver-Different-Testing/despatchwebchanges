@@ -21,7 +21,8 @@ class OverviewController extends BaseController {
         "$window",
         "navigationService",
         "overviewFiltersService",
-        "$document"
+        "$document",
+        "$interval",
     ];
 
     private readonly OverviewJobLimitDisplay: string = "overviewJobLimitDisplay";
@@ -46,7 +47,6 @@ class OverviewController extends BaseController {
     promise: Promise<any> | null;
 
     search: string;
-    searchTimeout: any;
 
     dateRange: { start: Date | null; end: Date | null };
     selectedRegions: Suggestion[];
@@ -67,9 +67,11 @@ class OverviewController extends BaseController {
         private $window: angular.IWindowService,
         private navigationService: NavigationService,
         private overviewFiltersService: OverviewFiltersService,
-        private $document: angular.IDocumentService
+        private $document: angular.IDocumentService,
+        private $interval: angular.IIntervalService,
     ) {
         super();
+        this.initServices(this.$timeout, this.$interval, this.$scope)
 
         // Initialize properties
         this.isLoading = false;
@@ -98,7 +100,6 @@ class OverviewController extends BaseController {
 
         // Search properties
         this.search = "";
-        this.searchTimeout = null;
 
         // Filters
         this.dateRange = {start: null, end: null};
@@ -124,7 +125,7 @@ class OverviewController extends BaseController {
 
     private setupWatchers(): void {
         // Watch for tab changes
-        this.$scope.$watch(
+        this.watchScope(
             () => this.activeTab,
             (newValue: number, oldValue: number) => {
                 if (newValue !== oldValue) {
@@ -133,8 +134,8 @@ class OverviewController extends BaseController {
             }
         );
 
-        // Watch for search changes with debounce
-        this.$scope.$watch(
+        // Watch for search changes with debouncing
+        this.watchScope(
             () => this.search,
             (newValue: string, oldValue: string) => {
                 if (newValue !== oldValue) {
@@ -143,8 +144,8 @@ class OverviewController extends BaseController {
             }
         );
 
-        // Watch for changes to query limit
-        this.$scope.$watch(
+        // Watch for changes to the query limit
+        this.watchScope(
             () => this.query.limit,
             (newValue: number, oldValue: number) => {
                 if (newValue !== oldValue) {
@@ -218,13 +219,8 @@ class OverviewController extends BaseController {
     }
 
     handleSearchChange() {
-        // Cancel any pending timeout
-        if (this.searchTimeout) {
-            this.$timeout.cancel(this.searchTimeout);
-        }
-
-        // Set new timeout
-        this.searchTimeout = this.$timeout(async () => {
+        // Set a new timeout
+        this.registerTimeout(async () => {
             this.query.page = 1; // Reset to first page on new search
             await this.refreshData();
         }, 300); // 300ms debounce

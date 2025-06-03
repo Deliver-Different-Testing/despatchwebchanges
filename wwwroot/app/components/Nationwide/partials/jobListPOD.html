@@ -68,11 +68,12 @@
             ng-click="ctrl.selectJob(job)">
 
             <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">
-                {{job.booked | date: (ctrl.isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm")}}
+                {{job.booked | momentFormat: (ctrl.isUsCustomer ? "MM/DD/YYYY HH:mm" : "DD/MM/YYYY HH:mm")}}
+                ({{::ctrl.timeZone | timezoneShort}})
             </td>
             <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">
                 <md-icon md-font-set="material-symbols-outlined" ng-if="job.fromAirportId || job.toAirportId">
-                    {{ctrl.getFlightIcon(job.jobNo)}}
+                    {{::ctrl.getFlightIcon(job.jobNo)}}
                 </md-icon>
                 <span ng-if="!job.fromAirportId && !job.toAirportId">{{job.speed}}</span>
             </td>

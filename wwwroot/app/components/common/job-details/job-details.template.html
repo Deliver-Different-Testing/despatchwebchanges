@@ -165,7 +165,7 @@
                             <div class="md-list-item-text">
                                 <h3>Start Time</h3>
                                 <p>
-                                    {{ctrl.job.time ? (ctrl.job.time | momentFormat:'HH:mm') + '(' + ((ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort) + ')' : 'N/A'}}</p>
+                                    {{ctrl.job.time ? (ctrl.job.time | momentFormat:'HH:mm') + ' (' + ((ctrl.job.pickUpTimeZone ? ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort) + ')' : 'N/A'}}</p>
                             </div>
                         </md-list-item>
                     </md-list>
