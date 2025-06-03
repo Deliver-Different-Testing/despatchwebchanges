@@ -15,8 +15,7 @@
                     </md-button>
                     <md-menu-content style="width: 300px; overflow: hidden;">
                         <div class="md-padding" md-prevent-menu-close>
-                            <label id="dateRange" class="label-padding">Date Filter: ({{ctrl.browserTimeZone | timezoneShort}})</label>
-                            <md-radio-group ng-change="ctrl.onSearchRangeChange(ctrl.dateSearchRange)" ng-model="ctrl.dateSearchRange"
+                            <label id="dateRange" class="label-padding">Date Filter: ({{::ctrl.browserTimeZone | timezoneShort}})</label>                            <md-radio-group ng-change="ctrl.onSearchRangeChange(ctrl.dateSearchRange)" ng-model="ctrl.dateSearchRange"
                                             aria-labelledby="dateRange" layout="row" layout-align="center center">
                                 <md-radio-button value="1">24 Hours</md-radio-button>
                                 <md-radio-button value="2">Custom</md-radio-button>

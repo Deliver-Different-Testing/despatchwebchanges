@@ -92,7 +92,7 @@ class JobDetailController extends BaseController {
         private jobFileUploadDialogService: JobFileUploadDialogService
     ) {
         super();
-        this.initServices($timeout, $interval);
+        this.initServices($timeout, $interval, this.$scope);
 
         this.isUsCustomer = appConfig.US_Customer;
         this.timeZone = TimeZone;
@@ -1169,10 +1169,9 @@ class JobDetailController extends BaseController {
             },
         ];
 
-        const jobTypeDes = this.getJobTypeDescription(job.jobType);
         console.log("Showing select dialog", {
             jobId: job.id,
-            jobTypeDes,
+            jobTypeDes: job.jobTypeDescription,
             availableOptions: data.length,
         });
 
@@ -1183,7 +1182,7 @@ class JobDetailController extends BaseController {
                 data,
                 JobProperty.AcceptedJobTypeID,
                 "Job Type",
-                jobTypeDes
+                job.jobTypeDescription
             );
             console.log("Select dialog completed}");
         } catch (error) {
@@ -1313,28 +1312,6 @@ class JobDetailController extends BaseController {
         } finally {
             this.hideLoading();
         }
-    }
-
-    getJobTypeDescription(jobTypeId?: number) {
-        console.log(`Getting job type description for jobTypeId: ${jobTypeId}`);
-        const description = (() => {
-            switch (jobTypeId || 1) {
-                case 1:
-                    return "Pickup";
-                case 2:
-                    return "Delivery";
-                case 3:
-                    return "3rd-Party";
-                default:
-                    console.warn(
-                        `Unknown jobTypeId: ${jobTypeId}, defaulting to "Pickup"`
-                    );
-                    return "Pickup";
-            }
-        })();
-
-        console.log(`Resolved job type description: ${description}`);
-        return description;
     }
 
     hasDGDocs(job: IJob) {

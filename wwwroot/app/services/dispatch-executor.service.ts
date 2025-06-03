@@ -272,10 +272,11 @@ class DispatchExecutorService implements angular.IServiceProvider {
         console.log("Validating job:", {
             jobNo: job?.jobNo,
             courierId: courier?.id,
-            hasDG: job.dgClass !== undefined && job.dgClass > 0
+            hasDG: job.dgClass !== undefined && job.dgClass > 0,
+            hasExistingCourier: !!job.courierData?.courierId
         });
 
-        if (job.courierData !== null) {
+        if (job.courierData?.courierId) {
             const message = `Restore ${job.jobNo} prior to dispatching to another courier`;
             console.warn("Job validation failed:", message);
             return {isValid: false, message};

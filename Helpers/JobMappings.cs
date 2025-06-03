@@ -225,7 +225,7 @@ public static class JobMappings
         // Airport information
         ToAirportId = j.ToAirportId,
         FromAirportId = j.FromAirportId,
-        
+
         AssignedFlight =
             j.Parent != null
                 ? j
@@ -294,67 +294,67 @@ public static class JobMappings
                                 : new List<FlightSegmentViewModel>(), // Empty list if no segments
                     })
                     .FirstOrDefault()
-            : j.TucJobNationwides.Any() == true
-                ? j
-                    .TucJobNationwides.Select(nj => new AssignedFlight
-                    {
-                        ExpectedArrival = nj.UcnwEta,
-                        ArrivalTimeZone = nj.UcnwJob.ToAirport.Timezone,
-                        ExpectedDeparture = nj.UcnwEtd,
-                        DepartureTimeZone = nj.UcnwJob.FromAirport.Timezone,
-                        FlightNumber = nj.UcnwFlightNo,
-                        Notes = nj.UcnwNotes,
-                        // Check if there are any flight segments
-                        FlightSegments =
-                            j.TucJobNationwides.Count != 0 == true
-                                ? j
-                                    .TucJobNationwides.OrderBy(f => f.UcnwLegNumber)
-                                    .Select(segment => new FlightSegmentViewModel
-                                    {
-                                        SegmentOrder = segment.UcnwLegNumber - 1,
-                                        CarrierFsCode =
-                                            !string.IsNullOrEmpty(segment.UcnwFlightNo)
-                                            && segment.UcnwFlightNo.Length >= 2
-                                                ? segment.UcnwFlightNo.Substring(0, 2)
-                                                : "??",
-                                        FlightNumber =
-                                            !string.IsNullOrEmpty(segment.UcnwFlightNo)
-                                            && segment.UcnwFlightNo.Length > 2
-                                                ? segment.UcnwFlightNo.Substring(2)
-                                                : "????",
-                                        DepartureTime = segment.UcnwEtd ?? new DateTime(1753, 1, 1),
-                                        ArrivalTime = segment.UcnwEta ?? new DateTime(1753, 1, 1),
-                                        DepartureAirportFsCode = segment.DepartureAirportFsCode,
-                                        DepartureAirportName = segment.DepartureAirportName,
-                                        DepartureAirportCity = segment.DepartureAirportCity,
-                                        DepartureAirportCountry = segment.DepartureAirportCountry,
-                                        DepartureAirportTimeZone = segment.DepartureAirportTimeZone,
-                                        DepartureAirportTimeZoneId =
-                                            segment.DepartureAirportTimeZoneId ?? 0,
-                                        DepartureTerminal = segment.DepartureTerminal,
-                                        ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
-                                        ArrivalAirportName = segment.ArrivalAirportName,
-                                        ArrivalAirportCity = segment.ArrivalAirportCity,
-                                        ArrivalAirportCountry = segment.ArrivalAirportCountry,
-                                        ArrivalAirportTimeZone = segment.ArrivalAirportTimeZone,
-                                        ArrivalAirportTimeZoneId =
-                                            segment.ArrivalAirportTimeZoneId ?? 0,
-                                        ArrivalTerminal = segment.ArrivalTerminal,
-                                        ElapsedTime = (int)(
-                                            (segment.UcnwEta.HasValue && segment.UcnwEtd.HasValue)
-                                                ? (
-                                                    segment.UcnwEta.Value - segment.UcnwEtd.Value
-                                                ).TotalMinutes
-                                                : 0
-                                        ),
-                                        AircraftName = segment.AircraftName,
-                                        AirlineName = segment.UcnwAirlineName,
-                                    })
-                                    .ToList()
-                                : new List<FlightSegmentViewModel>(), // Empty list if no segments
-                    })
-                    .FirstOrDefault()
-            : null, // Return null if no job nationwides exist
+                : j.TucJobNationwides.Any() == true
+                    ? j
+                        .TucJobNationwides.Select(nj => new AssignedFlight
+                        {
+                            ExpectedArrival = nj.UcnwEta,
+                            ArrivalTimeZone = nj.UcnwJob.ToAirport.Timezone,
+                            ExpectedDeparture = nj.UcnwEtd,
+                            DepartureTimeZone = nj.UcnwJob.FromAirport.Timezone,
+                            FlightNumber = nj.UcnwFlightNo,
+                            Notes = nj.UcnwNotes,
+                            // Check if there are any flight segments
+                            FlightSegments =
+                                j.TucJobNationwides.Count != 0 == true
+                                    ? j
+                                        .TucJobNationwides.OrderBy(f => f.UcnwLegNumber)
+                                        .Select(segment => new FlightSegmentViewModel
+                                        {
+                                            SegmentOrder = segment.UcnwLegNumber - 1,
+                                            CarrierFsCode =
+                                                !string.IsNullOrEmpty(segment.UcnwFlightNo)
+                                                && segment.UcnwFlightNo.Length >= 2
+                                                    ? segment.UcnwFlightNo.Substring(0, 2)
+                                                    : "??",
+                                            FlightNumber =
+                                                !string.IsNullOrEmpty(segment.UcnwFlightNo)
+                                                && segment.UcnwFlightNo.Length > 2
+                                                    ? segment.UcnwFlightNo.Substring(2)
+                                                    : "????",
+                                            DepartureTime = segment.UcnwEtd ?? new DateTime(1753, 1, 1),
+                                            ArrivalTime = segment.UcnwEta ?? new DateTime(1753, 1, 1),
+                                            DepartureAirportFsCode = segment.DepartureAirportFsCode,
+                                            DepartureAirportName = segment.DepartureAirportName,
+                                            DepartureAirportCity = segment.DepartureAirportCity,
+                                            DepartureAirportCountry = segment.DepartureAirportCountry,
+                                            DepartureAirportTimeZone = segment.DepartureAirportTimeZone,
+                                            DepartureAirportTimeZoneId =
+                                                segment.DepartureAirportTimeZoneId ?? 0,
+                                            DepartureTerminal = segment.DepartureTerminal,
+                                            ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
+                                            ArrivalAirportName = segment.ArrivalAirportName,
+                                            ArrivalAirportCity = segment.ArrivalAirportCity,
+                                            ArrivalAirportCountry = segment.ArrivalAirportCountry,
+                                            ArrivalAirportTimeZone = segment.ArrivalAirportTimeZone,
+                                            ArrivalAirportTimeZoneId =
+                                                segment.ArrivalAirportTimeZoneId ?? 0,
+                                            ArrivalTerminal = segment.ArrivalTerminal,
+                                            ElapsedTime = (int)(
+                                                (segment.UcnwEta.HasValue && segment.UcnwEtd.HasValue)
+                                                    ? (
+                                                        segment.UcnwEta.Value - segment.UcnwEtd.Value
+                                                    ).TotalMinutes
+                                                    : 0
+                                            ),
+                                            AircraftName = segment.AircraftName,
+                                            AirlineName = segment.UcnwAirlineName,
+                                        })
+                                        .ToList()
+                                    : new List<FlightSegmentViewModel>(), // Empty list if no segments
+                        })
+                        .FirstOrDefault()
+                    : null, // Return null if no job nationwides exist
 
         // Assigned agent
         AssignedAgent =
@@ -417,12 +417,14 @@ public static class JobMappings
         Weight = j.UcjbWeight,
         ToAddress = j.UcjbToAddr,
         JobType = (int)(j.UcjbType ?? 0),
+        JobTypeDescription = GetJobTypeDescription((int)(j.UcjbType ?? 0)),
         Direct = j.Direct,
         Van = j.UcjbVan,
         VanOk = j.VanOk,
         Truck = j.Truck,
         DgClass = j.Dgclass,
         DgDocumentation = j.Dgdocument,
+        HasDgDocsString = j.Dgdocument != null ? "Yes" : "No",
         ParcelDimensions =
             j.ParentId == null || j.ParentId == j.UcjbId
                 ? j
@@ -533,8 +535,9 @@ public static class JobMappings
                     j.DeliveryLatitude ?? 0,
                     j.DeliveryLongitude ?? 0
                 )
-            : j.TotalDistance.HasValue ? (double)j.TotalDistance.Value
-            : 0.0,
+                : j.TotalDistance.HasValue
+                    ? (double)j.TotalDistance.Value
+                    : 0.0,
 
         ReadTrackerInfo =
             j.TucJobReadTracker != null
@@ -578,8 +581,8 @@ public static class JobMappings
                 j.UcjbDate.HasValue && j.UcjbTime.HasValue
                     ? DateTime.Parse(
                         j.UcjbDate.Value.ToString("yyyy-MM-dd")
-                            + " "
-                            + j.UcjbTime.Value.ToString("HH:mm:ss")
+                        + " "
+                        + j.UcjbTime.Value.ToString("HH:mm:ss")
                     )
                     : DateTime.MinValue,
             DispatchTime = j.UcjbDispTime,
@@ -675,12 +678,14 @@ public static class JobMappings
             Weight = j.UcjbWeight,
             ToAddress = j.UcjbToAddr,
             JobType = (int)(j.UcjbType ?? 0),
+            JobTypeDescription = GetJobTypeDescription((int)(j.UcjbType ?? 0)),
             Direct = j.Direct,
             Van = j.UcjbVan,
             VanOk = j.VanOk,
             Truck = j.Truck,
             DgClass = j.Dgclass,
             DgDocumentation = j.Dgdocument,
+            HasDgDocsString = j.Dgdocument != null ? "Yes" : "No",
 
             // Job status and details
             Done = j.UcjbJobDone,
@@ -852,12 +857,14 @@ public static class JobMappings
         Weight = j.UcbkWeight,
         ToAddress = j.UcbkToAddr,
         JobType = j.UcbkType ?? 0,
+        JobTypeDescription = GetJobTypeDescription((int)(j.UcbkType ?? 0)),
         Direct = j.Direct,
         Van = j.UcbkVan,
         VanOk = j.VanOk,
         Truck = j.Truck,
         DgClass = j.Dgclass,
         DgDocumentation = j.Dgdocument,
+        HasDgDocsString = j.Dgdocument != null ? "Yes" : "No",
 
         // Job status and details
         Done = j.UcbkDone,
@@ -1034,4 +1041,16 @@ public static class JobMappings
 
     private static string FormatFullName(TucStaff staff) =>
         $"{staff.UcstFirstName} {staff.UcstLastName}".Trim();
+
+    private static string GetJobTypeDescription(int? jobTypeId)
+    {
+        var jobType = (LateEventType?)(jobTypeId ?? (int)LateEventType.Pickup);
+        return jobType switch
+        {
+            LateEventType.Pickup => "Pickup",
+            LateEventType.Delivery => "Delivery",
+            LateEventType.ThirdParty => "3rd-Party",
+            _ => "Pickup"
+        };
+    }
 }

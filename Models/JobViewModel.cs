@@ -126,6 +126,7 @@ public class JobViewModel : DispatchJobViewModel
 
     public Suggestion  PickUpTimeZone { get; set; }
     public Suggestion DeliveryTimeZone {get;set;}
+    public string HasDgDocsString { get; set; }
 }
 
 public class Vehicle
