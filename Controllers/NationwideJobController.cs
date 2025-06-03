@@ -289,7 +289,7 @@ public class NationwideJobController(
             try
             {
                 var addToDb =
-                    await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value, jobRequestModel.JobId.Value);
+                    await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value, jobRequestModel.JobId.Value, jobRequestModel.IncludeStopJobs ?? false);
                 if (!addToDb)
                     return BadRequest("An error occurred while assigning the agent to the job.");
 

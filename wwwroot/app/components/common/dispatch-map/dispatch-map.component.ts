@@ -596,11 +596,16 @@ class DispatchMapController extends BaseController {
         });
 
         marker.addListener("click", () => {
+            if (this.isUpdating) {
+                console.log('Ignoring marker click during map update');
+                return;
+            }
+
             const currentZoom = this.mapInstance!.getZoom();
 
             if (locationType === "Delivery") {
                 marker.setAnimation(this.$window.google.maps.Animation.BOUNCE);
-                setTimeout(() => {
+                this.registerTimeout(() => {
                     marker.setAnimation(null);
                 }, 750);
             }
@@ -611,9 +616,11 @@ class DispatchMapController extends BaseController {
                 this.mapInstance!.setZoom(currentZoom);
             }
 
-            if (this.onMarkerClick) {
-                this.onMarkerClick({job: job});
-            }
+            this.debounce(() => {
+                if (this.onMarkerClick) {
+                    this.onMarkerClick({job: job});
+                }
+            }, 200, `marker-click-${job.id}`);
         });
     }
 

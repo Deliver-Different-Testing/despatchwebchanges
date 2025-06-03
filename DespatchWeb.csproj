@@ -384,6 +384,7 @@
     <TypeScriptCompile Include="wwwroot\app\enums\job-status.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\late-event-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
+    <TypeScriptCompile Include="wwwroot\app\functions\countSubJobs.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\getDangerousGoodsClassName.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\greetUser.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\isDeliveryJob.ts" />

@@ -285,49 +285,97 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         return results;
     }
 
-    public async Task<bool> AddAgentToJobAsync(int agentId, int jobId)
+   public async Task<bool> AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false)
+{
+    try
     {
-        try
+        var job = await Context.TucJobs
+            .Include(j => j.Parent).ThenInclude(j => j.InverseParent)
+            .Include(j => j.InverseParent)
+            .FirstOrDefaultAsync(j => j.UcjbId == jobId);
+        ArgumentNullException.ThrowIfNull(job);
+
+        var currentDate = _infoService.GetCurrentTenantTime();
+        var isDepartureAirportAgent = job.FromAirportId != null && job.ToAirportId == null;
+        var isGroundJob = !string.IsNullOrEmpty(job.UcjbNumber) && !char.IsDigit(job.UcjbNumber.Last());
+
+        job.AgentId = agentId;
+        job.UcjbStatus = isGroundJob ? (int)JobStatus.GroundAgentAssigned
+            : isDepartureAirportAgent ? (int)JobStatus.InboundAgentAssigned
+            : (int)JobStatus.OutboundAgentAssigned;
+
+        job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
+        job.UcjbDispDate = currentDate;
+        job.UcjbDispTime = currentDate;
+
+        // Get Agent Name
+        var agentName = Context.TucAgents
+            .Where(a => a.UcagId == agentId)
+            .Select(a => a.UcagName)
+            .FirstOrDefault();
+
+        if (includeStopJobs)
         {
-            var job = await Context.TucJobs.FindAsync(jobId);
-            ArgumentNullException.ThrowIfNull(job);
+            var mainJobNumber = job.UcjbNumber;
+            if (string.IsNullOrEmpty(mainJobNumber)) throw new ArgumentNullException(nameof(mainJobNumber));
 
-            var currentDate = _infoService.GetCurrentTenantTime();
-            var isDepartureAirportAgent = job.FromAirportId != null && job.ToAirportId == null;
-            var isGroundJob = !string.IsNullOrEmpty(job.UcjbNumber) && !char.IsDigit(job.UcjbNumber.Last());
+            // Stop jobs have the pattern: mainJobNumber + letter (e.g., KT22451a, KT22451b, KT22451c)
+            var stopJobs = job.Parent != null
+                ? job.Parent.InverseParent.Where(j =>
+                    !string.IsNullOrEmpty(j.UcjbNumber) &&
+                    j.UcjbNumber.StartsWith(mainJobNumber) &&
+                    j.UcjbNumber.Length == mainJobNumber.Length + 1 &&
+                    char.IsLetter(j.UcjbNumber.Last()) &&
+                    j.UcjbId != jobId) // Exclude the main job itself
+                : job.InverseParent.Where(j =>
+                    !string.IsNullOrEmpty(j.UcjbNumber) &&
+                    j.UcjbNumber.StartsWith(mainJobNumber) &&
+                    j.UcjbNumber.Length == mainJobNumber.Length + 1 &&
+                    char.IsLetter(j.UcjbNumber.Last()) &&
+                    j.UcjbId != jobId); // Exclude the main job itself
 
-            job.AgentId = agentId;
-            job.UcjbStatus = isGroundJob ? (int)JobStatus.GroundAgentAssigned
-                : isDepartureAirportAgent ? (int)JobStatus.InboundAgentAssigned
-                : (int)JobStatus.OutboundAgentAssigned;
-
-            job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
-            job.UcjbDispDate = currentDate;
-            job.UcjbDispTime = currentDate;
-
-
-            var agentName = Context.TucAgents.Where(a => a.UcagId == agentId).Select(a => a.UcagName).FirstOrDefault();
-
-            var note = new TucNote
+            foreach (var stopJob in stopJobs)
             {
-                JobId = jobId,
-                NoteTypeId = (int)NoteType.AgentUpdate,
-                NoteText = $"Agent {agentName} assigned",
-                CreatedBy = _infoService.GetStaffId(),
-                CreatedDate = currentDate
-            };
+                stopJob.AgentId = agentId;
+                stopJob.UcjbStatus = isGroundJob ? (int)JobStatus.GroundAgentAssigned
+                    : isDepartureAirportAgent ? (int)JobStatus.InboundAgentAssigned
+                    : (int)JobStatus.OutboundAgentAssigned;
+                stopJob.UcjbDispDate = currentDate;
+                stopJob.UcjbDispTime = currentDate;
 
-            await Context.AddAsync(note);
-            await Context.SaveChangesAsync();
+                var stopJobNote = new TucNote
+                {
+                    JobId = stopJob.UcjbId,
+                    NoteTypeId = (int)NoteType.AgentUpdate,
+                    NoteText = $"Agent {agentName} assigned",
+                    CreatedBy = _infoService.GetStaffId(),
+                    CreatedDate = currentDate
+                };
 
-            return true;
+                await Context.AddAsync(stopJobNote);
+            }
         }
-        catch (Exception e)
+
+        var note = new TucNote
         {
-            Log.Error(e, "An error occured adding Agent {AgentId} to job {JobId}", agentId, jobId);
-            return false;
-        }
+            JobId = jobId,
+            NoteTypeId = (int)NoteType.AgentUpdate,
+            NoteText = $"Agent {agentName} assigned",
+            CreatedBy = _infoService.GetStaffId(),
+            CreatedDate = currentDate
+        };
+
+        await Context.AddAsync(note);
+        await Context.SaveChangesAsync();
+
+        return true;
     }
+    catch (Exception e)
+    {
+        Log.Error(e, "An error occured adding Agent {AgentId} to job {JobId}", agentId, jobId);
+        return false;
+    }
+}
 
     public async Task<List<DispatchJobViewModel>> NationwideJobListAsync(JobQueryParams queryParams, bool isInternal,
         bool isUsTenant,

@@ -21,7 +21,7 @@ public interface INationwideJobRepository
 
     Task<List<AgentViewModel>> GetAgentsAsync(int jobId);
 
-    Task<bool> AddAgentToJobAsync(int agentId, int jobId);
+    Task<bool> AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false);
 
     Task<List<Suggestion>> GetActiveAirlineOptionsAsync();
     Task SendAgentRequestMessageAsync(int agentId, int jobId);

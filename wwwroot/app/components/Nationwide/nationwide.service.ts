@@ -189,11 +189,12 @@ class NationwideService implements angular.IServiceProvider {
         };
     }
 
-    async assignAgentToJob(jobId: number, agentId: number) {
+    async assignAgentToJob(jobId: number, agentId: number, includeStopJobs: boolean) {
         try {
             const response = await this.$http.post("nationwideJob/AssignAgentToJob", {
                 jobId,
                 agentId,
+                includeStopJobs
             });
 
             return response.data;

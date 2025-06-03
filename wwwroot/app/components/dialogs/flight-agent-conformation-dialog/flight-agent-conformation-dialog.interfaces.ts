@@ -7,4 +7,5 @@ export interface IFlightAgentConfirmationDialogLocals {
     agent?: Suggestion;
     existingAwb?: string;
     dgClass?: number;
+    stopJobCount?: number;
 }

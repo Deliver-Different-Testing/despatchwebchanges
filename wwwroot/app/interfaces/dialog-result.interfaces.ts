@@ -13,6 +13,7 @@ export interface IDialogDateTimeResult {
 }
 
 export interface FlightAgentConfirmationDialogResult {
-  shouldAssign: boolean;
-  awb?: string;
+    shouldAssign?: boolean;
+    awb?: string;
+    shouldAssignToStopJobs?: boolean;
 }

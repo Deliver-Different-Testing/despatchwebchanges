@@ -1329,7 +1329,7 @@ class NationwideControl extends BaseController {
 
             console.log('Assigning to job');
 
-            await this.nationwideService.assignAgentToJob(job.id, agent.id);
+            await this.nationwideService.assignAgentToJob(job.id, agent.id, result.shouldAssignToStopJobs);
 
             if (result.awb) {
                 await this.DispatchData.updateJobDetail(job.id, JobProperty.ConNote, result.awb, false);
