@@ -9,12 +9,13 @@ import {AppConfig} from "../../../interfaces/app-config.interface";
 class DispatchMapController extends BaseController {
     static $inject = [
         "NgMap",
-        "$timeout",
         "configService",
         "$window",
         "$rootScope",
         "DispatchData",
         "APP_CONFIG",
+        "$timeout",
+        "$interval",
     ];
 
     private locationRefreshInterval: angular.IPromise<void> | null = null;
@@ -59,14 +60,16 @@ class DispatchMapController extends BaseController {
 
     constructor(
         private NgMap: angular.map.INgMap,
-        private $timeout: angular.ITimeoutService,
         private configService: ConfigService,
         private $window: angular.IWindowService,
         private $rootScope: angular.IRootScopeService,
         private DispatchData: DispatchCoreService,
-        private AppConfig: AppConfig
+        private AppConfig: AppConfig,
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
     ) {
         super();
+        this.initServices($timeout, $interval);
     }
 
     $onInit() {
@@ -76,7 +79,7 @@ class DispatchMapController extends BaseController {
             .then((apiKey: string) => {
                 this.googleMapsUrl = `https://maps.google.com/maps/api/js?key=${apiKey}&libraries=places`;
 
-                return this.$timeout(() => {
+                return this.registerTimeout(() => {
                     return this.NgMap.getMap({id: 'dispatchMap'});
                 }, 1000);
             })
@@ -261,18 +264,10 @@ class DispatchMapController extends BaseController {
         }
     }
 
-    private onBoundsChanged = this.debounce(() => {
+    private onBoundsChanged() {
         if (this.showAvailableCouriers) {
             return this.fetchCourierPositions();
         }
-    }, 500);
-
-    private debounce(func: Function, wait: number) {
-        let timeout: any;
-        return (...args: any[]) => {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
-        };
     }
 
     async fetchCourierPositions() {
@@ -380,6 +375,7 @@ class DispatchMapController extends BaseController {
 
             console.log(`[DispatchMapController] Map mode: ${isShowingCourierJobs ? 'Courier jobs view' : 'Normal view'}`);
 
+            // Add current job first (if exists)
             if (this.currentJob) {
                 console.log(`[DispatchMapController] Adding current job to map: ${this.currentJob.jobNo}`);
 
@@ -400,38 +396,26 @@ class DispatchMapController extends BaseController {
                 }
             }
 
+            // Add other jobs in batches
             if (this.jobs?.length) {
-                console.log(`[DispatchMapController] Adding ${this.jobs.length} jobs to map`);
+                console.log(`[DispatchMapController] Adding ${this.jobs.length} jobs to map in batches`);
 
-                this.jobs.forEach((job: IJob) => {
-                    if (currentJobId && job.id === currentJobId) {
-                        return;
-                    }
+                const jobsToAdd = this.jobs.filter(job =>
+                    !currentJobId || job.id !== currentJobId
+                );
 
-                    const useAlternateColor = isShowingCourierJobs;
-
-                    if (this.isValidCoordinates(
-                        job.pickupAddress?.latitude,
-                        job.pickupAddress?.longitude
-                    )) {
-                        this.addPickupMarker(job, false, useAlternateColor);
-                        markersAdded++;
-                    }
-
-                    if (this.isValidCoordinates(
-                        job.deliveryAddress?.latitude,
-                        job.deliveryAddress?.longitude
-                    )) {
-                        this.addDeliveryMarker(job, false, useAlternateColor);
-                        markersAdded++;
-                    }
-                });
+                const batchMarkersAdded = await this.addMarkersInBatches(
+                    jobsToAdd,
+                    isShowingCourierJobs,
+                    50 // batch size
+                );
+                markersAdded += batchMarkersAdded;
             }
 
             console.log(`Added ${markersAdded} markers to the map`);
 
             if (markersAdded > 0) {
-                await this.$timeout(() => {
+                await this.registerTimeout(() => {
                     if (this.autoZoomEnabled) {
                         console.log('[DispatchMapController] Auto-zoom enabled, fitting map to markers');
                         this.fitMapToMarkers();
@@ -445,6 +429,50 @@ class DispatchMapController extends BaseController {
         } finally {
             this.isUpdating = false;
         }
+    }
+
+    private async addMarkersInBatches(
+        jobs: IJob[],
+        useAlternateColor: boolean = false,
+        batchSize: number = 50
+    ): Promise<number> {
+        let totalMarkersAdded = 0;
+
+        for (let i = 0; i < jobs.length; i += batchSize) {
+            const batch = jobs.slice(i, i + batchSize);
+            let batchMarkersAdded = 0;
+
+            console.log(`[DispatchMapController] Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(jobs.length/batchSize)} (${batch.length} jobs)`);
+
+            batch.forEach((job: IJob) => {
+                if (this.isValidCoordinates(
+                    job.pickupAddress?.latitude,
+                    job.pickupAddress?.longitude
+                )) {
+                    this.addPickupMarker(job, false, useAlternateColor);
+                    batchMarkersAdded++;
+                }
+
+                if (this.isValidCoordinates(
+                    job.deliveryAddress?.latitude,
+                    job.deliveryAddress?.longitude
+                )) {
+                    this.addDeliveryMarker(job, false, useAlternateColor);
+                    batchMarkersAdded++;
+                }
+            });
+
+            totalMarkersAdded += batchMarkersAdded;
+
+            if (i + batchSize < jobs.length) {
+                await new Promise<void>(resolve => {
+                    this.registerTimeout(() => resolve(), 10);
+                });
+            }
+        }
+
+        console.log(`[DispatchMapController] Completed batched marker addition: ${totalMarkersAdded} markers from ${jobs.length} jobs`);
+        return totalMarkersAdded;
     }
 
     private updateCourierMarkers(couriers: AvailableCourierPosition[]) {
@@ -489,7 +517,7 @@ class DispatchMapController extends BaseController {
             opacity: 0.4
         });
 
-        this.$timeout(() => {
+        this.registerTimeout(() => {
             this.fadeInMarker(marker);
         }, Math.random() * 200);
 
@@ -526,7 +554,7 @@ class DispatchMapController extends BaseController {
             opacity: 0.4
         });
 
-        this.$timeout(() => {
+        this.registerTimeout(() => {
             this.fadeInMarker(marker);
         }, Math.random() * 200);
 
@@ -635,7 +663,7 @@ class DispatchMapController extends BaseController {
         });
 
         // Add fade-in effect to courier markers
-        this.$timeout(() => {
+        this.registerTimeout(() => {
             this.fadeInMarker(marker);
         }, Math.random() * 200);
 
@@ -729,26 +757,27 @@ class DispatchMapController extends BaseController {
         this.clearLocationRefreshInterval();
 
         // Start a new interval
-        this.locationRefreshInterval = this.$timeout(() => {
+        this.locationRefreshInterval = this.registerTimeout(() => {
             this.refreshCourierLocations();
         }, this.LOCATION_REFRESH_INTERVAL);
     }
 
     private refreshCourierLocations() {
         if (this.showAvailableCouriers) {
-            this.fetchCourierPositions().then(_ =>
-                this.$rootScope.$emit('courierLocationsNeedRefresh')
-            );
+            this.debounce(() => {
+                this.fetchCourierPositions().then(_ =>
+                    this.$rootScope.$emit('courierLocationsNeedRefresh')
+                );
+            }, 500);
         }
 
-        this.locationRefreshInterval = this.$timeout(() => {
+        this.locationRefreshInterval = this.registerTimeout(() => {
             this.refreshCourierLocations();
         }, this.LOCATION_REFRESH_INTERVAL);
     }
 
     private clearLocationRefreshInterval() {
         if (this.locationRefreshInterval) {
-            this.$timeout.cancel(this.locationRefreshInterval);
             this.locationRefreshInterval = null;
         }
     }

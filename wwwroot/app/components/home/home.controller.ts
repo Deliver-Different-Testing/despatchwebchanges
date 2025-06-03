@@ -70,27 +70,10 @@ class HomeController extends BaseController {
         'truckCourierStatusDialogService',
     ];
 
-    // Debounce methods
-    private debouncedGetData!: () => void;
-    private debouncedSaveLayout!: () => void;
-    private debouncedApplyDimensions!: () => void;
-    private debouncedFetchDriverLocations!: () => void;
-    private debouncedApplyJobCutoffDate!: () => void;
-    private debouncedGetJobList!: () => void;
-    private debouncedLoadSupports!: (filterType: string) => void;
-    private debouncedUpdateViews !: () => void;
-
     private readonly DOM_SELECTORS = {
         areaGroup: "#area-group .btn",
         driverLocations: "#driverLocations .listActive"
     } as const;
-
-    private refreshInterval?: angular.IPromise<any>;
-    virtualScrollConfig = {
-        itemHeight: 48, // Height of each row
-        containerHeight: 400, // Height of the scrollable container
-        buffer: 10 // Number of items to render outside visible area
-    };
 
     showDriverLocationsNoData: boolean = false;
     showDriverLocationsData: boolean = false;
@@ -169,7 +152,7 @@ class HomeController extends BaseController {
         private $mdDialog: angular.material.IDialogService,
         private $scope: angular.IScope,
         private $window: angular.IWindowService,
-        private $timeout: angular.ITimeoutService,
+        $timeout: angular.ITimeoutService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
         private uCSData: JobSearchService,
@@ -185,7 +168,7 @@ class HomeController extends BaseController {
         private interCourierChargeDialogService: InterCourierChargeDialogService,
         private jobContextMenuService: JobContextMenuService,
         private $mdEditDialog: any,
-        private $interval: angular.IIntervalService,
+        $interval: angular.IIntervalService,
         private navigationService: NavigationService,
         private truckCourierStatusDialogService: TruckCourierStatusDialogService,
     ) {
@@ -201,7 +184,12 @@ class HomeController extends BaseController {
         this.initialViewSet = false;
         this.mapJobList = [];
 
-        this.watchProperty("selectedViews", () => this.debouncedUpdateViews());
+        this.registerWatch(this.$scope, "selectedViews", (newViews) => {
+            if (newViews) {
+                this.initialViewSet = false;
+                this.updateMapForSelectedViews();
+            }
+        }, true);
 
         this.watchEvent('jobChanged', (_, newJob: IDispatchJob) => {
             this.currentSelection = ` for Job ${newJob.jobNo}`;
@@ -258,8 +246,8 @@ class HomeController extends BaseController {
                 angular.element('.column-sortable').removeClass('ui-sortable-active');
 
                 // Update box metrics and save layout
-                    this.updateBoxMetrics();
-                this.debouncedSaveLayout();
+                this.updateBoxMetrics();
+                this.saveLayout();
                 this.registerTimeout(() => this.$scope.$apply());
             }
         };
@@ -381,8 +369,6 @@ class HomeController extends BaseController {
         }, {
             id: "3", label: "Trucks",
         },];
-
-        this.setupDebouncedMethods();
     }
 
     $onInit() {
@@ -415,20 +401,9 @@ class HomeController extends BaseController {
             }
         });
 
-        /*this.refreshInterval = this.$interval(async () => {
-            console.log("[HomeRefresh] - Refreshing tasks and job list");
-
-            // Store current state before refresh
-            const currentJobId = this.currentJob?.id;
-            const currentCourierId = this.currentCourier?.courierId;
-
-            // Refresh job list
-            await this.refreshJobList(currentJobId, currentCourierId);
-        }, 60000);*/
-
         // Set up a watch to apply dimensions when the layout changes
         this.registerWatch(this.$scope, () => this.layout, () => {
-            this.debouncedApplyDimensions();
+            this.registerTimeout(() => this.applyLayoutDimensions());
         }, true);
 
         // Ensure draggingItems container exists
@@ -442,26 +417,6 @@ class HomeController extends BaseController {
         this.currentListLoading = false;
 
         this.filteredSupports = this.supports;
-    }
-
-    $onDestroy() {
-        if (this.refreshInterval) {
-            this.$interval.cancel(this.refreshInterval);
-        }
-    }
-
-    private setupDebouncedMethods(): void {
-        // Existing debounced methods
-        this.debouncedGetData = this.debounce(() => this.getData(), 300, 'getData');
-        this.debouncedSaveLayout = this.debounce(() => this.saveCurrentLayout(), 500, 'saveLayout');
-        this.debouncedApplyDimensions = this.debounce(() => this.applyLayoutDimensions(), 200, 'applyDimensions');
-        this.debouncedFetchDriverLocations = this.debounce(() => this.fetchDriverLocations(), 400, 'fetchDrivers');
-        this.debouncedApplyJobCutoffDate = this.debounce(() => this.applyJobCutoffDate(), 300, 'applyJobCutoff');
-        this.debouncedGetJobList = this.debounce(() => this.getJobList(), 250, 'getJobList');
-        this.debouncedLoadSupports = this.debounce((filterType: string) => this.loadSupports(filterType), 200, 'loadSupports');
-        this.debouncedUpdateViews = this.debounce(() => {
-            this.updateMapForSelectedViews();
-        }, 200, 'updateViews');
     }
 
     private updateBoxMetrics() {
@@ -551,7 +506,9 @@ class HomeController extends BaseController {
         }
 
         // Auto-save changes
-       this.registerWatch(this.$scope, "layout", (newValue: { columns: IColumn[] }, oldValue: { columns: IColumn[] }) => {
+        this.registerWatch(this.$scope, "layout", (newValue: { columns: IColumn[] }, oldValue: {
+            columns: IColumn[]
+        }) => {
             if (newValue !== oldValue && this.currentLayoutName) {
                 const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
                 if (index !== -1) {
@@ -569,11 +526,11 @@ class HomeController extends BaseController {
         this.currentLayoutName = layout.name;
         this.layout = angular.copy(layout.layout);
 
-        this.debouncedApplyDimensions();
+        this.applyLayoutDimensions();
 
-            if (Modernizr.localstorage) {
-                localStorage.setItem(`lastActiveLayout-${ContactID}`, layout.name);
-            }
+        if (Modernizr.localstorage) {
+            localStorage.setItem(`lastActiveLayout-${ContactID}`, layout.name);
+        }
 
         this.registerTimeout(() => this.$scope.$apply());
     }
@@ -713,11 +670,16 @@ class HomeController extends BaseController {
             }
         }
 
+        // Save filtered views
         this.saveViewsToStorage(this.selectedViews);
+
+        // Update map bounds for new selection
         this.updateMapForSelectedViews();
 
-        this.debouncedFetchDriverLocations();
-        this.debouncedGetData();
+        this.debounce(async () => {
+            await this.getData();
+            await this.fetchDriverLocations();
+        }, 500);
     }
 
     updateMapForSelectedViews() {
@@ -894,6 +856,36 @@ class HomeController extends BaseController {
     }
 
     async handleDispatchSelection(selectedCourier: Suggestion, job: IDispatchJob) {
+        console.log("DISPATCH CALLED FROM:", new Error().stack);
+        console.log("Context check:", {
+            hasThis: !!this,
+            hasDispatchState: !!this?.dispatchState,
+            constructor: this?.constructor?.name,
+            jobNo: job?.jobNo,
+            courierName: selectedCourier?.text
+        });
+
+        console.log("Context check:", {
+            hasThis: !!this,
+            hasDispatchState: !!this?.dispatchState,
+            constructor: this?.constructor?.name
+        });
+
+        if (!this || !this.dispatchState) {
+            console.error("CONTEXT LOST - this is the binding issue!");
+            return;
+        }
+
+        if (!selectedCourier || !selectedCourier.id) {
+            console.log("handleDispatchSelection called without valid courier - ignoring");
+            return;
+        }
+
+        if (this.currentListLoading) {
+            console.log("handleDispatchSelection called during loading - ignoring");
+            return;
+        }
+
         if (this.dispatchState.processing) {
             console.log("Dispatch already in progress");
             return;
@@ -1472,17 +1464,14 @@ class HomeController extends BaseController {
 
     async activateDrop() {
         const self = this;
-        await this.$timeout(0);
+        this.registerTimeout(() => console.log("Activated drop"), 0);
         await new Promise((resolve) => {
             this.$document.ready(resolve);
         });
 
         (angular.element(".droppable-row") as any).droppable({
-            classes: {"ui-droppable-hover": "active"},
-            drop: async (event: MouseEvent, ui: any) => {
-                if (self.dispatchState.selectedJobs.size > 0 && event.target) {
-                    await self.handleDroppedJob(angular.element(event.target as Element));
-                }
+            classes: {"ui-droppable-hover": "active"}, drop: async (event: MouseEvent, ui: any) => {
+                await self.handleDroppedJob(self);
             },
         });
     }
@@ -1517,7 +1506,7 @@ class HomeController extends BaseController {
     }
 
     async dispatchDroppedJob($element: any) {
-        const courierId = parseInt($element.attr("data-courier").replace(/[^\d.-]/g, ""), 10);
+        const courierId = $element.attr("data-courier").replace(/[^\d.-]/g, "");
 
         // Validate courier ID
         if (!courierId || isNaN(courierId)) {
@@ -1639,7 +1628,7 @@ class HomeController extends BaseController {
 
     async selectCourier(courier: CourierData) {
         try {
-                this.currentListLoading = true;
+            this.currentListLoading = true;
             this.registerTimeout(() => this.$scope.$apply());
 
             if (!courier || !courier.courierId) return;
@@ -1669,7 +1658,7 @@ class HomeController extends BaseController {
             console.error("Error selecting courier:", error);
             this.toastrService.showErrorToast("Error loading courier information");
         } finally {
-                this.currentListLoading = false;
+            this.currentListLoading = false;
             this.registerTimeout(() => this.$scope.$apply());
         }
     }
@@ -1813,7 +1802,6 @@ class HomeController extends BaseController {
 
         this.markJobReadStatus(job.id, true);
 
-        await this.$timeout(async () => {
             // Refresh tasks
             await this.loadSupports();
 
@@ -1908,7 +1896,8 @@ class HomeController extends BaseController {
 
             // Only focus the dispatch field for the selected job
             this.focusDispatchField(job.id);
-        }, 0);
+
+        this.$scope.$applyAsync();
     }
 
     async handleUndispatchedJob(job: IDispatchJob) {
@@ -1937,19 +1926,19 @@ class HomeController extends BaseController {
     }
 
     focusDispatchField(jobId: number) {
-            const inputField = angular.element(`#input_${jobId}`);
-            if (inputField.length) {
-                const inputElement = inputField.find('input');
-                if (inputElement.length) {
-                    const htmlInputElement = (inputElement as any)[0] as HTMLInputElement;
-                    htmlInputElement.focus();
+        const inputField = angular.element(`#input_${jobId}`);
+        if (inputField.length) {
+            const inputElement = inputField.find('input');
+            if (inputElement.length) {
+                const htmlInputElement = (inputElement as any)[0] as HTMLInputElement;
+                htmlInputElement.focus();
 
-                    const job = this.jobList.find(j => j.id === jobId);
-                    if (job && !job.courier && !job.assignedCourier) {
-                        htmlInputElement.select();
-                    }
+                const job = this.jobList.find(j => j.id === jobId);
+                if (job && !job.courier && !job.assignedCourier) {
+                    htmlInputElement.select();
                 }
             }
+        }
 
         this.registerTimeout(() => this.$scope.$apply());
     }
@@ -2102,7 +2091,7 @@ class HomeController extends BaseController {
             this.endDate = newDate;
         }
 
-        this.debouncedApplyJobCutoffDate();
+        await this.applyJobCutoffDate();
     }
 
     async resetJobCutoffDate() {
@@ -2185,7 +2174,7 @@ class HomeController extends BaseController {
             const selectedViews = this.views.filter((view) => view.selected);
 
             if (!selectedViews || selectedViews.length === 0) {
-                this.driverLocations = { areas: [] };
+                this.driverLocations = {areas: []};
                 this.updateDriverLocationsDisplay();
                 return;
             }
@@ -2196,7 +2185,7 @@ class HomeController extends BaseController {
             await this.activateDrop();
         } catch (error: any) {
             console.error("Error getting driver locations data:", error);
-            this.driverLocations = { areas: [] };
+            this.driverLocations = {areas: []};
             this.updateDriverLocationsDisplay();
         }
     }
@@ -2248,7 +2237,7 @@ class HomeController extends BaseController {
     }
 
     async truckLoadingStatus($event: MouseEvent) {
-        if(!this.truckCourierStatus) return;
+        if (!this.truckCourierStatus) return;
         await this.truckCourierStatusDialogService.showTruckLoadingStatus($event, this.truckCourierStatus);
     }
 
@@ -2404,7 +2393,7 @@ class HomeController extends BaseController {
     async filterByStatus(statusGroup: string) {
         console.log('filterByStatus called with:', statusGroup);
         this.queryParams.order = statusGroup;
-        this.debouncedGetJobList();
+        await this.getJobList();
         console.log(`Jobs ordered by status group: ${statusGroup}`);
     }
 
@@ -2504,7 +2493,7 @@ class HomeController extends BaseController {
 
     async filterSupports(filterType: string): Promise<void> {
         this.supportsFilter = filterType;
-        this.debouncedLoadSupports(filterType);
+        await this.loadSupports(filterType);
     }
 
     getContextMenuOptions(job: IDispatchJob) {

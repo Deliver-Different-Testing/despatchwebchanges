@@ -15,7 +15,7 @@ class BaseController implements angular.IController {
     protected initServices(
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
-        $scope: angular.IScope): void {
+        $scope?: angular.IScope): void {
         this.$timeoutService = $timeout;
         this.$intervalService = $interval;
         this.$scopeService = $scope;

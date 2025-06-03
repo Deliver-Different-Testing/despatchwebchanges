@@ -47,6 +47,8 @@ public class DispatchJobViewModel
     public string Client { get; set; }
     public int? ClientId { get; set; }
     public int? JobType { get; set; }
+    public string JobTypeDescription { get; set; }
+
     public int? Minutes { get; set; }
     public int? PickupTime { get; set; }
     public int? AlertLatePickup { get; set; }

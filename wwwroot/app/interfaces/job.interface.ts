@@ -36,6 +36,7 @@ export interface IJob {
     vehicle: Suggestion;
     clientId?: number;
     jobType?: number;
+    jobTypeDescription?: string;
     client: string;
     clientName: string;
     from: string;
@@ -161,6 +162,7 @@ export interface IJob {
     deliverByWindowMins?: number;
     pickUpTimeZone?: Suggestion;
     deliveryTimeZone?: Suggestion;
+    hasDgDocsString?: string;
 }
 
 export interface ParcelDimensions {
