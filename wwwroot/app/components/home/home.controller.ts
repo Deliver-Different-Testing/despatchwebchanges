@@ -173,8 +173,8 @@ class HomeController extends BaseController {
         private truckCourierStatusDialogService: TruckCourierStatusDialogService,
     ) {
         super();
-
         this.initServices($timeout, $interval, this.$scope);
+        this.bindMethods();
 
         this.greeting = greetUser(FirstName);
         this.timeZone = TimeZone;
@@ -367,6 +367,29 @@ class HomeController extends BaseController {
         }, {
             id: "3", label: "Trucks",
         },];
+    }
+
+    private bindMethods() {
+        this.handleDispatchSelection = this.handleDispatchSelection.bind(this);
+        this.selectJob = this.selectJob.bind(this);
+        this.toggleView = this.toggleView.bind(this);
+        this.selectedCourierChange = this.selectedCourierChange.bind(this);
+        this.selectCourier = this.selectCourier.bind(this);
+        this.selectClearList = this.selectClearList.bind(this);
+        this.handleDispatchFieldClick = this.handleDispatchFieldClick.bind(this);
+        this.selectForDispatch = this.selectForDispatch.bind(this);
+        this.handleMarkerClick = this.handleMarkerClick.bind(this);
+        this.handleSplitJob = this.handleSplitJob.bind(this);
+        this.JobRecordSelected = this.JobRecordSelected.bind(this);
+        this.selectPotentialCourier = this.selectPotentialCourier.bind(this);
+        this.selectSupportJobDetail = this.selectSupportJobDetail.bind(this);
+        this.filterByStatus = this.filterByStatus.bind(this);
+        this.filterSupports = this.filterSupports.bind(this);
+        this.filterTasks = this.filterTasks.bind(this);
+        this.onSearchRangeChange = this.onSearchRangeChange.bind(this);
+        this.setTruckMode = this.setTruckMode.bind(this);
+        this.openSearch = this.openSearch.bind(this);
+        this.onCourierSearchClick = this.onCourierSearchClick.bind(this);
     }
 
     $onInit() {
@@ -856,42 +879,13 @@ class HomeController extends BaseController {
 
     async handleDispatchSelection(selectedCourier: Suggestion, job: IDispatchJob) {
         console.log("DISPATCH CALLED FROM:", new Error().stack);
-        console.log("Context check:", {
-            hasThis: !!this,
-            hasDispatchState: !!this?.dispatchState,
-            constructor: this?.constructor?.name,
-            jobNo: job?.jobNo,
-            courierName: selectedCourier?.text
-        });
-
-        console.log("Context check:", {
-            hasThis: !!this,
-            hasDispatchState: !!this?.dispatchState,
-            constructor: this?.constructor?.name
-        });
-
-        if (!this || !this.dispatchState) {
-            console.error("CONTEXT LOST - this is the binding issue!");
+        if(job.courierData || job.assignedCourier || job.assignedFlight) {
+            console.log("handleDispatchSelection called with courierData or assignedCourier or assignedFlight - ignoring");
             return;
         }
 
         if (!selectedCourier || !selectedCourier.id) {
             console.log("handleDispatchSelection called without valid courier - ignoring");
-            return;
-        }
-
-        if (this.currentListLoading) {
-            console.log("handleDispatchSelection called during loading - ignoring");
-            return;
-        }
-
-        if (this.dispatchState.processing) {
-            console.log("Dispatch already in progress");
-            return;
-        }
-
-        if (!selectedCourier) {
-            console.log("Unchecked Courier Selection Clicked!");
             return;
         }
 
@@ -1461,37 +1455,6 @@ class HomeController extends BaseController {
         return this.$mdDialog.show(confirm);
     }
 
-    isWithinDropZone(parentOffset: any, rowOffset: any, $element: any) {
-        const parentTop = parentOffset.top;
-        const parentBottom = parentTop + $element.parents(".box").outerHeight();
-        const rowTop = rowOffset.top;
-        const rowBottom = rowTop + $element.outerHeight();
-
-        return rowTop < parentBottom && rowBottom > parentTop;
-    }
-
-    async animateDroppedJob($element: any) {
-        $element.css({"background-color": "#c6dfad"});
-        await new Promise<void>((resolve) => {
-            $element.animate({backgroundColor: "inherit"}, 300, () => {
-                $element.removeAttr("style");
-                resolve();
-            });
-        });
-    }
-
-    async dispatchDroppedJob($element: any) {
-        const courierId = $element.attr("data-courier").replace(/[^\d.-]/g, "");
-
-        try {
-            await this.dispatchJobs(courierId);
-            console.log("Dispatch complete");
-            await this.fetchDriverLocations();
-        } catch (error: any) {
-            console.error("Error in drop handler:", error);
-        }
-    }
-
     async getPotentialCouriers(jobId: number) {
         try {
             this.potentialCouriers = await this.DispatchData.getPotentialCouriers(jobId);
@@ -1544,7 +1507,7 @@ class HomeController extends BaseController {
 
     async selectedCourierChange(courier: Suggestion) {
         if (!courier) {
-            // When courier is cleared, show all jobs
+            // When the courier is cleared, show all jobs
             this.currentCourier = null;
             this.mapJobList = [...this.jobList];
             return;
