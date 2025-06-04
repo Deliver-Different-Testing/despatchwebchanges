@@ -16,16 +16,16 @@ namespace DespatchWeb.EntityClasses
             return FromExpression(() => UTL_fncClearList_Other());
         }
 
+        [DbFunction("UTL_fncClearListArea_Couriers", "dbo")]
+        public IQueryable<UTL_fncClearListArea_CouriersResult> UTL_fncClearListArea_Couriers(int? ClearListAreaID, DateTime? CurrentDate)
+        {
+            return FromExpression(() => UTL_fncClearListArea_Couriers(ClearListAreaID, CurrentDate));
+        }
+
         [DbFunction("UTL_fncJob_ExtraRate", "dbo")]
         public IQueryable<UTL_fncJob_ExtraRateResult> UTL_fncJob_ExtraRate(decimal? TotalWeight, int? Quantity, decimal? Cubic, int? TotalPallets, int? ExtraStopOffs, int? VehicleSizeID, bool? DangerousGoods, decimal? DryIceWeight, int? WaitTime, int? ExtraChargeID, bool? Holiday, bool? Afterhours, int? FromZoneCongestionID, int? ToZoneCongestionID, decimal? MFV)
         {
             return FromExpression(() => UTL_fncJob_ExtraRate(TotalWeight, Quantity, Cubic, TotalPallets, ExtraStopOffs, VehicleSizeID, DangerousGoods, DryIceWeight, WaitTime, ExtraChargeID, Holiday, Afterhours, FromZoneCongestionID, ToZoneCongestionID, MFV));
-        }
-
-        [DbFunction("UTL_fncJob_HasChildren", "dbo")]
-        public static bool? UTL_fncJob_HasChildren(int? JobID)
-        {
-            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
         }
 
         [DbFunction("UTL_fncS_GetNationwideService_RawPrice", "dbo")]
@@ -34,15 +34,10 @@ namespace DespatchWeb.EntityClasses
             throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
         }
 
-        [DbFunction("UTL_fncSuburb_FromNameWithPostCode", "dbo")]
-        public static int? UTL_fncSuburb_FromNameWithPostCode(string Suburb, int? SiteID, int? PostCode)
-        {
-            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
-        }
-
         protected void OnModelCreatingGeneratedFunctions(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<UTL_fncClearList_OtherResult>().HasNoKey();
+            modelBuilder.Entity<UTL_fncClearListArea_CouriersResult>().HasNoKey();
             modelBuilder.Entity<UTL_fncJob_ExtraRateResult>().HasNoKey();
         }
     }

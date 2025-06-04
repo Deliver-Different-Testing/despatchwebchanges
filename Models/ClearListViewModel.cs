@@ -4,7 +4,7 @@ namespace DespatchWeb.Models;
 
 public class ClearListViewModel
 {
-    public List<AreaClearList> Areas { get; set; } = new();
+    public List<AreaClearList> Areas { get; set; } = [];
 }
 
 public class AreaClearList
@@ -13,9 +13,9 @@ public class AreaClearList
     public string Name { get; set; }
     public int Order { get; set; }
     public int PercentHeight { get; set; }
-    public List<ClearListSection> Top { get; set; } = new();
-    public List<ClearListSection> Middle { get; set; } = new();
-    public List<ClearListSection> Bottom { get; set; } = new();
+    public List<ClearListSection> Top { get; set; } = [];
+    public List<ClearListSection> Middle { get; set; } = [];
+    public List<ClearListSection> Bottom { get; set; } = [];
     public int TotalRemaining { get; set; }
 }
 
@@ -23,7 +23,7 @@ public class ClearListSection
 {
     public string CourierNumber { get; set; }
     public CourierData CourierData { get; set; }
-    public List<Destination> Destinations { get; set; } = new();
+    public List<Destination> Destinations { get; set; } = [];
     public int JobCount { get; set; }
 }
 

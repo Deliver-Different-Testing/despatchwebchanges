@@ -265,6 +265,8 @@ public partial class TucCourier
 
     public decimal? SubContractorFuelPercentage { get; set; }
 
+    public virtual TucCourierFleet CourierFleet { get; set; }
+
     public virtual TblCourierGp CourierGps { get; set; }
 
     public virtual TblCourierLogInOut CourierLogInOut { get; set; }

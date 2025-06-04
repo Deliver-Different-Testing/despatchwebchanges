@@ -207,6 +207,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucCourierFleet]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucEvent]",
          "ObjectType": 0
       },
@@ -375,36 +379,7 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[DD_stpGetCarrierFlightRate]",
-         "ObjectType": 1
-      },
-      {
-         "Name": "[dbo].[DD_stpJob_AddStop_InsertJob]",
-         "ObjectType": 1
-      },
-      {
-         "Name": "[dbo].[DD_stpJob_NationWideFlight_InsertParts]",
-         "ObjectType": 1
-      },
-      {
          "Name": "[dbo].[DD_stpJob_Rate_Described]",
-         "ObjectType": 1
-      },
-      {
-         "Name": "[dbo].[DES_qdfCourier_ClearLists]",
-         "ObjectType": 1
-      },
-      {
-         "Name": "[dbo].[DES_qdfEvent_Insert]",
-         "ObjectType": 1
-      },
-      {
-         "MappedType": "DES_qdfCourier_ClearListsResult",
-         "Name": "[dbo].[DES_qdfUS_Courier_ClearLists]",
-         "ObjectType": 1
-      },
-      {
-         "Name": "[dbo].[DES_qryCourierCombo_Active]",
          "ObjectType": 1
       },
       {
@@ -584,19 +559,15 @@
          "ObjectType": 2
       },
       {
+         "Name": "[dbo].[UTL_fncClearListArea_Couriers]",
+         "ObjectType": 2
+      },
+      {
          "Name": "[dbo].[UTL_fncJob_ExtraRate]",
          "ObjectType": 2
       },
       {
-         "Name": "[dbo].[UTL_fncJob_HasChildren]",
-         "ObjectType": 2
-      },
-      {
          "Name": "[dbo].[UTL_fncS_GetNationwideService_RawPrice]",
-         "ObjectType": 2
-      },
-      {
-         "Name": "[dbo].[UTL_fncSuburb_FromNameWithPostCode]",
          "ObjectType": 2
       }
    ],

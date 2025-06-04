@@ -71,8 +71,8 @@
             ng-click="ctrl.selectJob(job)"
             ng-repeat="job in ctrl.jobList track by job.id">
 
-            <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">{{::job.time | momentFormat:"HH:mm"}}
-                ({{ctrl.timeZone | timezoneShort}})
+            <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">{{job.time | momentFormat:"HH:mm"}}
+                ({{::ctrl.timeZone | timezoneShort}})
             </td>
             <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">{{job.speed}}</td>
             <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">{{job.notify}}</td>
@@ -82,12 +82,12 @@
             <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">{{job.jobNo}}</td>
             <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">{{job.client}}</td>
             <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">
-                {{::ctrl.isUsCustomer ? job.pickupAddress.addressLine5 + ', ' + job.pickupAddress.addressLine6 : job.from}}
+                {{ctrl.isUsCustomer ? job.pickupAddress.addressLine5 + ', ' + job.pickupAddress.addressLine6 : job.from}}
                 <md-tooltip md-direction="bottom">{{ job.pickupAddress.fullAddress }}</md-tooltip>
                 <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
             </td>
             <td md-cell md-truncate ng-class="{'font-bold': !job.hasBeenRead}">
-                <span md-truncate> {{::ctrl.isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}</span>
+                <span md-truncate> {{ctrl.isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}</span>
                 <md-tooltip md-direction="bottom">{{ job.deliveryAddress.fullAddress }}</md-tooltip>
                 <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
             </td>

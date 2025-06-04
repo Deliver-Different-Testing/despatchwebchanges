@@ -856,8 +856,8 @@ class HomeController extends BaseController {
 
     async handleDispatchSelection(selectedCourier: Suggestion, job: IDispatchJob) {
         console.log("DISPATCH CALLED FROM:", new Error().stack);
-        if(job.courierData || job.assignedCourier || job.assignedFlight) {
-            console.log("handleDispatchSelection called with courierData or assignedCourier or assignedFlight - ignoring");
+        if(job.courierData || job.assignedAgent || job.assignedFlight) {
+            console.log("handleDispatchSelection called with courierData or assignedAgent or assignedFlight - ignoring");
             return;
         }
 
