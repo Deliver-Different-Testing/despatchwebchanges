@@ -433,7 +433,8 @@ private async Task<List<AvailableCourierPosition>> GetNzAvailableCourierPosition
 
         try
         {
-            var query = Context.TblDespatchViews.Where(dv => despatchViewIds.Contains(dv.DespatchViewId));
+            var query = Context.TblDespatchViews
+                .Where(dv => despatchViewIds.Contains(dv.DespatchViewId));
 
             var clearLists = await query
                 .SelectMany(dv => dv.DespatchViewZoneGroups)

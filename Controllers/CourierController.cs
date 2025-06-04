@@ -28,7 +28,7 @@ public class CourierController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting clear lists");
-            return StatusCode(500);
+            return StatusCode(500, e.Message);
         }
     }
 
