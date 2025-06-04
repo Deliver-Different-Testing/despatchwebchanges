@@ -5,3 +5,8 @@ export interface ResendJobsRequest {
     jobNos: string[];
     courierId: number;
 }
+
+export interface DispatchState {
+    processing: boolean;
+    selectedJobs: Set<number>;
+}

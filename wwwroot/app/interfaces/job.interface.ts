@@ -263,14 +263,14 @@ export interface ClearListSection {
 
 export interface CourierData {
     courier: string;
-    location: string;
-    pu: string;
-    del: string;
-    lrm: string;
-    eta2Lrm: string;
+    location?: string;
+    pu?: string;
+    del?: string;
+    lrm?: string;
+    eta2Lrm?: string;
     courierId?: number;
-    courierName: string;
-    courierMobile: string;
+    courierName?: string;
+    courierMobile?: string;
     courierNumber: string;
     latitude?: number;
     longitude?: number;
@@ -417,6 +417,7 @@ export interface IDispatchJob {
 
     // Courier information
     courier?: string;
+    courierSearchLoading: boolean;
     assignedCourier?: Suggestion;
     courierData?: CourierData;
 

@@ -61,7 +61,7 @@
         <tbody md-body>
         <tr md-row
             ng-repeat="job in ctrl.jobList | filter: box.searchBox track by job.id"
-            ng-class="ctrl.jobClass(job)"
+            ng-class="::ctrl.jobClass(job)"
             context-menu="ctrl.getContextMenuOptions(job)"
             context-menu-on="contextmenu"
             context-menu-class="job-context-menu"
@@ -75,7 +75,7 @@
                 <md-icon md-font-set="material-symbols-outlined" ng-if="job.fromAirportId || job.toAirportId">
                     {{::ctrl.getFlightIcon(job.jobNo)}}
                 </md-icon>
-                <span ng-if="!job.fromAirportId && !job.toAirportId">{{job.speed}}</span>
+                <span ng-if="::!job.fromAirportId && !job.toAirportId">{{job.speed}}</span>
             </td>
             <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">{{job.jobNo}}</td>
             <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">{{job.client}}</td>

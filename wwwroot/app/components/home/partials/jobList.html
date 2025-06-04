@@ -6,7 +6,7 @@
         <div class="status-summary" ng-if="ctrl.jobList && ctrl.jobList.length > 0">
             <md-button class="md-button status-chip total" ng-click="ctrl.filterByStatus('group-all')">
                 <md-icon md-font-set="material-symbols-outlined">article</md-icon>
-                <span>{{::ctrl.jobList.length || 0}}</span>
+                <span>{{ctrl.jobList.length || 0}}</span>
                 <span class="status-label">Total</span>
             </md-button>
             <md-button class="md-button status-chip unread" ng-click="ctrl.filterByStatus('unread')">
@@ -84,42 +84,49 @@
             <td md-cell ng-class="{'font-bold': !job.hasBeenRead}">
                 {{ctrl.isUsCustomer ? job.pickupAddress.addressLine5 + ', ' + job.pickupAddress.addressLine6 : job.from}}
                 <md-tooltip md-direction="bottom">{{ job.pickupAddress.fullAddress }}</md-tooltip>
-                <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
+                <md-icon md-font-set="material-symbols-outlined" ng-if="::!job.pickUpLongitude">warning</md-icon>
             </td>
             <td md-cell md-truncate ng-class="{'font-bold': !job.hasBeenRead}">
                 <span md-truncate> {{ctrl.isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}</span>
                 <md-tooltip md-direction="bottom">{{ job.deliveryAddress.fullAddress }}</md-tooltip>
-                <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
+                <md-icon md-font-set="material-symbols-outlined" ng-if="::!job.deliveryLongitude">warning</md-icon>
             </td>
 
             <td md-cell>
-                <md-autocomplete
-                        id="input_{{job.id}}"
-                        md-item-text="item.text"
-                        md-items="item in ctrl.courierSearch(job.searchText)"
-                        md-min-length="2"
-                        md-search-text="job.searchText"
-                        md-select-on-focus
-                        md-autoselect
-                        md-autocomplete-enter-select
-                        md-select-on-match="true"
-                        md-selected-item="job.assignedCourier"
-                        md-no-cache="true"
-                        md-clear-button="false"
-                        md-input-name="dispatchCourierSearch"
-                        ng-click="ctrl.handleDispatchFieldClick($event, job)"
-                        ng-disabled="job.courier !== null || job.assignedCourier !== null"
-                        md-selected-item-change="ctrl.handleDispatchSelection(item, job)"
-                        placeholder="Search Courier...">
-                    <md-item-template>
-        <span md-highlight-flags="^i"
-              md-highlight-text="job.searchText">{{item.text}}</span>
-                    </md-item-template>
-                    <md-not-found>
-                        No couriers matching "{{job.searchText}}" were found.
-                    </md-not-found>
-                </md-autocomplete>
+                <div class="material-typeahead-container">
+                    <input type="text"
+                           id="input_{{job.id}}"
+                           ng-model="job.assignedCourier"
+                           uib-typeahead="item as item.text for item in ctrl.courierSearch($viewValue)"
+                           typeahead-loading="job.courierSearchLoading"
+                           typeahead-no-results="ctrl.noResults"
+                           typeahead-min-length="2"
+                           typeahead-wait-ms="300"
+                           typeahead-select-on-blur="true"
+                           typeahead-focus-first="true"
+                           typeahead-editable="false"
+                           typeahead-on-select="ctrl.handleDispatchSelection($item, $model, $label, $event, job)"
+                           typeahead-input-formatter="ctrl.formatCourierDisplay($model)"
+                           class="md-input material-typeahead-input"
+                           ng-click="ctrl.handleDispatchFieldClick($event, job)"
+                           ng-disabled="job.courier !== null || job.courierData !== null || ctrl.dispatchState.processing"
+                           placeholder="Search Courier..."
+                           autocomplete="off">
+
+                    <!-- Loading indicator -->
+                    <md-progress-circular md-mode="indeterminate"
+                                          md-diameter="20"
+                                          ng-show="ctrl.loadingCouriers"
+                                          class="material-typeahead-spinner">
+                    </md-progress-circular>
+
+                    <!-- No results message -->
+                    <div ng-show="ctrl.noResults" class="material-typeahead-no-results">
+                        No couriers matching your search were found.
+                    </div>
+                </div>
             </td>
+
             <td md-cell>
                 <span class="remain-time">{{job.remain}}</span>
             </td>

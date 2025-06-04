@@ -188,6 +188,7 @@ class NationwideControl extends BaseController {
     ) {
         super();
         this.initServices($timeout, $interval, this.$scope);
+        this.bindMethods();
 
         this.greeting = greetUser(FirstName);
         this.isUsCustomer = this.appConfig.US_Customer;
@@ -468,6 +469,74 @@ class NationwideControl extends BaseController {
                 this.saveCurrentLayout();
             }
         };
+    }
+
+    private bindMethods(): void {
+        // Event handlers that are passed as callbacks
+        this.handleStatusChange = this.handleStatusChange.bind(this);
+        this.toggleView = this.toggleView.bind(this);
+
+        // Methods used in templates that might lose context
+        this.selectJob = this.selectJob.bind(this);
+        this.loadRelatedJobDetail = this.loadRelatedJobDetail.bind(this);
+        this.selectTaskJobDetail = this.selectTaskJobDetail.bind(this);
+        this.jobRecordSelected = this.jobRecordSelected.bind(this);
+
+        // Async operations that might be called from templates
+        this.loadFlights = this.loadFlights.bind(this);
+        this.loadNextDayFlights = this.loadNextDayFlights.bind(this);
+        this.onAirportSelectionChanged = this.onAirportSelectionChanged.bind(this);
+        this.filterFlightsByAirline = this.filterFlightsByAirline.bind(this);
+
+        // Job list operations
+        this.onReorderJobList = this.onReorderJobList.bind(this);
+        this.onReorderPodList = this.onReorderPodList.bind(this);
+        this.onReorderRepriceList = this.onReorderRepriceList.bind(this);
+        this.refreshJobLists = this.refreshJobLists.bind(this);
+
+        // Filter operations
+        this.filterNewJobsByStatus = this.filterNewJobsByStatus.bind(this);
+        this.filterPodJobsByStatus = this.filterPodJobsByStatus.bind(this);
+        this.filterRepriceJobsByStatus = this.filterRepriceJobsByStatus.bind(this);
+        this.filterTasks = this.filterTasks.bind(this);
+        this.filterTasksByStatus = this.filterTasksByStatus.bind(this);
+
+        // Job operations that might be called from templates
+        this.addFlightToJob = this.addFlightToJob.bind(this);
+        this.addAgentToJob = this.addAgentToJob.bind(this);
+        this.addSelectedAgentToJob = this.addSelectedAgentToJob.bind(this);
+        this.sendQuoteRequest = this.sendQuoteRequest.bind(this);
+        this.addStopToJob = this.addStopToJob.bind(this);
+
+        // Dialog operations
+        this.openFlightMoreInfo = this.openFlightMoreInfo.bind(this);
+        this.openAgentMoreInfo = this.openAgentMoreInfo.bind(this);
+        this.openAgentSearchDialog = this.openAgentSearchDialog.bind(this);
+        this.openFileAttachmentDialog = this.openFileAttachmentDialog.bind(this);
+        this.showAdditionalServicesMenu = this.showAdditionalServicesMenu.bind(this);
+        this.createEvent = this.createEvent.bind(this);
+
+        // Layout operations
+        this.saveLayout = this.saveLayout.bind(this);
+        this.deleteLayout = this.deleteLayout.bind(this);
+        this.loadLayout = this.loadLayout.bind(this);
+
+        // Data operations
+        this.getData = this.getData.bind(this);
+        this.getJobList = this.getJobList.bind(this);
+        this.loadTasks = this.loadTasks.bind(this);
+        this.loadPageViews = this.loadPageViews.bind(this);
+
+        // Job state operations
+        this.lockJob = this.lockJob.bind(this);
+        this.unlockJob = this.unlockJob.bind(this);
+        this.restoreJob = this.restoreJob.bind(this);
+        this.reAllocateJobs = this.reAllocateJobs.bind(this);
+
+        // Search and utility operations
+        this.jobRecordSearch = this.jobRecordSearch.bind(this);
+        this.onSearchRangeChange = this.onSearchRangeChange.bind(this);
+        this.refreshAction = this.refreshAction.bind(this);
     }
 
     $onInit() {
