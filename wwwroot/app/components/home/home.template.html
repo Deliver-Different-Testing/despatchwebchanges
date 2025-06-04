@@ -132,10 +132,10 @@
                         <md-toolbar class="md-accent">
                             <div class="md-toolbar-tools">
                                 <!--Icon-->
-                                <span class="material-symbols-outlined">{{ctrl.boxes[box.name].icon}}</span>
+                                <span class="material-symbols-outlined">{{::ctrl.boxes[box.name].icon}}</span>
 
                                 <span class="md-headline-title" flex style="margin-left: 8px;">
-                                {{ctrl.boxes[box.name].title}}
+                                {{::ctrl.boxes[box.name].title}}
                                 <span ng-if="box.name == 'jobDetail'">{{ctrl.currentSelection}}</span>
                                 <span ng-if="box.name == 'potentialCouriers'">{{ctrl.potentialCouriersSelection}}</span>
                                 <span ng-if="box.name == 'currentWork' || box.name == 'map'">{{ctrl.currentWorkSelection}}</span>
