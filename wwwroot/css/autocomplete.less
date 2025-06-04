@@ -1,0 +1,311 @@
+@import 'variables.less';
+
+// Material Design Variables for Typeahead
+@primary-color-light: rgba(33, 150, 243, 0.1);
+@text-primary: rgba(0,0,0,0.87);
+@text-secondary: rgba(0,0,0,0.54);
+@text-disabled: rgba(0,0,0,0.38);
+@text-hint: rgba(0,0,0,0.54);
+@divider-color: rgba(0,0,0,0.12);
+@hover-color: rgba(0,0,0,0.04);
+@shadow-color: rgba(0,0,0,0.15);
+
+// Transitions
+@transition-duration: 0.2s;
+@fast-transition: 0.15s;
+
+// Spacing
+@table-cell-padding: 4px 8px;
+@dropdown-padding: 4px 0;
+@item-padding: 8px 16px;
+
+// Typography
+@font-size-table: 13px;
+@font-size-small: 12px;
+@line-height-base: 1.4;
+@line-height-small: 1.3;
+
+// Z-index management
+@z-typeahead-dropdown: 1050;
+@z-loading-spinner: 1051;
+
+// Material Design Table Integration
+td.md-cell {
+  // Ensure proper positioning context
+  position: relative;
+
+  .material-typeahead-container {
+    position: relative;
+    width: 100%;
+    min-width: 140px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+  }
+}
+
+// Input styling optimized for Material Design tables
+.material-typeahead-input {
+  // Remove default styling
+  border: none;
+  background: transparent;
+  outline: none;
+  box-shadow: none;
+
+  // Material Design table typography
+  font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-size: @font-size-table;
+  line-height: @line-height-base;
+  font-weight: 400;
+  color: @text-primary;
+
+  // Sizing and spacing
+  width: 100%;
+  height: 32px;
+  padding: @table-cell-padding;
+  margin: 0;
+
+  // Material Design underline effect
+  border-bottom: 1px solid transparent;
+  transition: border-color @transition-duration cubic-bezier(0.4, 0.0, 0.2, 1);
+
+  // Hover state
+  &:hover:not(:disabled) {
+    border-bottom-color: @divider-color;
+  }
+
+  // Focus state
+  &:focus {
+    border-bottom: 2px solid @primary-color;
+    padding-bottom: 3px; // Compensate for thicker border
+  }
+
+  // Disabled state
+  &:disabled {
+    color: @text-disabled;
+    cursor: not-allowed;
+    border-bottom-style: dotted;
+    border-bottom-color: @text-disabled;
+  }
+
+  // Placeholder styling
+  &::placeholder {
+    color: @text-hint;
+    font-size: @font-size-small;
+    font-weight: 400;
+  }
+
+  // Remove browser autocomplete styling
+  &:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px white inset;
+    -webkit-text-fill-color: @text-primary;
+  }
+}
+
+// Dropdown styling optimized for Material Design
+.dropdown-menu.uib-typeahead-match {
+  // Material Design elevation
+  background: white;
+  border: none;
+  border-radius: 4px;
+  box-shadow:
+          0 2px 4px rgba(0,0,0,0.14),
+          0 3px 4px rgba(0,0,0,0.12),
+          0 1px 5px rgba(0,0,0,0.20);
+
+  // Positioning
+  margin-top: 4px;
+  padding: @dropdown-padding;
+  min-width: 160px;
+  max-width: 320px;
+  max-height: 280px;
+  overflow-y: auto;
+  z-index: @z-typeahead-dropdown;
+
+  // Typography
+  font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-size: @font-size-table;
+
+  // Custom scrollbar for webkit browsers
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: @divider-color;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: @text-secondary;
+  }
+
+  // Dropdown items
+  > li {
+    border-bottom: none;
+    list-style: none;
+
+    > a {
+      display: block;
+      padding: @item-padding;
+      color: @text-primary;
+      text-decoration: none;
+      line-height: @line-height-small;
+      font-weight: 400;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      // Material Design ripple-like effect
+      position: relative;
+      transition: background-color @fast-transition cubic-bezier(0.4, 0.0, 0.2, 1);
+
+      // Hover state
+      &:hover,
+      &:focus {
+        background-color: @hover-color;
+        color: @text-primary;
+        outline: none;
+      }
+
+      // Active/selected state
+      &:active {
+        background-color: @primary-color-light;
+      }
+    }
+
+    // Active item (keyboard navigation)
+    &.active > a,
+    &.active > a:hover,
+    &.active > a:focus {
+      background-color: @primary-color-light;
+      color: @primary-color;
+    }
+  }
+
+  // Highlight matching text
+  .uib-typeahead-match {
+    font-weight: 500;
+    color: @primary-color;
+    background-color: @primary-color-light;
+    padding: 1px 2px;
+    border-radius: 2px;
+  }
+}
+
+// Loading spinner positioned for table context
+.material-typeahead-spinner {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: @z-loading-spinner;
+
+  // Ensure spinner is visible
+  .md-progress-circular {
+    width: 16px !important;
+    height: 16px !important;
+
+    svg {
+      width: 16px !important;
+      height: 16px !important;
+    }
+  }
+}
+
+// No results message with Material Design styling
+.material-typeahead-no-results {
+  padding: @item-padding;
+  color: @text-secondary;
+  font-size: @font-size-small;
+  font-style: italic;
+  text-align: center;
+  line-height: @line-height-small;
+}
+
+// Assigned courier display for dispatched jobs
+.assigned-courier-display {
+  font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-size: @font-size-table;
+  font-weight: 400;
+  color: @text-primary;
+  padding: @table-cell-padding;
+  line-height: @line-height-base;
+
+  // Truncate long names
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// Material Design table specific overrides
+.md-table-content {
+  .material-typeahead-container {
+    // Ensure full width in table cells
+    width: 100%;
+
+    .material-typeahead-input {
+      // Remove any default margins that might interfere with table layout
+      margin: 0;
+
+      // Ensure proper vertical alignment
+      vertical-align: middle;
+    }
+  }
+}
+
+// Responsive behavior for smaller screens
+@media (max-width: 768px) {
+  .dropdown-menu.uib-typeahead-match {
+    max-height: 200px;
+    max-width: 280px;
+    font-size: @font-size-small;
+
+    > li > a {
+      padding: 6px 12px;
+    }
+  }
+
+  .material-typeahead-input {
+    font-size: @font-size-small;
+  }
+
+  td.md-cell .material-typeahead-container {
+    min-width: 120px;
+  }
+}
+
+// Animation for dropdown appearance
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-menu.uib-typeahead-match {
+  animation: slideDown @fast-transition cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+// Focus ring for accessibility
+.material-typeahead-input:focus-visible {
+  outline: 2px solid @primary-color;
+  outline-offset: 2px;
+}
+
+// Ensure proper stacking context in tables
+tr {
+  &:hover {
+    .dropdown-menu.uib-typeahead-match {
+      z-index: @z-typeahead-dropdown + 1;
+    }
+  }
+}
