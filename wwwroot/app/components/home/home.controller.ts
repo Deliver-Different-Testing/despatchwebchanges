@@ -625,13 +625,14 @@ class HomeController extends BaseController {
     async loadPageViews() {
         try {
             this.views = await this.DispatchData.getSelectedViews(ContactID, AppPages.Dispatch);
-
             await this.initializeViews();
+
             await this.fetchDriverLocations();
         } catch (error: any) {
             console.error("Error fetching dispatch views:", error);
             this.views = [];
             await this.initializeViews();
+            await this.fetchDriverLocations();
         }
     }
 
@@ -2075,15 +2076,17 @@ class HomeController extends BaseController {
 
     async getDriverLocationsData() {
         try {
-            const selectedViews = this.views.filter((view) => view.selected);
-
-            if (!selectedViews || selectedViews.length === 0) {
+            // Use this.selectedViews directly instead of filtering by view.selected
+            if (!this.selectedViews || this.selectedViews.length === 0) {
+                console.log('No selected views available for driver locations');
                 this.driverLocations = {areas: []};
                 this.updateDriverLocationsDisplay();
                 return;
             }
 
-            this.driverLocations = await this.DispatchData.getDriverLocations(selectedViews);
+            console.log('Fetching driver locations for views:', this.selectedViews);
+            this.driverLocations = await this.DispatchData.getDriverLocations(this.selectedViews);
+            console.log('Driver locations received:', this.driverLocations);
             this.updateDriverLocationsDisplay();
         } catch (error: any) {
             console.error("Error getting driver locations data:", error);
@@ -2541,7 +2544,7 @@ class HomeController extends BaseController {
             this.startDate = dayjs(new Date(0)).toDate();
             this.endDate = dayjs().add(24, 'hours').toDate();
 
-            // Use current date for dateCutoff (backward compatibility)
+            // Use the current date for dateCutoff (backward compatibility)
             this.jobCutoffDate = new Date();
         }
 
@@ -2549,13 +2552,17 @@ class HomeController extends BaseController {
     }
 
     private updateDriverLocationsDisplay() {
-        this.showDriverLocationsNoData = !this.driverLocationsLoading &&
-            (!this.driverLocations || !this.driverLocations.areas || this.driverLocations.areas.length === 0);
+        const hasAreas = this.driverLocations && this.driverLocations.areas && this.driverLocations.areas.length > 0;
 
-        this.showDriverLocationsData = (!this.driverLocationsLoading &&
-            this.driverLocations &&
-            this.driverLocations.areas &&
-            this.driverLocations.areas.length > 0) ?? false;
+        console.log('Updating driver locations display:', {
+            loading: this.driverLocationsLoading,
+            hasDriverLocations: !!this.driverLocations,
+            areasCount: this.driverLocations?.areas?.length || 0,
+            hasAreas: hasAreas
+        });
+
+        this.showDriverLocationsNoData = !this.driverLocationsLoading && !hasAreas;
+        this.showDriverLocationsData = (!this.driverLocationsLoading && hasAreas) ?? true;
     }
 }
 
