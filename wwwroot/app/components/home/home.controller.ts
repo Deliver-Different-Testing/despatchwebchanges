@@ -176,7 +176,6 @@ class HomeController extends BaseController {
     ) {
         super();
         this.initServices($timeout, $interval, this.$scope);
-        this.bindMethods();
 
         this.greeting = greetUser(FirstName);
         this.timeZone = TimeZone;
@@ -369,29 +368,6 @@ class HomeController extends BaseController {
         }, {
             id: "3", label: "Trucks",
         },];
-    }
-
-    private bindMethods() {
-        this.handleDispatchSelection = this.handleDispatchSelection.bind(this);
-        this.selectJob = this.selectJob.bind(this);
-        this.toggleView = this.toggleView.bind(this);
-        this.selectedCourierChange = this.selectedCourierChange.bind(this);
-        this.selectCourier = this.selectCourier.bind(this);
-        this.selectClearList = this.selectClearList.bind(this);
-        this.handleDispatchFieldClick = this.handleDispatchFieldClick.bind(this);
-        this.selectForDispatch = this.selectForDispatch.bind(this);
-        this.handleMarkerClick = this.handleMarkerClick.bind(this);
-        this.handleSplitJob = this.handleSplitJob.bind(this);
-        this.JobRecordSelected = this.JobRecordSelected.bind(this);
-        this.selectPotentialCourier = this.selectPotentialCourier.bind(this);
-        this.selectSupportJobDetail = this.selectSupportJobDetail.bind(this);
-        this.filterByStatus = this.filterByStatus.bind(this);
-        this.filterSupports = this.filterSupports.bind(this);
-        this.filterTasks = this.filterTasks.bind(this);
-        this.onSearchRangeChange = this.onSearchRangeChange.bind(this);
-        this.setTruckMode = this.setTruckMode.bind(this);
-        this.openSearch = this.openSearch.bind(this);
-        this.onCourierSearchClick = this.onCourierSearchClick.bind(this);
     }
 
     $onInit() {
@@ -661,10 +637,9 @@ class HomeController extends BaseController {
 
     async initializeViews() {
         if (this.views && this.views.length > 0) {
-            // Load saved views or initialize empty array
             this.selectedViews = this.loadViewsFromStorage();
 
-            // Set selected property on each view
+            // Set a selected property on each view
             this.views = this.views.map((view) => ({
                 ...view, selected: this.selectedViews.some((v: DfrntPageViewModel) => v.id === view.id),
             }));
@@ -2590,6 +2565,6 @@ const HomeComponent: angular.IComponentOptions = {
     controllerAs: "ctrl",
     bindings: {
         jobId: '<'
-    }
+    },
 }
 export default HomeComponent;

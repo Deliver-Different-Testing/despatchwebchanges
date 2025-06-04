@@ -16,6 +16,7 @@ class DispatchMapController extends BaseController {
         "APP_CONFIG",
         "$timeout",
         "$interval",
+        "$scope",
     ];
 
     private locationRefreshInterval: angular.IPromise<void> | null = null;
@@ -67,16 +68,10 @@ class DispatchMapController extends BaseController {
         private AppConfig: AppConfig,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
+        $scope: angular.IScope,
     ) {
         super();
-        this.initServices($timeout, $interval);
-        this.bindMethods();
-    }
-
-    private bindMethods() {
-        this.onBoundsChanged = this.onBoundsChanged.bind(this);
-        this.refreshCourierLocations = this.refreshCourierLocations.bind(this);
-        this.toggleAutoZoom = this.toggleAutoZoom.bind(this);
+        this.initServices($timeout, $interval, $scope);
     }
 
     $onInit() {
@@ -242,7 +237,7 @@ class DispatchMapController extends BaseController {
     }
 
     private setupEventListeners() {
-        this.refreshCouriersMarkerListener = this.$rootScope.$on('refreshCourierMarkers',
+        this.refreshCouriersMarkerListener = this.watchScope('refreshCourierMarkers',
             (_: angular.IAngularEvent, newPositions: any) => {
                 if (newPositions && this.mapInstance) {
                     this.updateCourierMarkers(newPositions);
