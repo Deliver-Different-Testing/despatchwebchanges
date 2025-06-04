@@ -343,12 +343,12 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async getDriverLocations(selectedViews: DfrntPageViewModel[]) {
         const filteredViews = selectedViews.filter((view) => view.selected);
-        const despatchViewIds = this._prepareViewIdsForRequest(filteredViews);
+        const despatchViewIds = filteredViews.map(view => view.id);
 
         const response = await this.$http.get<ClearListViewModel>(
             `courier`, {
                 params: {
-                    despatchViewIds: despatchViewIds,
+                    despatchViewIds,
                     isUsTenant: this.isUsCustomer,
                 }
             }
@@ -864,7 +864,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         internal: boolean,
         selectedAreas: Suggestion[]
     ): Promise<IDispatchJob[]> {
-        const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
+        const despatchViewIds = selectedAreas.map(area => area.id);
 
         const params: Record<string, any> = {
             order: queryParams.order ?? "time",
@@ -872,7 +872,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             isInternal: internal,
             cid: ContactID,
             clientIds: selectedClients.length ? selectedClients.join(",") : "",
-            despatchViewIds: despatchViewIds
+            despatchViewIds
         };
 
         // Add date filter parameters - handle all options
@@ -903,7 +903,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         selectedAreas: DfrntPageViewModel[],
         selectedClearList: IClearListEnvelope
     ): Promise<IDispatchJob[]> {
-        const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
+        const despatchViewIds = selectedAreas.map(view => view.id);
 
         const defaultParams = {
             order: "time",
@@ -917,7 +917,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             isInternal: internal,
             cid: ContactID,
             clientIds: selectedClients.join(","),
-            despatchViewIds: despatchViewIds,
+            despatchViewIds,
             'clearListEnvelope.minimumLatitude': selectedClearList.minimumLatitude,
             'clearListEnvelope.maximumLatitude': selectedClearList.maximumLatitude,
             'clearListEnvelope.minimumLongitude': selectedClearList.minimumLongitude,
@@ -1178,14 +1178,6 @@ class DispatchCoreService implements angular.IServiceProvider {
             console.error("Error updating packages:", error);
             throw error;
         }
-    }
-
-    private _prepareViewIdsForRequest(
-        selectedAreas: DfrntPageViewModel[] | Suggestion[]
-    ): number[] {
-        return selectedAreas.map((area) => {
-            return typeof area === "object" && area.id ? area.id : 0;
-        });
     }
 }
 

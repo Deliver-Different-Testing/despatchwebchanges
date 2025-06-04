@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 
@@ -13,7 +14,8 @@ public class CourierController(
     ITaskRepository taskRepository
     ) : Controller
 {
-    public async Task<IActionResult> Index([FromQuery] List<int> despatchViewIds, bool isUsTenant)
+    [HttpGet]
+    public async Task<IActionResult> Index(List<int> despatchViewIds, bool isUsTenant)
     {
         try
         {
@@ -62,11 +64,11 @@ public class CourierController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> AvailableCourierLocation(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat, bool isUsTenant)
+    public async Task<IActionResult> AvailableCourierLocation(CourierLocationRequest request)
     {
         try
         {
-            var result = await courierRepository.GetAvailableCouriers(minLng, minLat, maxLng, maxLat, isUsTenant);
+            var result = await courierRepository.GetAvailableCouriers(request);
             return Json(result);
         }
         catch (Exception ex)

@@ -92,100 +92,59 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         }
     }
 
-    public async Task<List<AvailableCourierPosition>> GetAvailableCouriers(
-        decimal minLng,
-        decimal minLat,
-        decimal maxLng,
-        decimal maxLat,
-        bool isUsTenant
-    )
+    public async Task<List<AvailableCourierPosition>> GetAvailableCouriers(CourierLocationRequest data)
     {
-        if (!isUsTenant)
-            return await GetNzAvailableCourierPositions(
-                minLng,
-                minLat,
-                maxLng,
-                maxLat
-            );
-
-        return await GetUsAvailableCourierPositions(
-            minLng,
-            minLat,
-            maxLng,
-            maxLat
-        );
-    }
-
-    private async Task<List<AvailableCourierPosition>> GetUsAvailableCourierPositions(
-        decimal minimumLongitude,
-        decimal minimumLatitude,
-        decimal maximumLongitude,
-        decimal maximumLatitude)
-    {
-        var currentDate = tenantInfoService.GetCurrentTenantTime();
-
-        var couriers = await Context.TucCouriers
-            .Where(c => c.CourierLogInOut.LogOutTime == null &&
-                        c.CourierGps.Longitude >= minimumLongitude && c.CourierGps.Longitude <= maximumLongitude
-                        && c.CourierGps.Latitude >= minimumLatitude && c.CourierGps.Latitude <= maximumLatitude
-                        && c.CourierFleetId != 29)
-            .Select(c => new CourierDto
-            {
-                CourierId = c.UccrId,
-                Latitude = c.CourierGps.Latitude ?? 0,
-                Longitude = c.CourierGps.Longitude ?? 0,
-                ChannelId = c.UccrChannelId ?? 0,
-                VehicleType = c.UccrVehicle,
-                ClearListAreaIDs = c.CourierGps.ZipPolygon.TblClearListAreaPolygons
-                    .Select(x => x.ClearListArea.ClearListAreaId).ToList(),
-                Code = c.Code,
-                FleetId = c.CourierFleetId,
-                TotalJobs = c.TucJobUcjbCouriers.Count(j => !j.UcjbVoid && !j.UcjbJobDone),
-                Jobs = c.TucJobUcjbCouriers
-                    .Where(j => !j.UcjbVoid && !j.UcjbJobDone && j.UcjbTime != null)
-                    .Select(j => new JobDto
-                    {
-                        UcjbDate = j.UcjbDate,
-                        UcjbTime = j.UcjbTime,
-                        Minutes = j.AcceptedJobType.Minutes
-                    })
-                    .ToList(),
-                CourierName = c.UccrName
-            })
-            .AsNoTracking()
-            .ToListAsync();
-
-
-        var uaFleetIds = new[] { 32, 33, 34, 35, 36, 37, 38, 64 };
-
-        return couriers.Select(dto => new AvailableCourierPosition
+        return data.IsUsTenant switch
         {
-            CourierId = dto.CourierId,
-            CourierName = dto.CourierName,
-            Latitude = dto.Latitude,
-            Longitude = dto.Longitude,
-            ChannelId = dto.ChannelId,
-            VehicleType = dto.VehicleType,
-            ClearListAreaIDs = dto.ClearListAreaIDs,
-            Code = dto.Code,
-            FleetCode = uaFleetIds.Contains(dto.FleetId ?? 0) ? "UA" : string.Empty,
-            TotalJobs = dto.TotalJobs,
-            OverDueJobs = dto.Jobs.Count(j =>
-                j.UcjbTime != null &&
-                j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes ?? 0) < currentDate)
-        }).ToList();
+            false => await GetNzAvailableCourierPositions(data),
+            _ => await GetUsAvailableCourierPositions(data)
+        };
     }
 
-    private async Task<List<AvailableCourierPosition>> GetNzAvailableCourierPositions(
-        decimal minimumLongitude,
-        decimal minimumLatitude,
-        decimal maximumLongitude,
-        decimal maximumLatitude)
+  private async Task<List<AvailableCourierPosition>> GetUsAvailableCourierPositions(CourierLocationRequest data)
+{
+    var currentDate = tenantInfoService.GetCurrentTenantTime();
+    var uaFleetIds = new[] { 32, 33, 34, 35, 36, 37, 38, 64 };
+
+    var result = await Context.TucCouriers
+        .Where(c => c.CourierFleetId != 29 &&
+                    c.CourierGps != null &&
+                    c.CourierGps.Longitude >= data.MinLng &&
+                    c.CourierGps.Longitude <= data.MaxLng &&
+                    c.CourierGps.Latitude >= data.MinLat &&
+                    c.CourierGps.Latitude <= data.MaxLat &&
+                    c.CourierLogInOut != null &&
+                    c.CourierLogInOut.LogOutTime == null)
+        .Select(c => new AvailableCourierPosition
+        {
+            CourierId = c.UccrId,
+            CourierName = c.UccrName,
+            Latitude = c.CourierGps.Latitude ?? 0,
+            Longitude = c.CourierGps.Longitude ?? 0,
+            ChannelId = c.UccrChannelId ?? 0,
+            VehicleType = c.UccrVehicle,
+            ClearListAreaIDs = c.CourierGps.ZipPolygon.TblClearListAreaPolygons
+                .Select(x => x.ClearListArea.ClearListAreaId).ToList(),
+            Code = c.Code,
+            FleetCode = uaFleetIds.Contains(c.CourierFleetId ?? 0) ? "UA" : string.Empty,
+            TotalJobs = c.TucJobUcjbCouriers.Count(j => !j.UcjbVoid && !j.UcjbJobDone),
+            OverDueJobs = c.TucJobUcjbCouriers
+                .Where(j => !j.UcjbVoid && !j.UcjbJobDone && j.UcjbTime != null)
+                .Count(j => j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay)
+                    .AddMinutes(j.AcceptedJobType.Minutes ?? 0) < currentDate)
+        })
+        .AsNoTracking()
+        .ToListAsync();
+
+    return result;
+}
+
+private async Task<List<AvailableCourierPosition>> GetNzAvailableCourierPositions(CourierLocationRequest data)
     {
         var couriers = await Context.TucCouriers
             .Where(c => c.CourierLogInOut.LogOutTime == null &&
-                        c.CourierGps.Longitude >= minimumLongitude && c.CourierGps.Longitude <= maximumLongitude &&
-                        c.CourierGps.Latitude >= minimumLatitude && c.CourierGps.Latitude <= maximumLatitude &&
+                        c.CourierGps.Longitude >= data.MinLng && c.CourierGps.Longitude <= data.MaxLng &&
+                        c.CourierGps.Latitude >= data.MinLat && c.CourierGps.Latitude <= data.MaxLat &&
                         c.CourierFleetId != 29)
             .Select(c => new CourierDto
             {
