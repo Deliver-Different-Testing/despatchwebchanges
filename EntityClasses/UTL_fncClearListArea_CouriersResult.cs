@@ -6,14 +6,16 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DespatchWeb.EntityClasses
 {
-    public partial class DES_qryCourierCombo_ActiveResult
+    public partial class UTL_fncClearListArea_CouriersResult
     {
-        public int CourierID { get; set; }
+        public int? CourierID { get; set; }
         [StringLength(50)]
         public string Code { get; set; }
-        [StringLength(101)]
-        public string Name { get; set; }
-        public byte DangerousGoods { get; set; }
-        public DateTime? DGLicenseExpiry { get; set; }
+        public int? DisplayOrder { get; set; }
+        [StringLength(50)]
+        public string Deliver { get; set; }
+        [StringLength(50)]
+        public string ClearListAreaIDs { get; set; }
+        public DateTime? Created { get; set; }
     }
 }

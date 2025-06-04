@@ -400,24 +400,27 @@ private async Task<List<AvailableCourierPosition>> GetNzAvailableCourierPosition
 
     private async Task<List<ActiveCourierDto>> GetActiveCouriers()
     {
+        var today = tenantInfoService.GetCurrentTenantTime();
+
         return await Context.TucCouriers
-            .Where(c => c.Active)
-            .Where(c => c.SendJobsViaSms ||
-                        c.SendAlertSms ||
-                        (c.SendJobsViaSms == false &&
-                         c.CourierLogInOut != null &&
-                         c.CourierLogInOut.LogInTime.Date == DateTime.Today &&
-                         c.CourierLogInOut.LogOutTime == null))
+            .Where(c => c.Active &&
+                        (c.SendJobsViaSms ||
+                         c.SendAlertSms ||
+                         (!c.SendJobsViaSms &&
+                          c.CourierLogInOut != null &&
+                          c.CourierLogInOut.LogInTime.Date == today.Date &&
+                          c.CourierLogInOut.LogOutTime == null)))
             .Select(c => new ActiveCourierDto
             {
                 CourierId = c.UccrId,
                 Code = c.Code,
-                Name = c.UccrName + " " + c.UccrSurname,
+                Name = $"{c.UccrName} {c.UccrSurname}",
                 DangerousGoods = c.UccrDangerousGoods == 1,
                 DgLicenseExpiry = c.DglicenseExpiry,
                 JobCount = c.TucJobUcjbCouriers.Count(jt => !jt.UcjbVoid && !jt.UcjbJobDone)
             })
             .OrderBy(c => c.Code)
+            .AsNoTracking()
             .ToListAsync();
     }
 
@@ -426,48 +429,41 @@ private async Task<List<AvailableCourierPosition>> GetNzAvailableCourierPosition
         bool isUsTenant
     )
     {
+        if (despatchViewIds.Count == 0) return new ClearListViewModel();
+
         try
         {
-            // Get all required data upfront
-            var activeCouriers = await GetActiveCouriers();
-            var query = Context.TblDespatchViews.AsQueryable();
+            var query = Context.TblDespatchViews.Where(dv => despatchViewIds.Contains(dv.DespatchViewId));
 
-            // If view(s) provided, filter to these
-            if (despatchViewIds.Count != 0)
-            {
-                query = query.Where(dv => despatchViewIds.Contains(dv.DespatchViewId));
-            }
-
-            // Get the results
             var clearLists = await query
                 .SelectMany(dv => dv.DespatchViewZoneGroups)
                 .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
                 .Where(cla => cla != null)
                 .Distinct()
-                .Select(cl => new
+                .Select(cl => new ClearListAreaDto
                 {
-                    cl.ClearListAreaId,
-                    cl.Name,
-                    cl.Order
+                    ClearListAreaId = cl.ClearListAreaId,
+                    AreaName = cl.Name,
+                    AreaOrder = cl.Order
                 })
                 .ToListAsync();
 
-            // Process each clear list sequentially to avoid DbContext threading issues
+            var activeCouriers = await GetActiveCouriers();
+
             var areas = new List<AreaClearList>();
             foreach (var clearList in clearLists)
             {
                 var areaClearList = await BuildClearListViewModel(
                     activeCouriers,
                     clearList,
-                    33,
-                    isUsTenant
+                    33
                 );
 
                 if (areaClearList == null)
                     continue;
 
                 areaClearList.TotalRemaining = await ClearListTotalRemainingAsync(
-                    clearList.Name?.ToLower()
+                    clearList.AreaName?.ToLower()
                 );
                 areas.Add(areaClearList);
             }
@@ -720,16 +716,11 @@ private async Task<List<AvailableCourierPosition>> GetNzAvailableCourierPosition
     private async Task<AreaClearList> BuildClearListViewModel(
         List<ActiveCourierDto> activeCouriers,
         dynamic clearList,
-        int percentHeight,
-        bool isUsTenant
+        int percentHeight
     )
     {
-        // Combine multiple queries into one
-        var clearListData = isUsTenant
-            ? await Context.Procedures.DES_qdfUS_Courier_ClearListsAsync(clearList.ClearListAreaId)
-            : await Context.Procedures.DES_qdfCourier_ClearListsAsync(clearList.ClearListAreaId);
-
-        if (clearListData == null)
+        var clearListData = await GetClearListCouriers(clearList.ClearListAreaId);
+        if (clearListData is null)
             return null;
 
         var acl = new AreaClearList
@@ -746,23 +737,81 @@ private async Task<List<AvailableCourierPosition>> GetNzAvailableCourierPosition
         return acl;
     }
 
+     private async Task<List<ClearListResult>> GetClearListCouriers(int clearListAreaId)
+     {
+         var currentDate = tenantInfoService.GetCurrentTenantTime();
+
+        // Main courier data query
+        var courierData = await (
+            from ac in Context.UTL_fncClearListArea_Couriers(clearListAreaId, currentDate)
+            join c in Context.TucCouriers on ac.CourierID equals c.UccrId
+            join cf in Context.TucCourierFleets on c.CourierFleetId equals cf.UccfId
+            join gps in Context.TblCourierGps on c.CourierGpsid equals gps.CourierGpsid into gpsGroup
+            from gps in gpsGroup.DefaultIfEmpty()
+            where  cf.DisplayOnClearlistsDespatch
+            select new ClearListResult
+            {
+                CourierId = ac.CourierID,
+                Code = ac.Code +
+                       (c.SendJobsViaSms ? "#" : string.Empty) +
+                       (gps != null && EF.Functions.DateDiffMinute(gps.Created, currentDate) > 3 ? "*" : string.Empty) +
+                       (!c.AutoDespatch ? "^" : string.Empty) +
+                       (c.UccrVehicle == "Truck" ? "T" : string.Empty),
+                DisplayOrder = ac.DisplayOrder ?? 0,
+                Deliver = ac.Deliver,
+                DisplayOrderDesc = ac.DisplayOrder == 1 ? ac.Created : null,
+                DisplayOrderAsc = ac.DisplayOrder != 1 ? ac.Created : null,
+                AutoDespatch = c.AutoDespatch
+            }
+        ).ToListAsync();
+
+        // Add static separator rows
+        var staticRows = new List<ClearListResult>
+        {
+            new()
+            {
+                CourierId = null,
+                Code = "----",
+                DisplayOrder = 2,
+                Deliver = "---------",
+                DisplayOrderDesc = null,
+                DisplayOrderAsc = null,
+                AutoDespatch = null
+            },
+            new()
+            {
+                CourierId = null,
+                Code = "----",
+                DisplayOrder = 4,
+                Deliver = "---------",
+                DisplayOrderDesc = null,
+                DisplayOrderAsc = null,
+                AutoDespatch = null
+            }
+        };
+
+        // Combine and sort
+        return courierData.Concat(staticRows).OrderBy(x => x.DisplayOrder).ToList();
+    }
+
+
     private static List<ClearListSection> BuildClearListSection(
-        IEnumerable<DES_qdfCourier_ClearListsResult> result,
+        List<ClearListResult> data,
         List<ActiveCourierDto> activeCouriers,
         int displayOrder
     )
     {
-        if (result == null)
+        if (data == null)
             return [];
 
-        return result
+        return data
             .Where(c => c.DisplayOrder == displayOrder)
             .Select(x =>
             {
-                var activeCourier = activeCouriers.FirstOrDefault(c => c?.CourierId == x.CourierID);
+                var activeCourier = activeCouriers.FirstOrDefault(c => c?.CourierId == x.CourierId);
                 return new ClearListSection
                 {
-                    CourierNumber = x.Hash,
+                    CourierNumber = x.Code,
                     CourierData = BuildCourierData(x, activeCouriers),
                     Destinations = BuildDestinations(x.Deliver),
                     JobCount = activeCourier?.JobCount ?? 0
@@ -772,23 +821,23 @@ private async Task<List<AvailableCourierPosition>> GetNzAvailableCourierPosition
     }
 
     private static CourierData BuildCourierData(
-        DES_qdfCourier_ClearListsResult x,
+        ClearListResult result,
         List<ActiveCourierDto> activeCouriers
     )
     {
         if (activeCouriers == null)
             return new CourierData();
-        var activeCourier = activeCouriers.FirstOrDefault(c => c?.CourierId == x?.CourierID);
+        var activeCourier = activeCouriers.FirstOrDefault(c => c?.CourierId == result?.CourierId);
 
         return new CourierData
         {
-            Courier = $"{activeCourier?.Code}   {activeCourier?.Name}".Trim(),
+            Courier = $"{activeCourier?.Code} {activeCourier?.Name}".Trim(),
             Location = "Unknown",
             Pu = "Unknown",
-            Del = x?.Deliver ?? "Unknown",
+            Del = result?.Deliver ?? "Unknown",
             Lrm = "Unknown",
             Eta2Lrm = "Unknown",
-            CourierId = x?.CourierID
+            CourierId = result?.CourierId
         };
     }
 
