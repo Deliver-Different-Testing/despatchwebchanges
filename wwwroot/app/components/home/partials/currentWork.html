@@ -1,80 +1,51 @@
 <div class="droppable-box nationwide-job-list">
     <md-table-container ng-if="ctrl.jobsCurrentList && ctrl.jobsCurrentList.length > 0">
-        <table md-dense md-progress="ctrl.currentListLoading" md-table>
+        <table md-progress="ctrl.currentListLoading" md-table>
             <thead md-head>
             <tr md-row>
                 <th md-column>T</th>
                 <th md-column>Speed</th>
-                <th md-column>N</th>
-                <th md-column>V</th>
                 <th md-column>Job</th>
                 <th md-column>Client</th>
                 <th md-column>From</th>
                 <th md-column>To</th>
-                <th md-column>Dispatch</th>
                 <th md-column>Remain</th>
                 <th md-column>S</th>
                 <th md-column>LP</th>
                 <th md-column>LD</th>
-                <th md-column>Actions</th>
             </tr>
             </thead>
 
             <tbody md-body>
             <tr md-row
+                md-dense
+                context-menu="ctrl.getContextMenuOptions(job)"
+                context-menu-on="contextmenu"
+                context-menu-class="job-context-menu"
                 ng-repeat="job in ctrl.jobsCurrentList | filter: box.searchBox"
-                ng-click="ctrl.selectJob(job)"
-                ng-right-click="ctrl.showJobContextMenu($event, job)"
-                data-jobid="{{job.id}}"
-                data-jobno="{{job.jobNo}}"
-                data-courier="{{job.courier}}"
-                class="clickable-row noselect md-truncate droppable-row">
+                ng-click="ctrl.selectJob(job)">
 
-                <td md-cell>{{job.time | momentFormat:"HH:mm"}} ({{ctrl.timeZone | timezoneShort}})</td>
+                <td md-cell>{{job.time | momentFormat:"HH:mm"}} ({{::ctrl.timeZone | timezoneShort}})</td>
+
                 <td md-cell>{{job.speed}}</td>
-                <td md-cell>
-                    {{job.notify}}
-                </td>
-                <td md-cell md-truncate title="{{job.size.text}}">
-                    {{job.vehicle.text}}
-                </td>
+
                 <td md-cell>{{job.jobNo}}</td>
+
                 <td md-cell>{{job.client}}</td>
+
                 <td md-cell md-truncate>
-                    {{ctrl.isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
+                    {{::ctrl.isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
                 </td>
+
                 <td md-cell md-truncate>
-                    {{ctrl.isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}
+                    {{::ctrl.isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
                 </td>
-                <td md-cell>
-                    <md-autocomplete
-                            md-item-text="item.text"
-                            md-items="item in ctrl.courierSearch(ctrl.dispatchCourierSearchTest)"
-                            md-min-length="2"
-                            md-search-text="ctrl.dispatchCourierSearchTest"
-                            md-select-on-focus
-                            md-selected-item="job.assignedCourier"
-                            md-autoselect
-                            md-clear-button="false"
-                            md-input-name="dispatchCourierSearch"
-                            ng-click="ctrl.handleDispatchFieldClick($event, job)"
-                            ng-disabled="job.assignedCourier"
-                            md-selected-item-change="ctrl.handleDispatchSelection(item, job)"
-                            placeholder="Search Courier...">
-                        <md-item-template>
-                            <span md-highlight-flags="^i"
-                                  md-highlight-text="ctrl.dispatchCourierSearchTest">{{item.text}}</span>
-                        </md-item-template>
-                        <md-not-found>
-                            No couriers matching "{{ctrl.dispatchCourierSearchTest}}" were found.
-                        </md-not-found>
-                    </md-autocomplete>
-                </td>
 
-                <td md-cell md-truncate><span
-                        ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
+                <td md-cell>
+                    <span class="remain-time">{{job.remain}}</span>
+                </td>
 
                 <td md-cell>
                     <md-chip class="status {{job.statusName | lowercase | replace:' ':'-'}}">
@@ -82,36 +53,16 @@
                     </md-chip>
                 </td>
 
-                <td md-cell>
-                    <input class="lateCallField"
-                           ng-focus="ctrl.selectAllContent($event)"
-                           ng-keydown="$event.keyCode === 13 && ctrl.latePickup(job.lp, job, this)"
-                           ng-model="job.lp"
-                           ng-mouseup="$event.preventDefault();"
-                           placeholder="LP"
-                           type="text"/>
+                <td md-cell class="late-call-cell" ng-click="ctrl.openEditDialog($event, job, 'lp', 'Late Pickup')"
+                    title="Click to edit Late Pickup">
+                    {{::job.lp ? job.lp : 'LP'}}
                 </td>
-                <td md-cell>
-                    <input class="lateCallField"
-                           ng-focus="ctrl.selectAllContent($event)"
-                           ng-keydown="$event.keyCode === 13 && ctrl.lateDelivery(job.ld, job, this)"
-                           ng-model="job.ld"
-                           ng-mouseup="$event.preventDefault();"
-                           placeholder="LD"
-                           type="text"/>
+
+                <td md-cell class="late-call-cell" ng-click="ctrl.openEditDialog($event, job, 'ld', 'Late Delivery')"
+                    title="Click to edit Late Delivery">
+                    {{::job.ld ? job.ld : 'LD'}}
                 </td>
-                <td md-cell class="selectjob" ng-click="$event.stopPropagation();">
-                    <md-button
-                            class="md-icon-button"
-                            aria-label="Select for dispatch"
-                            ng-click="ctrl.selectForDispatch(job); $event.stopPropagation();">
-                        <md-icon md-font-set="material-symbols-outlined"
-                                 ng-class="{'selected-icon': ctrl.isJobSelected(job.id)}">
-                            {{ ctrl.isJobSelected(job.id) ? 'check_box' : 'check_box_outline_blank' }}
-                        </md-icon>
-                        <md-tooltip md-direction="bottom">Select for dispatch</md-tooltip>
-                    </md-button>
-                </td>
+
             </tr>
             </tbody>
         </table>

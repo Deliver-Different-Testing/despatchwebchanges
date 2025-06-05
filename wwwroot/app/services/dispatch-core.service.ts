@@ -411,15 +411,6 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getCourierPosition(code: string) {
-        const response = await this.$http.get(`courier/location`, {
-            params: {
-                code,
-            }
-        });
-        return response.data;
-    }
-
     async getCourierById(courierId: number) {
         const response = await this.$http.get<ActiveCourierViewModel>(
             `courier/GetCourier`, {

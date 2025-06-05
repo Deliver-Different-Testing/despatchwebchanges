@@ -74,7 +74,7 @@
 
                         <div class="day-content">
                             <!-- Task indicators with priority styling -->
-                            <div class="task-indicators" ng-if="day.tasks.length > 0">
+                            <div class="task-indicators" ng-if="::day.tasks.length > 0">
                                 <div class="task-indicator"
                                      ng-repeat="task in day.tasks | limitTo:3"
                                      ng-class="ctrl.getTaskPriorityClass(task)"
@@ -107,7 +107,7 @@
                     <div class="time-header">&nbsp;</div>
                     <div class="time-slots">
                         <div class="time-slot" ng-repeat="time in ctrl.timeSlots">
-                            {{ctrl.formatTimeSlot(time)}}
+                            {{::ctrl.formatTimeSlot(time)}}
                         </div>
                     </div>
                 </div>
@@ -116,7 +116,7 @@
                 <div flex class="days-container" layout="row">
                     <div flex class="day-column" ng-repeat="day in ctrl.weekDays">
                         <div class="day-header" ng-class="{'today': ctrl.isToday(day)}">
-                            <div class="day-name">{{ctrl.formatWeekDayHeader(day)}}</div>
+                            <div class="day-name">{{::ctrl.formatWeekDayHeader(day)}}</div>
                         </div>
 
                         <div class="time-grid">
@@ -148,7 +148,7 @@
                 <div class="time-column">
                     <div class="time-slots">
                         <div class="time-slot" ng-repeat="time in ctrl.timeSlots">
-                            {{ctrl.formatTimeSlot(time)}}
+                            {{::ctrl.formatTimeSlot(time)}}
                         </div>
                     </div>
                 </div>
@@ -180,7 +180,7 @@
                         <md-toolbar>
                             <div class="md-toolbar-tools">
                                 <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
-                                <h3 class="md-title">Overdue Tasks ({{ctrl.getOverdueTasks().length}})</h3>
+                                <h3 class="md-title">Overdue Tasks ({{::ctrl.getOverdueTasks().length}})</h3>
                             </div>
                         </md-toolbar>
                         <md-card-content class="overdue-list">

@@ -76,7 +76,7 @@ class TaskDashboardController extends BaseController {
     ) {
         super();
 
-        this.initServices($timeout, $interval);
+        this.initServices($timeout, $interval, $scope);
 
         this.showFullCalendar = false;
         this.loadViewPreference();
@@ -94,7 +94,7 @@ class TaskDashboardController extends BaseController {
                 console.error('Initialization error:', error);
             });
 
-        this.registerEvent($scope, 'jobChanged', (_, newJob: IDispatchJob) => {
+        this.watchEvent('jobChanged', (_, newJob: IDispatchJob) => {
             this.currentSelection = ` for Job ${newJob.jobNo}`;
         });
     }

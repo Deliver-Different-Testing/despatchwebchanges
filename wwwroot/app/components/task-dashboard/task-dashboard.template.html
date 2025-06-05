@@ -15,7 +15,7 @@
                 <md-menu-content style="width: 300px; overflow: hidden;">
                     <div class="md-padding" md-prevent-menu-close>
                         <label id="dateRange" class="label-padding">Date Filter:
-                            ({{ctrl.browserTimeZone | timezoneShort}})</label>
+                            ({{::ctrl.browserTimeZone | timezoneShort}})</label>
                         <md-radio-group ng-change="ctrl.onSearchRangeChange(ctrl.dateSearchRange)"
                                         ng-model="ctrl.dateSearchRange"
                                         aria-labelledby="dateRange" layout="row" layout-align="center center">
@@ -58,7 +58,7 @@
                 </md-menu-content>
             </md-menu>
 
-            <span style="font-size: medium;">{{ctrl.greeting}}</span>
+            <span style="font-size: medium;">{{::ctrl.greeting}}</span>
 
             <md-button aria-label="Menu" class="md-icon-button" ng-mouseover="ctrl.toggleSidenav()">
                 <md-icon md-font-set="material-symbols-outlined">menu</md-icon>

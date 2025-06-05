@@ -1,4 +1,4 @@
-import {AssignedFlight, Suggestion} from "../../interfaces/job.interface";
+import {AddressViewModel, AssignedFlight, Suggestion} from "../../interfaces/job.interface";
 
 export interface OverviewQueryParams {
     statusGroup?: number;
@@ -56,8 +56,8 @@ export interface MegaMapResponse {
     jobNumber: string;
     jobStatus: string;
     estimatedDelivery: Date;
-    pickupLocation: AddressDetails;
-    deliveryLocation: AddressDetails;
+    pickupLocation: AddressViewModel;
+    deliveryLocation: AddressViewModel;
     courierLocation: CourierLocation;
     isFlightJob: boolean;
     flightInfo: AssignedFlight;
@@ -67,12 +67,6 @@ export interface CourierLocation {
     courierId: number;
     courierName: string;
     coordinates: Coordinates;
-}
-
-export interface DriverStats {
-    driverName: string;
-    completedToday: number;
-    lastCompleted: Date | null;
 }
 
 export interface OpenJobResponse {
@@ -115,7 +109,6 @@ export interface OverviewTableParentJob {
     region: string;
     childJobs: OverviewTableChildJob[];
 }
-
 
 export interface DriverViewModel {
     name: string;
