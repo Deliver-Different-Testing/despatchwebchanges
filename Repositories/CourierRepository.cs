@@ -716,7 +716,7 @@ private async Task<List<AvailableCourierPosition>> GetNzAvailableCourierPosition
 
     private async Task<AreaClearList> BuildClearListViewModel(
         List<ActiveCourierDto> activeCouriers,
-        dynamic clearList,
+        ClearListAreaDto clearList,
         int percentHeight
     )
     {
@@ -727,8 +727,8 @@ private async Task<List<AvailableCourierPosition>> GetNzAvailableCourierPosition
         var acl = new AreaClearList
         {
             Id = clearList.ClearListAreaId,
-            Name = clearList.Name,
-            Order = clearList.Order,
+            Name = clearList.AreaName,
+            Order = clearList.AreaOrder,
             PercentHeight = percentHeight,
             Top = BuildClearListSection(clearListData, activeCouriers, 1),
             Middle = BuildClearListSection(clearListData, activeCouriers, 3),
