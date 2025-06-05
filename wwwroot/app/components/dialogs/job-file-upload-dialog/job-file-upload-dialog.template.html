@@ -2,9 +2,9 @@
     <md-toolbar>
         <div class="md-toolbar-tools">
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">
-                {{ctrl.isPODUpload() ? 'camera_alt' : 'upload_file'}}
+                {{::ctrl.isPODUpload() ? 'camera_alt' : 'upload_file'}}
             </md-icon>
-            <h2>{{ctrl.isPODUpload() ? 'POD Photos' : 'Attached Files'}}</h2>
+            <h2>{{::ctrl.isPODUpload() ? 'POD Photos' : 'Attached Files'}}</h2>
             <span flex></span>
             <md-button class="md-button" ng-click="ctrl.skip()">
                 <md-tooltip md-direction="bottom">Skip File Upload</md-tooltip>
@@ -20,9 +20,9 @@
     <md-dialog-content class="md-padding">
         <div layout="column">
             <!-- Single Tab Mode -->
-            <div ng-if="!ctrl.showNormalTab || !ctrl.showPodTab">
+            <div ng-if="::!ctrl.showNormalTab || !ctrl.showPodTab">
                 <!-- Regular File Upload (Only) -->
-                <div ng-if="ctrl.showNormalTab && !ctrl.showPodTab" layout="column">
+                <div ng-if="::ctrl.showNormalTab && !ctrl.showPodTab" layout="column">
                     <div
                             class="drop-box"
                             ng-model="ctrl.files"
@@ -72,7 +72,7 @@
                 </div>
 
                 <!-- POD Upload (Only) -->
-                <div ng-if="!ctrl.showNormalTab && ctrl.showPodTab" layout="column">
+                <div ng-if="::!ctrl.showNormalTab && ctrl.showPodTab" layout="column">
                     <!-- POD Description Input -->
                     <md-input-container class="md-block">
                         <label>POD Photo Description</label>
@@ -131,7 +131,7 @@
             </div>
 
             <!-- Multi-Tab Mode -->
-            <div ng-if="ctrl.showNormalTab && ctrl.showPodTab">
+            <div ng-if="::ctrl.showNormalTab && ctrl.showPodTab">
                 <md-tabs md-dynamic-height md-border-bottom md-selected="ctrl.selectedTabIndex">
                     <md-tab id="tab1" label="Regular Files" md-on-select="ctrl.setUploadType('normal')">
                         <div layout="column" class="md-padding">
@@ -265,7 +265,7 @@
     <md-dialog-actions layout="row">
         <span flex></span>
         <md-button class="md-raised md-primary" ng-click="ctrl.cancel()">
-            {{ctrl.isPODUpload() ? 'Skip' : 'Close'}}
+            {{::ctrl.isPODUpload() ? 'Skip' : 'Close'}}
         </md-button>
     </md-dialog-actions>
 </md-dialog>

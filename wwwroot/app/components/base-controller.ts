@@ -29,7 +29,7 @@ class BaseController implements angular.IController {
         return this.registerEvent(this.$scopeService, eventName, listener);
     }
 
-    protected registerEvent<T>(
+    private registerEvent<T>(
         scope: angular.IScope,
         eventName: string,
         listener: (event: angular.IAngularEvent, ...args: T[]) => void
@@ -47,7 +47,7 @@ class BaseController implements angular.IController {
         return this.registerWatch(this.$scopeService, watchExpression, listener, objectEquality);
     }
 
-    protected registerWatch(
+    private registerWatch(
         scope: angular.IScope,
         watchExpression: string | Function | ((scope: angular.IScope) => any),
         listener: (newValue: any, oldValue: any, scope: angular.IScope) => void,

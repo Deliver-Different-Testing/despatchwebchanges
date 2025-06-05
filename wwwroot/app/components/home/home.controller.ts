@@ -185,7 +185,7 @@ class HomeController extends BaseController {
         this.initialViewSet = false;
         this.mapJobList = [];
 
-        this.registerWatch(this.$scope, "selectedViews", (newViews) => {
+        this.watchScope("selectedViews", (newViews) => {
             if (newViews) {
                 this.initialViewSet = false;
                 this.updateMapForSelectedViews();
@@ -424,7 +424,7 @@ class HomeController extends BaseController {
         });
 
         // Set up a watch to apply dimensions when the layout changes
-        this.registerWatch(this.$scope, () => this.layout, () => {
+        this.watchScope(() => this.layout, () => {
             this.registerTimeout(() => this.applyLayoutDimensions());
         }, true);
 
@@ -528,7 +528,7 @@ class HomeController extends BaseController {
         }
 
         // Auto-save changes
-        this.registerWatch(this.$scope, "layout", (newValue: { columns: IColumn[] }, oldValue: {
+        this.watchScope("layout", (newValue: { columns: IColumn[] }, oldValue: {
             columns: IColumn[]
         }) => {
             if (newValue !== oldValue && this.currentLayoutName) {

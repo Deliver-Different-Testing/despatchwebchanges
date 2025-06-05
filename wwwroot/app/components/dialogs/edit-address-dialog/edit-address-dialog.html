@@ -1,11 +1,11 @@
-<md-dialog aria-label="{{ ctrl.title }}" style="width: 50%">
+<md-dialog aria-label="{{ ::ctrl.title }}" style="width: 50%">
     <form ng-cloak>
         <md-toolbar>
             <div class="md-toolbar-tools">
                 <md-icon class="popup-icon" md-font-set="material-symbols-outlined">
                     location_on
                 </md-icon>
-                <h2>{{ ctrl.title }}</h2>
+                <h2>{{ ::ctrl.title }}</h2>
                 <span flex></span>
                 <md-button class="md-icon-button" ng-click="ctrl.cancel()">
                     <md-tooltip md-direction="bottom">Cancel</md-tooltip>
@@ -24,7 +24,7 @@
                     <md-autocomplete
                             class="md-block"
                             flex-gt-xs
-                            md-floating-label="{{ ctrl.useUsFormat ? 'Street Address' : 'Address' }}"
+                            md-floating-label="{{ ::ctrl.useUsFormat ? 'Street Address' : 'Address' }}"
                             md-item-text="item.address.label"
                             md-items="item in ctrl.autocompleteAddressSearch(ctrl.addressSearchText)"
                             md-min-length="3"
@@ -213,8 +213,7 @@
                                     ng-click="ctrl.toggleContactCard()"
                             >
                                 <md-icon md-font-set="material-symbols-outlined">
-                                    {{ ctrl.isContactCardExpanded ? 'expand_less' : 'expand_more'
-                                    }}
+                                    {{ ctrl.isContactCardExpanded ? 'expand_less' : 'expand_more'}}
                                 </md-icon>
                             </md-button>
                         </div>
@@ -320,7 +319,7 @@
                     class="md-raised md-primary"
                     ng-click="ctrl.submit(ctrl.addressDetails)"
                     ng-if="!ctrl.isLoading">
-                {{ ctrl.submitLabel || 'SAVE' }}
+                {{ ::ctrl.submitLabel || 'SAVE' }}
             </md-button>
         </md-dialog-actions>
     </form>

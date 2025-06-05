@@ -12,22 +12,22 @@ namespace DespatchWeb.Controllers;
 public class CourierController(
     ICourierRepository courierRepository,
     ITaskRepository taskRepository
-    ) : Controller
+) : Controller
 {
     [HttpGet]
-    public async Task<IActionResult> Index(List<int> despatchViewIds, bool isUsTenant)
+    public async Task<IActionResult> Index([FromQuery] List<int> despatchViewIds, [FromQuery] bool isUsTenant)
     {
         try
         {
-            if (despatchViewIds is { Count: 0 })
-                despatchViewIds.Add(49);
+            if (despatchViewIds == null || despatchViewIds.Count == 0)
+                despatchViewIds = [49];
 
             var result = await courierRepository.GetClearListsAsync(despatchViewIds, isUsTenant);
             return Json(result);
         }
         catch (Exception e)
         {
-            Log.Error(e, "An error occured getting clear lists");
+            Log.Error(e, "An error occurred getting clear lists");
             return StatusCode(500, e.Message);
         }
     }
@@ -44,7 +44,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting clear list envelopes");
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -59,7 +59,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting active couriers");
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -74,7 +74,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting available courier locations");
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -89,7 +89,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting potential couriers");
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -119,7 +119,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting all active couriers");
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -134,7 +134,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting courier location");
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -149,7 +149,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting courier route");
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -164,7 +164,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting truck courier status");
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -185,7 +185,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error adding followup event");
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -200,7 +200,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting vehicle sizes");
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -215,7 +215,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error find courier");
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 }
