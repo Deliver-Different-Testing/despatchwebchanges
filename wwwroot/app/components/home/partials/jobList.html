@@ -43,7 +43,7 @@
 
 <md-table-container class="table-scroll">
     <table md-progress="ctrl.jobListPromise" md-table ng-model="ctrl.selectedJob">
-    <thead fix-head md-head md-on-reorder="ctrl.getJobList" md-order="ctrl.queryParams.order">
+        <thead fix-head md-head md-on-reorder="ctrl.getJobList" md-order="ctrl.queryParams.order">
         <tr md-row>
             <th md-column md-order-by="time">Time</th>
             <th md-column md-order-by="speed">Speed</th>
@@ -99,7 +99,6 @@
                            ng-model="job.assignedCourier"
                            uib-typeahead="item as item.text for item in ctrl.courierSearch($viewValue)"
                            typeahead-loading="job.courierSearchLoading"
-                           typeahead-no-results="ctrl.noResults"
                            typeahead-min-length="2"
                            typeahead-wait-ms="300"
                            typeahead-select-on-blur="true"
@@ -114,16 +113,12 @@
                            autocomplete="off">
 
                     <!-- Loading indicator -->
-                    <md-progress-circular md-mode="indeterminate"
-                                          md-diameter="20"
-                                          ng-show="ctrl.loadingCouriers"
-                                          class="material-typeahead-spinner">
+                    <md-progress-circular
+                            md-mode="indeterminate"
+                            md-diameter="20"
+                            ng-show="job.courierSearchLoading"
+                            class="material-typeahead-spinner">
                     </md-progress-circular>
-
-                    <!-- No results message -->
-                    <div ng-show="ctrl.noResults" class="material-typeahead-no-results">
-                        No couriers matching your search were found.
-                    </div>
                 </div>
             </td>
 

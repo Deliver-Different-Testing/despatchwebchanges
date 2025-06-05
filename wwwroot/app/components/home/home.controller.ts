@@ -75,7 +75,6 @@ class HomeController extends BaseController {
         driverLocations: "#driverLocations .listActive"
     } as const;
 
-    noCourierResults: boolean = false
     isLoadingData: boolean = false;
     showDriverLocationsNoData: boolean = false;
     showDriverLocationsData: boolean = false;
@@ -1952,10 +1951,6 @@ class HomeController extends BaseController {
                 job.courierSearchLoading = false;
             }
 
-            if (!job.hasOwnProperty('noResults')) {
-                 this.noCourierResults = false;
-            }
-
             // Initialize assignedCourier if job has existing courier data
             if (!job.assignedCourier && job.courier) {
                 job.assignedCourier = {
@@ -1966,10 +1961,6 @@ class HomeController extends BaseController {
 
             return job;
         });
-    }
-
-    handleTypeaheadNoResults(job: IDispatchJob, hasResults: boolean) {
-        this.noCourierResults = !hasResults;
     }
 
     async getJobList() {
