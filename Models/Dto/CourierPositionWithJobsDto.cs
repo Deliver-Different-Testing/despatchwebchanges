@@ -1,0 +1,26 @@
+using System;
+using System.Collections.Generic;
+
+namespace DespatchWeb.Models.Dto;
+
+public class CourierPositionWithJobsDto
+{
+    public int CourierId { get; set; }
+    public string CourierName { get; set; }
+    public decimal Latitude { get; set; }
+    public decimal Longitude { get; set; }
+    public int ChannelId { get; set; }
+    public string VehicleType { get; set; }
+    public List<int> ClearListAreaIDs { get; set; } = [];
+    public string Code { get; set; }
+    public string FleetCode { get; set; }
+    public int TotalJobs { get; set; }
+    public List<JobTimingDto> Jobs { get; set; } = [];
+}
+
+public class JobTimingDto
+{
+    public DateTime UcjbDate { get; set; }
+    public DateTime? UcjbTime { get; set; }
+    public int Minutes { get; set; }
+}
