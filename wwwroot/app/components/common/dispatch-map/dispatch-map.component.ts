@@ -5,6 +5,7 @@ import "./dispatch-map.styles.less";
 import BaseController from "../../base-controller";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
+import {ClearListEnvelopeViewModel} from "../../../interfaces/dfrnt-page-view-model.interface";
 
 class DispatchMapController extends BaseController {
     static $inject = [
@@ -925,6 +926,62 @@ class DispatchMapController extends BaseController {
         // Add the control to the map
         this.mapInstance!.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(mapControlsDiv);
     }
+
+    fitMapToEnvelope(envelopeData: ClearListEnvelopeViewModel, zoomLevel?: number): void {
+        if (!this.mapInstance || !envelopeData) {
+            console.log('[DispatchMapController] Cannot fit to envelope - map instance or data not available');
+            return;
+        }
+
+        try {
+            const swll = new this.$window.google.maps.LatLng(
+                envelopeData.minimumLatitude,
+                envelopeData.minimumLongitude
+            );
+            const nell = new this.$window.google.maps.LatLng(
+                envelopeData.maximumLatitude,
+                envelopeData.maximumLongitude
+            );
+
+            const bounds = new this.$window.google.maps.LatLngBounds(swll, nell);
+            this.mapInstance.fitBounds(bounds);
+
+            if (zoomLevel) {
+                this.registerTimeout(() => {
+                    this.mapInstance!.setZoom(zoomLevel);
+                }, 100);
+            }
+
+            console.log('[DispatchMapController] Map fitted to envelope bounds');
+        } catch (error) {
+            console.error('[DispatchMapController] Error fitting map to envelope:', error);
+        }
+    }
+
+    async updateMapWithClearListEnvelope(clearListId: number): Promise<any> {
+        if (!clearListId) {
+            console.log('[DispatchMapController] No clear list ID provided');
+            return null;
+        }
+
+        try {
+            console.log(`[DispatchMapController] Fetching envelope for clear list: ${clearListId}`);
+
+            const envelopeData = await this.DispatchData.getDriverDestinationEnvelope(clearListId);
+
+            if (envelopeData) {
+                this.fitMapToEnvelope(envelopeData, 13);
+                return envelopeData;
+            } else {
+                console.log('[DispatchMapController] No envelope data received');
+                return null;
+            }
+        } catch (error) {
+            console.error('[DispatchMapController] Error fetching clear list envelope:', error);
+            throw error;
+        }
+    }
+
 }
 
 const DispatchMapComponent: angular.IComponentOptions = {
@@ -937,7 +994,9 @@ const DispatchMapComponent: angular.IComponentOptions = {
         mapCenter: '<',
         mapZoom: '<',
         onMarkerClick: '&',
-        showAvailableCouriers: '<'
+        showAvailableCouriers: '<',
+        clearListId: '<',
+        onEnvelopeUpdate: '&'
     }
 };
 
