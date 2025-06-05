@@ -12,8 +12,3 @@ export interface ClearListEnvelopeViewModel {
     maximumLatitude: number;
     maximumLongitude: number;
 }
-
-export interface EnvelopeCoordinate {
-    longitude: number;
-    latitude: number;
-}

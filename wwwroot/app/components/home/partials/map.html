@@ -5,7 +5,9 @@
         map-center="ctrl.mapCenter"
         map-zoom="ctrl.mapZoom"
         on-marker-click="ctrl.selectJob(job)"
-        show-available-couriers="true">
+        show-available-couriers="true"
+        clear-list-id="ctrl.clearListId"
+        on-envelope-update="ctrl.onEnvelopeUpdate(data)">
 </dispatch-map>
 
 <style>

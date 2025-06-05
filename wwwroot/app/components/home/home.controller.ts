@@ -16,7 +16,7 @@ import {
 } from "../../interfaces/job.interface";
 import {ActiveCourierViewModel, TruckCourierStatusViewModel} from "../../interfaces/courier.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
-import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
+import {ClearListEnvelopeViewModel, DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {JobStatus} from "../../enums/job-status.enum";
 import BaseController from "../base-controller";
 import {ExtendedTask, TaskTableFiltersRequest, TaskViewModel} from "../task-dashboard/task-dashboard.interfaces";
@@ -147,6 +147,9 @@ class HomeController extends BaseController {
     dateSearchRange: number = 1;
     startDate: Date = dayjs(new Date(0)).toDate();
     endDate: Date = dayjs().add(24, 'hours').toDate();
+    clearListId?: number;
+    envelopeData: any;
+    envelopePromiseResolve?: ((value: ClearListEnvelopeViewModel | undefined) => void) | null = null;
 
     constructor(
         private $document: angular.IDocumentService,
@@ -246,7 +249,7 @@ class HomeController extends BaseController {
                 ui.item.removeClass('dragging');
                 angular.element('.column-sortable').removeClass('ui-sortable-active');
 
-                // Updated the saved laout
+                // Updated the saved layout
                 this.saveCurrentLayout();
             }
         };
@@ -859,23 +862,26 @@ class HomeController extends BaseController {
 
     async getClearListEnvelope(clearListId: number) {
         try {
-            const data = await this.DispatchData.getDriverDestinationEnvelope(clearListId);
-
-            if (data) {
-                // Update map bounds with envelope data
-                if (this.map) {
-                    const swll = new this.$window.google.maps.LatLng(data.minimumLatitude, data.minimumLongitude);
-                    const nell = new this.$window.google.maps.LatLng(data.maximumLatitude, data.maximumLongitude);
-                    this.map.fitBounds(new this.$window.google.maps.LatLngBounds(swll, nell));
-                    this.map.setZoom(13);
-                }
-            }
-
-            return data;
+            this.clearListId = clearListId;
+            return await this.waitForEnvelopeUpdate();
         } catch (error: any) {
             console.error("Error getting clear list envelope:", error);
             throw error;
         }
+    }
+
+    onEnvelopeUpdate(data: any) {
+        this.envelopeData = data;
+        if (this.envelopePromiseResolve) {
+            this.envelopePromiseResolve(data);
+            this.envelopePromiseResolve = null;
+        }
+    }
+
+    private waitForEnvelopeUpdate(): Promise<any> {
+        return new Promise((resolve) => {
+            this.envelopePromiseResolve = resolve;
+        });
     }
 
     async handleDispatchSelection(selectedCourier: Suggestion, model: Suggestion, label: string, $event: MouseEvent, job: IDispatchJob) {
