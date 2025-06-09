@@ -139,7 +139,7 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         // Add note
         if (!string.IsNullOrEmpty(extras.JobNotes))
         {
-            var note = CreateNote(job, extras.JobNotes, staffId, currentDate);
+            var note = CreateNote(job.UcjbId, extras.JobNotes, staffId, currentDate);
             await repository.AddEntityAsync(note);
         }
 
@@ -147,6 +147,128 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         await repository.SaveChangesAsync();
 
         return newStopJob.UcjbId;
+    }
+
+    public async Task<int> AddStopInsertRecurringJobAsync(AddStopRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var job = await repository.GetByIdAsync<TucJobBooking>(request.JobId);
+        ArgumentNullException.ThrowIfNull(job);
+
+        var newStopJobNumber = await GenerateNewStopJobNumberAsync(job.UcbkJobNumber);
+        var parentId = job.ParentId ?? job.UcbkId;
+        var extras = request.PickUpAddress?.ShipmentDetails ?? request.DeliveryAddress?.ShipmentDetails;
+
+        var newStopJob = new TucJobBooking
+        {
+            UcbkJobNumber = newStopJobNumber,
+            UcbkDate = job.UcbkDate,
+            UcbkTime = job.UcbkTime,
+            UcbkType = job.UcbkType,
+            UcbkClientId = job.UcbkClientId,
+            UcbkContact = job.UcbkContact,
+            UcbkChargeType = job.UcbkChargeType,
+            UcbkAmount = ExtraStopAmount,
+            CourierPayment = ExtraStopCourierPayment,
+            UcbkSpeed = job.UcbkSpeed,
+            UcbkFrom = job.UcbkFrom,
+            UcbkFromAddr = GetSafeAddress(request.PickUpAddress?.FullAddress, job.UcbkFromAddr),
+            UcbkTo = AirportSuburbId,
+            UcbkToSpecial = null,
+            UcbkToAddr = GetSafeAddress(request.DeliveryAddress?.FullAddress, job.UcbkFromAddr),
+            UcbkSize = job.UcbkSize,
+            Quantity = extras is { Quantity: not null } ? (short)extras.Quantity : job.Quantity,
+            UcbkCbd = false,
+            UcbkKm = 0,
+            UcbkWeight = extras?.Weight != null ? (int)extras.Weight : job.UcbkWeight,
+            CourierId = null,
+            UcbkDone = false,
+            UcbkClientRefa = job.UcbkClientRefa,
+            UcbkClientRefb = job.UcbkClientRefb,
+            UcbkOurRef = job.UcbkJobNumber,
+            UcbkVan = job.UcbkVan,
+            UcbkReturn = job.UcbkReturn,
+            UcbkAttention = true,
+            UcbkPickUpFrom = job.UcbkPickUpFrom,
+            UcbkClientCode = job.UcbkClientCode,
+            RefJobId = job.UcbkId,
+            SaturdayDelivery = false,
+            ClientNotes = job.ClientNotes,
+            ContactId = job.ContactId,
+            DeliverToPrivateBusiness = null,
+            DeliverToLeaveId = null,
+            ProofOfDelivery = null,
+            ProofOfDeliveryEmail = null,
+            ParentId = parentId,
+            JobRelationshipTypeId = JobRelationshipTypeId,
+            PickupFromContact = extras?.ContactName ?? job.PickupFromContact,
+            PickupFromPhone = extras?.ContactPhone ?? job.PickupFromPhone,
+            DeliverToContact = extras?.ContactName ?? job.DeliverToContact,
+            DeliverToPhone = extras?.ContactPhone ?? job.DeliverToPhone,
+            Dgclass = job.Dgclass,
+            Dgdocument = job.Dgdocument,
+           // RawAmount = await CalculateRawAmountAsync(job),
+            PickUpLatitude = job.PickUpLatitude,
+            PickUpLongitude = job.PickUpLongitude,
+            DeliveryLatitude = job.DeliveryLatitude,
+            DeliveryLongitude = job.DeliveryLongitude,
+            FuelSurchargeAmount = 0,
+            CourierFuel = ExtraStopFuel,
+            ShopId = job.ShopId,
+            ShopRef1 = CleanShopRef(job.ShopRef1),
+            ShopRef2 = CleanShopRef(job.ShopRef2),
+            ShopRef3 = CleanShopRef(job.ShopRef3),
+            ShopRef4 = CleanShopRef(job.ShopRef4),
+            ShopRef5 = CleanShopRef(job.ShopRef5),
+            CourierPercentageOverride = job.CourierPercentageOverride,
+            DryIceWeight = job.DryIceWeight,
+            PickupAddressLine1 = request?.PickUpAddress?.AddressLine1 ?? job.PickupAddressLine1,
+            PickupAddressLine2 = request?.PickUpAddress?.AddressLine2 ?? job.PickupAddressLine2,
+            PickupAddressLine3 = request?.PickUpAddress?.AddressLine3 ?? job.PickupAddressLine3,
+            PickupAddressLine4 = request?.PickUpAddress?.AddressLine4 ?? job.PickupAddressLine4,
+            PickupAddressLine5 = request?.PickUpAddress?.AddressLine5 ?? job.PickupAddressLine5,
+            PickupAddressLine6 = request?.PickUpAddress?.AddressLine6 ?? job.PickupAddressLine6,
+            PickupAddressLine7 = request?.PickUpAddress?.AddressLine7 ?? job.PickupAddressLine7,
+            PickupAddressLine8 = request?.PickUpAddress?.AddressLine8 ?? job.PickupAddressLine8,
+            DeliveryAddressLine1 = request?.DeliveryAddress?.AddressLine1 ?? job.DeliveryAddressLine1,
+            DeliveryAddressLine2 = request?.DeliveryAddress?.AddressLine2 ?? job.DeliveryAddressLine2,
+            DeliveryAddressLine3 = request?.DeliveryAddress?.AddressLine3 ?? job.DeliveryAddressLine3,
+            DeliveryAddressLine4 = request?.DeliveryAddress?.AddressLine4 ?? job.DeliveryAddressLine4,
+            DeliveryAddressLine5 = request?.DeliveryAddress?.AddressLine5 ?? job.DeliveryAddressLine5,
+            DeliveryAddressLine6 = request?.DeliveryAddress?.AddressLine6 ?? job.DeliveryAddressLine6,
+            DeliveryAddressLine7 = request?.DeliveryAddress?.AddressLine7 ?? job.DeliveryAddressLine7,
+            FromAirportId = job.FromAirportId,
+            ToAirportId = job.ToAirportId,
+            DeliverByTime = job.DeliverByTime,
+            PickupTimeZoneId = job.PickupTimeZoneId,
+            DeliverByTimeZoneId = job.DeliverByTimeZoneId,
+            TotalDistance = null,
+            RatedManually = true,
+        };
+
+        // Insert the new job stop
+        await repository.AddEntityAsync(newStopJob);
+        await repository.SaveChangesAsync();
+
+        var staffId = infoService.GetStaffId();
+        var currentDate = infoService.GetCurrentTenantTime();
+
+        // Pricing Breakdown
+        var pricingBreakdown = CreateBookingPricingBreakdown(newStopJob.UcbkId);
+        await repository.AddEntityAsync(pricingBreakdown);
+
+        // Add note
+        if (!string.IsNullOrEmpty(extras.JobNotes))
+        {
+            var note = CreateBookingNote(job.UcbkId, extras.JobNotes, staffId, currentDate);
+            await repository.AddEntityAsync(note);
+        }
+
+        // Save changes to a database
+        await repository.SaveChangesAsync();
+
+        return newStopJob.UcbkId;
     }
 
     private static string GetSafeAddress(string address, string defaultAddress)
@@ -191,11 +313,11 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
 
     private static string CleanShopRef(string shopRef) => string.IsNullOrWhiteSpace(shopRef) ? null : shopRef.Trim();
 
-    private static TucNote CreateNote(TucJob job, string noteText, int staffId, DateTime currentDate)
+    private static TucNote CreateNote(int jobId, string noteText, int staffId, DateTime currentDate)
     {
         return new TucNote
         {
-            JobId = job.UcjbId,
+            JobId = jobId,
             NoteText = noteText,
             CreatedBy = staffId,
             CreatedDate = currentDate,
@@ -205,15 +327,39 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         };
     }
 
-    private static PricingBreakdown CreatePricingBreakdown(int stopJobId)
+    private static TucNote CreateBookingNote(int jobBookingId, string noteText, int staffId, DateTime currentDate)
     {
-        return new PricingBreakdown
+        return new TucNote
         {
-            JobId = stopJobId,
+            JobBookingId = jobBookingId,
+            NoteText = noteText,
+            CreatedBy = staffId,
+            CreatedDate = currentDate,
+            NoteTypeId = (int)NoteType.InternalNote,
+            UpdatedBy = staffId,
+            UpdatedDate = currentDate
+        };
+    }
+
+    private static PricingBreakdown CreatePricingBreakdown(int stopJobId) => CreatePricingBreakdownCore(stopJobId, isRecurring: false);
+
+    private static PricingBreakdown CreateBookingPricingBreakdown(int stopJobId) => CreatePricingBreakdownCore(stopJobId, isRecurring: true);
+
+    private static PricingBreakdown CreatePricingBreakdownCore(int stopJobId, bool isRecurring)
+    {
+        var breakdown = new PricingBreakdown
+        {
             ChargeAmount = ExtraStopAmount,
             CostAmount = ExtraStopCourierPayment,
             Total = ExtraStopAmount - ExtraStopCourierPayment,
             ChargeName = "Extra Stop"
         };
+
+        if (isRecurring)
+            breakdown.PrebookJobId = stopJobId;
+        else
+            breakdown.JobId = stopJobId;
+
+        return breakdown;
     }
 }

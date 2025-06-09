@@ -195,7 +195,7 @@
                         <md-toolbar class="md-accent">
                             <div class="md-toolbar-tools">
                                 <!--Icon-->
-                                <span class="material-symbols-outlined">{{ctrl.boxes[box.name].icon}}</span>
+                                <span class="material-symbols-outlined">{{::ctrl.boxes[box.name].icon}}</span>
                                 <span class="md-headline-title" flex style="margin-left: 8px">
   {{::ctrl.boxes[box.name].title}}
 
@@ -219,45 +219,31 @@
                                 <md-button
                                         class="md-icon-button md-primary"
                                         ng-click="ctrl.refreshAction(box.name)"
-                                        ng-if="::ctrl.boxes[box.name].showRefresh"
-                                >
-                                    <md-icon md-font-set="material-symbols-outlined"
-                                    >refresh
-                                    </md-icon
-                                    >
+                                        ng-if="::ctrl.boxes[box.name].showRefresh">
+                                    <md-icon md-font-set="material-symbols-outlined">refresh
+                                    </md-icon>
                                 </md-button>
 
                                 <div
                                         class="row-overflow"
                                         layout="row"
-                                        ng-if="box.name === 'flightAgentDataTable' && ctrl.flightOptions.length > 0"
-                                >
+                                        ng-if="box.name === 'flightAgentDataTable' && ctrl.flightOptions.length > 0">
                                     <md-button
                                             class="md-icon-button md-primary"
-                                            ng-click="ctrl.loadNextFlights()"
-                                    >
-                                        <md-tooltip md-direction="top"
-                                        >Next Available Flights
-                                        </md-tooltip
-                                        >
-                                        <md-icon md-font-set="material-symbols-outlined"
-                                        >next_week
-                                        </md-icon
-                                        >
+                                            ng-click="ctrl.loadNextFlights()">
+                                        <md-tooltip md-direction="top">Next Available Flights
+                                        </md-tooltip>
+                                        <md-icon md-font-set="material-symbols-outlined">next_week
+                                        </md-icon>
                                     </md-button>
 
                                     <md-button
                                             class="md-icon-button md-primary"
-                                            ng-click="ctrl.loadNextDayFlights()"
-                                    >
-                                        <md-tooltip md-direction="top"
-                                        >Next Day's Flights
-                                        </md-tooltip
-                                        >
-                                        <md-icon md-font-set="material-symbols-outlined"
-                                        >event_upcoming
-                                        </md-icon
-                                        >
+                                            ng-click="ctrl.loadNextDayFlights()">
+                                        <md-tooltip md-direction="top">Next Day's Flights
+                                        </md-tooltip>
+                                        <md-icon md-font-set="material-symbols-outlined">event_upcoming
+                                        </md-icon>
                                     </md-button>
                                 </div>
 
@@ -265,35 +251,30 @@
                                 <div
                                         class="row-overflow"
                                         layout="row"
-                                        ng-if="ctrl.currentJob && ctrl.boxes[box.name].showDetailButtons"
-                                >
+                                        ng-if="ctrl.currentJob && ctrl.boxes[box.name].showDetailButtons">
                                     <md-fab-speed-dial
                                             class="md-scale"
                                             md-direction="left"
                                             md-open="jobDetailFabIsOpen"
                                             ng-class="{ 'md-hover-full': true }"
                                             ng-mouseenter="jobDetailFabIsOpen=true"
-                                            ng-mouseleave="jobDetailFabIsOpen=false"
-                                    >
+                                            ng-mouseleave="jobDetailFabIsOpen=false">
                                         <md-fab-trigger>
                                             <md-button
                                                     aria-label="menu"
-                                                    class="md-fab md-mini md-primary"
-                                            >
+                                                    class="md-fab md-mini md-primary">
                                                 <md-tooltip md-direction="bottom">Options</md-tooltip>
                                                 <md-icon md-font-set="material-symbols-outlined"
                                                 >page_info
-                                                </md-icon
-                                                >
+                                                </md-icon>
                                             </md-button>
                                         </md-fab-trigger>
 
                                         <md-fab-actions>
                                             <md-button
-                                                    ng-if="ctrl.isDeliveryJob(ctrl.currentJob)"
+                                                    ng-if="::ctrl.isDeliveryJobType"
                                                     class="md-fab md-raised md-mini"
-                                                    ng-click="ctrl.addStopToJob($event, ctrl.currentJob)"
-                                            >
+                                                    ng-click="ctrl.addStopToJob($event, ctrl.currentJob)">
                                                 <md-tooltip md-direction="bottom">Add Stop</md-tooltip>
                                                 <md-icon md-font-set="material-symbols-outlined">
                                                     pin_drop
@@ -301,33 +282,25 @@
                                             </md-button>
                                             <md-button
                                                     class="md-fab md-raised md-mini"
-                                                    ng-click="ctrl.showAdditionalServicesMenu($event, ctrl.currentJob)"
-                                            >
-                                                <md-tooltip md-direction="bottom"
-                                                >Additional Services
-                                                </md-tooltip
-                                                >
+                                                    ng-click="ctrl.showAdditionalServicesMenu($event, ctrl.currentJob)">
+                                                <md-tooltip md-direction="bottom">Additional Services
+                                                </md-tooltip>
                                                 <md-icon md-font-set="material-symbols-outlined">
                                                     add_shopping_cart
                                                 </md-icon>
                                             </md-button>
                                             <md-button
                                                     class="md-fab md-raised md-mini"
-                                                    ng-click="ctrl.createEvent($event, ctrl.currentJob)"
-                                            >
+                                                    ng-click="ctrl.createEvent($event, ctrl.currentJob)">
                                                 <md-tooltip md-direction="bottom">Add Task</md-tooltip>
-                                                <md-icon md-font-set="material-symbols-outlined"
-                                                >edit_calendar
+                                                <md-icon md-font-set="material-symbols-outlined">edit_calendar
                                                 </md-icon>
                                             </md-button>
                                             <md-button
                                                     class="md-fab md-raised md-mini"
-                                                    ng-click="ctrl.openFileAttachmentDialog($event, ctrl.currentJob)"
-                                            >
-                                                <md-tooltip md-direction="bottom"
-                                                >Attachments
-                                                </md-tooltip
-                                                >
+                                                    ng-click="ctrl.openFileAttachmentDialog($event, ctrl.currentJob)">
+                                                <md-tooltip md-direction="bottom">Attachments
+                                                </md-tooltip>
                                                 <md-icon md-font-set="material-symbols-outlined">
                                                     cloud_upload
                                                 </md-icon>
@@ -335,27 +308,19 @@
                                             <md-button
                                                     class="md-fab md-raised md-mini"
                                                     ng-click="ctrl.unlockJob(ctrl.currentJob)"
-                                                    ng-if="ctrl.currentJob && (ctrl.currentJob.locked && !ctrl.currentJob.invoiced)"
-                                            >
-                                                <md-tooltip md-direction="bottom"
-                                                >Unlock Job
-                                                </md-tooltip
-                                                >
-                                                <md-icon md-font-set="material-symbols-outlined"
-                                                >lock_open
-                                                </md-icon
-                                                >
+                                                    ng-if="ctrl.currentJob && (ctrl.currentJob.locked && !ctrl.currentJob.invoiced)">
+                                                <md-tooltip md-direction="bottom">Unlock Job
+                                                </md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">lock_open
+                                                </md-icon>
                                             </md-button>
                                             <md-button
                                                     class="md-fab md-raised md-mini"
                                                     ng-click="ctrl.lockJob(ctrl.currentJob)"
-                                                    ng-if="ctrl.currentJob && (!ctrl.currentJob.locked && !ctrl.currentJob.invoiced)"
-                                            >
+                                                    ng-if="ctrl.currentJob && (!ctrl.currentJob.locked && !ctrl.currentJob.invoiced)">
                                                 <md-tooltip md-direction="bottom">Lock Job</md-tooltip>
-                                                <md-icon md-font-set="material-symbols-outlined"
-                                                >lock
-                                                </md-icon
-                                                >
+                                                <md-icon md-font-set="material-symbols-outlined">lock
+                                                </md-icon>
                                             </md-button>
                                         </md-fab-actions>
                                     </md-fab-speed-dial>
@@ -371,13 +336,11 @@
                                             ng-click="ctrl.openSearch(box.name, $index)">
                                         <md-icon
                                                 md-font-set="material-symbols-outlined"
-                                                ng-if="!ctrl.showInput[box.name + '-' + $index]"
-                                        >search
+                                                ng-if="!ctrl.showInput[box.name + '-' + $index]">search
                                         </md-icon>
                                         <md-icon
                                                 md-font-set="material-symbols-outlined"
-                                                ng-if="ctrl.showInput[box.name + '-' + $index]"
-                                        >close
+                                                ng-if="ctrl.showInput[box.name + '-' + $index]">close
                                         </md-icon>
                                     </md-button>
 
@@ -407,8 +370,7 @@
                                 <div class="box-handle md-icon-button">
                                     <md-icon
                                             class="md-drag-button"
-                                            md-font-set="material-symbols-outlined"
-                                    >
+                                            md-font-set="material-symbols-outlined">
                                         drag_indicator
                                     </md-icon>
                                 </div>

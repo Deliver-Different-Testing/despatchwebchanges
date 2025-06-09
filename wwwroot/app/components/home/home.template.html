@@ -15,7 +15,8 @@
                     </md-button>
                     <md-menu-content style="width: 300px; overflow: hidden;">
                         <div class="md-padding" md-prevent-menu-close>
-                            <label id="dateRange" class="label-padding">Date Filter: ({{::ctrl.browserTimeZone | timezoneShort}})</label>                            <md-radio-group ng-change="ctrl.onSearchRangeChange(ctrl.dateSearchRange)" ng-model="ctrl.dateSearchRange"
+                            <label id="dateRange" class="label-padding">Date Filter: ({{::ctrl.browserTimeZone | timezoneShort}})</label>
+                            <md-radio-group ng-change="ctrl.onSearchRangeChange(ctrl.dateSearchRange)" ng-model="ctrl.dateSearchRange"
                                             aria-labelledby="dateRange" layout="row" layout-align="center center">
                                 <md-radio-button value="1">24 Hours</md-radio-button>
                                 <md-radio-button value="2">Custom</md-radio-button>
@@ -119,6 +120,10 @@
         <material-sidenav></material-sidenav>
     </div>
 
+    <div ng-if="ctrl.isDataLoading">
+        <md-progress-linear md-mode="indeterminate" class="md-primary" style="padding: 10px;"></md-progress-linear>
+    </div>
+
     <div>
         <div class="columns">
             <div class="column" id="co-{{column.id}}" ng-repeat="(colKey,column) in ctrl.layout.columns"
@@ -136,20 +141,20 @@
 
                                 <span class="md-headline-title" flex style="margin-left: 8px;">
                                 {{::ctrl.boxes[box.name].title}}
-                                <span ng-if="box.name == 'jobDetail'">{{ctrl.currentSelection}}</span>
-                                <span ng-if="box.name == 'potentialCouriers'">{{ctrl.potentialCouriersSelection}}</span>
-                                <span ng-if="box.name == 'currentWork' || box.name == 'map'">{{ctrl.currentWorkSelection}}</span>
+                                <span ng-if="::box.name == 'jobDetail'">{{ctrl.currentSelection}}</span>
+                                <span ng-if="::box.name == 'potentialCouriers'">{{ctrl.potentialCouriersSelection}}</span>
+                                <span ng-if="::box.name == 'currentWork' || box.name == 'map'">{{ctrl.currentWorkSelection}}</span>
                             </span>
 
                                 <div flex></div>
 
                                 <md-button class="md-icon-button md-primary" ng-click="ctrl.getData()"
-                                           ng-if="ctrl.boxes[box.name].showRefresh">
+                                           ng-if="::ctrl.boxes[box.name].showRefresh">
                                     <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
                                 </md-button>
 
                                 <!-- Courier Card Buttons-->
-                                <div class="row-overflow" ng-if="box.name === 'currentWork' && ctrl.currentCourier">
+                                <div class="row-overflow" ng-if="::box.name === 'currentWork' && ctrl.currentCourier">
                                     <md-fab-speed-dial class="md-scale" md-direction="left"
                                                        md-open="ctrl.courierListFabIsOpen"
                                                        ng-class="{ 'md-hover-full': true }"
@@ -165,7 +170,7 @@
                                         <md-fab-actions>
                                             <md-button class="md-fab md-raised md-mini"
                                                        ng-click="ctrl.truckLoadingStatus($event)"
-                                                       ng-if="ctrl.truckCourierStatus.length > 0">
+                                                       ng-if="::ctrl.truckCourierStatus.length > 0">
                                                 <md-tooltip md-direction="bottom">Truck Loading Status</md-tooltip>
                                                 <md-icon md-font-set="material-symbols-outlined">
                                                     local_shipping
@@ -212,6 +217,15 @@
                                         </md-fab-trigger>
 
                                         <md-fab-actions>
+                                            <md-button
+                                                    ng-if="::ctrl.isDeliveryJob(ctrl.currentJob)"
+                                                    class="md-fab md-raised md-mini"
+                                                    ng-click="ctrl.addStopToJob($event, ctrl.currentJob)">
+                                                <md-tooltip md-direction="bottom">Add Stop</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">
+                                                    pin_drop
+                                                </md-icon>
+                                            </md-button>
                                             <md-button class="md-fab md-raised md-mini"
                                                        ng-click="ctrl.showAdditionalServicesMenu($event, ctrl.currentJob)">
                                                 <md-tooltip md-direction="bottom">Additional Services</md-tooltip>
@@ -297,7 +311,7 @@
                                     </md-autocomplete>
                                 </div>
 
-                                <div class="row-overflow" ng-if="box.name === 'driverLocations'">
+                                <div class="row-overflow" ng-if="::box.name === 'driverLocations'">
                                     <md-menu>
                                         <md-button aria-label="truck mode" class="md-raised md-accent"
                                                    ng-click="$mdMenu.open($event)">
@@ -324,7 +338,7 @@
                                 </div>
 
                                 <div class="row-overflow" id="box-{{box.name}}-{{$index}}" layout="row"
-                                     ng-if="ctrl.boxes[box.name].showSearch">
+                                     ng-if="::ctrl.boxes[box.name].showSearch">
                                     <md-button aria-label="open search" class="md-icon-button"
                                                ng-click="ctrl.openSearch(box.name, $index)">
                                         <md-icon md-font-set="material-symbols-outlined"

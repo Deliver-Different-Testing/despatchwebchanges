@@ -11,8 +11,8 @@
         <md-card-content>
             <div layout="row" layout-align="start center">
                 <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
-                <span class="warning-text" ng-if="ctrl.job.isArchived">Job archived. Some fields can't be edited</span>
-                <span class="warning-text" ng-if="ctrl.job.preBook"
+                <span class="warning-text" ng-if=":ctrl.job.isArchived">Job archived. Some fields can't be edited</span>
+                <span class="warning-text" ng-if=":ctrl.job.preBook"
                 >Recurring job. Some fields may require confirmation</span>
             </div>
         </md-card-content>
@@ -185,7 +185,7 @@
                             </md-icon>
                             <div class="md-list-item-text">
                                 <h3>Deliver By</h3>
-                                <p>{{ctrl.getDeliveryTimeWindow()}}</p>
+                                <p>{{::ctrl.getDeliveryTimeWindow()}}</p>
                             </div>
                         </md-list-item>
 
@@ -202,7 +202,7 @@
                             </md-icon>
                             <div class="md-list-item-text">
                                 <h3>PU Time</h3>
-                                <p>{{ctrl.getPickupTimeWindow()}}</p>
+                                <p>{{::ctrl.getPickupTimeWindow()}}</p>
                             </div>
                         </md-list-item>
 

@@ -125,6 +125,7 @@ class DispatchMapController extends BaseController {
     }
 
     $onDestroy() {
+        super.$onDestroy();
         this.clearLocationRefreshInterval();
         this.removeEventListeners();
     }
