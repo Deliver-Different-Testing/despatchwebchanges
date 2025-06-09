@@ -1,24 +1,31 @@
 import {AppConfig} from "../../interfaces/app-config.interface";
-import {IJob} from "../../interfaces/job.interface";
+import {IDispatchJob, IJob} from "../../interfaces/job.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import {ClientInternal, ContactID} from "../../contants";
 import RecurringJobsService from "./recurringJobs.service";
-import {IRecurringJobQuery} from "./recurringJobs.interface";
+import {IPrebookListModel, IRecurringJobQuery} from "./recurringJobs.interface";
 import ToastrService from "../../services/toastr.service";
 import greetUser from "../../functions/greetUser";
+import JobContextMenuService from "../../services/job-context-menu.service";
+import {AppPages} from "../../enums/app-pages.enum";
+import {isNotFlightJob} from "../../functions/isNotFlightJob";
+import JobAddStopService from "../../services/job-add-stop.service";
 
 class RecurringJobsController extends BaseController {
     static $inject = [
         '$mdDialog',
-        '$scope',
         '$state',
         '$filter',
-        '$timeout',
         '$mdSidenav',
         'uPBData',
         'toastrService',
-        'APP_CONFIG'
+        'jobContextMenuService',
+        'jobAddStopService',
+        '$scope',
+        '$timeout',
+        '$interval',
+        'APP_CONFIG',
     ];
 
     readonly options = {
@@ -80,9 +87,9 @@ class RecurringJobsController extends BaseController {
     };
     searchBox: string = "";
     totalCount: number = 0;
-    jobList: IJob[] = [];
-    filteredData: IJob[] = [];
-    pagedData: IJob[] = [];
+    jobList: IPrebookListModel[] = [];
+    filteredData: IPrebookListModel[] = [];
+    pagedData: IPrebookListModel[] = [];
     searchText: string = "";
     promise: angular.IPromise<any> | null = null;
     showInput: Record<string, boolean> = {};
@@ -95,30 +102,40 @@ class RecurringJobsController extends BaseController {
     currentLayoutName?: string;
     timeZone: string = TimeZone;
     activeFilter: boolean = true;
+    isDataLoading: boolean = false;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        private $scope: angular.IScope,
         private $state: angular.ui.IStateService,
         private $filter: angular.IFilterService,
-        private $timeout: angular.ITimeoutService,
         private $mdSidenav: angular.material.ISidenavService,
-        private uPBData: RecurringJobsService,
+        private recurringJobsService: RecurringJobsService,
         private toastrService: ToastrService,
+        private jobContextMenuService: JobContextMenuService,
+        private jobAddStopService: JobAddStopService,
+        $scope: angular.IScope,
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
         appConfig: AppConfig,
     ) {
         super();
+        this.initServices($timeout, $interval, $scope);
 
         this.isUsCustomer = appConfig.US_Customer;
         this.isAdmin = ClientInternal;
 
-        this._initializeLayout();
+        this.initializeLayout();
     }
 
     $onInit(): void {
         // Setup watchers
-        this.$scope.$watchGroup(["searchText", "jobQuery.order"], () => {
-            this.jobQuery.page = 1; // Reset to first page
+        this.watchScope("searchText", () => {
+            this.jobQuery.page = 1; // Reset to the first page
+            this.updateTable();
+        });
+
+        this.watchScope("jobQuery.order", () => {
+            this.jobQuery.page = 1; // Reset to the first page
             this.updateTable();
         });
 
@@ -182,10 +199,10 @@ class RecurringJobsController extends BaseController {
             });
     }
 
-    private _initializeLayout(): void {
+    private initializeLayout(): void {
         this.layouts = []
 
-            this.defaultLayout = {
+        this.defaultLayout = {
             name: "Default",
             layout: {
                 columns: [
@@ -205,7 +222,7 @@ class RecurringJobsController extends BaseController {
                     }
                 ],
             },
-            };
+        };
 
         // Load saved layouts or use default
         if (Modernizr.localstorage) {
@@ -239,10 +256,10 @@ class RecurringJobsController extends BaseController {
 
     updateTable(): void {
         // Apply search filter
-        let orderedData = this.$filter("filter")(this.jobList, this.searchText) as IJob[];
+        let orderedData = this.$filter("filter")(this.jobList, this.searchText) as IPrebookListModel[];
 
         // Apply sorting
-        orderedData = this.$filter("orderBy")(orderedData, this.jobQuery.order) as IJob[];
+        orderedData = this.$filter("orderBy")(orderedData, this.jobQuery.order) as IPrebookListModel[];
 
         this.filteredData = orderedData;
 
@@ -281,9 +298,6 @@ class RecurringJobsController extends BaseController {
             }));
     }
 
-    JobRecordSelected(selectedJobId: number): Promise<void> {
-        return this.selectJobDetail(selectedJobId);
-    }
 
     loadLayout(index: number) {
         const layout: ILayout = this.layouts[index] || this.layouts[0];
@@ -291,8 +305,8 @@ class RecurringJobsController extends BaseController {
         this.layout = angular.copy(layout.layout);
 
         // Apply dimensions on next digest cycle
-        this.$timeout(() => {
-            this._applyLayoutDimensions();
+        this.registerTimeout(() => {
+            this.applyLayoutDimensions();
 
             if (Modernizr.localstorage) {
                 localStorage.setItem(`lastActiveLayout-recurring-${ContactID}`, layout.name);
@@ -300,7 +314,7 @@ class RecurringJobsController extends BaseController {
         });
     }
 
-    private _applyLayoutDimensions() {
+    private applyLayoutDimensions() {
         if (!this.layout || !this.layout.columns) return;
 
         this.layout.columns.forEach((column: IColumn) => {
@@ -333,10 +347,10 @@ class RecurringJobsController extends BaseController {
         }
     }
 
-    async refreshData(active = this.activeFilter): Promise<IJob[]> {
+    async refreshData(active = this.activeFilter): Promise<IPrebookListModel[]> {
         try {
             this.activeFilter = active;
-            this.promise = this.uPBData.getPreBookJobs(active);
+            this.promise = this.recurringJobsService.getPreBookJobs(active);
 
             this.jobList = await this.promise;
             this.updateTable();
@@ -351,7 +365,7 @@ class RecurringJobsController extends BaseController {
         }
     }
 
-    onOrderChange(order: string): Promise<IJob[]> {
+    onOrderChange(order: string): Promise<IPrebookListModel[]> {
         this.jobQuery.order = order;
         this.updateTable();
         return this.refreshData();
@@ -404,7 +418,7 @@ class RecurringJobsController extends BaseController {
 
             // User clicked 'Yes'
             const voidJobs = jobIds.map(jobId =>
-                this.uPBData.voidPrebookJob(jobId, FirstName, ContactID)
+                this.recurringJobsService.voidPrebookJob(jobId, FirstName, ContactID)
             );
 
             await Promise.all(voidJobs);
@@ -451,7 +465,7 @@ class RecurringJobsController extends BaseController {
             await this.$mdDialog.show(confirm);
 
             // User clicked 'Yes'
-            await this.uPBData.voidPrebookJob(jobId, FirstName, ContactID);
+            await this.recurringJobsService.voidPrebookJob(jobId, FirstName, ContactID);
 
             await this.refreshData();
 
@@ -497,7 +511,7 @@ class RecurringJobsController extends BaseController {
             await this.$mdDialog.show(confirm);
 
             // User clicked 'Yes'
-            const sendJobs = jobIds.map(jobId => this.uPBData.sendPrebookJob(jobId));
+            const sendJobs = jobIds.map(jobId => this.recurringJobsService.sendPrebookJob(jobId));
             await Promise.all(sendJobs);
 
             await this.refreshData();
@@ -541,7 +555,7 @@ class RecurringJobsController extends BaseController {
             await this.$mdDialog.show(confirm);
 
             // User clicked 'Yes'
-            await this.uPBData.sendPrebookJob(jobId);
+            await this.recurringJobsService.sendPrebookJob(jobId);
 
             await this.refreshData();
 
@@ -567,6 +581,16 @@ class RecurringJobsController extends BaseController {
                 );
             }
         }
+    }
+
+    getContextMenuOptions(job: IPrebookListModel) {
+        if (!job) return [];
+
+        const callbacks = {
+            onRefresh: () => this.refreshData(),
+        };
+
+        return this.jobContextMenuService.getRecurringJobMenuOptions(job, callbacks);
     }
 }
 

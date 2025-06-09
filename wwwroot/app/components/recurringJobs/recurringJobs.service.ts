@@ -11,8 +11,8 @@ class RecurringJobsService {
         console.log('RecurringJobsService: Service instantiated');
     }
 
-    async getPreBookJobs(active: boolean) {
-        const response = await this.$http.get<IPrebookListModel[]>(`/Job/PreBookJobs`, {
+    async getPreBookJobs(active: boolean): Promise<IPrebookListModel[]> {
+        const response = await this.$http.get<IPrebookListModel[]>(`job/PreBookJobs`, {
             params: {
                 active
             }
@@ -21,7 +21,7 @@ class RecurringJobsService {
     }
 
     async sendPrebookJob(jobId: number) {
-        await this.$http.post(`/Job/SendPrebookJob`,
+        await this.$http.post(`job/SendPrebookJob`,
             null, {
                 params: {
                     jobId,
@@ -31,7 +31,7 @@ class RecurringJobsService {
 
     async voidPrebookJob(jobId: number, despatcherName: string, staffId: number) {
         await this.$http.post(
-            `/Job/VoidPrebookJob`,
+            `job/VoidPrebookJob`,
             null, {
                 params: {
                     jobId,

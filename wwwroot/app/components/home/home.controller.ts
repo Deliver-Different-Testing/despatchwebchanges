@@ -42,14 +42,14 @@ import greetUser from "../../functions/greetUser";
 import dayjs from "dayjs";
 import TruckCourierStatusDialogService
     from "../dialogs/truck-courier-status-dialog/truck-courier-status-dialog.service";
+import {isNotFlightJob} from "../../functions/isNotFlightJob";
+import JobAddStopService from "../../services/job-add-stop.service";
 
 class HomeController extends BaseController {
     static $inject = [
         '$document',
         '$mdDialog',
-        '$scope',
         '$window',
-        '$timeout',
         'toastrService',
         'DispatchData',
         'uCSData',
@@ -65,9 +65,12 @@ class HomeController extends BaseController {
         'interCourierChargeDialogService',
         'jobContextMenuService',
         '$mdEditDialog',
-        '$interval',
         'navigationService',
         'truckCourierStatusDialogService',
+        'jobAddStopService',
+        '$scope',
+        '$timeout',
+        '$interval',
     ];
 
     private readonly DOM_SELECTORS = {
@@ -150,13 +153,12 @@ class HomeController extends BaseController {
     clearListId?: number;
     envelopeData: any;
     envelopePromiseResolve?: ((value: ClearListEnvelopeViewModel | undefined) => void) | null = null;
+    isDataLoading: boolean = false;
 
     constructor(
         private $document: angular.IDocumentService,
         private $mdDialog: angular.material.IDialogService,
-        private $scope: angular.IScope,
         private $window: angular.IWindowService,
-        $timeout: angular.ITimeoutService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
         private uCSData: JobSearchService,
@@ -172,13 +174,15 @@ class HomeController extends BaseController {
         private interCourierChargeDialogService: InterCourierChargeDialogService,
         private jobContextMenuService: JobContextMenuService,
         private $mdEditDialog: any,
-        $interval: angular.IIntervalService,
         private navigationService: NavigationService,
         private truckCourierStatusDialogService: TruckCourierStatusDialogService,
+        private jobAddStopService: JobAddStopService,
+        $scope: angular.IScope,
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
     ) {
         super();
-        this.initServices($timeout, $interval, this.$scope);
-        this.bindMethods();
+        this.initServices($timeout, $interval, $scope);
 
         this.greeting = greetUser(FirstName);
         this.timeZone = TimeZone;
@@ -373,29 +377,6 @@ class HomeController extends BaseController {
         },];
     }
 
-    private bindMethods() {
-        this.handleDispatchSelection = this.handleDispatchSelection.bind(this);
-        this.selectJob = this.selectJob.bind(this);
-        this.toggleView = this.toggleView.bind(this);
-        this.selectedCourierChange = this.selectedCourierChange.bind(this);
-        this.selectCourier = this.selectCourier.bind(this);
-        this.selectClearList = this.selectClearList.bind(this);
-        this.handleDispatchFieldClick = this.handleDispatchFieldClick.bind(this);
-        this.selectForDispatch = this.selectForDispatch.bind(this);
-        this.handleMarkerClick = this.handleMarkerClick.bind(this);
-        this.handleSplitJob = this.handleSplitJob.bind(this);
-        this.JobRecordSelected = this.JobRecordSelected.bind(this);
-        this.selectPotentialCourier = this.selectPotentialCourier.bind(this);
-        this.selectSupportJobDetail = this.selectSupportJobDetail.bind(this);
-        this.filterByStatus = this.filterByStatus.bind(this);
-        this.filterSupports = this.filterSupports.bind(this);
-        this.filterTasks = this.filterTasks.bind(this);
-        this.onSearchRangeChange = this.onSearchRangeChange.bind(this);
-        this.setTruckMode = this.setTruckMode.bind(this);
-        this.openSearch = this.openSearch.bind(this);
-        this.onCourierSearchClick = this.onCourierSearchClick.bind(this);
-    }
-
     $onInit() {
         this.initLayoutSystem(ContactID);
 
@@ -557,7 +538,7 @@ class HomeController extends BaseController {
             localStorage.setItem(`lastActiveLayout-${ContactID}`, layout.name);
         }
 
-        this.registerTimeout(() => this.$scope.$apply());
+        this.applyScope();
     }
 
     saveLayout() {
@@ -1589,7 +1570,7 @@ class HomeController extends BaseController {
     async selectCourier(courier: CourierData) {
         try {
             this.currentListLoading = true;
-            this.registerTimeout(() => this.$scope.$apply());
+            this.applyScope();
 
             if (!courier || !courier.courierId) return;
             const foundCourier = await this.DispatchData.getCourierById(courier.courierId);
@@ -1619,7 +1600,7 @@ class HomeController extends BaseController {
             this.toastrService.showErrorToast("Error loading courier information");
         } finally {
             this.currentListLoading = false;
-            this.registerTimeout(() => this.$scope.$apply());
+            this.applyScope();
         }
     }
 
@@ -1854,7 +1835,7 @@ class HomeController extends BaseController {
             // Only focus the dispatch field for the selected job
             this.focusDispatchField(job.id);
 
-        this.$scope.$applyAsync();
+        this.applyScope();
     }
 
     async handleUndispatchedJob(job: IDispatchJob) {
@@ -1897,7 +1878,7 @@ class HomeController extends BaseController {
             }
         }
 
-        this.registerTimeout(() => this.$scope.$apply());
+        this.applyScope();
     }
 
     async showJobContextMenu($event: MouseEvent, job: IDispatchJob) {
@@ -2049,7 +2030,7 @@ class HomeController extends BaseController {
             }
         } finally {
             this.isLoadingData = false;
-            this.registerTimeout(() => this.$scope.$applyAsync());
+            this.applyScope();
         }
     }
 
@@ -2486,7 +2467,7 @@ class HomeController extends BaseController {
             }
         };
 
-        return this.jobContextMenuService.getMenuOptions(job, callbacks);
+        return this.jobContextMenuService.getMenuOptions(job, callbacks, AppPages.Dispatch);
     }
 
     async handleSplitJob(job: IDispatchJob) {
@@ -2635,6 +2616,42 @@ class HomeController extends BaseController {
 
         this.showDriverLocationsNoData = !this.driverLocationsLoading && !hasAreas;
         this.showDriverLocationsData = (!this.driverLocationsLoading && hasAreas) ?? true;
+    }
+
+    isDeliveryJob(job: IDispatchJob): boolean {
+        return isNotFlightJob(job);
+    }
+
+    async addStopToJob($event: MouseEvent, job: IDispatchJob): Promise<void> {
+        const setLoadingState = (isLoading: boolean) => {
+            this.isDataLoading = isLoading;
+            this.applyScope();
+        };
+
+        try {
+            setLoadingState(true);
+
+            const newStopJobId = await this.jobAddStopService.addNewStop(job, $event);
+
+            if (newStopJobId) {
+                let newStopJob = this.jobList.find(j => j.id === newStopJobId) ||
+                    await this.DispatchData.getDispatchJobDetail(newStopJobId);
+
+                if (newStopJob) {
+                    await this.selectJob(newStopJob);
+                }
+            } else {
+                this.currentJobId = job.id;
+                this.currentJob = job;
+            }
+        } catch (error: any) {
+            console.error('Error in addStopToJob:', error);
+            this.toastrService.showErrorToast(
+                error.message?.includes('loading') ? 'Error loading new stop job details' : 'Failed to add stop to job'
+            );
+        } finally {
+            setLoadingState(false);
+        }
     }
 }
 

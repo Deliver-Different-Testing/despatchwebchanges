@@ -25,10 +25,10 @@
                         <md-menu-item ng-repeat="lo in ctrl.layouts track by $index">
                             <md-button>
                                 <md-icon md-font-set="material-symbols-outlined" ng-click="ctrl.deleteLayout($index)"
-                                         ng-if="lo.name != 'Default'">
+                                         ng-if="::lo.name != 'Default'">
                                     delete
                                 </md-icon>
-                                <md-icon md-font-set="material-symbols-outlined" ng-if="lo.name == 'Default'">
+                                <md-icon md-font-set="material-symbols-outlined" ng-if="::lo.name == 'Default'">
                                     tune
                                 </md-icon>
                                 <span ng-click="ctrl.loadLayout($index)"
@@ -40,7 +40,7 @@
 
                 <md-divider class="vertical-divider"></md-divider>
 
-                <span style="font-size: medium;">{{ctrl.greetUser()}}</span>
+                <span style="font-size: medium;">{{::ctrl.greetUser()}}</span>
 
                 <md-button aria-label="Menu" class="md-icon-button" ng-click="ctrl.toggleSidenav()"
                            ng-mouseover="ctrl.toggleSidenav()">
@@ -64,10 +64,10 @@
                         <md-toolbar class="md-accent">
                             <div class="md-toolbar-tools">
                                 <!--Icon-->
-                                <span class="material-symbols-outlined">{{ctrl.boxes[box.name].icon}}</span>
+                                <span class="material-symbols-outlined">{{::ctrl.boxes[box.name].icon}}</span>
 
                                 <span class="md-headline-title" flex style="margin-left: 8px;">
-                                    {{ctrl.boxes[box.name].title}}
+                                    {{::ctrl.boxes[box.name].title}}
                                 </span>
 
                                 <!--Send all-->
@@ -89,12 +89,12 @@
                                 <!--Refresh-->
                                 <md-button class="md-icon-button md-primary"
                                            ng-click="ctrl.refreshData()"
-                                           ng-if="ctrl.boxes[box.name].showRefresh">
+                                           ng-if="::ctrl.boxes[box.name].showRefresh">
                                     <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
                                 </md-button>
 
                                 <!--Inactive Filter-->
-                                <md-menu ng-if="ctrl.boxes[box.name].showFilter">
+                                <md-menu ng-if="::ctrl.boxes[box.name].showFilter">
                                     <md-button class="md-icon-button md-primary"
                                                ng-click="$mdMenu.open($event)">
                                         <md-icon md-font-set="material-symbols-outlined">filter_list</md-icon>
@@ -115,28 +115,29 @@
                                     </md-menu-content>
                                 </md-menu>
 
-                                <div ng-if="box.name == 'eventList'">
-                                    <input ng-model="ctrl.searchBox" placeholder="Search Events..." type="text" />
+                                <div ng-if="::box.name == 'eventList'">
+                                    <input ng-model="ctrl.searchBox" placeholder="Search Events..." type="text"/>
                                     <div class="results" ng-if="ctrl.searchBox">
                                         <ul>
                                             <li class="result"
                                                 ng-mousedown="ctrl.selectEvent(event)"
                                                 ng-repeat="event in filteredEvents = (ctrl.allEvents | filter: ctrl.searchBox) | limitTo:10">
-                                                {{event.jobNumber}}<br />
-                                                <small class="address">{{event.courierName}} {{event.courierCode}}</small>
+                                                {{event.jobNumber}}<br/>
+                                                <small class="address">{{event.courierName}}
+                                                    {{event.courierCode}}</small>
                                             </li>
                                         </ul>
                                         <small ng-hide="filteredEvents.length">No results</small>
                                     </div>
                                 </div>
 
-                                <div ng-if="box.name == 'eventList'">
+                                <div ng-if="::box.name == 'eventList'">
                                     <md-checkbox aria-label="Include Closed"
                                                  ng-change="ctrl.refreshData(true)"
                                                  ng-model="ctrl.includeClosed">
                                         Include Closed?
                                     </md-checkbox>
-                                    <div layout="row" ng-if="ctrl.isAdmin">
+                                    <div layout="row" ng-if="::ctrl.isAdmin">
                                         <md-radio-group ng-change="ctrl.refreshData(true)"
                                                         ng-model="ctrl.followupClient.name">
                                             <md-radio-button value="All">All</md-radio-button>
@@ -146,7 +147,7 @@
                                     </div>
                                 </div>
 
-                                <div ng-if="box.name == 'jobDetail'">
+                                <div ng-if="::box.name == 'jobDetail'">
                                     <md-button aria-label="reply" class="md-icon-button"
                                                ng-click="ctrl.reply(ctrl.currentEvent)"
                                                ng-if="ctrl.currentEvent && !ctrl.currentEvent.closedDate">

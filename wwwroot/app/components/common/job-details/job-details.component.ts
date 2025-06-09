@@ -157,6 +157,8 @@ class JobDetailController extends BaseController {
     }
 
     $onDestroy() {
+        super.$onDestroy();
+
         console.log("$onDestroy called - cleaning up resources");
 
         const photoSection = angular.element(".pod-photo-section");

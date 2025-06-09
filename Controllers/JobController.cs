@@ -719,6 +719,21 @@ public class JobController(
     }
 
     [HttpGet]
+    public async Task<IActionResult> GetRecurringJobDetail(int jobBookingId)
+    {
+        try
+        {
+            var job = await recurringJobRepository.GetPrebookJobById(jobBookingId);
+            return Json(job);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, e.Message);
+        }
+    }
+
+    [HttpGet]
     public async Task<IActionResult> PodSearch(PodSearchRequest data)
     {
         try
@@ -2770,6 +2785,21 @@ public class JobController(
         try
         {
             var newStopJobId = await addStopJobService.AddStopInsertJobAsync(data);
+            return Json(newStopJobId);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error updating job read status");
+            return StatusCode(500, ex.Message);
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AddStopToRecurringJob([FromBody] AddStopRequest data)
+    {
+        try
+        {
+            var newStopJobId = await addStopJobService.AddStopInsertRecurringJobAsync(data);
             return Json(newStopJobId);
         }
         catch (Exception ex)

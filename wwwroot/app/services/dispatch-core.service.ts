@@ -1170,6 +1170,25 @@ class DispatchCoreService implements angular.IServiceProvider {
             throw error;
         }
     }
+
+    async addStopToRecurringJob(
+        jobId: number,
+        pickUpAddress?: EditAddressDialogViewModel,
+        deliveryAddress?: EditAddressDialogViewModel
+    ): Promise<number> {
+        try {
+            const response = await this.$http.post<number>("job/AddStopToRecurringJob", {
+                jobId,
+                pickUpAddress,
+                deliveryAddress,
+            });
+
+            return response.data;
+        } catch (error) {
+            console.error("Error updating packages:", error);
+            throw error;
+        }
+    }
 }
 
 export default DispatchCoreService;

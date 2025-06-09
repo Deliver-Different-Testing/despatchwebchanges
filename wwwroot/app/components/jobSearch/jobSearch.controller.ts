@@ -12,6 +12,7 @@ import JobContextMenuService from "../../services/job-context-menu.service";
 import {JobProperty} from "../../enums/job-property.enum";
 import NavigationService from "../../services/navigation.service";
 import greetUser from "../../functions/greetUser";
+import {AppPages} from "../../enums/app-pages.enum";
 
 class JobSearchController extends BaseController {
 
@@ -1192,7 +1193,7 @@ class JobSearchController extends BaseController {
             onRefresh: () => this.refreshAllData()
         };
 
-        return this.jobContextMenuService.getMenuOptions(job, callbacks);
+        return this.jobContextMenuService.getMenuOptions(job, callbacks, AppPages.JobSearch);
     }
 
     async openHubUrl() {

@@ -104,6 +104,11 @@ class BaseController implements angular.IController {
         };
     }
 
+    protected applyScope(): void {
+        if(this.$scopeService === undefined) throw new Error("Scope is undefined. Make sure you call initServices before using this method.");
+        this.registerTimeout(() => this.$scopeService?.$apply());
+    }
+
     $onDestroy(): void {
         if (this.$timeoutService) {
             Object.values(this.debounceTimeouts).forEach(timeout => {

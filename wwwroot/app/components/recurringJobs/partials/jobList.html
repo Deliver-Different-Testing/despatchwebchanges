@@ -16,16 +16,20 @@
         <tr
                 md-row
                 ng-click="ctrl.selectJobDetail(job.id);"
+                context-menu="ctrl.getContextMenuOptions(job)"
+                context-menu-on="contextmenu"
+                context-menu-class="job-context-menu"
                 ng-repeat="job in ctrl.pagedData | filter: ctrl.searchText">
-
-            <td md-cell>{{job.booked | momentFormat:"HH:mm"}} ({{ctrl.timeZone | timezoneShort}})</td>
+            <td md-cell>{{job.booked | momentFormat:"HH:mm"}} ({{::ctrl.timeZone | timezoneShort}})</td>
             <td md-cell>{{job.speed}}</td>
             <td md-cell>{{job.client}}</td>
-            <td md-cell>
+            <td md-cell md-truncate>
                 <span> {{ctrl.isUsCustomer ? job.pickupAddress.fullAddress : job.fromAddress}}</span>
+                <md-icon md-font-set="material-symbols-outlined" ng-if="::!job.pickUpLongitude">warning</md-icon>
             </td>
             <td md-cell>
-                <span>{{ctrl.isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}</span>
+                <span md-truncate>{{ctrl.isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}</span>
+                <md-icon md-font-set="material-symbols-outlined" ng-if="::!job.deliveryLongitude">warning</md-icon>
             </td>
             <td md-cell>{{job.courier}}</td>
             <td md-cell>
