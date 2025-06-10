@@ -25,16 +25,7 @@ public class OverviewController(IJobRepository jobRepository, ICourierRepository
             // Get paginated jobs
             var paginatedJobs = await jobRepository.GetJobsForOverviewPageAsync(
                 statusEnum,
-                parameters.Page,
-                parameters.Limit,
-                true,
-                parameters.Search,
-                parameters.StartDate,
-                parameters.EndDate,
-                parameters.OrderBy,
-                parameters.OrderDirection,
-                parameters.Regions,
-                parameters.Speeds
+                parameters
             );
 
             return Json(paginatedJobs);
@@ -132,12 +123,7 @@ public class OverviewController(IJobRepository jobRepository, ICourierRepository
         try
         {
             Log.Information("Retrieving open jobs");
-            var jobs = await jobRepository.GetOpenJobsAsync(
-                parameters.StartDate,
-                parameters.EndDate,
-                parameters.Regions,
-                parameters.Speeds
-            );
+            var jobs = await jobRepository.GetOpenJobsAsync(parameters);
             Log.Information("Successfully retrieved {JobCount} open jobs", jobs.Count);
             return Json(jobs);
         }

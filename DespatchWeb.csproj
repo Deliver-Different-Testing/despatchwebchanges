@@ -386,8 +386,8 @@
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\countSubJobs.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\getDangerousGoodsClassName.ts" />
+    <TypeScriptCompile Include="wwwroot\app\functions\getJobTableRowClass.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\greetUser.ts" />
-    <TypeScriptCompile Include="wwwroot\app\functions\isDeliveryJob.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\isFlightJob.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\sortRelatedJobs.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\usStates.ts" />

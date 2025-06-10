@@ -2455,12 +2455,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         await Context.SaveChangesAsync();
     }
 
-    public async Task<IList<OpenJobResponse>> GetOpenJobsAsync(
-        DateTime? startDate = null,
-        DateTime? endDate = null,
-        string regions = null,
-        string speeds = null
-    )
+    public async Task<IList<OpenJobResponse>> GetOpenJobsAsync(OpenJobsRequest parameters)
     {
         try
         {
@@ -2469,27 +2464,23 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             );
 
             // Apply date range filter
-            if (startDate.HasValue)
-                query = query.Where(j => j.UcjbDate >= startDate);
-            if (endDate.HasValue)
-                query = query.Where(j => j.UcjbDate <= endDate);
+            if (parameters.StartDate.HasValue)
+                query = query.Where(j => j.UcjbDate >= parameters.StartDate);
+            if (parameters.EndDate.HasValue)
+                query = query.Where(j => j.UcjbDate <= parameters.EndDate);
 
             // Apply region filter if provided
-            if (!string.IsNullOrWhiteSpace(regions))
+            if (parameters.Regions.Count > 0)
             {
-                var regionIds = regions.Split(',').Select(int.Parse).ToList();
-
                 query = query.Where(j =>
-                    j.TblBulkJobs.Any(b => regionIds.Contains(b.Region.BulkRegionId))
+                    j.TblBulkJobs.Any(b => parameters.Regions.Contains(b.Region.BulkRegionId))
                 );
             }
 
             // Apply speed filter if provided
-            if (!string.IsNullOrWhiteSpace(speeds))
+            if (parameters.Speeds.Count > 0)
             {
-                var speedIds = speeds.Split(',').Select(int.Parse).ToList();
-
-                query = query.Where(j => speedIds.Contains(j.UcjbSpeedNavigation.UcjtId));
+                query = query.Where(j => parameters.Speeds.Contains(j.UcjbSpeedNavigation.UcjtId));
             }
 
             // Order
@@ -2544,7 +2535,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                         .FirstOrDefault(),
                     Quantity = j.UcjbQty ?? 0,
                     PackageType = j.AcceptedJobType.UcjtName,
-                    Mileage = 0, // ToDo: Add Kerran's new field
+                    Mileage = j.TotalDistance ?? 0
                 })
                 .AsNoTracking()
                 .ToListAsync();

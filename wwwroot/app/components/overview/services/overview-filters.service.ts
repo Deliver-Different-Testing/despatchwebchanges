@@ -1,9 +1,10 @@
 import {Suggestion} from "../../../interfaces/job.interface";
+import {Dayjs} from "dayjs";
 
 class OverviewFiltersService implements angular.IServiceProvider {
     selectedRegions: Suggestion[];
     selectedSpeeds: Suggestion[];
-    dateRange: { start: Date | null, end: Date | null };
+    dateRange: { start: Dayjs | null, end: Dayjs | null };
     filterChangeCallbacks: Array<() => void>;
 
     constructor() {
@@ -29,7 +30,7 @@ class OverviewFiltersService implements angular.IServiceProvider {
     updateFilters(filters: {
         selectedRegions?: Array<{ id: number }>,
         selectedSpeeds?: Array<{ id: number }>,
-        dateRange?: { start: Date | null, end: Date | null }
+        dateRange?: { start: Dayjs | null, end: Dayjs | null }
     }): void {
         Object.assign(this, filters);
         this.filterChangeCallbacks.forEach(callback => callback());

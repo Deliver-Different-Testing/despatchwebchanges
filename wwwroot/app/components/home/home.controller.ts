@@ -44,6 +44,7 @@ import TruckCourierStatusDialogService
     from "../dialogs/truck-courier-status-dialog/truck-courier-status-dialog.service";
 import {isNotFlightJob} from "../../functions/isNotFlightJob";
 import JobAddStopService from "../../services/job-add-stop.service";
+import getJobTableRowClass from "../../functions/getJobTableRowClass";
 
 class HomeController extends BaseController {
     static $inject = [
@@ -1119,29 +1120,8 @@ class HomeController extends BaseController {
     }
 
     jobClass(job: IDispatchJob): string {
-        if (!job) return "";
-
-        const classes = [];
-
-        // Add direct class if job is direct
-        if (job.direct) {
-            classes.push("direct");
-        }
-
-        // Add chilled class for specific speed types
-        const chilledSpeedTypes = ["CT", "CTHIRE", "FT", "FTHIRE", "HC", "TC"];
-        if (chilledSpeedTypes.includes(job.speed ?? '')) {
-            classes.push("chilled");
-        }
-
-        // Add G class if job is dispatched (has a courier assigned)
-        if (job.courier || job.assignedCourier) {
-            classes.push("G");
-        }
-
-        return classes.join(" ");
+        return getJobTableRowClass(job, this.currentJob);
     }
-
     async dispatchJobs(courierId: number) {
         if (this.dispatchState.processing) {
             console.warn("Dispatch already in progress");

@@ -26,21 +26,13 @@ public class TenantInfoService(IHttpContextAccessor contextAccessor) : ITenantIn
         return TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tenantTimeZoneInfo);
     }
 
-    public DateTime ConvertUtcToTenantTime(string utcDateTime)
-    {
-        var parsedDateTime = DateTime.Parse(utcDateTime);
-        var utcSpecifiedDateTime = DateTime.SpecifyKind(parsedDateTime, DateTimeKind.Utc);
-
-        return ConvertUtcToTenantTime(utcSpecifiedDateTime);
-    }
-    
     public string FormatDateForTenant(DateTime? dateTime)
     {
         if (!dateTime.HasValue)
             return "";
-        
+
         var countryCode = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CountryCode")?.Value;
-        
+
         var cultureCode = countryCode switch
         {
             "US" => "en-US",
@@ -49,9 +41,9 @@ public class TenantInfoService(IHttpContextAccessor contextAccessor) : ITenantIn
             "NZ" => "en-NZ",
             _ => "en-US" // Default fallback
         };
-        
+
         var culture = new CultureInfo(cultureCode);
-        
+
         return dateTime.Value.ToString("g", culture); // "g" is short date/time pattern
     }
 

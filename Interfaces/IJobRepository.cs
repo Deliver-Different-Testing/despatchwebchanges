@@ -271,12 +271,7 @@ public interface IJobRepository
 
     Task AddClientsItemToJobAsync(int jobId, List<int> clientItemIds, decimal totalCost);
 
-    Task<IList<OpenJobResponse>> GetOpenJobsAsync(
-        DateTime? startDate = null,
-        DateTime? endDate = null,
-        string regions = null,
-        string speeds = null
-    );
+    Task<IList<OpenJobResponse>> GetOpenJobsAsync(OpenJobsRequest parameters);
 
     Task<DriverStats> GetDriverStatsAsync(int courierId);
     void Dispose();
@@ -290,16 +285,7 @@ public interface IJobRepository
 
     Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(
         JobStatusGroup statusGroup,
-        int page,
-        int limit,
-        bool isUsCustomer = true,
-        string search = null,
-        DateTime? startDate = null,
-        DateTime? endDate = null,
-        string orderBy = "jobName",
-        string orderDirection = "asc",
-        string regions = null,
-        string speeds = null
+        OverviewJobsRequest parameters
     );
 
     Task<OverviewDeliveryMapResponse> GetOverviewLocationDataAsync(int jobId);

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace DespatchWeb.Models.RequestModels;
 
@@ -18,8 +19,8 @@ public class OpenJobsRequest : BaseOverviewRequest
 
 public class BaseOverviewRequest
 {
-    public DateTime? StartDate { get; }
+    public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
-    public string Regions { get; set; } // Comma-separated region IDs
-    public string Speeds { get; set; } // Comma-separated speed IDs
+    public List<int> Regions { get; set; } = [];
+    public List<int> Speeds { get; set; } = [];
 }
