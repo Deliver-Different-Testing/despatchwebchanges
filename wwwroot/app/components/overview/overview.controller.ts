@@ -2,26 +2,26 @@ import OverviewService from "./overview.service";
 import ToastrService from "../../services/toastr.service";
 import NavigationService from "../../services/navigation.service";
 import OverviewFiltersService from "./services/overview-filters.service";
-import {OverviewTableChildJob, OverviewTableParentJob} from "./overview.interfaces";
+import {OverviewQueryParams, OverviewTableChildJob, OverviewTableParentJob} from "./overview.interfaces";
 import "./overview.styles.less";
 import BaseController from "../base-controller";
 import {Suggestion} from "../../interfaces/job.interface";
 import greetUser from "../../functions/greetUser";
-import dayjs from "dayjs";
+import dayjs, {Dayjs} from "dayjs";
 
 class OverviewController extends BaseController {
     static $inject = [
         "$mdDialog",
         "$mdSidenav",
         "overviewService",
-        "$scope",
-        "$timeout",
         "toastrService",
         "$state",
         "$window",
         "navigationService",
         "overviewFiltersService",
         "$document",
+        "$scope",
+        "$timeout",
         "$interval",
     ];
 
@@ -48,7 +48,7 @@ class OverviewController extends BaseController {
 
     search: string;
 
-    dateRange: { start: Date | null; end: Date | null };
+    dateRange: { start: Dayjs | null; end: Dayjs | null };
     selectedRegions: Suggestion[];
     allRegionsSelected: boolean;
     selectedSpeeds: Suggestion[];
@@ -60,18 +60,18 @@ class OverviewController extends BaseController {
         private $mdDialog: angular.material.IDialogService,
         private $mdSidenav: angular.material.ISidenavService,
         private overviewService: OverviewService,
-        private $scope: angular.IScope,
-        private $timeout: angular.ITimeoutService,
         private toastrService: ToastrService,
         private $state: angular.ui.IStateService,
         private $window: angular.IWindowService,
         private navigationService: NavigationService,
         private overviewFiltersService: OverviewFiltersService,
         private $document: angular.IDocumentService,
-        private $interval: angular.IIntervalService,
+        $scope: angular.IScope,
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
     ) {
         super();
-        this.initServices(this.$timeout, this.$interval, this.$scope)
+        this.initServices($timeout, $interval, $scope)
 
         // Initialize properties
         this.isLoading = false;
@@ -219,11 +219,10 @@ class OverviewController extends BaseController {
     }
 
     handleSearchChange() {
-        // Set a new timeout
-        this.registerTimeout(async () => {
-            this.query.page = 1; // Reset to first page on new search
+        this.debounce(async () => {
+            this.query.page = 1;
             await this.refreshData();
-        }, 300); // 300ms debounce
+        }, 300);
     }
 
     async getRegions() {
@@ -324,10 +323,8 @@ class OverviewController extends BaseController {
     }
 
     transformStatus(status: string): string {
-        // Remove spaces and special characters, convert to uppercase
         return status.toUpperCase().replace(/[\s-]/g, "_");
     }
-
 
     getProgressClass(completion: number): string {
         if (completion < 30) {
@@ -340,7 +337,12 @@ class OverviewController extends BaseController {
 
     async showDateRangeDialog($event: MouseEvent) {
         try {
-            this.dateRange = await this.$mdDialog.show({
+            const dialogDateRange = {
+                start: this.dateRange.start ? this.dateRange.start.toDate() : null,
+                end: this.dateRange.end ? this.dateRange.end.toDate() : null,
+            };
+
+            const result = await this.$mdDialog.show({
                 controller: "DateRangeDialogController",
                 controllerAs: "ctrl",
                 targetEvent: $event,
@@ -350,9 +352,14 @@ class OverviewController extends BaseController {
                 fullscreen: false,
                 bindToController: true,
                 locals: {
-                    dateRange: this.dateRange,
+                    dateRange: dialogDateRange,
                 },
             });
+
+            this.dateRange = {
+                start: result.start ? dayjs(result.start) : null,
+                end: result.end ? dayjs(result.end) : null,
+            };
 
             this.overviewFiltersService.updateFilters({
                 dateRange: this.dateRange,
@@ -384,8 +391,8 @@ class OverviewController extends BaseController {
         }
     }
 
-    formatDate(date: Date | null): string {
-        return date ? dayjs(date).format("MMM D, YYYY") : "";
+    formatDate(date: Dayjs | null): string {
+        return date ? date.format("MMM D, YYYY") : "";
     }
 
     async clearDateRange($event: MouseEvent | undefined) {
@@ -452,20 +459,24 @@ class OverviewController extends BaseController {
                 orderDirection = "desc";
             }
 
-            // Set promise to trigger loading state in md-table
-            this.promise = this.overviewService.getAllJobs({
+            const regions = this.selectedRegions.map(region => region.id);
+            const speeds = this.selectedSpeeds.map(speed => speed.id);
+
+            const params: OverviewQueryParams = {
                 statusGroup,
                 page: this.query.page || 1,
                 limit: this.query.limit || 20,
                 search: this.search,
-                startDate: this.dateRange.start || undefined,
-                endDate: this.dateRange.end || undefined,
+                startDate: this.dateRange.start ? this.dateRange.start : undefined,
+                endDate: this.dateRange.end ? this.dateRange.end : undefined,
                 orderBy,
                 orderDirection,
-                regions: this.selectedRegions.length > 0 ? this.selectedRegions : undefined,
-                speeds: this.selectedSpeeds.length > 0 ? this.selectedSpeeds : undefined,
-            });
+                regions: regions.length > 0 ? regions : undefined,
+                speeds: speeds.length > 0 ? speeds : undefined,
+            }
 
+            // Set promise to trigger loading state in md-table
+            this.promise = this.overviewService.getAllJobs(params);
             const response = await this.promise;
 
             // Transform status for each delivery and child job
@@ -483,7 +494,7 @@ class OverviewController extends BaseController {
             // Update query metadata
             this.query.total = response.total;
 
-            // Refresh statistics after data load
+            // Refresh statistics after a data load
             await this.loadStats();
         } catch (error) {
             console.error("Error loading deliveries:", error);

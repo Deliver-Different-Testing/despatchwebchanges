@@ -366,6 +366,23 @@ table.table {
       }
     }
 
+    &.related-job {
+      background: #e3f2fd !important;
+      border-left: 4px solid #2196f3 !important;
+
+      &:hover {
+        background-color: #bbdefb !important;
+      }
+
+      td {
+        color: #0d47a1 !important;
+      }
+
+      &.direct, &.chilled {
+        background-color: mix(#e3f2fd, rgba(33, 150, 243, 0.05), 80%) !important;
+      }
+    }
+
     &.status-warning {
       background: #ffebee;
       border-left: 4px solid #f44336;

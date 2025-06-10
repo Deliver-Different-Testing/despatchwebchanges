@@ -1,21 +1,17 @@
-import {AddressViewModel, AssignedFlight, Suggestion} from "../../interfaces/job.interface";
+import {AddressViewModel, AssignedFlight} from "../../interfaces/job.interface";
+import {Dayjs} from "dayjs";
 
 export interface OverviewQueryParams {
     statusGroup?: number;
     page: number;
     limit: number;
     search?: string;
-    startDate?: Date;
-    endDate?: Date;
+    startDate?: Dayjs;
+    endDate?: Dayjs;
     orderBy?: string;
     orderDirection?: string;
-    regions?: Suggestion[];
-    speeds?: Suggestion[];
-}
-
-export interface DateRange {
-    start: Date | null;
-    end: Date | null;
+    regions?: number[];
+    speeds?: number[];
 }
 
 export interface OverviewStatsViewModel {
@@ -73,15 +69,15 @@ export interface OpenJobResponse {
     jobId: number;
     reference: string;
     status: string;
-    pickupTime: Date;
+    pickupTime: Dayjs;
     pickupName: string;
     pickupAddress: string;
-    deliveryTime: Date;
+    deliveryTime: Dayjs;
     deliveryName: string;
     deliveryAddress: string;
     driverName: string;
     completedToday: number;
-    lastCompleted: Date | null;
+    lastCompleted: Dayjs | null;
     quantity: number;
     packageType: string;
     mileage: number;

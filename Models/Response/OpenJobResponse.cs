@@ -18,7 +18,7 @@ public class OpenJobResponse
     public DateTime? LastCompleted { get; set; }
     public short Quantity { get; set; }
     public string PackageType { get; set; }
-    public double Mileage { get; set; }
+    public decimal Mileage { get; set; }
 }
 
 public class DriverStats

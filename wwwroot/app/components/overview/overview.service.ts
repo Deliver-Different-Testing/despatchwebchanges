@@ -6,6 +6,7 @@ import {
     OverviewQueryParams,
     OverviewStatsViewModel, OverviewTableParentJob
 } from "./overview.interfaces";
+import dayjs from "dayjs";
 
 class OverviewService implements angular.IServiceProvider {
     static $inject = ["$http"];
@@ -18,21 +19,18 @@ class OverviewService implements angular.IServiceProvider {
     }
 
     async getAllJobs(params: OverviewQueryParams): Promise<IPaginatedResponse<OverviewTableParentJob>> {
-        const regionIds = params.regions?.map(r => r.id).join(",");
-        const speedIds = params.speeds?.map(s => s.id).join(",");
-
         const response = await this.$http.get<IPaginatedResponse<OverviewTableParentJob>>("/overview", {
             params: {
                 statusGroup: params.statusGroup,
                 page: params.page,
                 limit: params.limit,
                 search: params.search,
-                startDate: params.startDate ? params.startDate.toISOString() : null,
-                endDate: params.endDate ? params.endDate.toISOString() : null,
+                startDate: params.startDate ? dayjs(params.startDate).format() : null,
+                endDate: params.endDate ? dayjs(params.endDate).format() : null,
                 orderBy: params.orderBy || "jobName",
                 orderDirection: params.orderDirection,
-                regions: regionIds || null,
-                speeds: speedIds || null
+                regions: params.regions,
+                speeds: params.regions
             }
         });
 
@@ -70,15 +68,12 @@ class OverviewService implements angular.IServiceProvider {
     }
 
    async getOpenJobs(params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds'>): Promise<OpenJobResponse[]> {
-        const regionIds = params.regions?.map(r => r.id).join(",");
-        const speedIds = params.speeds?.map(s => s.id).join(",");
-
         const response = await this.$http.get<OpenJobResponse[]>("/overview/GetOpenJobs", {
             params: {
-                startDate: params.startDate ? params.startDate.toISOString() : null,
-                endDate: params.endDate ? params.endDate.toISOString() : null,
-                regions: regionIds || null,
-                speeds: speedIds || null
+                startDate: params.startDate ? params.startDate.format() : null,
+                endDate: params.endDate ? params.endDate.format() : null,
+                regions: params.regions,
+                speeds: params.speeds
             }
         });
 

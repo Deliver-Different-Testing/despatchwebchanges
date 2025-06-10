@@ -10,6 +10,7 @@ using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
+using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -771,22 +772,13 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
     public async Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(
         JobStatusGroup statusGroup,
-        int page,
-        int limit,
-        bool isUsCustomer = true,
-        string search = null,
-        DateTime? startDate = null,
-        DateTime? endDate = null,
-        string orderBy = "jobName",
-        string orderDirection = "asc",
-        string regions = null,
-        string speeds = null
+               OverviewJobsRequest parameters
     )
     {
         // Base query
         var query = Context.TucJobs.Where(j => j.InverseParent.Count != 0);
 
-        // Apply status group
+        // Apply a status group
         query = statusGroup switch
         {
             JobStatusGroup.Active => query.Where(j =>
@@ -807,27 +799,23 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         };
 
         // Apply region filter if provided
-        if (!string.IsNullOrWhiteSpace(regions))
+        if(parameters.Regions.Count > 0)
         {
-            var regionIds = regions.Split(',').Select(int.Parse).ToList();
-
             query = query.Where(j =>
-                j.TblBulkJobs.Any(b => regionIds.Contains(b.Region.BulkRegionId))
+                j.TblBulkJobs.Any(b => parameters.Regions.Contains(b.Region.BulkRegionId))
             );
         }
 
         // Apply speed filter if provided
-        if (!string.IsNullOrWhiteSpace(speeds))
+        if (parameters.Speeds.Count > 0)
         {
-            var speedIds = speeds.Split(',').Select(int.Parse).ToList();
-
-            query = query.Where(j => speedIds.Contains(j.UcjbSpeedNavigation.UcjtId));
+            query = query.Where(j => parameters.Speeds.Contains(j.UcjbSpeedNavigation.UcjtId));
         }
 
         // Apply search filter if provided
-        if (!string.IsNullOrWhiteSpace(search))
+        if (!string.IsNullOrWhiteSpace(parameters.Search))
         {
-            search = search.ToLower().Trim();
+            var search = parameters.Search.ToLower().Trim();
             query = query.Where(j =>
                 EF.Functions.Like(j.UcjbNumber.ToLower(), $"%{search}%")
                 || EF.Functions.Like(j.UcjbStatusNavigation.UcjsName.ToLower(), $"%{search}%")
@@ -847,40 +835,42 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         }
 
         // Apply date range filter
-        if (startDate.HasValue)
-            query = query.Where(j => j.UcjbDate >= startDate);
-        if (endDate.HasValue)
-            query = query.Where(j => j.UcjbDate <= endDate);
+        if (parameters.StartDate.HasValue)
+            query = query.Where(j => j.UcjbDate >= parameters.StartDate);
+        if (parameters.EndDate.HasValue)
+            query = query.Where(j => j.UcjbDate <= parameters.EndDate);
 
         // Apply sorting
-        query = ApplySorting(query, orderBy, orderDirection);
+        query = ApplySorting(query, parameters.OrderBy, parameters.OrderDirection);
 
         // Get total count for pagination
         var total = await query.CountAsync();
-        var pages = (int)Math.Ceiling(total / (double)limit);
+        var pages = (int)Math.Ceiling(total / (double)parameters.Limit);
+
+        var isUsCustomer = infoService.IsUsTenant();
 
         // Apply pagination
         var jobs = await query
-            .Skip((page - 1) * limit)
-            .Take(limit)
+            .Skip((parameters.Page - 1) * parameters.Limit)
+            .Take(parameters.Limit)
             .Select(j => new DeliveryJob
             {
                 JobId = j.UcjbId,
                 JobName = j.UcjbNumber,
-                Status = j.UcjbStatusNavigation.UcjsName,
+                Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : "Unknown",
                 Region =
                     j.TblBulkJobs.FirstOrDefault() != null
                         ? j.TblBulkJobs.FirstOrDefault().Region.Name
                         : null,
                 Pickup = isUsCustomer
-                    ? j.PickupAddressLine5 + ", " + j.PickupAddressLine6
+                    ? $"{j.PickupAddressLine5},  {j.PickupAddressLine6}"
                     : j.UcjbFromAddr,
                 Delivery = isUsCustomer
-                    ? j.DeliveryAddressLine5 + ", " + j.DeliveryAddressLine6
+                    ? $"{j.DeliveryAddressLine5},  {j.DeliveryAddressLine6}"
                     : j.UcjbToAddr,
                 Driver =
                     j.UcjbCourier != null
-                        ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
+                        ? $"{j.UcjbCourier.UccrName} {j.UcjbCourier.UccrSurname}"
                         : null,
                 Completion = j.InverseParent.Count != 0
                     ? (int)
@@ -902,16 +892,16 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     {
                         JobId = c.UcjbId,
                         JobName = c.UcjbNumber,
-                        Status = c.UcjbStatusNavigation.UcjsName,
+                        Status = c.UcjbStatusNavigation != null ? c.UcjbStatusNavigation.UcjsName : "Unknown",
                         Region =
                             c.TblBulkJobs.FirstOrDefault() != null
                                 ? c.TblBulkJobs.FirstOrDefault().Region.Name
                                 : null,
-                        Pickup = c.PickupAddressLine5 + ", " + c.PickupAddressLine6,
-                        Delivery = c.DeliveryAddressLine5 + ", " + c.DeliveryAddressLine6,
+                        Pickup = $"{c.PickupAddressLine5}, {c.PickupAddressLine6}",
+                        Delivery = $"{c.DeliveryAddressLine5}, {c.DeliveryAddressLine6}",
                         Driver =
                             c.UcjbCourier != null
-                                ? c.UcjbCourier.UccrName + " " + c.UcjbCourier.UccrSurname
+                                ? $"{c.UcjbCourier.UccrName}, {c.UcjbCourier.UccrSurname}"
                                 : null,
                         Completion =
                             c.UcjbJobDone || c.UcjbStatus == (int)JobStatus.Completed ? 100 : 0
@@ -925,7 +915,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         {
             Items = jobs,
             Total = total,
-            Page = page,
+            Page = parameters.Page,
             Pages = pages
         };
     }

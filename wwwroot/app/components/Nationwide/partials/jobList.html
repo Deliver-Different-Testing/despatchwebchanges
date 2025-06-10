@@ -61,7 +61,7 @@
         <tbody md-body>
         <tr md-row
             ng-repeat="job in ctrl.jobList | filter: box.searchBox track by job.id"
-            ng-class="::ctrl.jobClass(job)"
+            ng-class="ctrl.jobClass(job)"
             context-menu="ctrl.getContextMenuOptions(job)"
             context-menu-on="contextmenu"
             context-menu-class="job-context-menu"

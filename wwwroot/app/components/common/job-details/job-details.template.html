@@ -7,13 +7,12 @@
 <div class="job-detail-page" ng-if="ctrl.job">
     <md-card
             class="warning-section md-whiteframe-1dp"
-            ng-if="ctrl.job.isArchived || ctrl.job.preBook">
+            ng-if="::ctrl.job.isArchived || ctrl.job.preBook">
         <md-card-content>
             <div layout="row" layout-align="start center">
                 <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
                 <span class="warning-text" ng-if=":ctrl.job.isArchived">Job archived. Some fields can't be edited</span>
-                <span class="warning-text" ng-if=":ctrl.job.preBook"
-                >Recurring job. Some fields may require confirmation</span>
+                <span class="warning-text" ng-if=":ctrl.job.preBook">Recurring job. Some fields may require confirmation</span>
             </div>
         </md-card-content>
     </md-card>
@@ -25,17 +24,16 @@
                     ng-if="ctrl.jobGroups && ctrl.jobGroups.length > 0">
                 <md-tabs
                         md-border-bottom
-                        md-center-tabs="true"
-                        md-no-pagination="ctrl.jobGroups.length <= 2"
-                        md-selected="ctrl.selectedTabIndex"
-                        md-swipe-content>
+                        md-no-pagination="ctrl.jobGroups.length < 4"
+                        md-enable-disconnect="true"
+                        md-selected="ctrl.selectedTabIndex">
                     <md-tab
                             ng-disabled="ctrl.processingTabChange"
                             ng-repeat="relatedJob in ctrl.jobGroups track by relatedJob.job.id">
                         <md-tab-label>
                             <div ng-click="ctrl.switchToRelatedJob($index)">
-                                <span ng-if="ctrl.isRecurringJob">Job #{{$index + 1}}</span>
-                                <span ng-if="!ctrl.isRecurringJob">Job #{{relatedJob.job.text}}</span>
+                                <span ng-if="::ctrl.isRecurringJob">Job #{{$index + 1}}</span>
+                                <span ng-if="::!ctrl.isRecurringJob">Job #{{relatedJob.job.text}}</span>
                                 <md-icon
                                         md-font-set="material-symbols-outlined"
                                         ng-if="relatedJob.subJobs.length > 0">
@@ -96,10 +94,7 @@
                 ng-if="ctrl.selectedRelatedJob && ctrl.selectedRelatedJob.subJobs && ctrl.selectedRelatedJob.subJobs.length > 0">
             <md-tabs
                     md-border-bottom
-                    md-center-tabs="true"
-                    md-no-pagination="ctrl.selectedRelatedJob.subJobs.length <= 2"
-                    md-selected="ctrl.selectedSubJobIndex"
-                    md-swipe-content>
+                    md-selected="ctrl.selectedSubJobIndex">
                 <!-- Subjob tabs -->
                 <md-tab
                         ng-disabled="ctrl.processingTabChange"
@@ -456,44 +451,36 @@
                 <!-- Combined Info Sections -->
                 <div
                         class="info-sections-container md-whiteframe-1dp"
-                        ng-if="ctrl.job.assignedFlight || ctrl.job.assignedAgent"
-                        style="background: #f5f5f5"
-                >
+                        ng-if="::ctrl.job.assignedFlight || ctrl.job.assignedAgent"
+                        style="background: #f5f5f5">
                     <!-- Flight Information -->
                     <section
                             class="info-section client-section"
-                            ng-if="ctrl.job.assignedFlight"
-                    >
+                            ng-if="ctrl.job.assignedFlight">
                         <md-toolbar class="md-primary">
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">flight</span>
-                                <span class="md-headline-title" flex style="margin-left: 8px"
-                                >Flight Information</span
-                                >
+                                <span class="md-headline-title" flex style="margin-left: 8px">Flight Information</span>
                             </div>
                         </md-toolbar>
 
                         <!-- Flight segments information for multi-leg flights -->
                         <div
                                 class="flight-segments-container md-padding"
-                                ng-if="ctrl.job.assignedFlight.flightSegments && ctrl.job.assignedFlight.flightSegments.length > 0"
-                        >
+                                ng-if="::ctrl.job.assignedFlight.flightSegments && ctrl.job.assignedFlight.flightSegments.length > 0">
                             <div class="segment-header md-caption">
-                <span
-                >SEGMENTS:
-                  {{ctrl.job.assignedFlight.flightSegments.length}}</span
-                >
+                <span>SEGMENTS:
+                  {{::ctrl.job.assignedFlight.flightSegments.length}}</span>
                             </div>
 
                             <div
                                     class="segment-item"
-                                    ng-repeat="segment in ctrl.job.assignedFlight.flightSegments"
-                            >
+                                    ng-repeat="segment in ctrl.job.assignedFlight.flightSegments">
                                 <div class="segment-content">
                                     <div class="segment-number">
                                         Segment {{$index + 1}} of
-                                        {{ctrl.job.assignedFlight.flightSegments.length}} -
-                                        {{segment.carrierFsCode}}{{segment.flightNumber}}
+                                        {{::ctrl.job.assignedFlight.flightSegments.length}} -
+                                        {{::segment.carrierFsCode}}{{::segment.flightNumber}}
                                     </div>
 
                                     <div
@@ -506,14 +493,14 @@
                                             <div class="time">
                                                 {{segment.departureTime | date: 'MM/dd/yyyy HH:mm'}}
                                                 <span ng-if="segment.departureAirportTimeZone">
-                          ({{segment.departureAirportTimeZone | timezoneShort}})
+                          ({{::segment.departureAirportTimeZone | timezoneShort}})
                         </span>
                                             </div>
                                             <div class="airport-code">
-                                                {{segment.departureAirportFsCode}}
+                                                {{::segment.departureAirportFsCode}}
                                             </div>
                                             <div class="terminal" ng-if="segment.departureTerminal">
-                                                Terminal {{segment.departureTerminal}}
+                                                Terminal {{::segment.departureTerminal}}
                                             </div>
                                         </div>
 
@@ -525,14 +512,12 @@
                                             <div class="line">
                                                 <md-icon
                                                         class="line-arrow"
-                                                        md-font-set="material-symbols-outlined"
-                                                >
+                                                        md-font-set="material-symbols-outlined">
                                                     arrow_forward
                                                 </md-icon>
                                             </div>
                                             <div class="aircraft-info">
-                                                {{segment.aircraftName ||
-                                            segment.flightEquipmentIataCode || 'Unknown'}}
+                                                {{segment.aircraftName || segment.flightEquipmentIataCode || 'Unknown'}}
                                             </div>
                                         </div>
 
@@ -540,12 +525,12 @@
                                         <div class="segment-arrival" flex="30">
                                             <div class="time">
                                                 {{segment.arrivalTime | date: 'MM/dd/yyyy HH:mm'}}
-                                                <span ng-if="segment.arrivalAirportTimeZone">
-                          ({{segment.arrivalAirportTimeZone | timezoneShort}})
+                                                <span ng-if="::segment.arrivalAirportTimeZone">
+                          ({{::segment.arrivalAirportTimeZone | timezoneShort}})
                         </span>
                                             </div>
                                             <div class="airport-code">
-                                                {{segment.arrivalAirportFsCode}}
+                                                {{::segment.arrivalAirportFsCode}}
                                             </div>
                                             <div class="terminal" ng-if="segment.arrivalTerminal">
                                                 Terminal {{segment.arrivalTerminal}}
@@ -558,12 +543,10 @@
                                 <div class="layover-info" ng-if="!$last">
                                     <md-icon
                                             class="layover-icon"
-                                            md-font-set="material-symbols-outlined"
-                                    >schedule
+                                            md-font-set="material-symbols-outlined">schedule
                                     </md-icon>
                                     <span class="layover-text">
-                    {{ctrl.getConnectionTime(segment,
-                                            ctrl.job.assignedFlight.flightSegments[$index + 1])}}
+                    {{::ctrl.getConnectionTime(segment, ctrl.job.assignedFlight.flightSegments[$index + 1])}}
                     layover
                   </span>
                                 </div>
@@ -594,7 +577,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Agent Name</h3>
-                                    <p>{{ctrl.job.assignedAgent.agentName || 'N/A'}}</p>
+                                    <p>{{::ctrl.job.assignedAgent.agentName || 'N/A'}}</p>
                                 </div>
                             </md-list-item>
 
@@ -607,7 +590,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Agent Rate</h3>
-                                    <p>{{ctrl.job.assignedAgent.agentRate || 'N/A'}}</p>
+                                    <p>{{::ctrl.job.assignedAgent.agentRate || 'N/A'}}</p>
                                 </div>
                             </md-list-item>
 
@@ -620,7 +603,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Agent Ranking</h3>
-                                    <p>{{ctrl.job.assignedAgent.agentRanking || 'N/A'}}</p>
+                                    <p>{{::ctrl.job.assignedAgent.agentRanking || 'N/A'}}</p>
                                 </div>
                             </md-list-item>
 
@@ -633,13 +616,13 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Agent Phone</h3>
-                                    <p>{{ctrl.job.assignedAgent.agentPhone || 'N/A'}}</p>
+                                    <p>{{::ctrl.job.assignedAgent.agentPhone || 'N/A'}}</p>
                                 </div>
                                 <md-button
                                         class="md-secondary md-icon-button"
-                                        href="tel:{{ctrl.assignedAgent.agentPhone}}"
+                                        href="tel:{{::ctrl.assignedAgent.agentPhone}}"
                                         ng-click="$event.stopPropagation()"
-                                        ng-if="ctrl.job.assignedAgent.agentPhone"
+                                        ng-if="::ctrl.job.assignedAgent.agentPhone"
                                         aria-label="call">
                                     <md-icon md-font-set="material-symbols-outlined">phone</md-icon>
                                 </md-button>
@@ -653,13 +636,13 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                     <h3>Agent Email</h3>
-                                    <p>{{ctrl.job.assignedAgent.agentEmail || 'N/A'}}</p>
+                                    <p>{{::ctrl.job.assignedAgent.agentEmail || 'N/A'}}</p>
                                 </div>
                                 <md-button
                                         class="md-secondary md-icon-button"
-                                        href="mailto:{{ctrl.job.assignedAgent.agentEmail}}"
+                                        href="mailto:{{::ctrl.job.assignedAgent.agentEmail}}"
                                         ng-click="$event.stopPropagation()"
-                                        ng-if="ctrl.job.assignedAgent.agentEmail"
+                                        ng-if="::ctrl.job.assignedAgent.agentEmail"
                                         aria-label="email">
                                     <md-icon md-font-set="material-symbols-outlined">email</md-icon>
                                 </md-button>
@@ -779,7 +762,7 @@
                             class="info-section"
                             flex="50"
                             flex-xs="100"
-                            ng-if="!ctrl.job.prebook">
+                            ng-if="::!ctrl.job.prebook">
                         <div class="info-section">
                             <md-toolbar class="md-primary">
                                 <div class="md-toolbar-tools">
@@ -852,7 +835,7 @@
                             class="info-section"
                             flex="50"
                             flex-xs="100"
-                            ng-if="ctrl.job.preBook">
+                            ng-if="::ctrl.job.preBook">
                         <div class="info-section">
                             <md-toolbar class="md-primary">
                                 <div class="md-toolbar-tools">
@@ -1116,7 +1099,7 @@
                             <md-list-item
                                     class="md-2-line md-long-text"
                                     ng-click="ctrl.contactClick($event, ctrl.job)"
-                                    ng-if="!ctrl.job.bulkJob">
+                                    ng-if="::!ctrl.job.bulkJob">
                                 <md-icon
                                         class="md-avatar"
                                         aria-label="Contact name"
@@ -1332,7 +1315,7 @@
                 <!-- Right Column -->
                 <div class="timing-column checkbox-column" flex="33" flex-xs="100">
                     <div layout="row" layout-align="start center" layout-wrap>
-                        <div flex="50" ng-if="!ctrl.isUsCustomer">
+                        <div flex="50" ng-if="::!ctrl.isUsCustomer">
                             <md-checkbox
                                     class="compact-checkbox"
                                     ng-click="ctrl.toggleProperty(ctrl.job, 'van', ctrl.job.van)"
@@ -1340,7 +1323,7 @@
                             >Van
                             </md-checkbox>
                         </div>
-                        <div flex="50" ng-if="!ctrl.isUsCustomer">
+                        <div flex="50" ng-if="::!ctrl.isUsCustomer">
                             <md-checkbox
                                     class="compact-checkbox"
                                     ng-click="ctrl.toggleProperty(ctrl.job, 'truck', ctrl.job.truck)"
@@ -1429,8 +1412,7 @@
 
 <div
         class="pod-photo-section md-whiteframe-1dp"
-        ng-if="ctrl.job && ctrl.job.done && ctrl.formattedPodPhotos.length > 0"
->
+        ng-if="ctrl.job && ctrl.job.done && ctrl.formattedPodPhotos.length > 0">
     <div class="section-header">
         <div
                 class="md-dense"
@@ -1439,19 +1421,14 @@
         justify-content: space-between;
         align-items: center;
         padding: 8px 16px;
-      "
-        >
+      ">
             <div style="display: flex; align-items: center">
                 <md-icon
                         md-font-set="material-symbols-outlined"
-                        style="margin-right: 8px"
-                >photo_library
-                </md-icon
-                >
+                        style="margin-right: 8px">photo_library
+                </md-icon>
                 <span>Proof of Delivery Photos</span>
-                <span class="photo-count"
-                >{{ctrl.formattedPodPhotos.length}} photos</span
-                >
+                <span class="photo-count">{{ctrl.formattedPodPhotos.length}} photos</span>
             </div>
 
             <div style="display: flex; gap: 8px">
@@ -1466,8 +1443,7 @@
                 <md-button
                         aria-label="Send POD"
                         class="md-icon-button"
-                        ng-click="ctrl.sendPOD($event)"
-                >
+                        ng-click="ctrl.sendPOD($event)">
                     <md-icon md-font-set="material-symbols-outlined">send</md-icon>
                     <md-tooltip>Send POD</md-tooltip>
                 </md-button>
@@ -1490,19 +1466,19 @@
         <div class="pod-photo-info">
             <p class="timestamp">
                 {{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].timestamp |
-            date:'medium'}} ({{ctrl.job.deliveryTimeZone.text | timezoneShort}})
+            date:'medium'}} ({{::ctrl.job.deliveryTimeZone.text | timezoneShort}})
             </p>
             <p class="uploader">
                 Delivered by
-                {{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].uploadedBy}}
+                {{::ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].uploadedBy}}
             </p>
             <p
                     class="coordinates"
                     ng-if="ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].coordinates"
             >
                 Location:
-                {{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].coordinates.lat}},
-                {{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].coordinates.lng}}
+                {{::ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].coordinates.lat}},
+                {{::ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].coordinates.lng}}
             </p>
         </div>
 
@@ -1510,16 +1486,14 @@
         <md-button
                 class="md-icon-button nav-button prev-button"
                 ng-click="ctrl.prevPhoto(); $event.stopPropagation();"
-                ng-if="ctrl.formattedPodPhotos.length > 1"
-        >
+                ng-if="ctrl.formattedPodPhotos.length > 1">
             <md-icon md-font-set="material-symbols-outlined">chevron_left</md-icon>
         </md-button>
 
         <md-button
                 class="md-icon-button nav-button next-button"
                 ng-click="ctrl.nextPhoto(); $event.stopPropagation();"
-                ng-if="ctrl.formattedPodPhotos.length > 1"
-        >
+                ng-if="ctrl.formattedPodPhotos.length > 1">
             <md-icon md-font-set="material-symbols-outlined">chevron_right</md-icon>
         </md-button>
     </div>
@@ -1544,8 +1518,8 @@
                 />
                 <md-grid-tile-footer>
                     <h3>
-                        {{photo.timestamp | date:'shortTime'}}
-                        ({{ctrl.job.deliveryTimeZone.text | timezoneShort}})
+                        {{::photo.timestamp | date:'shortTime'}}
+                        ({{::ctrl.job.deliveryTimeZone.text | timezoneShort}})
                     </h3>
                 </md-grid-tile-footer>
             </md-grid-tile>
@@ -1555,17 +1529,13 @@
 
 <div
         class="pod-photo-section md-whiteframe-1dp"
-        ng-if="ctrl.formattedPodPhotos.length === 0 && ctrl.job.done"
->
+        ng-if="ctrl.formattedPodPhotos.length === 0 && ctrl.job.done">
     <div class="section-header">
         <div
                 class="md-dense"
-                style="display: flex; align-items: center; padding: 8px 16px"
-        >
-            <md-icon md-font-set="material-symbols-outlined" style="margin-right: 8px"
-            >photo_library
-            </md-icon
-            >
+                style="display: flex; align-items: center; padding: 8px 16px">
+            <md-icon md-font-set="material-symbols-outlined" style="margin-right: 8px">photo_library
+            </md-icon>
             <span>Proof of Delivery Photos</span>
         </div>
     </div>
@@ -1580,8 +1550,7 @@
         height: 48px;
         width: 48px;
         color: rgba(0, 0, 0, 0.54);
-      "
-        >
+      ">
             photo_library
         </md-icon>
         <h3 style="margin: 16px 0 8px; color: rgba(0, 0, 0, 0.87)">

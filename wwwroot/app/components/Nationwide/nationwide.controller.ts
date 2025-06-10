@@ -35,6 +35,7 @@ import FlightAgentConfirmationDialogService
     from "../dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.service";
 import AgentInfoDialogService from "../dialogs/agent-info-dialog/agent-info-dialog.service";
 import dayjs from "dayjs";
+import getJobTableRowClass from "../../functions/getJobTableRowClass";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -1600,29 +1601,7 @@ class NationwideControl extends BaseController {
     }
 
     jobClass(job: IDispatchJob): string {
-        if (!job) {
-            return '';
-        }
-
-        if (job.statusId === JobStatus.Warning) {
-            return 'status-warning';
-        }
-
-        if (!job.followupTime) {
-            return '';
-        }
-
-        const followupTime = dayjs(job.followupTime);
-        const now = dayjs();
-        const diffMinutes = followupTime.diff(now, 'minutes');
-
-        if (diffMinutes > 30) {
-            return 'status-future';
-        } else if (diffMinutes < -30) {
-            return 'status-past';
-        } else {
-            return 'status-current';
-        }
+       return getJobTableRowClass(job, this.currentJob);
     }
 
     private handleError(error: any) {

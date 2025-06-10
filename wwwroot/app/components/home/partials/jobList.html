@@ -65,6 +65,7 @@
         <tbody md-body>
         <tr md-row
             md-dense
+            ng-class="ctrl.jobClass(job)"
             context-menu="ctrl.getContextMenuOptions(job)"
             context-menu-on="contextmenu"
             context-menu-class="job-context-menu"

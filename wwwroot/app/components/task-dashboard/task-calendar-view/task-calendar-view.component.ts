@@ -17,8 +17,8 @@ dayjs.extend(timezone);
 
 class TaskCalendarViewController extends BaseController {
     static $inject = [
-        "$scope",
         "tasksService",
+        "$scope",
         "$timeout",
         "$interval",
     ];
@@ -51,13 +51,13 @@ class TaskCalendarViewController extends BaseController {
     timeSlots: string[] = [];
 
     constructor(
-        private $scope: angular.IScope,
         private tasksService: TasksService,
+        $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
     ) {
         super();
-        this.initServices($timeout, $interval, this.$scope);
+        this.initServices($timeout, $interval, $scope);
 
         this.timezone = TimeZone;
 
@@ -70,13 +70,13 @@ class TaskCalendarViewController extends BaseController {
         this.initializeCalendar();
         this.emitViewChange();
 
-        this.registerTimeout(() => this.$scope.$apply());
+        this.applyScope();
     }
 
     $onChanges(changes: angular.IOnChangesObject) {
         if (changes.tasks && !changes.tasks.isFirstChange()) {
             this.initializeCalendar();
-            this.registerTimeout(() => this.$scope.$apply());
+            this.applyScope();
         }
     }
 
@@ -266,7 +266,7 @@ class TaskCalendarViewController extends BaseController {
         this.handleTaskStatusChange(task);
 
         this.initializeCalendar();
-        this.registerTimeout(() => this.$scope.$apply());
+        this.applyScope();
     }
 
     formatPeriodTitle(): string {
