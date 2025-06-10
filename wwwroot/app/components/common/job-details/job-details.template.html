@@ -24,8 +24,6 @@
                     ng-if="ctrl.jobGroups && ctrl.jobGroups.length > 0">
                 <md-tabs
                         md-border-bottom
-                        md-no-pagination="ctrl.jobGroups.length < 4"
-                        md-enable-disconnect="true"
                         md-selected="ctrl.selectedTabIndex">
                     <md-tab
                             ng-disabled="ctrl.processingTabChange"
@@ -214,7 +212,7 @@
                             <div class="md-list-item-text">
                                 <h3>Dispatch</h3>
                                 <p>
-                                    {{ctrl.job.dispatchTime ? (ctrl.job.dispatchTime | momentFormat:'MM/DD HH:mm') + ' (' + (ctrl.timeZone | timezoneShort) + ')' : 'N/A'}}</p>
+                                    {{::ctrl.job.dispatchTime ? (ctrl.job.dispatchTime | momentFormat:'MM/DD HH:mm') + ' (' + (ctrl.timeZone | timezoneShort) + ')' : 'N/A'}}</p>
                             </div>
                         </md-list-item>
                     </md-list>
@@ -782,7 +780,7 @@
                                     </md-icon>
                                     <div class="md-list-item-text">
                                         <h3>Dispatcher Name</h3>
-                                        <p>{{ctrl.job.dispatcherName || 'N/A'}}</p>
+                                        <p>{{::ctrl.job.dispatcherName || 'N/A'}}</p>
                                     </div>
                                 </md-list-item>
 
@@ -809,7 +807,7 @@
                                     </md-icon>
                                     <div class="md-list-item-text">
                                         <h3>Courier Mobile</h3>
-                                        <p>{{ctrl.job.courierData.courierMobile || 'N/A'}}</p>
+                                        <p>{{::ctrl.job.courierData.courierMobile || 'N/A'}}</p>
                                     </div>
                                 </md-list-item>
 
@@ -822,7 +820,7 @@
                                     </md-icon>
                                     <div class="md-list-item-text">
                                         <h3>Schedule Name</h3>
-                                        <p>{{ctrl.job.scheduleName || 'N/A'}}</p>
+                                        <p>{{::ctrl.job.scheduleName || 'N/A'}}</p>
                                     </div>
                                 </md-list-item>
                             </md-list>
@@ -994,7 +992,7 @@
                                     </md-icon>
                                     <div class="md-list-item-text">
                                         <h3>Inactive By</h3>
-                                        <p>{{ctrl.job.inActiveBy.text}}</p>
+                                        <p>{{::ctrl.job.inActiveBy.text}}</p>
                                     </div>
                                 </md-list-item>
 
@@ -1092,7 +1090,7 @@
                                 </md-icon>
                                 <div class="md-list-item-text">
                                 <h3>Logged-in Contact</h3>
-                                <p>{{ctrl.job.loggedInContactName || 'N/A'}}</p>
+                                <p>{{::ctrl.job.loggedInContactName || 'N/A'}}</p>
                             </div>
                             </md-list-item>
 
@@ -1505,13 +1503,11 @@
                 md-cols-sm="4"
                 md-cols-xs="3"
                 md-gutter="8px"
-                md-row-height="1:1"
-        >
+                md-row-height="1:1">
             <md-grid-tile
                     ng-class="{'active-thumbnail': $index === ctrl.selectedPhotoIndex}"
                     ng-click="ctrl.setSelectedPhoto($index)"
-                    ng-repeat="photo in ctrl.formattedPodPhotos track by $index"
-            >
+                    ng-repeat="photo in ctrl.formattedPodPhotos track by $index">
                 <img
                         alt="Photo {{$index + 1}}"
                         ng-src="{{'data:image/png;base64,' +photo.url}}"

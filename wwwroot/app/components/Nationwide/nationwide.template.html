@@ -199,19 +199,14 @@
                                 <span class="md-headline-title" flex style="margin-left: 8px">
   {{::ctrl.boxes[box.name].title}}
 
-                  <span ng-if="box.name == 'jobDetail'">
-                    {{ctrl.currentSelection}}
+                  <span ng-if="::box.name == 'jobDetail'">{{ctrl.currentSelection}}
                     <md-icon
                             md-font-set="material-symbols-outlined"
                             ng-if="ctrl.currentJob.assignedFlight">flight</md-icon>
-                    <span ng-if="ctrl.currentJob.assignedFlight">
-                      {{ctrl.currentJob.assignedFlight.flightNumber}}
-                    </span>
+                    <span ng-if="ctrl.currentJob.assignedFlight">{{ctrl.currentJob.assignedFlight.flightNumber}}</span>
                   </span>
 
-                  <span ng-if="box.name == 'flightAgentDataTable'">
-  {{::ctrl.isDeliveryJobType ? 'Agents' : 'Flights'}}
-                  </span>
+                  <span ng-if="::box.name == 'flightAgentDataTable'">{{::ctrl.isDeliveryJobType ? 'Agents' : 'Flights'}}</span>
                 </span>
 
                                 <div flex></div>
@@ -264,8 +259,7 @@
                                                     aria-label="menu"
                                                     class="md-fab md-mini md-primary">
                                                 <md-tooltip md-direction="bottom">Options</md-tooltip>
-                                                <md-icon md-font-set="material-symbols-outlined"
-                                                >page_info
+                                                <md-icon md-font-set="material-symbols-outlined">page_info
                                                 </md-icon>
                                             </md-button>
                                         </md-fab-trigger>

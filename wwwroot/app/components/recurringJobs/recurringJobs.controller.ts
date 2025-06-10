@@ -1,5 +1,5 @@
 import {AppConfig} from "../../interfaces/app-config.interface";
-import {IDispatchJob, IJob} from "../../interfaces/job.interface";
+import {IJob} from "../../interfaces/job.interface";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import {ClientInternal, ContactID} from "../../contants";
@@ -8,9 +8,6 @@ import {IPrebookListModel, IRecurringJobQuery} from "./recurringJobs.interface";
 import ToastrService from "../../services/toastr.service";
 import greetUser from "../../functions/greetUser";
 import JobContextMenuService from "../../services/job-context-menu.service";
-import {AppPages} from "../../enums/app-pages.enum";
-import {isNotFlightJob} from "../../functions/isNotFlightJob";
-import JobAddStopService from "../../services/job-add-stop.service";
 
 class RecurringJobsController extends BaseController {
     static $inject = [
@@ -21,7 +18,6 @@ class RecurringJobsController extends BaseController {
         'uPBData',
         'toastrService',
         'jobContextMenuService',
-        'jobAddStopService',
         '$scope',
         '$timeout',
         '$interval',
@@ -112,7 +108,6 @@ class RecurringJobsController extends BaseController {
         private recurringJobsService: RecurringJobsService,
         private toastrService: ToastrService,
         private jobContextMenuService: JobContextMenuService,
-        private jobAddStopService: JobAddStopService,
         $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
@@ -231,7 +226,7 @@ class RecurringJobsController extends BaseController {
                 const lastActiveLayout = localStorage.getItem(`lastActiveLayout-recurring-${ContactID}`);
 
                 this.layouts = storedLayouts || [this.defaultLayout];
-                this.layouts[0] = this.defaultLayout; // Ensure default is always up-to-date
+                this.layouts[0] = this.defaultLayout; // Ensure default is always up to date
 
                 // Load last active layout or default
                 const layoutToLoad = lastActiveLayout ? this.layouts.findIndex((l: ILayout) => l.name === lastActiveLayout) : 0;
@@ -349,6 +344,7 @@ class RecurringJobsController extends BaseController {
 
     async refreshData(active = this.activeFilter): Promise<IPrebookListModel[]> {
         try {
+            this.currentJobId = undefined;
             this.activeFilter = active;
             this.promise = this.recurringJobsService.getPreBookJobs(active);
 

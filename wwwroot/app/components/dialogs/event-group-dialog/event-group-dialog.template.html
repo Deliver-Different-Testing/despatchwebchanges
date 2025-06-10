@@ -19,16 +19,16 @@
                             <th md-column>Task Type</th>
                             <th md-column>Group</th>
                             <th md-column>Sequence</th>
-                            <th md-column>Due ({{ctrl.browserTimeZone | timezoneShort}})</th>
+                            <th md-column>Due ({{::ctrl.browserTimeZone | timezoneShort}})</th>
                             <th md-column>Assign To</th>
                             <th md-column>Active</th>
                         </tr>
                         </thead>
                         <tbody md-body>
                         <tr md-row ng-repeat="item in ctrl.events">
-                            <td md-cell>{{item.eventType.text}}</td>
-                            <td md-cell md-truncate="">{{item.group}}</td>
-                            <td md-cell>{{item.sequence}}</td>
+                            <td md-cell>{{::item.eventType.text}}</td>
+                            <td md-cell md-truncate>{{::item.group}}</td>
+                            <td md-cell>{{::item.sequence}}</td>
                             <td md-cell>
                                 <md-input-container>
                                     <input mdc-datetime-picker

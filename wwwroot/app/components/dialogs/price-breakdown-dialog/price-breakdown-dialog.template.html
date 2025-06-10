@@ -15,7 +15,7 @@
         <md-dialog-content>
             <div class="dialog-body">
                 <!-- Parent Job Alert with enhanced styling -->
-                <div class="alert-card parent-job-alert" ng-if="ctrl.isParentJob">
+                <div class="alert-card parent-job-alert" ng-if="::ctrl.isParentJob">
                     <md-icon md-font-set="material-symbols-outlined">info</md-icon>
                     <div class="alert-content">
                         <h4>Child Job Notice</h4>
@@ -137,9 +137,9 @@
                             <div class="form-header">
                                 <h3>
                                     <md-icon md-font-set="material-symbols-outlined">
-                                        {{ctrl.isNew ? 'add_circle' : 'edit'}}
+                                        {{::ctrl.isNew ? 'add_circle' : 'edit'}}
                                     </md-icon>
-                                    {{ctrl.isNew ? 'Add New Price Item' : 'Edit Price Item'}}
+                                    {{::ctrl.isNew ? 'Add New Price Item' : 'Edit Price Item'}}
                                 </h3>
                             </div>
 
@@ -201,7 +201,7 @@
                                                           md-diameter="20" class="md-accent"></md-progress-circular>
                                     <md-icon ng-if="!ctrl.isSaving" md-font-set="material-symbols-outlined">save
                                     </md-icon>
-                                    <span>{{ctrl.isNew ? 'Add Item' : 'Save Changes'}}</span>
+                                    <span>{{::ctrl.isNew ? 'Add Item' : 'Save Changes'}}</span>
                                 </md-button>
                             </div>
                         </div>

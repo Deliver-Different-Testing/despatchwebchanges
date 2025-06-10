@@ -1,8 +1,8 @@
-<md-dialog aria-label="{{ ctrl.title }}" class="date-time-dialog">
+<md-dialog aria-label="{{ ::ctrl.title }}" class="date-time-dialog">
     <md-toolbar>
         <div class="md-toolbar-tools">
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">today</md-icon>
-            <h2>{{ ctrl.title }}</h2>
+            <h2>{{ ::ctrl.title }}</h2>
             <span flex></span>
             <md-button class="md-icon-button" ng-click="ctrl.cancel()" aria-label="Close dialog">
                 <md-icon md-font-set="material-symbols-outlined">close</md-icon>
@@ -96,7 +96,7 @@
                     </md-select>
                 </md-input-container>
                 <p ng-if="ctrl.selectedTimeZone" class="md-body-1">
-                    Local timezone: {{ ctrl.browserTimeZone }}
+                    Local timezone: {{ ::ctrl.browserTimeZone }}
                 </p>
             </div>
         </div>

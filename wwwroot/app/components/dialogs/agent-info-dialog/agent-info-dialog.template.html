@@ -3,7 +3,7 @@
     <md-toolbar>
         <div class="md-toolbar-tools">
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">engineering</md-icon>
-            <h2>Agent Details: {{ctrl.agent.agentName}}</h2>
+            <h2>Agent Details: {{::ctrl.agent.agentName}}</h2>
             <span flex></span>
             <md-button class="md-icon-button" ng-click="ctrl.cancel()">
                 <md-icon md-font-set="material-symbols-outlined">close</md-icon>
@@ -20,12 +20,12 @@
                         <h3 class="md-title">Basic Information</h3>
                         <div class="info-row">
                             <span class="info-label">Name:</span>
-                            <span class="info-value">{{ctrl.agent.agentName}}</span>
+                            <span class="info-value">{{::ctrl.agent.agentName}}</span>
                         </div>
 
                         <div class="info-row">
                             <span class="info-label">Rate:</span>
-                            <span class="info-value">{{ctrl.agent.agentRate | currency}}</span>
+                            <span class="info-value">{{::ctrl.agent.agentRate | currency}}</span>
                         </div>
 
                         <div class="info-row">
@@ -39,31 +39,31 @@
                         <div class="info-row">
                             <span class="info-label">Phone:</span>
                             <span class="info-value">
-                <a href="tel:{{ctrl.agent.agentPhone}}">{{ctrl.formatPhone(ctrl.agent.agentPhone)}}</a>
+                <a href="tel:{{::ctrl.agent.agentPhone}}">{{::ctrl.formatPhone(ctrl.agent.agentPhone)}}</a>
               </span>
                         </div>
 
                         <div class="info-row">
                             <span class="info-label">Email:</span>
                             <span class="info-value">
-                <a href="mailto:{{ctrl.agent.agentEmail}}">{{ctrl.agent.agentEmail}}</a>
+                <a href="mailto:{{::ctrl.agent.agentEmail}}">{{::ctrl.agent.agentEmail}}</a>
               </span>
                         </div>
 
                         <div class="info-row">
                             <span class="info-label">Address:</span>
-                            <span class="info-value">{{ctrl.agent.address.fullAddress}}</span>
+                            <span class="info-value">{{::ctrl.agent.address.fullAddress}}</span>
                         </div>
 
                         <h3 class="md-title notes-title">Notes</h3>
-                        <p class="notes-content">{{ctrl.agent.agentNotes || 'No notes available.'}}</p>
+                        <p class="notes-content">{{::ctrl.agent.agentNotes || 'No notes available.'}}</p>
                     </md-card-content>
                 </md-card>
             </div>
 
             <!-- Airports Column -->
             <div flex="40" flex-xs="100" class="airports-container">
-                <md-card ng-if="ctrl.agent.airports && ctrl.agent.airports.length > 0">
+                <md-card ng-if="::ctrl.agent.airports && ctrl.agent.airports.length > 0">
                     <md-card-content>
                         <h3 class="md-title">Assigned Airports</h3>
 
@@ -80,14 +80,14 @@
                                     </p>
                                     <p class="airport-coordinates">
                                         <md-icon md-font-set="material-symbols-outlined">place</md-icon>
-                                        {{ctrl.formatCoordinates(airport.latitude, airport.longitude)}}
+                                        {{::ctrl.formatCoordinates(airport.latitude, airport.longitude)}}
                                     </p>
                                 </div>
                                 <md-divider ng-if="!$last"></md-divider>
                             </md-list-item>
                         </md-list>
 
-                        <div class="no-airports" ng-if="!ctrl.agent.airports || ctrl.agent.airports.length === 0">
+                        <div class="no-airports" ng-if="::!ctrl.agent.airports || ctrl.agent.airports.length === 0">
                             <p>No airports are assigned to this agent.</p>
                         </div>
                     </md-card-content>
