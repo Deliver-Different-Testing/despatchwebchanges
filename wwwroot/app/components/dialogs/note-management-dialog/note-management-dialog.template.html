@@ -1,9 +1,9 @@
-<md-dialog aria-label="{{ctrl.title}}" class="job-note-editor-dialog">
+<md-dialog aria-label="{{::ctrl.title}}" class="job-note-editor-dialog">
     <form name="noteForm" ng-submit="ctrl.save()" novalidate>
         <md-toolbar>
             <div class="md-toolbar-tools">
                 <md-icon class="popup-icon" md-font-set="material-symbols-outlined">sticky_note_2</md-icon>
-                <h2>{{ctrl.title}}</h2>
+                <h2>{{::ctrl.title}}</h2>
                 <span flex></span>
                 <md-button class="md-icon-button" ng-click="ctrl.cancel()" aria-label="Close">
                     <md-icon md-font-set="material-symbols-outlined">close</md-icon>
@@ -44,7 +44,7 @@
                     <div ng-if="ctrl.showDescriptionFor === ctrl.model.noteTypeId" class="note-type-description-card">
                         <md-card>
                             <md-card-content>
-                                <p>{{ctrl.getSelectedNoteType().description}}</p>
+                                <p>{{::ctrl.getSelectedNoteType().description}}</p>
                             </md-card-content>
                         </md-card>
                     </div>
@@ -56,7 +56,6 @@
                         <md-card-title>
                             <md-card-title-text>
                                 <span class="md-headline">Create New Note Type</span>
-                                <md-divider></md-divider>
                             </md-card-title-text>
                         </md-card-title>
                         <md-card-content>
@@ -123,14 +122,15 @@
                     </md-subheader>
                     <md-list-item>
                         <md-icon md-font-set="material-symbols-outlined">person</md-icon>
-                        <p>Created by <strong>{{ctrl.model.createdByName || 'System'}}</strong></p>
+                        <p>Created by <strong>{{::ctrl.model.createdByName || 'System'}}</strong></p>
                     </md-list-item>
                     <md-list-item ng-if="ctrl.model.createdDate">
                         <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
-                        <p>Created on <strong>{{ctrl.model.createdDate | momentFormat: 'MMM D, YYYY HH:mm:ss'}} ({{ctrl.timeZone | timezoneShort}})</strong></p>                    </md-list-item>
+                        <p>Created on <strong>{{::ctrl.model.createdDate | momentFormat: 'MMM D, YYYY HH:mm:ss'}} ({{::ctrl.timeZone | timezoneShort}})</strong></p>
+                    </md-list-item>
                     <md-list-item ng-if="ctrl.model.updatedDate">
                         <md-icon md-font-set="material-symbols-outlined">update</md-icon>
-                        <p>Last updated by <strong>{{ctrl.model.updatedByName}}</strong> on <strong>{{ctrl.model.updatedDate | momentFormat: 'MMM D, YYYY HH:mm:ss'}} ({{ctrl.timeZone | timezoneShort}})</strong></p>                    </md-list-item>
+                        <p>Last updated by <strong>{{ctrl.model.updatedByName}}</strong> on <strong>{{ctrl.model.updatedDate | momentFormat: 'MMM D, YYYY HH:mm:ss'}} ({{::ctrl.timeZone | timezoneShort}})</strong></p>                    </md-list-item>
                 </md-list>
             </div>
         </md-dialog-content>

@@ -217,6 +217,106 @@
     border-radius: 4px;
     overflow: hidden;
 
+    tr {
+      @s-green: #b0f57b;
+      @s-blue: #bae1ff;
+      @s-white: #EEE;
+      @s-orange: #ffdfba;
+      @s-red: #ffb3ba;
+      @s-grey: #DDD;
+      @s-purple: #f1cbff;
+
+      @status-future-bg: fadeout(@s-green, 70%);
+      @status-current-bg: fadeout(@s-orange, 70%);
+      @status-past-bg: fadeout(@s-red, 70%);
+
+      &.related-job {
+        background: #e3f2fd !important;
+        border-left: 4px solid #2196f3 !important;
+
+        &:hover {
+          background-color: #bbdefb !important;
+        }
+
+        td {
+          color: #0d47a1 !important;
+        }
+
+        &.direct, &.chilled {
+          background-color: mix(#e3f2fd, rgba(33, 150, 243, 0.05), 80%) !important;
+        }
+      }
+
+      &.status-warning {
+        background: #ffebee !important;
+        border-left: 4px solid #f44336 !important;
+
+        &:hover {
+          background-color: #ffcdd2 !important;
+        }
+
+        td {
+          color: #212121 !important;
+        }
+
+        &.direct, &.chilled {
+          background-color: mix(#ffebee, rgba(255, 0, 0, 0.05), 80%) !important;
+        }
+      }
+
+      &.status-future {
+        background-color: @s-green;
+
+        &:hover {
+          background-color: fadeout(@status-future-bg, 60%);
+        }
+
+        &.direct, &.chilled {
+          background-color: mix(@status-future-bg, rgba(255, 0, 0, 0.05), 80%);
+        }
+      }
+
+      &.status-current {
+        background-color: @s-orange;
+
+        &:hover {
+          background-color: fadeout(@status-current-bg, 60%);
+        }
+
+        &.direct, &.chilled {
+          background-color: mix(@status-current-bg, rgba(255, 0, 0, 0.05), 80%);
+        }
+      }
+
+      &.status-past {
+        background-color: @s-red;
+
+        &:hover {
+          background-color: fadeout(@status-past-bg, 60%);
+        }
+
+        &.direct, &.chilled {
+          background-color: mix(@status-past-bg, rgba(255, 0, 0, 0.05), 80%);
+        }
+      }
+
+      &.late {
+        background-color: #ffecec;
+      }
+
+      &:hover {
+        background-color: #fffaf5;
+      }
+
+      &.active {
+        background: #ffefe0;
+
+        td {
+          background-color: transparent;
+        }
+      }
+    }
+
     th.md-column {
       color: #5f6368;
       font-weight: 500;
