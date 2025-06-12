@@ -1,14 +1,19 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
-using DateTime = System.DateTime;
 
 namespace DespatchWeb.Interfaces;
 
 public interface IFlightStatsService
 {
-    Task< List<FlightViewModel>> GetFlightsAsync(
+    Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
+        string departureAirportCode);
+
+    Task DeleteFlightRuleById(string webhookId);
+
+    Task<List<FlightViewModel>> GetFlightsAsync(
         int jobId,
         DateTime? departureDateTime = null,
         int? airlineId = null,
@@ -17,16 +22,10 @@ public interface IFlightStatsService
         string codeType = null,
         List<string> extendedOptions = null,
         int minimumLayoverMinutes = 60
-        );
+    );
 
-    Task<AddFlightToJobDto> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,
-        DateTime departureTime);
-
-    Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
-        string departureAirportCode);
-
-    Task<List<FlightDetailsDialogViewModel>> GetFlightDetailByFlightNumberDetailDialog(
-        string completeFlightNumber, DateTime departureTime);
-
-    Task DeleteFlightRuleById(string webhookId);
+    Task<AddFlightToJobDto> GetFlightDetailsByFlightNumberAsync(
+        string completeFlightNumber,
+        DateTime departureTime,
+        int jobId);
 }
