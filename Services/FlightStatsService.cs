@@ -213,7 +213,8 @@ public class FlightStatsService(
         if (connections is null) return [];
 
         var flightOptions = connections
-            .Where(conn => conn.ScheduledFlight.Count != 0)
+            .Where(conn => conn.ScheduledFlight.Count != 0 &&
+                   conn.ScheduledFlight.All(segment => segment.Stops < 1)) // Exclude connections with segments having more than 1 stop
             .Select(conn =>
             {
                 var firstFlight = conn.ScheduledFlight.First();
