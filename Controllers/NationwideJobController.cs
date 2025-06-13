@@ -64,27 +64,6 @@ public class NationwideJobController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> NationwideJobListBookDelivery(JobQueryParams queryParams,
-        bool isInternal, int cid, string clientIds, List<int> despatchViewIds)
-    {
-        try
-        {
-            if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
-            var isUsTenant = countryService.IsUsTenant();
-
-            var result = await repository.NationwideJobListAsync(queryParams, isInternal, isUsTenant, clientIds,
-                NationwideWidget.ActionRequired, despatchViewIds);
-
-            return Json(result);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "An error occured getting the delivery Nationwide job list");
-            return StatusCode(500, e.Message);
-        }
-    }
-
-    [HttpGet]
     public async Task<IActionResult> NationwideJobListReprice(JobQueryParams queryParams, bool isInternal,
         int cid, string clientIds, List<int> despatchViewIds)
     {

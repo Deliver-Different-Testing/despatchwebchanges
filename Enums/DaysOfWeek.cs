@@ -22,13 +22,11 @@ public enum DaysOfWeek
 
 public static class DaysOfWeekExtensions
 {
-    // Convert to readable string (e.g., "Monday, Wednesday, Friday")
     public static string ToDisplayString(this DaysOfWeek days) => days == DaysOfWeek.None
         ? "None"
         : string.Join(", ", GetSelectedDays(days).Select(d => d.ToString()));
 
-    // Get array of selected DaysOfWeek values
-    public static DaysOfWeek[] GetSelectedDays(this DaysOfWeek days)
+    private static DaysOfWeek[] GetSelectedDays(this DaysOfWeek days)
     {
         return Enum.GetValues(typeof(DaysOfWeek))
             .Cast<DaysOfWeek>()
@@ -38,41 +36,9 @@ public static class DaysOfWeekExtensions
             .ToArray();
     }
 
-    // Check if a specific day is included
     public static bool IncludesDay(this DaysOfWeek days, DaysOfWeek day) => (days & day) == day;
-
-    // Add one or more days
-    public static DaysOfWeek AddDays(this DaysOfWeek days, DaysOfWeek daysToAdd) => days | daysToAdd;
-
-    // Remove one or more days
-    public static DaysOfWeek RemoveDays(this DaysOfWeek days, DaysOfWeek daysToRemove) => days & ~daysToRemove;
-
-    // Convert from integer (for database operations)
-    public static DaysOfWeek FromInt(int value) => (DaysOfWeek)value;
-
-    // Convert to integer (for database operations)
-    public static int ToInt(this DaysOfWeek days) => (int)days;
-
-    // Parse from comma-separated string (useful for migration from string field)
-    public static DaysOfWeek ParseFromString(string dayString)
-    {
-        if (string.IsNullOrWhiteSpace(dayString))
-            return DaysOfWeek.None;
-
-        var result = DaysOfWeek.None;
-        var dayNames = dayString.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-        foreach (var dayName in dayNames)
-        {
-            if (Enum.TryParse<DaysOfWeek>(dayName, true, out var day))
-                result |= day;
-        }
-
-        return result;
-    }
-
-    // Get DayOfWeek instances for the selected days (for DateTime operations)
-    public static List<DayOfWeek> ToDayOfWeekList(this DaysOfWeek days)
+    
+    private static List<DayOfWeek> ToDayOfWeekList(this DaysOfWeek days)
     {
         var result = new List<DayOfWeek>();
         if (days.HasFlag(DaysOfWeek.Monday)) result.Add(DayOfWeek.Monday);
@@ -85,7 +51,6 @@ public static class DaysOfWeekExtensions
         return result;
     }
 
-    // Check if a DateTime falls on one of the selected days
     public static bool IncludesDate(this DaysOfWeek days, DateTime date) =>
         days.ToDayOfWeekList().Contains(date.DayOfWeek);
 }

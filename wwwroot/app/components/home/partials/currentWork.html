@@ -35,12 +35,12 @@
 
                 <td md-cell md-truncate>
                     {{::ctrl.isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
-                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="::!job.pickUpLongitude">warning</md-icon>
                 </td>
 
                 <td md-cell md-truncate>
                     {{::ctrl.isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}
-                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="::!job.deliveryLongitude">warning</md-icon>
                 </td>
 
                 <td md-cell>

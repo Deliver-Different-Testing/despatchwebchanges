@@ -356,50 +356,44 @@ class NationwideControl extends BaseController {
         this.selected = [];
 
         this.boxes = {
-            "jobsList": {
+            [NationwideBoxes.NewJobs]: {
                 "title": "New Jobs",
                 "icon": "new_releases",
                 "templateUrl": "app/components/Nationwide/partials/jobList.html",
                 "showSearch": 1,
                 "showRefresh": 1
-            },
-            "jobsListPOD": {
+            }, [NationwideBoxes.PodJobs]: {
                 "title": "Awaiting POD",
                 "icon": "pending_actions",
                 "templateUrl": "app/components/Nationwide/partials/jobListPOD.html",
                 "showSearch": 1,
                 "showRefresh": 1
-            },
-            "tasksList": {
+            }, [NationwideBoxes.Tasks]: {
                 "title": "Tasks",
                 "icon": "support",
                 "templateUrl": "app/components/Nationwide/partials/tasksList.html",
                 "showSearch": 0,
                 "showRefresh": 1
-            },
-            "jobsListReprice": {
+            }, [NationwideBoxes.RepriceJobs]: {
                 "title": "Reprice",
                 "icon": "price_change",
                 "templateUrl": "app/components/Nationwide/partials/jobListReprice.html",
                 "showSearch": 1,
                 "showRefresh": 1
-            },
-            "jobDetail": {
+            }, [NationwideBoxes.JobDetail]: {
                 "title": "Detail",
                 "icon": "assignment",
                 "templateUrl": "app/components/Nationwide/partials/jobDetail.html",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
-            },
-            "map": {
+            }, [NationwideBoxes.Map]: {
                 "title": "Map",
                 "icon": "pin_drop",
                 "templateUrl": "app/components/Nationwide/partials/map.html",
                 "showSearch": 0,
                 "showRefresh": 1
-            },
-            "flightAgentDataTable": {
+            }, [NationwideBoxes.FlightAgents]: {
                 "title": "Available",
                 "icon": "docs_add_on",
                 "templateUrl": "app/components/Nationwide/partials/flightAgentDataTableBox.html",

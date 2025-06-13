@@ -250,6 +250,11 @@
     <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\parcel-visuailzation\parcel-visualization.component.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\parcel-visuailzation\parcel-visualization.styles.less" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\parcel-visuailzation\parcel-visualization.template.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\messaging\messaging.component.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\messaging\messaging.interfaces.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\messaging\messaging.service.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\messaging\messaging.styles.less" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\messaging\messaging.template.html" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
@@ -311,8 +316,12 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dialog.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dialog.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\home\enums\DispatchBoxes.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\podSearchResponse.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-event-dialog\add-event-dialog.controller.ts" />
@@ -383,6 +392,7 @@
     <TypeScriptCompile Include="wwwroot\app\enums\job-property.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\job-status.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\late-event-type.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\message-delivery-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\countSubJobs.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\getDangerousGoodsClassName.ts" />
@@ -416,6 +426,7 @@
     <TypeScriptCompile Include="wwwroot\app\services\dispatch-executor.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\job-add-stop.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\job-context-menu.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\services\messaging.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\notes.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\tasks.service.ts" />
     <TypeScriptCompile Include="wwwroot\types\html.d.ts" />

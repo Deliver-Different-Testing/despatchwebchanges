@@ -279,6 +279,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucMessage]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucNote]",
          "ObjectType": 0
       },

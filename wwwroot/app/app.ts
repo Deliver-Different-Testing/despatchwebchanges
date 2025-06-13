@@ -100,6 +100,9 @@ import TruckCourierStatusDialogController
     from "./components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.controller";
 import TruckCourierStatusDialogService
     from "./components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.service";
+import MessagingService from "./services/messaging.service";
+import MessagingDialogService from "./components/dialogs/messaging-dialog/messaging-dialog.service";
+import MessagingDialogController from "./components/dialogs/messaging-dialog/messaging-dialog.controller";
 
 const app = (window as any).uDispatchApp;
 
@@ -253,6 +256,7 @@ app.controller("flightDetailsDialogController", FlightDetailsDialogController);
 app.controller("flightAgentConformationDialogController", FlightAgentConformationDialogController);
 app.controller("agentInfoDialogController", AgentInfoDialogController);
 app.controller("TruckCourierStatusDialogController", TruckCourierStatusDialogController);
+app.controller("messagingDialogController", MessagingDialogController);
 
 // Services
 app.service("configService", ConfigService);
@@ -287,5 +291,7 @@ app.service("agentInfoDialogService", AgentInfoDialogService)
 app.service("addressLookupService", AddressLookupService)
 app.service("tasksService", TasksService)
 app.service("truckCourierStatusDialogService", TruckCourierStatusDialogService)
+app.service("messagingService", MessagingService)
+app.service("messagingDialogService", MessagingDialogService)
 
 export default app;

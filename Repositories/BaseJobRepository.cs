@@ -21,18 +21,6 @@ namespace DespatchWeb.Repositories;
 public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory, ITenantInfoService infoService)
     : BaseRepository(contextFactory)
 {
-    public async Task<T> AddEntityAsync<T>(T entity)
-        where T : class
-    {
-        var result = await Context.Set<T>().AddAsync(entity);
-        await Context.SaveChangesAsync();
-        return result.Entity;
-    }
-
-    public async Task<T> GetByIdAsync<T>(int id) where T : class => await Context.Set<T>().FindAsync(id);
-
-    public async Task SaveChangesAsync() => await Context.SaveChangesAsync();
-
     protected async Task<List<DispatchJobViewModel>> DespatchQry(
         AppPage page,
         JobQueryParams queryParams,
@@ -1590,17 +1578,14 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             activeNote.UpdatedDate = currentTime;
             activeNote.UpdatedBy = staffId;
 
-            var effectiveJobBookingId = 0;
-            var effectiveJobId = 0;
-
             if (isPrebook)
             {
-                effectiveJobBookingId = await GetEffectiveJobBookingId(viewModel.JobBookingId.Value);
+                var effectiveJobBookingId = await GetEffectiveJobBookingId(viewModel.JobBookingId.Value);
                 activeNote.JobBookingId = effectiveJobBookingId;
             }
             else
             {
-                effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
+                var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
                 activeNote.JobId = effectiveJobId;
             }
 
@@ -1764,21 +1749,18 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
     protected async Task<int> GetJobBookingRelationshipInfoAsync(int bookingId)
     {
-        if (bookingId != 0)
-        {
-            var jobInfo = await Context.TucJobBookings
-                .Where(j => j.UcbkId == bookingId)
-                .Select(j => new
-                {
-                    EffectiveJobId = j.ParentId ?? j.UcbkId,
-                })
-                .AsNoTracking()
-                .FirstOrDefaultAsync();
+        if (bookingId == 0) return 0;
+        var jobInfo = await Context.TucJobBookings
+            .Where(j => j.UcbkId == bookingId)
+            .Select(j => new
+            {
+                EffectiveJobId = j.ParentId ?? j.UcbkId,
+            })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
 
-            return jobInfo.EffectiveJobId;
-        }
+        return jobInfo.EffectiveJobId;
 
-        return 0;
     }
 
     protected static string GetTrackingName(int trackingMethodId)
