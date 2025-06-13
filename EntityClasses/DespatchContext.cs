@@ -161,6 +161,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TucManualMessage> TucManualMessages { get; set; }
 
+    public virtual DbSet<TucMessage> TucMessages { get; set; }
+
     public virtual DbSet<TucNote> TucNotes { get; set; }
 
     public virtual DbSet<TucNoteArchive> TucNoteArchives { get; set; }
@@ -1015,11 +1017,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PrebookJobId).HasColumnName("PrebookJobID");
             entity.Property(e => e.Total).HasColumnType("decimal(18, 4)");
 
-            entity.HasOne(d => d.ChildJob).WithMany(p => p.PricingBreakdownChildJobs)
-                .HasForeignKey(d => d.ChildJobId)
-                .HasConstraintName("FK_PricingBreakdown_ChildJobID");
-
-            entity.HasOne(d => d.Job).WithMany(p => p.PricingBreakdownJobs)
+            entity.HasOne(d => d.Job).WithMany(p => p.PricingBreakdowns)
                 .HasForeignKey(d => d.JobId)
                 .HasConstraintName("FK__PricingBr__JobID__1B69C5D8");
 
@@ -5825,6 +5823,31 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasColumnName("ucmmWindowsUser");
+        });
+
+        modelBuilder.Entity<TucMessage>(entity =>
+        {
+            entity.HasKey(e => e.UcmpId)
+                .IsClustered(false)
+                .HasAnnotation("SqlServer:FillFactor", 80);
+
+            entity.ToTable("tucMessage");
+
+            entity.Property(e => e.UcmpId).HasColumnName("ucmpID");
+            entity.Property(e => e.UcmpCourier).HasColumnName("ucmpCourier");
+            entity.Property(e => e.UcmpDate)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("ucmpDate");
+            entity.Property(e => e.UcmpMessage)
+                .HasMaxLength(250)
+                .IsUnicode(false)
+                .HasColumnName("ucmpMessage");
+            entity.Property(e => e.UcmpOperator).HasColumnName("ucmpOperator");
+            entity.Property(e => e.UcmpSent).HasColumnName("ucmpSent");
+            entity.Property(e => e.UcmpTime)
+                .HasColumnType("datetime")
+                .HasColumnName("ucmpTime");
         });
 
         modelBuilder.Entity<TucNote>(entity =>

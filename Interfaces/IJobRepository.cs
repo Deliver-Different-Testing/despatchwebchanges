@@ -50,17 +50,12 @@ public interface IJobRepository
         List<int> selectedViewIds,
         ClearListEnvelopeViewModel clearListEnvelope = null);
 
-    Task<TucEvent> GetSupportEventAsync(int eventId);
-    Task<int> UpdateSupportEventAsync(TucEvent supportEvent);
-    Task CloseSupportEvent(int supportId, int staffId);
     Task DispatchSelectedJobs(int courierId, int dispId, List<int> jobIds);
     Task SwapPod(string job1, string job2);
     Task ReDispatchSelectedJobs(int courierId, int dispId, List<int> jobIds);
     Task ReSendSelectedJobs(string jobIds);
-    Task<List<BulkScanDetail>> ScanList(DateTime? runDate, string scan);
     Task ReAssignSelectedJobs(string jobIds);
     Task SetFirstJob(int jobId, int courierId);
-    Task TransferJob(int jobId, int courierId, int dispId);
 
     Task UpdatePodDetails(UpdatePodDetailsRequest data);
 
@@ -68,16 +63,6 @@ public interface IJobRepository
     Task<int> MaxAutoLatePickupAlert();
     Task<int> MaxAutoLateDeliveryAlert();
     Task<decimal> PpdExclusiveAmount(int clientId, decimal amount);
-    Task<decimal> PpdInclusiveAmount(int clientId, decimal amount);
-
-    Task<decimal> FuelSurchargeInclusiveAmount(
-        int clientId,
-        decimal amount,
-        int from,
-        int to,
-        DateTime booked,
-        int size
-    );
 
     Task ResetLateEvent(int jobId, int lateEventType);
 
@@ -86,7 +71,6 @@ public interface IJobRepository
         string bookedSpeed,
         string notifiedSpeed,
         int late,
-        int staffId,
         bool calculationRequired
     );
 
@@ -95,7 +79,6 @@ public interface IJobRepository
         string bookedSpeed,
         string notifiedSpeed,
         int late,
-        int staffId,
         bool calculationRequired
     );
 
@@ -119,76 +102,17 @@ public interface IJobRepository
     Task<List<SuburbLookup>> SuburbsAsync();
     Task<List<Suggestion>> SpeedsAsync();
     Task<List<Suggestion>> ContactsAsync(int clientId);
-    Task<List<ClientContactDetailViewModel>> ContactDetailList(int clientId);
     Task<List<Lookup>> LeaveParcelLocationsAsync();
     Task<List<UndeliverableLocation>> UndeliverableLocationsAsync();
     Task<List<InternalStatus>> GetInternalStatusListAsync();
     Task<List<Suggestion>> GetStatusListAsync();
     Task<List<Suggestion>> EventTypeListAsync();
 
-    Task<decimal> RateTruckJob(
-        int clientId,
-        int fromId,
-        int toId,
-        double weight,
-        int size,
-        int speed,
-        int qty,
-        DateTime bookedDate,
-        int pickUp,
-        int dropOff,
-        bool privateRes,
-        int oversizeItems,
-        int overWeightItems,
-        int dGClass,
-        DateTime truckStartTime,
-        double truckHours
-    );
-
-    Task<string> RateTruckJobDescription(
-        int clientId,
-        int fromId,
-        int toId,
-        double weight,
-        int size,
-        int speed,
-        int qty,
-        DateTime bookedDate,
-        int pickUp,
-        int dropOff,
-        bool privateRes,
-        int oversizeItems,
-        int overWeightItems,
-        int dGClass,
-        DateTime truckStartTime,
-        double truckHours
-    );
-
     Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId, bool isPrebook);
 
     Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel, int staffId);
     Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel, int staffId);
     Task DeleteJobPriceBreakdownAsync(int chargeId, int staffId);
-
-    Task<string> RateJobDescription(
-        int clientId,
-        int fromId,
-        int toId,
-        int speed,
-        bool pedal,
-        bool van,
-        bool returnJob,
-        int weight,
-        int size,
-        bool includeFuelSurcharge,
-        bool direct,
-        int acceptedJobTypeId,
-        string ourRef,
-        string refA,
-        string refB,
-        int quantity,
-        DateTime booked
-    );
 
     Task AddPalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
     Task EditPalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
@@ -201,33 +125,10 @@ public interface IJobRepository
     Task UpdateBookingDeliveryAddressNzAsync(UpdateAddressRequestNz request);
     Task UpdateBookingDeliveryAddressUsAsync(UpdateAddressRequestUs request);
 
-    Task UpdateBulkDeliveryAddressAsync(
-        int bulkJobId,
-        string toSuburb,
-        int toPostCode,
-        string address,
-        decimal deliveryLat,
-        decimal deliveryLng,
-        string despatcher
-    );
-
     Task UpdatePickupAddressNzAsync(UpdateAddressRequestNz request);
     Task UpdatePickupAddressUsAsync(UpdateAddressRequestUs request);
     Task UpdateBookingPickupAddressNzAsync(UpdateAddressRequestNz request);
     Task UpdateBookingPickupAddressUsAsync(UpdateAddressRequestUs request);
-    Task UpdateJobTypeAsync(int jobId, int jobType, string despatcher);
-
-    Task UpdateBulkPickupAddressAsync(
-        int bulkJobId,
-        string fromSuburb,
-        int fromPostCode,
-        string address,
-        decimal pickupLat,
-        decimal pickupLng,
-        string despatcher
-    );
-
-    Task ReleaseBulkJobAsync(string jobNumber, DateTime bookDate);
 
     Task UpdateJobAsync(
         int jobId,
@@ -235,23 +136,8 @@ public interface IJobRepository
         string value
     );
 
-    Task UpdateJobAsync(
-        int jobId,
-        string field,
-        string value
-    );
-
     Task UpdateBulkJobAsync(
         int bulkJobId,
-        string field,
-        string value,
-        decimal? rate,
-        string despatcher,
-        int staffId
-    );
-
-    Task UpdateJobBookingAsync(
-        int jobId,
         string field,
         string value,
         decimal? rate,
@@ -274,9 +160,8 @@ public interface IJobRepository
     Task<IList<OpenJobResponse>> GetOpenJobsAsync(OpenJobsRequest parameters);
 
     Task<DriverStats> GetDriverStatsAsync(int courierId);
-    void Dispose();
 
-    Task<T> AddEntityAsync<T>(T entity) where T : class;
+    Task AddEntityAsync<T>(T entity) where T : class;
 
     Task<JobViewModel> GetJobByIdAsync(int jobId);
     Task UpdateJobNoteAsync(int jobId, string note);

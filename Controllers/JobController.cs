@@ -341,33 +341,6 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> CloseSupport(int supportId, int staffId)
-    {
-        await jobRepository.CloseSupportEvent(supportId, staffId);
-        return Ok();
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> LockSupport(int id, string dispatcher)
-    {
-        var support = await jobRepository.GetSupportEventAsync(id);
-        support.UcevDespatcher = dispatcher;
-        var result = await jobRepository.UpdateSupportEventAsync(support);
-        return Json(result > 0);
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> UnLockSupport(int id, string dispatcher)
-    {
-        var support = await jobRepository.GetSupportEventAsync(id);
-        if (support.UcevDespatcher != dispatcher)
-            return Json(false);
-        support.UcevDespatcher = "";
-        var result = await jobRepository.UpdateSupportEventAsync(support);
-        return Json(result > 0);
-    }
-
-    [HttpPost]
     public async Task<IActionResult> UploadJobDeliveryPhotoOrSignature(
         int jobId,
         IFormFile file,
@@ -465,50 +438,6 @@ public class JobController(
             ".pdf" => "application/pdf",
             _ => "application/octet-stream" // Default content type
         };
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> UploadMultipleJobDeliveryPhotos(
-        int jobId,
-        IFormFileCollection files,
-        string[] descriptions = null)
-    {
-        if (files == null || files.Count == 0)
-        {
-            return BadRequest("No files were uploaded");
-        }
-
-        var results = new List<object>();
-
-        for (var i = 0; i < files.Count; i++)
-        {
-            var file = files[i];
-            var description = descriptions != null && i < descriptions.Length ? descriptions[i] : null;
-
-            try
-            {
-                // Reuse the single upload method for each file
-                if (await UploadJobDeliveryPhotoOrSignature(jobId, file, true, description) is JsonResult result)
-                {
-                    results.Add(result.Value);
-                }
-                else
-                {
-                    results.Add(new { success = false, fileName = file.FileName, error = "Failed to process file" });
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error uploading POD photo {FileName} for job {JobId}", file.FileName, jobId);
-                results.Add(new { success = false, fileName = file.FileName, error = ex.Message });
-            }
-        }
-
-        return Json(new
-        {
-            success = results.All(r => ((dynamic)r).success),
-            files = results
-        });
     }
 
     [HttpDelete]
@@ -686,13 +615,6 @@ public class JobController(
         }
     }
 
-    [HttpGet]
-    public async Task<IActionResult> ScanJobDetailAsync(DateTime? runDate, string scan)
-    {
-        var data = await jobRepository.ScanList(runDate, scan);
-        return Json(data);
-    }
-
     public async Task<IActionResult> Related(int parentId, int clientId)
     {
         var result = await jobRepository.RelatedJobs(parentId, clientId);
@@ -702,12 +624,6 @@ public class JobController(
     public async Task<IActionResult> BulkDetail(int bulkJobId)
     {
         var result = await jobRepository.BulkJobDetail(bulkJobId);
-        return Json(result);
-    }
-
-    public async Task<IActionResult> PreBookDetail(int preBookJobId)
-    {
-        var result = await jobRepository.GetJobByIdAsync(preBookJobId);
         return Json(result);
     }
 
@@ -1098,7 +1014,6 @@ public class JobController(
                         job.BookedSpeed,
                         job.NotifiedSpeed,
                         request.LateTime,
-                        request.StaffId,
                         request.CalculationRequired
                     );
                     break;
@@ -1108,7 +1023,6 @@ public class JobController(
                         job.BookedSpeed,
                         job.NotifiedSpeed,
                         request.LateTime,
-                        request.StaffId,
                         request.CalculationRequired
                     );
                     break;
@@ -1246,13 +1160,6 @@ public class JobController(
     public async Task<IActionResult> ReAssignSelected(string jobIds)
     {
         await jobRepository.ReAssignSelectedJobs(jobIds);
-        return Ok();
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> Transfer(int jobId, int courierId, int dispId)
-    {
-        await jobRepository.TransferJob(jobId, courierId, dispId);
         return Ok();
     }
 
@@ -1446,30 +1353,6 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddOtherEvent(
-        string jobNo,
-        int clientId,
-        string contact,
-        int staffId,
-        int? courierId,
-        int jobId,
-        int jobType,
-        string despatcherName,
-        string notes
-    )
-    {
-        await taskRepository.AddEventAsync(
-            jobId,
-            staffId,
-            despatcherName,
-            notes,
-            (int)EventType.Other
-        );
-
-        return Ok();
-    }
-
-    [HttpPost]
     public async Task<IActionResult> AddEvent([FromBody] JobEventDataRequest data)
     {
         try
@@ -1560,13 +1443,6 @@ public class JobController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> ContactDetailList(int clientId)
-    {
-        var data = await jobRepository.ContactDetailList(clientId);
-        return Json(data);
-    }
-
-    [HttpGet]
     public async Task<IActionResult> LeaveList()
     {
         var data = await jobRepository.LeaveParcelLocationsAsync();
@@ -1601,242 +1477,10 @@ public class JobController(
         return Json(data);
     }
 
-    public async Task<IActionResult> TruckJobAmountBreakdown(
-        int clientId,
-        int fromId,
-        int toId,
-        double weight,
-        int size,
-        int speed,
-        int qty,
-        DateTime bookedDate,
-        int pickUp,
-        int dropOff,
-        bool privateRes,
-        int oversizeItems,
-        int overWeightItems,
-        int dGClass,
-        DateTime truckStartTime,
-        double truckHours,
-        decimal gstRate
-    )
-    {
-        var rate = await jobRepository.RateTruckJob(
-            clientId,
-            fromId,
-            toId,
-            weight,
-            size,
-            speed,
-            qty,
-            bookedDate,
-            pickUp,
-            dropOff,
-            privateRes,
-            oversizeItems,
-            overWeightItems,
-            dGClass,
-            truckStartTime,
-            truckHours
-        );
-        var description = await jobRepository.RateTruckJobDescription(
-            clientId,
-            fromId,
-            toId,
-            weight,
-            size,
-            speed,
-            qty,
-            bookedDate,
-            pickUp,
-            dropOff,
-            privateRes,
-            oversizeItems,
-            overWeightItems,
-            dGClass,
-            truckStartTime,
-            truckHours
-        );
-        description += $"\rTotal = {rate:C}";
-        description += $"\rTotal (+GST) = {rate * (1 + gstRate):C}";
-        return Json(description);
-    }
-
-    public async Task<IActionResult> RateTruckJob(
-        int clientId,
-        int fromId,
-        int toId,
-        double weight,
-        int size,
-        int speed,
-        int qty,
-        DateTime bookedDate,
-        int pickUp,
-        int dropOff,
-        bool privateRes,
-        int oversizeItems,
-        int overWeightItems,
-        int dGClass,
-        DateTime truckStartTime,
-        double truckHours
-    )
-    {
-        var rate = await jobRepository.RateTruckJob(
-            clientId,
-            fromId,
-            toId,
-            weight,
-            size,
-            speed,
-            qty,
-            bookedDate,
-            pickUp,
-            dropOff,
-            privateRes,
-            oversizeItems,
-            overWeightItems,
-            dGClass,
-            truckStartTime,
-            truckHours
-        );
-        return Json($"{rate:C}");
-    }
-
-    public async Task<IActionResult> JobAmountBreakdown(
-        int clientId,
-        int fromId,
-        int toId,
-        int speed,
-        bool pedal,
-        bool van,
-        bool returnJob,
-        int weight,
-        int size,
-        bool includeFuelSurcharge,
-        bool direct,
-        int acceptedJobTypeId,
-        string ourRef,
-        string refA,
-        string refB,
-        int quantity,
-        DateTime booked,
-        decimal gstRate,
-        decimal amount
-    )
-    {
-        var currentRateAmount = await jobRepository.RateJobAsync(
-            clientId,
-            fromId,
-            toId,
-            speed,
-            pedal,
-            van,
-            returnJob,
-            weight,
-            size,
-            includeFuelSurcharge,
-            direct,
-            acceptedJobTypeId,
-            ourRef,
-            refA,
-            refB,
-            quantity,
-            booked
-        );
-
-        var finalDescription =
-            direct ? "DIRECT PRICE\r"
-            : currentRateAmount != amount ? "NORMAL PRICE\r"
-            : "";
-        var description = await jobRepository.RateJobDescription(
-            clientId,
-            fromId,
-            toId,
-            speed,
-            pedal,
-            van,
-            returnJob,
-            weight,
-            size,
-            includeFuelSurcharge,
-            direct,
-            acceptedJobTypeId,
-            ourRef,
-            refA,
-            refB,
-            quantity,
-            booked
-        );
-        finalDescription += description;
-        finalDescription += $"\rTotal = {currentRateAmount:C}";
-        finalDescription += $"\rTotal (+GST) = {currentRateAmount * (1 + gstRate):C}";
-
-        if (currentRateAmount == amount)
-            return Json(finalDescription);
-
-        var fs = includeFuelSurcharge
-            ? await jobRepository.FuelSurchargeInclusiveAmount(
-                clientId,
-                amount,
-                fromId,
-                toId,
-                booked,
-                size
-            )
-            : 0;
-        var ppd = includeFuelSurcharge
-            ? await jobRepository.PpdInclusiveAmount(clientId, amount)
-            : 0;
-        finalDescription += $"\rSPECIAL PRICE = {amount - fs - ppd:C}";
-        if (fs <= 0)
-            return Json(finalDescription);
-
-        finalDescription += $"\rPlus fuel surcharge = {fs:C}";
-        finalDescription += $"\rPlus PPD = {ppd:C}";
-        finalDescription += $"\rTOTAL = {amount:C}";
-        finalDescription += $"\rTotal (+GST) = {amount * (1 + gstRate):C}";
-
-        return Json(finalDescription);
-    }
-
     public async Task<IActionResult> PpdExclusiveAmount(int clientId, decimal amount)
     {
         var ppd = await jobRepository.PpdExclusiveAmount(clientId, amount);
         return Json(ppd);
-    }
-
-    public async Task<IActionResult> TruckItemsSummary(int jobId, int truckWeightLimit)
-    {
-        var summary = await jobRepository.TruckJobItemsAsync(jobId, truckWeightLimit);
-        return Json(summary);
-    }
-
-    public async Task<IActionResult> UpdateJobType(int jobId, int jobType, string despatcherName)
-    {
-        await jobRepository.UpdateJobTypeAsync(jobId, jobType, despatcherName);
-        return Ok();
-    }
-
-    public async Task<IActionResult> UpdateBulkPickupAddress(
-        int bulkJobId,
-        string fromSuburb,
-        int fromPostCode,
-        string address,
-        decimal pickupLat,
-        decimal pickupLng,
-        string despatcherName
-    )
-    {
-        await jobRepository.UpdateBulkPickupAddressAsync(
-            bulkJobId,
-            fromSuburb,
-            fromPostCode,
-            address,
-            pickupLat,
-            pickupLng,
-            despatcherName
-        );
-        return Ok();
     }
 
     [HttpPost]
@@ -1994,12 +1638,6 @@ public class JobController(
             despatcherName,
             staffId
         );
-        return Ok();
-    }
-
-    public async Task<IActionResult> ReleaseBulkJob(string jobNumber, DateTime bookDate)
-    {
-        await jobRepository.ReleaseBulkJobAsync(jobNumber, bookDate);
         return Ok();
     }
 
@@ -2300,7 +1938,7 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> DownloadFile(int jobId, string key)
+    public async Task<IActionResult> DownloadFile(string key)
     {
         var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
         try
@@ -2325,10 +1963,8 @@ public class JobController(
                     originalFileName
                 );
             }
-            else
-            {
-                return NotFound($"File {key} not found.");
-            }
+
+            return NotFound($"File {key} not found.");
         }
         catch (AmazonS3Exception ex)
         {
@@ -2338,7 +1974,7 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> DeleteFile(int jobId, string key)
+    public async Task<IActionResult> DeleteFile(string key)
     {
         var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
 
@@ -2413,53 +2049,7 @@ public class JobController(
             );
         }
     }
-
-    [HttpPost]
-    public async Task<IActionResult> UpdateConnote(int jobId, string conNote)
-    {
-        Log.Information(
-            "Request received to update connote for job {JobId} with value {NewConnote}",
-            jobId,
-            conNote
-        );
-
-        if (jobId <= 0)
-        {
-            Log.Warning("Invalid jobId received: {JobId}", jobId);
-            return BadRequest(new { message = "Invalid job ID" });
-        }
-
-        if (string.IsNullOrWhiteSpace(conNote))
-        {
-            Log.Warning("Empty connote value received for job {JobId}", jobId);
-            return BadRequest(new { message = "Connote value cannot be empty" });
-        }
-
-        try
-        {
-            await jobRepository.UpdateJobConnoteAsync(jobId, conNote);
-            Log.Information("Successfully updated connote for job {JobId}", jobId);
-            return Ok(new { message = "Connote updated successfully" });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            Log.Error(ex, "Job not found for ID {JobId}", jobId);
-            return NotFound(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            Log.Error(
-                ex,
-                "Error updating connote for job {JobId}. Error: {ErrorMessage}",
-                jobId,
-                ex.Message
-            );
-            return StatusCode(
-                500,
-                new { message = "An unexpected error occurred while updating the connote" }
-            );
-        }
-    }
+    
 
     [HttpPost]
     public async Task<IActionResult> UpdateJobPackages([FromBody] UpdateJobPackagesRequest request)
@@ -2479,17 +2069,6 @@ public class JobController(
             );
             return StatusCode(500, new { message = ex.Message });
         }
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> GetJobTypes()
-    {
-        var types = await jobRepository.GetAllAsync<TucJobType>();
-        var formattedList = types
-            .Select(t => new Suggestion { Id = t.UcjtId, Text = t.UcjtName })
-            .ToList();
-
-        return Json(formattedList);
     }
 
     [HttpGet]

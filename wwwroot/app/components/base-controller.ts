@@ -109,6 +109,21 @@ class BaseController implements angular.IController {
         this.registerTimeout(() => this.$scopeService?.$apply());
     }
 
+    protected registerInterval(
+        fn: (...args: any[]) => any,
+        delay: number,
+        count?: number,
+        invokeApply: boolean = true
+    ): angular.IPromise<any> {
+        if (!this.$intervalService) {
+            throw new Error('$interval service not initialized. Call initServices first.');
+        }
+
+        const intervalPromise = this.$intervalService(fn, delay, count, invokeApply);
+        this.intervals.push(intervalPromise);
+        return intervalPromise;
+    }
+
     $onDestroy(): void {
         if (this.$timeoutService) {
             Object.values(this.debounceTimeouts).forEach(timeout => {

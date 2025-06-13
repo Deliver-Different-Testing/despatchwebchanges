@@ -14,8 +14,8 @@ public static class CountryExtensions
     {
         var fieldInfo = country.GetType().GetField(country.ToString());
         var descriptionAttributes =
-            (DescriptionAttribute[])fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false);
+            (DescriptionAttribute[])fieldInfo?.GetCustomAttributes(typeof(DescriptionAttribute), false);
 
-        return descriptionAttributes.Length > 0 ? descriptionAttributes[0].Description : country.ToString();
+        return descriptionAttributes?.Length > 0 ? descriptionAttributes[0].Description : country.ToString();
     }
 }

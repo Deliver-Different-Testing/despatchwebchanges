@@ -45,6 +45,8 @@ import TruckCourierStatusDialogService
 import {isNotFlightJob} from "../../functions/isNotFlightJob";
 import JobAddStopService from "../../services/job-add-stop.service";
 import getJobTableRowClass from "../../functions/getJobTableRowClass";
+import DispatchBoxes from "./enums/DispatchBoxes";
+import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 
 class HomeController extends BaseController {
     static $inject = [
@@ -69,6 +71,7 @@ class HomeController extends BaseController {
         'navigationService',
         'truckCourierStatusDialogService',
         'jobAddStopService',
+        'messagingDialogService',
         '$scope',
         '$timeout',
         '$interval',
@@ -79,6 +82,7 @@ class HomeController extends BaseController {
         driverLocations: "#driverLocations .listActive"
     } as const;
 
+    showMessageView: boolean = false;
     isLoadingData: boolean = false;
     showDriverLocationsNoData: boolean = false;
     showDriverLocationsData: boolean = false;
@@ -178,6 +182,7 @@ class HomeController extends BaseController {
         private navigationService: NavigationService,
         private truckCourierStatusDialogService: TruckCourierStatusDialogService,
         private jobAddStopService: JobAddStopService,
+        private messagingDialogService: MessagingDialogService,
         $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
@@ -312,42 +317,43 @@ class HomeController extends BaseController {
         this.supports = [];
 
         this.boxes = {
-            jobsList: {
+            [DispatchBoxes.JobsList]: {
                 title: "Jobs List",
                 icon: "list_alt",
                 templateUrl: "app/components/home/partials/jobList.html",
                 showSearch: 1,
                 showRefresh: 1,
-            }, jobDetail: {
+            }, [DispatchBoxes.JobDetail]: {
                 title: "Detail",
                 icon: "assignment",
                 templateUrl: "app/components/home/partials/jobDetail.html",
                 showSearch: 0,
                 showRefresh: 0,
                 showDetailButtons: 1,
-            }, currentWork: {
-                title: "Current Work",
-                icon: "local_shipping",
-                templateUrl: "app/components/home/partials/currentWork.html",
-                showSearch: 1,
-                showRefresh: 0,
-            }, supports: {
+            }, [DispatchBoxes.Supports]: {
                 title: "Tasks",
                 icon: "support",
                 templateUrl: "app/components/home/partials/supports.html",
                 showSearch: 0,
                 showRefresh: 0,
-            }, map: {
+            }, [DispatchBoxes.Map]: {
                 title: "Map",
                 icon: "pin_drop",
                 templateUrl: "app/components/home/partials/map.html",
                 showSearch: 0,
                 showRefresh: 1,
-            }, driverLocations: {
+            }, [DispatchBoxes.DriverLocations]: {
                 title: "Driver Locations",
                 icon: "person_pin_circle",
                 templateUrl: "app/components/home/partials/driverLocations.html",
                 showSearch: 0,
+                showRefresh: 0,
+            },
+            [DispatchBoxes.CurrentWork]: {
+                title: "Current Work",
+                icon: "local_shipping",
+                templateUrl: "app/components/home/partials/currentWork.html",
+                showSearch: 1,
                 showRefresh: 0,
             },
         };
@@ -475,21 +481,31 @@ class HomeController extends BaseController {
                     {
                         id: "col1",
                         width: "65%",
-                        boxes: [{name: "jobsList", height: "45%"}, {name: "jobDetail", height: "65%"}],
+                        boxes: [{name: DispatchBoxes.JobsList, height: "45%"}, {
+                            name: DispatchBoxes.JobDetail,
+                            height: "65%"
+                        }],
                     },
                     {
                         id: "col2",
                         width: "17.5%",
-                        boxes: [{name: "currentWork", height: "50%"}, {name: "supports", height: "50%"}],
+                        boxes: [
+                            {name: DispatchBoxes.CurrentWork, height: "50%"},
+                            {name: DispatchBoxes.Supports, height: "50%"}
+                        ],
                     },
                     {
                         id: "col3",
                         width: "17.5%",
-                        boxes: [{name: "driverLocations", height: "50%"}, {name: "map", height: "50%"}],
+                        boxes: [{name: DispatchBoxes.DriverLocations, height: "50%"}, {
+                            name: DispatchBoxes.Map,
+                            height: "50%"
+                        }],
                     }
                 ],
             },
         };
+
 
         // Load saved layouts or use default
         if (Modernizr.localstorage) {
@@ -868,11 +884,11 @@ class HomeController extends BaseController {
 
     async handleDispatchSelection(selectedCourier: Suggestion, model: Suggestion, label: string, $event: MouseEvent, job: IDispatchJob) {
         console.log("DISPATCH CALLED FROM:", new Error().stack);
-        console.log("Typeahead params:", { selectedCourier, model, label });
+        console.log("Typeahead params:", {selectedCourier, model, label});
 
         // Prevent duplicate dispatch attempts
-        if($event === undefined) return;
-       // if (job.courierData || job.assignedAgent || job.assignedFlight) return;
+        if ($event === undefined) return;
+        // if (job.courierData || job.assignedAgent || job.assignedFlight) return;
         if (!selectedCourier || !selectedCourier.id) return;
 
         try {
@@ -1122,6 +1138,7 @@ class HomeController extends BaseController {
     jobClass(job: IDispatchJob): string {
         return getJobTableRowClass(job, this.currentJob);
     }
+
     async dispatchJobs(courierId: number) {
         if (this.dispatchState.processing) {
             console.warn("Dispatch already in progress");
@@ -1720,100 +1737,100 @@ class HomeController extends BaseController {
 
         this.markJobReadStatus(job.id, true);
 
-            // Refresh tasks
-            await this.loadSupports();
+        // Refresh tasks
+        await this.loadSupports();
 
 
-            this.selectedJobs = [];
-            this.currentSupport = null;
+        this.selectedJobs = [];
+        this.currentSupport = null;
 
-            // Create a new reference to trigger change detection
-            this.currentJob = angular.copy(job);
-            this.currentJobId = job.id;
+        // Create a new reference to trigger change detection
+        this.currentJob = angular.copy(job);
+        this.currentJobId = job.id;
 
-            await this.checkForAttachments(job.id);
+        await this.checkForAttachments(job.id);
 
-            if (job.rootParentId) {
-                try {
-                    if (this.currentJob?.rootParentId && this.currentJob?.clientId) {
-                        this.currentJob.relatedJobs = await this.DispatchData.getRelatedJobs(this.currentJob.rootParentId, this.currentJob.clientId);
-                    }
-                } catch (error: any) {
-                    console.error("Error getting related jobs:", error);
-                }
-            }
-
-            // Set the currentSelection to job-specific information
-            this.currentSelection = ` for Job ${job.jobNo}`;
-
+        if (job.rootParentId) {
             try {
-                if (!job.courier && !job.assignedCourier) {
-                    // Scenario 2: Job has no courier assigned - show only this job
-                    console.log("Selected job has no courier - showing only this job on map");
-                    this.mapJobList = [job];
-                    await this.handleUndispatchedJob(job);
-                } else {
-                    // Scenario 3: Job has a courier assigned - show this courier's jobs
-                    console.log("Selected job has courier assigned - loading courier's jobs");
-                    this.potentialCouriers = false;
-
-                    if (job.courierData && job.courierData.courierId) {
-                        // Set the current courier context first
-                        this.currentCourier = {
-                            courierId: job.courierData.courierId,
-                            courier: job.courierData.courierName || job.courier || job.assignedCourier || 'Unknown Courier'
-                        };
-
-                        this.currentWorkSelection = ` for Courier ${this.currentCourier.courier}`;
-
-                        // Get all jobs for this courier
-                        await this.getCurrentJobs(job.courierData.courierId);
-
-                        // Make sure the current job is in the list if not already
-                        const jobInList = this.mapJobList.some(j => j.id === job.id);
-                        if (!jobInList) {
-                            this.mapJobList = [...this.mapJobList, job];
-                        }
-
-                        try {
-                            this.truckCourierStatus = await this.DispatchData.truckCourierStatus(job.courierData.courierId);
-                        } catch (error: any) {
-                            console.warn("Error fetching truck courier status:", error);
-                        }
-
-                        // Set map bounds to include pickup, delivery and courier positions if available
-                        if (job.pickupAddress?.latitude != null && job.pickupAddress?.longitude != null &&
-                            job.deliveryAddress?.latitude != null && job.deliveryAddress?.longitude != null &&
-                            this.isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude) &&
-                            this.isValidCoordinates(job.deliveryAddress.latitude, job.deliveryAddress.longitude)) {
-
-                            if (this.map) {
-                                // Create bounds that include pickup and delivery points
-                                const bounds = new this.$window.google.maps.LatLngBounds();
-                                bounds.extend(new this.$window.google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
-                                bounds.extend(new this.$window.google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude));
-
-                                // If courier position is available, include it
-                                if (job.courierData.latitude != null && job.courierData.longitude != null &&
-                                    this.isValidCoordinates(job.courierData.latitude, job.courierData.longitude)) {
-                                    bounds.extend(new this.$window.google.maps.LatLng(job.courierData.latitude, job.courierData.longitude));
-                                }
-                            }
-                        }
-                    } else {
-                        // Fallback if no courier data available
-                        console.warn("Job has courier assigned but missing courierData");
-                        this.mapJobList = [job];
-                    }
+                if (this.currentJob?.rootParentId && this.currentJob?.clientId) {
+                    this.currentJob.relatedJobs = await this.DispatchData.getRelatedJobs(this.currentJob.rootParentId, this.currentJob.clientId);
                 }
             } catch (error: any) {
-                console.error("Error in selectJob:", error);
-                // Fallback to showing just the current job
-                this.mapJobList = [job];
+                console.error("Error getting related jobs:", error);
             }
+        }
 
-            // Only focus the dispatch field for the selected job
-            this.focusDispatchField(job.id);
+        // Set the currentSelection to job-specific information
+        this.currentSelection = ` for Job ${job.jobNo}`;
+
+        try {
+            if (!job.courier && !job.assignedCourier) {
+                // Scenario 2: Job has no courier assigned - show only this job
+                console.log("Selected job has no courier - showing only this job on map");
+                this.mapJobList = [job];
+                await this.handleUndispatchedJob(job);
+            } else {
+                // Scenario 3: Job has a courier assigned - show this courier's jobs
+                console.log("Selected job has courier assigned - loading courier's jobs");
+                this.potentialCouriers = false;
+
+                if (job.courierData && job.courierData.courierId) {
+                    // Set the current courier context first
+                    this.currentCourier = {
+                        courierId: job.courierData.courierId,
+                        courier: job.courierData.courierName || job.courier || job.assignedCourier || 'Unknown Courier'
+                    };
+
+                    this.currentWorkSelection = ` for Courier ${this.currentCourier.courier}`;
+
+                    // Get all jobs for this courier
+                    await this.getCurrentJobs(job.courierData.courierId);
+
+                    // Make sure the current job is in the list if not already
+                    const jobInList = this.mapJobList.some(j => j.id === job.id);
+                    if (!jobInList) {
+                        this.mapJobList = [...this.mapJobList, job];
+                    }
+
+                    try {
+                        this.truckCourierStatus = await this.DispatchData.truckCourierStatus(job.courierData.courierId);
+                    } catch (error: any) {
+                        console.warn("Error fetching truck courier status:", error);
+                    }
+
+                    // Set map bounds to include pickup, delivery and courier positions if available
+                    if (job.pickupAddress?.latitude != null && job.pickupAddress?.longitude != null &&
+                        job.deliveryAddress?.latitude != null && job.deliveryAddress?.longitude != null &&
+                        this.isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude) &&
+                        this.isValidCoordinates(job.deliveryAddress.latitude, job.deliveryAddress.longitude)) {
+
+                        if (this.map) {
+                            // Create bounds that include pickup and delivery points
+                            const bounds = new this.$window.google.maps.LatLngBounds();
+                            bounds.extend(new this.$window.google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
+                            bounds.extend(new this.$window.google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude));
+
+                            // If courier position is available, include it
+                            if (job.courierData.latitude != null && job.courierData.longitude != null &&
+                                this.isValidCoordinates(job.courierData.latitude, job.courierData.longitude)) {
+                                bounds.extend(new this.$window.google.maps.LatLng(job.courierData.latitude, job.courierData.longitude));
+                            }
+                        }
+                    }
+                } else {
+                    // Fallback if no courier data available
+                    console.warn("Job has courier assigned but missing courierData");
+                    this.mapJobList = [job];
+                }
+            }
+        } catch (error: any) {
+            console.error("Error in selectJob:", error);
+            // Fallback to showing just the current job
+            this.mapJobList = [job];
+        }
+
+        // Only focus the dispatch field for the selected job
+        this.focusDispatchField(job.id);
 
         this.applyScope();
     }
@@ -1876,19 +1893,6 @@ class HomeController extends BaseController {
         } catch (error) {
             console.error('Error selecting job:', error);
         }
-    }
-
-    async createMenuItem(text: string, action: any) {
-        return {
-            text, click: async ($itemScope: any, $event: MouseEvent) => {
-                try {
-                    await action($itemScope, $event);
-                    console.log(`${text} completed successfully`);
-                } catch (error: any) {
-                    console.log(`Error in ${text}:`, error);
-                }
-            }
-        };
     }
 
     async setTruckMode(mode: string) {
@@ -2632,6 +2636,10 @@ class HomeController extends BaseController {
         } finally {
             setLoadingState(false);
         }
+    }
+    
+    async openMessagingDialog($event: MouseEvent) {
+        await this.messagingDialogService.openMessagingDialog($event);
     }
 }
 

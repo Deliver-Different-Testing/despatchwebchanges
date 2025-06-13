@@ -1,19 +1,23 @@
 ﻿using System;
+using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using Microsoft.EntityFrameworkCore;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Repositories;
 
-public class BaseRepository(IDbContextFactory<DespatchContext> contextFactory):IDisposable
+public class BaseRepository(IDbContextFactory<DespatchContext> contextFactory) : IDisposable
 {
     private DespatchContext? _context;
-    protected DespatchContext Context
-    {
-        get { return _context ??= contextFactory.CreateDbContext(); }
-    }
-    public void Dispose()
-    {
-        _context?.Dispose();
-    }
+
+    protected DespatchContext Context => _context ??= contextFactory.CreateDbContext();
+
+    public void Dispose() => _context?.Dispose();
+
+    public async Task AddEntityAsync<T>(T entity)
+        where T : class => await Context.Set<T>().AddAsync(entity);
+
+    public async Task<T> GetByIdAsync<T>(int id) where T : class => await Context.Set<T>().FindAsync(id);
+
+    public async Task SaveChangesAsync() => await Context.SaveChangesAsync();
 }
