@@ -1,4 +1,5 @@
 using System;
+using DespatchWeb.Enums;
 
 namespace DespatchWeb.Models.MessageModels;
 
@@ -11,4 +12,5 @@ public class RecentMessageViewModel
     public int UnreadCount { get; set; }
     public string LastMessage { get; set; }
     public DateTime LastMessageTime {get;set;}
+    public MessageDirection MessageDirection { get; set; }
 }

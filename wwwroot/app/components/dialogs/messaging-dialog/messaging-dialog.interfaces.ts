@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import MessageDeliveryType from "../../../enums/message-delivery-type.enum";
+import {MessageDirection} from "./messaging-dailog.enums";
 
 export interface ChatMessageViewModel {
     messageId: number;
@@ -10,6 +11,7 @@ export interface ChatMessageViewModel {
     read: boolean;
     readTime?: dayjs.Dayjs;
     sent: boolean;
+    messageDirection: MessageDirection;
 }
 
 export interface RecentMessageViewModel {
@@ -20,6 +22,7 @@ export interface RecentMessageViewModel {
     unreadCount: number;
     lastMessage: string;
     lastMessageTime: dayjs.Dayjs;
+    messageDirection: MessageDirection;
 }
 
 export interface SendMessageRequest {

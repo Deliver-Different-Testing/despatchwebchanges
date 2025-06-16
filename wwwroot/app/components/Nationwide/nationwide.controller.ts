@@ -36,6 +36,7 @@ import FlightAgentConfirmationDialogService
 import AgentInfoDialogService from "../dialogs/agent-info-dialog/agent-info-dialog.service";
 import dayjs from "dayjs";
 import getJobTableRowClass from "../../functions/getJobTableRowClass";
+import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -62,6 +63,7 @@ class NationwideControl extends BaseController {
         '$stateParams',
         'flightAgentConfirmationDialogService',
         'agentInfoDialogService',
+        'messagingDialogService',
     ];
 
     public readonly nationwidePageId: number = AppPages.Domestic;
@@ -186,6 +188,7 @@ class NationwideControl extends BaseController {
         private $stateParams: angular.ui.IStateParamsService,
         private flightAgentConfirmationDialogService: FlightAgentConfirmationDialogService,
         private agentInfoDialogService: AgentInfoDialogService,
+        private messagingDialogService: MessagingDialogService,
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
@@ -2065,6 +2068,10 @@ class NationwideControl extends BaseController {
         } else {
             console.warn('No current job to display on map');
         }
+    }
+
+    async openMessagingDialog($event: MouseEvent) {
+        await this.messagingDialogService.openMessagingDialog($event);
     }
 }
 

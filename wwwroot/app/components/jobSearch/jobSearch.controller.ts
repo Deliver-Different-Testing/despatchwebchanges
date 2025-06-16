@@ -13,6 +13,7 @@ import {JobProperty} from "../../enums/job-property.enum";
 import NavigationService from "../../services/navigation.service";
 import greetUser from "../../functions/greetUser";
 import {AppPages} from "../../enums/app-pages.enum";
+import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 
 class JobSearchController extends BaseController {
 
@@ -32,6 +33,7 @@ class JobSearchController extends BaseController {
         'APP_CONFIG',
         'jobContextMenuService',
         "navigationService",
+        "messagingDialogService",
     ];
 
     readonly isUsCustomer: boolean;
@@ -118,7 +120,8 @@ class JobSearchController extends BaseController {
         private $mdSidenav: angular.material.ISidenavService,
         appConfig: AppConfig,
         private jobContextMenuService: JobContextMenuService,
-        private navigationService: NavigationService
+        private navigationService: NavigationService,
+        private messagingDialogService: MessagingDialogService,
     ) {
         super();
 
@@ -1198,6 +1201,10 @@ class JobSearchController extends BaseController {
 
     async openHubUrl() {
         await this.navigationService.openHubUrl();
+    }
+    
+    async openMessagingDialog($event: MouseEvent) {
+        await this.messagingDialogService.openMessagingDialog($event);
     }
 }
 

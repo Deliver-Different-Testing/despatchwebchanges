@@ -42,6 +42,14 @@ class MessagingService implements angular.IServiceProvider {
     async sendMessage(data: SendMessageRequest) {
         await this.$http.post('messages/SendMessage', data);
     }
+    
+    async markAsRead(courierId: number) {
+        await this.$http.get('messages/MarkAsRead', {
+            params: {
+                courierId,
+            }
+        })
+    }
 }
 
 export default MessagingService;

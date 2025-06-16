@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using DespatchWeb.Enums;
 
@@ -6,8 +5,8 @@ namespace DespatchWeb.Constants;
 
 public static class JobStatusGroups
 {
-    public static readonly List<int> Active = new()
-    {
+    public static readonly List<int> Active =
+    [
         (int)JobStatus.Dispatched,
         (int)JobStatus.New,
         (int)JobStatus.Accepted,
@@ -25,28 +24,11 @@ public static class JobStatusGroups
         (int)JobStatus.ReadyForPacking,
         (int)JobStatus.ReadyToPickup,
         (int)JobStatus.OutForDelivery
-    };
+    ];
 
-    public static readonly List<int> Completed = new()
-    {
+    public static readonly List<int> Completed =
+    [
         (int)JobStatus.Completed,
         (int)JobStatus.Undeliverable
-    };
-
-    // Helper method to check if status is active
-    public static bool IsActive(int? status) => status.HasValue && Active.Contains(status.Value);
-
-    // Helper method to check if status is completed
-    public static bool IsCompleted(int? status) => status.HasValue && Completed.Contains(status.Value);
-
-    // Helper method to get statuses for a specific group
-    public static List<int> GetStatusesForGroup(JobStatusGroup group)
-    {
-        return group switch
-        {
-            JobStatusGroup.Active => Active,
-            JobStatusGroup.Completed => Completed,
-            _ => throw new ArgumentException($"Unsupported status group: {group}")
-        };
-    }
+    ];
 }
