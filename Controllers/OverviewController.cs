@@ -136,24 +136,4 @@ public class OverviewController(IJobRepository jobRepository, ICourierRepository
             );
         }
     }
-
-    [HttpGet]
-    public async Task<IActionResult> GetDriverStats(int courierId)
-    {
-        try
-        {
-            Log.Information("Getting driver stats for courier ID: {CourierId}", courierId);
-            var driverStats = await jobRepository.GetDriverStatsAsync(courierId);
-            Log.Information(
-                "Successfully retrieved driver stats for courier ID: {CourierId}",
-                courierId
-            );
-            return Json(driverStats);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error retrieving driver stats for courier ID: {CourierId}", courierId);
-            return StatusCode(500, "An error occurred while retrieving driver statistics");
-        }
-    }
 }

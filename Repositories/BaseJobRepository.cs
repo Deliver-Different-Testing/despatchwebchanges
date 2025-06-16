@@ -1521,17 +1521,14 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             activeNote.CreatedDate = currentTime;
             activeNote.CreatedBy = staffId;
 
-            var effectiveJobBookingId = 0;
-            var effectiveJobId = 0;
-
             if (isPrebook)
             {
-                effectiveJobBookingId = await GetEffectiveJobBookingId(viewModel.JobBookingId.Value);
+                var effectiveJobBookingId = await GetEffectiveJobBookingId(viewModel.JobBookingId.Value);
                 activeNote.JobBookingId = effectiveJobBookingId;
             }
             else
             {
-                effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
+                var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
                 activeNote.JobId = effectiveJobId;
             }
 

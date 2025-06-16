@@ -14,7 +14,7 @@ public class CountryService(IHttpContextAccessor httpContextAccessor) : ICountry
         return countryCode?.ToUpper().Equals(usa) ?? false;
     }
 
-    public string GetCountryCode() =>
+    private string GetCountryCode() =>
         httpContextAccessor.HttpContext?.User.Claims
             .FirstOrDefault(x => x.Type == "CountryCode")?.Value;
 }

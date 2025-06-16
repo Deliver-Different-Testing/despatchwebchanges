@@ -10,4 +10,5 @@ public interface IMessageRepository
     Task<List<RecentMessageViewModel>> GetRecentListAsync(int staffId);
     Task<List<ChatMessageViewModel>> GetMessagesByCourierIdAsync(int courierId, int staffId);
     Task SendMessageToCouriersAsync(SendMessageRequest request);
+    Task MarkMessagesAsReadAsync(int courierId);
 }

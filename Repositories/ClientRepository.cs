@@ -61,19 +61,6 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
             .ToListAsync();
     }
 
-    public async Task<DispatcherViewModel> ValidateDispatcherLoginAsync(string name)
-    {
-        var result = await Context.Procedures.INT_stpIsValidLogin_DespatchAsync(name);
-        return result
-            .Select(d => new DispatcherViewModel
-            {
-                FirstName = d.FirstName,
-                LastName = d.LastName,
-                StaffID = d.StaffID
-            })
-            .FirstOrDefault();
-    }
-
     public async Task<List<ClientActiveViewModel>> ActiveClientsAsync(string searchTerm)
     {
         var result = await Context.Procedures.DESWEB_qryClientsActiveAsync(searchTerm);

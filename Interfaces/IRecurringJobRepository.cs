@@ -26,5 +26,4 @@ public interface IRecurringJobRepository
 
     Task UpdateTucJobRecurring(int jobId, JobProperty property, string value);
     Task<List<TucNoteViewModel>> GetRecurringNotesByJobIdAsync(int jobId);
-    void Dispose();
 }

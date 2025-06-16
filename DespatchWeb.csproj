@@ -316,6 +316,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dailog.enums.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dialog.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dialog.service.ts" />

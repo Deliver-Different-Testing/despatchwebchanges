@@ -1331,15 +1331,9 @@ public class JobController(
 
     [HttpPost]
     public async Task<IActionResult> AddPriceSuburbChangeEvent(
-        string jobNo,
-        int clientId,
-        string contact,
         int staffId,
-        int? courierId,
         int jobId,
-        int jobType,
-        string despatcherName
-    )
+        string despatcherName)
     {
         await taskRepository.AddEventAsync(
             jobId,
@@ -1409,16 +1403,12 @@ public class JobController(
 
         var response = await httpClient.PostAsync("activity", content);
 
-        if (response.StatusCode != HttpStatusCode.OK)
-        {
-            var responseContent = await response.Content.ReadAsStringAsync();
-            var e = new ApplicationException(
-                $"Exsalerate Activity Failed {responseContent} {Environment.NewLine} CurrentBody= {body}"
-            );
-            throw e;
-        }
-
-        return Ok();
+        if (response.StatusCode == HttpStatusCode.OK) return Ok();
+        var responseContent = await response.Content.ReadAsStringAsync();
+        var e = new ApplicationException(
+            $"Exsalerate Activity Failed {responseContent} {Environment.NewLine} CurrentBody= {body}"
+        );
+        throw e;
     }
 
     [HttpGet]
@@ -1946,25 +1936,22 @@ public class JobController(
             var request = new GetObjectRequest { BucketName = bucketName, Key = key };
 
             using var response = await s3Client.GetObjectAsync(request);
-            if (response.HttpStatusCode == HttpStatusCode.OK)
-            {
-                var originalFileName = response.Metadata["FileName"];
-                var contentType = response.Headers.ContentType;
+            if (response.HttpStatusCode != HttpStatusCode.OK) return NotFound($"File {key} not found.");
+            var originalFileName = response.Metadata["FileName"];
+            var contentType = response.Headers.ContentType;
 
-                // Read the stream into a memory stream to get the bytes
-                using var ms = new MemoryStream();
-                await response.ResponseStream.CopyToAsync(ms);
-                var fileBytes = ms.ToArray();
+            // Read the stream into a memory stream to get the bytes
+            using var ms = new MemoryStream();
+            await response.ResponseStream.CopyToAsync(ms);
+            var fileBytes = ms.ToArray();
 
-                // Return file with proper headers
-                return File(
-                    fileBytes,
-                    contentType,
-                    originalFileName
-                );
-            }
+            // Return file with proper headers
+            return File(
+                fileBytes,
+                contentType,
+                originalFileName
+            );
 
-            return NotFound($"File {key} not found.");
         }
         catch (AmazonS3Exception ex)
         {

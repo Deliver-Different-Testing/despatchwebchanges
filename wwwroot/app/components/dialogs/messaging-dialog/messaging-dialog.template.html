@@ -1,87 +1,150 @@
-<md-dialog aria-label="Messages" class="messaging-dialog">
+<md-dialog aria-label="Messages" class="messaging-dialog" role="dialog">
     <md-toolbar>
         <div class="md-toolbar-tools">
-            <md-button class="md-icon-button" ng-if="ctrl.showNewChatView" ng-click="ctrl.backToMessaging()">
-                <md-icon md-font-set="material-symbols-outlined">arrow_back</md-icon>
+            <md-button class="md-icon-button" ng-if="ctrl.showNewChatView" ng-click="ctrl.backToMessaging()"
+                       aria-label="Go back to messages">
+                <md-icon md-font-set="material-symbols-outlined" aria-hidden="true">arrow_back</md-icon>
             </md-button>
-            <md-icon md-font-set="material-symbols-outlined" class="header-icon" ng-if="!ctrl.showNewChatView">chat</md-icon>
+            <md-icon md-font-set="material-symbols-outlined" class="header-icon" ng-if="!ctrl.showNewChatView"
+                     aria-hidden="true">chat
+            </md-icon>
             <h2>{{ctrl.showNewChatView ? 'New Conversation' : 'Messages'}}</h2>
             <span flex></span>
-            <md-button class="md-icon-button" ng-click="ctrl.cancel()">
-                <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+            <!-- Online status indicator -->
+            <div class="connection-status" ng-if="!ctrl.showNewChatView" layout="row" layout-align="center center">
+                <div class="status-dot online"></div>
+                <span class="status-text">Online</span>
+            </div>
+            <md-button class="md-icon-button" ng-click="ctrl.cancel()" aria-label="Close dialog">
+                <md-icon md-font-set="material-symbols-outlined" aria-hidden="true">close</md-icon>
             </md-button>
         </div>
     </md-toolbar>
 
     <md-dialog-content class="messaging-content">
         <!-- NEW CHAT VIEW -->
-        <div class="new-chat-view" ng-if="ctrl.showNewChatView">
+        <div class="new-chat-view" ng-if="ctrl.showNewChatView" role="search">
             <!-- Search -->
             <div class="search-section">
                 <md-input-container md-no-float>
                     <md-icon md-font-set="material-symbols-outlined" class="search-icon">search</md-icon>
                     <input ng-model="ctrl.courierSearchTerm"
-                           placeholder="Search couriers..."
+                           placeholder="Search couriers by name or ID..."
                            ng-keyup="ctrl.onSearchKeyup($event)"
-                           ng-focus="ctrl.onSearchFocus()">
-                    <md-button class="md-icon-button clear-btn" ng-if="ctrl.courierSearchTerm" ng-click="ctrl.clearSearch()">
+                           ng-focus="ctrl.onSearchFocus()"
+                           aria-label="Search for couriers"
+                           autocomplete="off">
+                    <md-button class="md-icon-button clear-btn"
+                               ng-if="ctrl.courierSearchTerm"
+                               ng-click="ctrl.clearSearch()"
+                               aria-label="Clear search">
                         <md-icon md-font-set="material-symbols-outlined">clear</md-icon>
                     </md-button>
                 </md-input-container>
+
+                <div class="search-tips" ng-if="!ctrl.courierSearchTerm">
+                    <small>💡 Tip: Use Enter to select first result, Escape to go back</small>
+                </div>
             </div>
 
             <!-- Loading -->
-            <div class="search-loading" ng-if="ctrl.isSearching" layout="row" layout-align="center center">
-                <md-progress-circular md-mode="indeterminate" md-diameter="24"></md-progress-circular>
-                <span>Searching...</span>
+            <div class="search-loading" ng-if="ctrl.isSearching" layout="row" layout-align="center center" role="status"
+                 aria-live="polite">
+                <md-progress-circular md-mode="indeterminate" md-diameter="24"
+                                      aria-hidden="true"></md-progress-circular>
+                <span>Searching couriers...</span>
             </div>
 
             <!-- Results -->
-            <div class="search-results">
+            <div class="search-results" role="region" aria-label="Search results">
                 <!-- Recent -->
                 <div class="results-section" ng-if="!ctrl.courierSearchTerm && ctrl.recentCouriers.length > 0">
-                    <h4>Recent</h4>
-                    <div class="courier-item" ng-repeat="courier in ctrl.recentCouriers"
+                    <h4>Recent Conversations</h4>
+                    <div class="courier-item"
+                         ng-repeat="courier in ctrl.recentCouriers track by courier.courierId"
                          ng-click="ctrl.startConversationWith(courier)"
-                         layout="row" layout-align="start center">
-                        <div class="avatar">{{courier.initials}}</div>
+                         layout="row" layout-align="start center"
+                         tabindex="0"
+                         role="button"
+                         aria-label="Start conversation with {{courier.courierName}}"
+                         ng-keydown="$event.keyCode === 13 && ctrl.startConversationWith(courier)">
+                        <div class="avatar" aria-hidden="true">{{courier.initials}}</div>
                         <div class="courier-info" flex>
                             <div class="courier-name">{{courier.courierName}}</div>
-                            <div class="courier-status">{{::ctrl.titleCase(courier.status)}}</div>
+                            <div class="courier-status" aria-label="Status: {{courier.status}}">
+                                <span class="status-indicator" ng-class="courier.status" aria-hidden="true"></span>
+                                {{ctrl.titleCase(courier.status)}}
+                            </div>
+                            <div class="last-message-preview" ng-if="courier.lastMessage">
+                                <span class="message-direction">{{ctrl.getLastMessageDirectionText(courier)}}</span>
+                                "{{courier.lastMessage | limitTo:50}}{{courier.lastMessage.length > 50 ? '...' : ''}}"
+                            </div>
                         </div>
-                        <md-icon md-font-set="material-symbols-outlined" class="action-icon">chat</md-icon>
+                        <md-icon md-font-set="material-symbols-outlined" class="action-icon" aria-hidden="true">chat
+                        </md-icon>
                     </div>
                 </div>
 
                 <!-- Search Results -->
                 <div class="results-section" ng-if="ctrl.courierSearchTerm && ctrl.courierSuggestions.length > 0">
-                    <h4>Search Results</h4>
-                    <div class="courier-item" ng-repeat="suggestion in ctrl.courierSuggestions"
+                    <h4>Search Results ({{ctrl.courierSuggestions.length}})</h4>
+                    <div class="courier-item"
+                         ng-repeat="suggestion in ctrl.courierSuggestions track by suggestion.id"
                          ng-click="ctrl.startConversationWith(suggestion)"
-                         layout="row" layout-align="start center">
-                        <div class="avatar">{{::ctrl.getInitials(suggestion.text)}}</div>
+                         layout="row" layout-align="start center"
+                         tabindex="0"
+                         role="button"
+                         aria-label="Start conversation with {{suggestion.text}}"
+                         ng-keydown="$event.keyCode === 13 && ctrl.startConversationWith(suggestion)">
+                        <div class="avatar" aria-hidden="true">{{ctrl.getInitials(suggestion.text)}}</div>
                         <div class="courier-info" flex>
-                            <div class="courier-name" ng-bind-html="ctrl.highlightSearchTerm(suggestion.text, ctrl.courierSearchTerm)"></div>
-                            <div class="courier-details">ID: {{suggestion.id}}</div>
+                            <div class="courier-name"
+                                 ng-bind-html="ctrl.highlightSearchTerm(suggestion.text, ctrl.courierSearchTerm)"></div>
+                            <div class="courier-details">Courier ID: {{suggestion.id}}</div>
+                            <div class="courier-status" ng-if="suggestion.status">
+                                <span class="status-indicator" ng-class="suggestion.status" aria-hidden="true"></span>
+                                {{ctrl.titleCase(suggestion.status || 'Unknown')}}
+                            </div>
                         </div>
-                        <md-icon md-font-set="material-symbols-outlined" class="action-icon">chat</md-icon>
+                        <md-icon md-font-set="material-symbols-outlined" class="action-icon" aria-hidden="true">chat
+                        </md-icon>
                     </div>
                 </div>
 
                 <!-- No Results -->
-                <div class="no-results" ng-if="ctrl.courierSearchTerm && !ctrl.isSearching && ctrl.courierSuggestions.length === 0"
-                     layout="column" layout-align="center center">
-                    <md-icon md-font-set="material-symbols-outlined" class="empty-icon">search_off</md-icon>
+                <div class="no-results"
+                     ng-if="ctrl.courierSearchTerm && !ctrl.isSearching && ctrl.courierSuggestions.length === 0"
+                     layout="column" layout-align="center center"
+                     role="status"
+                     aria-live="polite">
+                    <md-icon md-font-set="material-symbols-outlined" class="empty-icon" aria-hidden="true">search_off
+                    </md-icon>
                     <h4>No couriers found</h4>
-                    <p>Try a different search term</p>
+                    <p>No results for "{{ctrl.courierSearchTerm}}"</p>
+                    <p><small>Try searching by:</small></p>
+                    <ul class="search-suggestions">
+                        <li>Full name or partial name</li>
+                        <li>Courier ID number</li>
+                        <li>Different spelling variations</li>
+                    </ul>
                 </div>
 
                 <!-- Empty State -->
-                <div class="search-empty" ng-if="!ctrl.courierSearchTerm && ctrl.recentCouriers.length === 0"
+                <div class="search-empty"
+                     ng-if="!ctrl.courierSearchTerm && ctrl.recentCouriers.length === 0"
                      layout="column" layout-align="center center">
-                    <md-icon md-font-set="material-symbols-outlined" class="empty-icon">search</md-icon>
-                    <h4>Find a courier</h4>
-                    <p>Search by name or courier code</p>
+                    <md-icon md-font-set="material-symbols-outlined" class="empty-icon" aria-hidden="true">
+                        person_search
+                    </md-icon>
+                    <h4>Find a courier to message</h4>
+                    <p>Search by name or courier ID to start a conversation</p>
+                    <div class="quick-tips">
+                        <p><strong>Quick tips:</strong></p>
+                        <ul>
+                            <li>Start typing to see suggestions</li>
+                            <li>Use Enter to select the first result</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
@@ -89,11 +152,15 @@
         <!-- MAIN MESSAGING VIEW -->
         <div class="main-messaging-view" ng-if="!ctrl.showNewChatView">
             <!-- Error State -->
-            <div class="error-container" ng-if="ctrl.hasError()" layout="column" layout-align="center center">
-                <md-icon md-font-set="material-symbols-outlined" class="error-icon">error_outline</md-icon>
+            <div class="error-container" ng-if="ctrl.hasError()" layout="column" layout-align="center center"
+                 role="alert">
+                <md-icon md-font-set="material-symbols-outlined" class="error-icon" aria-hidden="true">error_outline
+                </md-icon>
                 <h3>Unable to load messages</h3>
                 <p>{{ctrl.getErrorMessage()}}</p>
-                <md-button class="md-raised md-primary" ng-click="ctrl.refreshCouriers()">
+                <md-button class="md-raised md-primary" ng-click="ctrl.refreshCouriers()"
+                           aria-label="Retry loading messages">
+                    <md-icon md-font-set="material-symbols-outlined" aria-hidden="true">refresh</md-icon>
                     Try Again
                 </md-button>
             </div>
@@ -101,151 +168,324 @@
             <!-- Main Content -->
             <div class="messaging-layout" ng-if="!ctrl.hasError()" layout="row">
                 <!-- Left Panel: Conversations -->
-                <div class="conversations-panel">
+                <div class="conversations-panel" role="navigation" aria-label="Conversations list">
                     <!-- Header with New Chat Button -->
                     <div class="panel-header" layout="row" layout-align="space-between center">
                         <div class="header-info" layout="row" layout-align="start center">
-                            <h3>Chats</h3>
-                            <div class="unread-total" ng-if="ctrl.getTotalUnreadCount() > 0">
+                            <h3>Conversations</h3>
+                            <div class="unread-total"
+                                 ng-if="ctrl.getTotalUnreadCount() > 0"
+                                 aria-label="{{ctrl.getTotalUnreadCount()}} unread messages">
                                 {{ctrl.getTotalUnreadCount()}}
                             </div>
                         </div>
                         <div class="header-actions" layout="row">
-                            <md-button class="md-icon-button" ng-click="ctrl.refreshCouriers()"
-                                       ng-disabled="ctrl.isLoading">
-                                <md-icon md-font-set="material-symbols-outlined" ng-class="{'spinning': ctrl.isLoading}">refresh</md-icon>
+                            <md-button class="md-icon-button"
+                                       ng-click="ctrl.refreshCouriers()"
+                                       ng-disabled="ctrl.isLoading"
+                                       aria-label="Refresh conversations">
+                                <md-icon md-font-set="material-symbols-outlined"
+                                         ng-class="{'spinning': ctrl.isLoading}"
+                                         aria-hidden="true">refresh
+                                </md-icon>
                             </md-button>
-                            <md-button class="md-icon-button md-primary" ng-click="ctrl.showNewChat()">
-                                <md-icon md-font-set="material-symbols-outlined">add</md-icon>
+                            <md-button class="md-icon-button md-primary"
+                                       ng-click="ctrl.showNewChat()"
+                                       aria-label="Start new conversation">
+                                <md-icon md-font-set="material-symbols-outlined" aria-hidden="true">add_comment
+                                </md-icon>
                             </md-button>
                         </div>
                     </div>
 
                     <!-- Loading -->
-                    <md-progress-linear md-mode="indeterminate" ng-show="ctrl.isLoading"></md-progress-linear>
+                    <md-progress-linear md-mode="indeterminate" ng-show="ctrl.isLoading"
+                                        aria-hidden="true"></md-progress-linear>
 
                     <!-- Conversations List -->
-                    <div class="conversations-list" ng-if="ctrl.couriers.length > 0">
+                    <div class="conversations-list" ng-if="ctrl.couriers.length > 0" role="list">
                         <div class="conversation-item"
                              ng-repeat="courier in ctrl.couriers track by courier.courierId"
                              ng-click="ctrl.selectCourier(courier)"
                              ng-class="{'active': ctrl.selectedCourier && ctrl.selectedCourier.courierId === courier.courierId}"
-                             layout="row" layout-align="start center">
+                             layout="row" layout-align="start center"
+                             tabindex="0"
+                             role="listitem button"
+                             aria-label="Conversation with {{courier.courierName}}, {{courier.unreadCount > 0 ? courier.unreadCount + ' unread messages' : 'no unread messages'}}"
+                             ng-keydown="$event.keyCode === 13 && ctrl.selectCourier(courier)">
 
                             <div class="avatar-container">
-                                <div class="avatar">{{courier.initials}}</div>
-                                <div class="status-indicator" ng-class="courier.status"></div>
+                                <div class="avatar" aria-hidden="true">{{courier.initials}}</div>
+                                <div class="status-indicator"
+                                     ng-class="courier.status"
+                                     aria-label="{{courier.status}}"
+                                     title="{{courier.status}}"></div>
                             </div>
 
                             <div class="conversation-info" flex>
                                 <div class="courier-name">{{courier.courierName}}</div>
-                                <div class="last-message" ng-if="courier.lastMessage">{{courier.lastMessage}}</div>
+                                <div class="last-message" ng-if="courier.lastMessage">
+                                    <span class="message-direction-prefix">{{ctrl.getLastMessageDirectionText(courier)}}</span>
+                                    <span class="message-text">{{courier.lastMessage | limitTo:60}}{{courier.lastMessage.length > 60 ? '...' : ''}}</span>
+                                </div>
                                 <div class="courier-status">{{courier.status}}</div>
                             </div>
 
                             <div class="conversation-meta" layout="column" layout-align="center end">
-                                <div class="time" ng-if="courier.lastMessageTime">
-                                    {{::ctrl.formatLastMessageTime(courier.lastMessageTime)}}
+                                <div class="time" ng-if="courier.lastMessageTime"
+                                     title="{{courier.lastMessageTime.format('MMMM D YYYY, h:mm:ss a')}}">
+                                    {{ctrl.formatLastMessageTime(courier.lastMessageTime)}} ({{::ctrl.timeZone | timezoneShort}})
                                 </div>
-                                <div class="unread-badge" ng-if="courier.unreadCount > 0">
-                                    {{courier.unreadCount}}
+                                <div class="unread-badge"
+                                     ng-if="courier.unreadCount > 0"
+                                     aria-label="{{courier.unreadCount}} unread messages">
+                                    {{courier.unreadCount > 99 ? '99+' : courier.unreadCount}}
+                                </div>
+                                <!-- Message direction indicator -->
+                                <div class="message-direction-indicator" ng-if="courier.lastMessage">
+                                    <md-icon md-font-set="material-symbols-outlined"
+                                             ng-class="{'sent-direction': courier.messageDirection === ctrl.MessageDirection.StaffToCourier, 
+                                                       'received-direction': courier.messageDirection === ctrl.MessageDirection.CourierToStaff}"
+                                             aria-hidden="true"
+                                             title="{{courier.messageDirection === ctrl.MessageDirection.StaffToCourier ? 'You sent' : 'They sent'}}">
+                                        {{courier.messageDirection === ctrl.MessageDirection.StaffToCourier ? 'send' : 'reply'}}
+                                    </md-icon>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Empty State -->
-                    <div class="empty-conversations" ng-if="!ctrl.isLoading && ctrl.couriers.length === 0"
+                    <div class="empty-conversations"
+                         ng-if="!ctrl.isLoading && ctrl.couriers.length === 0"
                          layout="column" layout-align="center center">
-                        <md-icon md-font-set="material-symbols-outlined" class="empty-icon">chat_bubble_outline</md-icon>
-                        <h4>No conversations</h4>
-                        <p>Start a new conversation</p>
+                        <md-icon md-font-set="material-symbols-outlined" class="empty-icon" aria-hidden="true">
+                            chat_bubble_outline
+                        </md-icon>
+                        <h4>No conversations yet</h4>
+                        <p>Start messaging couriers to see your conversations here</p>
                         <md-button class="md-raised md-primary" ng-click="ctrl.showNewChat()">
-                            <md-icon md-font-set="material-symbols-outlined">add</md-icon>
-                            <span>New Conversation</span>
+                            <md-icon md-font-set="material-symbols-outlined" aria-hidden="true">add_comment</md-icon>
+                            <span>Start Conversation</span>
                         </md-button>
                     </div>
                 </div>
 
                 <!-- Right Panel: Chat -->
-                <div class="chat-panel" flex>
+                <div class="chat-panel" flex role="main" aria-label="Chat area">
                     <!-- Chat Header -->
                     <div class="chat-header" ng-if="ctrl.selectedCourier" layout="row" layout-align="start center">
                         <div class="avatar-container">
-                            <div class="avatar small">{{ctrl.selectedCourier.initials}}</div>
-                            <div class="status-indicator" ng-class="ctrl.selectedCourier.status"></div>
+                            <div class="avatar small" aria-hidden="true">{{ctrl.selectedCourier.initials}}</div>
+                            <div class="status-indicator"
+                                 ng-class="ctrl.selectedCourier.status"
+                                 aria-label="{{ctrl.selectedCourier.status}}"
+                                 title="{{ctrl.selectedCourier.status}}"></div>
                         </div>
                         <div class="chat-info" flex>
                             <div class="courier-name">{{ctrl.selectedCourier.courierName}}</div>
                             <div class="courier-status">{{ctrl.selectedCourier.status}}</div>
+                            <div class="typing-indicator" ng-if="ctrl.isTyping">
+                                <span class="typing-dots">
+                                    <span></span><span></span><span></span>
+                                </span>
+                                <span class="typing-text">{{ctrl.selectedCourier.courierName}} is typing...</span>
+                            </div>
                         </div>
-                        <md-button class="md-icon-button" ng-click="ctrl.refreshMessages()"
-                                   ng-disabled="ctrl.isMessagesLoading">
-                            <md-icon md-font-set="material-symbols-outlined" ng-class="{'spinning': ctrl.isMessagesLoading}">refresh</md-icon>
-                        </md-button>
+                        <div class="chat-actions" layout="row">
+                            <md-button class="md-icon-button"
+                                       ng-click="ctrl.refreshMessages()"
+                                       ng-disabled="ctrl.isMessagesLoading"
+                                       aria-label="Refresh messages">
+                                <md-icon md-font-set="material-symbols-outlined"
+                                         ng-class="{'spinning': ctrl.isMessagesLoading}"
+                                         aria-hidden="true">refresh
+                                </md-icon>
+                            </md-button>
+                            <md-menu md-position-mode="target-right target">
+                                <md-button class="md-icon-button" ng-click="$mdMenu.open($event)"
+                                           aria-label="More options">
+                                    <md-icon md-font-set="material-symbols-outlined" aria-hidden="true">more_vert
+                                    </md-icon>
+                                </md-button>
+                                <md-menu-content width="3">
+                                    <md-menu-item>
+                                        <md-button ng-click="ctrl.clearChat()">
+                                            <md-icon md-font-set="material-symbols-outlined" aria-hidden="true">delete
+                                            </md-icon>
+                                            Clear Chat History
+                                        </md-button>
+                                    </md-menu-item>
+                                    <md-menu-item>
+                                        <md-button ng-click="ctrl.exportChat()">
+                                            <md-icon md-font-set="material-symbols-outlined" aria-hidden="true">
+                                                download
+                                            </md-icon>
+                                            Export Messages
+                                        </md-button>
+                                    </md-menu-item>
+                                </md-menu-content>
+                            </md-menu>
+                        </div>
                     </div>
 
                     <!-- Messages Area -->
-                    <div class="messages-area" ng-if="ctrl.selectedCourier">
-                        <md-progress-linear md-mode="indeterminate" ng-show="ctrl.isMessagesLoading"></md-progress-linear>
+                    <div class="messages-area" ng-if="ctrl.selectedCourier" role="log" aria-label="Chat messages"
+                         aria-live="polite">
+                        <md-progress-linear md-mode="indeterminate" ng-show="ctrl.isMessagesLoading"
+                                            aria-hidden="true"></md-progress-linear>
 
                         <div class="messages-container" ng-if="ctrl.messages.length > 0">
-                            <div class="message" ng-repeat="message in ctrl.messages track by message.messageId"
-                                 ng-class="{'sent': message.sent, 'received': !message.sent}">
-                                <div class="message-bubble">
-                                    <div class="message-text">{{message.message}}</div>
-                                    <div class="message-info">
-                                        <span class="message-time">{{::ctrl.formatMessageTime(message.messageTime)}}</span>
-                                        <md-icon md-font-set="material-symbols-outlined" class="read-status" ng-if="message.sent && message.read">done_all</md-icon>
-                                        <md-icon md-font-set="material-symbols-outlined" class="sent-status" ng-if="message.sent && !message.read">done</md-icon>
+                            <div class="message-group" ng-repeat="message in ctrl.messages track by message.messageId">
+                                <div class="date-separator"
+                                     ng-if="$first || !ctrl.messages[$index-1].messageTime.isSame(message.messageTime, 'day')">
+                                    <span>{{message.messageTime.format('MMMM D YYYY')}} ({{::ctrl.timeZone | timezoneShort}})</span>
+                                </div>
+
+                                <div class="message"
+                                     ng-class="{
+                                         'sent': message.messageDirection === ctrl.MessageDirection.StaffToCourier, 
+                                         'received': message.messageDirection === ctrl.MessageDirection.CourierToStaff
+                                     }"
+                                     role="article"
+                                     aria-label="{{ctrl.getSenderName(message)}} sent: {{message.message}} at {{::ctrl.formatMessageTime(message.messageTime)}} ({{::ctrl.timeZone | timezoneShort}})">
+
+                                    <!-- Message sender indicator for received messages (FROM courier TO staff) -->
+                                    <div class="message-sender" ng-if="message.messageDirection === ctrl.MessageDirection.CourierToStaff">
+                                        <div class="sender-avatar small" aria-hidden="true">{{ctrl.selectedCourier.initials}}</div>
+                                        <span class="sender-name">{{ctrl.selectedCourier.courierName}}</span>
+                                    </div>
+
+                                    <div class="message-bubble">
+                                        <div class="message-text">{{message.message}}</div>
+                                        <div class="message-info">
+                                            <span class="message-time"
+                                                  title="{{message.messageTime.format('MMMM D YYYY, h:mm:ss a')}}">
+                                                {{::ctrl.formatMessageTime(message.messageTime)}} ({{::ctrl.timeZone | timezoneShort}})
+                                            </span>
+
+                                            <!-- Direction indicator icon -->
+                                            <md-icon md-font-set="material-symbols-outlined"
+                                                     class="direction-indicator"
+                                                     ng-class="{
+                                                         'sent-direction': message.messageDirection === ctrl.MessageDirection.StaffToCourier,
+                                                         'received-direction': message.messageDirection === ctrl.MessageDirection.CourierToStaff
+                                                     }"
+                                                     aria-hidden="true"
+                                                     title="{{message.messageDirection === ctrl.MessageDirection.StaffToCourier ? 'Sent to courier' : 'Received from courier'}}">
+                                                {{ctrl.getMessageDirectionIcon(message)}}
+                                            </md-icon>
+
+                                            <!-- Read status for sent messages (FROM staff TO courier) -->
+                                            <md-icon md-font-set="material-symbols-outlined"
+                                                     class="read-status"
+                                                     ng-if="message.messageDirection === ctrl.MessageDirection.StaffToCourier && message.read"
+                                                     aria-label="Message read"
+                                                     title="Read at {{message.readTime && message.readTime.format('h:mm a')}}">
+                                                done_all
+                                            </md-icon>
+                                            <md-icon md-font-set="material-symbols-outlined"
+                                                     class="sent-status"
+                                                     ng-if="message.messageDirection === ctrl.MessageDirection.StaffToCourier && !message.read && message.sent"
+                                                     aria-label="Message sent"
+                                                     title="Sent">done
+                                                <md-tooltip md-direction="bottom">Sent</md-tooltip>
+                                            </md-icon>
+                                            <md-icon md-font-set="material-symbols-outlined"
+                                                     class="sent-status"
+                                                     ng-if="message.messageDirection === ctrl.MessageDirection.StaffToCourier && message.read && message.sent"
+                                                     aria-label="Message sent"
+                                                     title="Sent">done
+                                                <md-tooltip md-direction="bottom">Read</md-tooltip>
+                                            </md-icon>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="empty-messages" ng-if="!ctrl.isMessagesLoading && ctrl.messages.length === 0"
+                        <div class="empty-messages"
+                             ng-if="!ctrl.isMessagesLoading && ctrl.messages.length === 0"
                              layout="column" layout-align="center center">
-                            <md-icon md-font-set="material-symbols-outlined" class="empty-icon">chat_bubble_outline</md-icon>
-                            <h4>No messages yet</h4>
-                            <p>Send a message to {{ctrl.selectedCourier.courierName}}</p>
+                            <md-icon md-font-set="material-symbols-outlined" class="empty-icon" aria-hidden="true">
+                                chat_bubble_outline
+                            </md-icon>
+                            <h4>Start the conversation</h4>
+                            <p>Send a message to {{ctrl.selectedCourier.courierName}} to get started</p>
+                            <div class="conversation-starters">
+                                <p><strong>Quick messages:</strong></p>
+                                <md-button class="md-raised starter-button"
+                                           ng-click="ctrl.newMessage = 'Hi! How are you today?'">
+                                    👋 Say hello
+                                </md-button>
+                                <md-button class="md-raised starter-button"
+                                           ng-click="ctrl.newMessage = 'Do you have any updates on your current delivery?'">
+                                    📦 Check delivery status
+                                </md-button>
+                            </div>
                         </div>
                     </div>
 
                     <!-- No Selection -->
-                    <div class="no-selection" ng-if="!ctrl.selectedCourier" layout="column" layout-align="center center">
-                        <md-icon md-font-set="material-symbols-outlined" class="empty-icon large">chat</md-icon>
+                    <div class="no-selection" ng-if="!ctrl.selectedCourier" layout="column"
+                         layout-align="center center">
+                        <md-icon md-font-set="material-symbols-outlined" class="empty-icon large" aria-hidden="true">
+                            chat
+                        </md-icon>
                         <h3>Select a conversation</h3>
-                        <p>Choose a conversation to start messaging</p>
-                        <md-button class="md-raised md-primary" ng-click="ctrl.showNewChat()">
-                            <md-icon md-font-set="material-symbols-outlined">add</md-icon>
-                            <span>Start New Conversation</span>
-                        </md-button>
+                        <p>Choose a conversation from the left panel or start a new one</p>
+                        <div class="quick-actions" layout="row" layout-wrap layout-align="center center">
+                            <md-button class="md-raised md-primary" ng-click="ctrl.showNewChat()">
+                                <md-icon md-font-set="material-symbols-outlined" aria-hidden="true">add_comment
+                                </md-icon>
+                                <span>New Conversation</span>
+                            </md-button>
+                            <md-button class="md-raised" ng-click="ctrl.refreshCouriers()">
+                                <md-icon md-font-set="material-symbols-outlined" aria-hidden="true">refresh</md-icon>
+                                <span>Refresh</span>
+                            </md-button>
+                        </div>
                     </div>
 
                     <!-- Message Input -->
-                    <div class="message-input" ng-if="ctrl.selectedCourier">
+                    <div class="message-input" ng-if="ctrl.selectedCourier" role="form"
+                         aria-label="Message composition">
                         <form ng-submit="ctrl.sendMessage()" name="messageForm" layout="row" layout-align="start end">
                             <md-input-container flex md-no-float>
+                                <label class="sr-only">Message to {{ctrl.selectedCourier.courierName}}</label>
                                 <textarea ng-model="ctrl.newMessage"
-                                          placeholder="Type a message..."
+                                          placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
                                           rows="1"
                                           md-maxlength="1000"
                                           ng-keydown="ctrl.onMessageKeyPress($event)"
+                                          aria-label="Message to {{ctrl.selectedCourier.courierName}}"
                                           required></textarea>
+                                <div class="character-count" ng-if="ctrl.newMessage.length > 800">
+                                    {{1000 - ctrl.newMessage.length}} characters remaining
+                                </div>
                             </md-input-container>
 
                             <div class="delivery-options" layout="column">
-                                <md-select ng-model="ctrl.messageDeliveryType" aria-label="Delivery method">
-                                    <md-option value="1">App</md-option>
-                                    <md-option value="2">SMS</md-option>
-                                    <md-option value="3">Smart</md-option>
+                                <md-select ng-model="ctrl.messageDeliveryType" aria-label="Message delivery method">
+                                    <md-option value="1">📱 App Only</md-option>
+                                    <md-option value="2">💬 SMS Only</md-option>
+                                    <md-option value="3">🤖 Smart Delivery</md-option>
                                 </md-select>
                             </div>
 
-                            <md-button type="submit" class="md-fab md-mini md-primary send-button"
-                                       ng-disabled="!ctrl.newMessage.trim() || messageForm.$invalid || ctrl.isSending">
-                                <md-icon md-font-set="material-symbols-outlined" ng-if="!ctrl.isSending">send</md-icon>
-                                <md-progress-circular ng-if="ctrl.isSending" md-mode="indeterminate" md-diameter="20"></md-progress-circular>
+                            <md-button type="submit"
+                                       class="md-fab md-mini md-primary send-button"
+                                       ng-disabled="!ctrl.newMessage.trim() || messageForm.$invalid || ctrl.isSending"
+                                       aria-label="Send message">
+                                <md-icon md-font-set="material-symbols-outlined"
+                                         ng-if="!ctrl.isSending"
+                                         aria-hidden="true">send
+                                </md-icon>
+                                <md-progress-circular ng-if="ctrl.isSending"
+                                                      md-mode="indeterminate"
+                                                      md-diameter="20"
+                                                      aria-hidden="true"></md-progress-circular>
+                                <md-tooltip md-direction="bottom">Send message</md-tooltip>
                             </md-button>
                         </form>
                     </div>
@@ -253,9 +493,13 @@
             </div>
 
             <!-- Loading Overlay -->
-            <div class="loading-overlay" ng-if="ctrl.isLoading && ctrl.couriers.length === 0"
-                 layout="column" layout-align="center center">
-                <md-progress-circular md-mode="indeterminate" md-diameter="40"></md-progress-circular>
+            <div class="loading-overlay"
+                 ng-if="ctrl.isLoading && ctrl.couriers.length === 0"
+                 layout="column" layout-align="center center"
+                 role="status"
+                 aria-live="polite">
+                <md-progress-circular md-mode="indeterminate" md-diameter="40"
+                                      aria-hidden="true"></md-progress-circular>
                 <p>Loading conversations...</p>
             </div>
         </div>

@@ -6,12 +6,15 @@ import MessagingService from "../../../services/messaging.service";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import {Suggestion} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
+import calendar from "dayjs/plugin/calendar";
+import relativeTime from "dayjs/plugin/relativeTime";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import {MessageDirection} from "./messaging-dailog.enums";
 
 class MessagingDialogController extends BaseController {
     static $inject = [
         '$mdDialog',
         'messagingService',
-        '$mdToast',
         'DispatchData',
         'toastrService',
         '$interval',
@@ -20,11 +23,12 @@ class MessagingDialogController extends BaseController {
     ];
 
     // Main properties
+    timeZone: string;
     selectedCourier?: RecentMessageViewModel;
     couriers: RecentMessageViewModel[] = [];
     messages: ChatMessageViewModel[] = [];
     newMessage: string = '';
-    messageDeliveryType: number = 3; // SmartDelivery by default
+    messageDeliveryType: number = 3;
 
     // Loading states
     isLoading: boolean = false;
@@ -46,10 +50,12 @@ class MessagingDialogController extends BaseController {
     isSearching: boolean = false;
     private searchTimeout: any = null;
 
+    // Message direction enum for template access
+    MessageDirection = MessageDirection;
+
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private messagingService: MessagingService,
-        private $mdToast: angular.material.IToastService,
         private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
         $interval: angular.IIntervalService,
@@ -61,6 +67,12 @@ class MessagingDialogController extends BaseController {
         this.currentStaffId = ContactID;
         this.currentStaffName = FullName;
 
+        dayjs.extend(calendar);
+        dayjs.extend(relativeTime);
+        dayjs.extend(isSameOrAfter);
+
+        this.timeZone = TimeZone;
+
         if (!this.currentStaffId) {
             this.error = 'Unable to determine current staff member';
             return;
@@ -68,15 +80,16 @@ class MessagingDialogController extends BaseController {
     }
 
     $onInit() {
-        this.loadRecentCouriers();
-        this.setupAutoRefresh();
+        this.loadRecentCouriers().then(() => {
+            this.setupAutoRefresh();
+        });
     }
 
     private setupAutoRefresh(): void {
-        // Refresh conversations every 30 seconds
+        // Refresh conversations every 20 seconds
         this.registerInterval(async () => {
             await this.loadRecentCouriers(true);
-        }, 30000);
+        }, 20000);
 
         // Refresh messages every 10 seconds if chat is open
         this.registerInterval(async () => {
@@ -105,10 +118,9 @@ class MessagingDialogController extends BaseController {
                 const updated = this.couriers.find(c => c.courierId === this.selectedCourier!.courierId);
                 if (updated) this.selectedCourier = updated;
             }
-
         } catch (error) {
             console.error('Failed to load conversations:', error);
-            if (!silent) this.showToast('Failed to load conversations');
+            if (!silent) this.toastrService.showErrorToast('Failed to load conversations');
         } finally {
             if (!silent) this.isLoading = false;
         }
@@ -120,18 +132,26 @@ class MessagingDialogController extends BaseController {
         try {
             const messages = await this.messagingService.getMessages(courierId, this.currentStaffId);
 
-            this.messages = messages.map(message => ({
-                ...message,
-                messageTime: dayjs(message.messageTime),
-                readTime: message.readTime ? dayjs(message.readTime) : undefined,
-                sent: message.staffId === this.currentStaffId
-            }));
+            this.messages = messages
+                .map(message => {
+                    // Messages TO courier are sent BY staff (right side)
+                    // Messages TO staff are sent BY courier (left side)
+                    const isSentByCurrentStaff = message.messageDirection === MessageDirection.StaffToCourier;
+
+                    return {
+                        ...message,
+                        messageTime: dayjs(message.messageTime),
+                        readTime: message.readTime ? dayjs(message.readTime) : undefined,
+                        sent: isSentByCurrentStaff
+                    };
+                })
+                .sort((a, b) => a.messageTime.valueOf() - b.messageTime.valueOf()); // Sort chronologically (oldest first)
 
             this.scrollToBottom();
 
         } catch (error) {
             console.error('Failed to load messages:', error);
-            if (!silent) this.showToast('Failed to load messages');
+            if (!silent) this.toastrService.showErrorToast('Failed to load messages');
         } finally {
             if (!silent) this.isMessagesLoading = false;
         }
@@ -142,9 +162,14 @@ class MessagingDialogController extends BaseController {
 
         this.selectedCourier = courier;
         this.messages = [];
-        courier.unreadCount = 0; // Clear unread count
 
         await this.loadMessages(courier.courierId);
+
+        // Mark messages as read if there are unread messages
+        if (courier.unreadCount > 0) {
+            await this.markMessagesAsRead(courier.courierId);
+            courier.unreadCount = 0; // Clear unread count immediately
+        }
     }
 
     async sendMessage(): Promise<void> {
@@ -162,7 +187,7 @@ class MessagingDialogController extends BaseController {
 
             await this.messagingService.sendMessage(data);
 
-            // Add an optimistic message to UI
+            // Add an optimistic message to UI (insert at the end since messages are chronological)
             const optimisticMessage: ChatMessageViewModel = {
                 messageId: -Date.now(),
                 staffId: this.currentStaffId,
@@ -170,22 +195,24 @@ class MessagingDialogController extends BaseController {
                 message: messageContent,
                 messageTime: dayjs(),
                 read: false,
-                sent: true
+                sent: true,
+                messageDirection: MessageDirection.StaffToCourier
             };
 
-            this.messages.push(optimisticMessage);
+            this.messages.push(optimisticMessage); // Add to end of array
             this.newMessage = '';
 
             // Update conversation preview
             this.selectedCourier.lastMessage = messageContent;
             this.selectedCourier.lastMessageTime = dayjs();
+            this.selectedCourier.messageDirection = MessageDirection.StaffToCourier;
 
             this.scrollToBottom();
-            this.showToast('Message sent');
+            this.toastrService.showSuccessToast('Message sent');
 
         } catch (error) {
             console.error('Failed to send message:', error);
-            this.showToast('Failed to send message', 'error');
+            this.toastrService.showErrorToast('Failed to send message');
         } finally {
             this.isSending = false;
         }
@@ -195,6 +222,81 @@ class MessagingDialogController extends BaseController {
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
             await this.sendMessage();
+        }
+    }
+
+    private async markMessagesAsRead(courierId: number): Promise<void> {
+        try {
+            await this.messagingService.markAsRead(courierId);
+
+            // Update local messages to show as read - only messages received FROM courier (TO staff)
+            this.messages.forEach(message => {
+                if (message.messageDirection === MessageDirection.CourierToStaff && !message.read) {
+                    message.read = true;
+                    message.readTime = dayjs();
+                }
+            });
+
+            // Update conversation unread count
+            if (this.selectedCourier) {
+                this.selectedCourier.unreadCount = 0;
+            }
+
+            // Update in conversation list
+            const conversation = this.couriers.find(c => c.courierId === courierId);
+            if (conversation) {
+                conversation.unreadCount = 0;
+            }
+
+        } catch (error) {
+            console.error('Failed to mark messages as read:', error);
+            // Don't show error toast for this as it's not critical to user experience
+        }
+    }
+
+    // Helper method to determine if message was sent by current user
+    isSentByCurrentUser(message: ChatMessageViewModel): boolean {
+        // Messages TO courier are sent BY staff (current user)
+        return message.messageDirection === MessageDirection.StaffToCourier;
+    }
+
+    // Helper method to determine if message was received from courier
+    isReceivedFromCourier(message: ChatMessageViewModel): boolean {
+        // Messages TO staff are sent BY courier
+        return message.messageDirection === MessageDirection.CourierToStaff;
+    }
+
+    // Helper method to get sender name for display
+    getSenderName(message: ChatMessageViewModel): string {
+        if (message.messageDirection === MessageDirection.StaffToCourier) {
+            return 'You'; // Staff sent TO courier
+        } else if (message.messageDirection === MessageDirection.CourierToStaff) {
+            return this.selectedCourier?.courierName || 'Courier'; // Courier sent TO staff
+        }
+        return 'Unknown';
+    }
+
+    // Helper method to get message direction icon
+    getMessageDirectionIcon(message: ChatMessageViewModel): string {
+        switch (message.messageDirection) {
+            case MessageDirection.StaffToCourier:
+                return 'send';
+            case MessageDirection.CourierToStaff:
+                return 'reply';
+            default:
+                return 'help';
+        }
+    }
+
+    // Helper method to get last message direction text for conversation list
+    getLastMessageDirectionText(conversation: RecentMessageViewModel): string {
+        switch (conversation.messageDirection) {
+            case MessageDirection.StaffToCourier:
+                return 'You: '; // Staff sent TO courier
+            case MessageDirection.CourierToStaff:
+                return `${conversation.courierName}: `; // Courier sent TO staff
+            default:
+                return '';
         }
     }
 
@@ -296,7 +398,8 @@ class MessagingDialogController extends BaseController {
                 status: courier.status || 'offline',
                 unreadCount: 0,
                 lastMessage: '',
-                lastMessageTime: dayjs()
+                lastMessageTime: dayjs(),
+                messageDirection: MessageDirection.StaffToCourier // Default direction for new conversations
             };
 
             this.couriers.unshift(newCourier);
@@ -359,15 +462,6 @@ class MessagingDialogController extends BaseController {
         return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
     }
 
-    private showToast(message: string, type: string = 'success'): void {
-        const toast = this.$mdToast.simple()
-            .textContent(message)
-            .position('bottom left')
-            .hideDelay(3000);
-
-        this.$mdToast.show(toast);
-    }
-
     // === FORMATTING FUNCTIONS ===
 
     formatMessageTime(messageTime: dayjs.Dayjs): string {
@@ -418,6 +512,7 @@ class MessagingDialogController extends BaseController {
     }
 
     $onDestroy(): void {
+        super.$onDestroy();
         this.clearSearchTimeout();
     }
 
