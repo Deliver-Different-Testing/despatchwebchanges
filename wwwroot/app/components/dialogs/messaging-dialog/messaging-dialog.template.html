@@ -310,14 +310,7 @@
                                 </md-button>
                                 <md-menu-content width="3">
                                     <md-menu-item>
-                                        <md-button ng-click="ctrl.clearChat()">
-                                            <md-icon md-font-set="material-symbols-outlined" aria-hidden="true">delete
-                                            </md-icon>
-                                            Clear Chat History
-                                        </md-button>
-                                    </md-menu-item>
-                                    <md-menu-item>
-                                        <md-button ng-click="ctrl.exportChat()">
+                                        <md-button ng-click="ctrl.exportChat()" disabled>
                                             <md-icon md-font-set="material-symbols-outlined" aria-hidden="true">
                                                 download
                                             </md-icon>
@@ -450,7 +443,74 @@
                     <!-- Message Input -->
                     <div class="message-input" ng-if="ctrl.selectedCourier" role="form"
                          aria-label="Message composition">
+
+                        <!-- Quick Responses with Categories -->
+                        <div class="quick-responses-section" ng-if="ctrl.showQuickResponses">
+                            <div class="quick-responses-header" layout="row" layout-align="space-between center">
+                                <h4>Quick Responses</h4>
+                                <div class="header-actions" layout="row">
+                                    <md-button class="md-icon-button"
+                                               ng-click="ctrl.useContextualResponses = !ctrl.useContextualResponses"
+                                               ng-class="{'active': ctrl.useContextualResponses}"
+                                               aria-label="Toggle contextual responses">
+                                        <md-icon md-font-set="material-symbols-outlined">psychology</md-icon>
+                                        <md-tooltip md-direction="top">Smart suggestions</md-tooltip>
+                                    </md-button>
+                                    <md-button class="md-icon-button" ng-click="ctrl.hideQuickResponses()"
+                                               aria-label="Hide quick responses">
+                                        <md-icon md-font-set="material-symbols-outlined">keyboard_arrow_down</md-icon>
+                                    </md-button>
+                                </div>
+                            </div>
+
+                            <!-- Categorized Responses -->
+                            <div class="quick-responses-content" ng-if="!ctrl.useContextualResponses">
+                                <div class="response-category"
+                                     ng-repeat="(category, responses) in ctrl.getQuickResponsesByCategory() track by category">
+                                    <h5 class="category-title">{{category}}</h5>
+                                    <div class="category-responses" layout="row" layout-wrap>
+                                        <md-button class="md-raised quick-response-btn"
+                                                   ng-repeat="response in responses track by response"
+                                                   ng-click="ctrl.selectQuickResponse(response)"
+                                                   aria-label="Use quick response: {{response}}">
+                                            {{response}}
+                                        </md-button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Contextual Responses -->
+                            <div class="quick-responses-content contextual" ng-if="ctrl.useContextualResponses">
+                                <div class="contextual-info">
+                                    <small>
+                                        <md-icon md-font-set="material-symbols-outlined">psychology</md-icon>
+                                        Smart suggestions based on current context
+                                    </small>
+                                </div>
+                                <div class="contextual-responses" layout="row" layout-wrap>
+                                    <md-button class="md-raised quick-response-btn contextual-btn"
+                                               ng-repeat="response in ctrl.getContextualQuickResponses() track by response"
+                                               ng-click="ctrl.selectQuickResponse(response)"
+                                               aria-label="Use contextual response: {{response}}">
+                                        {{response}}
+                                    </md-button>
+                                </div>
+                            </div>
+                        </div>
+
                         <form ng-submit="ctrl.sendMessage()" name="messageForm" layout="row" layout-align="start end">
+                            <!-- Quick Response Toggle Button -->
+                            <md-button class="md-icon-button quick-toggle-btn"
+                                       ng-click="ctrl.toggleQuickResponses()"
+                                       ng-class="{'active': ctrl.showQuickResponses}"
+                                       aria-label="{{ctrl.showQuickResponses ? 'Hide' : 'Show'}} quick responses"
+                                       type="button">
+                                <md-icon md-font-set="material-symbols-outlined">
+                                    {{ctrl.showQuickResponses ? 'keyboard_arrow_down' : 'quick_phrases'}}
+                                </md-icon>
+                                <md-tooltip md-direction="top">Quick responses</md-tooltip>
+                            </md-button>
+
                             <md-input-container flex md-no-float>
                                 <label class="sr-only">Message to {{ctrl.selectedCourier.courierName}}</label>
                                 <textarea ng-model="ctrl.newMessage"
@@ -458,9 +518,12 @@
                                           rows="1"
                                           md-maxlength="1000"
                                           ng-keydown="ctrl.onMessageKeyPress($event)"
+                                          ng-focus="ctrl.hideQuickResponses()"
                                           aria-label="Message to {{ctrl.selectedCourier.courierName}}"
                                           required></textarea>
-                                <div class="character-count" ng-if="ctrl.newMessage.length > 800">
+                                <div class="character-count"
+                                     ng-if="ctrl.newMessage.length > 800"
+                                     ng-class="{'warning': ctrl.newMessage.length > 900, 'danger': ctrl.newMessage.length > 950}">
                                     {{1000 - ctrl.newMessage.length}} characters remaining
                                 </div>
                             </md-input-container>
@@ -505,3 +568,9 @@
         </div>
     </md-dialog-content>
 </md-dialog>
+
+<style>
+    .layout-gt-md-row:not(.layout-lg-column)>.md-auto-horizontal-margin:not(:first-child), .layout-gt-sm-row:not(.layout-gt-md-column):not(.layout-lg-column)>.md-auto-horizontal-margin:not(:first-child), .layout-gt-xs-row:not(.layout-gt-sm-column):not(.layout-gt-md-column):not(.layout-lg-column)>.md-auto-horizontal-margin:not(:first-child), .layout-lg-row:not(.layout-lg-column)>.md-auto-horizontal-margin:not(:first-child), .layout-row:not(.layout-gt-xs-column):not(.layout-gt-sm-column):not(.layout-gt-md-column):not(.layout-lg-column)>.md-auto-horizontal-margin:not(:first-child) {
+        margin-left: 0 !important;
+    }
+</style>

@@ -12,7 +12,6 @@ import {
 import {
     FeatureInDevelopmentDialogController
 } from "./components/dialogs/feature-in-development-dialog/feature-in-development-dialog.controller";
-import {SendMessageDialogController} from "./components/dialogs/send-message-dialog/send-message-dialog.controller";
 import {SelectDialogController} from "./components/dialogs/select-dialog/select-dialog.controller";
 import {MapDialogController} from "./components/dialogs/map-dialog/map-dialog.controller";
 import MegaMapComponent from "./components/overview/mega-map/mega-map.controller";
@@ -243,7 +242,6 @@ app.controller("CreateJobDialogController", CreateJobDialogController);
 app.controller("DateRangeDialogController", DateRangeDialogController);
 app.controller("EditParcelDimensionsDialogController", EditParcelDimensionsDialogController);
 app.controller("FeatureInDevelopmentDialogController", FeatureInDevelopmentDialogController);
-app.controller("SendMessageDialogController", SendMessageDialogController);
 app.controller("SelectDialogController", SelectDialogController);
 app.controller("MapDialogController", MapDialogController);
 app.controller('EventGroupDialogController', EventGroupDialogController);
