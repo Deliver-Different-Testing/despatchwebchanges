@@ -6,10 +6,8 @@ import MessagingService from "../../../services/messaging.service";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import {Suggestion} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
-import calendar from "dayjs/plugin/calendar";
-import relativeTime from "dayjs/plugin/relativeTime";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import {MessageDirection} from "./messaging-dailog.enums";
+import {MessageDirection, QuickResponseType} from "./messaging-dailog.enums";
 
 class MessagingDialogController extends BaseController {
     static $inject = [
@@ -52,7 +50,13 @@ class MessagingDialogController extends BaseController {
 
     // Message direction enum for template access
     MessageDirection = MessageDirection;
-
+    
+    // Quick responses
+    useContextualResponses: boolean = false;
+    quickResponses: string[] = Object.values(QuickResponseType);
+    showQuickResponses: boolean = false;
+    QuickResponseType = QuickResponseType;
+    
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private messagingService: MessagingService,
@@ -66,9 +70,7 @@ class MessagingDialogController extends BaseController {
         this.initServices($timeout, $interval, $scope);
         this.currentStaffId = ContactID;
         this.currentStaffName = FullName;
-
-        dayjs.extend(calendar);
-        dayjs.extend(relativeTime);
+        
         dayjs.extend(isSameOrAfter);
 
         this.timeZone = TimeZone;
@@ -98,9 +100,7 @@ class MessagingDialogController extends BaseController {
             }
         }, 10000);
     }
-
-    // === CORE MESSAGING FUNCTIONS ===
-
+    
     private async loadRecentCouriers(silent: boolean = false): Promise<void> {
         if (!silent) this.isLoading = true;
 
@@ -199,7 +199,7 @@ class MessagingDialogController extends BaseController {
                 messageDirection: MessageDirection.StaffToCourier
             };
 
-            this.messages.push(optimisticMessage); // Add to end of array
+            this.messages.push(optimisticMessage);
             this.newMessage = '';
 
             // Update conversation preview
@@ -242,30 +242,16 @@ class MessagingDialogController extends BaseController {
                 this.selectedCourier.unreadCount = 0;
             }
 
-            // Update in conversation list
+            // Update in a conversation list
             const conversation = this.couriers.find(c => c.courierId === courierId);
             if (conversation) {
                 conversation.unreadCount = 0;
             }
-
         } catch (error) {
             console.error('Failed to mark messages as read:', error);
-            // Don't show error toast for this as it's not critical to user experience
         }
     }
-
-    // Helper method to determine if message was sent by current user
-    isSentByCurrentUser(message: ChatMessageViewModel): boolean {
-        // Messages TO courier are sent BY staff (current user)
-        return message.messageDirection === MessageDirection.StaffToCourier;
-    }
-
-    // Helper method to determine if message was received from courier
-    isReceivedFromCourier(message: ChatMessageViewModel): boolean {
-        // Messages TO staff are sent BY courier
-        return message.messageDirection === MessageDirection.CourierToStaff;
-    }
-
+    
     // Helper method to get sender name for display
     getSenderName(message: ChatMessageViewModel): string {
         if (message.messageDirection === MessageDirection.StaffToCourier) {
@@ -276,7 +262,6 @@ class MessagingDialogController extends BaseController {
         return 'Unknown';
     }
 
-    // Helper method to get message direction icon
     getMessageDirectionIcon(message: ChatMessageViewModel): string {
         switch (message.messageDirection) {
             case MessageDirection.StaffToCourier:
@@ -288,7 +273,6 @@ class MessagingDialogController extends BaseController {
         }
     }
 
-    // Helper method to get last message direction text for conversation list
     getLastMessageDirectionText(conversation: RecentMessageViewModel): string {
         switch (conversation.messageDirection) {
             case MessageDirection.StaffToCourier:
@@ -419,9 +403,7 @@ class MessagingDialogController extends BaseController {
     getInitials(name: string): string {
         return this.generateInitials(name);
     }
-
-    // === API CALLS ===
-
+    
     async refreshCouriers(): Promise<void> {
         await this.loadRecentCouriers();
     }
@@ -519,6 +501,80 @@ class MessagingDialogController extends BaseController {
     titleCase(input: string): string {
         if (!input) return '';
         return input.charAt(0).toUpperCase() + input.slice(1).toLowerCase();
+    }
+
+    // === Quick Responses ===
+    selectQuickResponse(response: string): void {
+        this.newMessage = response;
+        this.showQuickResponses = false;
+
+        // Autofocus the textarea
+        this.registerTimeout(() => {
+            const textarea = document.querySelector('.message-input textarea') as HTMLTextAreaElement;
+            if (textarea) {
+                textarea.focus();
+            }
+        }, 50);
+    }
+
+    getContextualQuickResponses(): string[] {
+        const hour = dayjs().hour();
+        if (hour < 9) {
+            // Morning responses
+            return [
+                QuickResponseType.OnMyWay,
+                QuickResponseType.ETA5Minutes,
+                QuickResponseType.TrafficDelay
+            ];
+        } else if (hour > 17) {
+            // Evening responses
+            return [
+                QuickResponseType.DeliveredSuccessfully,
+                QuickResponseType.DeliveryComplete,
+                QuickResponseType.CustomerNotAvailable
+            ];
+        }
+
+        // Default responses
+        return this.quickResponses;
+    }
+
+    toggleQuickResponses(): void {
+        this.showQuickResponses = !this.showQuickResponses;
+    }
+
+    hideQuickResponses(): void {
+        this.showQuickResponses = false;
+    }
+
+    getQuickResponsesByCategory(): { [category: string]: string[] } {
+        return {
+            'Status Updates': [
+                QuickResponseType.OnMyWay,
+                QuickResponseType.ArrivedAtLocation,
+                QuickResponseType.ETA5Minutes,
+                QuickResponseType.ContactingCustomer
+            ],
+            'Delivery Success': [
+                QuickResponseType.DeliveredSuccessfully,
+                QuickResponseType.DeliveryComplete,
+                QuickResponseType.PackageLeftAtDoor
+            ],
+            'Issues': [
+                QuickResponseType.CustomerNotAvailable,
+                QuickResponseType.UnableToDeliver,
+                QuickResponseType.AddressIssue,
+                QuickResponseType.NeedAssistance
+            ],
+            'Delays': [
+                QuickResponseType.TrafficDelay,
+                QuickResponseType.WeatherDelay,
+                QuickResponseType.CustomerRequested
+            ],
+            'Other': [
+                QuickResponseType.PackageReturning
+            ]
+        };
     }
 }
 

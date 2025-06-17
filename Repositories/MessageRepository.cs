@@ -28,7 +28,7 @@ public class MessageRepository(
         // Group by the "other party" (courier or staff member)
         var recentList = messages
             .GroupBy(m => m.UcmmStaffId == staffId ? m.UcmmSendTo : m.UcmmStaffId)
-            .Where(g => g.Key.HasValue) // Ensure we have a valid other party ID
+            .Where(g => g.Key.HasValue) // Ensure we have a valid another party ID
             .Select(g => new
             {
                 OtherPartyId = g.Key.Value,
@@ -178,8 +178,6 @@ public class MessageRepository(
 
                 message.SendToMobile = NormalizeMobileNumber(mobileNumber, isUsTenant);
                 message.Subject = $"SMS to Courier: {delivery.Courier.Code}";
-                // For SMS, we might not set UcmmSendTo, or set it to courier ID for consistency
-                message.UcmmSendTo = delivery.Courier.CourierId;
             }
 
             messagesToAdd.Add(message);
@@ -213,7 +211,7 @@ public class MessageRepository(
     
         return isUsTenant ?
             // For US numbers, remove +1 prefix if present
-            normalized.Replace("+1", "") :
+            normalized.Replace("+1", string.Empty) :
             // For NZ numbers, replace +64 with 0
             normalized.Replace("+64", "0");
     }

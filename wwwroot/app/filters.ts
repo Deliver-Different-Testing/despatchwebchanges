@@ -128,27 +128,30 @@ export function momentFormatFilter(dateString: string | Date, format: string): s
 
 /**
  * Gets timezone abbreviation from IANA timezone
- * Day.js doesn't handle timezone abbreviations well with just the 'z' format
  */
 export function timezoneShortFilter(timezone: string): string {
     if (!timezone) return '';
 
     try {
-        const now = new Date();
+        const now = dayjs();
 
         const ianaTimezones = findIana(timezone);
         const ianaTimezone = ianaTimezones && ianaTimezones.length > 0
             ? ianaTimezones[0]
             : timezone; // If not found, use original (might already be IANA)
 
-        // Create a formatter that can extract timezone information
+        // Use Day.js to format in the target timezone
+        const timeInZone = now.tz(ianaTimezone);
+
+        // Still need Intl.DateTimeFormat for timezone abbreviation extraction
+        // Day.js doesn't have built-in timezone abbreviation support
         const formatter = new Intl.DateTimeFormat('en', {
             timeZone: ianaTimezone,
             timeZoneName: 'short'
         });
 
-        // Format the date and extract just the timezone abbreviation
-        const formatted = formatter.format(now);
+        // Format the Day.js date as a native Date for Intl formatter
+        const formatted = formatter.format(timeInZone.toDate());
         const abbreviation = formatted.split(' ').pop();
 
         return abbreviation || timezone;

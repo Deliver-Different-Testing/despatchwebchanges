@@ -27,7 +27,7 @@ class MessagingDialogService implements angular.IServiceProvider {
                 targetEvent: $event,
                 clickOutsideToClose: false,
                 escapeToClose: true,
-                fullscreen: false,
+                fullscreen: true,
                 locals: {},
                 bindToController: true,
             });

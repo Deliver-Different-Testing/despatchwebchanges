@@ -9,12 +9,15 @@ import greetUser from "../../functions/greetUser";
 import dayjs from "dayjs";
 import {ContactID} from "../../contants";
 import DispatchCoreService from "../../services/dispatch-core.service";
+import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
+import timezone from 'dayjs/plugin/timezone';
 
 class TaskDashboardController extends BaseController {
     static $inject = [
         "$mdSidenav",
         "$filter",
         "DispatchData",
+        "messagingDialogService",
         "$timeout",
         "$interval",
         "$scope",
@@ -70,19 +73,20 @@ class TaskDashboardController extends BaseController {
         private $mdSidenav: angular.material.ISidenavService,
         private $filter: angular.IFilterService,
         private DispatchService: DispatchCoreService,
+        private messagingDialogService: MessagingDialogService,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
         $scope: angular.IScope,
     ) {
         super();
-
         this.initServices($timeout, $interval, $scope);
+        dayjs.extend(timezone);
 
         this.showFullCalendar = false;
         this.loadViewPreference();
 
         this.greeting = greetUser(FirstName);
-        this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        this.browserTimeZone = dayjs.tz.guess();
         this.timeZone = TimeZone;
 
         this.generateTimeOptions();
@@ -416,6 +420,10 @@ class TaskDashboardController extends BaseController {
 
     async handleCalendarViewChange(startDate: Date, endDate: Date): Promise<void> {
         await this.updateDateRangeFromCalendar(startDate, endDate);
+    }
+
+    async openMessagingDialog($event: MouseEvent) {
+        await this.messagingDialogService.openMessagingDialog($event);
     }
 }
 

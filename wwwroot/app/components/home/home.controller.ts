@@ -47,6 +47,7 @@ import JobAddStopService from "../../services/job-add-stop.service";
 import getJobTableRowClass from "../../functions/getJobTableRowClass";
 import DispatchBoxes from "./enums/DispatchBoxes";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
+import timezone from 'dayjs/plugin/timezone';
 
 class HomeController extends BaseController {
     static $inject = [
@@ -189,10 +190,11 @@ class HomeController extends BaseController {
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
+        dayjs.extend(timezone);
 
         this.greeting = greetUser(FirstName);
         this.timeZone = TimeZone;
-        this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        this.browserTimeZone = dayjs.tz.guess();
 
         // Views and Layout
         this.initialViewSet = false;
@@ -1065,28 +1067,6 @@ class HomeController extends BaseController {
         } catch (error: any) {
             console.error("Job void canceled or error occurred", error);
         }
-    }
-
-    messageClick($event: MouseEvent, job: IDispatchJob) {
-        const selectedCourierId = this.selectedCourier ? this.selectedCourier.id : job.courierData?.courierId;
-
-        this.$mdDialog
-            .show({
-                controller: "SendMessageDialogController",
-                controllerAs: "ctrl",
-                parent: this.$document.parent(),
-                templateUrl: "app/components/dialogs/send-message-dialog/send-message-dialog.html",
-                clickOutsideToClose: false,
-                fullscreen: true,
-                targetEvent: $event,
-                locals: {
-                    selectedCourierId, contactId: ContactID, dispatcherName: FirstName,
-                },
-                bindToController: true,
-            })
-            .then(() => {
-                console.log("Dialog closed!");
-            });
     }
 
     async otherEventForm($event: MouseEvent, job: IDispatchJob) {
