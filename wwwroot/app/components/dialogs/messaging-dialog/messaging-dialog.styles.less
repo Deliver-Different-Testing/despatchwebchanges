@@ -1,16 +1,69 @@
 @import '../../../../css/variables';
 
 .messaging-dialog {
+  .layout-gt-md-row:not(.layout-lg-column) > .md-auto-horizontal-margin:not(:first-child),
+  .layout-gt-sm-row:not(.layout-gt-md-column):not(.layout-lg-column) > .md-auto-horizontal-margin:not(:first-child),
+  .layout-gt-xs-row:not(.layout-gt-sm-column):not(.layout-gt-md-column):not(.layout-lg-column) > .md-auto-horizontal-margin:not(:first-child),
+  .layout-lg-row:not(.layout-lg-column) > .md-auto-horizontal-margin:not(:first-child),
+  .layout-row:not(.layout-gt-xs-column):not(.layout-gt-sm-column):not(.layout-gt-md-column):not(.layout-lg-column) > .md-auto-horizontal-margin:not(:first-child) {
+    margin-left: 0 !important;
+  }
+  
   width: 90vw;
   max-width: 1200px;
-  height: 85vh;
-  max-height: 1000px;
+  height: 95vh;
+  max-height: 1400px;
   min-width: 800px;
   min-height: 600px;
   border-radius: 12px;
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.15);
   overflow: hidden;
 
+  .party-type, .courier-details {
+    font-size: 12px;
+    color: #666;
+    margin-top: 2px;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+
+  .party-details {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 12px;
+    color: #666;
+    margin-top: 2px;
+
+    .party-type {
+      margin-top: 0;
+    }
+
+    .party-status {
+      text-transform: capitalize;
+      font-weight: 400;
+      opacity: 0.8;
+    }
+  }
+
+  .party-name, .courier-name {
+    font-weight: 500;
+    color: #333;
+    line-height: 1.3;
+  }
+
+  // Connection status in header
+  .connection-status {
+    margin-right: 16px;
+    font-size: 12px;
+    opacity: 0.9;
+    transition: opacity 0.3s ease;
+
+    .status-text {
+      font-weight: 500;
+    }
+  }
+  
   .header-icon {
     margin-right: 12px;
     color: rgba(255, 255, 255, 0.9);
@@ -276,6 +329,7 @@
     flex-direction: column;
     height: 100%;
     animation: slideInFromLeft 0.3s ease-out;
+    overflow-x: auto;
   }
 
   .error-container {
@@ -922,11 +976,11 @@
         box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
 
         .quick-responses-header {
-          padding: 16px 20px 8px 20px;
+          padding: 5px;
           border-bottom: 1px solid #e0e0e0;
 
           h4 {
-            margin: 0;
+            margin: 5px;
             color: #333;
             font-size: 14px;
             font-weight: 600;
@@ -957,7 +1011,7 @@
         }
 
         .quick-responses-content {
-          max-height: 300px;
+          max-height: 130px;
           overflow-y: auto;
 
           .response-category {
@@ -1163,6 +1217,73 @@
               border-color: @primary-color;
               box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.15);
             }
+          }
+        }
+      }
+
+      .save-quick-response-button {
+        width: 48px;
+        height: 48px;
+        margin: 0 8px 0 0; // Add some spacing from other buttons
+        background: linear-gradient(135deg, #ff6b35, #f7931e); // Orange gradient for "save" action
+        box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+        transition: all 0.3s ease;
+        position: relative;
+
+        &:hover:not([disabled]) {
+          transform: translateY(-2px) scale(1.05);
+          box-shadow: 0 6px 16px rgba(255, 107, 53, 0.4);
+          background: linear-gradient(135deg, #ff7849, #ffad33);
+        }
+
+        &:active:not([disabled]) {
+          transform: translateY(-1px) scale(1.02);
+          box-shadow: 0 3px 8px rgba(255, 107, 53, 0.3);
+        }
+
+        &[disabled] {
+          background: #e0e0e0;
+          box-shadow: none;
+          cursor: not-allowed;
+        }
+
+        // Icon styling
+        md-icon {
+          font-size: 20px;
+          color: white;
+          transition: transform 0.2s ease;
+        }
+
+        &:hover:not([disabled]) md-icon {
+          transform: scale(1.1);
+        }
+
+        // Loading spinner styling
+        md-progress-circular {
+          .md-inner .md-gap {
+            border-color: white;
+          }
+          .md-inner .md-left .md-half-circle {
+            border-left-color: white;
+            border-top-color: white;
+          }
+          .md-inner .md-right .md-half-circle {
+            border-right-color: white;
+            border-top-color: white;
+          }
+        }
+
+        // Subtle pulse animation when available to save
+        &.save-available {
+          animation: subtle-pulse 2s infinite;
+        }
+
+        @keyframes subtle-pulse {
+          0%, 100% {
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+          }
+          50% {
+            box-shadow: 0 4px 16px rgba(255, 107, 53, 0.5);
           }
         }
       }

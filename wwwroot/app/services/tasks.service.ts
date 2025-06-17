@@ -1,10 +1,14 @@
-class TasksService {
+class TasksService implements angular.IServiceProvider {
     static $inject = [
         "$http"
     ];
 
     constructor(private $http: angular.IHttpService) {
         console.log("Tasks service initialized");
+    }
+    
+    $get() {
+        return this;
     }
 
     async markTaskAsClosed(eventId: number, closed: boolean) {

@@ -1,13 +1,19 @@
 import "./messaging-dialog.styles.less";
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
-import {ChatMessageViewModel, RecentMessageViewModel, SendMessageRequest} from "./messaging-dialog.interfaces";
+import {
+    ChatMessageViewModel,
+    RecentMessageViewModel,
+    SendMessageRequest,
+    SaveQuickResponseRequest
+} from "./messaging-dialog.interfaces";
 import MessagingService from "../../../services/messaging.service";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import {Suggestion} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import {MessageDirection, QuickResponseType} from "./messaging-dailog.enums";
+import {MessageDirection, OtherMessagePartyType} from "./messaging-dailog.enums";
+import {DEFAULT_QUICK_RESPONSES} from "./DEFAULT_QUICK_RESPONSES";
 
 class MessagingDialogController extends BaseController {
     static $inject = [
@@ -22,8 +28,8 @@ class MessagingDialogController extends BaseController {
 
     // Main properties
     timeZone: string;
-    selectedCourier?: RecentMessageViewModel;
-    couriers: RecentMessageViewModel[] = [];
+    selectedConversation?: RecentMessageViewModel;
+    conversations: RecentMessageViewModel[] = [];
     messages: ChatMessageViewModel[] = [];
     newMessage: string = '';
     messageDeliveryType: number = 3;
@@ -44,19 +50,20 @@ class MessagingDialogController extends BaseController {
     showNewChatView: boolean = false;
     courierSearchTerm: string = '';
     courierSuggestions: Suggestion[] = [];
-    recentCouriers: RecentMessageViewModel[] = [];
+    recentConversations: RecentMessageViewModel[] = [];
     isSearching: boolean = false;
     private searchTimeout: any = null;
 
     // Message direction enum for template access
-    MessageDirection = MessageDirection;
-    
-    // Quick responses
-    useContextualResponses: boolean = false;
-    quickResponses: string[] = Object.values(QuickResponseType);
+    OtherMessagePartyType = OtherMessagePartyType;
+
+    // Quick responses - simplified
+    isLoadingQuickResponses: boolean = false;
     showQuickResponses: boolean = false;
-    QuickResponseType = QuickResponseType;
-    
+    quickResponses: Suggestion[] = [];
+    showSaveAsQuickResponse: boolean = false;
+    isSavingQuickResponse: boolean = false;
+
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private messagingService: MessagingService,
@@ -70,7 +77,7 @@ class MessagingDialogController extends BaseController {
         this.initServices($timeout, $interval, $scope);
         this.currentStaffId = ContactID;
         this.currentStaffName = FullName;
-        
+
         dayjs.extend(isSameOrAfter);
 
         this.timeZone = TimeZone;
@@ -82,41 +89,46 @@ class MessagingDialogController extends BaseController {
     }
 
     $onInit() {
-        this.loadRecentCouriers().then(() => {
-            this.setupAutoRefresh();
+        this.loadRecentConversations().then(() => {
+            this.loadQuickResponses().then(() => {
+                this.setupAutoRefresh();
+            })
         });
     }
 
     private setupAutoRefresh(): void {
         // Refresh conversations every 20 seconds
         this.registerInterval(async () => {
-            await this.loadRecentCouriers(true);
+            await this.loadRecentConversations(true);
         }, 20000);
 
         // Refresh messages every 10 seconds if chat is open
         this.registerInterval(async () => {
-            if (this.selectedCourier) {
-                await this.loadMessages(this.selectedCourier.courierId, true);
+            if (this.selectedConversation) {
+                await this.loadMessages(this.selectedConversation.otherPartyId, this.selectedConversation.otherPartyType, true);
             }
         }, 10000);
     }
-    
-    private async loadRecentCouriers(silent: boolean = false): Promise<void> {
+
+    private async loadRecentConversations(silent: boolean = false): Promise<void> {
         if (!silent) this.isLoading = true;
 
         try {
-            const couriers = await this.messagingService.getRecentList(this.currentStaffId);
+            const conversations = await this.messagingService.getRecentList();
 
-            this.couriers = couriers.map(courier => ({
-                ...courier,
-                lastMessageTime: dayjs(courier.lastMessageTime),
-                initials: courier.initials || this.generateInitials(courier.courierName)
+            this.conversations = conversations.map(conversation => ({
+                ...conversation,
+                lastMessageTime: dayjs(conversation.lastMessageTime),
+                otherPartyInitials: conversation.otherPartyInitials || this.generateInitials(conversation.otherPartyName)
             }));
 
-            // Update selected courier if exists
-            if (this.selectedCourier) {
-                const updated = this.couriers.find(c => c.courierId === this.selectedCourier!.courierId);
-                if (updated) this.selectedCourier = updated;
+            // Update selected conversation if exists
+            if (this.selectedConversation) {
+                const updated = this.conversations.find(c =>
+                    c.otherPartyId === this.selectedConversation!.otherPartyId &&
+                    c.otherPartyType === this.selectedConversation!.otherPartyType
+                );
+                if (updated) this.selectedConversation = updated;
             }
         } catch (error) {
             console.error('Failed to load conversations:', error);
@@ -126,90 +138,114 @@ class MessagingDialogController extends BaseController {
         }
     }
 
-    private async loadMessages(courierId: number, silent: boolean = false): Promise<void> {
+    private async loadQuickResponses(): Promise<void> {
+        try {
+            this.isLoadingQuickResponses = true;
+            const savedResponses = await this.messagingService.getQuickResponses();
+
+            // Combine saved responses with defaults, with saved responses first
+            this.quickResponses = [...savedResponses, ...DEFAULT_QUICK_RESPONSES];
+
+            this.applyScope();
+
+            console.log('Quick responses loaded:', this.quickResponses.length);
+        } catch (error) {
+            console.error('Failed to load quick responses:', error);
+            // Fallback to just defaults if loading fails
+            this.quickResponses = [...DEFAULT_QUICK_RESPONSES];
+            this.toastrService.showWarningToast('Using default quick responses only');
+        } finally {
+            this.isLoadingQuickResponses = false;
+        }
+    }
+
+    private async loadMessages(otherPartyId: number, otherPartyType: OtherMessagePartyType, silent: boolean = false): Promise<void> {
         if (!silent) this.isMessagesLoading = true;
 
         try {
-            const messages = await this.messagingService.getMessages(courierId, this.currentStaffId);
+            const messages = await this.messagingService.getMessages(otherPartyId, otherPartyType, this.currentStaffId);
 
             this.messages = messages
                 .map(message => {
-                    // Messages TO courier are sent BY staff (right side)
-                    // Messages TO staff are sent BY courier (left side)
-                    const isSentByCurrentStaff = message.messageDirection === MessageDirection.StaffToCourier;
-
                     return {
                         ...message,
                         messageTime: dayjs(message.messageTime),
                         readTime: message.readTime ? dayjs(message.readTime) : undefined,
-                        sent: isSentByCurrentStaff
                     };
                 })
-                .sort((a, b) => a.messageTime.valueOf() - b.messageTime.valueOf()); // Sort chronologically (oldest first)
+                .sort((a, b) => a.messageTime.valueOf() - b.messageTime.valueOf());
 
-            this.scrollToBottom();
-
+            this.applyScope();
         } catch (error) {
             console.error('Failed to load messages:', error);
             if (!silent) this.toastrService.showErrorToast('Failed to load messages');
         } finally {
             if (!silent) this.isMessagesLoading = false;
+            if (silent) this.scrollToBottom();
         }
     }
 
-    async selectCourier(courier: RecentMessageViewModel): Promise<void> {
-        if (this.selectedCourier?.courierId === courier.courierId) return;
+    async selectConversation(conversation: RecentMessageViewModel): Promise<void> {
+        if (this.selectedConversation?.otherPartyId === conversation.otherPartyId &&
+            this.selectedConversation?.otherPartyType === conversation.otherPartyType) return;
 
-        this.selectedCourier = courier;
+        this.selectedConversation = conversation;
         this.messages = [];
 
-        await this.loadMessages(courier.courierId);
+        await this.loadMessages(conversation.otherPartyId, conversation.otherPartyType);
 
         // Mark messages as read if there are unread messages
-        if (courier.unreadCount > 0) {
-            await this.markMessagesAsRead(courier.courierId);
-            courier.unreadCount = 0; // Clear unread count immediately
+        if (conversation.unreadCount > 0) {
+            await this.markMessagesAsRead(conversation.otherPartyId, conversation.otherPartyType);
+            conversation.unreadCount = 0;
         }
     }
 
     async sendMessage(): Promise<void> {
-        if (!this.newMessage.trim() || !this.selectedCourier || this.isSending) return;
+        if (!this.newMessage.trim() || !this.selectedConversation || this.isSending) return;
 
         const messageContent = this.newMessage.trim();
         this.isSending = true;
 
         try {
             const data: SendMessageRequest = {
-                courierIds: [this.selectedCourier.courierId],
+                sendToCourierId: this.selectedConversation.otherPartyType === OtherMessagePartyType.Courier
+                    ? this.selectedConversation.otherPartyId : undefined,
+                sendToStaffId: this.selectedConversation.otherPartyType === OtherMessagePartyType.Staff
+                    ? this.selectedConversation.otherPartyId : undefined,
                 message: messageContent,
                 messageType: this.messageDeliveryType
             };
 
             await this.messagingService.sendMessage(data);
 
-            // Add an optimistic message to UI (insert at the end since messages are chronological)
+            // Add an optimistic message to UI
             const optimisticMessage: ChatMessageViewModel = {
                 messageId: -Date.now(),
-                staffId: this.currentStaffId,
-                courierId: this.selectedCourier.courierId,
+                sendFromStaffId: this.currentStaffId,
+                sendToCourierId: this.selectedConversation.otherPartyType === OtherMessagePartyType.Courier
+                    ? this.selectedConversation.otherPartyId : undefined,
+                sendToStaffId: this.selectedConversation.otherPartyType === OtherMessagePartyType.Staff
+                    ? this.selectedConversation.otherPartyId : undefined,
                 message: messageContent,
                 messageTime: dayjs(),
                 read: false,
                 sent: true,
-                messageDirection: MessageDirection.StaffToCourier
+                isSender: true
             };
 
             this.messages.push(optimisticMessage);
             this.newMessage = '';
+            this.showSaveAsQuickResponse = false; // Hide the save option after sending
 
             // Update conversation preview
-            this.selectedCourier.lastMessage = messageContent;
-            this.selectedCourier.lastMessageTime = dayjs();
-            this.selectedCourier.messageDirection = MessageDirection.StaffToCourier;
+            this.selectedConversation.lastMessage = messageContent;
+            this.selectedConversation.lastMessageTime = dayjs();
 
             this.scrollToBottom();
-            this.toastrService.showSuccessToast('Message sent');
+            this.applyScope();
 
+            this.toastrService.showSuccessToast('Message sent');
         } catch (error) {
             console.error('Failed to send message:', error);
             this.toastrService.showErrorToast('Failed to send message');
@@ -225,25 +261,87 @@ class MessagingDialogController extends BaseController {
         }
     }
 
-    private async markMessagesAsRead(courierId: number): Promise<void> {
-        try {
-            await this.messagingService.markAsRead(courierId);
+    // Watch for changes in message input to show/hide a save option
+    onMessageInputChange(): void {
+        const messageText = this.newMessage;
+        const hasText = messageText.trim().length > 0;
+        const isNotExistingResponse = !this.quickResponses.some(qr => qr.text === messageText.trim());
 
-            // Update local messages to show as read - only messages received FROM courier (TO staff)
+        this.showSaveAsQuickResponse = hasText && isNotExistingResponse && messageText.trim().length >= 2;
+        this.applyScope();
+    }
+
+    async saveCurrentMessageAsQuickResponse(): Promise<void> {
+        if (!this.newMessage.trim() || this.isSavingQuickResponse) return;
+
+        this.isSavingQuickResponse = true;
+
+        try {
+            const request: SaveQuickResponseRequest = {
+                message: this.newMessage.trim()
+            };
+
+            const newId = await this.messagingService.addQuickResponse(request);
+
+            // Add to local list
+            const newResponse: Suggestion = {
+                id: newId,
+                text: this.newMessage.trim()
+            };
+
+            this.quickResponses.unshift(newResponse); // Add to the beginning
+            this.showSaveAsQuickResponse = false;
+
+            this.toastrService.showSuccessToast('Quick response saved!');
+
+        } catch (error) {
+            console.error('Failed to save quick response:', error);
+            this.toastrService.showErrorToast('Failed to save quick response');
+        } finally {
+            this.isSavingQuickResponse = false;
+        }
+    }
+
+    async deleteQuickResponse(response: Suggestion): Promise<void> {
+        // Prevent deleting default responses (negative IDs)
+        if (response.id < 0) {
+            this.toastrService.showWarningToast('Cannot delete default quick responses');
+            return;
+        }
+
+        try {
+            await this.messagingService.deleteQuickResponse(response.id);
+
+            this.quickResponses = this.quickResponses.filter(r => r.id !== response.id);
+            this.toastrService.showSuccessToast('Quick response deleted');
+
+        } catch (error) {
+            console.error('Failed to delete quick response:', error);
+            this.toastrService.showErrorToast('Failed to delete quick response');
+        }
+    }
+
+    private async markMessagesAsRead(otherPartyId: number, otherPartyType: OtherMessagePartyType): Promise<void> {
+        try {
+            await this.messagingService.markAsRead(otherPartyId, otherPartyType);
+
+            // Update local messages to show as read - only messages received by current staff
             this.messages.forEach(message => {
-                if (message.messageDirection === MessageDirection.CourierToStaff && !message.read) {
+                if (message.sendToStaffId === this.currentStaffId && !message.read) {
                     message.read = true;
                     message.readTime = dayjs();
                 }
             });
 
             // Update conversation unread count
-            if (this.selectedCourier) {
-                this.selectedCourier.unreadCount = 0;
+            if (this.selectedConversation) {
+                this.selectedConversation.unreadCount = 0;
             }
 
-            // Update in a conversation list
-            const conversation = this.couriers.find(c => c.courierId === courierId);
+            // Update in conversation list
+            const conversation = this.conversations.find(c =>
+                c.otherPartyId === otherPartyId && c.otherPartyType === otherPartyType
+            );
             if (conversation) {
                 conversation.unreadCount = 0;
             }
@@ -251,37 +349,61 @@ class MessagingDialogController extends BaseController {
             console.error('Failed to mark messages as read:', error);
         }
     }
-    
+
+    // Helper method to determine if message is from current user
+    isMessageFromCurrentUser(message: ChatMessageViewModel): boolean {
+        return message.sendFromStaffId === this.currentStaffId;
+    }
+
     // Helper method to get sender name for display
     getSenderName(message: ChatMessageViewModel): string {
-        if (message.messageDirection === MessageDirection.StaffToCourier) {
-            return 'You'; // Staff sent TO courier
-        } else if (message.messageDirection === MessageDirection.CourierToStaff) {
-            return this.selectedCourier?.courierName || 'Courier'; // Courier sent TO staff
+        if (this.isMessageFromCurrentUser(message)) {
+            return 'You';
+        } else if (this.selectedConversation) {
+            return this.selectedConversation.otherPartyName;
         }
         return 'Unknown';
     }
 
     getMessageDirectionIcon(message: ChatMessageViewModel): string {
-        switch (message.messageDirection) {
-            case MessageDirection.StaffToCourier:
-                return 'send';
-            case MessageDirection.CourierToStaff:
-                return 'reply';
-            default:
-                return 'help';
-        }
+        return this.isMessageFromCurrentUser(message) ? 'send' : 'reply';
     }
 
     getLastMessageDirectionText(conversation: RecentMessageViewModel): string {
-        switch (conversation.messageDirection) {
-            case MessageDirection.StaffToCourier:
-                return 'You: '; // Staff sent TO courier
-            case MessageDirection.CourierToStaff:
-                return `${conversation.courierName}: `; // Courier sent TO staff
-            default:
-                return '';
-        }
+        return conversation.unreadCount > 0 ? `${conversation.otherPartyName}: ` : 'You: ';
+    }
+
+    // === Quick Responses ===
+    selectQuickResponse(response: Suggestion): void {
+        this.newMessage = response.text;
+        this.showQuickResponses = false;
+        this.showSaveAsQuickResponse = false; // Hide save option when using existing response
+
+        // Autofocus the textarea
+        this.registerTimeout(() => {
+            const textarea = document.querySelector('.message-input textarea') as HTMLTextAreaElement;
+            if (textarea) {
+                textarea.focus();
+            }
+        }, 50);
+    }
+
+    toggleQuickResponses(): void {
+        this.showQuickResponses = !this.showQuickResponses;
+    }
+
+    hideQuickResponses(): void {
+        this.showQuickResponses = false;
+    }
+
+    // Filter quick responses based on search
+    getFilteredQuickResponses(): Suggestion[] {
+        return this.quickResponses;
+    }
+
+    // Check if response is deletable (custom responses only)
+    canDeleteResponse(response: Suggestion): boolean {
+        return response.id > 0; // Positive IDs are custom, negative are defaults
     }
 
     // === NEW CHAT VIEW ===
@@ -303,12 +425,12 @@ class MessagingDialogController extends BaseController {
     async onSearchKeyup(event: KeyboardEvent): Promise<void> {
         this.clearSearchTimeout();
 
-        if (event.keyCode === 27) { // Escape
+        if (event.keyCode === 27) {
             this.backToMessaging();
             return;
         }
 
-        if (event.keyCode === 13 && this.courierSuggestions.length > 0) { // Enter
+        if (event.keyCode === 13 && this.courierSuggestions.length > 0) {
             await this.startConversationWith(this.courierSuggestions[0]);
             return;
         }
@@ -326,7 +448,7 @@ class MessagingDialogController extends BaseController {
     }
 
     async onSearchFocus(): Promise<void> {
-        if (!this.courierSearchTerm && this.recentCouriers.length === 0) {
+        if (!this.courierSearchTerm && this.recentConversations.length === 0) {
             await this.loadRecentForNewChat();
         }
     }
@@ -360,37 +482,39 @@ class MessagingDialogController extends BaseController {
     }
 
     private async loadRecentForNewChat(): Promise<void> {
-        this.recentCouriers = this.couriers
+        this.recentConversations = this.conversations
             .filter(c => c.lastMessageTime)
             .sort((a, b) => b.lastMessageTime.valueOf() - a.lastMessageTime.valueOf())
             .slice(0, 5);
     }
 
-    async startConversationWith(courier: any): Promise<void> {
-        // Handle both RecentMessageViewModel and Suggestion interfaces
-        const courierId = courier.courierId || courier.id;
-        const courierName = courier.courierName || courier.text || 'Unknown';
+    async startConversationWith(courierOrSuggestion: any): Promise<void> {
+        const otherPartyId = courierOrSuggestion.otherPartyId || courierOrSuggestion.id;
+        const otherPartyName = courierOrSuggestion.otherPartyName || courierOrSuggestion.text || 'Unknown';
+        const otherPartyType = courierOrSuggestion.otherPartyType || OtherMessagePartyType.Courier;
 
-        const existing = this.couriers.find(c => c.courierId === courierId);
+        const existing = this.conversations.find(c =>
+            c.otherPartyId === otherPartyId && c.otherPartyType === otherPartyType
+        );
+
         if (existing) {
-            await this.selectCourier(existing);
+            await this.selectConversation(existing);
         } else {
-            const newCourier: RecentMessageViewModel = {
-                courierId: courierId,
-                courierName: courierName,
-                initials: this.generateInitials(courierName),
-                status: courier.status || 'offline',
+            const newConversation: RecentMessageViewModel = {
+                otherPartyId: otherPartyId,
+                otherPartyType: otherPartyType,
+                otherPartyName: otherPartyName,
+                otherPartyInitials: this.generateInitials(otherPartyName),
+                otherPartyStatus: courierOrSuggestion.status || 'offline',
                 unreadCount: 0,
                 lastMessage: '',
-                lastMessageTime: dayjs(),
-                messageDirection: MessageDirection.StaffToCourier // Default direction for new conversations
+                lastMessageTime: dayjs()
             };
 
-            this.couriers.unshift(newCourier);
-            await this.selectCourier(newCourier);
+            this.conversations.unshift(newConversation);
+            await this.selectConversation(newConversation);
         }
 
-        // Go back to the main messaging view
         this.backToMessaging();
     }
 
@@ -403,14 +527,14 @@ class MessagingDialogController extends BaseController {
     getInitials(name: string): string {
         return this.generateInitials(name);
     }
-    
-    async refreshCouriers(): Promise<void> {
-        await this.loadRecentCouriers();
+
+    async refreshConversations(): Promise<void> {
+        await this.loadRecentConversations();
     }
 
     async refreshMessages(): Promise<void> {
-        if (this.selectedCourier) {
-            await this.loadMessages(this.selectedCourier.courierId);
+        if (this.selectedConversation) {
+            await this.loadMessages(this.selectedConversation.otherPartyId, this.selectedConversation.otherPartyType);
         }
     }
 
@@ -472,7 +596,7 @@ class MessagingDialogController extends BaseController {
     }
 
     getTotalUnreadCount(): number {
-        return this.couriers.reduce((total, courier) => total + courier.unreadCount, 0);
+        return this.conversations.reduce((total, conversation) => total + conversation.unreadCount, 0);
     }
 
     // === DIALOG ACTIONS ===
@@ -501,80 +625,6 @@ class MessagingDialogController extends BaseController {
     titleCase(input: string): string {
         if (!input) return '';
         return input.charAt(0).toUpperCase() + input.slice(1).toLowerCase();
-    }
-
-    // === Quick Responses ===
-    selectQuickResponse(response: string): void {
-        this.newMessage = response;
-        this.showQuickResponses = false;
-
-        // Autofocus the textarea
-        this.registerTimeout(() => {
-            const textarea = document.querySelector('.message-input textarea') as HTMLTextAreaElement;
-            if (textarea) {
-                textarea.focus();
-            }
-        }, 50);
-    }
-
-    getContextualQuickResponses(): string[] {
-        const hour = dayjs().hour();
-        if (hour < 9) {
-            // Morning responses
-            return [
-                QuickResponseType.OnMyWay,
-                QuickResponseType.ETA5Minutes,
-                QuickResponseType.TrafficDelay
-            ];
-        } else if (hour > 17) {
-            // Evening responses
-            return [
-                QuickResponseType.DeliveredSuccessfully,
-                QuickResponseType.DeliveryComplete,
-                QuickResponseType.CustomerNotAvailable
-            ];
-        }
-
-        // Default responses
-        return this.quickResponses;
-    }
-
-    toggleQuickResponses(): void {
-        this.showQuickResponses = !this.showQuickResponses;
-    }
-
-    hideQuickResponses(): void {
-        this.showQuickResponses = false;
-    }
-
-    getQuickResponsesByCategory(): { [category: string]: string[] } {
-        return {
-            'Status Updates': [
-                QuickResponseType.OnMyWay,
-                QuickResponseType.ArrivedAtLocation,
-                QuickResponseType.ETA5Minutes,
-                QuickResponseType.ContactingCustomer
-            ],
-            'Delivery Success': [
-                QuickResponseType.DeliveredSuccessfully,
-                QuickResponseType.DeliveryComplete,
-                QuickResponseType.PackageLeftAtDoor
-            ],
-            'Issues': [
-                QuickResponseType.CustomerNotAvailable,
-                QuickResponseType.UnableToDeliver,
-                QuickResponseType.AddressIssue,
-                QuickResponseType.NeedAssistance
-            ],
-            'Delays': [
-                QuickResponseType.TrafficDelay,
-                QuickResponseType.WeatherDelay,
-                QuickResponseType.CustomerRequested
-            ],
-            'Other': [
-                QuickResponseType.PackageReturning
-            ]
-        };
     }
 }
 

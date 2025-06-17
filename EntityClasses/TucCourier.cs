@@ -265,11 +265,15 @@ public partial class TucCourier
 
     public decimal? SubContractorFuelPercentage { get; set; }
 
+    public int? RegionId { get; set; }
+
     public virtual TucCourierFleet CourierFleet { get; set; }
 
     public virtual TblCourierGp CourierGps { get; set; }
 
     public virtual TblCourierLogInOut CourierLogInOut { get; set; }
+
+    public virtual TblBulkRegion Region { get; set; }
 
     public virtual ICollection<TblAfterHour> TblAfterHours { get; set; } = new List<TblAfterHour>();
 
@@ -286,4 +290,10 @@ public partial class TucCourier
     public virtual ICollection<TucJob> TucJobMasterCouriers { get; set; } = new List<TucJob>();
 
     public virtual ICollection<TucJob> TucJobUcjbCouriers { get; set; } = new List<TucJob>();
+
+    public virtual ICollection<TucManualMessage> TucManualMessageUcmmSendFromCouriers { get; set; } = new List<TucManualMessage>();
+
+    public virtual ICollection<TucManualMessage> TucManualMessageUcmmSendToCouriers { get; set; } = new List<TucManualMessage>();
+
+    public virtual ICollection<UserQuickResponse> UserQuickResponses { get; set; } = new List<UserQuickResponse>();
 }

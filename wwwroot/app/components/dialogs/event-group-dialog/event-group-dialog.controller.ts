@@ -17,6 +17,7 @@ export class EventGroupDialogController extends BaseController{
         '$http',
         'toastrService',
         '$timeout',
+        '$interval',
         'jobId',
         'eventTypeGroups',
         'users'
@@ -26,12 +27,14 @@ export class EventGroupDialogController extends BaseController{
         private $mdDialog: angular.material.IDialogService,
         private $http: angular.IHttpService,
         private toastrService: ToastrService,
-        private $timeout: angular.ITimeoutService,
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
         public jobId: number,
         public events: EventGroupViewModel[],
         public users: Suggestion[],
     ) {
         super();
+        this.initServices($timeout, $interval);
 
         this.browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -40,14 +43,14 @@ export class EventGroupDialogController extends BaseController{
         this.maxDate = new Date();
         this.maxDate.setDate(this.maxDate.getFullYear() + 15);
 
-        this.$timeout(() => {
+        this.registerTimeout(() => {
             console.log('EventGroupDialog initialized with', events.length, 'event groups');
         });
     }
 
     async save(jobId: number, events: EventGroupViewModel[]) {
         try {
-            this.$timeout(() => {
+            this.registerTimeout(() => {
                 console.log('Processing event save request');
             });
 
@@ -70,7 +73,7 @@ export class EventGroupDialogController extends BaseController{
 
             const taskCount = activeEvents.length;
 
-            this.$timeout(() => {
+            this.registerTimeout(() => {
                 this.toastrService.showSuccessToast(`${taskCount} task${taskCount !== 1 ? 's' : ''} added successfully`);
                 // Close dialog
                 this.$mdDialog.hide();
@@ -84,7 +87,7 @@ export class EventGroupDialogController extends BaseController{
     querySearch(text: string): Suggestion[] {
         let results: Suggestion[] = [];
 
-        this.$timeout(() => {
+        this.registerTimeout(() => {
             if (!text) {
                 results = this.users;
             } else {
@@ -101,7 +104,7 @@ export class EventGroupDialogController extends BaseController{
     }
 
     selectedUserChange(user: Suggestion, index: number): void {
-        this.$timeout(() => {
+        this.registerTimeout(() => {
             if (user && user.text) {
                 if (!this.events[index].assignTo) {
                     this.events[index].assignTo = { text: '', id: 0 };

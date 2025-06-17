@@ -1,7 +1,10 @@
 import {
     ChatMessageViewModel,
-    RecentMessageViewModel, SendMessageRequest
+    RecentMessageViewModel,
+    SendMessageRequest, SaveQuickResponseRequest
 } from "../components/dialogs/messaging-dialog/messaging-dialog.interfaces";
+import {Suggestion} from "../interfaces/job.interface";
+import {OtherMessagePartyType} from "../components/dialogs/messaging-dialog/messaging-dailog.enums";
 
 class MessagingService implements angular.IServiceProvider {
     static $inject = [
@@ -11,44 +14,68 @@ class MessagingService implements angular.IServiceProvider {
     constructor(
         private $http: angular.IHttpService,
     ) {
-        console.log('ChatApiService: Service instantiated');
+        console.log('MessagingService: Service instantiated');
     }
 
     $get() {
         return this;
     }
 
-    async getRecentList(staffId: number): Promise<RecentMessageViewModel[]> {
-        const response = await this.$http.get<RecentMessageViewModel[]>(`messages/GetRecentList`, {
+    async getRecentList(): Promise<RecentMessageViewModel[]> {
+        const response = await this.$http.get<RecentMessageViewModel[]>(`messages/GetRecentList`);
+        return response.data;
+    }
+
+    async getMessages(otherPartyId: number, otherPartyType: OtherMessagePartyType, staffId: number): Promise<ChatMessageViewModel[]> {
+        let url: string;
+
+        if (otherPartyType === OtherMessagePartyType.Courier) {
+            url = `messages/GetMessages`;
+        } else {
+            url = `messages/GetMessagesByStaff`;
+        }
+
+        const response = await this.$http.get<ChatMessageViewModel[]>(url, {
             params: {
-                staffId,
+                courierId: otherPartyType === OtherMessagePartyType.Courier ? otherPartyId : undefined,
+                otherStaffId: otherPartyType === OtherMessagePartyType.Staff ? otherPartyId : undefined,
+                staffId: staffId,
+                currentStaffId: staffId,
             }
         });
 
         return response.data;
     }
 
-    async getMessages(courierId: number, staffId: number): Promise<ChatMessageViewModel[]> {
-        const response = await this.$http.get<ChatMessageViewModel[]>(`messages/GetMessages`, {
-            params: {
-                courierId,
-                staffId,
-            }
-        });
-
-        return response.data;
-    }
-    
     async sendMessage(data: SendMessageRequest) {
         await this.$http.post('messages/SendMessage', data);
     }
-    
-    async markAsRead(courierId: number) {
-        await this.$http.get('messages/MarkAsRead', {
+
+    async markAsRead(otherPartyId: number, otherPartyType: OtherMessagePartyType) {
+        await this.$http.post('messages/MarkMessagesAsRead', null, {
             params: {
-                courierId,
+                otherPartyId,
+                otherPartyType,
             }
-        })
+        });
+    }
+
+    async getQuickResponses(): Promise<Suggestion[]> {
+        const response = await this.$http.get<Suggestion[]>(`messages/GetQuickResponses`);
+        return response.data;
+    }
+
+    async addQuickResponse(data: SaveQuickResponseRequest): Promise<number> {
+        const response = await this.$http.post<number>('messages/AddQuickResponse', data);
+        return response.data;
+    }
+
+    async deleteQuickResponse(responseId: number) {
+        await this.$http.post('messages/DeleteQuickResponse', null, {
+            params: {
+                responseId,
+            }
+        });
     }
 }
 

@@ -1,32 +1,39 @@
 import dayjs from "dayjs";
 import MessageDeliveryType from "../../../enums/message-delivery-type.enum";
-import {MessageDirection} from "./messaging-dailog.enums";
+import { OtherMessagePartyType } from "./messaging-dailog.enums";
 
 export interface ChatMessageViewModel {
     messageId: number;
-    staffId: number;
-    courierId: number;
+    sendToStaffId?: number;
+    sendFromStaffId?: number;
+    sendToCourierId?: number;
+    sendFromCourierId?: number;
     message: string;
     messageTime: dayjs.Dayjs;
     read: boolean;
     readTime?: dayjs.Dayjs;
     sent: boolean;
-    messageDirection: MessageDirection;
+    isSender: boolean;
 }
 
 export interface RecentMessageViewModel {
-    courierId: number;
-    courierName: string;
-    initials: string;
-    status: string;
+    otherPartyId: number;
+    otherPartyType: OtherMessagePartyType;
+    otherPartyName: string;
+    otherPartyInitials: string;
+    otherPartyStatus: string;
     unreadCount: number;
     lastMessage: string;
     lastMessageTime: dayjs.Dayjs;
-    messageDirection: MessageDirection;
 }
 
 export interface SendMessageRequest {
-    courierIds: number[];
+    sendToStaffId?: number;
+    sendToCourierId?: number;
     message: string;
     messageType: MessageDeliveryType;
+}
+
+export interface SaveQuickResponseRequest {
+    message: string;
 }

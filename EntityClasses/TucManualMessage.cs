@@ -50,4 +50,20 @@ public partial class TucManualMessage
     public string FileType { get; set; }
 
     public byte[] FileContent { get; set; }
+
+    public int? UcmmSendToCourierId { get; set; }
+
+    public int? UcmmSendToStaffId { get; set; }
+
+    public int? UcmmSendFromCourierId { get; set; }
+
+    public int? UcmmSendFromStaffId { get; set; }
+
+    public virtual TucCourier UcmmSendFromCourier { get; set; }
+
+    public virtual TucStaff UcmmSendFromStaff { get; set; }
+
+    public virtual TucCourier UcmmSendToCourier { get; set; }
+
+    public virtual TucStaff UcmmSendToStaff { get; set; }
 }
