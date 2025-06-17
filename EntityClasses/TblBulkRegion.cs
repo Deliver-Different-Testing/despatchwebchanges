@@ -59,5 +59,7 @@ public partial class TblBulkRegion
 
     public virtual ICollection<TblBulkRunSchedule> TblBulkRunSchedules { get; set; } = new List<TblBulkRunSchedule>();
 
+    public virtual ICollection<TucCourier> TucCouriers { get; set; } = new List<TucCourier>();
+
     public virtual ICollection<ZoneName> ZoneNames { get; set; } = new List<ZoneName>();
 }

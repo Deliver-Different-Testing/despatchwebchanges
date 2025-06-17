@@ -19,13 +19,13 @@ class FlightDetailsDialogController extends BaseController {
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
-        public flightData: IFlightViewModel
+        flightData: IFlightViewModel
     ) {
         super();
         this.flight = flightData;
         console.log('FlightDetailsDialogController: Flight data received', this.flight);
 
-        // Initialize with overview or first segment
+        // Initialize with an overview or first segment
         if (this.flight.isMultiSegment && this.flight.flightSegments && this.flight.flightSegments.length > 0) {
             this.currentSegment = this.flight.flightSegments[0];
         } else {
@@ -43,10 +43,6 @@ class FlightDetailsDialogController extends BaseController {
                 stopsInSegment: 0
             };
         }
-    }
-
-    $onInit() {
-        // No need to fetch data, we already have it
     }
 
     selectSegment(index: number): void {

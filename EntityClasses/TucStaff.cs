@@ -111,9 +111,15 @@ public partial class TucStaff
 
     public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
 
+    public virtual ICollection<TucManualMessage> TucManualMessageUcmmSendFromStaffs { get; set; } = new List<TucManualMessage>();
+
+    public virtual ICollection<TucManualMessage> TucManualMessageUcmmSendToStaffs { get; set; } = new List<TucManualMessage>();
+
     public virtual ICollection<TucNote> TucNoteCreatedByNavigations { get; set; } = new List<TucNote>();
 
     public virtual ICollection<TucNote> TucNoteUpdatedByNavigations { get; set; } = new List<TucNote>();
 
     public virtual TucSuburb UcstSuburb { get; set; }
+
+    public virtual ICollection<UserQuickResponse> UserQuickResponses { get; set; } = new List<UserQuickResponse>();
 }

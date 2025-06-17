@@ -175,6 +175,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TucSuburb> TucSuburbs { get; set; }
 
+    public virtual DbSet<UserQuickResponse> UserQuickResponses { get; set; }
+
     public virtual DbSet<UtlQryContactLookup> UtlQryContactLookups { get; set; }
 
     public virtual DbSet<UvwBookingToday> UvwBookingTodays { get; set; }
@@ -3769,6 +3771,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.MasterCourierId, "IX_MasterCourierId");
 
+            entity.HasIndex(e => e.RegionId, "IX_RegionId");
+
             entity.HasIndex(e => e.XeroId, "IX_XeroId");
 
             entity.HasIndex(e => e.Code, "IX_tucCourier_Code");
@@ -4016,6 +4020,10 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.CourierLogInOut).WithMany(p => p.TucCouriers)
                 .HasForeignKey(d => d.CourierLogInOutId)
                 .HasConstraintName("FK_tucCourier_tblCourierLogInOut");
+
+            entity.HasOne(d => d.Region).WithMany(p => p.TucCouriers)
+                .HasForeignKey(d => d.RegionId)
+                .HasConstraintName("FK_tucCourier_tblBulkRegion");
         });
 
         modelBuilder.Entity<TucCourierFleet>(entity =>
@@ -5811,7 +5819,11 @@ public partial class DespatchContext : DbContext
                 .IsRequired()
                 .HasColumnType("ntext")
                 .HasColumnName("ucmmMessage");
+            entity.Property(e => e.UcmmSendFromCourierId).HasColumnName("ucmmSendFromCourierID");
+            entity.Property(e => e.UcmmSendFromStaffId).HasColumnName("ucmmSendFromStaffID");
             entity.Property(e => e.UcmmSendTo).HasColumnName("ucmmSendTo");
+            entity.Property(e => e.UcmmSendToCourierId).HasColumnName("ucmmSendToCourierID");
+            entity.Property(e => e.UcmmSendToStaffId).HasColumnName("ucmmSendToStaffID");
             entity.Property(e => e.UcmmSent).HasColumnName("ucmmSent");
             entity.Property(e => e.UcmmStaffId)
                 .HasDefaultValue(0)
@@ -5823,6 +5835,22 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasColumnName("ucmmWindowsUser");
+
+            entity.HasOne(d => d.UcmmSendFromCourier).WithMany(p => p.TucManualMessageUcmmSendFromCouriers)
+                .HasForeignKey(d => d.UcmmSendFromCourierId)
+                .HasConstraintName("FK_tucManualMessage_SendFromCourier");
+
+            entity.HasOne(d => d.UcmmSendFromStaff).WithMany(p => p.TucManualMessageUcmmSendFromStaffs)
+                .HasForeignKey(d => d.UcmmSendFromStaffId)
+                .HasConstraintName("FK_tucManualMessage_SendFromStaff");
+
+            entity.HasOne(d => d.UcmmSendToCourier).WithMany(p => p.TucManualMessageUcmmSendToCouriers)
+                .HasForeignKey(d => d.UcmmSendToCourierId)
+                .HasConstraintName("FK_tucManualMessage_SendToCourier");
+
+            entity.HasOne(d => d.UcmmSendToStaff).WithMany(p => p.TucManualMessageUcmmSendToStaffs)
+                .HasForeignKey(d => d.UcmmSendToStaffId)
+                .HasConstraintName("FK_tucManualMessage_SendToStaff");
         });
 
         modelBuilder.Entity<TucMessage>(entity =>
@@ -6139,6 +6167,30 @@ public partial class DespatchContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("ucsuName");
             entity.Property(e => e.UcsuRegion).HasColumnName("ucsuRegion");
+        });
+
+        modelBuilder.Entity<UserQuickResponse>(entity =>
+        {
+            entity.HasKey(e => e.ResponseId).HasName("PK__UserQuic__1AAA640CA2077CE3");
+
+            entity.HasIndex(e => e.CourierId, "IX_UserQuickResponses_CourierID");
+
+            entity.HasIndex(e => e.StaffId, "IX_UserQuickResponses_StaffID");
+
+            entity.Property(e => e.ResponseId).HasColumnName("ResponseID");
+            entity.Property(e => e.CourierId).HasColumnName("CourierID");
+            entity.Property(e => e.CreatedDate).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.Message).IsRequired();
+            entity.Property(e => e.StaffId).HasColumnName("StaffID");
+
+            entity.HasOne(d => d.Courier).WithMany(p => p.UserQuickResponses)
+                .HasForeignKey(d => d.CourierId)
+                .HasConstraintName("FK_UserQuickResponses_Courier");
+
+            entity.HasOne(d => d.Staff).WithMany(p => p.UserQuickResponses)
+                .HasForeignKey(d => d.StaffId)
+                .HasConstraintName("FK_UserQuickResponses_Staff");
         });
 
         modelBuilder.Entity<UtlQryContactLookup>(entity =>

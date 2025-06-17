@@ -146,6 +146,7 @@ builder.Services.AddScoped<ICountryService, CountryService>();
 builder.Services.AddScoped<ITenantInfoService, TenantInfoService>();
 builder.Services.AddScoped<IFlightRateService, FlightRateService>();
 builder.Services.AddScoped<IAddStopJobService, AddStopJobService>();
+builder.Services.AddScoped<IMessageHelperService, MessageHelperService>();
 
 // Register DespatchContext with a dummy connection string
 builder.Services.AddDbContextFactory<DespatchContext>(options =>

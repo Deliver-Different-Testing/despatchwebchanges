@@ -307,6 +307,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[UserQuickResponses]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[VehicleSize]",
          "ObjectType": 0
       },

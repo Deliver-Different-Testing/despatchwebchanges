@@ -4,7 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Models.MessageModels;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.EntityFrameworkCore;
@@ -13,66 +15,51 @@ namespace DespatchWeb.Repositories;
 
 public class MessageRepository(
     IDbContextFactory<DespatchContext> contextFactory,
-    ITenantInfoService infoService) : BaseRepository(contextFactory), IMessageRepository
+    ITenantInfoService infoService,
+    IMessageHelperService messageHelper) : BaseRepository(contextFactory), IMessageRepository
 {
-    public async Task<List<RecentMessageViewModel>> GetRecentListAsync(int staffId)
+    public async Task<List<RecentMessageViewModel>> GetRecentListAsync()
     {
+        var staffId = infoService.GetStaffId();
         var currentDate = infoService.GetCurrentTenantTime();
-        
-        // Get all messages where current staff is either sender or receiver
-        var messages = await Context.TucManualMessages
-            .Where(m => m.UcmmStaffId == staffId || m.UcmmSendTo == staffId)
-            .AsNoTracking()
+
+        var allMessages = await Context.TucManualMessages
+            .ForStaff(staffId)
+            .IncludeParticipants()
             .ToListAsync();
 
-        // Group by the "other party" (courier or staff member)
-        var recentList = messages
-            .GroupBy(m => m.UcmmStaffId == staffId ? m.UcmmSendTo : m.UcmmStaffId)
-            .Where(g => g.Key.HasValue) // Ensure we have a valid another party ID
-            .Select(g => new
+        // Group by other party and build result using helper service
+        var result = allMessages
+            .Select(m => new
             {
-                OtherPartyId = g.Key.Value,
-                UnreadCount = g.Count(x => !x.Read && x.UcmmStaffId != staffId), // Only count unread messages not sent by current staff
-                LastMessageDate = g.Max(x => x.UcmmDate),
-                LastMessage = g.OrderByDescending(x => x.UcmmDate).First().UcmmMessage,
-                LastMessageDirection = g.OrderByDescending(x => x.UcmmDate).First().UcmmStaffId == staffId 
-                    ? MessageDirection.StaffToCourier 
-                    : MessageDirection.CourierToStaff
+                Message = m,
+                OtherParty = messageHelper.GetOtherParty(m, staffId),
+                IsIncoming = messageHelper.IsIncomingMessage(m, staffId)
             })
-            .ToList();
-
-        // Get courier information for all other parties
-        var otherPartyIds = recentList.Select(x => x.OtherPartyId).ToList();
-        var couriers = await Context.TucCouriers
-            .Where(c => otherPartyIds.Contains(c.UccrId))
-            .AsNoTracking()
-            .ToListAsync();
-
-        // Get login status for couriers
-        var courierLogOuts = await Context.TblCourierLogInOuts
-            .Where(log => otherPartyIds.Contains(log.CourierId))
-            .GroupBy(log => log.CourierId)
-            .Select(g => new { CourierId = g.Key, LastLogOut = g.Max(l => (DateTime?)l.LogOutTime) })
-            .AsNoTracking()
-            .ToListAsync();
-
-        var result = recentList.Select(x =>
-        {
-            var courier = couriers.FirstOrDefault(c => c.UccrId == x.OtherPartyId);
-            var logOut = courierLogOuts.FirstOrDefault(l => l.CourierId == x.OtherPartyId);
-            
-            return new RecentMessageViewModel
+            .Where(x => x.OtherParty.Id > 0)
+            .GroupBy(x => new { x.OtherParty.Id, x.OtherParty.Type })
+            .Select(g =>
             {
-                CourierId = x.OtherPartyId,
-                CourierName = courier != null ? $"{courier.UccrName} {courier.UccrSurname}" : "Unknown",
-                Initials = courier != null ? $"{courier.UccrName[0]}{courier.UccrSurname[0]}" : "??",
-                Status = logOut?.LastLogOut.HasValue == true && logOut.LastLogOut < currentDate ? "online" : "offline",
-                UnreadCount = x.UnreadCount,
-                LastMessage = x.LastMessage,
-                LastMessageTime = x.LastMessageDate,
-                MessageDirection = x.LastMessageDirection
-            };
-        }).OrderByDescending(x => x.LastMessageTime).ToList();
+                var latestMessage = g.OrderByDescending(x => x.Message.UcmmDate).First();
+
+                return new RecentMessageViewModel
+                {
+                    OtherPartyId = latestMessage.OtherParty.Id,
+                    OtherPartyType = latestMessage.OtherParty.Type,
+                    OtherPartyName = latestMessage.OtherParty.Name,
+                    OtherPartyInitials = latestMessage.OtherParty.Initials,
+                    OtherPartyStatus = messageHelper.GetCourierStatus(
+                        latestMessage.OtherParty.Type == OtherMessagePartyType.Courier
+                            ? GetCourierFromMessage(latestMessage.Message, latestMessage.OtherParty.Id)
+                            : null,
+                        currentDate),
+                    UnreadCount = g.Count(x => x.IsIncoming && !x.Message.Read),
+                    LastMessage = latestMessage.Message.UcmmMessage,
+                    LastMessageTime = latestMessage.Message.UcmmDate
+                };
+            })
+            .OrderByDescending(x => x.LastMessageTime)
+            .ToList();
 
         return result;
     }
@@ -80,35 +67,164 @@ public class MessageRepository(
     public async Task<List<ChatMessageViewModel>> GetMessagesByCourierIdAsync(int courierId, int staffId)
     {
         var messages = await Context.TucManualMessages
-            .Where(m => (m.UcmmSendTo == courierId && m.UcmmStaffId == staffId) || 
-                       (m.UcmmSendTo == staffId && m.UcmmStaffId == courierId))
+            .BetweenStaffAndCourier(staffId, courierId)
             .OrderBy(m => m.UcmmDate)
             .Select(m => new ChatMessageViewModel
             {
                 MessageId = m.UcmmId,
-                StaffId = m.UcmmStaffId,
-                CourierId = m.UcmmSendTo,
+                SendFromStaffId = m.UcmmSendFromStaffId,
+                SendToStaffId = m.UcmmSendToStaffId,
+                SendFromCourierId = m.UcmmSendFromCourierId,
+                SendToCourierId = m.UcmmSendToCourierId,
                 Message = m.UcmmMessage,
                 MessageTime = m.UcmmTimeSent ?? m.UcmmDate,
                 Read = m.Read,
                 ReadTime = m.TimeRead,
                 Sent = m.UcmmSent,
-                MessageDirection = m.UcmmStaffId == staffId ? MessageDirection.StaffToCourier : MessageDirection.CourierToStaff
+                IsSender = m.UcmmSendFromStaffId == staffId
             })
             .ToListAsync();
 
         return messages;
     }
 
-    public async Task SendMessageToCouriersAsync(SendMessageRequest request)
+    public async Task<List<ChatMessageViewModel>> GetMessagesByStaffIdAsync(int otherStaffId, int currentStaffId)
+    {
+        var messages = await Context.TucManualMessages
+            .BetweenStaff(currentStaffId, otherStaffId)
+            .OrderBy(m => m.UcmmDate)
+            .Select(m => new ChatMessageViewModel
+            {
+                MessageId = m.UcmmId,
+                SendFromStaffId = m.UcmmSendFromStaffId,
+                SendToStaffId = m.UcmmSendToStaffId,
+                SendFromCourierId = m.UcmmSendFromCourierId,
+                SendToCourierId = m.UcmmSendToCourierId,
+                Message = m.UcmmMessage,
+                MessageTime = m.UcmmTimeSent ?? m.UcmmDate,
+                Read = m.Read,
+                ReadTime = m.TimeRead,
+                Sent = m.UcmmSent,
+                IsSender = m.UcmmSendFromStaffId == currentStaffId
+            })
+            .ToListAsync();
+
+        return messages;
+    }
+
+    public async Task SendMessageAsync(SendMessageRequest request)
     {
         var currentDate = infoService.GetCurrentTenantTime();
         var staffId = infoService.GetStaffId();
         var isUsTenant = infoService.IsUsTenant();
 
-        // Single query to get all courier data with login status
+        // Validate that exactly one recipient is specified
+        if ((request.SendToStaffId.HasValue ? 1 : 0) + (request.SendToCourierId.HasValue ? 1 : 0) != 1)
+        {
+            throw new ArgumentException("Must specify exactly one recipient (either SendToStaffId or SendToCourierId)");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Message))
+        {
+            throw new ArgumentException("Message cannot be empty");
+        }
+
+        var message = new TucManualMessage
+        {
+            UcmmDate = currentDate,
+            UcmmSendFromStaffId = staffId,
+            UcmmAttempts = 0,
+            UcmmMessage = request.Message
+        };
+
+        if (request.SendToCourierId.HasValue)
+        {
+            await HandleCourierMessageAsync(message, request, isUsTenant, currentDate.Date);
+        }
+        else if (request.SendToStaffId.HasValue)
+        {
+            await HandleStaffMessageAsync(message, request);
+        }
+
+        Context.TucManualMessages.Add(message);
+        await Context.SaveChangesAsync();
+    }
+
+    public async Task MarkMessagesAsReadAsync(int otherPartyId, OtherMessagePartyType otherPartyType)
+    {
+        var currentDate = infoService.GetCurrentTenantTime();
+        var staffId = infoService.GetStaffId();
+
+        var query = Context.TucManualMessages
+            .UnreadForStaff(staffId);
+
+        // Filter by another party type
+        query = otherPartyType == OtherMessagePartyType.Courier
+            ? query.Where(m => m.UcmmSendFromCourierId == otherPartyId)
+            : query.Where(m => m.UcmmSendFromStaffId == otherPartyId);
+
+        var messages = await query.ToListAsync();
+
+        foreach (var message in messages)
+        {
+            message.Read = true;
+            message.TimeRead = currentDate;
+        }
+
+        await Context.SaveChangesAsync();
+    }
+
+    public async Task<List<Suggestion>> GetSavedQuickResponsesAsync()
+    {
+        var staffId = infoService.GetStaffId();
+
+        var quickResponses = await Context.UserQuickResponses
+            .Where(r => r.StaffId == staffId && r.IsActive == true)
+            .Select(r => new Suggestion
+            {
+                Id = r.ResponseId,
+                Text = r.Message
+            })
+            .AsNoTracking()
+            .ToListAsync();
+
+        return quickResponses;
+    }
+
+    public async Task<int> AddNewQuickResponseAsync(SaveQuickResponseRequest data)
+    {
+        var staffId = infoService.GetStaffId();
+        var response = new UserQuickResponse
+        {
+            StaffId = staffId,
+            Message = data.Message,
+            IsActive = true
+        };
+
+        await Context.UserQuickResponses.AddAsync(response);
+        await Context.SaveChangesAsync();
+
+        return response.ResponseId;
+    }
+
+    public async Task DeleteQuickResponseAsync(int responseId)
+    {
+        var staffId = infoService.GetStaffId();
+        var response =
+            await Context.UserQuickResponses.FirstOrDefaultAsync(r =>
+                r.StaffId == staffId && r.ResponseId == responseId);
+        ArgumentNullException.ThrowIfNull(response);
+
+        // Softly delete
+        response.IsActive = false;
+        await Context.SaveChangesAsync();
+    }
+
+    private async Task HandleCourierMessageAsync(TucManualMessage message, SendMessageRequest request, bool isUsTenant,
+        DateTime currentDate)
+    {
         var courierData = await (from courier in Context.TucCouriers
-            where request.CourierIds.Contains(courier.UccrId) && courier.Active
+            where courier.UccrId == request.SendToCourierId.Value && courier.Active
             join loginOut in Context.TblCourierLogInOuts
                 on courier.CourierLogInOutId equals loginOut.CourierLogInOutId into loginGroup
             from login in loginGroup.DefaultIfEmpty()
@@ -121,83 +237,61 @@ public class MessageRepository(
                 IsLoggedInToday = login != null &&
                                   login.LogInTime.Date == currentDate &&
                                   !login.LogOutTime.HasValue
-            }).ToListAsync();
+            }).FirstOrDefaultAsync();
 
-        // Validate all couriers exist and are active
-        if (request.CourierIds.Count != courierData.Count)
+        ArgumentNullException.ThrowIfNull(courierData);
+
+        var deliveryMethod = GetDeliveryMethod(request.MessageType, courierData.IsLoggedInToday);
+
+        message.UcmmSendToCourierId =
+            request.SendToCourierId ?? throw new ArgumentException("Courier ID cannot be null");
+
+        if (deliveryMethod == MessageDeliveryType.App)
         {
-            var foundIds = courierData.Select(c => c.CourierId).ToList();
-            var missingIds = request.CourierIds.Except(foundIds).ToList();
-            throw new ArgumentException($"Invalid or inactive courier(s): {string.Join(", ", missingIds)}");
+            message.Subject = "Courier Manager";
         }
-
-        // Determine delivery method for each courier
-        var messageDeliveries = courierData.Select(courier => new
+        else // SMS
         {
-            Courier = courier,
-            DeliveryMethod = GetDeliveryMethod(request.MessageType, courier.IsLoggedInToday)
-        }).ToList();
-
-        // Validate SMS requirements
-        var smsDeliveries = messageDeliveries.Where(md => md.DeliveryMethod == MessageDeliveryType.Sms);
-        var couriersWithoutMobile = smsDeliveries
-            .Where(md => string.IsNullOrWhiteSpace(md.Courier.PersonalMobile) &&
-                         string.IsNullOrWhiteSpace(md.Courier.UccrMobile))
-            .Select(md => md.Courier.Code)
-            .ToList();
-
-        if (couriersWithoutMobile.Count != 0)
-        {
-            throw new ArgumentException(
-                $"Couriers must have a mobile number to send SMS: {string.Join(", ", couriersWithoutMobile)}");
-        }
-
-        // Create message records
-        var messagesToAdd = new List<TucManualMessage>();
-
-        foreach (var delivery in messageDeliveries)
-        {
-            var message = new TucManualMessage
+            if (string.IsNullOrWhiteSpace(courierData.PersonalMobile) &&
+                string.IsNullOrWhiteSpace(courierData.UccrMobile))
             {
-                UcmmDate = currentDate,
-                UcmmStaffId = staffId,
-                UcmmAttempts = 0,
-                UcmmMessage = request.Message
-            };
-
-            if (delivery.DeliveryMethod == MessageDeliveryType.App)
-            {
-                message.UcmmSendTo = delivery.Courier.CourierId;
-                message.Subject = "Courier Manager";
-            }
-            else // SMS
-            {
-                var mobileNumber = !string.IsNullOrWhiteSpace(delivery.Courier.PersonalMobile)
-                    ? delivery.Courier.PersonalMobile
-                    : delivery.Courier.UccrMobile;
-
-                message.SendToMobile = NormalizeMobileNumber(mobileNumber, isUsTenant);
-                message.Subject = $"SMS to Courier: {delivery.Courier.Code}";
+                throw new ArgumentException($"Courier {courierData.Code} must have a mobile number to send SMS");
             }
 
-            messagesToAdd.Add(message);
-        }
+            var mobileNumber = !string.IsNullOrWhiteSpace(courierData.PersonalMobile)
+                ? courierData.PersonalMobile
+                : courierData.UccrMobile;
 
-        // Save all messages in one transaction
-        if (messagesToAdd.Count != 0)
-        {
-            Context.TucManualMessages.AddRange(messagesToAdd);
-            await Context.SaveChangesAsync();
+            message.SendToMobile = NormalizeMobileNumber(mobileNumber, isUsTenant);
+            message.Subject = $"SMS to Courier: {courierData.Code}";
         }
+    }
+
+    private async Task HandleStaffMessageAsync(TucManualMessage message, SendMessageRequest request)
+    {
+        var staffExists = await Context.TucStaffs
+            .AnyAsync(s => s.UcstId == request.SendToStaffId.Value && s.UcstActive);
+
+        ArgumentNullException.ThrowIfNull(staffExists);
+
+        message.UcmmSendToStaffId = request.SendToStaffId ?? throw new ArgumentException("Staff ID cannot be null");
+        message.Subject = "Staff Message";
+    }
+
+    private static TucCourier GetCourierFromMessage(TucManualMessage message, int courierId)
+    {
+        return message.UcmmSendFromCourierId == courierId
+            ? message.UcmmSendFromCourier
+            : message.UcmmSendToCourier;
     }
 
     private static MessageDeliveryType GetDeliveryMethod(int messageType, bool isLoggedInToday)
     {
         return messageType switch
         {
-            1 => MessageDeliveryType.App, // Always internal
-            2 => MessageDeliveryType.Sms, // Always SMS
-            3 => isLoggedInToday ? MessageDeliveryType.App : MessageDeliveryType.Sms, // Mixed - based on login status
+            1 => MessageDeliveryType.App,
+            2 => MessageDeliveryType.Sms,
+            3 => isLoggedInToday ? MessageDeliveryType.App : MessageDeliveryType.Sms,
             _ => throw new ArgumentException($"Invalid message type: {messageType}")
         };
     }
@@ -206,31 +300,9 @@ public class MessageRepository(
     {
         if (string.IsNullOrWhiteSpace(phoneNumber))
             return phoneNumber;
-    
+
         var normalized = phoneNumber.Replace(" ", string.Empty);
-    
-        return isUsTenant ?
-            // For US numbers, remove +1 prefix if present
-            normalized.Replace("+1", string.Empty) :
-            // For NZ numbers, replace +64 with 0
-            normalized.Replace("+64", "0");
-    }
-    
-    public async Task MarkMessagesAsReadAsync(int courierId)
-    {
-        var currentDate = infoService.GetCurrentTenantTime();
-        var staffId = infoService.GetStaffId();
-        
-        var messages = await Context.TucManualMessages
-            .Where(m => m.UcmmSendTo == staffId && m.UcmmStaffId == courierId)
-            .ToListAsync();
-        
-        foreach (var message in messages)
-        {
-            message.Read = true;
-            message.TimeRead = currentDate;
-        }
-        
-        await Context.SaveChangesAsync();   
+
+        return isUsTenant ? normalized.Replace("+1", string.Empty) : normalized.Replace("+64", "0");
     }
 }
