@@ -744,6 +744,10 @@ class MessagingDialogController extends BaseController {
         this.selectedContacts = [];
         this.applyScope();
     }
+
+    shouldShowComma(isLast: boolean, index: number): string {
+        return !isLast && index < 2 ? ', ' : '';
+    }
 }
 
 export default MessagingDialogController;
