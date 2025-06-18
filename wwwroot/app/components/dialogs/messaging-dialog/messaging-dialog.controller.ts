@@ -6,7 +6,7 @@ import {
     MessageContactOption,
     RecentMessageViewModel,
     SaveQuickResponseRequest,
-    SendMessageRequest
+    SendMessageRequest, SendMultipleMessageRequest
 } from "./messaging-dialog.interfaces";
 import MessagingService from "../../../services/messaging.service";
 import {Suggestion} from "../../../interfaces/job.interface";
@@ -61,6 +61,10 @@ class MessagingDialogController extends BaseController {
     quickResponses: Suggestion[] = [];
     showSaveAsQuickResponse: boolean = false;
     isSavingQuickResponse: boolean = false;
+    
+    // Multi-messaging
+    isMultiSelectMode: boolean = false;
+    selectedContacts: MessageContactOption[] = [];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -427,8 +431,9 @@ class MessagingDialogController extends BaseController {
         this.showNewChatView = false;
         this.contactSearchTerm = '';
         this.contactOptions = [];
+        this.selectedContacts = [];
+        this.isMultiSelectMode = false;
         this.clearSearchTimeout();
-
         this.applyScope();
     }
 
@@ -501,10 +506,12 @@ class MessagingDialogController extends BaseController {
             .slice(0, 5);
     }
 
-    async startConversationWith(messageContactOption: MessageContactOption): Promise<void> {
-        const otherPartyId = messageContactOption.recordId;
-        const otherPartyName = messageContactOption.name || 'Unknown';
-        const otherPartyType = messageContactOption.otherMessagePartyType || OtherMessagePartyType.Courier;
+    async startConversationWith(contact: MessageContactOption | RecentMessageViewModel): Promise<void> {
+        const normalizedContact = this.normalizeContact(contact);
+
+        const otherPartyId = normalizedContact.recordId;
+        const otherPartyName = normalizedContact.name || 'Unknown';
+        const otherPartyType = normalizedContact.otherMessagePartyType || OtherMessagePartyType.Courier;
 
         const existing = this.conversations.find(c =>
             c.otherPartyId === otherPartyId && c.otherPartyType === otherPartyType
@@ -518,7 +525,7 @@ class MessagingDialogController extends BaseController {
                 otherPartyType: otherPartyType,
                 otherPartyName: otherPartyName,
                 otherPartyInitials: this.generateInitials(otherPartyName),
-                otherPartyStatus: messageContactOption.status || 'offline',
+                otherPartyStatus: normalizedContact.status || 'offline',
                 unreadCount: 0,
                 lastMessage: '',
                 lastMessageTime: dayjs()
@@ -531,7 +538,7 @@ class MessagingDialogController extends BaseController {
         this.backToMessaging();
         this.applyScope();
     }
-
+    
     highlightSearchTerm(text: string, searchTerm: string): string {
         if (!searchTerm || !text) return text;
         const regex = new RegExp(`(${searchTerm})`, 'gi');
@@ -638,6 +645,104 @@ class MessagingDialogController extends BaseController {
             default:
                 return "Unknown";
         }
+    }
+    
+    // Multi-Messages
+    // Multi-select methods
+    toggleMultiSelectMode(): void {
+        this.isMultiSelectMode = !this.isMultiSelectMode;
+        if (!this.isMultiSelectMode) {
+            this.selectedContacts = [];
+        }
+        this.applyScope();
+    }
+
+    toggleContactSelection(contact: MessageContactOption | RecentMessageViewModel): void {
+        // Normalize the contact to have consistent structure
+        const normalizedContact = this.normalizeContact(contact);
+
+        const index = this.selectedContacts.findIndex(c =>
+            c.recordId === normalizedContact.recordId &&
+            c.otherMessagePartyType === normalizedContact.otherMessagePartyType
+        );
+
+        if (index > -1) {
+            this.selectedContacts.splice(index, 1);
+        } else {
+            this.selectedContacts.push(normalizedContact);
+        }
+        this.applyScope();
+    }
+
+    isContactSelected(contact: MessageContactOption | RecentMessageViewModel): boolean {
+        const normalizedContact = this.normalizeContact(contact);
+        return this.selectedContacts.some(c =>
+            c.recordId === normalizedContact.recordId &&
+            c.otherMessagePartyType === normalizedContact.otherMessagePartyType
+        );
+    }
+
+    private normalizeContact(contact: MessageContactOption | RecentMessageViewModel): MessageContactOption {
+        // Check if it's a RecentMessageViewModel (has otherPartyId)
+        if ('otherPartyId' in contact) {
+            return {
+                id: `${contact.otherPartyId}-${contact.otherPartyType}`,
+                recordId: contact.otherPartyId,
+                name: contact.otherPartyName,
+                otherMessagePartyType: contact.otherPartyType,
+                status: contact.otherPartyStatus || 'unknown'
+            } as MessageContactOption;
+        }
+
+        // It's already a MessageContactOption
+        return contact as MessageContactOption;
+    }
+
+    async sendMessageToMultipleContacts(): Promise<void> {
+        if (!this.newMessage.trim() || this.selectedContacts.length === 0 || this.isSending) return;
+
+        const messageContent = this.newMessage.trim();
+        this.isSending = true;
+
+        try {
+            const courierIds = this.selectedContacts
+                .filter(c => c.otherMessagePartyType === OtherMessagePartyType.Courier)
+                .map(c => c.recordId);
+
+            const staffIds = this.selectedContacts
+                .filter(c => c.otherMessagePartyType === OtherMessagePartyType.Staff)
+                .map(c => c.recordId);
+
+            const data: SendMultipleMessageRequest = {
+                sendToCourierIds: courierIds.length > 0 ? courierIds : undefined,
+                sendToStaffIds: staffIds.length > 0 ? staffIds : undefined,
+                message: messageContent,
+                messageType: this.messageDeliveryType
+            };
+
+            await this.messagingService.sendMultiMessage(data);
+
+            this.newMessage = '';
+            this.selectedContacts = [];
+            this.isMultiSelectMode = false;
+
+            this.toastrService.showSuccessToast(`Message sent to ${courierIds.length + staffIds.length} contacts`);
+
+            // Go back to the main messaging view
+            this.backToMessaging();
+
+        } catch (error) {
+            console.error('Failed to send multi message:', error);
+            this.toastrService.showErrorToast('Failed to send message to all contacts');
+        } finally {
+            this.isSending = false;
+            this.applyScope();
+        }
+    }
+
+    clearSelectedContacts(): void {
+        this.selectedContacts = [];
+        this.applyScope();
     }
 }
 

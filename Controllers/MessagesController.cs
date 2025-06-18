@@ -90,6 +90,23 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
             return StatusCode(500, e.Message);
         }
     }
+    
+    [HttpPost]
+    public async Task<IActionResult> SendMultiMessage([FromBody] SendMultipleMessageRequest request)
+    {
+        try
+        {
+          if(request.SendToCourierIds.Count == 0 && request.SendToStaffIds.Count == 0) return BadRequest("Must specify at least one recipient (either SendToCourierIds or SendToStaffIds)");
+
+            await messageRepository.SendMultipleMessagesAsync(request);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error sending multiple messages: {Error}", e.Message);
+            return StatusCode(500, e.Message);
+        }
+    }
 
     [HttpPost]
     public async Task<IActionResult> MarkMessagesAsRead(int otherPartyId, OtherMessagePartyType otherPartyType)

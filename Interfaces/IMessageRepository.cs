@@ -13,6 +13,7 @@ public interface IMessageRepository
     Task<List<ChatMessageViewModel>> GetMessagesByCourierIdAsync(int courierId, int staffId);
     Task<List<ChatMessageViewModel>> GetMessagesByStaffIdAsync(int otherStaffId, int currentStaffId);
     Task SendMessageAsync(SendMessageRequest request);
+    Task SendMultipleMessagesAsync(SendMultipleMessageRequest request);
     Task MarkMessagesAsReadAsync(int otherPartyId, OtherMessagePartyType otherPartyType);
     Task<List<Suggestion>> GetSavedQuickResponsesAsync();
     Task<int> AddNewQuickResponseAsync(SaveQuickResponseRequest data);
