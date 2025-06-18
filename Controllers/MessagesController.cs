@@ -11,6 +11,21 @@ namespace DespatchWeb.Controllers;
 public class MessagesController(IMessageRepository messageRepository) : Controller
 {
     [HttpGet]
+    public async Task<IActionResult> GetUnreadMessageCount()
+    {
+        try
+        {
+            var count = await messageRepository.GetUnreadMessageCountAsync();
+            return Json(count);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error getting unread message count: {Error}", e.Message);
+            return StatusCode(500, e.Message);
+        }
+    }    
+    
+    [HttpGet]
     public async Task<IActionResult> GetRecentList()
     {
         try

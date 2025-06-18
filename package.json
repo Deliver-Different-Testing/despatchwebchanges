@@ -11,6 +11,7 @@
     "angular-heremaps": "^0.1.9",
     "angular-hotkeys": "^1.7.0",
     "angular-material": "^1.2.5",
+    "angular-material-badge": "^1.2.91",
     "angular-material-data-table": "^0.10.10",
     "angular-messages": "^1.8.2",
     "angular-resizable": "^1.2.0",

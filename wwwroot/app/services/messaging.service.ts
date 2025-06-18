@@ -21,6 +21,11 @@ class MessagingService implements angular.IServiceProvider {
         return this;
     }
 
+    async getUnreadMessageCount(): Promise<number> {
+        const response = await this.$http.get<number>(`messages/GetUnreadMessageCount`);
+        return response.data;
+    }
+    
     async getRecentList(): Promise<RecentMessageViewModel[]> {
         const response = await this.$http.get<RecentMessageViewModel[]>(`messages/GetRecentList`);
         return response.data;
@@ -67,8 +72,8 @@ class MessagingService implements angular.IServiceProvider {
             }
         });
         return response.data;
-    }  
-    
+    }
+
     async getQuickResponses(): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>(`messages/GetQuickResponses`);
         return response.data;

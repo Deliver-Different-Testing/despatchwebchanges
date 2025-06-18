@@ -104,6 +104,9 @@
                         <div class="courier-info" flex>
                             <div class="courier-name"
                                  ng-bind-html="ctrl.highlightSearchTerm(contactOption.name, ctrl.contactSearchTerm)"></div>
+                            <div class="courier-status">
+                                {{ctrl.printContactType(contactOption.otherMessagePartyType)}}
+                            </div>  
                             <div class="courier-status" ng-if="contactOption.status">
                                 <span class="status-indicator" ng-class="contactOption.status" aria-hidden="true"></span>
                                 {{contactOption.status || 'Unknown'}}
@@ -340,10 +343,10 @@
 
                                     <!-- Message sender indicator for received messages -->
                                     <div class="message-sender" ng-if="!message.isSender">
+                                        <md-icon md-font-set="material-symbols-outlined"></md-icon>
                                         <div class="sender-avatar small" aria-hidden="true">
                                             {{ctrl.selectedConversation.otherPartyInitials}}
                                         </div>
-                                        <span class="sender-name">{{ctrl.selectedConversation.otherPartyName}}</span>
                                     </div>
 
                                     <div class="message-bubble">

@@ -8,6 +8,7 @@ namespace DespatchWeb.Interfaces;
 
 public interface IMessageRepository
 {
+    Task<int> GetUnreadMessageCountAsync();
     Task<List<RecentMessageViewModel>> GetRecentListAsync();
     Task<List<ChatMessageViewModel>> GetMessagesByCourierIdAsync(int courierId, int staffId);
     Task<List<ChatMessageViewModel>> GetMessagesByStaffIdAsync(int otherStaffId, int currentStaffId);

@@ -48,6 +48,7 @@ import getJobTableRowClass from "../../functions/getJobTableRowClass";
 import DispatchBoxes from "./enums/DispatchBoxes";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import timezone from 'dayjs/plugin/timezone';
+import MessagingService from "../../services/messaging.service";
 
 class HomeController extends BaseController {
     static $inject = [
@@ -73,6 +74,7 @@ class HomeController extends BaseController {
         'truckCourierStatusDialogService',
         'jobAddStopService',
         'messagingDialogService',
+        'messagingService',
         '$scope',
         '$timeout',
         '$interval',
@@ -160,6 +162,7 @@ class HomeController extends BaseController {
     envelopeData: any;
     envelopePromiseResolve?: ((value: ClearListEnvelopeViewModel | undefined) => void) | null = null;
     isDataLoading: boolean = false;
+    unReadMessageCount?: number;
 
     constructor(
         private $document: angular.IDocumentService,
@@ -184,6 +187,7 @@ class HomeController extends BaseController {
         private truckCourierStatusDialogService: TruckCourierStatusDialogService,
         private jobAddStopService: JobAddStopService,
         private messagingDialogService: MessagingDialogService,
+        private messagingService: MessagingService,
         $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
@@ -388,6 +392,10 @@ class HomeController extends BaseController {
 
     $onInit() {
         this.initLayoutSystem(ContactID);
+        
+        this.registerInterval(async () => {
+            await this.getUnreadMessageCount();
+        }, 10000);
 
         this.loadPageViews().then(async () => {
             console.log("Loaded Page Views and Data!");
@@ -2620,6 +2628,10 @@ class HomeController extends BaseController {
     
     async openMessagingDialog($event: MouseEvent) {
         await this.messagingDialogService.openMessagingDialog($event);
+    }
+    
+    private async getUnreadMessageCount() {
+        this.unReadMessageCount = await this.messagingService.getUnreadMessageCount();
     }
 }
 
