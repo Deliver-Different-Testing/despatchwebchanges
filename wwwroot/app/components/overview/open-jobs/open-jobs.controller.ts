@@ -106,12 +106,12 @@ class OpenJobsWidgetController extends BaseController {
                         reference: job.reference,
                         status: job.status,
                         pickup: {
-                            time: job.pickupTime,
+                            time: job.pickupTime.toDate(),
                             name: job.pickupName,
                             address: job.pickupAddress
                         },
                         delivery: {
-                            time: job.deliveryTime,
+                            time: job.deliveryTime.toDate(),
                             name: job.deliveryName,
                             address: job.deliveryAddress
                         },
@@ -122,7 +122,7 @@ class OpenJobsWidgetController extends BaseController {
                     };
 
                     groupedJobs[job.driverName].jobs.push(viewJob);
-                    this.tableJobs.push(viewJob); // Add to flat list for table view
+                    this.tableJobs.push(viewJob); // Add to a flat list for table view
                 });
 
                 // Convert to array and sort jobs within each driver group
@@ -159,8 +159,8 @@ class OpenJobsWidgetController extends BaseController {
         await this.overviewService.saveCollapseState("openJobs", this.isCardCollapsed);
     }
 
-    private _formatTime(timestamp: Date): string {
-        return dayjs(timestamp).format("HH:mm");
+    private _formatTime(timestamp: dayjs.Dayjs): string {
+        return timestamp.format("HH:mm");
     }
 
     compareJobs(a: ViewJob, b: ViewJob): number {

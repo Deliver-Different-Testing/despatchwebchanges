@@ -5,21 +5,19 @@ import {
     ChatMessageViewModel,
     RecentMessageViewModel,
     SendMessageRequest,
-    SaveQuickResponseRequest
+    SaveQuickResponseRequest, MessageContactOption
 } from "./messaging-dialog.interfaces";
 import MessagingService from "../../../services/messaging.service";
-import DispatchCoreService from "../../../services/dispatch-core.service";
 import {Suggestion} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import {MessageDirection, OtherMessagePartyType} from "./messaging-dailog.enums";
+import {OtherMessagePartyType} from "./messaging-dailog.enums";
 import {DEFAULT_QUICK_RESPONSES} from "./DEFAULT_QUICK_RESPONSES";
 
 class MessagingDialogController extends BaseController {
     static $inject = [
         '$mdDialog',
         'messagingService',
-        'DispatchData',
         'toastrService',
         '$interval',
         '$timeout',
@@ -48,16 +46,15 @@ class MessagingDialogController extends BaseController {
 
     // New chat dialog
     showNewChatView: boolean = false;
-    courierSearchTerm: string = '';
-    courierSuggestions: Suggestion[] = [];
+    contactSearchTerm: string = '';
+    contactOptions: MessageContactOption[] = [];
     recentConversations: RecentMessageViewModel[] = [];
     isSearching: boolean = false;
     private searchTimeout: any = null;
 
-    // Message direction enum for template access
     OtherMessagePartyType = OtherMessagePartyType;
 
-    // Quick responses - simplified
+    // Quick 
     isLoadingQuickResponses: boolean = false;
     showQuickResponses: boolean = false;
     quickResponses: Suggestion[] = [];
@@ -67,7 +64,6 @@ class MessagingDialogController extends BaseController {
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private messagingService: MessagingService,
-        private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
         $interval: angular.IIntervalService,
         $timeout: angular.ITimeoutService,
@@ -153,7 +149,6 @@ class MessagingDialogController extends BaseController {
             console.error('Failed to load quick responses:', error);
             // Fallback to just defaults if loading fails
             this.quickResponses = [...DEFAULT_QUICK_RESPONSES];
-            this.toastrService.showWarningToast('Using default quick responses only');
         } finally {
             this.isLoadingQuickResponses = false;
         }
@@ -314,7 +309,6 @@ class MessagingDialogController extends BaseController {
 
             this.quickResponses = this.quickResponses.filter(r => r.id !== response.id);
             this.toastrService.showSuccessToast('Quick response deleted');
-
         } catch (error) {
             console.error('Failed to delete quick response:', error);
             this.toastrService.showErrorToast('Failed to delete quick response');
@@ -338,7 +332,7 @@ class MessagingDialogController extends BaseController {
                 this.selectedConversation.unreadCount = 0;
             }
 
-            // Update in conversation list
+            // Update in a conversation list
             const conversation = this.conversations.find(c =>
                 c.otherPartyId === otherPartyId && c.otherPartyType === otherPartyType
             );
@@ -350,7 +344,7 @@ class MessagingDialogController extends BaseController {
         }
     }
 
-    // Helper method to determine if message is from current user
+    // Helper method to determine if a message is from current user
     isMessageFromCurrentUser(message: ChatMessageViewModel): boolean {
         return message.sendFromStaffId === this.currentStaffId;
     }
@@ -410,15 +404,15 @@ class MessagingDialogController extends BaseController {
 
     async showNewChat(): Promise<void> {
         this.showNewChatView = true;
-        this.courierSearchTerm = '';
-        this.courierSuggestions = [];
+        this.contactSearchTerm = '';
+        this.contactOptions = [];
         await this.loadRecentForNewChat();
     }
 
     backToMessaging(): void {
         this.showNewChatView = false;
-        this.courierSearchTerm = '';
-        this.courierSuggestions = [];
+        this.contactSearchTerm = '';
+        this.contactOptions = [];
         this.clearSearchTimeout();
     }
 
@@ -430,14 +424,14 @@ class MessagingDialogController extends BaseController {
             return;
         }
 
-        if (event.keyCode === 13 && this.courierSuggestions.length > 0) {
-            await this.startConversationWith(this.courierSuggestions[0]);
+        if (event.keyCode === 13 && this.contactOptions.length > 0) {
+            await this.startConversationWith(this.contactOptions[0]);
             return;
         }
 
-        const searchTerm = this.courierSearchTerm?.trim();
+        const searchTerm = this.contactSearchTerm?.trim();
         if (!searchTerm) {
-            this.courierSuggestions = [];
+            this.contactOptions = [];
             this.isSearching = false;
             return;
         }
@@ -448,14 +442,14 @@ class MessagingDialogController extends BaseController {
     }
 
     async onSearchFocus(): Promise<void> {
-        if (!this.courierSearchTerm && this.recentConversations.length === 0) {
+        if (!this.contactSearchTerm && this.recentConversations.length === 0) {
             await this.loadRecentForNewChat();
         }
     }
 
     clearSearch(): void {
-        this.courierSearchTerm = '';
-        this.courierSuggestions = [];
+        this.contactSearchTerm = '';
+        this.contactOptions = [];
         this.clearSearchTimeout();
     }
 
@@ -471,11 +465,11 @@ class MessagingDialogController extends BaseController {
 
         try {
             this.isSearching = true;
-            this.courierSuggestions = await this.searchCouriersAPI(searchTerm);
+            this.contactOptions = await this.messagingService.getMessageContactOptions(searchTerm);
 
         } catch (error) {
             console.error('Search failed:', error);
-            this.courierSuggestions = [];
+            this.contactOptions = [];
         } finally {
             this.isSearching = false;
         }
@@ -488,10 +482,10 @@ class MessagingDialogController extends BaseController {
             .slice(0, 5);
     }
 
-    async startConversationWith(courierOrSuggestion: any): Promise<void> {
-        const otherPartyId = courierOrSuggestion.otherPartyId || courierOrSuggestion.id;
-        const otherPartyName = courierOrSuggestion.otherPartyName || courierOrSuggestion.text || 'Unknown';
-        const otherPartyType = courierOrSuggestion.otherPartyType || OtherMessagePartyType.Courier;
+    async startConversationWith(messageContactOption: MessageContactOption): Promise<void> {
+        const otherPartyId = messageContactOption.id;
+        const otherPartyName = messageContactOption.name || 'Unknown';
+        const otherPartyType = messageContactOption.otherMessagePartyType || OtherMessagePartyType.Courier;
 
         const existing = this.conversations.find(c =>
             c.otherPartyId === otherPartyId && c.otherPartyType === otherPartyType
@@ -505,7 +499,7 @@ class MessagingDialogController extends BaseController {
                 otherPartyType: otherPartyType,
                 otherPartyName: otherPartyName,
                 otherPartyInitials: this.generateInitials(otherPartyName),
-                otherPartyStatus: courierOrSuggestion.status || 'offline',
+                otherPartyStatus: messageContactOption.status || 'offline',
                 unreadCount: 0,
                 lastMessage: '',
                 lastMessageTime: dayjs()
@@ -535,18 +529,6 @@ class MessagingDialogController extends BaseController {
     async refreshMessages(): Promise<void> {
         if (this.selectedConversation) {
             await this.loadMessages(this.selectedConversation.otherPartyId, this.selectedConversation.otherPartyType);
-        }
-    }
-
-    private async searchCouriersAPI(searchTerm: string): Promise<Suggestion[]> {
-        if (!searchTerm || searchTerm.length < 2) return [];
-
-        try {
-            const url = "/courier/AllActiveSearch";
-            return await this.DispatchData.autocompleteSearch(searchTerm, url);
-        } catch (error: any) {
-            this.toastrService.showErrorToast(error.message);
-            return [];
         }
     }
 

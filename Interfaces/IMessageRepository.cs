@@ -16,4 +16,5 @@ public interface IMessageRepository
     Task<List<Suggestion>> GetSavedQuickResponsesAsync();
     Task<int> AddNewQuickResponseAsync(SaveQuickResponseRequest data);
     Task DeleteQuickResponseAsync(int responseId);
+    Task<List<MessageContactOptionViewModel>> GetNewMessageContactOptionsAsync(string searchTerm);
 }

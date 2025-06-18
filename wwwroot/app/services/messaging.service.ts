@@ -1,7 +1,7 @@
 import {
     ChatMessageViewModel,
     RecentMessageViewModel,
-    SendMessageRequest, SaveQuickResponseRequest
+    SendMessageRequest, SaveQuickResponseRequest, MessageContactOption
 } from "../components/dialogs/messaging-dialog/messaging-dialog.interfaces";
 import {Suggestion} from "../interfaces/job.interface";
 import {OtherMessagePartyType} from "../components/dialogs/messaging-dialog/messaging-dailog.enums";
@@ -60,6 +60,15 @@ class MessagingService implements angular.IServiceProvider {
         });
     }
 
+    async getMessageContactOptions(searchTerm: string): Promise<MessageContactOption[]> {
+        const response = await this.$http.get<MessageContactOption[]>(`messages/GetMessageContactOptions`, {
+            params: {
+                searchTerm,
+            }
+        });
+        return response.data;
+    }  
+    
     async getQuickResponses(): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>(`messages/GetQuickResponses`);
         return response.data;

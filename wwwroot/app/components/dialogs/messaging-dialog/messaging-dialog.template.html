@@ -8,7 +8,7 @@
             <md-icon md-font-set="material-symbols-outlined" class="header-icon" ng-if="!ctrl.showNewChatView"
                      aria-hidden="true">chat
             </md-icon>
-            <h2>{{ctrl.showNewChatView ? 'New Conversation' : 'Messages'}}</h2>
+            <h2>{{ctrl.showNewChatView ? 'New Conversation' : 'Message Center'}}</h2>
             <span flex></span>
             <!-- Online status indicator -->
             <div class="connection-status" ng-if="!ctrl.showNewChatView" layout="row" layout-align="center center">
@@ -28,22 +28,22 @@
             <div class="search-section">
                 <md-input-container md-no-float>
                     <md-icon md-font-set="material-symbols-outlined" class="search-icon">search</md-icon>
-                    <input ng-model="ctrl.courierSearchTerm"
+                    <input ng-model="ctrl.contactSearchTerm"
                            placeholder="Search couriers by name or ID..."
                            ng-keyup="ctrl.onSearchKeyup($event)"
                            ng-focus="ctrl.onSearchFocus()"
                            aria-label="Search for couriers"
                            autocomplete="off">
                     <md-button class="md-icon-button clear-btn"
-                               ng-if="ctrl.courierSearchTerm"
+                               ng-if="ctrl.contactSearchTerm"
                                ng-click="ctrl.clearSearch()"
                                aria-label="Clear search">
                         <md-icon md-font-set="material-symbols-outlined">clear</md-icon>
                     </md-button>
                 </md-input-container>
 
-                <div class="search-tips" ng-if="!ctrl.courierSearchTerm">
-                    <small>💡 Tip: Use Enter to select first result, Escape to go back</small>
+                <div class="search-tips" ng-if="!ctrl.contactSearchTerm">
+                    <small>💡 Tip: Use Enter to select the first result</small>
                 </div>
             </div>
 
@@ -58,7 +58,7 @@
             <!-- Results -->
             <div class="search-results" role="region" aria-label="Search results">
                 <!-- Recent -->
-                <div class="results-section" ng-if="!ctrl.courierSearchTerm && ctrl.recentConversations.length > 0">
+                <div class="results-section" ng-if="!ctrl.contactSearchTerm && ctrl.recentConversations.length > 0">
                     <h4>Recent Conversations</h4>
                     <div class="courier-item"
                          ng-repeat="conversation in ctrl.recentConversations track by (conversation.otherPartyId + '-' + conversation.otherPartyType)"
@@ -90,24 +90,23 @@
                 </div>
 
                 <!-- Search Results -->
-                <div class="results-section" ng-if="ctrl.courierSearchTerm && ctrl.courierSuggestions.length > 0">
-                    <h4>Search Results ({{ctrl.courierSuggestions.length}})</h4>
+                <div class="results-section" ng-if="ctrl.contactSearchTerm && ctrl.contactOptions.length > 0">
+                    <h4>Search Results ({{ctrl.contactOptions.length}})</h4>
                     <div class="courier-item"
-                         ng-repeat="suggestion in ctrl.courierSuggestions track by suggestion.id"
-                         ng-click="ctrl.startConversationWith(suggestion)"
+                         ng-repeat="contactOption in ctrl.contactOptions track by contactOption.id"
+                         ng-click="ctrl.startConversationWith(contactOption)"
                          layout="row" layout-align="start center"
                          tabindex="0"
                          role="button"
-                         aria-label="Start conversation with {{suggestion.text}}"
-                         ng-keydown="$event.keyCode === 13 && ctrl.startConversationWith(suggestion)">
-                        <div class="avatar" aria-hidden="true">{{ctrl.getInitials(suggestion.text)}}</div>
+                         aria-label="Start conversation with {{contactOption.name}}"
+                         ng-keydown="$event.keyCode === 13 && ctrl.startConversationWith(contactOption)">
+                        <div class="avatar" aria-hidden="true">{{ctrl.getInitials(contactOption.name)}}</div>
                         <div class="courier-info" flex>
                             <div class="courier-name"
-                                 ng-bind-html="ctrl.highlightSearchTerm(suggestion.text, ctrl.courierSearchTerm)"></div>
-                            <div class="courier-details">Courier ID: {{suggestion.id}}</div>
-                            <div class="courier-status" ng-if="suggestion.status">
-                                <span class="status-indicator" ng-class="suggestion.status" aria-hidden="true"></span>
-                                {{ctrl.titleCase(suggestion.status || 'Unknown')}}
+                                 ng-bind-html="ctrl.highlightSearchTerm(contactOption.name, ctrl.contactSearchTerm)"></div>
+                            <div class="courier-status" ng-if="contactOption.status">
+                                <span class="status-indicator" ng-class="contactOption.status" aria-hidden="true"></span>
+                                {{contactOption.status || 'Unknown'}}
                             </div>
                         </div>
                         <md-icon md-font-set="material-symbols-outlined" class="action-icon" aria-hidden="true">chat
@@ -117,14 +116,14 @@
 
                 <!-- No Results -->
                 <div class="no-results"
-                     ng-if="ctrl.courierSearchTerm && !ctrl.isSearching && ctrl.courierSuggestions.length === 0"
+                     ng-if="ctrl.contactSearchTerm && !ctrl.isSearching && ctrl.contactOptions.length === 0"
                      layout="column" layout-align="center center"
                      role="status"
                      aria-live="polite">
                     <md-icon md-font-set="material-symbols-outlined" class="empty-icon" aria-hidden="true">search_off
                     </md-icon>
                     <h4>No couriers found</h4>
-                    <p>No results for "{{ctrl.courierSearchTerm}}"</p>
+                    <p>No results for "{{ctrl.contactSearchTerm}}"</p>
                     <p><small>Try searching by:</small></p>
                     <ul class="search-suggestions">
                         <li>Full name or partial name</li>
@@ -135,7 +134,7 @@
 
                 <!-- Empty State -->
                 <div class="search-empty"
-                     ng-if="!ctrl.courierSearchTerm && ctrl.recentConversations.length === 0"
+                     ng-if="!ctrl.contactSearchTerm && ctrl.recentConversations.length === 0"
                      layout="column" layout-align="center center">
                     <md-icon md-font-set="material-symbols-outlined" class="empty-icon" aria-hidden="true">
                         person_search
@@ -166,6 +165,7 @@
                            aria-label="Retry loading messages">
                     <md-icon md-font-set="material-symbols-outlined" aria-hidden="true">refresh</md-icon>
                     Try Again
+                    <md-tooltip md-direction="top">Manual Refresh</md-tooltip>
                 </md-button>
             </div>
 
@@ -203,7 +203,7 @@
                     </div>
 
                     <!-- Loading -->
-                    <md-progress-linear md-mode="indeterminate" ng-show="ctrl.isLoading"
+                    <md-progress-linear md-mode="indeterminate" ng-if="ctrl.isLoading"
                                         aria-hidden="true"></md-progress-linear>
 
                     <!-- Conversations List -->
@@ -224,14 +224,6 @@
                                      ng-class="conversation.otherPartyStatus"
                                      aria-label="{{conversation.otherPartyStatus}}"
                                      title="{{conversation.otherPartyStatus}}"></div>
-                                <!-- Party type indicator -->
-                                <div class="party-type-indicator"
-                                     ng-class="{'courier': conversation.otherPartyType === ctrl.OtherMessagePartyType.Courier, 'staff': conversation.otherPartyType === ctrl.OtherMessagePartyType.Staff}"
-                                     title="{{conversation.otherPartyType === ctrl.OtherMessagePartyType.Courier ? 'Courier' : 'Staff'}}">
-                                    <md-icon md-font-set="material-symbols-outlined" aria-hidden="true">
-                                        {{conversation.otherPartyType === ctrl.OtherMessagePartyType.Courier ? 'local_shipping' : 'person'}}
-                                    </md-icon>
-                                </div>
                             </div>
 
                             <div class="conversation-info" flex>
@@ -280,23 +272,8 @@
                 <div class="chat-panel" flex role="main" aria-label="Chat area">
                     <!-- Chat Header -->
                     <div class="chat-header" ng-if="ctrl.selectedConversation" layout="row" layout-align="start center">
-                        <div class="avatar-container">
-                            <div class="avatar small" aria-hidden="true">
-                                {{ctrl.selectedConversation.otherPartyInitials}}
-                            </div>
-                            <div class="status-indicator"
-                                 ng-class="ctrl.selectedConversation.otherPartyStatus"
-                                 aria-label="{{ctrl.selectedConversation.otherPartyStatus}}"
-                                 title="{{ctrl.selectedConversation.otherPartyStatus}}"></div>
-                            <!-- Party type indicator -->
-                            <div class="party-type-indicator small"
-                                 ng-class="{'courier': ctrl.selectedConversation.otherPartyType === ctrl.OtherMessagePartyType.Courier, 'staff': ctrl.selectedConversation.otherPartyType === ctrl.OtherMessagePartyType.Staff}"
-                                 title="{{ctrl.selectedConversation.otherPartyType === ctrl.OtherMessagePartyType.Courier ? 'Courier' : 'Staff'}}">
-                                <md-icon md-font-set="material-symbols-outlined" aria-hidden="true">
-                                    {{ctrl.selectedConversation.otherPartyType === ctrl.OtherMessagePartyType.Courier ? 'local_shipping' : 'person'}}
-                                </md-icon>
-                            </div>
-                        </div>
+                        <md-icon md-font-set="material-symbols-outlined" style="margin-right: 5px;">account_circle</md-icon>
+                        
                         <div class="chat-info" flex>
                             <div class="party-name">{{ctrl.selectedConversation.otherPartyName}}</div>
                             <div class="party-details">
@@ -343,7 +320,7 @@
                     <!-- Messages Area -->
                     <div class="messages-area" ng-if="ctrl.selectedConversation" role="log" aria-label="Chat messages"
                          aria-live="polite">
-                        <md-progress-linear md-mode="indeterminate" ng-show="ctrl.isMessagesLoading"
+                        <md-progress-linear md-mode="indeterminate" ng-if="ctrl.isMessagesLoading"
                                             aria-hidden="true"></md-progress-linear>
 
                         <div class="messages-container" ng-if="ctrl.messages.length > 0">

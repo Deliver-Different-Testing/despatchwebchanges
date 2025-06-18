@@ -140,4 +140,21 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
             return StatusCode(500, e.Message);
         }
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetMessageContactOptions(string searchTerm)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(searchTerm)) return Ok();
+
+            var results = await messageRepository.GetNewMessageContactOptionsAsync(searchTerm);
+            return Json(results);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error occured searching for message-able contacts");
+            return StatusCode(500, e.Message);
+        }
+    }
 }
