@@ -9,10 +9,14 @@
                 <span flex></span>
 
                 <md-button aria-label="Open messages window" class="md-icon-button" ng-click="ctrl.openMessagingDialog($event)">
+                    <md-badge md-content="ctrl.unreadCount"
+                              md-theme="warn"
+                              ng-if="ctrl.unreadCount > 0">
+                    </md-badge>
                     <md-icon md-font-set="material-symbols-outlined">sms</md-icon>
                     <md-tooltip md-direction="bottom">Messages</md-tooltip>
                 </md-button>
-
+                
                 <md-menu>
                     <md-button aria-label="Open date filter menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined">calendar_today</md-icon>

@@ -18,6 +18,19 @@ public class MessageRepository(
     ITenantInfoService infoService,
     IMessageHelperService messageHelper) : BaseRepository(contextFactory), IMessageRepository
 {
+    public async Task<int> GetUnreadMessageCountAsync()
+    {
+        var staffId = infoService.GetStaffId();
+
+        var count = await Context.TucManualMessages
+            .ForStaff(staffId)
+            .Where(m => !m.Read)
+            .AsNoTracking()
+            .CountAsync();
+
+        return count;
+    }
+    
     public async Task<List<RecentMessageViewModel>> GetRecentListAsync()
     {
         var staffId = infoService.GetStaffId();
@@ -278,7 +291,8 @@ public class MessageRepository(
                 .OrderBy(c => c.Code)
                 .Select(c => new MessageContactOptionViewModel
                 {
-                    Id = c.UccrId,
+                    Id = Guid.NewGuid(),
+                    RecordId = c.UccrId,
                     Name = $"{c.UccrName} {c.UccrSurname}",
                     OtherMessagePartyType = OtherMessagePartyType.Courier,
                     Status = c.CourierLogInOut.LogOutTime != null && c.CourierLogInOut.LogOutTime < currentDate ? "online" : "offline"
@@ -291,7 +305,8 @@ public class MessageRepository(
                 .OrderBy(s => s.UcstFirstName)
                 .Select(s => new MessageContactOptionViewModel
                 {
-                    Id = s.UcstId,
+                    Id = Guid.NewGuid(),
+                    RecordId = s.UcstId,
                     Name = $"{s.UcstFirstName} {s.UcstLastName}",
                     OtherMessagePartyType = OtherMessagePartyType.Staff,
                     Status = "unknown"

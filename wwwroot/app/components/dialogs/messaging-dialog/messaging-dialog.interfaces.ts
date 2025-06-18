@@ -39,7 +39,8 @@ export interface SaveQuickResponseRequest {
 }
 
 export interface MessageContactOption {
-    id: number;
+    id: string;
+    recordId: number;
     name: string;
     otherMessagePartyType: OtherMessagePartyType;
     status: string;

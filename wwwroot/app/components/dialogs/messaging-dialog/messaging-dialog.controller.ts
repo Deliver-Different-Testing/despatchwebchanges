@@ -3,9 +3,10 @@ import BaseController from "../../base-controller";
 import dayjs from "dayjs";
 import {
     ChatMessageViewModel,
+    MessageContactOption,
     RecentMessageViewModel,
-    SendMessageRequest,
-    SaveQuickResponseRequest, MessageContactOption
+    SaveQuickResponseRequest,
+    SendMessageRequest
 } from "./messaging-dialog.interfaces";
 import MessagingService from "../../../services/messaging.service";
 import {Suggestion} from "../../../interfaces/job.interface";
@@ -88,6 +89,8 @@ class MessagingDialogController extends BaseController {
         this.loadRecentConversations().then(() => {
             this.loadQuickResponses().then(() => {
                 this.setupAutoRefresh();
+
+                this.applyScope();
             })
         });
     }
@@ -104,6 +107,8 @@ class MessagingDialogController extends BaseController {
                 await this.loadMessages(this.selectedConversation.otherPartyId, this.selectedConversation.otherPartyType, true);
             }
         }, 10000);
+
+        this.applyScope();
     }
 
     private async loadRecentConversations(silent: boolean = false): Promise<void> {
@@ -131,6 +136,7 @@ class MessagingDialogController extends BaseController {
             if (!silent) this.toastrService.showErrorToast('Failed to load conversations');
         } finally {
             if (!silent) this.isLoading = false;
+            this.applyScope();
         }
     }
 
@@ -151,6 +157,7 @@ class MessagingDialogController extends BaseController {
             this.quickResponses = [...DEFAULT_QUICK_RESPONSES];
         } finally {
             this.isLoadingQuickResponses = false;
+            this.applyScope();
         }
     }
 
@@ -169,14 +176,14 @@ class MessagingDialogController extends BaseController {
                     };
                 })
                 .sort((a, b) => a.messageTime.valueOf() - b.messageTime.valueOf());
-
-            this.applyScope();
         } catch (error) {
             console.error('Failed to load messages:', error);
             if (!silent) this.toastrService.showErrorToast('Failed to load messages');
         } finally {
             if (!silent) this.isMessagesLoading = false;
             if (silent) this.scrollToBottom();
+
+            this.applyScope();
         }
     }
 
@@ -238,14 +245,13 @@ class MessagingDialogController extends BaseController {
             this.selectedConversation.lastMessageTime = dayjs();
 
             this.scrollToBottom();
-            this.applyScope();
-
             this.toastrService.showSuccessToast('Message sent');
         } catch (error) {
             console.error('Failed to send message:', error);
             this.toastrService.showErrorToast('Failed to send message');
         } finally {
             this.isSending = false;
+            this.applyScope();
         }
     }
 
@@ -288,12 +294,12 @@ class MessagingDialogController extends BaseController {
             this.showSaveAsQuickResponse = false;
 
             this.toastrService.showSuccessToast('Quick response saved!');
-
         } catch (error) {
             console.error('Failed to save quick response:', error);
             this.toastrService.showErrorToast('Failed to save quick response');
         } finally {
             this.isSavingQuickResponse = false;
+            this.applyScope();
         }
     }
 
@@ -312,6 +318,8 @@ class MessagingDialogController extends BaseController {
         } catch (error) {
             console.error('Failed to delete quick response:', error);
             this.toastrService.showErrorToast('Failed to delete quick response');
+        } finally {
+            this.applyScope();
         }
     }
 
@@ -341,6 +349,8 @@ class MessagingDialogController extends BaseController {
             }
         } catch (error) {
             console.error('Failed to mark messages as read:', error);
+        } finally {
+            this.applyScope();
         }
     }
 
@@ -380,6 +390,8 @@ class MessagingDialogController extends BaseController {
                 textarea.focus();
             }
         }, 50);
+
+        this.applyScope();
     }
 
     toggleQuickResponses(): void {
@@ -407,6 +419,8 @@ class MessagingDialogController extends BaseController {
         this.contactSearchTerm = '';
         this.contactOptions = [];
         await this.loadRecentForNewChat();
+
+        this.applyScope();
     }
 
     backToMessaging(): void {
@@ -414,6 +428,8 @@ class MessagingDialogController extends BaseController {
         this.contactSearchTerm = '';
         this.contactOptions = [];
         this.clearSearchTimeout();
+
+        this.applyScope();
     }
 
     async onSearchKeyup(event: KeyboardEvent): Promise<void> {
@@ -437,8 +453,10 @@ class MessagingDialogController extends BaseController {
         }
 
         this.searchTimeout = this.registerTimeout(async () => {
-            await this.searchCouriers(searchTerm);
+            await this.searchContactOptions(searchTerm);
         }, 300);
+
+        this.applyScope();
     }
 
     async onSearchFocus(): Promise<void> {
@@ -460,7 +478,7 @@ class MessagingDialogController extends BaseController {
         }
     }
 
-    private async searchCouriers(searchTerm: string): Promise<void> {
+    private async searchContactOptions(searchTerm: string): Promise<void> {
         if (!searchTerm?.trim()) return;
 
         try {
@@ -472,6 +490,7 @@ class MessagingDialogController extends BaseController {
             this.contactOptions = [];
         } finally {
             this.isSearching = false;
+            this.applyScope();
         }
     }
 
@@ -483,7 +502,7 @@ class MessagingDialogController extends BaseController {
     }
 
     async startConversationWith(messageContactOption: MessageContactOption): Promise<void> {
-        const otherPartyId = messageContactOption.id;
+        const otherPartyId = messageContactOption.recordId;
         const otherPartyName = messageContactOption.name || 'Unknown';
         const otherPartyType = messageContactOption.otherMessagePartyType || OtherMessagePartyType.Courier;
 
@@ -510,6 +529,7 @@ class MessagingDialogController extends BaseController {
         }
 
         this.backToMessaging();
+        this.applyScope();
     }
 
     highlightSearchTerm(text: string, searchTerm: string): string {
@@ -607,6 +627,17 @@ class MessagingDialogController extends BaseController {
     titleCase(input: string): string {
         if (!input) return '';
         return input.charAt(0).toUpperCase() + input.slice(1).toLowerCase();
+    }
+
+    printContactType(partyType: OtherMessagePartyType): string {
+        switch (partyType) {
+            case OtherMessagePartyType.Courier:
+                return "Courier";
+            case OtherMessagePartyType.Staff:
+                return "Staff";
+            default:
+                return "Unknown";
+        }
     }
 }
 
