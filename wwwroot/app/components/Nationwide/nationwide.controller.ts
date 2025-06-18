@@ -37,6 +37,7 @@ import AgentInfoDialogService from "../dialogs/agent-info-dialog/agent-info-dial
 import dayjs from "dayjs";
 import getJobTableRowClass from "../../functions/getJobTableRowClass";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
+import MessagingService from "../../services/messaging.service";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -64,6 +65,7 @@ class NationwideControl extends BaseController {
         'flightAgentConfirmationDialogService',
         'agentInfoDialogService',
         'messagingDialogService',
+        'messagingService',
     ];
 
     public readonly nationwidePageId: number = AppPages.Domestic;
@@ -164,6 +166,8 @@ class NationwideControl extends BaseController {
     startDate: Date = dayjs(new Date(0)).toDate();
     endDate: Date = dayjs().add(24, 'hours').toDate();
 
+    unReadMessageCount?: number;
+
     constructor(
         $scope: angular.IScope,
         private nationwideService: NationwideService,
@@ -189,6 +193,7 @@ class NationwideControl extends BaseController {
         private flightAgentConfirmationDialogService: FlightAgentConfirmationDialogService,
         private agentInfoDialogService: AgentInfoDialogService,
         private messagingDialogService: MessagingDialogService,
+        private messagingService: MessagingService
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
@@ -487,6 +492,10 @@ class NationwideControl extends BaseController {
         } else {
             return this.loadPageViews();
         }
+
+        this.registerInterval(async () => {
+            await this.getUnreadMessageCount();
+        }, 10000);
     }
 
     private updateBoxMetrics() {
@@ -2072,6 +2081,11 @@ class NationwideControl extends BaseController {
 
     async openMessagingDialog($event: MouseEvent) {
         await this.messagingDialogService.openMessagingDialog($event);
+    }
+
+    private async getUnreadMessageCount() {
+        this.unReadMessageCount = await this.messagingService.getUnreadMessageCount();
+        this.applyScope();
     }
 }
 

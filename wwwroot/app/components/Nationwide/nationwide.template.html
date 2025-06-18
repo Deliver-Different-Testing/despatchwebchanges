@@ -15,6 +15,11 @@
 
                 <span flex></span>
 
+                <md-badge ng-show="ctrl.unReadMessageCount > 0">
+                    {{ ctrl.unReadMessageCount }}
+                    <md-tooltip md-direction="bottom">Unread Messages</md-tooltip>
+                </md-badge>
+
                 <md-button aria-label="Open messages window" class="md-icon-button" ng-click="ctrl.openMessagingDialog($event)">
                     <md-icon md-font-set="material-symbols-outlined">sms</md-icon>
                     <md-tooltip md-direction="bottom">Messages</md-tooltip>

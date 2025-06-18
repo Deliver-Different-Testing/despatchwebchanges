@@ -1,7 +1,7 @@
 import {
     ChatMessageViewModel,
     RecentMessageViewModel,
-    SendMessageRequest, SaveQuickResponseRequest, MessageContactOption
+    SendMessageRequest, SaveQuickResponseRequest, MessageContactOption, SendMultipleMessageRequest
 } from "../components/dialogs/messaging-dialog/messaging-dialog.interfaces";
 import {Suggestion} from "../interfaces/job.interface";
 import {OtherMessagePartyType} from "../components/dialogs/messaging-dialog/messaging-dailog.enums";
@@ -54,6 +54,10 @@ class MessagingService implements angular.IServiceProvider {
 
     async sendMessage(data: SendMessageRequest) {
         await this.$http.post('messages/SendMessage', data);
+    } 
+    
+    async sendMultiMessage(data: SendMultipleMessageRequest) {
+        await this.$http.post('messages/SendMultiMessage', data);
     }
 
     async markAsRead(otherPartyId: number, otherPartyType: OtherMessagePartyType) {

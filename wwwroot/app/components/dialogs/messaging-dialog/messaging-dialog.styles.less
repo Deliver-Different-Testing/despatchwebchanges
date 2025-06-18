@@ -108,6 +108,97 @@
     height: 100%;
     animation: slideInFromRight 0.3s ease-out;
 
+    .multi-select-header {
+      padding: 16px 24px;
+      background: #e3f2fd;
+      border-bottom: 1px solid #bbdefb;
+
+      .selected-count {
+        font-weight: 600;
+        color: @primary-color;
+      }
+
+      .multi-select-actions {
+        gap: 12px;
+      }
+    }
+
+    .multi-select-toggle {
+      margin-top: 12px;
+
+      .md-button {
+        transition: all 0.3s ease;
+
+        &.md-primary {
+          box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
+        }
+      }
+    }
+
+    .courier-item {
+      &.selected {
+        background: linear-gradient(90deg, #e3f2fd, rgba(227, 242, 253, 0.7));
+        border-left: 4px solid @primary-color;
+
+        .action-icon {
+          color: @primary-color;
+        }
+      }
+
+      md-checkbox {
+        margin-right: 12px;
+
+        .md-container {
+          top: 0;
+        }
+      }
+    }
+
+    .multi-compose-area {
+      margin: 24px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      border: 2px solid #e0e0e0;
+      animation: slideInUp 0.3s ease-out;
+
+      .compose-header {
+        margin-bottom: 16px;
+
+        h4 {
+          margin: 0 0 8px 0;
+          color: @primary-color;
+          font-weight: 600;
+        }
+
+        .selected-contacts-preview {
+          font-size: 13px;
+          color: #666;
+          font-style: italic;
+        }
+      }
+
+      .compose-actions {
+        margin-top: 16px;
+        gap: 12px;
+      }
+
+      md-input-container {
+        margin-bottom: 0;
+
+        textarea {
+          border: 1px solid #e0e0e0;
+          border-radius: 8px;
+          padding: 12px;
+
+          &:focus {
+            border-color: @primary-color;
+            box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.15);
+          }
+        }
+      }
+    }
+
     .search-section {
       padding: 24px;
       background: #fafafa;

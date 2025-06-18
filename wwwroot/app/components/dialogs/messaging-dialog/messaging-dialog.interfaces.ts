@@ -27,9 +27,17 @@ export interface RecentMessageViewModel {
     lastMessageTime: dayjs.Dayjs;
 }
 
-export interface SendMessageRequest {
+export interface SendMessageRequest extends SendMessageBaseClass {
     sendToStaffId?: number;
     sendToCourierId?: number;
+}
+
+export interface SendMultipleMessageRequest extends SendMessageBaseClass {
+    sendToStaffIds?: number[];
+    sendToCourierIds?: number[];
+}
+
+interface SendMessageBaseClass {
     message: string;
     messageType: MessageDeliveryType;
 }

@@ -392,7 +392,7 @@ class HomeController extends BaseController {
 
     $onInit() {
         this.initLayoutSystem(ContactID);
-        
+
         this.registerInterval(async () => {
             await this.getUnreadMessageCount();
         }, 10000);
@@ -2623,15 +2623,17 @@ class HomeController extends BaseController {
             );
         } finally {
             setLoadingState(false);
+            this.applyScope();
         }
     }
-    
+
     async openMessagingDialog($event: MouseEvent) {
         await this.messagingDialogService.openMessagingDialog($event);
     }
-    
+
     private async getUnreadMessageCount() {
         this.unReadMessageCount = await this.messagingService.getUnreadMessageCount();
+        this.applyScope();
     }
 }
 
