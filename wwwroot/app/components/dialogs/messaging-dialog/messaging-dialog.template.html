@@ -170,7 +170,7 @@
                         <h4>Compose Message to {{ctrl.selectedContacts.length}} Contact{{ctrl.selectedContacts.length !== 1 ? 's' : ''}}</h4>
                         <div class="selected-contacts-preview">
                             <span ng-repeat="contact in ctrl.selectedContacts | limitTo:3 track by contact.id">
-                                {{contact.name || contact.otherPartyName}}{{!$last && $index < 2 ? ', ' : ''}}
+                                {{contact.name || contact.otherPartyName}}{{ctrl.shouldShowComma($last, $index)}}
                             </span>
                             <span ng-if="ctrl.selectedContacts.length > 3">... and {{ctrl.selectedContacts.length - 3}} more</span>
                         </div>
