@@ -352,13 +352,11 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\price-breakdown-dialog\price-breakdown-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\send-message-dialog\send-message-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\auto-complete-dialog\auto-complete-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\date-range-dialog\date-range-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\send-message-dialog\send-message-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\home.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\home.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\enums\JobDataType.ts" />

@@ -266,6 +266,42 @@ public class MessageRepository(
             message.Subject = $"SMS to Courier: {courierData.Code}";
         }
     }
+    
+    public async Task<List<MessageContactOptionViewModel>> GetNewMessageContactOptionsAsync(string searchTerm)
+    {
+        var currentDate = infoService.GetCurrentTenantTime();
+            var couriers = await Context
+                .TucCouriers.Where(c =>
+                    c.Active == true
+                    && (c.Code + " " + c.UccrName + " " + c.UccrSurname).Contains(searchTerm)
+                )
+                .OrderBy(c => c.Code)
+                .Select(c => new MessageContactOptionViewModel
+                {
+                    Id = c.UccrId,
+                    Name = $"{c.UccrName} {c.UccrSurname}",
+                    OtherMessagePartyType = OtherMessagePartyType.Courier,
+                    Status = c.CourierLogInOut.LogOutTime != null && c.CourierLogInOut.LogOutTime < currentDate ? "online" : "offline"
+                })
+                .AsNoTracking()
+                .ToListAsync();
+            
+            var staff = await Context.TucStaffs
+                .Where(s => s.UcstActive == true && (s.UcstFirstName + " " + s.UcstLastName).Contains(searchTerm))
+                .OrderBy(s => s.UcstFirstName)
+                .Select(s => new MessageContactOptionViewModel
+                {
+                    Id = s.UcstId,
+                    Name = $"{s.UcstFirstName} {s.UcstLastName}",
+                    OtherMessagePartyType = OtherMessagePartyType.Staff,
+                    Status = "unknown"
+                })
+                .AsNoTracking()
+                .ToListAsync();
+            
+            var results = couriers.Concat(staff).ToList();
+            return results;
+    }
 
     private async Task HandleStaffMessageAsync(TucManualMessage message, SendMessageRequest request)
     {

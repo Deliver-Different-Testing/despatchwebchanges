@@ -37,3 +37,10 @@ export interface SendMessageRequest {
 export interface SaveQuickResponseRequest {
     message: string;
 }
+
+export interface MessageContactOption {
+    id: number;
+    name: string;
+    otherMessagePartyType: OtherMessagePartyType;
+    status: string;
+}
