@@ -2,12 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Net.Sockets;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
-using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Helpers;
 
@@ -39,7 +37,7 @@ public static class JobMappings
                         Courier = j.UcjbCourier.Code,
                         CourierId = j.UcjbCourierId,
                         CourierMobile = j.UcjbCourier.UccrMobile,
-                        CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname,
+                        CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
                     }
                     : null,
             AssignedCourier =
@@ -47,7 +45,7 @@ public static class JobMappings
                     ? new Suggestion
                     {
                         Id = j.UcjbCourier.UccrId,
-                        Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname,
+                        Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
                     }
                     : null,
 
@@ -64,7 +62,7 @@ public static class JobMappings
                 AddressLine7 = j.PickupAddressLine7,
                 AddressLine8 = j.PickupAddressLine8,
                 Latitude = j.PickUpLatitude,
-                Longitude = j.PickUpLongitude,
+                Longitude = j.PickUpLongitude
             },
             DeliveryAddress = new AddressViewModel
             {
@@ -77,7 +75,7 @@ public static class JobMappings
                 AddressLine7 = j.DeliveryAddressLine7,
                 AddressLine8 = j.DeliveryAddressLine8,
                 Latitude = j.DeliveryLatitude,
-                Longitude = j.DeliveryLongitude,
+                Longitude = j.DeliveryLongitude
             },
             PickUpLatitude = j.PickUpLatitude,
             PickUpLongitude = j.PickUpLongitude,
@@ -86,13 +84,13 @@ public static class JobMappings
 
             Direct = j.Direct,
             Speed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : null,
-            Notify = j.NotifiedJobType.UcjtName,
+            Notify = j.NotifiedJobType != null ?  j.NotifiedJobType.UcjtName : null,
             Vehicle =
                 j.UcjbSizeNavigation != null
                     ? new Suggestion
                     {
                         Id = j.UcjbSizeNavigation.VehicleSizeId,
-                        Text = j.UcjbSizeNavigation.VehicleName,
+                        Text = j.UcjbSizeNavigation.VehicleName
                     }
                     : null,
 
@@ -116,7 +114,7 @@ public static class JobMappings
                 .Parent.InverseParent.Select(p => new Suggestion
                 {
                     Id = p.UcjbId,
-                    Text = p.UcjbNumber,
+                    Text = p.UcjbNumber
                 })
                 .ToList(),
 
@@ -132,7 +130,7 @@ public static class JobMappings
                     : j
                         .TucJobNationwides.Select(nj => new AssignedFlight
                         {
-                            FlightNumber = nj.UcnwFlightNo,
+                            FlightNumber = nj.UcnwFlightNo
                         })
                         .FirstOrDefault(),
 
@@ -143,7 +141,7 @@ public static class JobMappings
                     {
                         AgentName = j.Agent.UcagName,
                         AgentEmail = j.Agent.UcagFax,
-                        AgentPhone = j.Agent.UcagPhone,
+                        AgentPhone = j.Agent.UcagPhone
                     }
                     : null,
             Locked = j.UcjbLocked ?? false,
@@ -152,7 +150,7 @@ public static class JobMappings
             FollowupTime = j.FollowupTime,
             Van = j.UcjbVan,
             Truck = j.Truck ?? false,
-            DgClass = j.Dgclass,
+            DgClass = j.Dgclass
         };
 
     public static readonly Expression<Func<TucJob, JobViewModel>> JobMapping = j => new JobViewModel
@@ -182,7 +180,7 @@ public static class JobMappings
                     Courier = j.UcjbCourier.Code,
                     CourierId = j.UcjbCourierId,
                     CourierMobile = j.UcjbCourier.UccrMobile,
-                    CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname,
+                    CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
                 }
                 : null,
         AssignedCourier =
@@ -190,7 +188,7 @@ public static class JobMappings
                 ? new Suggestion
                 {
                     Id = j.UcjbCourier.UccrId,
-                    Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname,
+                    Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
                 }
                 : null,
 
@@ -206,7 +204,7 @@ public static class JobMappings
             AddressLine7 = j.PickupAddressLine7,
             AddressLine8 = j.PickupAddressLine8,
             Latitude = j.PickUpLatitude,
-            Longitude = j.PickUpLongitude,
+            Longitude = j.PickUpLongitude
         },
         DeliveryAddress = new AddressViewModel
         {
@@ -219,7 +217,7 @@ public static class JobMappings
             AddressLine7 = j.DeliveryAddressLine7,
             AddressLine8 = j.DeliveryAddressLine8,
             Latitude = j.DeliveryLatitude,
-            Longitude = j.DeliveryLongitude,
+            Longitude = j.DeliveryLongitude
         },
 
         // Airport information
@@ -288,10 +286,10 @@ public static class JobMappings
                                                 : 0
                                         ),
                                         AircraftName = segment.AircraftName,
-                                        AirlineName = segment.UcnwAirlineName,
+                                        AirlineName = segment.UcnwAirlineName
                                     })
                                     .ToList()
-                                : new List<FlightSegmentViewModel>(), // Empty list if no segments
+                                : new List<FlightSegmentViewModel>() // Empty list if no segments
                     })
                     .FirstOrDefault()
                 : j.TucJobNationwides.Any() == true
@@ -348,10 +346,10 @@ public static class JobMappings
                                                     : 0
                                             ),
                                             AircraftName = segment.AircraftName,
-                                            AirlineName = segment.UcnwAirlineName,
+                                            AirlineName = segment.UcnwAirlineName
                                         })
                                         .ToList()
-                                    : new List<FlightSegmentViewModel>(), // Empty list if no segments
+                                    : new List<FlightSegmentViewModel>() // Empty list if no segments
                         })
                         .FirstOrDefault()
                     : null, // Return null if no job nationwides exist
@@ -366,7 +364,7 @@ public static class JobMappings
                     AgentRanking =
                         j.Agent.Ranking != null ? j.Agent.Ranking.AgentRankingName : null,
                     AgentEmail = j.Agent.UcagFax,
-                    AgentPhone = j.Agent.UcagPhone,
+                    AgentPhone = j.Agent.UcagPhone
                 }
                 : null,
 
@@ -415,6 +413,7 @@ public static class JobMappings
 
         // Job characteristics
         Weight = j.UcjbWeight,
+        CalculateDimsOncePerJob = j.DimensionsType == 1,
         ToAddress = j.UcjbToAddr,
         JobType = (int)(j.UcjbType ?? 0),
         JobTypeDescription = GetJobTypeDescription((int)(j.UcjbType ?? 0)),
@@ -434,7 +433,7 @@ public static class JobMappings
                         ItemName = p.Notes,
                         Height = p.Height,
                         Depth = p.Depth,
-                        Length = p.Length,
+                        Length = p.Length
                     })
                     .ToList()
                 : j
@@ -444,7 +443,7 @@ public static class JobMappings
                         ItemName = p.Notes,
                         Height = p.Height,
                         Depth = p.Depth,
-                        Length = p.Length,
+                        Length = p.Length
                     })
                     .ToList(),
 
@@ -457,7 +456,7 @@ public static class JobMappings
         Items = j.UcjbQty,
 
         PickupFrom = j.UcjbPickUpFrom,
-        Notify = j.NotifiedJobType.UcjtName,
+        Notify = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName : null,
         FromContactName = j.PickupFromContact,
         FromContactNumber = j.PickupFromPhone,
 
@@ -474,9 +473,6 @@ public static class JobMappings
         RefA = j.UcjbClientRefa,
         RefB = j.UcjbClientRefb,
         Charge = j.UcjbAmount.HasValue ? $"{j.UcjbAmount:C}" : null,
-        /*j.ParentId == null || j.ParentId == j.UcjbId
-                ? $"${j.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}"
-                : $"${j.Parent.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}",*/
         OurRef = j.UcjbOurRef,
 
         // Status
@@ -495,7 +491,7 @@ public static class JobMappings
                 ? new Suggestion
                 {
                     Id = j.UcjbSizeNavigation.VehicleSizeId,
-                    Text = j.UcjbSizeNavigation.VehicleName,
+                    Text = j.UcjbSizeNavigation.VehicleName
                 }
                 : null,
 
@@ -513,7 +509,7 @@ public static class JobMappings
                 Pu = i.Pu,
                 Do = i.Do,
                 DgClass = i.Dgclass,
-                Notes = i.Notes,
+                Notes = i.Notes
             })
             .ToList(),
 
@@ -548,7 +544,7 @@ public static class JobMappings
                         j.TucJobReadTracker.ReadByStaff != null
                             ? FormatFullName(j.TucJobReadTracker.ReadByStaff)
                             : string.Empty,
-                    ReadDate = j.TucJobReadTracker.ReadTimestamp,
+                    ReadDate = j.TucJobReadTracker.ReadTimestamp
                 }
                 : new ReadTrackerInfoViewModel { HasBeenRead = false },
 
@@ -565,7 +561,7 @@ public static class JobMappings
                 ? new Suggestion { Id = j.DeliverByTimeZone.Id, Text = j.DeliverByTimeZone.Name }
                 : null,
 
-        Locked = j.UcjbLocked ?? false,
+        Locked = j.UcjbLocked ?? false
     };
 
     public static readonly Expression<Func<TucJobArchive, JobViewModel>> JobArchiveMapping =
@@ -614,7 +610,7 @@ public static class JobMappings
                 AddressLine7 = j.PickupAddressLine7,
                 AddressLine8 = j.PickupAddressLine8,
                 Latitude = j.PickUpLatitude,
-                Longitude = j.PickUpLongitude,
+                Longitude = j.PickUpLongitude
             },
             DeliveryAddress = new AddressViewModel
             {
@@ -627,7 +623,7 @@ public static class JobMappings
                 AddressLine7 = j.DeliveryAddressLine7,
                 AddressLine8 = j.DeliveryAddressLine8,
                 Latitude = j.DeliveryLatitude,
-                Longitude = j.DeliveryLongitude,
+                Longitude = j.DeliveryLongitude
             },
 
             ToAirportId = j.ToAirportId,
@@ -642,7 +638,7 @@ public static class JobMappings
                         AgentId = j.Agent.UcagId,
                         AgentName = j.Agent.UcagName,
                         AgentEmail = j.Agent.UcagFax,
-                        AgentPhone = j.Agent.UcagPhone,
+                        AgentPhone = j.Agent.UcagPhone
                     }
                     : null,
 
@@ -676,6 +672,7 @@ public static class JobMappings
 
             // Job characteristics
             Weight = j.UcjbWeight,
+            CalculateDimsOncePerJob = j.DimensionsType == 1,
             ToAddress = j.UcjbToAddr,
             JobType = (int)(j.UcjbType ?? 0),
             JobTypeDescription = GetJobTypeDescription((int)(j.UcjbType ?? 0)),
@@ -720,7 +717,7 @@ public static class JobMappings
                     ? new Suggestion
                     {
                         Id = j.UcjbSizeNavigation.VehicleSizeId,
-                        Text = j.UcjbSizeNavigation.VehicleName,
+                        Text = j.UcjbSizeNavigation.VehicleName
                     }
                     : null,
             IsArchived = true,
@@ -751,11 +748,11 @@ public static class JobMappings
                     ? new Suggestion
                     {
                         Id = j.DeliverByTimeZone.Id,
-                        Text = j.DeliverByTimeZone.Name,
+                        Text = j.DeliverByTimeZone.Name
                     }
                     : null,
 
-            Locked = j.UcjbLocked.HasValue ? (bool?)(j.UcjbLocked != 0) : null,
+            Locked = j.UcjbLocked.HasValue ? j.UcjbLocked != 0 : null
         };
 
     public static readonly Expression<
@@ -771,7 +768,7 @@ public static class JobMappings
             .BookingParent.InverseBookingParent.Select(p => new Suggestion
             {
                 Id = p.UcbkId,
-                Text = p.UcbkJobNumber,
+                Text = p.UcbkJobNumber
             })
             .ToList(),
         Date = j.UcbkDate.HasValue ? j.UcbkDate.Value.ToString("MM/dd/yyyy") : null,
@@ -804,7 +801,7 @@ public static class JobMappings
             AddressLine7 = j.PickupAddressLine7,
             AddressLine8 = j.PickupAddressLine8,
             Latitude = j.PickUpLatitude,
-            Longitude = j.PickUpLongitude,
+            Longitude = j.PickUpLongitude
         },
         DeliveryAddress = new AddressViewModel
         {
@@ -817,7 +814,7 @@ public static class JobMappings
             AddressLine7 = j.DeliveryAddressLine7,
             AddressLine8 = j.DeliveryAddressLine8,
             Latitude = j.DeliveryLatitude,
-            Longitude = j.DeliveryLongitude,
+            Longitude = j.DeliveryLongitude
         },
 
         ToAirportId = j.ToAirportId,
@@ -855,9 +852,10 @@ public static class JobMappings
 
         // Job characteristics
         Weight = j.UcbkWeight,
+        CalculateDimsOncePerJob = j.DimensionsType == 1,
         ToAddress = j.UcbkToAddr,
         JobType = j.UcbkType ?? 0,
-        JobTypeDescription = GetJobTypeDescription((int)(j.UcbkType ?? 0)),
+        JobTypeDescription = GetJobTypeDescription(j.UcbkType ?? 0),
         Direct = j.Direct,
         Van = j.UcbkVan,
         VanOk = j.VanOk,
@@ -882,18 +880,15 @@ public static class JobMappings
         RefA = j.UcbkClientRefa,
         RefB = j.UcbkClientRefb,
         Charge = j.UcbkAmount.HasValue ? $"{j.UcbkAmount:C}" : null,
-        /*j.ParentId == null || j.ParentId == j.UcbkId
-                ? $"${j.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}"
-                : $"${j.BookingParent.PricingBreakdowns.Sum(p => p.ChargeAmount):F2}",*/
         OurRef = j.UcbkOurRef,
 
-        // Size - has navigation in archive
+        // Size - has navigation in the archive
         Size =
             j.UcbkSizeNavigation != null
                 ? new Suggestion
                 {
                     Id = j.UcbkSizeNavigation.VehicleSizeId,
-                    Text = j.UcbkSizeNavigation.VehicleName,
+                    Text = j.UcbkSizeNavigation.VehicleName
                 }
                 : null,
         IsArchived = false,
@@ -910,7 +905,7 @@ public static class JobMappings
                         ItemName = p.Notes,
                         Height = p.Height,
                         Depth = p.Depth,
-                        Length = p.Length,
+                        Length = p.Length
                     })
                     .ToList()
                 : j
@@ -920,7 +915,7 @@ public static class JobMappings
                         ItemName = p.Notes,
                         Height = p.Height,
                         Depth = p.Depth,
-                        Length = p.Length,
+                        Length = p.Length
                     })
                     .ToList(),
 
@@ -940,7 +935,7 @@ public static class JobMappings
                 ? new Suggestion
                 {
                     Id = j.UcbkInActiveBy.Value,
-                    Text = FormatFullName(j.UcbkInActiveByNavigation),
+                    Text = FormatFullName(j.UcbkInActiveByNavigation)
                 }
                 : null,
         InActiveDate = j.UcbkInActiveDate,
@@ -968,7 +963,7 @@ public static class JobMappings
         DeliveryTimeZone =
             j.DeliverByTimeZone != null
                 ? new Suggestion { Id = j.DeliverByTimeZone.Id, Text = j.DeliverByTimeZone.Name }
-                : null,
+                : null
     };
 
     public static readonly Expression<Func<TucJob, JobLateCallDto>> JobLateCallMapping =
@@ -978,22 +973,19 @@ public static class JobMappings
             ClientId = j.UcjbClientId ?? 0,
             MinutesRemaining = CalculateRemainTime(j, j.UcjbSpeedNavigation) ?? 0,
             PickupTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.PickupTime ?? 0 : 0,
-            DeliveryTime =
-                j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime ?? 0 : 0,
-            AlertLatePickup = j.UcjbClient.AlertLatePickUp,
-            AlertLateDelivery = j.UcjbClient.AlertLateDelivery,
+            DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime ?? 0 : 0,
+            AlertLatePickup = j.UcjbClient != null ? j.UcjbClient.AlertLatePickUp : 0,
+            AlertLateDelivery = j.UcjbClient != null ? j.UcjbClient.AlertLateDelivery : 0,
             JobTime = CombineDateAndTime(j.UcjbDate, j.UcjbTime),
-            BookedSpeed =
-                j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : string.Empty,
-            NotifiedSpeed =
-                j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName
+            BookedSpeed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : string.Empty,
+            NotifiedSpeed = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName
                 : j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName
-                : string.Empty,
+                : string.Empty
         };
 
     private static int? CalculateRemainTime(TucJob job, TucJobType jobType)
     {
-        if (job == null)
+        if (job is null)
             return null;
 
         var now = DateTime.Now;

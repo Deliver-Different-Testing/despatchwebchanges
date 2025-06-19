@@ -127,18 +127,7 @@ public class JobViewModel : DispatchJobViewModel
     public Suggestion  PickUpTimeZone { get; set; }
     public Suggestion DeliveryTimeZone {get;set;}
     public string HasDgDocsString { get; set; }
-}
-
-public class Vehicle
-{
-    public short? Id { get; set; }
-    public string Label { get; set; }
-}
-
-public class Size
-{
-    public int Id { get; set; }
-    public string Label { get; set; }
+    public bool CalculateDimsOncePerJob { get; set; }
 }
 
 public class ParcelDimensions

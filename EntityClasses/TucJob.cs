@@ -449,6 +449,12 @@ public partial class TucJob
 
     public int? BookingParentId { get; set; }
 
+    public int? DimensionsType { get; set; }
+
+    public string PickupGps { get; set; }
+
+    public string PickupCondition { get; set; }
+
     public virtual TucJobType AcceptedJobType { get; set; }
 
     public virtual TucAgent Agent { get; set; }

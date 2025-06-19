@@ -368,6 +368,8 @@ public partial class TucJobBooking
 
     public int? DeliverByTimeZoneId { get; set; }
 
+    public int? DimensionsType { get; set; }
+
     public virtual TucJobBooking BookingParent { get; set; }
 
     public virtual TucCourier Courier { get; set; }

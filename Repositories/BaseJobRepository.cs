@@ -1097,7 +1097,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             toAirportId: dto.ToAirportId,
             description: description,
             rate: rate,
-            returnValue: returnValue
+            returnValue: returnValue,
+            dimensionsType: dto.CalculateDimsOncePerJob ? 1 : 0
         );
 
         Log.Information("Pricing breakdown is: {DescriptionValue}", description.Value);
@@ -1908,6 +1909,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     // Client-specific rate information
                     ClientDiscount = job.UcbkClient.Discount,
                     Cubic = job.TucJobBookingItems.Sum(i => i.Cubic),
+                    CalculateDimsOncePerJob = job.DimensionsType == 1
                 })
                 .FirstOrDefaultAsync();
 

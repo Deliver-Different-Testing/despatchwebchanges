@@ -94,7 +94,8 @@ public class RateJobService(
                 ToAirportId = distanceResult.ToAirport?.AirportId ?? jobDetails.ToAirportId,
                 Quantity = jobDetails.Quantity,
                 Cubic = jobDetails.Cubic,
-                IsPrebook = jobDetails.IsPrebook ?? false
+                IsPrebook = jobDetails.IsPrebook ?? false,
+                CalculateDimsOncePerJob = jobDetails.CalculateDimsOncePerJob
             });
         }
         catch (Exception ex)

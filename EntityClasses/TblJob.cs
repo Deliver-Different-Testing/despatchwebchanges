@@ -382,4 +382,6 @@ public partial class TblJob
     public int? PickRunOrder { get; set; }
 
     public bool? Archived { get; set; }
+
+    public int? DimensionsType { get; set; }
 }
