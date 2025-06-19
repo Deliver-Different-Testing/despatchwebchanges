@@ -1,99 +1,9 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace DespatchWeb.Helpers;
 
 public static class AddressFormatter
 {
-    /// <summary>
-    /// Formats address lines into a single string, handling null/empty lines.
-    /// Combines city, state, and zip on one line when possible.
-    /// </summary>
-    public static string Format(Address address)
-    {
-        if (address == null)
-            return string.Empty;
-
-        var lines = new[]
-        {
-            address.Line1,
-            address.Line2,
-            address.Line3,
-            address.Line4,
-            address.Line5,
-            address.Line6,
-            address.Line7,
-            address.Line8
-        };
-
-        var validLines = lines
-            .Where(line => !string.IsNullOrWhiteSpace(line))
-            .Select(line => line.Trim())
-            .ToList();
-
-        // If no valid lines, return empty string
-        return validLines.Count == 0 ? string.Empty : string.Join(", ", validLines);
-    }
-
-    /// <summary>
-    /// Formats address lines into a multi-line string with proper line breaks
-    /// </summary>
-    public static string FormatMultiLine(Address address)
-    {
-        if (address == null)
-            return string.Empty;
-
-        var lines = new[]
-        {
-            address.Line1,
-            address.Line2,
-            address.Line3,
-            address.Line4,
-            address.Line5,
-            address.Line6,
-            address.Line7,
-            address.Line8
-        };
-
-        var validLines = lines
-            .Where(line => !string.IsNullOrWhiteSpace(line))
-            .Select(line => line.Trim())
-            .ToList();
-
-        // If no valid lines, return empty string
-        return validLines.Count == 0 ? string.Empty : string.Join(Environment.NewLine, validLines);
-    }
-
-    /// <summary>
-    /// Formats address with HTML line breaks for web display
-    /// </summary>
-    public static string FormatHtml(Address address)
-    {
-        if (address == null)
-            return string.Empty;
-
-        var lines = new[]
-        {
-            address.Line1,
-            address.Line2,
-            address.Line3,
-            address.Line4,
-            address.Line5,
-            address.Line6,
-            address.Line7,
-            address.Line8
-        };
-
-        var validLines = lines
-            .Where(line => !string.IsNullOrWhiteSpace(line))
-            .Select(line => line.Trim())
-            .ToList();
-
-        // If no valid lines, return empty string
-        return validLines.Count == 0 ? string.Empty : string.Join("<br/>", validLines);
-    }
-
     /// <summary>
     /// Attempts to format the last line as a city, state zip combination
     /// </summary>
