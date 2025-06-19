@@ -413,7 +413,7 @@ public static class JobMappings
 
         // Job characteristics
         Weight = j.UcjbWeight,
-        CalculateDimsOncePerJob = j.DimensionsType == 1,
+        CalculateDimsOncePerJob = j.DimensionsType.HasValue && j.DimensionsType.Value == 1,
         ToAddress = j.UcjbToAddr,
         JobType = (int)(j.UcjbType ?? 0),
         JobTypeDescription = GetJobTypeDescription((int)(j.UcjbType ?? 0)),
@@ -672,7 +672,7 @@ public static class JobMappings
 
             // Job characteristics
             Weight = j.UcjbWeight,
-            CalculateDimsOncePerJob = j.DimensionsType == 1,
+            CalculateDimsOncePerJob = j.DimensionsType.HasValue && j.DimensionsType.Value == 1,
             ToAddress = j.UcjbToAddr,
             JobType = (int)(j.UcjbType ?? 0),
             JobTypeDescription = GetJobTypeDescription((int)(j.UcjbType ?? 0)),
@@ -852,7 +852,7 @@ public static class JobMappings
 
         // Job characteristics
         Weight = j.UcbkWeight,
-        CalculateDimsOncePerJob = j.DimensionsType == 1,
+        CalculateDimsOncePerJob = j.DimensionsType.HasValue && j.DimensionsType.Value == 1,
         ToAddress = j.UcbkToAddr,
         JobType = j.UcbkType ?? 0,
         JobTypeDescription = GetJobTypeDescription(j.UcbkType ?? 0),
@@ -985,24 +985,22 @@ public static class JobMappings
 
     private static int? CalculateRemainTime(TucJob job, TucJobType jobType)
     {
-        if (job is null)
+        if (job == null)
             return null;
 
         var now = DateTime.Now;
         var jobDateTime = CombineDateAndTime(job.UcjbDate, job.UcjbTime);
 
-        // Handle Economy Delivery (Speed = 36)
         if (job.UcjbSpeed == 36)
         {
+            if (!job.DeliverByTime.HasValue) return null;
             var economyDeliveryDateTime = CombineDateAndTime(job.UcjbDate, job.DeliverByTime);
             return (int)(economyDeliveryDateTime - now).TotalMinutes;
         }
 
-        if (
-            job.UcjbSpeed != null
+        if (job.UcjbSpeed != null
             && SourceArray.Contains(job.UcjbSpeed.Value)
-            && job.RequiredDeliveryTime.HasValue
-        )
+            && job.RequiredDeliveryTime.HasValue)
         {
             var requiredDeliveryDateTime = CombineDateAndTime(
                 job.UcjbDate,
@@ -1011,9 +1009,10 @@ public static class JobMappings
             return (int)(requiredDeliveryDateTime - now).TotalMinutes;
         }
 
-        // Handle Standard Case
-        var standardDeliveryDateTime = jobDateTime.AddMinutes(jobType.Minutes ?? 0);
+        if (jobType?.Minutes == null) return null;
+        var standardDeliveryDateTime = jobDateTime.AddMinutes(jobType.Minutes.Value);
         return (int)(standardDeliveryDateTime - now).TotalMinutes;
+
     }
 
     private static DateTime CombineDateAndTime(DateTime date, DateTime? time)
