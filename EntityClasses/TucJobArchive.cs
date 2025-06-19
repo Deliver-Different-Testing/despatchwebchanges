@@ -465,6 +465,12 @@ public partial class TucJobArchive
 
     public int? BookingParentId { get; set; }
 
+    public int? DimensionsType { get; set; }
+
+    public string PickupGps { get; set; }
+
+    public string PickupCondition { get; set; }
+
     public virtual TucAgent Agent { get; set; }
 
     public virtual TimeZone DeliverByTimeZone { get; set; }

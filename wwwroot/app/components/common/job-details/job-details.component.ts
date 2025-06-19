@@ -74,7 +74,7 @@ class JobDetailController extends BaseController {
     jobAddressIcon: string = "pin_drop";
 
     constructor(
-        private $scope: angular.IScope,
+        $scope: angular.IScope,
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
@@ -92,7 +92,7 @@ class JobDetailController extends BaseController {
         private jobFileUploadDialogService: JobFileUploadDialogService
     ) {
         super();
-        this.initServices($timeout, $interval, this.$scope);
+        this.initServices($timeout, $interval, $scope);
 
         this.isUsCustomer = appConfig.US_Customer;
         this.timeZone = TimeZone;
@@ -139,7 +139,7 @@ class JobDetailController extends BaseController {
             return this.loadJobData(this.jobId);
         }
 
-        this.registerTimeout(() => this.$scope.$apply());
+        this.applyScope();
     }
 
     $onChanges(changes: angular.IOnChangesObject) {
@@ -248,10 +248,10 @@ class JobDetailController extends BaseController {
     }
 
     private setupRelatedJobs(jobId: number) {
-        if(!this.job) return;
+        if (!this.job) return;
 
         this.jobGroups = sortRelatedJobs(this.job.relatedJobs);
-        const { tabIndex, subJobIndex } = this.findJobInGroups(jobId);
+        const {tabIndex, subJobIndex} = this.findJobInGroups(jobId);
 
         if (tabIndex !== -1) {
             console.log(`[JobDetailController] Setting selectedTabIndex to ${tabIndex}, subJobIndex to ${subJobIndex}`);
@@ -275,7 +275,7 @@ class JobDetailController extends BaseController {
         );
 
         if (currentJobIndex !== -1) {
-            return { tabIndex: currentJobIndex, subJobIndex: -1 };
+            return {tabIndex: currentJobIndex, subJobIndex: -1};
         }
 
         for (let i = 0; i < this.jobGroups.length; i++) {
@@ -283,11 +283,11 @@ class JobDetailController extends BaseController {
                 (subJob) => subJob.id === jobId
             );
             if (subJobIndex !== -1) {
-                return { tabIndex: i, subJobIndex };
+                return {tabIndex: i, subJobIndex};
             }
         }
 
-        return { tabIndex: -1, subJobIndex: -1 };
+        return {tabIndex: -1, subJobIndex: -1};
     }
 
     getConnectionTime(firstSegment: any, secondSegment: any): string {

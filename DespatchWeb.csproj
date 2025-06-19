@@ -411,7 +411,6 @@
     <TypeScriptCompile Include="wwwroot\app\interfaces\event-interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\heremaps-autocomplete.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\hereMapsAppConfig.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\job-field.types.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\job-list-response.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\job.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\layout.interfaces.ts" />

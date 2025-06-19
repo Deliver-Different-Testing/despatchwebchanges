@@ -12,7 +12,8 @@
             <div layout="row" layout-align="start center">
                 <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
                 <span class="warning-text" ng-if=":ctrl.job.isArchived">Job archived. Some fields can't be edited</span>
-                <span class="warning-text" ng-if=":ctrl.job.preBook">Recurring job. Some fields may require confirmation</span>
+                <span class="warning-text"
+                      ng-if=":ctrl.job.preBook">Recurring job. Some fields may require confirmation</span>
             </div>
         </md-card-content>
     </md-card>
@@ -440,8 +441,8 @@
                 font-size: 14px;
                 font-weight: 500;
               "
-                        >Total {{ctrl.isUsCustomer ? 'Miles' : 'KMs'}}:
-              {{ctrl.job.distance || '0'}} {{ctrl.isUsCustomer ? 'miles' :
+                        >Total {{::ctrl.isUsCustomer ? 'Miles' : 'KMs'}}:
+              {{ctrl.job.distance || '0'}} {{::ctrl.isUsCustomer ? 'miles' :
                                     'km'}}</span>
                     </div>
                 </div>
@@ -657,7 +658,6 @@
                     </sticky-note>
                 </div>
 
-                <!-- Package Details -->
                 <div
                         class="info-sections-container md-whiteframe-1dp"
                         layout="row"
@@ -682,8 +682,21 @@
                                     straighten
                                 </md-icon>
                                 <div class="md-list-item-text">
-                                    <h3>Dimensions/Items</h3>
-                                    <p>{{ctrl.job.parcelDimensions.length || 0}} packages</p>
+                                    <h3>
+                                        Dimensions/Items
+                                        <span ng-if="ctrl.job.calculateDimsOncePerJob"
+                                              class="calculate-dims-badge"
+                                              style="background: #4CAF50; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; font-weight: normal;">
+                            CALC ONCE
+                        </span>
+                                    </h3>
+                                    <p>
+                                        {{ctrl.job.parcelDimensions.length || 0}} packages
+                                        <span ng-if="ctrl.job.calculateDimsOncePerJob"
+                                              style="color: #4CAF50; font-size: 12px; margin-left: 8px;">
+                            • Calculated once per job
+                        </span>
+                                    </p>
                                 </div>
                             </md-list-item>
 
@@ -697,8 +710,19 @@
                                     scale
                                 </md-icon>
                                 <div class="md-list-item-text">
-                                    <h3>Weight</h3>
-                                    <p>{{ctrl.job.weight || 0}}</p>
+                                    <h3>Weight
+                                        <span ng-if="ctrl.job.calculateDimsOncePerJob"
+                                              class="calculate-dims-badge"
+                                              style="background: #4CAF50; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; font-weight: normal;">
+                            CALC ONCE
+                        </span>
+                                    </h3>
+                                    <p>{{ctrl.job.weight || 0}}
+                                        <span ng-if="ctrl.job.calculateDimsOncePerJob"
+                                              style="color: #4CAF50; font-size: 12px; margin-left: 8px;">
+                            • Calculated once per job
+                        </span>
+                                    </p>
                                 </div>
                             </md-list-item>
                         </md-list>
@@ -1089,9 +1113,9 @@
                                     login
                                 </md-icon>
                                 <div class="md-list-item-text">
-                                <h3>Logged-in Contact</h3>
-                                <p>{{::ctrl.job.loggedInContactName || 'N/A'}}</p>
-                            </div>
+                                    <h3>Logged-in Contact</h3>
+                                    <p>{{::ctrl.job.loggedInContactName || 'N/A'}}</p>
+                                </div>
                             </md-list-item>
 
                             <md-list-item
@@ -1371,7 +1395,7 @@
                 </div>
 
                 <div class="read-details" ng-if="ctrl.job.readTrackerInfo.hasBeenRead">
-          <span>Read by: <strong>{{ctrl.job.readTrackerInfo.readBy || 'Unknown'}}</strong></span>
+                    <span>Read by: <strong>{{ctrl.job.readTrackerInfo.readBy || 'Unknown'}}</strong></span>
                     <span class="read-date">on {{ctrl.job.readTrackerInfo.readDate | momentFormat:'MM/DD/YYYY'}} ({{ctrl.timeZone | timezoneShort}})</span>
                 </div>
 

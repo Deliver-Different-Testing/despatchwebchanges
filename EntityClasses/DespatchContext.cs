@@ -4503,8 +4503,12 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PickupAddressLine7).HasMaxLength(255);
             entity.Property(e => e.PickupAddressLine8).HasMaxLength(255);
             entity.Property(e => e.PickupAmount).HasColumnType("money");
+            entity.Property(e => e.PickupCondition).HasMaxLength(50);
             entity.Property(e => e.PickupFromContact).HasMaxLength(100);
             entity.Property(e => e.PickupFromPhone).HasMaxLength(100);
+            entity.Property(e => e.PickupGps)
+                .HasMaxLength(50)
+                .HasColumnName("PickupGPS");
             entity.Property(e => e.PickupRawAmount).HasColumnType("money");
             entity.Property(e => e.PickupTimeZoneId).HasColumnName("PickupTimeZoneID");
             entity.Property(e => e.PodnotificationHasBeenSent).HasColumnName("PODNotificationHasBeenSent");
@@ -4981,6 +4985,10 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PickupAddressLine7).HasMaxLength(255);
             entity.Property(e => e.PickupAddressLine8).HasMaxLength(255);
             entity.Property(e => e.PickupAmount).HasColumnType("money");
+            entity.Property(e => e.PickupCondition).HasMaxLength(50);
+            entity.Property(e => e.PickupGps)
+                .HasMaxLength(50)
+                .HasColumnName("PickupGPS");
             entity.Property(e => e.PickupRawAmount).HasColumnType("money");
             entity.Property(e => e.PickupTimeZoneId).HasColumnName("PickupTimeZoneID");
             entity.Property(e => e.PodnotificationHasBeenSent).HasColumnName("PODNotificationHasBeenSent");

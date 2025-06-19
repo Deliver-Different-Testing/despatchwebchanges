@@ -163,6 +163,7 @@ export interface IJob {
     pickUpTimeZone?: Suggestion;
     deliveryTimeZone?: Suggestion;
     hasDgDocsString?: string;
+    calculateDimsOncePerJob: boolean;
 }
 
 export interface ParcelDimensions {
