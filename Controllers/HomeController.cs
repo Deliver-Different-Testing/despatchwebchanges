@@ -16,7 +16,7 @@ public class HomeController(
     IDfrntViewsRepository viewsRepository,
     IConnectionStringManager connectionStringManager) : Controller
 {
-    public async Task<IActionResult> Index([FromQuery] string login)
+    public async Task<IActionResult> Index()
     {
         try
         {

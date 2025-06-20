@@ -50,21 +50,10 @@ public class JobController(
         [FromQuery] List<int> despatchViewIds
     )
     {
-        Log.Information(
-            "Index endpoint called with params: {@QueryParams}, IsInternal: {IsInternal}, "
-            + "ClientId: {ClientId}, ClientIds: {ClientIds}, DespatchViewIds: {@DespatchViewIds}",
-            [queryParams, isInternal, cid, clientIds, despatchViewIds]
-        );
-
         try
         {
             var isUsTenant = countryService.IsUsTenant();
-
-            if (!isInternal)
-            {
-                Log.Debug("Validating client access for cid: {ClientId}", cid);
-                await clientAccessValidator.ValidateClientAccess(cid, clientIds);
-            }
+            if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
             var result = await jobRepository.JobListAsync(
                 queryParams,
@@ -76,10 +65,8 @@ public class JobController(
 
             return Json(result);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            Log.Warning(ex, "Unauthorized access attempt for client {ClientId}",
-                cid);
             return StatusCode(
                 StatusCodes.Status401Unauthorized,
                 $"Unauthorized access attempt for client {cid}"

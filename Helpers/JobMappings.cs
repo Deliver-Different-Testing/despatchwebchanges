@@ -99,7 +99,7 @@ public static class JobMappings
             JobType = (int)(j.UcjbType ?? 0),
             PickupTime = null,
             DeliveryTime = null,
-            AlertLatePickup = j.UcjbClient.AlertLatePickUp,
+            AlertLatePickup = j.UcjbClient != null ? j.UcjbClient.AlertLatePickUp : null,
 
             Lp = j.UcjbLatePick,
             Ld = j.UcjbLateDel,
@@ -107,16 +107,16 @@ public static class JobMappings
             Done = j.UcjbJobDone,
             PreBook = true,
 
-            PickupFrom = (short)j.UcjbPickUpFrom,
+            PickupFrom = j.UcjbPickUpFrom,
             RootParentId = j.RootParentId,
 
-            RelatedJobs = j
+            RelatedJobs = j.Parent != null && j.Parent.InverseParent.Any() ? j
                 .Parent.InverseParent.Select(p => new Suggestion
                 {
                     Id = p.UcjbId,
                     Text = p.UcjbNumber
                 })
-                .ToList(),
+                .ToList() : null,
 
             ToAirportId = j.ToAirportId,
             FromAirportId = j.FromAirportId,
@@ -146,7 +146,7 @@ public static class JobMappings
                     : null,
             Locked = j.UcjbLocked ?? false,
 
-            ConNote = j.ParentId != null ? j.Parent.Connote : j.Connote,
+            ConNote = j.Parent != null ? j.Parent.Connote : j.Connote,
             FollowupTime = j.FollowupTime,
             Van = j.UcjbVan,
             Truck = j.Truck ?? false,
@@ -379,8 +379,8 @@ public static class JobMappings
         ToCity = j.UcjbToNavigation != null ? j.UcjbToNavigation.City : null,
 
         // Region information
-        FromSuburbId = j.UcjbFromNavigation.UcsuId,
-        ToSuburbId = j.UcjbToNavigation.UcsuId,
+        FromSuburbId = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuId : null,
+        ToSuburbId = j.UcjbToNavigation != null ? j.UcjbToNavigation.UcsuId : null,
 
         // Tracking info
         TrackingMethod = j.TrackingMethod,
@@ -393,8 +393,8 @@ public static class JobMappings
         SaturdayDelivery = j.SaturdayDelivery,
         Remain = CalculateRemainTime(j, j.UcjbSpeedNavigation),
         CompletedTime = j.UcjbComplTime,
-        UdStatus = j.UndeliverableLocation.Name,
-        SigNotRequired = j.DeliverToLeave.Name,
+        UdStatus = j.UndeliverableLocation != null ? j.UndeliverableLocation.Name : string.Empty,
+        SigNotRequired = j.DeliverToLeave != null ? j.DeliverToLeave.Name : string.Empty,
         DeliverToLeaveId = j.DeliverToLeaveId,
         DeliverToContact = j.DeliverToContact,
 
@@ -406,7 +406,7 @@ public static class JobMappings
 
         // Client information
         Client = j.UcjbClientCode,
-        ClientName = j.UcjbClient.UcclName,
+        ClientName = j.UcjbClient != null ? j.UcjbClient.UcclName : string.Empty,
         ToContactPhone = j.DeliverToPhone,
         PodName = j.UcjbPodname,
         PuTime = j.PickUpTime,
@@ -449,8 +449,8 @@ public static class JobMappings
 
         // Job status and details
         Done = j.UcjbJobDone,
-        AlertLatePickup = j.UcjbClient.AlertLatePickUp,
-        AlertLateDelivery = j.UcjbClient.AlertLateDelivery,
+        AlertLatePickup = j.UcjbClient != null ? j.UcjbClient.AlertLatePickUp : null,
+        AlertLateDelivery = j.UcjbClient != null ? j.UcjbClient.AlertLateDelivery : null,
         Lp = j.UcjbLatePick,
         Ld = j.UcjbLateDel,
         Items = j.UcjbQty,
@@ -514,9 +514,9 @@ public static class JobMappings
             .ToList(),
 
         // Related jobs
-        RelatedJobs = j
+        RelatedJobs = j.Parent != null && j.Parent.InverseParent.Any() ? j
             .Parent.InverseParent.Select(p => new Suggestion { Id = p.UcjbId, Text = p.UcjbNumber })
-            .ToList(),
+            .ToList() : null,
 
         IsArchived = false,
         PreBook = false,
@@ -985,7 +985,7 @@ public static class JobMappings
 
     private static int? CalculateRemainTime(TucJob job, TucJobType jobType)
     {
-        if (job == null)
+        if (job == null || jobType == null)
             return null;
 
         var now = DateTime.Now;
@@ -1012,12 +1012,11 @@ public static class JobMappings
         if (jobType?.Minutes == null) return null;
         var standardDeliveryDateTime = jobDateTime.AddMinutes(jobType.Minutes.Value);
         return (int)(standardDeliveryDateTime - now).TotalMinutes;
-
     }
 
     private static DateTime CombineDateAndTime(DateTime date, DateTime? time)
     {
-        if (time is null)
+        if (time == null)
             return date;
 
         return new DateTime(
