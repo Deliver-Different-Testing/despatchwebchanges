@@ -159,13 +159,10 @@ public interface IJobRepository
 
     Task<IList<OpenJobResponse>> GetOpenJobsAsync(OpenJobsRequest parameters);
 
-    Task<DriverStats> GetDriverStatsAsync(int courierId);
-
     Task AddEntityAsync<T>(T entity) where T : class;
 
     Task<JobViewModel> GetJobByIdAsync(int jobId);
     Task UpdateJobNoteAsync(int jobId, string note);
-    Task UpdateJobConnoteAsync(int jobId, string conNote);
     Task<OverviewStatsViewModel> GetOverviewStatsAsync();
 
     Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(
@@ -186,8 +183,6 @@ public interface IJobRepository
         int weight,
         int size,
         bool includeFuelSurcharge,
-        bool direct,
-        int acceptedJobTypeId,
         string ourRef,
         string refA,
         string refB,
@@ -205,14 +200,7 @@ public interface IJobRepository
     Task<List<MegaMapResponse>> GetJobsForMegaMapAsync();
     Task UpdatePackagesForJobAsync(int jobId, List<ParcelDimensions> parcels);
 
-    Task<List<T>> GetAllAsync<T>()
-        where T : class;
-
-    Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(
-        bool isInternal,
-        bool isUsTenant,
-        string clientIds,
-        List<int> selectedViewIds);
+    Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds);
 
     Task<int> SaveNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default);
     Task<int> SaveNoteAsync(int jobId, string noteText, bool isImportant = false, bool isRecurringJob = false);
