@@ -13,7 +13,6 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
-using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
@@ -24,7 +23,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using EventType = DespatchWeb.Enums.EventType;
-using Exception = System.Exception;
 
 namespace DespatchWeb.Controllers;
 
@@ -94,17 +92,9 @@ public class JobController(
                 clientIds,
                 despatchViewIds
             );
-
-            var isUsTenant = countryService.IsUsTenant();
-
+            
             if (!isInternal) await clientAccessValidator.ValidateClientAccess(0, clientIds);
-
-            var result = await jobRepository.GetJobCoordinatesAsync(
-                isInternal,
-                isUsTenant,
-                clientIds,
-                despatchViewIds
-            );
+            var result = await jobRepository.GetJobCoordinatesAsync(despatchViewIds);
 
             Log.Information(
                 "Successfully retrieved {Count} job coordinates",

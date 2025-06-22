@@ -160,7 +160,7 @@ public static class JobMappings
         JobNo = j.UcjbNumber,
         Time = j.UcjbTime,
         RootParentId = j.RootParentId,
-        Date = j.UcjbDate.ToString("MM/dd/yyyy"),
+        Date = FormatDate(j.UcjbDate),
         Booked = CombineDateAndTime(j.UcjbDate, j.UcjbTime),
         DispatchTime = j.UcjbDispTime,
         CreatedDate = j.UcjbDate,
@@ -279,10 +279,8 @@ public static class JobMappings
                                             segment.ArrivalAirportTimeZoneId ?? 0,
                                         ArrivalTerminal = segment.ArrivalTerminal,
                                         ElapsedTime = (int)(
-                                            (segment.UcnwEta.HasValue && segment.UcnwEtd.HasValue)
-                                                ? (
-                                                    segment.UcnwEta.Value - segment.UcnwEtd.Value
-                                                ).TotalMinutes
+                                            segment.UcnwEta.HasValue && segment.UcnwEtd.HasValue
+                                                ? (segment.UcnwEta.Value - segment.UcnwEtd.Value).TotalMinutes
                                                 : 0
                                         ),
                                         AircraftName = segment.AircraftName,
@@ -339,10 +337,8 @@ public static class JobMappings
                                                 segment.ArrivalAirportTimeZoneId ?? 0,
                                             ArrivalTerminal = segment.ArrivalTerminal,
                                             ElapsedTime = (int)(
-                                                (segment.UcnwEta.HasValue && segment.UcnwEtd.HasValue)
-                                                    ? (
-                                                        segment.UcnwEta.Value - segment.UcnwEtd.Value
-                                                    ).TotalMinutes
+                                                segment.UcnwEta.HasValue && segment.UcnwEtd.HasValue
+                                                    ? (segment.UcnwEta.Value - segment.UcnwEtd.Value).TotalMinutes
                                                     : 0
                                             ),
                                             AircraftName = segment.AircraftName,
@@ -352,7 +348,7 @@ public static class JobMappings
                                     : new List<FlightSegmentViewModel>() // Empty list if no segments
                         })
                         .FirstOrDefault()
-                    : null, // Return null if no job nationwides exist
+                    : null,
 
         // Assigned agent
         AssignedAgent =
@@ -413,10 +409,10 @@ public static class JobMappings
 
         // Job characteristics
         Weight = j.UcjbWeight,
-        CalculateDimsOncePerJob = j.DimensionsType.HasValue && j.DimensionsType.Value == 1,
+        CalculateDimsOncePerJob = j.DimensionsType == 1,
         ToAddress = j.UcjbToAddr,
         JobType = (int)(j.UcjbType ?? 0),
-        JobTypeDescription = GetJobTypeDescription((int)(j.UcjbType ?? 0)),
+        JobTypeDescription = GetJobTypeDescription(j.UcjbType ?? 0),
         Direct = j.Direct,
         Van = j.UcjbVan,
         VanOk = j.VanOk,
@@ -472,7 +468,7 @@ public static class JobMappings
         // References and amounts
         RefA = j.UcjbClientRefa,
         RefB = j.UcjbClientRefb,
-        Charge = j.UcjbAmount.HasValue ? $"{j.UcjbAmount:C}" : null,
+        Charge = j.UcjbAmount != null ? $"{j.UcjbAmount:C}" : null,
         OurRef = j.UcjbOurRef,
 
         // Status
@@ -503,9 +499,9 @@ public static class JobMappings
                 Quantity = i.Items,
                 ItemId = i.ItemId,
                 Weight = i.Weight,
-                Length = i.Length.Value,
-                Depth = i.Depth.Value,
-                Height = i.Height.Value,
+                Length = i.Length ?? 0,
+                Depth = i.Depth ?? 0,
+                Height = i.Height ?? 0,
                 Pu = i.Pu,
                 Do = i.Do,
                 DgClass = i.Dgclass,
@@ -524,16 +520,14 @@ public static class JobMappings
         Attention = j.UcjbAttention,
 
         Distance =
-            j.ToAirportId.HasValue && j.FromAirportId.HasValue
+            j.ToAirportId != null && j.FromAirportId != null
                 ? DistanceCalculator.CalculateDistance(
                     j.PickUpLatitude ?? 0,
                     j.PickUpLongitude ?? 0,
                     j.DeliveryLatitude ?? 0,
                     j.DeliveryLongitude ?? 0
                 )
-                : j.TotalDistance.HasValue
-                    ? (double)j.TotalDistance.Value
-                    : 0.0,
+                : (double)(j.TotalDistance ?? 0),
 
         ReadTrackerInfo =
             j.TucJobReadTracker != null
@@ -572,15 +566,10 @@ public static class JobMappings
             JobNo = j.UcjbNumber,
             Time = j.UcjbTime,
             RootParentId = j.RootParentId,
-            Date = j.UcjbDate.HasValue ? j.UcjbDate.Value.ToString("MM/dd/yyyy") : null,
-            Booked =
-                j.UcjbDate.HasValue && j.UcjbTime.HasValue
-                    ? DateTime.Parse(
-                        j.UcjbDate.Value.ToString("yyyy-MM-dd")
-                        + " "
-                        + j.UcjbTime.Value.ToString("HH:mm:ss")
-                    )
-                    : DateTime.MinValue,
+            Date = FormatDate(j.UcjbDate),
+            Booked = j.UcjbDate != null 
+                ? CombineDateAndTime(j.UcjbDate ?? DateTime.MinValue, j.UcjbTime)
+                : DateTime.MinValue,
             DispatchTime = j.UcjbDispTime,
             CreatedDate = j.UcjbDate,
             ScheduleName = j.ScheduleName,
@@ -591,14 +580,14 @@ public static class JobMappings
             DeliveryTime = null,
 
             Courier = null,
-            CourierData = j.UcjbCourierId.HasValue
+            CourierData = j.UcjbCourierId != null
                 ? new CourierData { CourierId = j.UcjbCourierId }
                 : null,
             AssignedCourier = j.UcjbCourierId.HasValue
                 ? new Suggestion { Id = j.UcjbCourierId.Value }
                 : null,
 
-            // Address information - directly available in archive
+            // Address information - directly available in the archive
             PickupAddress = new AddressViewModel
             {
                 AddressLine1 = j.PickupAddressLine1,
@@ -672,10 +661,10 @@ public static class JobMappings
 
             // Job characteristics
             Weight = j.UcjbWeight,
-            CalculateDimsOncePerJob = j.DimensionsType.HasValue && j.DimensionsType.Value == 1,
+            CalculateDimsOncePerJob = j.DimensionsType == 1,
             ToAddress = j.UcjbToAddr,
             JobType = (int)(j.UcjbType ?? 0),
-            JobTypeDescription = GetJobTypeDescription((int)(j.UcjbType ?? 0)),
+            JobTypeDescription = GetJobTypeDescription(j.UcjbType ?? 0),
             Direct = j.Direct,
             Van = j.UcjbVan,
             VanOk = j.VanOk,
@@ -701,7 +690,7 @@ public static class JobMappings
             // References and amounts
             RefA = j.UcjbClientRefa,
             RefB = j.UcjbClientRefb,
-            Charge = j.UcjbAmount.HasValue ? $"{j.UcjbAmount:C}" : null,
+            Charge = j.UcjbAmount != null ? $"{j.UcjbAmount:C}" : null,
             OurRef = j.UcjbOurRef,
 
             StatusId = j.UcjbStatus,
@@ -711,7 +700,7 @@ public static class JobMappings
             // Checkboxes
             Reprice = j.Reprice,
 
-            // Size - has navigation in archive
+            // Size - has navigation in the archive
             Size =
                 j.UcjbSizeNavigation != null
                     ? new Suggestion
@@ -726,7 +715,7 @@ public static class JobMappings
             Attention = j.UcjbAttention,
 
             Distance =
-                j.ToAirportId.HasValue && j.FromAirportId.HasValue
+                j.ToAirportId != null && j.FromAirportId != null
                     ? DistanceCalculator.CalculateDistance(
                         j.PickUpLatitude ?? 0,
                         j.PickUpLongitude ?? 0,
@@ -752,7 +741,7 @@ public static class JobMappings
                     }
                     : null,
 
-            Locked = j.UcjbLocked.HasValue ? j.UcjbLocked != 0 : null
+            Locked = j.UcjbLocked != null ? j.UcjbLocked != 0 : null
         };
 
     public static readonly Expression<
@@ -771,9 +760,9 @@ public static class JobMappings
                 Text = p.UcbkJobNumber
             })
             .ToList(),
-        Date = j.UcbkDate.HasValue ? j.UcbkDate.Value.ToString("MM/dd/yyyy") : null,
-        Booked = j.UcbkDate.HasValue
-            ? CombineDateAndTime(j.UcbkDate.Value, j.UcbkTime)
+        Date = FormatDate(j.UcbkDate),
+        Booked = j.UcbkDate != null
+            ? CombineDateAndTime(j.UcbkDate ?? DateTime.MinValue, j.UcbkTime)
             : DateTime.MinValue,
         CreatedDate = j.UcbkDate,
         ScheduleName = j.ScheduleName,
@@ -782,14 +771,14 @@ public static class JobMappings
         DeliveryTime = null,
 
         Courier = null,
-        CourierData = j.CourierId.HasValue
+        CourierData = j.CourierId != null
             ? new CourierData { CourierId = j.CourierId, CourierName = j.Courier.UccrName }
             : null,
         AssignedCourier = j.CourierId.HasValue
             ? new Suggestion { Id = j.CourierId.Value, Text = j.Courier.UccrName }
             : null,
 
-        // Address information - directly available in archive
+        // Address information - directly available in the archive
         PickupAddress = new AddressViewModel
         {
             AddressLine1 = j.PickupAddressLine1,
@@ -852,7 +841,7 @@ public static class JobMappings
 
         // Job characteristics
         Weight = j.UcbkWeight,
-        CalculateDimsOncePerJob = j.DimensionsType.HasValue && j.DimensionsType.Value == 1,
+        CalculateDimsOncePerJob = j.DimensionsType == 1,
         ToAddress = j.UcbkToAddr,
         JobType = j.UcbkType ?? 0,
         JobTypeDescription = GetJobTypeDescription(j.UcbkType ?? 0),
@@ -879,7 +868,7 @@ public static class JobMappings
         // References and amounts
         RefA = j.UcbkClientRefa,
         RefB = j.UcbkClientRefb,
-        Charge = j.UcbkAmount.HasValue ? $"{j.UcbkAmount:C}" : null,
+        Charge = j.UcbkAmount != null ? $"{j.UcbkAmount:C}" : null,
         OurRef = j.UcbkOurRef,
 
         // Size - has navigation in the archive
@@ -920,18 +909,18 @@ public static class JobMappings
                     .ToList(),
 
         Distance =
-            j.ToAirportId.HasValue && j.FromAirportId.HasValue
+            j.ToAirportId != null && j.FromAirportId != null
                 ? DistanceCalculator.CalculateDistance(
                     j.PickUpLatitude ?? 0,
                     j.PickUpLongitude ?? 0,
                     j.DeliveryLatitude ?? 0,
                     j.DeliveryLongitude ?? 0
                 )
-                : (j.TotalDistance.HasValue ? (double)j.TotalDistance : 0),
+                : j.TotalDistance != null ? (double)j.TotalDistance : 0,
 
         // Added recurring job fields
         InActiveBy =
-            j.UcbkInActiveBy != null
+            j.UcbkInActiveBy.HasValue
                 ? new Suggestion
                 {
                     Id = j.UcbkInActiveBy.Value,
@@ -989,50 +978,77 @@ public static class JobMappings
             return null;
 
         var now = DateTime.Now;
-        var jobDateTime = CombineDateAndTime(job.UcjbDate, job.UcjbTime);
+    
+        var jobDateTime = new DateTime(
+            job.UcjbDate.Year,
+            job.UcjbDate.Month,
+            job.UcjbDate.Day,
+            job.UcjbTime?.Hour ?? 0,
+            job.UcjbTime?.Minute ?? 0,
+            job.UcjbTime?.Second ?? 0
+        );
 
         if (job.UcjbSpeed == 36)
         {
-            if (!job.DeliverByTime.HasValue) return null;
-            var economyDeliveryDateTime = CombineDateAndTime(job.UcjbDate, job.DeliverByTime);
+            if (job.DeliverByTime == null) return null;
+        
+            var economyDeliveryDateTime = new DateTime(
+                job.UcjbDate.Year,
+                job.UcjbDate.Month,
+                job.UcjbDate.Day,
+                job.DeliverByTime.Value.Hour,
+                job.DeliverByTime.Value.Minute,
+                job.DeliverByTime.Value.Second
+            );
             return (int)(economyDeliveryDateTime - now).TotalMinutes;
         }
 
+        var speedValue = job.UcjbSpeed ?? 0;
         if (job.UcjbSpeed != null
-            && SourceArray.Contains(job.UcjbSpeed.Value)
-            && job.RequiredDeliveryTime.HasValue)
+            && SourceArray.Contains(speedValue)
+            && job.RequiredDeliveryTime != null)
         {
-            var requiredDeliveryDateTime = CombineDateAndTime(
-                job.UcjbDate,
-                job.RequiredDeliveryTime.Value
+            var requiredDeliveryDateTime = new DateTime(
+                job.UcjbDate.Year,
+                job.UcjbDate.Month,
+                job.UcjbDate.Day,
+                job.RequiredDeliveryTime.Value.Hour,
+                job.RequiredDeliveryTime.Value.Minute,
+                job.RequiredDeliveryTime.Value.Second
             );
             return (int)(requiredDeliveryDateTime - now).TotalMinutes;
         }
 
-        if (jobType?.Minutes == null) return null;
-        var standardDeliveryDateTime = jobDateTime.AddMinutes(jobType.Minutes.Value);
+        // Use null-coalescing instead of .HasValue/.Value pattern
+        var minutesToAdd = jobType.Minutes ?? 0;
+        if (jobType.Minutes == null) return null;
+    
+        var standardDeliveryDateTime = jobDateTime.AddMinutes(minutesToAdd);
         return (int)(standardDeliveryDateTime - now).TotalMinutes;
+    }
+
+    private static string FormatDate(DateTime? date)
+    {
+        var dateToUse = date ?? DateTime.MinValue;
+        return dateToUse.ToString("MM/dd/yyyy");
     }
 
     private static DateTime CombineDateAndTime(DateTime date, DateTime? time)
     {
-        if (time == null)
-            return date;
-
         return new DateTime(
             date.Year,
             date.Month,
             date.Day,
-            time.Value.Hour,
-            time.Value.Minute,
-            time.Value.Second
+            time?.Hour ?? 0,
+            time?.Minute ?? 0,
+            time?.Second ?? 0
         );
     }
-
+    
     private static string FormatFullName(TucStaff staff) =>
         $"{staff.UcstFirstName} {staff.UcstLastName}".Trim();
 
-    private static string GetJobTypeDescription(int? jobTypeId)
+    private static string GetJobTypeDescription(double? jobTypeId)
     {
         var jobType = (LateEventType?)(jobTypeId ?? (int)LateEventType.Pickup);
         return jobType switch

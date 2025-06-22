@@ -35,8 +35,6 @@ public class RateJobService(
                 (int)jobDetails.Weight,
                 jobDetails.SizeId,
                 jobDetails.IncludeFuelSurcharge,
-                jobDetails.IsDirect,
-                jobDetails.AcceptedJobTypeId,
                 jobDetails.OurRef,
                 jobDetails.RefA,
                 jobDetails.RefB,

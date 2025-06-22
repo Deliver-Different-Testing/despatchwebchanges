@@ -53,8 +53,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
                     if (queryParams.EndDate.HasValue)
                         query = query.Where(j => j.UcjbDate <= queryParams.EndDate.Value.Date);
-
-
+                    
                     // Sorting
                     query = ApplyDashboardSpecificOrdering(
                         query,
@@ -526,10 +525,10 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     {
         try
         {
-            // Mark job as ready
+            // Mark the job as ready
             await MarkJobAsReadAsync(jobId);
 
-            // Check for live job first
+            // Check for a live job first
             var isLiveJob = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
             if (isLiveJob)
             {
@@ -541,7 +540,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 return liveJob;
             }
 
-            // Check for archived job
+            // Check for an archived job
             var archivedJob = await Context.TucJobArchives
                 .Where(j => j.UcjbId == jobId)
                 .Select(JobMappings.JobArchiveMapping)
@@ -1032,8 +1031,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         int weight,
         int size,
         bool includeFuelSurcharge,
-        bool direct,
-        int acceptedJobTypeId,
         string ourRef,
         string refA,
         string refB,
@@ -1365,9 +1362,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     }
 
     public async Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(
-        bool isInternal,
-        bool isUsTenant,
-        string clientIds,
         List<int> selectedViewIds)
     {
         try
