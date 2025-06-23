@@ -6,7 +6,6 @@ import "angular-resizable/angular-resizable.min.css";
 import "ng-material-datetimepicker/css/material-datetimepicker.css";
 import "angular-material-data-table/dist/md-data-table.css";
 import "angular-hotkeys/build/hotkeys.css";
-import "angular-material-badge/source/angular-material-badge.css";
 
 // Angular core imports
 import "angular";
@@ -31,7 +30,6 @@ import "angular-material-data-table";
 import "angular-hotkeys/build/hotkeys";
 import "angular-bootstrap-contextmenu/contextMenu";
 import "angular-heremaps/dist/angular-heremaps";
-import "angular-material-badge/source/angular-material-badge";
 
 // Local libs
 import "../lib/ModernizerLocalStorage";
@@ -65,7 +63,6 @@ const app = angular.module("uDispatch", [
     "hereMapTracking.components",
     "fixed.table.header",
     "ngMaterialDatePicker",
-    "ngMdBadge",
 ]);
 
 // Make the module available globally

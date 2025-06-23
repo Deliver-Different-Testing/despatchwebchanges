@@ -1,0 +1,144 @@
+﻿// Variables
+@badge-primary-color: #f44336;
+@badge-primary-hover: #d32f2f;
+@badge-text-color: white;
+@badge-border-radius: 12px;
+@badge-shadow: 0 2px 4px rgba(0,0,0,0.2);
+@badge-shadow-hover: 0 4px 8px rgba(0,0,0,0.3);
+@badge-transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+@badge-enter-transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+@badge-leave-transition: all 0.2s ease-in;
+
+// Mixins
+.badge-base() {
+  position: relative;
+  display: inline-block;
+  background-color: @badge-primary-color;
+  color: @badge-text-color;
+  border-radius: @badge-border-radius;
+  box-shadow: @badge-shadow;
+  transition: @badge-transition;
+  text-align: center;
+  font-weight: 500;
+}
+
+.badge-size(@width: 20px, @height: 20px, @font-size: 12px, @line-height: 16px, @padding: 2px 6px) {
+  min-width: @width;
+  height: @height;
+  padding: @padding;
+  font-size: @font-size;
+  line-height: @line-height;
+}
+
+.badge-hover-effect() {
+  &:hover {
+    background-color: @badge-primary-hover;
+    box-shadow: @badge-shadow-hover;
+    transform: translateY(-1px);
+  }
+}
+
+// Main badge component
+.custom-badge {
+  .badge-base();
+  .badge-size();
+  .badge-hover-effect();
+
+  // Large count variant
+  &.large-count {
+    .badge-size(24px, 24px, 13px, 20px);
+  }
+
+  // Animation states
+  &.ng-enter {
+    transform: scale(0);
+    opacity: 0;
+
+    &-active {
+      transform: scale(1);
+      opacity: 1;
+      transition: @badge-enter-transition;
+    }
+  }
+
+  &.ng-leave {
+    transform: scale(1);
+    opacity: 1;
+
+    &-active {
+      transform: scale(0);
+      opacity: 0;
+      transition: @badge-leave-transition;
+    }
+  }
+}
+
+// Badge container
+.badge-container {
+  position: relative;
+  display: inline-block;
+  margin: 20px;
+}
+
+// Icon button with badge positioning
+.md-icon-button {
+  position: relative;
+
+  .custom-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    z-index: 10;
+  }
+}
+
+// Demo specific styles (can be removed in production)
+.demo-content {
+  padding: 40px;
+  text-align: center;
+  background-color: #fafafa;
+  min-height: 200px;
+}
+
+.demo-button {
+  margin: 10px;
+}
+
+// Color variants (optional)
+.custom-badge {
+  // Success variant
+  &.badge-success {
+    background-color: #4caf50;
+
+    &:hover {
+      background-color: #388e3c;
+    }
+  }
+
+  // Warning variant
+  &.badge-warning {
+    background-color: #ff9800;
+
+    &:hover {
+      background-color: #f57c00;
+    }
+  }
+
+  // Info variant
+  &.badge-info {
+    background-color: #2196f3;
+
+    &:hover {
+      background-color: #1976d2;
+    }
+  }
+
+  // Secondary variant
+  &.badge-secondary {
+    background-color: #9e9e9e;
+
+    &:hover {
+      background-color: #757575;
+    }
+  }
+}

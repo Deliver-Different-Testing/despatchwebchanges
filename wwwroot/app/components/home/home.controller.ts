@@ -49,6 +49,7 @@ import DispatchBoxes from "./enums/DispatchBoxes";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import timezone from 'dayjs/plugin/timezone';
 import MessagingService from "../../services/messaging.service";
+import {StatusFilter} from "../task-dashboard/enums/status-filter";
 
 class HomeController extends BaseController {
     static $inject = [
@@ -84,6 +85,9 @@ class HomeController extends BaseController {
         areaGroup: "#area-group .btn",
         driverLocations: "#driverLocations .listActive"
     } as const;
+    
+    private readonly STAFF_SUPPORT_FILTER_NAME: string = `selectedSupportTypeDispatchFilter-${ContactID}`;
+    private readonly EVENT_TYPE_SUPPORT_FILTER_NAME: string = `selectedSupportTypeDispatchFilter-${ContactID}`;
 
     showMessageView: boolean = false;
     isLoadingData: boolean = false;
@@ -145,8 +149,6 @@ class HomeController extends BaseController {
     selectedJobs: any;
     boxSortableOptions: angular.ui.SortableOptions<any>;
     jobCutoffDate?: Date;
-    supportsFilter: string = 'all';
-    filteredSupports: ExtendedTask[] = [];
     supportItemConfig = {
         showAssign: true,
         showClose: true,
@@ -162,8 +164,16 @@ class HomeController extends BaseController {
     envelopeData: any;
     envelopePromiseResolve?: ((value: ClearListEnvelopeViewModel | undefined) => void) | null = null;
     isDataLoading: boolean = false;
-    unReadMessageCount?: number;
+    unReadMessageCount: number = 0;
 
+    // supportFilters
+    staffList?: Suggestion[];
+    eventTypesList?: Suggestion[];
+    staffFilter: string = StatusFilter.All;
+    eventTypeFilter: string = StatusFilter.All;
+    supportsFilter: string = 'all';
+    filteredSupports: ExtendedTask[] = [];
+    
     constructor(
         private $document: angular.IDocumentService,
         private $mdDialog: angular.material.IDialogService,
@@ -316,6 +326,9 @@ class HomeController extends BaseController {
                     this.autoZoomEnabled = true;
                 }
             }
+            
+            this.staffFilter = localStorage.getItem(this.STAFF_SUPPORT_FILTER_NAME) ?? StatusFilter.All;
+            this.eventTypeFilter = localStorage.getItem(this.EVENT_TYPE_SUPPORT_FILTER_NAME) ?? StatusFilter.All;
         }
 
         this.selected = [];
@@ -388,6 +401,13 @@ class HomeController extends BaseController {
         }, {
             id: "3", label: "Trucks",
         },];
+
+        // Load supports list
+        this.loadLists()
+            .then(() => console.log("Loaded Lists!"))
+            .catch(error => {
+                console.error('Initialization error:', error);
+            });
     }
 
     $onInit() {
@@ -474,7 +494,7 @@ class HomeController extends BaseController {
             if (this.layout) {
                 this.layouts[index].layout = angular.copy(this.layout);
             }
-
+            
             if (Modernizr.localstorage) {
                 localStorage.setItem(`layouts-${ContactID}`, JSON.stringify(this.layouts));
             }
@@ -2363,43 +2383,51 @@ class HomeController extends BaseController {
     }
 
     private buildFilterRequest(filterType: string): TaskTableFiltersRequest {
-        let filterRequest: TaskTableFiltersRequest = {};
-        filterRequest.jobId = this.currentJobId;
-        filterRequest.showCompleted = false;
+        let filters: TaskTableFiltersRequest = {};
+        filters.jobId = this.currentJobId;
+        filters.showCompleted = false;
+
+        if (this.staffFilter && this.staffFilter !== StatusFilter.All) {
+            filters.staffId = parseInt(this.staffFilter, 10);
+        }
+
+        if (this.eventTypeFilter && this.eventTypeFilter !== StatusFilter.All) {
+            filters.eventTypeId = parseInt(this.eventTypeFilter, 10);
+        }
 
         switch (filterType) {
             case 'mine':
-                filterRequest.staffId = ContactID;
-                filterRequest.orderBy = 'assignedTo';
-                filterRequest.orderDirection = 'desc';
+                filters.staffId = ContactID;
+                filters.orderBy = 'assignedTo';
+                filters.orderDirection = 'desc';
                 break;
             case 'unassigned':
-                filterRequest.staffId = -1;
-                filterRequest.orderBy = 'assignedTo';
-                filterRequest.orderDirection = 'desc';
+                filters.staffId = -1;
+                filters.orderBy = 'assignedTo';
+                filters.orderDirection = 'desc';
                 break;
             case 'newest':
-                filterRequest.orderBy = 'created';
-                filterRequest.orderDirection = 'desc';
+                filters.orderBy = 'created';
+                filters.orderDirection = 'desc';
                 break;
             case 'oldest':
-                filterRequest.orderBy = 'created';
-                filterRequest.orderDirection = 'asc';
+                filters.orderBy = 'created';
+                filters.orderDirection = 'asc';
                 break;
             default:
-                filterRequest.orderBy = 'created';
-                filterRequest.orderDirection = 'desc';
+                filters.orderBy = 'created';
+                filters.orderDirection = 'desc';
                 break;
         }
 
-        return filterRequest;
+        return filters;
     }
 
     async loadSupports(filterType: string = this.supportsFilter): Promise<void> {
         try {
             this.supportsLoading = true;
 
-            // Build filter request based on filter type
+            // Build filter request based on a filter type
             const filterRequest = this.buildFilterRequest(filterType);
             console.log('Filter request:', filterRequest);
 
@@ -2634,6 +2662,62 @@ class HomeController extends BaseController {
     private async getUnreadMessageCount() {
         this.unReadMessageCount = await this.messagingService.getUnreadMessageCount();
         this.applyScope();
+    }
+
+    private async loadLists() {
+        try {
+            const [staffList, eventTypesList] = await Promise.all([
+                this.DispatchData.getActiveStaff(),
+                this.DispatchData.getEventTypes()
+            ]);
+
+            this.staffList = staffList;
+            this.eventTypesList = eventTypesList;
+        } catch (error) {
+            console.error('Error loading lists:', error);
+            throw error;
+        }
+    }
+    
+    async filterByStaff(selectedStaff: string | Suggestion) {
+        if (typeof selectedStaff === 'string') {
+            this.staffFilter = selectedStaff;
+        } else {
+            this.staffFilter = selectedStaff.id?.toString() || 'all';
+        }
+
+        if (Modernizr.localstorage) {
+            localStorage.setItem(this.STAFF_SUPPORT_FILTER_NAME, this.staffFilter);
+        }
+        
+        await this.loadSupports();
+    }
+    
+    async filterBySupportType(selectedType: string | Suggestion) {
+        if (typeof selectedType === 'string') {
+            this.eventTypeFilter = selectedType;
+        } else {
+            this.eventTypeFilter = selectedType.id?.toString() || 'all';
+        }
+
+        if (Modernizr.localstorage) {
+            localStorage.setItem(this.EVENT_TYPE_SUPPORT_FILTER_NAME, this.eventTypeFilter);
+        }
+        
+        await this.loadSupports();
+    }
+
+    getActiveSupportFilterNames(): string {
+        if (this.staffFilter === StatusFilter.All && this.eventTypeFilter === StatusFilter.All) {
+            return ' - (All Tasks)';
+        }
+
+        const staffText = this.staffList?.find(s => s.id?.toString() === this.staffFilter)?.text ?? '';
+        const eventTypeText = this.eventTypesList?.find(et => et.id?.toString() === this.eventTypeFilter)?.text ?? '';
+
+        const filters = [staffText, eventTypeText].filter(Boolean).join(', ');
+
+        return `- (${filters})`;
     }
 }
 
