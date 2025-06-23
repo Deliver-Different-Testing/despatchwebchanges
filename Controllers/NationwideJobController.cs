@@ -159,7 +159,7 @@ public async Task<IActionResult> AssignFlightToJob([FromBody] AssignFlightToJobR
         if (request.FlightSegments != null && request.FlightSegments.Count != 0)
         {
             var firstSegment = request.FlightSegments.First();
-            var lastSegment = request.FlightSegments.Last();  // Get the FINAL segment
+            var lastSegment = request.FlightSegments.Last();
             
             // Map flight segments from request
             flight = new AddFlightToJobDto
@@ -168,10 +168,10 @@ public async Task<IActionResult> AssignFlightToJob([FromBody] AssignFlightToJobR
                               (firstSegment.CarrierFsCode != null
                                   ? $"{firstSegment.CarrierFsCode} Airlines"
                                   : null),
-                ArrivalTime = lastSegment.ArrivalTime,        // ✅ Use LAST segment's arrival time
-                CarrierFsCode = firstSegment.CarrierFsCode,   // ✅ Use FIRST segment's carrier
-                DepartureTime = firstSegment.DepartureTime,   // ✅ Use FIRST segment's departure time
-                FlightNumber = firstSegment.FlightNumber,     // ✅ Use FIRST segment's flight number
+                ArrivalTime = lastSegment.ArrivalTime,  
+                CarrierFsCode = firstSegment.CarrierFsCode,  
+                DepartureTime = firstSegment.DepartureTime, 
+                FlightNumber = firstSegment.FlightNumber,  
                 FlightSegments = request.FlightSegments
             };
         }
@@ -183,7 +183,7 @@ public async Task<IActionResult> AssignFlightToJob([FromBody] AssignFlightToJobR
                 flight = await flightService.GetFlightDetailsByFlightNumberAsync(
                     request.FlightNumber,
                     request.DepartureDate,
-                    request.JobId); // Add jobId parameter
+                    request.JobId);
             }
             catch (Exception ex)
             {
