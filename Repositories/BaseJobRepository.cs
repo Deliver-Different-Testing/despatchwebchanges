@@ -115,6 +115,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     .ToListAsync()
                 : [];
 
+        if (viewFilters.Count == 0) return [];
+
         var combinedFilters = string.Join(" OR ", viewFilters.Select(filter => $"({filter})"));
         return await Context
             .DeswebQryDespatchJobViewFilters.FromSqlRaw(

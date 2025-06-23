@@ -140,12 +140,12 @@ public class FlightStatsService(
         ArgumentException.ThrowIfNullOrEmpty(departureAirportCode);
         ArgumentException.ThrowIfNullOrEmpty(destinationAirportCode);
 
-        var flightsFrom = departureDateTime;
-        flightsFrom = flightsFrom?.AddMinutes(flightBuffer);
+        var flightsFrom = departureDateTime ?? DateTime.UtcNow;
+        flightsFrom = flightsFrom.AddMinutes(flightBuffer);
         ArgumentNullException.ThrowIfNull(flightsFrom);
 
-        var (year, month, day, hour, minute) = SplitDate(flightsFrom.Value);
-
+        var (year, month, day, hour, minute) = SplitDate(flightsFrom);
+        
         var relativeUrl =
             $"json/firstflightout/{departureAirportCode}/to/{destinationAirportCode}/leaving_after/{year}/{month}/{day}/{hour}/{minute}";
 
@@ -242,7 +242,7 @@ public class FlightStatsService(
                             CarrierFsCode = segment.CarrierFsCode,
                             FlightNumber = segment.FlightNumber,
                             DepartureTime = segment.DepartureTime,
-                            ArrivalTime = segment.ArrivalTime,
+                            ArrivalTime = AdjustArrivalTimeForOvernightFlight(segment.DepartureTime, segment.ArrivalTime),
                             DepartureAirportFsCode = segment.DepartureAirportFsCode,
                             DepartureTerminal = segment.DepartureTerminal,
                             ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
@@ -279,7 +279,7 @@ public class FlightStatsService(
                     AirlineCode = firstFlight.CarrierFsCode,
                     FlightNumber = firstFlight.CarrierFsCode + firstFlight.FlightNumber,
                     DepartureTime = firstFlight.DepartureTime,
-                    ArrivalTime = lastFlight.ArrivalTime,
+                    ArrivalTime = AdjustArrivalTimeForOvernightFlight(firstFlight.DepartureTime, lastFlight.ArrivalTime),
                     DepartureAirport = firstFlight.DepartureAirportFsCode,
                     ArrivalAirport = lastFlight.ArrivalAirportFsCode,
                     Duration = lastFlight.ArrivalTime - firstFlight.DepartureTime,
@@ -352,7 +352,7 @@ public class FlightStatsService(
         if (flightResponse?.Connections == null)
             return null;
 
-        // Find the specific flight by matching flight number in any segment
+        // Find the specific flight by matching the flight number in any segment
         var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
 
         var matchingConnection = flightResponse.Connections
@@ -393,7 +393,7 @@ public class FlightStatsService(
                     CarrierFsCode = segment.CarrierFsCode,
                     FlightNumber = segment.FlightNumber,
                     DepartureTime = segment.DepartureTime,
-                    ArrivalTime = segment.ArrivalTime,
+                    ArrivalTime = AdjustArrivalTimeForOvernightFlight(segment.DepartureTime, segment.ArrivalTime),
                     DepartureAirportFsCode = segment.DepartureAirportFsCode,
                     DepartureTerminal = segment.DepartureTerminal,
                     ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
@@ -426,10 +426,10 @@ public class FlightStatsService(
         {
             AirlineName = flightResponse.Appendix?.Airlines?.FirstOrDefault(a => a.Fs == firstFlight.CarrierFsCode)
                 ?.Name,
-            ArrivalTime = lastFlight.ArrivalTime, // Final destination arrival time
-            CarrierFsCode = firstFlight.CarrierFsCode, // First segment carrier
-            DepartureTime = firstFlight.DepartureTime, // First segment departure time
-            FlightNumber = firstFlight.FlightNumber, // First segment flight number
+            ArrivalTime = AdjustArrivalTimeForOvernightFlight(firstFlight.DepartureTime, lastFlight.ArrivalTime),
+            CarrierFsCode = firstFlight.CarrierFsCode,
+            DepartureTime = firstFlight.DepartureTime,
+            FlightNumber = firstFlight.FlightNumber,
             FlightSegments = segments
         };
     }
@@ -440,4 +440,17 @@ public class FlightStatsService(
 
     private static (string carrierCode, string flightNumber) SplitFlightCode(string completeFlightNumber) =>
         (completeFlightNumber?[..2], completeFlightNumber?[2..]);
+    
+    private static DateTime AdjustArrivalTimeForOvernightFlight(DateTime departureTime, DateTime arrivalTime)
+    {
+        // If arrival time is earlier than departure time, it means the flight goes overnight
+        if (arrivalTime.TimeOfDay < departureTime.TimeOfDay) 
+            return arrivalTime.AddDays(1);
+
+        // For multi-day flights, ensure the arrival date is at least the departure date
+        if (arrivalTime.Date >= departureTime.Date) return arrivalTime;
+        var daysDifference = (departureTime.Date - arrivalTime.Date).Days;
+        return arrivalTime.AddDays(daysDifference);
+
+    }
 }
