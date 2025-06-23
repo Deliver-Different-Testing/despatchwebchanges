@@ -15,16 +15,19 @@
 
                 <span flex></span>
 
-                <md-badge ng-show="ctrl.unReadMessageCount > 0">
-                    {{ ctrl.unReadMessageCount }}
-                    <md-tooltip md-direction="bottom">Unread Messages</md-tooltip>
-                </md-badge>
-
-                <md-button aria-label="Open messages window" class="md-icon-button" ng-click="ctrl.openMessagingDialog($event)">
+                <md-button aria-label="Open messages window" class="md-icon-button"
+                           ng-click="ctrl.openMessagingDialog($event)">
                     <md-icon md-font-set="material-symbols-outlined">sms</md-icon>
+                    <span class="custom-badge"
+                          ng-show="ctrl.unReadMessageCount > 0"
+                          ng-class="{'large-count': ctrl.unReadMessageCount > 99}"
+                          md-tooltip="{{ctrl.unReadMessageCount}} Unread Messages"
+                          md-tooltip-direction="bottom">
+        {{ ctrl.unReadMessageCount > 99 ? '99+' : ctrl.unReadMessageCount }}
+    </span>
                     <md-tooltip md-direction="bottom">Messages</md-tooltip>
                 </md-button>
-                
+
                 <md-menu>
                     <md-button
                             aria-label="Open views menu"
@@ -208,7 +211,7 @@
                                 <span class="material-symbols-outlined">{{::ctrl.boxes[box.name].icon}}</span>
                                 <span class="md-headline-title" flex style="margin-left: 8px">
   {{::ctrl.boxes[box.name].title}}
-
+                                    <span ng-if="::box.name == 'tasksList'">{{ctrl.getActiveTaskFilterNames()}}</span>
                   <span ng-if="::box.name == 'jobDetail'">{{ctrl.currentSelection}}
                     <md-icon
                             md-font-set="material-symbols-outlined"
@@ -369,6 +372,89 @@
                                             found. Please check the POD page.
                                         </md-not-found>
                                     </md-autocomplete>
+                                </div>
+
+                                <div ng-if="::box.name == 'tasksList'">
+                                    <md-menu>
+                                        <md-button aria-label="open staff support filter menu"
+                                                   class="md-icon-button"
+                                                   ng-click="$mdMenu.open($event)">
+                                            <md-icon md-menu-origin md-font-set="material-symbols-outlined">
+                                                person_apron
+                                            </md-icon>
+                                            <md-tooltip md-direction="bottom">Filter by Staff</md-tooltip>
+                                        </md-button>
+
+                                        <md-menu-content width="4">
+                                            <md-menu-item ng-if="ctrl.staffList && ctrl.staffList.length === 0">
+                                                <p>No staff.</p>
+                                            </md-menu-item>
+
+                                            <md-menu-item ng-if="ctrl.staffList && ctrl.staffList.length > 0">
+                                                <md-button ng-click="ctrl.filterByStaff('all')"
+                                                           ng-class="{'md-primary': ctrl.staffFilter === 'all'}">
+                                                    <md-icon md-font-set="material-symbols-outlined"
+                                                             md-menu-align-target>topic
+                                                    </md-icon>
+                                                    All Staff
+                                                </md-button>
+                                            </md-menu-item>
+
+                                            <md-menu-divider
+                                                    ng-if="ctrl.staffList && ctrl.staffList.length > 0"></md-menu-divider>
+
+                                            <md-menu-item ng-repeat="staff in ctrl.staffList">
+                                                <md-button ng-click="ctrl.filterByStaff(staff)"
+                                                           ng-class="{'md-primary': ctrl.staffFilter === staff.id.toString()}">
+                                                    <md-icon md-font-set="material-symbols-outlined"
+                                                             md-menu-align-target>topic
+                                                    </md-icon>
+                                                    {{ staff.text }}
+                                                </md-button>
+                                            </md-menu-item>
+                                        </md-menu-content>
+                                    </md-menu>
+
+                                    <md-menu>
+                                        <md-button aria-label="open event types filter menu"
+                                                   class="md-icon-button"
+                                                   ng-click="$mdMenu.open($event)">
+                                            <md-icon md-menu-origin md-font-set="material-symbols-outlined">category
+                                            </md-icon>
+                                            <md-tooltip md-direction="bottom">Filter by Event Type</md-tooltip>
+                                        </md-button>
+
+                                        <md-menu-content width="4">
+                                            <md-menu-item
+                                                    ng-if="ctrl.eventTypesList && ctrl.eventTypesList.length === 0">
+                                                <p>No event types.</p>
+                                            </md-menu-item>
+
+                                            <md-menu-item ng-if="ctrl.eventTypesList && ctrl.eventTypesList.length > 0">
+                                                <md-button ng-click="ctrl.filterBySupportType('all')"
+                                                           ng-class="{'md-primary': ctrl.eventTypeFilter === 'all'}">
+                                                    <md-icon md-font-set="material-symbols-outlined"
+                                                             md-menu-align-target>topic
+                                                    </md-icon>
+                                                    All Task Types
+                                                </md-button>
+                                            </md-menu-item>
+
+                                            <md-menu-divider
+                                                    ng-if="ctrl.eventTypesList && ctrl.eventTypesList.length > 0"></md-menu-divider>
+
+                                            <md-menu-item ng-repeat="eventType in ctrl.eventTypesList">
+                                                <md-button ng-click="ctrl.filterBySupportType(eventType)"
+                                                           ng-class="{'md-primary': ctrl.eventTypeFilter === eventType.id.toString()}">
+                                                    <md-icon md-font-set="material-symbols-outlined"
+                                                             md-menu-align-target>topic
+                                                    </md-icon>
+                                                    {{ eventType.text }}
+                                                </md-button>
+                                            </md-menu-item>
+
+                                        </md-menu-content>
+                                    </md-menu>
                                 </div>
 
                                 <div class="box-handle md-icon-button">

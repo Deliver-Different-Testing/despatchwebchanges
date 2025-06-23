@@ -38,6 +38,8 @@ import dayjs from "dayjs";
 import getJobTableRowClass from "../../functions/getJobTableRowClass";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import MessagingService from "../../services/messaging.service";
+import {ContactID} from "../../contants";
+import {StatusFilter} from "../task-dashboard/enums/status-filter";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -71,7 +73,10 @@ class NationwideControl extends BaseController {
     public readonly nationwidePageId: number = AppPages.Domestic;
     public readonly isUsCustomer: boolean = false;
 
- greeting: string;
+    private readonly STAFF_SUPPORT_FILTER_NAME: string = `selectedSupportTypeNWFilter-${ContactID}`;
+    private readonly EVENT_TYPE_SUPPORT_FILTER_NAME: string = `selectedSupportTypeNWFilter-${ContactID}`;
+
+    greeting: string;
     isDataLoading: boolean = false;
     layouts: any[] = [];
     defaultLayout?: any;
@@ -129,10 +134,6 @@ class NationwideControl extends BaseController {
     jobListPromise?: Promise<IDispatchJob[]>;
     podListPromise?: Promise<IDispatchJob[]>;
     repriceListPromise?: Promise<IDispatchJob[]>;
-    tasksLoading: boolean = false;
-    filteredTasks: ExtendedTask[] = [];
-    tasksFilter: string = 'all';
-    tasks: ExtendedTask[] = [];
     taskItemConfig = {
         showAssign: true,
         showClose: true,
@@ -166,7 +167,17 @@ class NationwideControl extends BaseController {
     startDate: Date = dayjs(new Date(0)).toDate();
     endDate: Date = dayjs().add(24, 'hours').toDate();
 
-    unReadMessageCount?: number;
+    unReadMessageCount: number = 0;
+
+    // supportFilters
+    staffList?: Suggestion[];
+    eventTypesList?: Suggestion[];
+    staffFilter: string = StatusFilter.All;
+    eventTypeFilter: string = StatusFilter.All;
+    tasksLoading: boolean = false;
+    filteredTasks: ExtendedTask[] = [];
+    tasksFilter: string = 'all';
+    tasks: ExtendedTask[] = [];
 
     constructor(
         $scope: angular.IScope,
@@ -471,12 +482,18 @@ class NationwideControl extends BaseController {
                 this.saveCurrentLayout();
             }
         };
+
+        this.loadLists()
+            .then(() => console.log("Loaded Lists!"))
+            .catch(error => {
+                console.error('Initialization error:', error);
+            });
     }
 
     $onInit() {
         const jobId = this.$stateParams.jobId;
         if (jobId) {
-            return this.loadPageViews()
+            this.loadPageViews()
                 .then(() => {
                     if (!this.jobList) return;
 
@@ -490,7 +507,7 @@ class NationwideControl extends BaseController {
                     this.toastrService.showErrorToast("Error loading job details");
                 });
         } else {
-            return this.loadPageViews();
+            this.loadPageViews();
         }
 
         this.registerInterval(async () => {
@@ -1650,36 +1667,44 @@ class NationwideControl extends BaseController {
 
     // Tasks
     private buildFilterRequest(filterType: string): TaskTableFiltersRequest {
-        let filterRequest: TaskTableFiltersRequest = {};
-        filterRequest.jobId = this.currentJobId;
-        filterRequest.showCompleted = false;
+        let filters: TaskTableFiltersRequest = {};
+        filters.jobId = this.currentJobId;
+        filters.showCompleted = false;
 
+        if (this.staffFilter && this.staffFilter !== StatusFilter.All) {
+            filters.staffId = parseInt(this.staffFilter, 10);
+        }
+
+        if (this.eventTypeFilter && this.eventTypeFilter !== StatusFilter.All) {
+            filters.eventTypeId = parseInt(this.eventTypeFilter, 10);
+        }
+        
         switch (filterType) {
             case 'mine':
-                filterRequest.staffId = ContactID;
-                filterRequest.orderBy = 'assignedTo';
-                filterRequest.orderDirection = 'desc';
+                filters.staffId = ContactID;
+                filters.orderBy = 'assignedTo';
+                filters.orderDirection = 'desc';
                 break;
             case 'unassigned':
-                filterRequest.staffId = -1;
-                filterRequest.orderBy = 'assignedTo';
-                filterRequest.orderDirection = 'desc';
+                filters.staffId = -1;
+                filters.orderBy = 'assignedTo';
+                filters.orderDirection = 'desc';
                 break;
             case 'newest':
-                filterRequest.orderBy = 'created';
-                filterRequest.orderDirection = 'desc';
+                filters.orderBy = 'created';
+                filters.orderDirection = 'desc';
                 break;
             case 'oldest':
-                filterRequest.orderBy = 'created';
-                filterRequest.orderDirection = 'asc';
+                filters.orderBy = 'created';
+                filters.orderDirection = 'asc';
                 break;
             default:
-                filterRequest.orderBy = 'created';
-                filterRequest.orderDirection = 'desc';
+                filters.orderBy = 'created';
+                filters.orderDirection = 'desc';
                 break;
         }
 
-        return filterRequest;
+        return filters;
     }
 
     getTasksStatusCount(statusType: string): number {
@@ -2086,6 +2111,62 @@ class NationwideControl extends BaseController {
     private async getUnreadMessageCount() {
         this.unReadMessageCount = await this.messagingService.getUnreadMessageCount();
         this.applyScope();
+    }
+
+    private async loadLists() {
+        try {
+            const [staffList, eventTypesList] = await Promise.all([
+                this.DispatchData.getActiveStaff(),
+                this.DispatchData.getEventTypes()
+            ]);
+
+            this.staffList = staffList;
+            this.eventTypesList = eventTypesList;
+        } catch (error) {
+            console.error('Error loading lists:', error);
+            throw error;
+        }
+    }
+
+    async filterByStaff(selectedStaff: string | Suggestion) {
+        if (typeof selectedStaff === 'string') {
+            this.staffFilter = selectedStaff;
+        } else {
+            this.staffFilter = selectedStaff.id?.toString() || 'all';
+        }
+
+        if (Modernizr.localstorage) {
+            localStorage.setItem(this.STAFF_SUPPORT_FILTER_NAME, this.staffFilter);
+        }
+
+        await this.loadTasks();
+    }
+
+    async filterBySupportType(selectedType: string | Suggestion) {
+        if (typeof selectedType === 'string') {
+            this.eventTypeFilter = selectedType;
+        } else {
+            this.eventTypeFilter = selectedType.id?.toString() || 'all';
+        }
+
+        if (Modernizr.localstorage) {
+            localStorage.setItem(this.EVENT_TYPE_SUPPORT_FILTER_NAME, this.eventTypeFilter);
+        }
+
+        await this.loadTasks();
+    }
+
+    getActiveTaskFilterNames(): string {
+        if (this.staffFilter === StatusFilter.All && this.eventTypeFilter === StatusFilter.All) {
+            return ' - (All Tasks)';
+        }
+
+        const staffText = this.staffList?.find(s => s.id?.toString() === this.staffFilter)?.text ?? '';
+        const eventTypeText = this.eventTypesList?.find(et => et.id?.toString() === this.eventTypeFilter)?.text ?? '';
+
+        const filters = [staffText, eventTypeText].filter(Boolean).join(', ');
+
+        return `- (${filters})`;
     }
 }
 
