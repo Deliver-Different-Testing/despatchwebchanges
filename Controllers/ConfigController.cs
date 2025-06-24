@@ -8,21 +8,18 @@ namespace DespatchWeb.Controllers;
 
 public class ConfigController(IWebHostEnvironment environment) : Controller
 {
-    [HttpGet]
     public IActionResult GetHubUrl()
     {
         var hubUrl = Environment.GetEnvironmentVariable("HubUrl");
         return Json(hubUrl);
     }
 
-    [HttpGet]
     public IActionResult GetHereMapsKey()
     {
         var apiKey = new ApiKeyResponse(Environment.GetEnvironmentVariable("HereMapsAPIKey"));
         return Json(apiKey);
     }
 
-    [HttpGet]
     public IActionResult GetHereMapsConfig()
     {
         var appId = Environment.GetEnvironmentVariable("HereMapsID");
@@ -31,7 +28,6 @@ public class ConfigController(IWebHostEnvironment environment) : Controller
         return Json(new { appId, appCode });
     }
 
-    [HttpGet]
     public IActionResult GetGoogleMapsKey()
     {
         var apiKey = new ApiKeyResponse(

@@ -21,7 +21,6 @@ public class NationwideJobController(
     IFlightRateService flightRateService)
     : Controller
 {
-    [HttpGet]
     public async Task<IActionResult> NationwideJobListNew(JobQueryParams queryParams, bool isInternal,
         int cid, string clientIds, List<int> despatchViewIds)
     {
@@ -42,7 +41,6 @@ public class NationwideJobController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> NationwideJobListPod(JobQueryParams queryParams, bool isInternal,
         int cid, string clientIds, List<int> despatchViewIds)
     {
@@ -63,7 +61,6 @@ public class NationwideJobController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> NationwideJobListReprice(JobQueryParams queryParams, bool isInternal,
         int cid, string clientIds, List<int> despatchViewIds)
     {
@@ -84,7 +81,6 @@ public class NationwideJobController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetScheduledFlightOptions(
         DateTime departureDate,
         int jobId,
@@ -145,109 +141,108 @@ public class NationwideJobController(
         }
     }
 
-  [HttpPost]
-public async Task<IActionResult> AssignFlightToJob([FromBody] AssignFlightToJobRequest request)
-{
-    try
+    [HttpPost]
+    public async Task<IActionResult> AssignFlightToJob([FromBody] AssignFlightToJobRequest request)
     {
-        if (request is null)
-            return BadRequest("No flight data was provided. Unable to assign to job.");
-
-        // Get flight details
-        AddFlightToJobDto flight;
-
-        if (request.FlightSegments != null && request.FlightSegments.Count != 0)
+        try
         {
-            var firstSegment = request.FlightSegments.First();
-            var lastSegment = request.FlightSegments.Last();
-            
-            // Map flight segments from request
-            flight = new AddFlightToJobDto
+            if (request is null)
+                return BadRequest("No flight data was provided. Unable to assign to job.");
+
+            // Get flight details
+            AddFlightToJobDto flight;
+
+            if (request.FlightSegments != null && request.FlightSegments.Count != 0)
             {
-                AirlineName = firstSegment.AirlineName ??
-                              (firstSegment.CarrierFsCode != null
-                                  ? $"{firstSegment.CarrierFsCode} Airlines"
-                                  : null),
-                ArrivalTime = lastSegment.ArrivalTime,  
-                CarrierFsCode = firstSegment.CarrierFsCode,  
-                DepartureTime = firstSegment.DepartureTime, 
-                FlightNumber = firstSegment.FlightNumber,  
-                FlightSegments = request.FlightSegments
-            };
-        }
-        else
-        {
+                var firstSegment = request.FlightSegments.First();
+                var lastSegment = request.FlightSegments.Last();
+
+                // Map flight segments from request
+                flight = new AddFlightToJobDto
+                {
+                    AirlineName = firstSegment.AirlineName ??
+                                  (firstSegment.CarrierFsCode != null
+                                      ? $"{firstSegment.CarrierFsCode} Airlines"
+                                      : null),
+                    ArrivalTime = lastSegment.ArrivalTime,
+                    CarrierFsCode = firstSegment.CarrierFsCode,
+                    DepartureTime = firstSegment.DepartureTime,
+                    FlightNumber = firstSegment.FlightNumber,
+                    FlightSegments = request.FlightSegments
+                };
+            }
+            else
+            {
+                try
+                {
+                    // Updated to pass jobId for route information
+                    flight = await flightService.GetFlightDetailsByFlightNumberAsync(
+                        request.FlightNumber,
+                        request.DepartureDate,
+                        request.JobId);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Error retrieving flight details for flight {FlightNumber}", request.FlightNumber);
+                    return StatusCode(500, ex.Message);
+                }
+            }
+
+            if (flight == null)
+            {
+                return BadRequest("Flight details could not be retrieved.");
+            }
+
+            // Create webhook
+            var webhookIds = new List<string>();
             try
             {
-                // Updated to pass jobId for route information
-                flight = await flightService.GetFlightDetailsByFlightNumberAsync(
-                    request.FlightNumber,
-                    request.DepartureDate,
-                    request.JobId);
+                foreach (var segment in flight.FlightSegments)
+                {
+                    // Generate a webhookId for each flight segment
+                    var webhookId = await flightService.CreateFlightRuleByDepartureAsync(
+                        segment.CarrierFsCode + segment.FlightNumber,
+                        segment.DepartureTime,
+                        segment.DepartureAirportFsCode) ?? string.Empty;
+
+                    if (!string.IsNullOrEmpty(webhookId))
+                    {
+                        webhookIds.Add(webhookId);
+                    }
+                }
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error retrieving flight details for flight {FlightNumber}", request.FlightNumber);
+                Log.Error(ex, "Error creating flight rule webhook for flight {FlightNumber}",
+                    request.FlightNumber);
                 return StatusCode(500, ex.Message);
             }
-        }
 
-        if (flight == null)
-        {
-            return BadRequest("Flight details could not be retrieved.");
-        }
-
-        // Create webhook
-        var webhookIds = new List<string>();
-        try
-        {
-            foreach (var segment in flight.FlightSegments)
+            // Add a job
+            try
             {
-                // Generate a webhookId for each flight segment
-                var webhookId = await flightService.CreateFlightRuleByDepartureAsync(
-                    segment.CarrierFsCode + segment.FlightNumber,
-                    segment.DepartureTime,
-                    segment.DepartureAirportFsCode) ?? string.Empty;
-
-                if (!string.IsNullOrEmpty(webhookId))
-                {
-                    webhookIds.Add(webhookId);
-                }
+                await repository.AddJobNationwideAsync(request.JobId, flight, webhookIds);
             }
+            catch (DbUpdateException ex)
+            {
+                Log.Error(ex, "Database error while adding job {JobId}", request.JobId);
+                return StatusCode(500, "Unable to save job information");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error adding nationwide job for JobId: {JobId}", request.JobId);
+                return StatusCode(500, "Unable to complete job assignment");
+            }
+
+            return Ok();
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error creating flight rule webhook for flight {FlightNumber}",
-                request.FlightNumber);
+            Log.Error(ex, "Unexpected error in AssignFlightToJob");
             return StatusCode(500, ex.Message);
         }
-
-        // Add a job
-        try
-        {
-            await repository.AddJobNationwideAsync(request.JobId, flight, webhookIds);
-        }
-        catch (DbUpdateException ex)
-        {
-            Log.Error(ex, "Database error while adding job {JobId}", request.JobId);
-            return StatusCode(500, "Unable to save job information");
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error adding nationwide job for JobId: {JobId}", request.JobId);
-            return StatusCode(500, "Unable to complete job assignment");
-        }
-
-        return Ok();
     }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "Unexpected error in AssignFlightToJob");
-        return StatusCode(500, ex.Message);
-    }
-}
 
-    [HttpGet]
     public async Task<IActionResult> GetAgentsForJob(int jobId)
     {
         try
@@ -279,7 +274,8 @@ public async Task<IActionResult> AssignFlightToJob([FromBody] AssignFlightToJobR
             try
             {
                 var addToDb =
-                    await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value, jobRequestModel.JobId.Value, jobRequestModel.IncludeStopJobs ?? false);
+                    await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value, jobRequestModel.JobId.Value,
+                        jobRequestModel.IncludeStopJobs ?? false);
                 if (!addToDb)
                     return BadRequest("An error occurred while assigning the agent to the job.");
 
@@ -305,7 +301,6 @@ public async Task<IActionResult> AssignFlightToJob([FromBody] AssignFlightToJobR
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetActiveAirlines()
     {
         try
@@ -339,7 +334,6 @@ public async Task<IActionResult> AssignFlightToJob([FromBody] AssignFlightToJobR
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetNearbyAirports(int jobId)
     {
         try
@@ -353,7 +347,7 @@ public async Task<IActionResult> AssignFlightToJob([FromBody] AssignFlightToJobR
             return StatusCode(500, e.Message);
         }
     }
-    
+
 
     [HttpPost]
     public async Task<IActionResult> RestoreJob([FromBody] RestoreJobRequest request)
@@ -375,7 +369,6 @@ public async Task<IActionResult> AssignFlightToJob([FromBody] AssignFlightToJobR
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetAllAgentsSearch(string searchTerm)
     {
         try
@@ -390,7 +383,6 @@ public async Task<IActionResult> AssignFlightToJob([FromBody] AssignFlightToJobR
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetAgentInfo(int agentId)
     {
         try

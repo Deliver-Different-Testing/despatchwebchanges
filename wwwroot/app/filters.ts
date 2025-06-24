@@ -1,11 +1,6 @@
 import {findIana} from "windows-iana";
+import { getTimeZones } from '@vvo/tzdb';
 import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
-
-// Register the required plugins
-dayjs.extend(utc);
-dayjs.extend(timezone);
 
 /**
  * Returns a unique list of items based on a key property
@@ -133,28 +128,21 @@ export function timezoneShortFilter(timezone: string): string {
     if (!timezone) return '';
 
     try {
-        const now = dayjs();
-
         const ianaTimezones = findIana(timezone);
         const ianaTimezone = ianaTimezones && ianaTimezones.length > 0
             ? ianaTimezones[0]
-            : timezone; // If not found, use original (might already be IANA)
+            : timezone;
 
-        // Use Day.js to format in the target timezone
-        const timeInZone = now.tz(ianaTimezone);
+        // Get all timezone data
+        const timeZones = getTimeZones();
+        const timezoneData = timeZones.find(tz => tz.name === ianaTimezone);
 
-        // Still need Intl.DateTimeFormat for timezone abbreviation extraction
-        // Day.js doesn't have built-in timezone abbreviation support
-        const formatter = new Intl.DateTimeFormat('en', {
-            timeZone: ianaTimezone,
-            timeZoneName: 'short'
-        });
+        if (timezoneData) {
+            return timezoneData.abbreviation;
+        }
 
-        // Format the Day.js date as a native Date for Intl formatter
-        const formatted = formatter.format(timeInZone.toDate());
-        const abbreviation = formatted.split(' ').pop();
-
-        return abbreviation || timezone;
+        // Fallback to original timezone string
+        return timezone;
     } catch (error) {
         console.error('Error formatting timezone:', error, 'for timezone:', timezone);
         return timezone;

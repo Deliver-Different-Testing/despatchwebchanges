@@ -14,7 +14,6 @@ public class CourierController(
     ITaskRepository taskRepository
 ) : Controller
 {
-    [HttpGet]
     public async Task<IActionResult> Index([FromQuery] List<int> despatchViewIds, [FromQuery] bool isUsTenant)
     {
         try
@@ -32,7 +31,6 @@ public class CourierController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> ClearListEnvelope(int clearListId, int countryId)
     {
         try
@@ -48,7 +46,6 @@ public class CourierController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> Active()
     {
         try
@@ -63,7 +60,6 @@ public class CourierController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> AvailableCourierLocation(CourierLocationRequest request)
     {
         try
@@ -78,7 +74,6 @@ public class CourierController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> PotentialCouriers(int jobId)
     {
         try
@@ -93,7 +88,6 @@ public class CourierController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> AllActiveSearch(string searchTerm)
     {
         try
@@ -108,7 +102,6 @@ public class CourierController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> AllActive()
     {
         try
@@ -123,7 +116,6 @@ public class CourierController(
         }
     }
 
-    [HttpGet]
     public IActionResult Location(string code)
     {
         try
@@ -138,7 +130,6 @@ public class CourierController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> Route(string code, DateTime? start, DateTime? end)
     {
         try
@@ -153,7 +144,6 @@ public class CourierController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> TruckCourierStatus(string courierId)
     {
         try
@@ -189,7 +179,6 @@ public class CourierController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetVehicleSizes()
     {
         try
@@ -204,7 +193,6 @@ public class CourierController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetCourier(int courierId)
     {
         try

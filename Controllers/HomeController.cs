@@ -11,7 +11,7 @@ using Serilog;
 
 namespace DespatchWeb.Controllers;
 
-public class HomeController(
+public partial class HomeController(
     IClientRepository clientRepository,
     IDfrntViewsRepository viewsRepository,
     IConnectionStringManager connectionStringManager) : Controller
@@ -38,7 +38,7 @@ public class HomeController(
             }
 
             Log.Debug("Found Identity for StaffID:{StaffId}", staffId);
-            var credentials = Environment.GetEnvironmentVariable("SQLCredentials") ?? "";
+            var credentials = Environment.GetEnvironmentVariable("SQLCredentials") ?? string.Empty;
             if (string.IsNullOrEmpty(credentials))
             {
                 throw new InvalidOperationException(
@@ -56,7 +56,7 @@ public class HomeController(
             ViewBag.FullName = clientDetail.FullName;
             ViewBag.Email = clientDetail.Email;
             ViewBag.ClientInternal = clientDetail.Internal;
-            ViewBag.ContactID = clientDetail.StaffID ?? int.Parse(contactId);
+            ViewBag.ContactID = clientDetail.StaffID ?? int.Parse(contactId ?? throw new InvalidOperationException());
             ViewBag.IsUsTenant = isUsTenantFlag ?? false;
             ViewBag.TimeZone = tenantTimeZone;
 
@@ -64,7 +64,7 @@ public class HomeController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex.Message, ex);
+            Log.Error(ex, "Error getting client details");
             return Redirect(Environment.GetEnvironmentVariable("PublicPath"));
         }
     }
@@ -76,17 +76,13 @@ public class HomeController(
         return Json(viewOptions);
     }
 
-    private string MaskSensitiveInfo(string connectionString)
+    private static string MaskSensitiveInfo(string connectionString)
     {
         // Mask password
-        var maskedString = Regex.Replace(connectionString,
-            @"(Password|Pwd)=[^;]*", "$1=********",
-            RegexOptions.IgnoreCase);
+        var maskedString = PasswordRegex().Replace(connectionString, "$1=********");
 
         // Mask user id if present
-        maskedString = Regex.Replace(maskedString,
-            @"(User ID|Uid)=[^;]*", "$1=********",
-            RegexOptions.IgnoreCase);
+        maskedString = UserIdRegex().Replace(maskedString, "$1=********");
 
         return maskedString;
     }
@@ -96,17 +92,18 @@ public class HomeController(
         var result = await clientRepository.ActiveClientsAsync(searchTerm);
         return Json(result);
     }
-
+    
     public async Task<IActionResult> ClientContacts(int contactId)
     {
         var result = await clientRepository.ClientContactsAsync(contactId);
         return Json(result);
     }
-
-
+    
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
-    {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-    }
+    public IActionResult Error() => View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+
+    [GeneratedRegex(@"(Password|Pwd)=[^;]*", RegexOptions.IgnoreCase, "en-NZ")]
+    private static partial Regex PasswordRegex();
+    [GeneratedRegex(@"(User ID|Uid)=[^;]*", RegexOptions.IgnoreCase, "en-NZ")]
+    private static partial Regex UserIdRegex();
 }

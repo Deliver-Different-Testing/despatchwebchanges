@@ -39,7 +39,6 @@ public class JobController(
     IAddStopJobService addStopJobService
 ) : Controller
 {
-    [HttpGet]
     public async Task<IActionResult> Index(
         [FromQuery] JobQueryParams queryParams,
         bool isInternal,
@@ -77,7 +76,6 @@ public class JobController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetAllJobCoordinates(
         bool isInternal,
         string clientIds,
@@ -115,7 +113,6 @@ public class JobController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetJobsByClearListEnvelope(
         JobQueryParams queryParams,
         bool isInternal,
@@ -184,7 +181,6 @@ public class JobController(
         return Ok("OK");
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetPricingBreakdown(int jobId, bool isPrebook)
     {
         try
@@ -562,7 +558,6 @@ public class JobController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> Detail(int jobId)
     {
         try
@@ -577,7 +572,6 @@ public class JobController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> DispatchJobDetail(int jobId)
     {
         try
@@ -604,14 +598,12 @@ public class JobController(
         return Json(result);
     }
 
-    [HttpGet]
     public async Task<IActionResult> PreBookJobs(bool active)
     {
         var result = await recurringJobRepository.PreBookJobListAsync(active);
         return Json(result);
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetRecurringJobDetail(int jobBookingId)
     {
         try
@@ -626,7 +618,6 @@ public class JobController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> PodSearch(PodSearchRequest data)
     {
         try
@@ -1388,56 +1379,48 @@ public class JobController(
         throw e;
     }
 
-    [HttpGet]
     public async Task<IActionResult> SuburbList()
     {
         var data = await jobRepository.SuburbsAsync();
         return Json(data);
     }
 
-    [HttpGet]
     public async Task<IActionResult> SpeedList()
     {
         var data = await jobRepository.SpeedsAsync();
         return Json(data);
     }
 
-    [HttpGet]
     public async Task<IActionResult> ContactList(int clientId)
     {
         var data = await jobRepository.ContactsAsync(clientId);
         return Json(data);
     }
 
-    [HttpGet]
     public async Task<IActionResult> LeaveList()
     {
         var data = await jobRepository.LeaveParcelLocationsAsync();
         return Json(data);
     }
 
-    [HttpGet]
     public async Task<IActionResult> UndeliverableList()
     {
         var data = await jobRepository.UndeliverableLocationsAsync();
         return Json(data);
     }
 
-    [HttpGet]
     public async Task<IActionResult> InternalStatusList()
     {
         var data = await jobRepository.GetInternalStatusListAsync();
         return Json(data);
     }
 
-    [HttpGet]
     public async Task<IActionResult> StatusList()
     {
         var data = await jobRepository.GetStatusListAsync();
         return Json(data);
     }
 
-    [HttpGet]
     public async Task<IActionResult> EventTypeList()
     {
         var data = await jobRepository.EventTypeListAsync();
@@ -1658,14 +1641,12 @@ public class JobController(
         return Ok();
     }
 
-    [HttpGet]
     public async Task<IActionResult> HasClientItemsAvailable(int clientId, int speedId)
     {
         var hasItems = await jobRepository.HasClientItemsAvailableAsync(clientId, speedId);
         return Json(hasItems);
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetAllClientItems(int clientId, int speedId, int jobId)
     {
         var clientItems =
@@ -2035,7 +2016,6 @@ public class JobController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> IsJobParent(int jobId)
     {
         var isParent = await jobRepository.IsJobParentAsync(jobId);
@@ -2307,7 +2287,6 @@ public class JobController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetTimeZoneOptions()
     {
         try

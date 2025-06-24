@@ -12,7 +12,6 @@ public class NoteController(
     IRecurringJobRepository recurringJobRepository
     ) : Controller
 {
-    [HttpGet]
     public async Task<IActionResult> GetNotes(int jobId)
     {
         try
@@ -29,7 +28,6 @@ public class NoteController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetRecurringNotes(int jobId)
     {
         try
@@ -111,7 +109,6 @@ public class NoteController(
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetNoteTypes()
     {
         try

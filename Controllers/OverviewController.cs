@@ -11,7 +11,6 @@ namespace DespatchWeb.Controllers;
 public class OverviewController(IJobRepository jobRepository, ICourierRepository courierRepository)
     : Controller
 {
-    [HttpGet]
     public async Task<IActionResult> Index([FromQuery] OverviewJobsRequest parameters)
     {
         try
@@ -42,7 +41,6 @@ public class OverviewController(IJobRepository jobRepository, ICourierRepository
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetAllRegions()
     {
         try
@@ -57,7 +55,6 @@ public class OverviewController(IJobRepository jobRepository, ICourierRepository
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetStats()
     {
         try
@@ -72,7 +69,6 @@ public class OverviewController(IJobRepository jobRepository, ICourierRepository
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetParentJobMap(int jobId)
     {
         try
@@ -87,7 +83,6 @@ public class OverviewController(IJobRepository jobRepository, ICourierRepository
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetAllSpeeds()
     {
         try
@@ -102,7 +97,6 @@ public class OverviewController(IJobRepository jobRepository, ICourierRepository
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetJobsForMegaMap()
     {
         try
@@ -117,7 +111,6 @@ public class OverviewController(IJobRepository jobRepository, ICourierRepository
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetOpenJobs([FromQuery] OpenJobsRequest parameters)
     {
         try
