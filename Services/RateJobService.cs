@@ -20,20 +20,29 @@ public class RateJobService(
 {
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient("HereMaps");
 
-    public async Task<decimal> RateJob(JobRatingDetailsDto jobDetails)
+
+    public async Task<decimal> RateJobAsync(JobRatingDetailsDto jobDetails)
     {
         try
         {
+            ArgumentNullException.ThrowIfNull(jobDetails);
+            ArgumentNullException.ThrowIfNull(jobDetails.ClientId);
+            ArgumentNullException.ThrowIfNull(jobDetails.FromId);
+            ArgumentNullException.ThrowIfNull(jobDetails.ToId);
+            ArgumentNullException.ThrowIfNull(jobDetails.SpeedId);
+            ArgumentNullException.ThrowIfNull(jobDetails.SpeedId);
+            ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
+            
             var rate = await jobRepository.RateJobAsync(
-                jobDetails.ClientId,
-                jobDetails.FromId,
-                jobDetails.ToId,
-                jobDetails.SpeedId,
+                jobDetails.ClientId.Value,
+                jobDetails.FromId.Value,
+                jobDetails.ToId.Value,
+                jobDetails.SpeedId.Value,
                 jobDetails.IsPedal,
                 jobDetails.IsVan,
                 jobDetails.IsReturnJob,
-                (int)jobDetails.Weight,
-                jobDetails.SizeId,
+                jobDetails.Weight.HasValue ? (int)jobDetails.Weight.Value : 0,
+                jobDetails.SizeId.Value,
                 jobDetails.IncludeFuelSurcharge,
                 jobDetails.OurRef,
                 jobDetails.RefA,
@@ -51,15 +60,20 @@ public class RateJobService(
         }
     }
 
-    public async Task RateJobUs(JobRatingDetailsDto jobDetails)
+    public async Task RateJobUsAsync(JobRatingDetailsDto jobDetails)
     {
         try
         {
+            ArgumentNullException.ThrowIfNull(jobDetails);
+            ArgumentNullException.ThrowIfNull(jobDetails.SpeedId);
+            ArgumentNullException.ThrowIfNull(jobDetails.ClientId);
+            ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
+            
             // Get distances and airport info
             var distanceResult = await CalculateJobRateUs(
                 new JobRateRequest
                 {
-                    SpeedId = jobDetails.SpeedId,
+                    SpeedId = jobDetails.SpeedId.Value,
                     PickupLat = jobDetails.PickupLat,
                     PickupLong = jobDetails.PickupLong,
                     DeliveryLat = jobDetails.DeliveryLat,
@@ -71,16 +85,16 @@ public class RateJobService(
             await jobRepository.RateJobUsAsync(new RateJobUsDto
             {
                 JobId = jobDetails.JobId,
-                ClientId = jobDetails.ClientId,
-                Speed = jobDetails.SpeedId,
+                ClientId = jobDetails.ClientId.Value,
+                Speed = jobDetails.SpeedId.Value,
                 FromZip = jobDetails.FromZip,
                 ToZip = jobDetails.ToZip,
                 TotalMiles = (decimal)distanceResult.TotalMiles, // Used for non-flight jobs
                 FromMiles = (decimal)distanceResult.FromMiles, // Used for flight jobs
                 ToMiles = (decimal)distanceResult.ToMiles, // Used for flight jobs
-                Weight = (int)jobDetails.Weight,
+                Weight = jobDetails.Weight.HasValue ? (int)jobDetails.Weight : 0,
                 Booked = jobDetails.BookedDate,
-                Size = jobDetails.SizeId,
+                Size = jobDetails.SizeId.Value,
                 DangerousGoods = jobDetails.DangerousGoods,
                 TotalPallets = jobDetails.TotalPallets,
                 ExtraStopOffs = jobDetails.ExtraStopOffs,

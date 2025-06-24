@@ -125,7 +125,7 @@ class JobDetailController extends BaseController {
     }
 
     $onInit() {
-        console.log("$onInit called - jobId:", this.jobId);
+        console.debug("$onInit called - jobId:", this.jobId);
 
         this.DispatchData.getInternalStatusList()
             .then((statusList: InternalStatus[]) => {
@@ -143,10 +143,10 @@ class JobDetailController extends BaseController {
     }
 
     $onChanges(changes: angular.IOnChangesObject) {
-        console.log("$onChanges called with changes:", changes);
+        console.debug("$onChanges called with changes:", changes);
 
         if (changes["jobId"]) {
-            console.log("jobId changed:", changes["jobId"].currentValue);
+            console.debug("jobId changed:", changes["jobId"].currentValue);
 
             if (changes["jobId"].currentValue) {
                 return this.loadJobData(changes["jobId"].currentValue);
@@ -158,8 +158,13 @@ class JobDetailController extends BaseController {
 
     $onDestroy() {
         super.$onDestroy();
+        console.debug("$onDestroy called - cleaning up resources");
 
-        console.log("$onDestroy called - cleaning up resources");
+        this.formattedPodPhotos?.forEach(photo => {
+            if (photo?.url) {
+                URL.revokeObjectURL(photo.url);
+            }
+        });
 
         const photoSection = angular.element(".pod-photo-section");
         if (photoSection) {
@@ -173,12 +178,12 @@ class JobDetailController extends BaseController {
         }
 
         this.processingTabChange = true;
-        console.log(`[JobDetailController] Switching to tab ${index}`);
+        console.debug(`Switching to tab ${index}`);
 
         try {
             if (!this.job || !this.jobGroups || this.jobGroups.length <= index) {
                 console.warn(
-                    `[JobDetailController] Invalid related job data for index ${index}`
+                    `Invalid related job data for index ${index}`
                 );
                 return;
             }
@@ -187,8 +192,8 @@ class JobDetailController extends BaseController {
             const targetJob = targetJobGroup.job;
 
             if (targetJob && targetJob.id && targetJob.id !== this.jobId) {
-                console.log(
-                    `[JobDetailController] Loading related job: ${targetJob.id} (${targetJob.text})`
+                console.debug(
+                    `Loading related job: ${targetJob.id} (${targetJob.text})`
                 );
 
                 this.selectedTabIndex = index;
@@ -203,8 +208,8 @@ class JobDetailController extends BaseController {
                 // Important: Reset subjob index but don't autoload a subjob
                 this.selectedSubJobIndex = -1;
             } else {
-                console.log(
-                    `[JobDetailController] Already on the selected job or invalid job data`
+                console.debug(
+                    `Already on the selected job or invalid job data`
                 );
             }
         } finally {
@@ -254,13 +259,13 @@ class JobDetailController extends BaseController {
         const {tabIndex, subJobIndex} = this.findJobInGroups(jobId);
 
         if (tabIndex !== -1) {
-            console.log(`[JobDetailController] Setting selectedTabIndex to ${tabIndex}, subJobIndex to ${subJobIndex}`);
+            console.debug(`Setting selectedTabIndex to ${tabIndex}, subJobIndex to ${subJobIndex}`);
             this.selectedTabIndex = tabIndex;
             this.selectedRelatedJob = this.jobGroups[tabIndex];
             this.selectedSubJobIndex = subJobIndex;
 
             if (subJobIndex !== -1) {
-                console.log(`[JobDetailController] Current job is a subjob at index ${subJobIndex}`);
+                console.debug(`Current job is a subjob at index ${subJobIndex}`);
             }
         } else {
             this.selectedTabIndex = 0;
@@ -309,87 +314,165 @@ class JobDetailController extends BaseController {
         }
     }
 
-    private loadPodPhotos() {
-        if (!this.job?.completedTime) {
-            console.log("No POD time available for job");
+    private async loadPodPhotos() {
+        console.debug("=== Starting loadPodPhotos ===");
+
+        if (!this.job) {
+            console.debug("❌ No job object available");
             return;
         }
 
-        console.log(`Loading POD photos for job: ${this.job.id}`);
+        console.debug("✓ Job object:", { id: this.job.id, completedTime: this.job.completedTime });
+
+        if (!this.job?.completedTime) {
+            console.debug("❌ No POD time available for job");
+            return;
+        }
+
+        console.debug(`✓ Loading POD photos for job: ${this.job.id}`);
+
+        const completedTime = dayjs(this.job?.completedTime);
+        const month = completedTime.month() + 1;
+        const year = completedTime.year();
+
+        console.debug(`✓ Parsed date - Year: ${year}, Month: ${month}, Raw completedTime:`, this.job.completedTime);
+        console.debug(`📅 Getting POD photos for date: ${year}-${month}`);
 
         try {
-            const completedTime = dayjs(this.job?.completedTime);
-            const month = completedTime.month() + 1;
-            const year = completedTime.year();
+            console.debug("🔄 Calling DispatchData.getJobDeliveryPhotosAndSignature...");
+            console.debug("📋 Request parameters:", { jobId: this.job.id, year, month });
 
-            console.log(`Getting POD photos for date: ${year}-${month}`);
-
-            this.DispatchData.getJobDeliveryPhotosAndSignature(
+            const photosData: number[][] = await this.DispatchData.getJobDeliveryPhotosAndSignature(
                 this.job.id,
                 year,
-                month
-            )
-                .then((photosData: any) => {
-                    if (!photosData || photosData.length === 0) {
-                        console.log("No POD photos returned from server");
-                        this.formattedPodPhotos = [];
-                    } else {
-                        console.log("Raw photos data received, count:", photosData.length);
+                month);
 
-                        this.formattedPodPhotos = photosData.map(
-                            (photoData: string, index: number) => {
-                                try {
-                                    const podPhoto: PodPhoto = {
-                                        url: photoData,
-                                        timestamp: this.job?.completedTime
-                                            ? dayjs(this.job.completedTime).format(
-                                                "MM/DD/YYYY HH:mm"
-                                            )
-                                            : undefined,
-                                        uploadedBy: this.job?.courierData.courierName ?? "Unknown",
-                                        coordinates: {
-                                            lat: this.job?.deliveryAddress?.latitude ?? 0,
-                                            lng: this.job?.deliveryAddress?.longitude ?? 0,
-                                        },
-                                    };
+            console.debug("✅ API call completed successfully");
+            console.debug("📊 Raw response type:", typeof photosData);
+            console.debug("📊 Raw response is array:", Array.isArray(photosData));
+            console.debug("📊 Raw response:", photosData);
 
-                                    return podPhoto;
-                                } catch (e) {
-                                    console.error(`Error processing photo ${index}:`, e);
-                                    return null;
-                                }
-                            }
-                        );
-                    }
+            if (!photosData) {
+                console.debug("❌ photosData is null or undefined");
+                this.formattedPodPhotos = [];
+                return;
+            }
 
-                    console.log(
-                        `Successfully processed ${this.formattedPodPhotos.length} POD photos`
-                    );
+            if (photosData.length === 0) {
+                console.debug("❌ No POD photos returned from server (empty array)");
+                this.formattedPodPhotos = [];
+                return;
+            }
 
-                    this.selectedPhotoIndex = 0;
-                    this.setupPhotoKeyboardNavigation();
-                })
-                .catch((error: Error) => {
-                    this.toastrService.showErrorToast("Failed to load POD photos");
-                    console.error("Error loading POD photos:", error);
+            console.debug(`✅ Raw photos data received, count: ${photosData.length}`);
 
-                    this.formattedPodPhotos = [];
+            // Log details about each photo data
+            photosData.forEach((photoBytes, index) => {
+                console.debug(`📸 Photo ${index}:`, {
+                    isArray: Array.isArray(photoBytes),
+                    length: photoBytes?.length,
+                    type: typeof photoBytes,
+                    firstFewBytes: photoBytes?.slice(0, 10)
                 });
+            });
+
+            console.debug("🔄 Starting photo processing...");
+
+            this.formattedPodPhotos = photosData.map(
+                (photoBytes: number[], index: number) => {
+                    console.debug(`🔄 Processing photo ${index}/${photosData.length - 1}`);
+
+                    try {
+                        if (!Array.isArray(photoBytes)) {
+                            console.error(`❌ Photo ${index} is not an array:`, typeof photoBytes);
+                            return null;
+                        }
+
+                        if (photoBytes.length === 0) {
+                            console.error(`❌ Photo ${index} is empty array`);
+                            return null;
+                        }
+
+                        console.debug(`✓ Photo ${index} byte array length: ${photoBytes.length}`);
+
+                        // Convert byte array to blob and create object URL
+                        console.debug(`🔄 Creating Uint8Array for photo ${index}...`);
+                        const uint8Array = new Uint8Array(photoBytes);
+                        console.debug(`✓ Uint8Array created, length: ${uint8Array.length}`);
+
+                        console.debug(`🔄 Creating blob for photo ${index}...`);
+                        const blob = new Blob([uint8Array], { type: 'image/jpeg' });
+                        console.debug(`✓ Blob created, size: ${blob.size}, type: ${blob.type}`);
+
+                        console.debug(`🔄 Creating object URL for photo ${index}...`);
+                        const photoUrl = URL.createObjectURL(blob);
+                        console.debug(`✓ Object URL created for photo ${index}: ${photoUrl}`);
+
+                        const podPhoto: PodPhoto = {
+                            url: photoUrl,
+                            timestamp: this.job?.completedTime
+                                ? dayjs(this.job.completedTime).format(
+                                    "MM/DD/YYYY HH:mm"
+                                )
+                                : undefined,
+                            uploadedBy: this.job?.courierData.courierName ?? "Unknown",
+                            coordinates: {
+                                lat: this.job?.deliveryAddress?.latitude ?? 0,
+                                lng: this.job?.deliveryAddress?.longitude ?? 0,
+                            },
+                        };
+
+                        console.debug(`✅ Successfully processed photo ${index}:`, {
+                            url: photoUrl,
+                            timestamp: podPhoto.timestamp,
+                            uploadedBy: podPhoto.uploadedBy,
+                            coordinates: podPhoto.coordinates
+                        });
+
+                        return podPhoto;
+                    } catch (error) {
+                        console.error(`❌ Error processing photo ${index}:`, error);
+                        console.error(`❌ Photo ${index} data:`, photoBytes);
+                        return null;
+                    }
+                }
+            ).filter(photo => {
+                const isValid = photo !== null;
+                console.debug(`🔍 Filtering photo - valid: ${isValid}`);
+                return isValid;
+            });
+
+            console.debug(`✅ Photo processing complete. Valid photos: ${this.formattedPodPhotos.length}`);
+            console.debug("📸 Final formatted photos:", this.formattedPodPhotos);
+
+            console.debug("🔄 Setting selectedPhotoIndex to 0");
+            this.selectedPhotoIndex = 0;
+
+            console.debug("🔄 Setting up photo keyboard navigation");
+            this.setupPhotoKeyboardNavigation();
+
+            console.debug("✅ Successfully completed loadPodPhotos");
+
         } catch (error) {
-            this.handleError(error);
+            console.error("❌ Error in loadPodPhotos:", error);
+            this.toastrService.showErrorToast("Failed to load POD photos");
+
+            console.debug("🔄 Setting formattedPodPhotos to empty array due to error");
             this.formattedPodPhotos = [];
         }
-    }
 
+        console.debug("=== Finished loadPodPhotos ===");
+    }
+    
     private initializeJobData() {
         if (!this.job) return;
 
-        console.log("Initializing job data:", this.job.id);
+        console.debug("Initializing job data:", this.job.id);
 
         this.jobAddressIcon = this.job?.assignedFlight ? "flight_takeoff" : "pin_drop";
 
         if (typeof this.job.daysOfWeek === "number" && this.job.daysOfWeek > 0) {
-            console.log("Original daysOfWeek bitmap value:", this.job.daysOfWeek);
+            console.debug("Original daysOfWeek bitmap value:", this.job.daysOfWeek);
 
             const daysArray = [];
             const dayValues = [
@@ -408,14 +491,14 @@ class JobDetailController extends BaseController {
                 }
             }
 
-            console.log("Converted daysOfWeek to array:", daysArray);
+            console.debug("Converted daysOfWeek to array:", daysArray);
 
             this.job.daysOfWeek = daysArray as any;
         }
 
         if (this.job.holidayDeliveryOption) {
             this.job.holidayDeliveryOption = Number(this.job.holidayDeliveryOption);
-            console.log(
+            console.debug(
                 "Set holiday delivery option to:",
                 this.job.holidayDeliveryOption
             );
@@ -423,7 +506,7 @@ class JobDetailController extends BaseController {
 
         if (this.job.frequency) {
             this.job.frequency = Number(this.job.frequency);
-            console.log("Set frequency to:", this.job.frequency);
+            console.debug("Set frequency to:", this.job.frequency);
         }
     }
 
@@ -784,7 +867,7 @@ class JobDetailController extends BaseController {
 
             await this.processAddressUpdate(job, newAddress, isDeliveryAddress);
         } catch (error) {
-            console.log("Error updating GPS:", error);
+            console.debug("Error updating GPS:", error);
         }
     }
 
@@ -793,7 +876,7 @@ class JobDetailController extends BaseController {
         newAddress: EditAddressDialogViewModel,
         isDeliveryAddress: boolean
     ) {
-        console.log(`isDeliveryAddress: ${isDeliveryAddress}`);
+        console.debug(`isDeliveryAddress: ${isDeliveryAddress}`);
 
         // Update job by address format
         const updatedJob = this.updateJobAddressUs(
@@ -824,7 +907,7 @@ class JobDetailController extends BaseController {
         const addressField = isDeliveryAddress
             ? "deliveryAddress"
             : "pickupAddress";
-        console.log(`Address Field: ${addressField}`);
+        console.debug(`Address Field: ${addressField}`);
 
         job[addressField] = newAddress;
         return job;
@@ -1150,7 +1233,7 @@ class JobDetailController extends BaseController {
     }
 
     async jobTypeClick($event: MouseEvent, job: IJob) {
-        console.log("jobTypeClick initiated", {
+        console.debug("jobTypeClick initiated", {
             eventType: $event.type,
             jobId: job.id,
             currentJobType: job.jobType,
@@ -1171,7 +1254,7 @@ class JobDetailController extends BaseController {
             },
         ];
 
-        console.log("Showing select dialog", {
+        console.debug("Showing select dialog", {
             jobId: job.id,
             jobTypeDes: job.jobTypeDescription,
             availableOptions: data.length,
@@ -1186,7 +1269,7 @@ class JobDetailController extends BaseController {
                 "Job Type",
                 job.jobTypeDescription
             );
-            console.log("Select dialog completed}");
+            console.debug("Select dialog completed}");
         } catch (error) {
             console.error("Error showing select dialog:", error);
             throw error;
@@ -1332,19 +1415,19 @@ class JobDetailController extends BaseController {
         value: boolean,
         useCharge: boolean = true
     ) {
-        console.log(
+        console.debug(
             `[JobDetailsComponentController] Start toggleJobProperty - property: ${property}, useCharge: ${useCharge}`
         );
 
         if (!job || !job.id) {
-            console.log(`[JobDetailsComponentController] Error: Invalid job data`);
+            console.debug(`[JobDetailsComponentController] Error: Invalid job data`);
             this.toastrService.showErrorToast(`Cannot update: Invalid job data`);
             return;
         }
 
         try {
             const newValue = !value;
-            console.log(
+            console.debug(
                 `[JobDetailsComponentController] Toggling ${property} for job ${
                     job.jobNo || job.id
                 } from ${!newValue} to ${newValue}`
@@ -1356,7 +1439,7 @@ class JobDetailController extends BaseController {
                 jobID: job.id,
             };
 
-            console.log(
+            console.debug(
                 `[JobDetailsComponentController] Calling updateField with data:`,
                 callData
             );
@@ -1364,7 +1447,7 @@ class JobDetailController extends BaseController {
             await this.updateField(job, callData);
 
             if (property === JobProperty.Reprice && newValue) {
-                console.log(
+                console.debug(
                     `[JobDetailsComponentController] Special handling for reprice - updating internal status`
                 );
                 const repriceStatusId = 4;
@@ -1376,17 +1459,17 @@ class JobDetailController extends BaseController {
                 );
             }
 
-            console.log(
+            console.debug(
                 `[JobDetailsComponentController] Update successful for ${property}`
             );
             this.toastrService.showSuccessToast(`${job.jobNo} updated`);
 
-            console.log(
+            console.debug(
                 `[JobDetailsComponentController] Refreshing job details for ID: ${job.id}`
             );
             await this.refreshJobDetails(job.id);
 
-            console.log(
+            console.debug(
                 `[JobDetailsComponentController] Toggle operation completed for ${property}`
             );
         } catch (error) {
@@ -1401,7 +1484,7 @@ class JobDetailController extends BaseController {
     }
 
     async toggleProperty(job: IJob, property: JobProperty, value: boolean) {
-        console.log(
+        console.debug(
             `[JobDetailsComponentController] Toggling property '${property}' for job ${
                 job?.jobNo || job?.id || "unknown"
             }`
@@ -1421,13 +1504,13 @@ class JobDetailController extends BaseController {
         ];
 
         const useCharge = propertiesUsingDefaultCharge.includes(property);
-        console.log(
+        console.debug(
             `[JobDetailsComponentController] Using default charge: ${useCharge}`
         );
 
         await this.toggleJobProperty(job, property, value, useCharge);
 
-        console.log(
+        console.debug(
             `[JobDetailsComponentController] Property '${property}' toggle completed`
         );
     }
@@ -1489,7 +1572,7 @@ class JobDetailController extends BaseController {
                 }
             }
 
-            console.log("[JobDetailsComponentController] Marking job as done]");
+            console.debug("[JobDetailsComponentController] Marking job as done]");
 
             const requestData: UpdatePodDetailsRequest = {
                 jobId: job.id,
@@ -1509,12 +1592,12 @@ class JobDetailController extends BaseController {
 
     private async refreshJobDetails(jobId: number) {
         try {
-            console.log(`Refreshing job details for jobId: ${jobId}`);
+            console.debug(`Refreshing job details for jobId: ${jobId}`);
             this.isLoading = true;
 
             await this.loadJobData(jobId);
 
-            console.log("Job data refreshed");
+            console.debug("Job data refreshed");
         } catch (error) {
             this.isLoading = false;
             this.toastrService.showErrorToast("Failed to refresh job details");
@@ -1523,7 +1606,7 @@ class JobDetailController extends BaseController {
 
     private handleError(error: any) {
         if (!error) {
-            console.log("User closed dialog");
+            console.debug("User closed dialog");
         } else {
             this.toastrService.showErrorToast();
         }
@@ -1601,7 +1684,7 @@ class JobDetailController extends BaseController {
                         .textContent("Sorry no photo for this job.")
                         .ok("OK")
                 );
-                console.log("Alert closed.");
+                console.debug("Alert closed.");
                 return;
             }
 
@@ -1659,8 +1742,8 @@ class JobDetailController extends BaseController {
         const newReadStatus = !job.readTrackerInfo?.hasBeenRead;
         const actionText = newReadStatus ? "read" : "unread";
 
-        console.log(
-            `[JobDetailController] Marking job ${job.jobNo} as ${actionText}`
+        console.debug(
+            `Marking job ${job.jobNo} as ${actionText}`
         );
 
         try {
@@ -1714,7 +1797,7 @@ class JobDetailController extends BaseController {
     }
 
     async updateDaysOfWeek(job: IJob) {
-        console.log("Updating days of week from array:", job.daysOfWeek);
+        console.debug("Updating days of week from array:", job.daysOfWeek);
 
         let daysValue = 0;
         if (Array.isArray(job.daysOfWeek)) {
@@ -1725,7 +1808,7 @@ class JobDetailController extends BaseController {
             daysValue = job.daysOfWeek;
         }
 
-        console.log("Days bitmask value calculated:", daysValue);
+        console.debug("Days bitmask value calculated:", daysValue);
 
         try {
             await this.DispatchData.updateJobDetail(
@@ -1747,7 +1830,7 @@ class JobDetailController extends BaseController {
         if (!job.frequency) return;
 
         const frequencyValue = Number(job.frequency);
-        console.log("Updating frequency to:", frequencyValue);
+        console.debug("Updating frequency to:", frequencyValue);
 
         try {
             await this.DispatchData.updateJobDetail(
@@ -1766,7 +1849,7 @@ class JobDetailController extends BaseController {
     }
 
     private triggerDigestCycle() {
-        console.log("[_triggerDigestCycle] Forcing UI update");
+        console.debug("[_triggerDigestCycle] Forcing UI update");
         try {
             if (!this.$rootScope.$$phase) {
                 this.$rootScope.$applyAsync();
@@ -1786,7 +1869,7 @@ class JobDetailController extends BaseController {
         if (!job.holidayDeliveryOption) return;
 
         const holidayOptionValue = Number(job.holidayDeliveryOption);
-        console.log("Updating holiday delivery option to:", holidayOptionValue);
+        console.debug("Updating holiday delivery option to:", holidayOptionValue);
 
         try {
             await this.DispatchData.updateJobDetail(
@@ -1901,7 +1984,7 @@ class JobDetailController extends BaseController {
             subJobIndex < 0
         ) {
             console.warn(
-                "[JobDetailController] Invalid subjob index or no subjobs available"
+                "Invalid subjob index or no subjobs available"
             );
             return;
         }
@@ -1910,8 +1993,8 @@ class JobDetailController extends BaseController {
 
         try {
             this.isLoading = true;
-            console.log(
-                `[JobDetailController] Loading subjob details for ID: ${subJob.id}`
+            console.debug(
+                `Loading subjob details for ID: ${subJob.id}`
             );
 
             // Load the subjob details from the server
@@ -1939,12 +2022,12 @@ class JobDetailController extends BaseController {
             // Broadcast the subjob change
             this.$rootScope.$broadcast("subJobChanged", this.job);
 
-            console.log(
-                `[JobDetailController] Successfully loaded subjob: ${subJob.id}`
+            console.debug(
+                `Successfully loaded subjob: ${subJob.id}`
             );
         } catch (error) {
             console.error(
-                `[JobDetailController] Error loading subjob details:`,
+                `Error loading subjob details:`,
                 error
             );
             this.toastrService.showErrorToast("Failed to load subjob details");

@@ -6,6 +6,6 @@ namespace DespatchWeb.Interfaces;
 
 public interface IRateJobService
 {
-    Task<decimal> RateJob(JobRatingDetailsDto jobDetails);
-    Task RateJobUs(JobRatingDetailsDto jobDetails);
+    Task<decimal> RateJobAsync(JobRatingDetailsDto jobDetails);
+    Task RateJobUsAsync(JobRatingDetailsDto jobDetails);
 }

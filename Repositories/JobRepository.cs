@@ -121,11 +121,11 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 TrackingEmail = j.TrackingEmail,
                 PreBook = false,
                 BulkJob = true,
-                Locked = (j.RunName ?? "").Length > 1 || j.BookDate < today,
+                Locked = (j.RunName ?? string.Empty).Length > 1 || j.BookDate < today,
                 RunName = j.RunName,
                 Done = j.Done,
                 ScheduleName = schedule.Name,
-                LoggedInContactName = $"{contact.Firstname} {contact.Surname ?? ""}",
+                LoggedInContactName = $"{contact.Firstname} {contact.Surname ?? string.Empty}",
                 Source = source.Name,
                 StatusName = status.UcjsName
             }

@@ -38,7 +38,7 @@ public partial class HomeController(
             }
 
             Log.Debug("Found Identity for StaffID:{StaffId}", staffId);
-            var credentials = Environment.GetEnvironmentVariable("SQLCredentials") ?? string.Empty;
+            var credentials = Environment.GetEnvironmentVariable("SQLCredentials") ?? "";
             if (string.IsNullOrEmpty(credentials))
             {
                 throw new InvalidOperationException(
@@ -56,7 +56,7 @@ public partial class HomeController(
             ViewBag.FullName = clientDetail.FullName;
             ViewBag.Email = clientDetail.Email;
             ViewBag.ClientInternal = clientDetail.Internal;
-            ViewBag.ContactID = clientDetail.StaffID ?? int.Parse(contactId ?? throw new InvalidOperationException());
+            ViewBag.ContactID = clientDetail.StaffID ?? int.Parse(contactId);
             ViewBag.IsUsTenant = isUsTenantFlag ?? false;
             ViewBag.TimeZone = tenantTimeZone;
 
@@ -65,7 +65,7 @@ public partial class HomeController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting client details");
-            return Redirect(Environment.GetEnvironmentVariable("PublicPath"));
+            return Redirect(Environment.GetEnvironmentVariable("PublicPath") ?? "https://deliverdifferent.com/");
         }
     }
 
@@ -92,18 +92,19 @@ public partial class HomeController(
         var result = await clientRepository.ActiveClientsAsync(searchTerm);
         return Json(result);
     }
-    
+
     public async Task<IActionResult> ClientContacts(int contactId)
     {
         var result = await clientRepository.ClientContactsAsync(contactId);
         return Json(result);
     }
-    
+
+
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error() => View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
 
-    [GeneratedRegex(@"(Password|Pwd)=[^;]*", RegexOptions.IgnoreCase, "en-NZ")]
+    [GeneratedRegex("(Password|Pwd)=[^;]*", RegexOptions.IgnoreCase, "en-NZ")]
     private static partial Regex PasswordRegex();
-    [GeneratedRegex(@"(User ID|Uid)=[^;]*", RegexOptions.IgnoreCase, "en-NZ")]
+    [GeneratedRegex("(User ID|Uid)=[^;]*", RegexOptions.IgnoreCase, "en-NZ")]
     private static partial Regex UserIdRegex();
 }

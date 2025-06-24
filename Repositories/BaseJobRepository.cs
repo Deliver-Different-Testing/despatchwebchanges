@@ -1512,27 +1512,25 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             await Context.SaveChangesAsync(cancellationToken);
             return archivedNote.NoteId;
         }
+
+        var activeNote = viewModel.ToEntity();
+        activeNote.CreatedDate = currentTime;
+        activeNote.CreatedBy = staffId;
+
+        if (isPrebook)
+        {
+            var effectiveJobBookingId = await GetEffectiveJobBookingId(viewModel.JobBookingId.Value);
+            activeNote.JobBookingId = effectiveJobBookingId;
+        }
         else
         {
-            var activeNote = viewModel.ToEntity();
-            activeNote.CreatedDate = currentTime;
-            activeNote.CreatedBy = staffId;
-
-            if (isPrebook)
-            {
-                var effectiveJobBookingId = await GetEffectiveJobBookingId(viewModel.JobBookingId.Value);
-                activeNote.JobBookingId = effectiveJobBookingId;
-            }
-            else
-            {
-                var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
-                activeNote.JobId = effectiveJobId;
-            }
-
-            await Context.TucNotes.AddAsync(activeNote, cancellationToken);
-            await Context.SaveChangesAsync(cancellationToken);
-            return activeNote.NoteId;
+            var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
+            activeNote.JobId = effectiveJobId;
         }
+
+        await Context.TucNotes.AddAsync(activeNote, cancellationToken);
+        await Context.SaveChangesAsync(cancellationToken);
+        return activeNote.NoteId;
     }
 
     private async Task<int> UpdateNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime,
@@ -1724,21 +1722,17 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
     protected async Task<int> GetJobRelationshipInfoAsync(int jobId)
     {
-        if (jobId != 0)
-        {
-            var jobInfo = await Context.TucJobs
-                .Where(j => j.UcjbId == jobId)
-                .Select(j => new
-                {
-                    EffectiveJobId = j.ParentId ?? j.UcjbId,
-                })
-                .AsNoTracking()
-                .FirstOrDefaultAsync();
+        if (jobId == 0) return 0;
+        var jobInfo = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new
+            {
+                EffectiveJobId = j.ParentId ?? j.UcjbId,
+            })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
 
-            return jobInfo.EffectiveJobId;
-        }
-
-        return 0;
+        return jobInfo.EffectiveJobId;
     }
 
     protected async Task<int> GetJobBookingRelationshipInfoAsync(int bookingId)
@@ -1788,24 +1782,24 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         {
             var jobDetails = await Context.TucJobs
                 .Where(j => j.UcjbId == jobId)
-                .Include(j => j.UcjbClient) // Include client info
-                .Include(j => j.UcjbSpeedNavigation) // Include job type info
+                .Include(j => j.UcjbClient)
+                .Include(j => j.UcjbSpeedNavigation)
                 .Select(job => new JobRatingDetailsDto
                 {
                     // Map the entity properties to our model
                     JobId = job.UcjbId,
-                    ClientId = job.UcjbClientId ?? 0,
-                    FromId = job.UcjbFrom ?? 0,
-                    ToId = job.UcjbTo ?? 0,
-                    SpeedId = job.UcjbSpeed ?? 0,
+                    ClientId = job.UcjbClientId,
+                    FromId = job.UcjbFrom,
+                    ToId = job.UcjbTo,
+                    SpeedId = job.UcjbSpeed,
                     IsPedal = job.UcjbCbd,
                     IsVan = job.UcjbVan,
                     IsReturnJob = job.UcjbReturn,
-                    Weight = job.UcjbWeight ?? 0,
-                    SizeId = job.UcjbSize ?? 0,
+                    Weight = job.UcjbWeight,
+                    SizeId = job.UcjbSize,
                     IncludeFuelSurcharge = false,
                     IsDirect = job.Direct,
-                    AcceptedJobTypeId = job.AcceptedJobTypeId ?? 0,
+                    AcceptedJobTypeId = job.AcceptedJobTypeId,
                     OurRef = job.UcjbOurRef,
                     RefA = job.UcjbClientRefa,
                     RefB = job.UcjbClientRefb,

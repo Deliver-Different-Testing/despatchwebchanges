@@ -90,7 +90,7 @@ public class JobController(
                 clientIds,
                 despatchViewIds
             );
-            
+
             if (!isInternal) await clientAccessValidator.ValidateClientAccess(0, clientIds);
             var result = await jobRepository.GetJobCoordinatesAsync(despatchViewIds);
 
@@ -210,14 +210,16 @@ public class JobController(
 
             var chargeId = await jobRepository.AddJobPriceBreakdownAsync(breakdown, staffId);
 
-            if (breakdown.JobId.HasValue) {
+            if (breakdown.JobId.HasValue)
+            {
                 await taskRepository.AddEventAsync(
-                jobId ?? 0,
-                staffId,
-                despatcherName,
-                "Manually rated price",
-                (int)EventType.ChangePrice);
+                    jobId ?? 0,
+                    staffId,
+                    despatcherName,
+                    "Manually rated price",
+                    (int)EventType.ChangePrice);
             }
+
             return Json(chargeId);
         }
         catch (Exception ex)
@@ -242,7 +244,8 @@ public class JobController(
 
             await jobRepository.UpdateJobPriceBreakdownAsync(breakdown, staffId);
 
-            if (breakdown.JobId.HasValue) {
+            if (breakdown.JobId.HasValue)
+            {
                 await taskRepository.AddEventAsync(
                     jobId ?? 0,
                     staffId,
@@ -250,6 +253,7 @@ public class JobController(
                     "Manually rated price",
                     (int)EventType.ChangePrice);
             }
+
             return Ok();
         }
         catch (Exception ex)
@@ -454,94 +458,160 @@ public class JobController(
         string bucketName,
         string pattern,
         int year,
-        int month
-    )
+        int month)
     {
         var allResults = new List<S3Object>();
-        // Calculate next month and year (handling December rollover)
-        var nextMonth = month == 12 ? 1 : month + 1;
-        var nextYear = month == 12 ? year + 1 : year;
+
         try
         {
-            var monthPrefixes = new[] { $"{year}/{month:D2}/", $"{nextYear}/{nextMonth:D2}/" };
-
+            // Search in the current month and next month to handle edge cases
+            var searchPeriods = GetSearchPeriods(year, month);
             var folders = new[] { "DeliverySignatures", "DeliveryPhotos" };
 
             foreach (var folder in folders)
             {
-                foreach (var monthPrefix in monthPrefixes)
+                foreach (var (searchYear, searchMonth) in searchPeriods)
                 {
-                    var request = new ListObjectsV2Request
-                    {
-                        BucketName = bucketName,
-                        Prefix = $"{folder}/{monthPrefix}{pattern}",
-                        MaxKeys = 1000
-                    };
+                    var prefix = $"{folder}/{searchYear}/{searchMonth:D2}/{pattern}";
+                    Log.Debug("Searching S3 with prefix: {Prefix}", prefix);
 
-                    var response = await s3Client.ListObjectsV2Async(request);
-                    allResults.AddRange(response.S3Objects);
-                    if (allResults.Count > 0)
-                    {
-                        break;
-                    }
+                    var objects = await ListS3ObjectsWithPrefixAsync(bucketName, prefix);
+                    allResults.AddRange(objects);
+
+                    // Early exit if we found files in the current folder/month combination
+                    if (objects.Count == 0) continue;
+                    Log.Debug("Found {ObjectCount} objects with prefix {Prefix}", objects.Count, prefix);
+                    break;
                 }
             }
         }
-        catch (AmazonS3Exception e)
+        catch (Exception ex)
         {
-            Log.Error(
-                e,
-                "Error encountered on server. Message:'{EMessage}' when writing an object", e.Message
-            );
-        }
-        catch (Exception e)
-        {
-            Log.Error(
-                e,
-                "Unknown encountered on server. Message:'{EMessage}' when writing an object", e.Message
-            );
+            Log.Error(ex, "Error searching for delivery files with pattern {Pattern} in {Year}-{Month:D2}",
+                pattern, year, month);
+            throw;
         }
 
         return allResults;
     }
 
+    private async Task<List<S3Object>> ListS3ObjectsWithPrefixAsync(string bucketName, string prefix)
+    {
+        var objects = new List<S3Object>();
+        string continuationToken = null;
+
+        do
+        {
+            var request = new ListObjectsV2Request
+            {
+                BucketName = bucketName,
+                Prefix = prefix,
+                MaxKeys = 1000,
+                ContinuationToken = continuationToken
+            };
+
+            try
+            {
+                var response = await s3Client.ListObjectsV2Async(request);
+                objects.AddRange(response.S3Objects);
+                continuationToken = response.NextContinuationToken;
+            }
+            catch (AmazonS3Exception ex)
+            {
+                Log.Error(ex, "S3 error while listing objects with prefix {Prefix}: {ErrorCode} - {ErrorMessage}",
+                    prefix, ex.ErrorCode, ex.Message);
+                throw;
+            }
+        } while (continuationToken != null);
+
+        return objects;
+    }
+
+    private static (int Year, int Month)[] GetSearchPeriods(int year, int month)
+    {
+        // Handle December rollover
+        var nextMonth = month == 12 ? 1 : month + 1;
+        var nextYear = month == 12 ? year + 1 : year;
+
+        return
+        [
+            (year, month), // Current month
+            (nextYear, nextMonth) // Next month (for edge cases)
+        ];
+    }
+
     public async Task<IActionResult> GetJobDeliveryPhotosAndSignature(
         int jobId,
         int year,
-        int month
-    )
+        int month)
     {
-        var all = new List<byte[]>();
         try
         {
-            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            var key = $"{jobId}-";
-            Log.Debug("Get S3 Object List for {Key}", key);
-            var s3List =
-                await SearchDeliveryFilesByPatternAsync(bucketName, key, year, month);
-            Log.Debug("Found {S3ListCount} objects for {Key}", s3List.Count, key);
-            foreach (
-                var getObjectRequest in s3List.Select(s3Object => new GetObjectRequest
-                {
-                    BucketName = bucketName,
-                    Key = s3Object.Key
-                })
-            )
-            {
-                using var response = await s3Client.GetObjectAsync(getObjectRequest);
-                await using var responseStream = response.ResponseStream;
-                using var reader = new StreamReader(responseStream);
-                using var memoryStream = new MemoryStream();
-                await response.ResponseStream.CopyToAsync(memoryStream);
-                all.Add(memoryStream.ToArray());
-            }
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, $"{nameof(GetJobDeliveryPhotosAndSignature)} Error: ");
-        }
+            Log.Debug("Getting delivery photos and signatures for Job {JobId}, {Year}-{Month:D2}",
+                jobId, year, month);
 
-        return Json(all);
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+            if (string.IsNullOrEmpty(bucketName))
+            {
+                Log.Error("S3BucketMars environment variable is not configured");
+                return BadRequest("S3 bucket configuration is missing");
+            }
+
+            var filePattern = $"{jobId}-";
+            var s3Objects = await SearchDeliveryFilesByPatternAsync(bucketName, filePattern, year, month);
+
+            if (s3Objects.Count == 0)
+            {
+                Log.Debug("No delivery files found for Job {JobId}", jobId);
+                return Json(new List<byte[]>());
+            }
+
+            Log.Debug("Found {FileCount} delivery files for Job {JobId}", s3Objects.Count, jobId);
+
+            var fileContents = new List<byte[]>();
+            var downloadTasks = s3Objects.Select(async s3Object =>
+            {
+                try
+                {
+                    Log.Debug("Downloading file: {FileName}", s3Object.Key);
+                    return await DownloadFileFromS3Async(bucketName, s3Object.Key);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Failed to download file {FileName}", s3Object.Key);
+                    return null;
+                }
+            });
+
+            var downloadResults = await Task.WhenAll(downloadTasks);
+
+            // Filter out failed downloads
+            fileContents.AddRange(downloadResults.Where(content => content != null));
+
+            Log.Debug("Successfully downloaded {SuccessCount} out of {TotalCount} files for Job {JobId}",
+                fileContents.Count, s3Objects.Count, jobId);
+
+            return Json(fileContents);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error retrieving delivery photos and signatures for Job {JobId}", jobId);
+            return StatusCode(500, "An error occurred while retrieving delivery files");
+        }
+    }
+
+    private async Task<byte[]> DownloadFileFromS3Async(string bucketName, string key)
+    {
+        var request = new GetObjectRequest
+        {
+            BucketName = bucketName,
+            Key = key
+        };
+
+        using var response = await s3Client.GetObjectAsync(request);
+        using var memoryStream = new MemoryStream();
+        await response.ResponseStream.CopyToAsync(memoryStream);
+        return memoryStream.ToArray();
     }
 
     public async Task<IActionResult> RecurringJobDetail(int jobId)
@@ -645,8 +715,8 @@ public class JobController(
 
         var data = await jobRepository.PodSearchDownloadAsync(
             courierId,
-            wild ?? "",
-            job ?? "",
+            wild ?? string.Empty,
+            job ?? string.Empty,
             fromDate.ResetTimeToStartOfDay(),
             toDate.ResetTimeToEndOfDay(),
             clientId
@@ -782,7 +852,7 @@ public class JobController(
                 .AsDataSet(
                     new ExcelDataSetConfiguration
                     {
-                        ConfigureDataTable = (_) =>
+                        ConfigureDataTable = _ =>
                             new ExcelDataTableConfiguration { UseHeaderRow = true }
                     }
                 )
@@ -839,15 +909,16 @@ public class JobController(
         {
             PropertyNameCaseInsensitive = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals,
+            NumberHandling = JsonNumberHandling.AllowReadingFromString |
+                             JsonNumberHandling.AllowNamedFloatingPointLiterals,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
 
         try
         {
             var result = JsonSerializer.Deserialize<List<JobManualPriceModel>>(
-               sResult,
-               deserializeOptions);
+                sResult,
+                deserializeOptions);
 
             if (result.Count == 0)
                 return Ok();
@@ -868,12 +939,11 @@ public class JobController(
     {
         var fromDate = DateTime.Today;
 
-        // Create a PodSearchRequest object that matches the repository method parameter
         var searchRequest = new PodSearchRequest
         {
             CourierId = null,
             ClientId = null,
-            Wild = "",  // You were passing an empty string to what appears to be the Wild parameter
+            Wild = string.Empty,
             Job = job,
             FromDate = fromDate.ResetTimeToStartOfDay(),
             ToDate = fromDate.ResetTimeToEndOfDay(),
@@ -905,8 +975,8 @@ public class JobController(
     {
         var result = await jobRepository.BulkSearchAsync(
             courierId,
-            job ?? "",
-            wild ?? "",
+            job ?? string.Empty,
+            wild ?? string.Empty,
             fromDate.ResetTimeToStartOfDay(),
             toDate.ResetTimeToEndOfDay(),
             clientId,
@@ -930,8 +1000,8 @@ public class JobController(
     {
         var result = await recurringJobRepository.PreBookSearchAsync(
             courierId,
-            wild ?? "",
-            job ?? "",
+            wild ?? string.Empty,
+            job ?? string.Empty,
             fromDate.ResetTimeToStartOfDay(),
             toDate.ResetTimeToEndOfDay(),
             clientId,
@@ -1453,9 +1523,9 @@ public class JobController(
 
             var isUsTenant = infoService.IsUsTenant();
             if (isUsTenant)
-                await rateJobService.RateJobUs(jobDetails);
+                await rateJobService.RateJobUsAsync(jobDetails);
             else
-                await rateJobService.RateJob(jobDetails);
+                await rateJobService.RateJobAsync(jobDetails);
             return Ok();
         }
         catch (Exception e)
@@ -1509,7 +1579,7 @@ public class JobController(
         {
             await jobRepository.UpdateJobAsync(jobId, field, value);
 
-            // Recalcate job
+            // Recalculate job
             var shouldRecalculateRate = ShouldRecalculateRate(field);
             if (!shouldRecalculateRate) return Ok();
 
@@ -1518,9 +1588,9 @@ public class JobController(
 
             var isUsTenant = infoService.IsUsTenant();
             if (isUsTenant)
-                await rateJobService.RateJobUs(jobDetails);
+                await rateJobService.RateJobUsAsync(jobDetails);
             else
-                await rateJobService.RateJob(jobDetails);
+                await rateJobService.RateJobAsync(jobDetails);
 
             var staffId = infoService.GetStaffId();
 
@@ -1909,7 +1979,6 @@ public class JobController(
                 contentType,
                 originalFileName
             );
-
         }
         catch (AmazonS3Exception ex)
         {
@@ -1994,7 +2063,7 @@ public class JobController(
             );
         }
     }
-    
+
 
     [HttpPost]
     public async Task<IActionResult> UpdateJobPackages([FromBody] UpdateJobPackagesRequest request)
@@ -2054,7 +2123,7 @@ public class JobController(
             jobDetails.DeliveryLong = request.Longitude;
 
             // Calculate new rate
-            var rate = await rateJobService.RateJob(jobDetails);
+            var rate = await rateJobService.RateJobAsync(jobDetails);
 
             // Create note text
             var noteText = $"Delivery address updated to {request.Address}. Rate recalculated: {rate:C}";
@@ -2088,7 +2157,7 @@ public class JobController(
             jobDetails.DeliveryLong = request.Address.Longitude ?? 0;
 
             // Calculate new rate
-            await rateJobService.RateJobUs(jobDetails);
+            await rateJobService.RateJobUsAsync(jobDetails);
 
             return Ok();
         }
@@ -2116,7 +2185,7 @@ public class JobController(
             jobDetails.PickupLong = request.Longitude;
 
             // Calculate new rate
-            var rate = await rateJobService.RateJob(jobDetails);
+            var rate = await rateJobService.RateJobAsync(jobDetails);
 
             // Create note text
             var noteText = $"Changed Pickup Address to {request.Address}. Rate recalculated: {rate:C}";
@@ -2150,7 +2219,7 @@ public class JobController(
             jobDetails.PickupLong = request.Address.Longitude ?? 0;
 
             // Calculate new rate
-            await rateJobService.RateJobUs(jobDetails);
+            await rateJobService.RateJobUsAsync(jobDetails);
 
             return Ok();
         }
@@ -2178,7 +2247,7 @@ public class JobController(
             jobDetails.IsPrebook = true;
 
             // Calculate new rate
-            var rate = await rateJobService.RateJob(jobDetails);
+            var rate = await rateJobService.RateJobAsync(jobDetails);
 
             // Create note text
             var noteText = $"Changed Pickup Address to {request.Address}. Rate recalculated: {rate:C}";
@@ -2213,7 +2282,7 @@ public class JobController(
             jobDetails.IsPrebook = true;
 
             // Calculate new rate
-            await rateJobService.RateJobUs(jobDetails);
+            await rateJobService.RateJobUsAsync(jobDetails);
 
             return Ok();
         }
@@ -2241,7 +2310,7 @@ public class JobController(
             jobDetails.IsPrebook = true;
 
             // Calculate new rate
-            var rate = await rateJobService.RateJob(jobDetails);
+            var rate = await rateJobService.RateJobAsync(jobDetails);
 
             // Create note text
             var noteText = $"Changed Delivery Address to {request.Address}. Rate recalculated: {rate:C}";
@@ -2276,7 +2345,7 @@ public class JobController(
             jobDetails.IsPrebook = true;
 
             // Calculate new rate
-            await rateJobService.RateJobUs(jobDetails);
+            await rateJobService.RateJobUsAsync(jobDetails);
 
             return Ok();
         }

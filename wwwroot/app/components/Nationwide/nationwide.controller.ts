@@ -226,7 +226,7 @@ class NationwideControl extends BaseController {
                     width: args.width,
                     height: args.height
                 });
-                console.log("Map container resized: ", args.id);
+                console.debug("Map container resized: ", args.id);
             }
         });
 
@@ -236,11 +236,11 @@ class NationwideControl extends BaseController {
 
         this.watchEvent<IDispatchJob>('jobChanged', (_, newJob) => {
             if (this.currentJobId === newJob.id) {
-                console.log(`Job ${newJob.jobNo} is already the current job, skipping reload`);
+                console.debug(`Job ${newJob.jobNo} is already the current job, skipping reload`);
                 return;
             }
 
-            console.log(`Handling job changed event for job ${newJob.jobNo}`);
+            console.debug(`Handling job changed event for job ${newJob.jobNo}`);
 
             // Set critical properties immediately
             this.currentJob = newJob;
@@ -254,7 +254,7 @@ class NationwideControl extends BaseController {
 
             // Then load related data asynchronously
             this.handleJobSelectionRelatedData(newJob).then(() => {
-                console.log(`Data loaded for job ${newJob.jobNo}`);
+                console.debug(`Data loaded for job ${newJob.jobNo}`);
 
                 try {
                     this.displayJobOnMap(newJob);
@@ -349,7 +349,7 @@ class NationwideControl extends BaseController {
 
         // Start loading data
         this.loadPageViews().then(() => {
-            console.log('Loaded Page Views and Data!');
+            console.debug('Loaded Page Views and Data!');
         });
 
         this.STATUS_TO_LIST_MAP = {
@@ -359,7 +359,7 @@ class NationwideControl extends BaseController {
         };
 
         this.nationwideService.getActiveAirlines().then((response) => {
-            console.log("[NationwideController] - Active Airlines:", response);
+            console.debug("[NationwideController] - Active Airlines:", response);
             this.activeAirlineOptions = response;
         });
 
@@ -484,7 +484,7 @@ class NationwideControl extends BaseController {
         };
 
         this.loadLists()
-            .then(() => console.log("Loaded Lists!"))
+            .then(() => console.debug("Loaded Lists!"))
             .catch(error => {
                 console.error('Initialization error:', error);
             });
@@ -507,7 +507,7 @@ class NationwideControl extends BaseController {
                     this.toastrService.showErrorToast("Error loading job details");
                 });
         } else {
-            this.loadPageViews();
+            this.loadPageViews().then(_ => console.debug("Loaded Page Views!"));
         }
 
         this.registerInterval(async () => {
@@ -704,7 +704,7 @@ class NationwideControl extends BaseController {
             return currentLayout;
         } catch (error) {
             if (!error) {
-                console.log("Save Layout Cancelled!");
+                console.debug("Save Layout Cancelled!");
             } else {
                 console.error("Unable to save layout:", error);
             }
@@ -790,7 +790,7 @@ class NationwideControl extends BaseController {
 
     async handleStatusChange(event: StatusChangeEvent) {
         try {
-            console.log('Handle status change triggered!', {
+            console.debug('Handle status change triggered!', {
                 jobId: event.jobId,
                 previousStatus: event.previousStatusId,
                 newStatus: event.newStatusId
@@ -800,13 +800,13 @@ class NationwideControl extends BaseController {
                 ...(this.STATUS_TO_LIST_MAP[event.previousStatusId] || []),
                 ...(this.STATUS_TO_LIST_MAP[event.newStatusId] || [])
             ]);
-            console.log('Lists to refresh:', Array.from(listsToRefresh));
+            console.debug('Lists to refresh:', Array.from(listsToRefresh));
 
             await this.getJobList(Array.from(listsToRefresh));
-            console.log('Job lists refreshed successfully');
+            console.debug('Job lists refreshed successfully');
 
             const refreshedJob = this.findJobInLocalLists(event.jobId);
-            console.log(refreshedJob
+            console.debug(refreshedJob
                     ? 'Found updated job in refreshed lists via lookup map'
                     : 'Updated job not found in refreshed lists',
                 {jobId: event.jobId}
@@ -814,7 +814,7 @@ class NationwideControl extends BaseController {
 
             if (refreshedJob) {
                 await this.selectJob(refreshedJob);
-                console.log('Job reselected successfully');
+                console.debug('Job reselected successfully');
             }
 
             this.applyScope();
@@ -830,19 +830,19 @@ class NationwideControl extends BaseController {
     }
 
     async onReorderJobList() {
-        console.log('[onReorderJobList] Called with order:', this.jobFilters?.order);
+        console.debug('[onReorderJobList] Called with order:', this.jobFilters?.order);
         this.processOrderParam(this.jobFilters?.order, this.jobFilters);
         await this.getJobList(JobDataType.NEW);
     }
 
     async onReorderPodList() {
-        console.log('[onReorderPodList] Called with order:', this.jobPodFilters?.order);
+        console.debug('[onReorderPodList] Called with order:', this.jobPodFilters?.order);
         this.processOrderParam(this.jobPodFilters?.order, this.jobPodFilters);
         await this.getJobList(JobDataType.POD);
     }
 
     async onReorderRepriceList() {
-        console.log('[onReorderRepriceList] Called with order:', this.jobRepriceFilters?.order);
+        console.debug('[onReorderRepriceList] Called with order:', this.jobRepriceFilters?.order);
         this.processOrderParam(this.jobRepriceFilters?.order, this.jobRepriceFilters);
         await this.getJobList(JobDataType.REPRICE);
     }
@@ -856,7 +856,7 @@ class NationwideControl extends BaseController {
             orderDirection = "desc";
         }
 
-        console.log(`Parsed order: ${orderBy}, direction: ${orderDirection}`);
+        console.debug(`Parsed order: ${orderBy}, direction: ${orderDirection}`);
 
         // Update filters with parsed values
         if (filtersObj) {
@@ -950,13 +950,13 @@ class NationwideControl extends BaseController {
 
     async loadRelatedJobDetail(jobId: number, jobNumber: string) {
         try {
-            console.log(`Loading related job detail for ID: ${jobId}, Number: ${jobNumber}`);
+            console.debug(`Loading related job detail for ID: ${jobId}, Number: ${jobNumber}`);
 
             // Use optimized job lookup
             const currentJob = this.findJobInLocalLists(jobId);
 
             if (currentJob) {
-                console.log(`Found job ${jobNumber} in local lists`);
+                console.debug(`Found job ${jobNumber} in local lists`);
                 await this.selectJob(currentJob);
                 this.currentSelection = ` for Job ${jobNumber}`;
             } else {
@@ -995,7 +995,7 @@ class NationwideControl extends BaseController {
         try {
             if (!job) return;
 
-            console.log(`Selecting job ${job.jobNo}`);
+            console.debug(`Selecting job ${job.jobNo}`);
 
             this.markJobReadStatus(job.id, true);
 
@@ -1034,13 +1034,13 @@ class NationwideControl extends BaseController {
 
         // Show flight table
         if (isFlightJob(job)) {
-            console.log('[NationwideController] Getting nearby airports');
+            console.debug('[NationwideController] Getting nearby airports');
             this.airportOptions = await this.nationwideService.getNearbyAirports(job.id);
-            console.log('[NationwideController] Got nearby airports:', this.airportOptions);
+            console.debug('[NationwideController] Got nearby airports:', this.airportOptions);
 
             if (this.airportOptions && this.airportOptions.length > 0) {
                 const defaultAirport = this.airportOptions.find(airport => airport.id === job.fromAirportId);
-                console.log('Default airport:', defaultAirport);
+                console.debug('Default airport:', defaultAirport);
                 if (defaultAirport) {
                     this.selectedAirport = defaultAirport;
                 }
@@ -1068,7 +1068,7 @@ class NationwideControl extends BaseController {
                 return;
             }
 
-            console.log(`Displaying job ${job.jobNo} on map`);
+            console.debug(`Displaying job ${job.jobNo} on map`);
 
             this.mapConfig = this.calculateMapBounds(job);
             this.applyScope();
@@ -1165,7 +1165,7 @@ class NationwideControl extends BaseController {
     }
 
     private async processAgents(job: IDispatchJob) {
-        console.log('Getting agents');
+        console.debug('Getting agents');
 
         // Clear existing agents while loading new ones
         this.agentOptions = [];
@@ -1180,7 +1180,7 @@ class NationwideControl extends BaseController {
             this.agentMessage = result.message ||
                 (this.agentOptions.length === 0 ? "No agents available for this job" : undefined);
 
-            console.log("Agent options loaded:", this.agentOptions.length);
+            console.debug("Agent options loaded:", this.agentOptions.length);
         } catch (error) {
             console.error("Error fetching agents:", error);
             this.agentMessage = "An error occurred while loading agents. Please try again.";
@@ -1200,7 +1200,7 @@ class NationwideControl extends BaseController {
         }
 
         if (this.flightsLoading) {
-            console.log("Flight loading already in progress, skipping duplicate request");
+            console.debug("Flight loading already in progress, skipping duplicate request");
             return;
         }
 
@@ -1223,7 +1223,7 @@ class NationwideControl extends BaseController {
             const departureAirportId = this.selectedAirport?.id;
             const minimumLayoverMinutes = 60;
 
-            console.log('Loading flights with params:', {
+            console.debug('Loading flights with params:', {
                 jobId: this.currentJob.id,
                 departureDate: departureDate,
                 airlineId: airlineId,
@@ -1246,7 +1246,7 @@ class NationwideControl extends BaseController {
                 "No flights available for the selected criteria" : undefined);
             this.lastDepartureTime = result.lastDepartureTime;
 
-            console.log(`Loaded ${this.flightOptions?.length} flights`);
+            console.debug(`Loaded ${this.flightOptions?.length} flights`);
         } catch (error) {
             console.error("Error loading flights:", error);
             this.flightMessage = "An error occurred while loading flights. Please try again.";
@@ -1296,7 +1296,7 @@ class NationwideControl extends BaseController {
 
             this.isDataLoading = true;
             this.applyScope();
-            console.log('Assigning to job');
+            console.debug('Assigning to job');
 
             const previousInternalStatusId = job.internalStatusId ?? InternalJobStatus.NewJobs;
             const listsToRefresh = new Set([JobDataType.POD]);
@@ -1351,7 +1351,7 @@ class NationwideControl extends BaseController {
             this.isDataLoading = true;
             this.applyScope();
 
-            console.log('Assigning to job');
+            console.debug('Assigning to job');
 
             await this.nationwideService.assignAgentToJob(job.id, agent.id, result.shouldAssignToStopJobs ?? false);
 
@@ -1374,24 +1374,24 @@ class NationwideControl extends BaseController {
     }
 
     async filterNewJobsByStatus(statusGroup: string) {
-        console.log('filterNewJobsByStatus called with:', statusGroup);
+        console.debug('filterNewJobsByStatus called with:', statusGroup);
         this.jobFilters.order = statusGroup;
         await this.getJobList(JobDataType.NEW);
-        console.log(`Jobs filtered by status group: ${statusGroup}`);
+        console.debug(`Jobs filtered by status group: ${statusGroup}`);
     }
 
     async filterPodJobsByStatus(statusGroup: string) {
-        console.log('filterPodJobsByStatus called with:', statusGroup);
+        console.debug('filterPodJobsByStatus called with:', statusGroup);
         this.jobPodFilters.order = statusGroup;
         await this.getJobList(JobDataType.POD);
-        console.log(`POD jobs filtered by status group: ${statusGroup}`);
+        console.debug(`POD jobs filtered by status group: ${statusGroup}`);
     }
 
     async filterRepriceJobsByStatus(statusGroup: string) {
-        console.log('filterRepriceJobsByStatus called with:', statusGroup);
+        console.debug('filterRepriceJobsByStatus called with:', statusGroup);
         this.jobRepriceFilters.order = statusGroup;
         await this.getJobList(JobDataType.REPRICE);
-        console.log(`Reprice jobs filtered by status group: ${statusGroup}`);
+        console.debug(`Reprice jobs filtered by status group: ${statusGroup}`);
     }
 
     getNewJobsStatusCount(statusGroup: string): number {
@@ -1493,7 +1493,7 @@ class NationwideControl extends BaseController {
 
     async getJobList(dataTypes: JobDataType | JobDataType[] = JobDataType.ALL): Promise<void> {
         if (!this.viewsInitialized && this.selectedViews.length === 0) {
-            console.log('Views not initialized yet, loading defaults');
+            console.debug('Views not initialized yet, loading defaults');
             this.selectedViews = this.loadViewsFromStorage();
 
             // If still no views, add at least one default view
@@ -1629,7 +1629,7 @@ class NationwideControl extends BaseController {
 
     private handleError(error: any) {
         if (!error) {
-            console.log('User canceled!');
+            console.debug('User canceled!');
         } else {
             console.error('Error assigning flight to job:', error);
         }
@@ -1646,7 +1646,7 @@ class NationwideControl extends BaseController {
             onRefresh: () => this.getData(),
             onSplitJob: (params: { job: IDispatchJob }) => this.handleSplitJob(params.job),
             onRefreshCourierJobs: (params: { courierId: number }) => {
-                console.log('Refreshing courier jobs:', params.courierId);
+                console.debug('Refreshing courier jobs:', params.courierId);
             }
         };
 
@@ -1657,7 +1657,7 @@ class NationwideControl extends BaseController {
         if (!job) return;
 
         try {
-            console.log("Split job requested for:", job.id);
+            console.debug("Split job requested for:", job.id);
 
             await this.getData();
         } catch (error: any) {
@@ -1785,7 +1785,7 @@ class NationwideControl extends BaseController {
 
             // If not found in local lists, fetch from database
             if (!attachedJob) {
-                console.log(`Job ${task.jobId} not found in local lists, fetching from database`);
+                console.debug(`Job ${task.jobId} not found in local lists, fetching from database`);
                 attachedJob = await this.DispatchData.getDispatchJobDetail(task.jobId);
             }
 
@@ -1796,7 +1796,7 @@ class NationwideControl extends BaseController {
             }
 
             await this.selectJob(attachedJob);
-            console.log('[selectTaskJobDetail] Job selected successfully');
+            console.debug('[selectTaskJobDetail] Job selected successfully');
 
             this.updateCurrentSelection(attachedJob.jobNo);
         } catch (error) {
@@ -1805,7 +1805,7 @@ class NationwideControl extends BaseController {
     }
 
     private logTaskInfo(task: TaskViewModel): void {
-        console.log('[selectTaskJobDetail] Starting with task:', {
+        console.debug('[selectTaskJobDetail] Starting with task:', {
             jobId: task.jobId,
             jobNumber: task.jobNumber,
             taskId: task.id
@@ -1851,7 +1851,7 @@ class NationwideControl extends BaseController {
         // Reset search when changing airport filter
         this.lastDepartureTime = undefined;
 
-        console.log('Airport selection changed to:',
+        console.debug('Airport selection changed to:',
             this.selectedAirport ? this.selectedAirport.text : 'All airports');
 
         this.flightsLoading = true;
@@ -1900,7 +1900,7 @@ class NationwideControl extends BaseController {
 
     async refreshJobLists(currentJobId?: number) {
         try {
-            console.log("[NationwideRefresh] - Refreshing job lists");
+            console.debug("[NationwideRefresh] - Refreshing job lists");
 
             await this.getJobList(JobDataType.ALL);
 
@@ -1909,14 +1909,14 @@ class NationwideControl extends BaseController {
 
                 if (updatedJob) {
                     this.currentJob = updatedJob;
-                    console.log("[NationwideRefresh] - Current job selection maintained via lookup map");
+                    console.debug("[NationwideRefresh] - Current job selection maintained via lookup map");
                 } else {
                     this.currentJob = undefined;
                     this.toastrService.showWarningToast("Job list has been refreshed, but the selected job is no longer available on this page");
                 }
             }
 
-            console.log("[NationwideRefresh] - Job lists refresh complete");
+            console.debug("[NationwideRefresh] - Job lists refresh complete");
             this.applyScope();
         } catch (error) {
             console.error("[NationwideRefresh] - Error refreshing job lists:", error);
@@ -2030,7 +2030,7 @@ class NationwideControl extends BaseController {
     }
 
     async refreshAction(boxName: string) {
-        console.log('[NationwideController] refreshing ', boxName);
+        console.debug('[NationwideController] refreshing ', boxName);
         switch (boxName) {
             case NationwideBoxes.Tasks:
                 await this.loadTasks();
@@ -2097,7 +2097,7 @@ class NationwideControl extends BaseController {
 
     refreshMap() {
         if (this.currentJob) {
-            console.log('Manually refreshing map for current job');
+            console.debug('Manually refreshing map for current job');
             this.displayJobOnMap(this.currentJob);
         } else {
             console.warn('No current job to display on map');

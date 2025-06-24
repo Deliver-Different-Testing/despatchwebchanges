@@ -183,7 +183,7 @@ builder.Services.AddAuthentication("Identity.Application")
         options.ExpireTimeSpan = TimeSpan.FromMinutes(20);
         options.SlidingExpiration = true;
         options.AccessDeniedPath = "/Forbidden/";
-        options.Events = new CookieAuthenticationEvents()
+        options.Events = new CookieAuthenticationEvents
         {
             OnRedirectToLogin = (context) =>
             {
