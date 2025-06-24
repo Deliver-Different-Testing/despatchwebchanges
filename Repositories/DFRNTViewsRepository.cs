@@ -13,7 +13,6 @@ namespace DespatchWeb.Repositories;
 
 public class DfrntViewsRepository(IDbContextFactory<DespatchContext> contextFactory) : BaseRepository(contextFactory), IDfrntViewsRepository
 {
-    
     public async Task<List<DfrntPageViewModel>> GetViewsByUserAndPageAsync(int userId, AppPage page)
     {
         Log.Information("Getting views for user {UserId} and page {Page}", userId, page);

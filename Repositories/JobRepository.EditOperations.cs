@@ -1,6 +1,8 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.EntityFrameworkCore;
@@ -27,8 +29,7 @@ public partial class JobRepository
 
         await Context.SaveChangesAsync();
     }
-
-
+    
     public async Task UpdatePickUpTime(UpdateJobTimeRequest data)
     {
         if (data.IsRecurring) {
@@ -103,34 +104,25 @@ public partial class JobRepository
                 job.UcjbSpeed = short.Parse(value);
                 break;
             case JobProperty.Weight:
-                var weight = short.Parse(value);
+                if (!double.TryParse(value?.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var weight))
+                    throw new ArgumentException($"Invalid weight value: '{value}'");
 
-                // Update parent job if it exists
-                if (job.ParentId != null)
+                if (job.Parent != null)
                 {
                     job.Parent.UcjbWeight = weight;
-
-                    // Update all other child jobs of the parent
-                    if (job.Parent.InverseParent.Count != 0)
-                    {
-                        foreach (var siblingJob in job.Parent.InverseParent)
+                    if (job.Parent.InverseParent.Count != 0) 
+                        foreach (var siblingJob in job.Parent.InverseParent) 
                             siblingJob.UcjbWeight = weight;
-                    }
                 }
-                // If no parent, update this job and its children
                 else
                 {
-                    // Update current job
                     job.UcjbWeight = weight;
-
-                    // Update child jobs
-                    if (job.InverseParent != null && job.InverseParent.Count != 0)
-                    {
-                        foreach (var childJob in job.InverseParent)
+                    if (job.InverseParent != null && job.InverseParent.Count != 0) 
+                        foreach (var childJob in job.InverseParent) 
                             childJob.UcjbWeight = weight;
-                    }
                 }
-
+                
+                updateNote = $"Changed Weight to {weight}";
                 break;
             case JobProperty.ClientID:
                 job.UcjbClientId = int.Parse(value);
@@ -328,20 +320,30 @@ public partial class JobRepository
                 job.FollowupTime = DateTime.Parse(value);
                 updateNote = $"Followup Time updated to {job.FollowupTime:dd/MM/yyyy HH:mm}";
                 break;
+            case JobProperty.DeliverToContact:
+            case JobProperty.StopDate:
+            case JobProperty.RestartDate:
+            case JobProperty.InActiveDate:
+            case JobProperty.FirstDue:
+            case JobProperty.LastDone:
+            case JobProperty.NextDue:
+            case JobProperty.DaysOfWeek:
+            case JobProperty.Frequency:
+            case JobProperty.HolidayDelivery:
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
         }
+        
+       await Context.SaveChangesAsync();
 
         if (!string.IsNullOrEmpty(updateNote))
-            await SaveNoteAsync(jobId, updateNote);
+            await JobUpdateAddNote(jobId, true, updateNote);
 
         // Add additional notes for undeliverable location
         if (property == JobProperty.UndeliverableLocationID && job.UndeliverableLocation?.Message != null)
-            await SaveNoteAsync(jobId, job.UndeliverableLocation.Message);
-
-        Context.TucJobs.Update(job);
-        await Context.SaveChangesAsync();
+            await JobUpdateAddNote(jobId, true, job.UndeliverableLocation.Message);
     }
+    
 
     private async Task UpdateTucJobArchive(int jobId, JobProperty property, string value)
     {
@@ -548,31 +550,16 @@ public partial class JobRepository
                 archive.Job.UcjbSpeed = short.Parse(value);
                 break;
             case JobProperty.Weight:
-                var weight = float.Parse(value);
+                var weight = double.Parse(value);
                 if (archive.Job.ParentId != null)
                 {
                     archive.Parent.UcjbWeight = weight;
-
-                    // Update all sibling jobs (including current job)
-                    if (archive.InverseParent.Any())
-                    {
-                        foreach (var siblingJob in archive.InverseParent)
-                        {
-                            siblingJob.UcjbWeight = weight;
-                        }
-                    }
+                    if (archive.InverseParent.Any()) foreach (var siblingJob in archive.InverseParent) siblingJob.UcjbWeight = weight;
                 }
                 else
                 {
-                    // This is a parent job, update it and all its children
                     archive.Job.UcjbWeight = weight;
-                    if (archive.InverseParent.Any())
-                    {
-                        foreach (var childJob in archive.InverseParent)
-                        {
-                            childJob.UcjbWeight = weight;
-                        }
-                    }
+                    if (archive.InverseParent.Any()) foreach (var childJob in archive.InverseParent) childJob.UcjbWeight = weight;
                 }
 
                 break;
@@ -761,17 +748,46 @@ public partial class JobRepository
             case JobProperty.BookedTime:
                 archive.Job.UcjbDate = DateTime.Parse(value);
                 break;
+            case JobProperty.FollowupTime:
+            case JobProperty.DeliverToContact:
+            case JobProperty.StopDate:
+            case JobProperty.RestartDate:
+            case JobProperty.InActiveDate:
+            case JobProperty.FirstDue:
+            case JobProperty.LastDone:
+            case JobProperty.NextDue:
+            case JobProperty.DaysOfWeek:
+            case JobProperty.Frequency:
+            case JobProperty.HolidayDelivery:
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
         }
 
-        if (!string.IsNullOrEmpty(updateNote)) await SaveNoteAsync(jobId, updateNote);
+        if (!string.IsNullOrEmpty(updateNote)) await JobUpdateAddNote(jobId, false, updateNote);
 
         // Add additional notes for undeliverable location
         if (property == JobProperty.UndeliverableLocationID && archive.UndeliverableLocation?.Message != null)
-            await SaveNoteAsync(jobId, archive.UndeliverableLocation.Message);
+            await JobUpdateAddNote(jobId, false, archive.UndeliverableLocation.Message);
 
-        Context.Update(archive.Job);
         await Context.SaveChangesAsync();
+    }
+    
+    private async Task JobUpdateAddNote(int jobId, bool isLiveJob, string updateNote)
+    {
+        var staffId = _infoService.GetStaffId();
+        var currentDate = _infoService.GetCurrentTenantTime();
+
+        var newNote = new TucNote
+        {
+            CreatedBy = staffId,
+            CreatedDate = currentDate,
+            JobId = isLiveJob ? jobId : null,
+            JobBookingId = !isLiveJob ? jobId : null,
+            NoteText = updateNote,
+            NoteTypeId = (int)NoteType.InternalNote,
+            IsImportant = false
+        };
+        
+        await Context.TucNotes.AddAsync(newNote);
     }
 }

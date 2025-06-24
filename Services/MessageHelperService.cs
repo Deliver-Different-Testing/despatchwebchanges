@@ -8,14 +8,11 @@ namespace DespatchWeb.Services;
 
 public class MessageHelperService : IMessageHelperService
 {
-    /// <summary>
-    /// Gets the other party (not the current staff member) in a message
-    /// </summary>
     public MessageParticipant GetOtherParty(TucManualMessage message, int currentStaffId)
     {
         if (message.UcmmSendFromStaffId == currentStaffId)
         {
-            // Message is FROM current staff, so other party is the recipient
+            // Message is FROM current staff, so another party is the recipient
             if (message.UcmmSendToCourierId.HasValue)
             {
                 return new MessageParticipant
@@ -54,7 +51,8 @@ public class MessageHelperService : IMessageHelperService
                     Status = GetCourierStatus(message.UcmmSendFromCourier, DateTime.Now)
                 };
             }
-            else if (message.UcmmSendFromStaffId.HasValue)
+
+            if (message.UcmmSendFromStaffId.HasValue)
             {
                 return new MessageParticipant
                 {
@@ -69,10 +67,7 @@ public class MessageHelperService : IMessageHelperService
 
         return new MessageParticipant { Id = 0, Type = OtherMessagePartyType.Staff, Name = "Unknown", Initials = "??" };
     }
-
-    /// <summary>
-    /// Gets complete message direction information
-    /// </summary>
+    
     public MessageDirection GetMessageDirection(TucManualMessage message, int currentStaffId)
     {
         var isFromCurrent = message.UcmmSendFromStaffId == currentStaffId;
@@ -86,26 +81,11 @@ public class MessageHelperService : IMessageHelperService
             To = GetRecipient(message)
         };
     }
+    
+    public bool IsIncomingMessage(TucManualMessage message, int staffId) => message.UcmmSendToStaffId == staffId;
+    
+    public bool IsOutgoingMessage(TucManualMessage message, int staffId) => message.UcmmSendFromStaffId == staffId;
 
-    /// <summary>
-    /// Checks if a message is incoming to the specified staff member
-    /// </summary>
-    public bool IsIncomingMessage(TucManualMessage message, int staffId)
-    {
-        return message.UcmmSendToStaffId == staffId;
-    }
-
-    /// <summary>
-    /// Checks if message is outgoing from the specified staff member
-    /// </summary>
-    public bool IsOutgoingMessage(TucManualMessage message, int staffId)
-    {
-        return message.UcmmSendFromStaffId == staffId;
-    }
-
-    /// <summary>
-    /// Gets formatted name for courier or staff
-    /// </summary>
     public string GetParticipantName(TucCourier courier = null, TucStaff staff = null)
     {
         if (courier != null)
@@ -125,9 +105,6 @@ public class MessageHelperService : IMessageHelperService
         return "Unknown";
     }
 
-    /// <summary>
-    /// Gets initials for courier or staff
-    /// </summary>
     public string GetParticipantInitials(TucCourier courier = null, TucStaff staff = null)
     {
         if (courier != null)
@@ -146,10 +123,7 @@ public class MessageHelperService : IMessageHelperService
 
         return "??";
     }
-
-    /// <summary>
-    /// Gets courier online/offline status
-    /// </summary>
+    
     public string GetCourierStatus(TucCourier courier, DateTime currentDate)
     {
         if (courier?.CourierLogInOut == null)

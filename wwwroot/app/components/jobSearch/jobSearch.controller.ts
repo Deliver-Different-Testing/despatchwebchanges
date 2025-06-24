@@ -582,7 +582,7 @@ class JobSearchController extends BaseController {
 
             // Then load the new job
             await this.selectJobDetail(newJobId);
-            console.log('Dialog closed!');
+            console.debug('Dialog closed!');
         } catch (error) {
             console.error('Error in createNewJob:', error);
         }
@@ -638,10 +638,10 @@ class JobSearchController extends BaseController {
                 bindToController: true
             });
 
-            console.log('Job File Upload Dialog Closed!');
+            console.debug('Job File Upload Dialog Closed!');
         } catch (error) {
             if (error === undefined) {
-                console.log('User canceled!');
+                console.debug('User canceled!');
             } else {
                 throw error;
             }
@@ -664,9 +664,9 @@ class JobSearchController extends BaseController {
                 bindToController: true
             });
 
-            console.log("Inter-courier Charge Added!");
+            console.debug("Inter-courier Charge Added!");
         } catch (error) {
-            console.log("Inter-courier Charge Canceled!");
+            console.debug("Inter-courier Charge Canceled!");
         }
     }
 
@@ -682,7 +682,7 @@ class JobSearchController extends BaseController {
     }
 
     goToRunViewer() {
-        console.log("goToRunViewer.");
+        console.debug("goToRunViewer.");
         this.$state.go('home');
     }
 
@@ -723,7 +723,7 @@ class JobSearchController extends BaseController {
 
             await Promise.all([this.refreshData(), this.refreshBulkData()]);
         } catch (error) {
-            console.log('Error in filterRegion:', error);
+            console.debug('Error in filterRegion:', error);
         }
     }
 
@@ -761,7 +761,7 @@ class JobSearchController extends BaseController {
             }
         } catch (error) {
             // User clicked 'No' or an error occurred
-            console.log('Un-split job cancelled or error occurred:', error);
+            console.debug('Un-split job cancelled or error occurred:', error);
         }
     }
 
@@ -873,7 +873,7 @@ class JobSearchController extends BaseController {
                     .title('No Photo')
                     .textContent('Sorry no photo for this job.')
                     .ok('OK'));
-                console.log("Alert closed.");
+                console.debug("Alert closed.");
                 return;
             }
 
@@ -1037,7 +1037,7 @@ class JobSearchController extends BaseController {
 
     async selectJobDetail(jobId: number) {
         try {
-            console.log("select Job  " + jobId);
+            console.debug("select Job  " + jobId);
 
             this.currentJob = await this.DispatchData.getJobDetail(jobId);
             this.currentJobId = jobId;
@@ -1062,7 +1062,7 @@ class JobSearchController extends BaseController {
 
     async selectBulkJobDetail(bulkJobId: number) {
         try {
-            console.log("select Bulk Job  " + bulkJobId);
+            console.debug("select Bulk Job  " + bulkJobId);
 
             this.currentJob = await this.uCSData.getBulkJobDetail(bulkJobId);
             this.currentSelection = " for Bulk Job " + this.currentJob.jobNo;
@@ -1185,7 +1185,7 @@ class JobSearchController extends BaseController {
                     break;
             }
         } catch (error) {
-            console.log("Error: ", error);
+            console.debug("Error: ", error);
         }
     }
 

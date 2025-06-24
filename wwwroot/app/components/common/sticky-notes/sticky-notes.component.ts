@@ -1,8 +1,8 @@
+import "./sticky-notes.styles.less";
 import NoteService from "../../../services/notes.service";
 import NoteManagementDialogService from "../../dialogs/note-management-dialog/note-management.dialog.service";
 import ToastrService from "../../../services/toastr.service";
 import {IJobNote, INoteType} from "../../../interfaces/job.interface";
-import "./sticky-notes.styles.less";
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
 
@@ -46,20 +46,20 @@ class StickyNoteController extends BaseController {
     }
 
     $onChanges(changes: angular.IOnChangesObject) {
-        console.log('StickyNoteController - $onChanges called with changes:', JSON.stringify(changes));
+        console.debug('StickyNoteController - $onChanges called with changes:', JSON.stringify(changes));
 
         if (changes['jobId']) {
             const currentValue = changes['jobId'].currentValue;
 
             if (currentValue && typeof currentValue === 'number') {
-                console.log('StickyNoteController - Valid jobId detected:', currentValue);
+                console.debug('StickyNoteController - Valid jobId detected:', currentValue);
 
                 if (this.previousJobId !== currentValue) {
                     this.previousJobId = currentValue;
                     this.loadNotes();
                 }
             } else {
-                console.log('StickyNoteController - No valid jobId change detected', {
+                console.debug('StickyNoteController - No valid jobId change detected', {
                     currentValue,
                     type: typeof currentValue
                 });
