@@ -10,7 +10,6 @@ namespace DespatchWeb.Controllers;
 
 public class TaskController(ITaskRepository taskRepository) : Controller
 {
-    [HttpGet]
     public async Task<IActionResult> GetAllTasks(TaskTableFiltersRequest filters)
     {
         try
@@ -70,7 +69,6 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetEventGroups()
     {
         try
@@ -85,7 +83,6 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetEventTypeGroups(int eventGroupId)
     {
         try
@@ -120,7 +117,6 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetStaff()
     {
         try

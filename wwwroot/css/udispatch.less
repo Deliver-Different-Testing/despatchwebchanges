@@ -46,7 +46,7 @@ html, body {
 /* Global scrollbar styles */
 * {
   scrollbar-width: thin;
-  scrollbar-color: fade(@primary-color, 70%) transparent;
+  scrollbar-color: fade(@scroll-bar-color, 70%) transparent;
 }
 
 *::-webkit-scrollbar {
@@ -59,7 +59,6 @@ html, body {
 }
 
 *::-webkit-scrollbar-thumb {
-  background-color: fade(@primary-color, 70%);
   border-radius: 4px;
 }
 
@@ -103,12 +102,12 @@ html, body {
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: fade(@primary-color, 70%);
+    background-color: fade(@scroll-bar-color, 70%);
     border-radius: 4px;
   }
 
   /* For Firefox */
-  scrollbar-color: fade(@primary-color, 70%) transparent;
+  scrollbar-color: fade(@scroll-bar-color, 70%) transparent;
   scrollbar-width: thin;
 }
 

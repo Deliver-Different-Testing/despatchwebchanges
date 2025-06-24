@@ -10,7 +10,6 @@ namespace DespatchWeb.Controllers;
 
 public class MessagesController(IMessageRepository messageRepository) : Controller
 {
-    [HttpGet]
     public async Task<IActionResult> GetUnreadMessageCount()
     {
         try
@@ -25,7 +24,6 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
         }
     }    
     
-    [HttpGet]
     public async Task<IActionResult> GetRecentList()
     {
         try
@@ -40,7 +38,6 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetMessages(int courierId, int staffId)
     {
         try
@@ -55,7 +52,6 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetMessagesByStaff(int otherStaffId, int currentStaffId)
     {
         try
@@ -125,7 +121,6 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetQuickResponses()
     {
         try
@@ -173,7 +168,6 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
         }
     }
 
-    [HttpGet]
     public async Task<IActionResult> GetMessageContactOptions(string searchTerm)
     {
         try
