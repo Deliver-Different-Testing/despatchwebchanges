@@ -86,7 +86,19 @@
                         <p>Recurring Jobs</p>
                     </div>
                     <div class="nav-indicator"></div>
+                </md-list-item>  
+                
+                <md-list-item class="nav-item"
+                              md-selected="ctrl.isActive('megaMap')"
+                              ng-class="{'md-primary': ctrl.isActive('megaMap')}"
+                              ui-sref="megaMap">
+                    <div class="nav-item-content">
+                        <md-icon md-font-set="material-symbols-outlined">globe_location_pin</md-icon>
+                        <p>Mega Map</p>
+                    </div>
+                    <div class="nav-indicator"></div>
                 </md-list-item>
+                
             </md-list>
         </md-content>
 

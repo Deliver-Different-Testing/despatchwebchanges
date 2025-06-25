@@ -8,11 +8,13 @@ import duration from 'dayjs/plugin/duration';
 
 class OpenJobsWidgetController extends BaseController {
     static $inject = [
-        "$scope",
         "overviewService",
-        "APP_CONFIG",
         "overviewFiltersService",
-        "$filter"
+        "$filter",
+        "APP_CONFIG",
+        "$scope",
+        "$timeout",
+        "$interval",
     ];
 
     private readonly isUsCustomer: boolean;
@@ -31,20 +33,23 @@ class OpenJobsWidgetController extends BaseController {
     };
 
     constructor(
-        $scope: angular.IScope,
         private overviewService: OverviewService,
-        APP_CONFIG: AppConfig,
         private overviewFiltersService: OverviewFiltersService,
         private $filter: angular.IFilterService,
+        APP_CONFIG: AppConfig,
+        $scope: angular.IScope,
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
     ) {
         super();
+        this.initServices($timeout, $interval, $scope)
 
         dayjs.extend(duration);
 
         this.isUsCustomer = APP_CONFIG.US_Customer;
         this.sortBy = "jobId";
 
-        $scope.$watch(
+        this.watchScope(
             () => this.tableQuery.limit,
             (newValue: number, oldValue: number) => {
                 if (newValue !== oldValue) {
@@ -58,31 +63,31 @@ class OpenJobsWidgetController extends BaseController {
 
     $onInit() {
         // Subscribe to filter changes
-        this.overviewFiltersService.onFilterChange(() => this._loadOpenJobs());
+        this.overviewFiltersService.onFilterChange(() => this.loadOpenJobs());
 
-        this._loadSavedLimit();
-        this._loadOpenJobs();
+        this.loadSavedLimit();
+        this.loadOpenJobs();
         this.loadCardState();
 
-        setInterval(this._loadOpenJobs, 60000);
+        this.registerInterval(this.loadOpenJobs, 60000);
     }
 
-    private _loadSavedLimit() {
+    private loadSavedLimit() {
         const savedLimit = localStorage.getItem(this.limitName);
-        console.log(`Saved limit is: ${savedLimit}`);
+        console.debug(`Saved limit is: ${savedLimit}`);
         if (savedLimit) {
             this.tableQuery.limit = parseInt(savedLimit);
         }
     }
 
-    private _loadOpenJobs() {
+    private loadOpenJobs() {
         const params: Pick<OverviewQueryParams, "startDate" | "endDate" | "regions" | "speeds"> = {
             startDate: this.overviewFiltersService.dateRange?.start || undefined,
             endDate: this.overviewFiltersService.dateRange?.end || undefined,
-            regions: this.overviewFiltersService.selectedRegions || undefined,
-            speeds: this.overviewFiltersService.selectedSpeeds || undefined
+            regions: this.overviewFiltersService.selectedRegions?.map(region => region.id) || undefined,
+            speeds: this.overviewFiltersService.selectedSpeeds?.map(speed => speed.id) || undefined
         };
-
+        
         this.overviewService.getOpenJobs(params)
             .then((jobs: OpenJobResponse[]) => {
                 // Group jobs by driver
@@ -96,7 +101,7 @@ class OpenJobsWidgetController extends BaseController {
                             jobs: [],
                             completedToday: job.completedToday,
                             lastCompleted: job.lastCompleted ?
-                                this._formatTime(job.lastCompleted) : "N/A",
+                                this.formatTime(job.lastCompleted) : "N/A",
                             expanded: false
                         };
                     }
@@ -159,7 +164,7 @@ class OpenJobsWidgetController extends BaseController {
         await this.overviewService.saveCollapseState("openJobs", this.isCardCollapsed);
     }
 
-    private _formatTime(timestamp: dayjs.Dayjs): string {
+    private formatTime(timestamp: dayjs.Dayjs): string {
         return timestamp.format("HH:mm");
     }
 
@@ -169,7 +174,7 @@ class OpenJobsWidgetController extends BaseController {
             const isDesc = order.charAt(0) === '-';
             const field = isDesc ? order.substring(1) : order;
 
-            let comparison = 0;
+            let comparison: number;
 
             switch (field) {
                 case "pickup":

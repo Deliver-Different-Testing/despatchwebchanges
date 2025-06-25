@@ -37,7 +37,7 @@ public static class JobMappings
                         Courier = j.UcjbCourier.Code,
                         CourierId = j.UcjbCourierId,
                         CourierMobile = j.UcjbCourier.UccrMobile,
-                        CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
+                        CourierName = $"{j.UcjbCourier.UccrName} {j.UcjbCourier.UccrSurname}"
                     }
                     : null,
             AssignedCourier =
@@ -45,7 +45,7 @@ public static class JobMappings
                     ? new Suggestion
                     {
                         Id = j.UcjbCourier.UccrId,
-                        Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
+                        Text = $"{j.UcjbCourier.UccrName} {j.UcjbCourier.UccrSurname}"
                     }
                     : null,
 
@@ -567,8 +567,8 @@ public static class JobMappings
             Time = j.UcjbTime,
             RootParentId = j.RootParentId,
             Date = FormatDate(j.UcjbDate),
-            Booked = j.UcjbDate != null 
-                ? CombineDateAndTime(j.UcjbDate ?? DateTime.MinValue, j.UcjbTime)
+            Booked = j.UcjbDate.HasValue 
+                ? CombineDateAndTime(j.UcjbDate.Value, j.UcjbTime)
                 : DateTime.MinValue,
             DispatchTime = j.UcjbDispTime,
             CreatedDate = j.UcjbDate,
@@ -580,7 +580,7 @@ public static class JobMappings
             DeliveryTime = null,
 
             Courier = null,
-            CourierData = j.UcjbCourierId != null
+            CourierData = j.UcjbCourierId.HasValue
                 ? new CourierData { CourierId = j.UcjbCourierId }
                 : null,
             AssignedCourier = j.UcjbCourierId.HasValue
@@ -671,7 +671,7 @@ public static class JobMappings
             Truck = j.Truck,
             DgClass = j.Dgclass,
             DgDocumentation = j.Dgdocument,
-            HasDgDocsString = j.Dgdocument != null ? "Yes" : "No",
+            HasDgDocsString = j.Dgdocument.HasValue ? "Yes" : "No",
 
             // Job status and details
             Done = j.UcjbJobDone,
@@ -715,14 +715,14 @@ public static class JobMappings
             Attention = j.UcjbAttention,
 
             Distance =
-                j.ToAirportId != null && j.FromAirportId != null
+                j.ToAirportId.HasValue && j.FromAirportId.HasValue
                     ? DistanceCalculator.CalculateDistance(
                         j.PickUpLatitude ?? 0,
                         j.PickUpLongitude ?? 0,
                         j.DeliveryLatitude ?? 0,
                         j.DeliveryLongitude ?? 0
                     )
-                    : (double)j.TotalDistance,
+                    : (double)(j.TotalDistance ?? 0),
 
             PickUpWindowMins = j.PickUpWindowMins,
             DeliverByWindowMins = j.DeliverByWindowMins,
@@ -741,7 +741,7 @@ public static class JobMappings
                     }
                     : null,
 
-            Locked = j.UcjbLocked != null ? j.UcjbLocked != 0 : null
+            Locked = j.UcjbLocked != null && j.UcjbLocked != 0
         };
 
     public static readonly Expression<
@@ -753,16 +753,16 @@ public static class JobMappings
         JobNo = j.UcbkJobNumber,
         Time = j.UcbkTime,
         RootParentId = j.RootParentId,
-        RelatedJobs = j
-            .BookingParent.InverseBookingParent.Select(p => new Suggestion
+        RelatedJobs = j.BookingParent != null && j.BookingParent.InverseBookingParent.Any() ?
+            j.BookingParent.InverseBookingParent.Select(p => new Suggestion
             {
                 Id = p.UcbkId,
                 Text = p.UcbkJobNumber
             })
-            .ToList(),
+            .ToList() : null,
         Date = FormatDate(j.UcbkDate),
-        Booked = j.UcbkDate != null
-            ? CombineDateAndTime(j.UcbkDate ?? DateTime.MinValue, j.UcbkTime)
+        Booked = j.UcbkDate.HasValue
+            ? CombineDateAndTime(j.UcbkDate.Value, j.UcbkTime)
             : DateTime.MinValue,
         CreatedDate = j.UcbkDate,
         ScheduleName = j.ScheduleName,
@@ -812,7 +812,7 @@ public static class JobMappings
         AssignedFlight = null,
 
         // Notes
-        Notes = j.TucNotes.Select(note => new TucNoteViewModel(note)).ToList(),
+        Notes = j.TucNotes.Any() ? j.TucNotes.Select(note => new TucNoteViewModel(note)).ToList() : null,
 
         FromSuburbId = (int)j.UcbkFrom,
         ToSuburbId = (int)j.UcbkTo,
@@ -843,7 +843,7 @@ public static class JobMappings
         Weight = j.UcbkWeight,
         CalculateDimsOncePerJob = j.DimensionsType == 1,
         ToAddress = j.UcbkToAddr,
-        JobType = j.UcbkType ?? 0,
+        JobType = j.UcbkType,
         JobTypeDescription = GetJobTypeDescription(j.UcbkType ?? 0),
         Direct = j.Direct,
         Van = j.UcbkVan,
@@ -851,13 +851,13 @@ public static class JobMappings
         Truck = j.Truck,
         DgClass = j.Dgclass,
         DgDocumentation = j.Dgdocument,
-        HasDgDocsString = j.Dgdocument != null ? "Yes" : "No",
+        HasDgDocsString = j.Dgdocument.HasValue ? "Yes" : "No",
 
         // Job status and details
         Done = j.UcbkDone,
         Items = j.Quantity,
 
-        PickupFrom = (short)j.UcbkPickUpFrom,
+        PickupFrom = j.UcbkPickUpFrom.HasValue ? (short)j.UcbkPickUpFrom : null,
         FromContactName = j.PickupFromContact,
 
         // Speed and job type information
@@ -886,9 +886,8 @@ public static class JobMappings
         Attention = j.UcbkAttention,
 
         ParcelDimensions =
-            j.ParentId == null || j.ParentId == j.UcbkId
-                ? j
-                    .TucJobBookingItems.Select(p => new ParcelDimensions
+            j.BookingParent == null || j.ParentId == j.UcbkId
+                ? j.TucJobBookingItems.Select(p => new ParcelDimensions
                     {
                         ItemId = p.ItemId,
                         ItemName = p.Notes,
@@ -897,8 +896,7 @@ public static class JobMappings
                         Length = p.Length
                     })
                     .ToList()
-                : j
-                    .BookingParent.TucJobBookingItems.Select(p => new ParcelDimensions
+                : j.BookingParent.TucJobBookingItems.Select(p => new ParcelDimensions
                     {
                         ItemId = p.ItemId,
                         ItemName = p.Notes,
@@ -909,18 +907,18 @@ public static class JobMappings
                     .ToList(),
 
         Distance =
-            j.ToAirportId != null && j.FromAirportId != null
+            j.ToAirportId.HasValue && j.FromAirportId.HasValue
                 ? DistanceCalculator.CalculateDistance(
                     j.PickUpLatitude ?? 0,
                     j.PickUpLongitude ?? 0,
                     j.DeliveryLatitude ?? 0,
                     j.DeliveryLongitude ?? 0
                 )
-                : j.TotalDistance != null ? (double)j.TotalDistance : 0,
+                : (double)(j.TotalDistance ?? 0),
 
         // Added recurring job fields
         InActiveBy =
-            j.UcbkInActiveBy.HasValue
+            j.UcbkInActiveByNavigation != null
                 ? new Suggestion
                 {
                     Id = j.UcbkInActiveBy.Value,
@@ -992,13 +990,14 @@ public static class JobMappings
         {
             if (job.DeliverByTime == null) return null;
         
+            var deliverBy = job.DeliverByTime.Value;
             var economyDeliveryDateTime = new DateTime(
                 job.UcjbDate.Year,
                 job.UcjbDate.Month,
                 job.UcjbDate.Day,
-                job.DeliverByTime.Value.Hour,
-                job.DeliverByTime.Value.Minute,
-                job.DeliverByTime.Value.Second
+                deliverBy.Hour,
+                deliverBy.Minute,
+                deliverBy.Second
             );
             return (int)(economyDeliveryDateTime - now).TotalMinutes;
         }
@@ -1008,25 +1007,25 @@ public static class JobMappings
             && SourceArray.Contains(speedValue)
             && job.RequiredDeliveryTime != null)
         {
+            var requiredDelivery = job.RequiredDeliveryTime.Value;
             var requiredDeliveryDateTime = new DateTime(
                 job.UcjbDate.Year,
                 job.UcjbDate.Month,
                 job.UcjbDate.Day,
-                job.RequiredDeliveryTime.Value.Hour,
-                job.RequiredDeliveryTime.Value.Minute,
-                job.RequiredDeliveryTime.Value.Second
+                requiredDelivery.Hour,
+                requiredDelivery.Minute,
+                requiredDelivery.Second
             );
             return (int)(requiredDeliveryDateTime - now).TotalMinutes;
         }
 
-        // Use null-coalescing instead of .HasValue/.Value pattern
         var minutesToAdd = jobType.Minutes ?? 0;
         if (jobType.Minutes == null) return null;
     
         var standardDeliveryDateTime = jobDateTime.AddMinutes(minutesToAdd);
         return (int)(standardDeliveryDateTime - now).TotalMinutes;
     }
-
+    
     private static string FormatDate(DateTime? date)
     {
         var dateToUse = date ?? DateTime.MinValue;

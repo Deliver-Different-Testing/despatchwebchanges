@@ -49,7 +49,6 @@ public class DispatchJobViewModel
     public int? JobType { get; set; }
     public string JobTypeDescription { get; set; }
 
-    public int? Minutes { get; set; }
     public int? PickupTime { get; set; }
     public int? AlertLatePickup { get; set; }
     public int? DeliveryTime { get; set; }
@@ -61,9 +60,6 @@ public class DispatchJobViewModel
 
     // Job flags
     public bool? Locked { get; set; }
-    public bool? Invoiced { get; set; }
-    public bool? AllowSplit { get; set; }
-    public bool? IsActive { get; set; }
     public bool? Done { get; set; }
     public bool? BulkJob { get; set; }
     public bool? PreBook { get; set; }
@@ -75,10 +71,8 @@ public class DispatchJobViewModel
     public bool? SaturdayDelivery { get; set; }
 
     // Special fields
-    public string ChildNotes { get; set; }
     public int? PickupFrom { get; set; }
     public int? RootParentId { get; set; }
-    public bool? DisplaySplitJobDetail { get; set; }
 
     // Airport Fields
     public int? ToAirportId { get; set; }
@@ -88,7 +82,6 @@ public class DispatchJobViewModel
     public AgentViewModel AssignedAgent { get; set; }
 
     // UI helper fields
-    public string SearchText { get; set; }
     public List<Suggestion> RelatedJobs { get; set; }
 
     public string ConNote {get;set;}

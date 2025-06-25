@@ -79,6 +79,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[PricingBreakdownArchive]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblAfterHours]",
          "ObjectType": 0
       },

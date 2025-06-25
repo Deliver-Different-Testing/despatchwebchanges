@@ -189,18 +189,12 @@ class NationwideService implements angular.IServiceProvider {
         };
     }
 
-    async assignAgentToJob(jobId: number, agentId: number, includeStopJobs: boolean) {
-        try {
-            const response = await this.$http.post("nationwideJob/AssignAgentToJob", {
-                jobId,
-                agentId,
-                includeStopJobs
-            });
-
-            return response.data;
-        } catch (error) {
-            console.error("Error assigning agent to job:", error);
-        }
+    async assignAgentToJob(jobId: number, agentId: number, includeStopJobs: boolean): Promise<any> {
+        await this.$http.post("nationwideJob/AssignAgentToJob", {
+            jobId,
+            agentId,
+            includeStopJobs
+        });
     }
 
     async getActiveAirlines(): Promise<Suggestion[]> {
@@ -217,20 +211,20 @@ class NationwideService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async sendAgentQuote(jobId: number, agentId: number) {
+    async sendAgentQuote(jobId: number, agentId: number): Promise<void> {
         await this.$http.post("nationwideJob/SendAgentQuote", {
             jobId,
             agentId,
         });
     }
 
-    async restoreJob(jobId: number) {
+    async restoreJob(jobId: number): Promise<void> {
         await this.$http.post("nationwideJob/RestoreJob", {
             jobId,
         });
     }
 
-    async getAgentInfoForDialog(agentId: number) {
+    async getAgentInfoForDialog(agentId: number): Promise<IAgentInfoDialog> {
         const response = await this.$http.get<IAgentInfoDialog>("nationwideJob/GetAgentInfo", {
             params: {
                 agentId,

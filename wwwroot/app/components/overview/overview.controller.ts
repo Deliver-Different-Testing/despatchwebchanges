@@ -433,11 +433,6 @@ class OverviewController extends BaseController {
         }
     }
 
-    openMegaMap() {
-        const url = this.$state.href("megaMap");
-        this.$window.open(url, "_blank");
-    }
-
     async onReorder() {
         this.query.page = 1;
         await this.refreshData();

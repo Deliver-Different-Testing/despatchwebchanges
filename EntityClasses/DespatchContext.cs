@@ -53,6 +53,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<PricingBreakdown> PricingBreakdowns { get; set; }
 
+    public virtual DbSet<PricingBreakdownArchive> PricingBreakdownArchives { get; set; }
+
     public virtual DbSet<TblAfterHour> TblAfterHours { get; set; }
 
     public virtual DbSet<TblAirport> TblAirports { get; set; }
@@ -1026,6 +1028,25 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.PrebookJob).WithMany(p => p.PricingBreakdowns)
                 .HasForeignKey(d => d.PrebookJobId)
                 .HasConstraintName("FK__PricingBr__Prebo__1C5DEA11");
+        });
+
+        modelBuilder.Entity<PricingBreakdownArchive>(entity =>
+        {
+            entity.HasKey(e => e.PricingBreakdownId).HasName("PK__PricingBreakdownArchive");
+
+            entity.ToTable("PricingBreakdownArchive");
+
+            entity.Property(e => e.PricingBreakdownId).HasColumnName("PricingBreakdownID");
+            entity.Property(e => e.ChargeAmount).HasColumnType("money");
+            entity.Property(e => e.ChargeName)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.Charged).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.CostAmount).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.Included).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.JobId).HasColumnName("JobID");
+            entity.Property(e => e.PrebookJobId).HasColumnName("PrebookJobID");
+            entity.Property(e => e.Total).HasColumnType("decimal(18, 4)");
         });
 
         modelBuilder.Entity<TblAfterHour>(entity =>

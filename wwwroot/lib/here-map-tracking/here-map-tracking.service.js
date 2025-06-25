@@ -163,7 +163,7 @@ angular.module("hereMapTracking.services")
 
             service.removeExtraMarkers = (extraMarkers, map) => {
                 //Removes extra markers
-                for (i in extraMarkers) {
+                for (let i in extraMarkers) {
                     map.removeObject(extraMarkers[i]);
                 }
                 extraMarkers = [];
@@ -208,13 +208,12 @@ angular.module("hereMapTracking.services")
                 map.getViewModel().setLookAtData({ bounds: expandedBoundingBox });
             };
 
-            service.drawRouteLine = (fromLat, fromLong, toLat, toLong, routeLine, job, map, platform, flight) => {
+            service.drawRouteLine = (fromLat, fromLong, toLat, toLong, routeLine, job, map, platform, flight, preserveView) => {
                 //Draws a single routeline
                 const routingParameters = {
                     routingMode: 'fast',
                     transportMode: 'car',
                     origin: fromLat + ',' + fromLong,
-
                     destination: toLat + ',' + toLong,
                     return: 'polyline'
                 };
@@ -260,25 +259,28 @@ angular.module("hereMapTracking.services")
                             }
                         });
 
-                        if (result.routes[0].sections.length > 1) {
-                            // Make a group so bounding box fits
-                            const group = new H.map.Group();
-                            const group1 = new H.map.Marker({lat: fromLat, lng: fromLong});
-                            const group2 = new H.map.Marker({lat: toLat, lng: toLong});
-                            group.addObjects([group1, group2]);
+                        // Only auto-zoom and center if preserveView is not set
+                        if (!preserveView) {
+                            if (result.routes[0].sections.length > 1) {
+                                // Make a group so bounding box fits
+                                const group = new H.map.Group();
+                                const group1 = new H.map.Marker({lat: fromLat, lng: fromLong});
+                                const group2 = new H.map.Marker({lat: toLat, lng: toLong});
+                                group.addObjects([group1, group2]);
 
-                            // Set the map's viewport to make the whole route visible:
-                            map.getViewModel().setLookAtData({bounds: group.getBoundingBox()});
+                                // Set the map's viewport to make the whole route visible:
+                                map.getViewModel().setLookAtData({bounds: group.getBoundingBox()});
 
-                            // Clear group after using bounds
-                            group.removeObjects([group1, group2]);
-                        } else {
-                            // Set the map's viewport to make the whole route visible:
-                            map.getViewModel().setLookAtData({bounds: routeLine.getBoundingBox()});
+                                // Clear group after using bounds
+                                group.removeObjects([group1, group2]);
+                            } else {
+                                // Set the map's viewport to make the whole route visible:
+                                map.getViewModel().setLookAtData({bounds: routeLine.getBoundingBox()});
+                            }
+
+                            // Center the map
+                            service.centerHereMap(fromLat, fromLong, toLat, toLong, job, routeLine, null, map);
                         }
-
-                        // Center the map
-                        service.centerHereMap(fromLat, fromLong, toLat, toLong, job, routeLine, null, map);
                     }
                 };
 
@@ -294,13 +296,12 @@ angular.module("hereMapTracking.services")
                     });
             };
 
-            service.addExtraRouteLine = (fromLat, fromLong, toLat, toLong, index, flight, extraRouteLines, job, map, platform, isScopedJob) => {
+            service.addExtraRouteLine = (fromLat, fromLong, toLat, toLong, index, flight, extraRouteLines, job, map, platform, isScopedJob, preserveView) => {
                 //Draws multiple routelines for multipart job
                 const routingParameters = {
                     routingMode: 'fast',
                     transportMode: 'car',
                     origin: fromLat + ',' + fromLong,
-
                     destination: toLat + ',' + toLong,
                     return: 'polyline'
                 };
@@ -350,7 +351,8 @@ angular.module("hereMapTracking.services")
                             }
                         });
 
-                        if ((flight && isScopedJob == null) || isScopedJob) {
+                        // Only center and zoom if preserveView is not set and it's a flight or scoped job
+                        if (!preserveView && ((flight && isScopedJob == null) || isScopedJob)) {
                             // Center the map and set viewport
                             service.centerHereMap(fromLat, fromLong, toLat, toLong, job.childJobs[index], null, extraRouteLines, map);
                             //match parents index to the flight part (as it encompasses whole route)
@@ -374,10 +376,10 @@ angular.module("hereMapTracking.services")
 
                 return extraRouteLines;
             };
-
+            
             service.removeExtraRouteLines = (extraRouteLines, map) => {
                 //Remove all extra routelines
-                for (i in extraRouteLines) {
+                for (let i in extraRouteLines) {
                     service.removeObjectById('route' + i, map);
                 };
                 extraRouteLines = [];

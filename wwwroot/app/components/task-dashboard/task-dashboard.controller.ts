@@ -335,7 +335,7 @@ class TaskDashboardController extends BaseController {
     }
 
     async onSearchRangeChange(optionSelected: number) {
-        console.log(`Search range changed to: ${optionSelected}`);
+        console.debug(`Search range changed to: ${optionSelected}`);
 
         this.dateSearchRange = optionSelected;
 
@@ -344,7 +344,7 @@ class TaskDashboardController extends BaseController {
             this.endDate = dayjs().add(24, 'hours').toDate();
             this.selectedDate = dayjs().toDate();
 
-            console.log('24 Hours mode: Reset dates to defaults', {
+            console.debug('24 Hours mode: Reset dates to defaults', {
                 startDate: dayjs(this.startDate).format('YYYY-MM-DD HH:mm:ss'),
                 endDate: dayjs(this.endDate).format('YYYY-MM-DD HH:mm:ss'),
                 selectedDate: dayjs(this.selectedDate).format('YYYY-MM-DD HH:mm:ss')
@@ -358,7 +358,7 @@ class TaskDashboardController extends BaseController {
                 this.endDate = dayjs().add(1, 'days').toDate();
             }
 
-            console.log('Custom mode: Set custom date range', {
+            console.debug('Custom mode: Set custom date range', {
                 startDate: dayjs(this.startDate).format('YYYY-MM-DD HH:mm:ss'),
                 endDate: dayjs(this.endDate).format('YYYY-MM-DD HH:mm:ss')
             });
@@ -368,7 +368,7 @@ class TaskDashboardController extends BaseController {
     }
 
     handleCalendarTaskClick(task: ExtendedTask): void {
-        console.log('Calendar task clicked:', task);
+        console.debug('Calendar task clicked:', task);
         this.selectTaskJobDetail(task);
     }
 
@@ -377,7 +377,7 @@ class TaskDashboardController extends BaseController {
     }
 
     handleCalendarTaskStatusChange(task: ExtendedTask): void {
-        console.log('Calendar task status changed:', task);
+        console.debug('Calendar task status changed:', task);
 
         const taskIndex = this.tasks.findIndex(t => t.id === task.id);
         if (taskIndex !== -1) {

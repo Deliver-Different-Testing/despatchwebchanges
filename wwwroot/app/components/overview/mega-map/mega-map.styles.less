@@ -1,5 +1,6 @@
+@import "./css/variables.less";
+
 // Material Design Variables
-@primary-color: #3EAFC2; // Your theme primary color
 @accent-color: #FFB300; // Used for secondary actions/highlights
 @error-color: #F44336; // For errors and urgent states
 @success-color: #4CAF50; // For success states
@@ -57,7 +58,6 @@
   overflow: hidden;
   color: @text-primary;
 
-
   // Map Container
   .map-container {
     .absolute-position();
@@ -65,30 +65,16 @@
     width: 100vw;
     z-index: @z-map;
 
-    ng-map, .angular-google-map-container {
+    // HERE Maps Component Container
+    here-map-tracking {
       height: 100% !important;
       width: 100% !important;
-    }
-  }
-
-  // Markers and Custom Overlays
-  .driver-marker, .flight-marker {
-    background: white;
-    border-radius: 50%;
-    padding: @spacing-unit;
-    .material-elevation(1);
-    cursor: pointer;
-    .material-transition(transform);
-
-    &:hover {
-      transform: scale(1.1);
-      .material-elevation(2);
-    }
-
-    i {
-      font-size: 20px;
-      color: @primary-color;
       display: block;
+
+      .here-map {
+        height: 100% !important;
+        width: 100% !important;
+      }
     }
   }
 
@@ -100,9 +86,10 @@
     width: 320px;
     z-index: @z-overlays;
     background: @card-bg;
-    .material-elevation(1);
+    .material-elevation(2);
     border-radius: 4px;
     overflow: hidden;
+    max-height: 400px;
 
     .md-subtitle {
       padding: @spacing-unit * 2;
@@ -110,22 +97,28 @@
       font-size: 16px;
       font-weight: @font-weight-medium;
       color: white;
-      background: @primary-color;
+      background: @scroll-bar-color;
     }
 
     .driver-list {
-      max-height: 400px;
+      max-height: 300px;
       overflow-y: auto;
       padding: 0;
     }
 
     .compact-list-item {
-      min-height: 48px;
+      min-height: 56px;
       padding: @spacing-unit * 1.5 @spacing-unit * 2;
       .material-transition(background-color);
+      cursor: pointer;
 
       &:hover {
         background-color: @hover-bg;
+      }
+
+      .driver-icon {
+        color: @scroll-bar-color;
+        margin-right: @spacing-unit * 1.5;
       }
 
       .md-list-item-text {
@@ -143,6 +136,139 @@
           margin-top: @spacing-unit/2;
         }
       }
+
+      .md-secondary {
+        color: @text-secondary;
+        font-size: 20px;
+      }
+    }
+  }
+
+  // Job Statistics Panel
+  .job-stats-panel {
+    position: fixed;
+    top: @spacing-unit * 2.5;
+    left: @spacing-unit * 2.5;
+    width: 280px;
+    z-index: @z-overlays;
+    background: @card-bg;
+    .material-elevation(2);
+    border-radius: 4px;
+    overflow: hidden;
+
+    .md-subtitle {
+      padding: @spacing-unit * 2;
+      margin: 0;
+      font-size: 16px;
+      font-weight: @font-weight-medium;
+      color: white;
+      background: @scroll-bar-color;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: @spacing-unit;
+      padding: @spacing-unit * 2;
+
+      .stat-item {
+        text-align: center;
+        padding: @spacing-unit;
+
+        .stat-number {
+          font-size: 24px;
+          font-weight: @font-weight-medium;
+          color: @scroll-bar-color;
+          line-height: 1;
+        }
+
+        .stat-label {
+          font-size: 12px;
+          color: @text-secondary;
+          margin-top: @spacing-unit/2;
+        }
+      }
+    }
+  }
+
+  // Flight Information Panel
+  .flight-info-panel {
+    position: fixed;
+    bottom: @spacing-unit * 2.5;
+    right: @spacing-unit * 2.5;
+    width: 320px;
+    z-index: @z-overlays;
+    background: @card-bg;
+    .material-elevation(2);
+    border-radius: 4px;
+    overflow: hidden;
+    max-height: 300px;
+
+    .md-subtitle {
+      padding: @spacing-unit * 2;
+      margin: 0;
+      font-size: 16px;
+      font-weight: @font-weight-medium;
+      color: white;
+      background: @accent-color;
+    }
+
+    .flight-list {
+      max-height: 200px;
+      overflow-y: auto;
+      padding: 0;
+    }
+
+    .compact-list-item {
+      min-height: 64px;
+      padding: @spacing-unit * 1.5 @spacing-unit * 2;
+      .material-transition(background-color);
+
+      &:hover {
+        background-color: @hover-bg;
+      }
+
+      .flight-icon {
+        color: @accent-color;
+        margin-right: @spacing-unit * 1.5;
+        transform: rotate(45deg);
+      }
+
+      .md-list-item-text {
+        flex: 1;
+
+        h4 {
+          margin: 0;
+          font-size: 14px;
+          font-weight: @font-weight-medium;
+          color: @text-primary;
+        }
+
+        small {
+          color: @text-secondary;
+          font-size: 12px;
+          display: block;
+          margin-top: @spacing-unit/4;
+        }
+      }
+
+      .flight-status {
+        width: 60px;
+
+        .progress-bar {
+          width: 100%;
+          height: 4px;
+          background-color: rgba(0, 0, 0, 0.1);
+          border-radius: 2px;
+          overflow: hidden;
+
+          .progress-fill {
+            height: 100%;
+            background-color: @accent-color;
+            transition: width 0.3s ease;
+          }
+        }
+      }
     }
   }
 
@@ -153,7 +279,7 @@
     bottom: @spacing-unit * 5;
     background: @card-bg;
     padding: @spacing-unit * 2;
-    .material-elevation(1);
+    .material-elevation(2);
     border-radius: 4px;
     z-index: @z-overlays;
 
@@ -161,9 +287,24 @@
       margin: 0 0 @spacing-unit * 1.5;
       font-size: 14px;
       font-weight: @font-weight-medium;
-      color: @primary-color;
+      color: @scroll-bar-color;
     }
 
+    .map-controls {
+      margin-bottom: @spacing-unit * 2;
+      padding-bottom: @spacing-unit * 2;
+      border-bottom: 1px solid grey;
+
+      .country-view-btn {
+        width: 100%;
+        margin: 0;
+
+        md-icon {
+          margin-right: @spacing-unit;
+        }
+      }
+    }
+    
     .legend-item {
       display: flex;
       align-items: center;
@@ -174,6 +315,7 @@
         width: 24px;
         height: 24px;
         margin-right: @spacing-unit * 1.5;
+        font-size: 18px;
       }
 
       .route-line {
@@ -182,12 +324,12 @@
         margin-right: @spacing-unit * 1.5;
 
         &.flight {
-          background-color: #3EAFC2;
-          border-top: 2px dashed #3EAFC2;
+          background-color: @scroll-bar-color;
+          border-top: 2px dashed @scroll-bar-color;
         }
 
         &.road {
-          background-color: #FFB300;
+          background-color: @accent-color;
         }
       }
 
@@ -204,10 +346,16 @@
     @shadow-key-penumbra-opacity: 0.14;
     @shadow-ambient-shadow-opacity: 0.12;
 
+    & when (@level = 1) {
+      box-shadow: 0 2px 1px -1px rgba(0, 0, 0, @shadow-key-umbra-opacity),
+      0 1px 1px 0 rgba(0, 0, 0, @shadow-key-penumbra-opacity),
+      0 1px 3px 0 rgba(0, 0, 0, @shadow-ambient-shadow-opacity);
+    }
+
     & when (@level = 2) {
-      box-shadow: 0 3px 1px -2px rgba(0, 0, 0, @shadow-key-umbra-opacity),
-      0 2px 2px 0 rgba(0, 0, 0, @shadow-key-penumbra-opacity),
-      0 1px 5px 0 rgba(0, 0, 0, @shadow-ambient-shadow-opacity);
+    }
+
+    & when (@level = 3) {
     }
   }
 
@@ -217,260 +365,36 @@
     z-index: @z-loading;
     background-color: @overlay-bg;
     .flex-center();
+    flex-direction: column;
 
     md-progress-circular {
-      stroke: @primary-color;
-    }
-  }
-
-  // Flight Info Window
-  .flight-info-window {
-    padding: @spacing-unit * 2;
-    max-width: 280px;
-
-    h4 {
-      margin: 0 0 @spacing-unit;
-      font-weight: @font-weight-medium;
-      color: @primary-color;
+      .CircularProgress-svg {
+        stroke: @scroll-bar-color;
+      }
     }
 
     p {
-      margin: @spacing-unit/2 0;
-      font-size: 13px;
-      line-height: 1.4;
+      margin-top: @spacing-unit * 2;
       color: @text-secondary;
-
-      &.notes {
-        font-style: italic;
-        padding: @spacing-unit 0;
-        border-top: 1px solid rgba(0, 0, 0, 0.1);
-        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-      }
+      font-size: 14px;
     }
   }
 
-  // Responsive Design
-  @media (max-width: 960px) {
-    .active-drivers, .job-info-panel {
-      width: calc(100% - @spacing-unit * 5);
-      max-height: 50vh;
-    }
-
-    .map-legend {
-      bottom: @spacing-unit * 10;
-    }
-  }
-
-  // Material Floating Action Button Override
-  .mfb-component__button--main {
-    background-color: @primary-color !important;
-    .material-elevation(2);
-    .material-transition(all);
-
-    &:hover {
-      background-color: darken(@primary-color, 10%) !important;
-      .material-elevation(3);
-    }
-  }
-
-  // Hide Google Maps Default UI
-  .gmnoprint, .gm-style-cc {
-    display: none;
-  }
-
-  // Info Window Customization
-  .gm-style-iw {
-    padding: @spacing-unit !important;
-
-    & > div {
-      margin: 0 !important;
-      padding: 0 !important;
-    }
-  }
-
-  .marker-container {
-    cursor: pointer;
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-    &:hover {
-      transform: scale(1.2);
-    }
-
-    i {
-      font-size: 24px;
-      display: block;
-      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
-    }
-
-    &.compact i {
-      font-size: 18px;
-    }
-  }
-
-  .pickup-marker i {
-    color: #4CAF50;
-  }
-
-  .delivery-marker i {
-    color: #F44336;
-  }
-
-  .airport-marker i {
-    color: #3EAFC2;
-  }
-
-  .flight-marker {
-    cursor: pointer;
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-    &:hover {
-      transform: scale(1.2);
-    }
-
-    i {
-      font-size: 28px;
-      display: block;
-      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
-    }
-
-    &.compact i {
-      font-size: 20px;
-    }
-  }
-
-  .marker-container {
-    background: white;
-    border-radius: 50%;
-    padding: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-    &:hover {
-      transform: scale(1.1);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    }
-
-    i {
-      font-size: 20px;
-      display: block;
-      transition: font-size 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    &.compact {
-      padding: 4px;
-
-      i {
-        font-size: 14px;
-      }
-    }
-  }
-
-  .pickup-marker i {
-    color: #4CAF50;
-  }
-
-  .delivery-marker i {
-    color: #F44336;
-  }
-
-  .airport-marker i {
-    color: #3EAFC2;
-  }
-
-  .flight-marker {
-    background: white;
-    border-radius: 50%;
-    padding: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-    &:hover {
-      transform: scale(1.1);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    }
-
-    i {
-      font-size: 24px;
-      display: block;
-      transition: font-size 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    &.compact {
-      padding: 4px;
-
-      i {
-        font-size: 16px;
-      }
-    }
-  }
-
-  // Cluster Styles
-  .cluster-marker {
-    background-color: white;
-    border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    color: @text-primary;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 500;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-    &:hover {
-      transform: scale(1.1);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    }
-
-    &.pickup {
-      border: 2px solid #4CAF50;
-    }
-
-    &.delivery {
-      border: 2px solid #F44336;
-    }
-  }
-
-  // Material ripple effect for clusters
-  .cluster-ripple {
-    position: absolute;
-    border-radius: 50%;
-    animation: ripple 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-
-    &.pickup {
-      border: 2px solid rgba(76, 175, 80, 0.5);
-    }
-
-    &.delivery {
-      border: 2px solid rgba(244, 67, 54, 0.5);
-    }
-  }
-
-  @keyframes ripple {
-    from {
-      transform: scale(1);
-      opacity: 0.4;
-    }
-    to {
-      transform: scale(1.5);
-      opacity: 0;
-    }
-  }
-
+  // Job Info Panel
   .job-info-panel {
     position: fixed;
     top: @spacing-unit * 2.5;
     right: @spacing-unit * 2.5;
     width: 360px;
-    z-index: @z-overlays;
+    z-index: @z-overlays + 10; // Higher than other panels
     background: @card-bg;
-    .material-elevation(2); // Using existing mixin
+    .material-elevation(3);
     border-radius: 4px;
     overflow: hidden;
+    max-height: 80vh;
 
     md-toolbar {
-      background-color: @primary-color !important;
+      background-color: @scroll-bar-color !important;
       min-height: 56px;
 
       .md-toolbar-tools {
@@ -486,23 +410,26 @@
           font-size: 20px;
           font-weight: @font-weight-medium;
           color: white;
+          margin: 0;
         }
       }
     }
 
     md-card-content {
       padding: 0;
+      max-height: calc(80vh - 56px);
+      overflow-y: auto;
 
       .status-banner {
         padding: @spacing-unit * 2;
-        margin-bottom: @spacing-unit * 2;
-        background-color: fade(@primary-color, 5%);
+        margin-bottom: 0;
+        background-color: fade(@scroll-bar-color, 5%);
 
         &.in-progress {
-          background-color: fade(@primary-color, 5%);
+          background-color: fade(@scroll-bar-color, 5%);
 
           .status-content {
-            color: @primary-color;
+            color: @scroll-bar-color;
           }
         }
 
@@ -526,8 +453,9 @@
           display: flex;
           justify-content: space-between;
           align-items: center;
-          color: @primary-color;
+          color: @scroll-bar-color;
           font-weight: @font-weight-medium;
+          font-size: 14px;
 
           .status-left, .status-right {
             display: flex;
@@ -545,7 +473,7 @@
         padding: @spacing-unit * 2;
 
         .detail-section {
-          margin-bottom: @spacing-unit * 3;
+          margin-bottom: @spacing-unit * 2;
 
           &:last-child {
             margin-bottom: 0;
@@ -553,17 +481,17 @@
 
           .section-header {
             display: flex;
-            align-items: start;
+            align-items: center;
             margin-bottom: @spacing-unit;
 
             md-icon {
               margin-right: @spacing-unit;
-              color: @primary-color;
+              color: @scroll-bar-color;
               font-size: 20px;
             }
 
             h3 {
-              color: @primary-color;
+              color: @scroll-bar-color;
               font-size: 14px;
               font-weight: @font-weight-medium;
               margin: 0;
@@ -571,11 +499,15 @@
           }
 
           p {
-            margin: 0;
+            margin: @spacing-unit/2 0;
             padding-left: @spacing-unit * 3.5;
             font-size: 14px;
             line-height: 1.5;
             color: @text-secondary;
+
+            strong {
+              color: @text-primary;
+            }
           }
         }
       }
@@ -592,116 +524,80 @@
     }
   }
 
-  // Cluster Styles
-  .cluster-small,
-  .cluster-medium,
-  .cluster-large {
-    background-color: @card-bg;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid @primary-color;
-    .material-elevation(1);
-    color: @text-primary;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  // Responsive Design
+  @media (max-width: 960px) {
+    .active-drivers,
+    .job-info-panel,
+    .flight-info-panel {
+      width: calc(100% - @spacing-unit * 5);
+      max-height: 50vh;
+      right: @spacing-unit * 2.5;
+      left: @spacing-unit * 2.5;
+    }
+
+    .job-stats-panel {
+      width: calc(100% - @spacing-unit * 5);
+      left: @spacing-unit * 2.5;
+    }
+
+    .map-legend {
+      bottom: @spacing-unit * 15;
+      left: @spacing-unit * 2.5;
+    }
+
+    .flight-info-panel {
+      bottom: @spacing-unit * 10;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .active-drivers,
+    .job-info-panel,
+    .flight-info-panel,
+    .job-stats-panel {
+      width: calc(100% - @spacing-unit * 2);
+      right: @spacing-unit;
+      left: @spacing-unit;
+    }
+
+    .map-legend {
+      left: @spacing-unit;
+      bottom: @spacing-unit * 20;
+    }
+  }
+
+  // Material Floating Action Button Override
+  .mfb-component__button--main {
+    background-color: @scroll-bar-color !important;
+    .material-elevation(2);
+    .material-transition(all);
 
     &:hover {
-      transform: scale(1.1);
-      .material-elevation(2);
+      background-color: darken(@scroll-bar-color, 10%) !important;
+      .material-elevation(3);
     }
   }
 
-  .cluster-small {
-    min-width: 35px;
-    min-height: 35px;
-    font-size: 12px;
-
-    &::before {
-      content: 'location_on';
-      font-size: 18px;
-      color: @primary-color;
-    }
+  // Animation for panel transitions
+  .panel-enter {
+    opacity: 0;
+    transform: translateY(-20px);
   }
 
-  .cluster-medium {
-    min-width: 45px;
-    min-height: 45px;
-    font-size: 14px;
-
-    &::before {
-      content: 'hub';
-      font-size: 20px;
-      color: @primary-color;
-    }
+  .panel-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .cluster-large {
-    min-width: 55px;
-    min-height: 55px;
-    font-size: 16px;
-
-    &::before {
-      content: 'hub';
-      font-size: 24px;
-      color: @primary-color;
-    }
+  .panel-leave {
+    opacity: 1;
+    transform: translateY(0);
   }
 
-  // Add marker animation
-  .marker-animation {
-    &:hover {
-      animation: bounce 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-  }
-
-  @keyframes bounce {
-    0%, 100% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.2);
-    }
-  }
-
-  .marker-container {
-    background: @card-bg;
-    border-radius: 50%;
-    padding: @spacing-unit;
-    .material-elevation(1);
-    cursor: pointer;
-    .material-transition(transform);
-
-    &:hover {
-      transform: scale(1.1);
-      .material-elevation(2);
-    }
-
-    i {
-      font-size: 20px;
-      display: block;
-      transition: font-size 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    &.compact {
-      padding: @spacing-unit/2;
-
-      i {
-        font-size: 14px;
-      }
-    }
-  }
-
-  // Update pickup/delivery colors to use your variables
-  .pickup-marker i {
-    color: @success-color;
-  }
-
-  .delivery-marker i {
-    color: @error-color;
-  }
-
-  .flight-marker i {
-    color: @primary-color;
+  .panel-leave-active {
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
