@@ -1,4 +1,4 @@
-export         interface MapPoint {
+export interface MapPoint {
     lat: number;
     lng: number;
     address: string;

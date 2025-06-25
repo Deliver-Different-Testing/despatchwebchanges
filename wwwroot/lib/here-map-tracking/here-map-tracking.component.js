@@ -3,10 +3,7 @@ angular.module('hereMapTracking.components', [])
     .directive('hereMapTracking', [() => ({
         restrict: 'E',
         scope: {
-            mapId: '@',
-            credentials: '=',
-            config: '=',
-            onMapReady: '&'
+            mapId: '@', credentials: '=', config: '=', onMapReady: '&'
         },
         template: '<div class="here-map" id="{{mapId}}"></div>',
         controller: ['$scope', 'HereMapService', '$rootScope', '$timeout', ($scope, HereMapService, $rootScope, $timeout) => {
@@ -41,8 +38,7 @@ angular.module('hereMapTracking.components', [])
                         // Notify parent component that map is ready
                         if ($scope.onMapReady) {
                             $scope.onMapReady({
-                                map: mapInstance.map,
-                                platform: platform
+                                map: mapInstance.map, platform: platform
                             });
                         }
 
@@ -53,8 +49,7 @@ angular.module('hereMapTracking.components', [])
                         }, 100); // Small delay to ensure DOM has settled
                     } else {
                         console.warn('Missing credentials or mapId', {
-                            hasCredentials: !!$scope.credentials,
-                            hasMapId: !!$scope.mapId
+                            hasCredentials: !!$scope.credentials, hasMapId: !!$scope.mapId
                         });
                     }
                 } catch (error) {
@@ -93,28 +88,16 @@ angular.module('hereMapTracking.components', [])
                     // Check if this is a completely new job (different ID)
                     const isNewJob = newConfig.job && (!oldConfig.job || newConfig.job.id !== oldJob.id);
 
-                    const hasCourierLocationChanges = (newConfig.courierLocation !== oldConfig.courierLocation) ||
-                        (newConfig.courierLocation && oldConfig.courierLocation &&
-                            (newConfig.courierLocation.lat !== oldConfig.courierLocation.lat ||
-                                newConfig.courierLocation.lng !== oldConfig.courierLocation.lng));
+                    const hasCourierLocationChanges = (newConfig.courierLocation !== oldConfig.courierLocation) || (newConfig.courierLocation && oldConfig.courierLocation && (newConfig.courierLocation.lat !== oldConfig.courierLocation.lat || newConfig.courierLocation.lng !== oldConfig.courierLocation.lng));
 
                     // Check if the job has a timestamp that has changed (for force updates of the same job)
-                    const hasNewTimestamp = newConfig.job && oldConfig.job &&
-                        newConfig.job.timestamp !== oldJob.timestamp;
+                    const hasNewTimestamp = newConfig.job && oldConfig.job && newConfig.job.timestamp !== oldJob.timestamp;
 
                     // Also check for changes in coordinates (might have been updated)
-                    const hasCoordinateChanges = newConfig.job && oldConfig.job &&
-                        (newConfig.job.pickup.lat !== oldJob.pickup.lat ||
-                            newConfig.job.pickup.lng !== oldJob.pickup.lng ||
-                            newConfig.job.delivery.lat !== oldJob.delivery.lat ||
-                            newConfig.job.delivery.lng !== oldJob.delivery.lng);
+                    const hasCoordinateChanges = newConfig.job && oldConfig.job && (newConfig.job.pickup.lat !== oldJob.pickup.lat || newConfig.job.pickup.lng !== oldJob.pickup.lng || newConfig.job.delivery.lat !== oldJob.delivery.lat || newConfig.job.delivery.lng !== oldJob.delivery.lng);
 
                     if (isNewJob || hasNewTimestamp || hasCoordinateChanges || hasCourierLocationChanges) {
-                        console.log('Map update triggered:',
-                            isNewJob ? 'New job' :
-                                hasNewTimestamp ? 'New timestamp' :
-                                    hasCoordinateChanges ? 'Coordinate changes' :
-                                        'Courier location changes');
+                        console.log('Map update triggered:', isNewJob ? 'New job' : hasNewTimestamp ? 'New timestamp' : hasCoordinateChanges ? 'Coordinate changes' : 'Courier location changes');
 
                         // Update map for the job
                         $scope.showJobOnMap(newConfig.job, newConfig.courierLocation);
@@ -133,8 +116,7 @@ angular.module('hereMapTracking.components', [])
             });
 
             $scope.$watch('config.courierLocation', (newValue, oldValue) => {
-                if (newValue && newValue.lat !== null && newValue.lng !== null && (!oldValue ||
-                    (newValue.lat !== oldValue.lat && newValue.lng !== oldValue.lng))) {
+                if (newValue && newValue.lat !== null && newValue.lng !== null && (!oldValue || (newValue.lat !== oldValue.lat && newValue.lng !== oldValue.lng))) {
                     courierMarker = HereMapService.getHereCourierMarker(newValue.lat, newValue.lng, courierMarker, mapInstance.map, null, null);
 
                     $scope.autoZoomMapToShowAllPoints();
@@ -143,14 +125,7 @@ angular.module('hereMapTracking.components', [])
 
             $scope.centerMapOnIndex = selectedJobIndex => {
                 const thisJob = $scope.getScopedJob(selectedJobIndex);
-                HereMapService.centerHereMap(thisJob.pickup.lat,
-                    thisJob.pickup.lng,
-                    thisJob.delivery.lat,
-                    thisJob.delivery.lng,
-                    thisJob,
-                    routeLine,
-                    extraRouteLines,
-                    mapInstance.map);
+                HereMapService.centerHereMap(thisJob.pickup.lat, thisJob.pickup.lng, thisJob.delivery.lat, thisJob.delivery.lng, thisJob, routeLine, extraRouteLines, mapInstance.map);
             };
 
             $scope.getScopedJob = selectedJobIndex => {
@@ -217,6 +192,9 @@ angular.module('hereMapTracking.components', [])
                     // Remove all markers and route lines
                     $scope.clearMap();
 
+                    // Check if we should preserve the current view
+                    const preserveView = $scope.config && $scope.config.preserveView;
+
                     // Add all markers
                     fromMarker = HereMapService.getHereFromMarker(job.pickup.lat, job.pickup.lng, fromMarker, mapInstance.map);
                     toMarker = HereMapService.getHereToMarker(job.delivery.lat, job.delivery.lng, toMarker, mapInstance.map);
@@ -251,33 +229,33 @@ angular.module('hereMapTracking.components', [])
                                 job.childJobs[i].delivery.lng,
                                 i,
                                 job.childJobs[i].flight, extraRouteLines, job, mapInstance.map, platform,
-                                scopedJob ? job.childJobs[i].id === scopedJob.id : null);
+                                scopedJob ? job.childJobs[i].id === scopedJob.id : null,
+                                preserveView);
                         }
                     } else {
                         routeLine = HereMapService.drawRouteLine(job.pickup.lat,
                             job.pickup.lng,
                             job.delivery.lat,
-                            job.delivery.lng, routeLine, job, mapInstance.map, platform, job.flight);
+                            job.delivery.lng, routeLine, job, mapInstance.map, platform, job.flight, preserveView);
                     }
 
-                    $timeout(() => {
-                        $scope.autoZoomMapToShowAllPoints();
-                    }, 2000);
+                    // Only auto-zoom if preserveView is not set or is false
+                    if (!preserveView) {
+                        $timeout(() => {
+                            $scope.autoZoomMapToShowAllPoints();
+                        }, 2000);
+                    }
                 } catch (error) {
                     console.error('Error in showJobOnMap:', error);
                 }
             };
-
+            
             $scope.autoZoomMapToShowAllPoints = () => {
                 if (!mapInstance || !mapInstance.map || !$scope.config || !$scope.config.job) {
                     return;
                 }
 
-                const allPoints = HereMapService.getAllVisiblePoints(
-                    $scope.config.job,
-                    $scope.config.courierLocation,
-                    extraMarkers
-                );
+                const allPoints = HereMapService.getAllVisiblePoints($scope.config.job, $scope.config.courierLocation, extraMarkers);
 
                 if (allPoints.length > 0) {
                     $timeout(() => {

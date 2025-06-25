@@ -255,6 +255,10 @@
     <_ContentIncludedByDefault Remove="wwwroot\app\components\common\messaging\messaging.service.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\common\messaging\messaging.styles.less" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\common\messaging\messaging.template.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\overview\mega-map\loading-dialog\loading-dialog.controller.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\overview\mega-map\loading-dialog\loading-dialog.interface.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\overview\mega-map\loading-dialog\loading-dialog.styles.less" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\overview\mega-map\loading-dialog\loading-dialog.template.html" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
@@ -409,6 +413,7 @@
     <TypeScriptCompile Include="wwwroot\app\interfaces\dialog-result.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\event-group-view-model.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\event-interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\hereMapCredentials.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\heremaps-autocomplete.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\hereMapsAppConfig.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\job-list-response.interface.ts" />

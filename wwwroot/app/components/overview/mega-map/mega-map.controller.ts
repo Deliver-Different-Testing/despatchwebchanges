@@ -6,15 +6,18 @@ import {Coordinates, MegaMapResponse} from "../overview.interfaces";
 import {MapPoint} from "./mega-map.interfaces";
 import {AssignedFlight} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
+import {HereMapConfig, HereMapCredentials} from "../../../interfaces/hereMapCredentials.interfaces";
+import dayjs from "dayjs";
 
 class MegaMapController extends BaseController {
     static $inject = [
         "toastrService",
-        "NgMap",
         "overviewService",
-        "APP_CONFIG",
         "configService",
-        "$window"
+        "$rootScope",
+        "APP_CONFIG",
+        "$timeout",
+        "$interval",
     ];
 
     isUsCustomer: boolean;
@@ -22,25 +25,25 @@ class MegaMapController extends BaseController {
     drivers: any[];
     pickupPoints: any[];
     deliveryPoints: any[];
-    zoomLevel: number;
     flightRoutes: any[];
     selectedJob: any;
-    mapCenter: [number, number];
-    isLoading: boolean;
-    googleMapsUrl: string | null;
+    mapCenter: Coordinates;
+    hereMapCredentials?: HereMapCredentials;
+    hereMapConfig?: HereMapConfig;
     map: any;
-    directionsService: any;
-    routePaths: Map<string, any> = new Map();
+    platform: any;
 
     constructor(
         private toastrService: ToastrService,
-        private NgMap: angular.map.INgMap,
         private overviewService: OverviewService,
-        appConfig: AppConfig,
         private configService: ConfigService,
-        private $window: angular.IWindowService
+        private $rootScope: angular.IRootScopeService,
+        appConfig: AppConfig,
+        $timeout: angular.ITimeoutService,
+        $interval: angular.IIntervalService,
     ) {
         super();
+        this.initServices($timeout, $interval);
 
         this.isUsCustomer = appConfig.US_Customer;
 
@@ -48,125 +51,161 @@ class MegaMapController extends BaseController {
         this.drivers = [];
         this.pickupPoints = [];
         this.deliveryPoints = [];
-        this.zoomLevel = 5; // Default zoom level
         this.flightRoutes = [];
         this.selectedJob = null;
 
         this.mapCenter = this.isUsCustomer
-            ? [39.8097343, -98.5556199] // Central USA coordinates
-            : [-36.8484597, 174.7633315]; // Auckland, New Zealand coordinates
-        this.isLoading = false;
-        this.googleMapsUrl = null;
+            ? appConfig.US_Coordinates_Center
+            : appConfig.NZ_Coordinates_Center;
 
-        this.initializeMap();
+        this.initializeMap().then(_ => console.debug("HERE Map initialized"));
+
+        // Set up auto-refresh every 30 seconds
+        this.registerInterval(async () => {
+            await this.refreshData();
+        }, 30000);
     }
 
-    /**
-     * @returns {Promise<void>}
-     */
     async initializeMap(): Promise<void> {
         try {
-            this.isLoading = true;
-            const apiKey = await this.configService.getGoogleMapsKey();
-            this.googleMapsUrl = `https://maps.google.com/maps/api/js?key=${apiKey}&libraries=places`;
+            // Get HERE Maps API key from config service
+            const hereApiKey = await this.configService.getHereMapsKey();
 
-            // Wait for map to be ready
-            const waitForMap = new Promise((resolve) => {
-                const checkMap = () => {
-                    this.NgMap.getMap({ id: "megaMap" })
-                        .then((map: any) => {
-                            this.map = map;
-                            this.directionsService = new this.$window.google.maps.DirectionsService();
-                            this.routePaths = new Map();
+            this.hereMapCredentials = {
+                apiKey: hereApiKey
+            };
 
-                            // Add zoom change listener
-                            this.$window.google.maps.event.addListener(
-                                map,
-                                "zoom_changed",
-                                () => {
-                                    this.onZoomChanged();
-                                }
-                            );
-
-                            resolve(map);
-                        })
-                        .catch(() => {
-                            setTimeout(checkMap, 100);
-                        });
-                };
-                checkMap();
-            });
-
-            await waitForMap;
+            // Initial map configuration
+            this.hereMapConfig = {
+                center: this.mapCenter,
+                zoom: this.isUsCustomer ? 4 : 6,
+                job: null, // Will be set when we have job data
+                courierLocation: null
+            };
 
             await this.refreshData();
         } catch (error) {
-            console.error("Error initializing map:", error);
+            console.error("Error initializing HERE Maps:", error);
             this.toastrService.showErrorToast("Error initializing map");
-        } finally {
-            this.isLoading = false;
         }
     }
 
+    onMapReady(mapData: { map: any, platform: any }) {
+        console.debug("HERE Map is ready", mapData);
+        this.map = mapData.map;
+        this.platform = mapData.platform;
+    }
+
     async refreshData(): Promise<void> {
-        this.isLoading = true;
-
-        // Get all jobs
-        const jobs = await this.overviewService.getMegaMapData();
-
         try {
+            // Get all jobs
+            const jobs = await this.overviewService.getMegaMapData();
+
             // Transform data for map
-            const {pickups, deliveries, drivers} = this.transformMapData(
-                jobs
-            );
+            const {pickups, deliveries, drivers} = this.transformMapData(jobs);
 
             this.drivers = drivers;
             this.pickupPoints = pickups;
             this.deliveryPoints = deliveries;
-
             this.jobs = jobs;
 
-            // Check visibility after setting points
-            if (this.map) {
-                this.checkVisiblePoints();
-
-                // Optionally, fit bounds to show all points
-                const bounds = new this.$window.google.maps.LatLngBounds();
-                [...pickups, ...deliveries, ...drivers].forEach((point) => {
-                    bounds.extend(
-                        new this.$window.google.maps.LatLng(point.lat, point.lng)
-                    );
-                });
-                this.map.fitBounds(bounds);
-            }
-
-            this.toastrService.showSuccessToast(
-                "Map updated! Calculating driver routes..."
-            );
+            // Update HERE map configuration with new data
+            this.updateHereMapConfig();
         } catch (error) {
             this.toastrService.showErrorToast("Error updating data");
             console.error("Error:", error);
-        } finally {
-            this.isLoading = false;
         }
     }
 
-    getDeliveryPointForJob(jobId: number): any {
-        return (
-            this.deliveryPoints.find((point) => point.jobId === jobId) || {
-                lat: 0,
-                lng: 0
-            }
-        );
+    updateHereMapConfig(): void {
+        if (!this.jobs.length) return;
+
+        const primaryJob = this.jobs[0];
+        const compositeJob = {
+            id: 'mega-map-composite',
+            pickup: {
+                lat: primaryJob.pickupLocation?.latitude || this.mapCenter.lat,
+                lng: primaryJob.pickupLocation?.longitude || this.mapCenter.lng
+            },
+            delivery: {
+                lat: primaryJob.deliveryLocation?.latitude || this.mapCenter.lat,
+                lng: primaryJob.deliveryLocation?.longitude || this.mapCenter.lng
+            },
+            childJobs: this.jobs.map((job, _) => ({
+                id: job.jobId,
+                pickup: {
+                    lat: job.pickupLocation?.latitude ?? 0,
+                    lng: job.pickupLocation?.longitude ?? 0
+                },
+                delivery: {
+                    lat: job.deliveryLocation?.latitude ?? 0,
+                    lng: job.deliveryLocation?.longitude ?? 0
+                },
+                flight: job.isFlightJob ?? false
+            }))
+        };
+
+        // Get an average courier location if we have drivers
+        let avgCourierLocation = null;
+        if (this.drivers.length > 0) {
+            const avgLat = this.drivers.reduce((sum, driver) => sum + driver.lat, 0) / this.drivers.length;
+            const avgLng = this.drivers.reduce((sum, driver) => sum + driver.lng, 0) / this.drivers.length;
+            avgCourierLocation = {lat: avgLat, lng: avgLng};
+        }
+
+        // Keep the same center and zoom - don't auto-zoom
+        const currentZoom = this.isUsCustomer ? 4 : 6;
+
+        this.hereMapConfig = {
+            center: this.mapCenter, // Keep the original center
+            zoom: currentZoom, // Keep country-level zoom
+            job: compositeJob,
+            courierLocation: avgCourierLocation,
+            timestamp: dayjs().valueOf(),
+            disableAutoZoom: true,
+            preserveView: true 
+        };
+
+        // Trigger map refresh
+        this.$rootScope.$broadcast('map-refresh-requested');
+    }
+    
+    centerOnDriver(driver: any): void {
+        if (!this.map) return;
+
+        this.hereMapConfig = {
+            ...this.hereMapConfig,
+            center: {lat: driver.lat, lng: driver.lng},
+            zoom: 15,
+            courierLocation: {lat: driver.lat, lng: driver.lng},
+            disableAutoZoom: false,
+            timestamp: dayjs().valueOf()
+        };
+
+        this.registerTimeout(() => {
+            this.returnToCountryView();
+        }, 5000);
     }
 
-    centerOnDriver(driver: any): void {
-        this.mapCenter = [driver.lat, driver.lng];
-        this.map.setZoom(15);
+    returnToCountryView(): void {
+        const countryZoom = this.isUsCustomer ? 4 : 6;
+
+        if (this.map) {
+            this.map.setCenter(this.mapCenter);
+            this.map.setZoom(countryZoom);
+        }
+
+        this.hereMapConfig = {
+            ...this.hereMapConfig,
+            center: this.mapCenter,
+            zoom: countryZoom,
+            timestamp: dayjs().valueOf()
+        };
     }
+
 
     transformMapData(jobs: MegaMapResponse[]) {
-        console.log("Starting transformMapData with %d jobs", jobs.length);
+        console.debug("Starting transformMapData with %d jobs", jobs.length);
 
         const pickups: MapPoint[] = [];
         const deliveries: MapPoint[] = [];
@@ -179,17 +218,17 @@ class MegaMapController extends BaseController {
         }>();
 
         jobs.forEach(job => {
-            console.log("Processing job %s:", job.jobNumber, job);
+            console.debug("Processing job %s:", job.jobNumber, job);
 
             const isFlightRoute = job?.isFlightJob || false;
 
             // Add pickup points
             if (job.pickupLocation && job.pickupLocation.latitude && job.pickupLocation.longitude) {
-                const lat = parseFloat(job.pickupLocation.latitude.toString());
-                const lng = parseFloat(job.pickupLocation.longitude.toString());
+                const lat = job.pickupLocation.latitude;
+                const lng = job.pickupLocation.longitude;
 
                 if (!isNaN(lat) && !isNaN(lng)) {
-                    console.log("Adding pickup point for job %s at [%d, %d]",
+                    console.debug("Adding pickup point for job %s at [%d, %d]",
                         job.jobNumber, lat, lng
                     );
 
@@ -210,11 +249,11 @@ class MegaMapController extends BaseController {
 
             // Add delivery points
             if (job.deliveryLocation && job.deliveryLocation.latitude && job.deliveryLocation.longitude) {
-                const lat = parseFloat(job.deliveryLocation.latitude.toString());
-                const lng = parseFloat(job.deliveryLocation.longitude.toString());
+                const lat = job.deliveryLocation.latitude;
+                const lng = job.deliveryLocation.longitude;
 
                 if (!isNaN(lat) && !isNaN(lng)) {
-                    console.log("Adding delivery point for job %s at [%d, %d]",
+                    console.debug("Adding delivery point for job %s at [%d, %d]",
                         job.jobNumber, lat, lng
                     );
 
@@ -235,17 +274,17 @@ class MegaMapController extends BaseController {
 
             // Add driver location if exists
             if (job.courierLocation && job.courierLocation.coordinates) {
-                const lat = parseFloat(job.courierLocation.coordinates.lat.toString());
-                const lng = parseFloat(job.courierLocation.coordinates.lng.toString());
+                const lat = job.courierLocation.coordinates.lat;
+                const lng = job.courierLocation.coordinates.lng;
 
                 if (!isNaN(lat) && !isNaN(lng)) {
                     const courierId = job.courierLocation.courierId;
 
-                    // Update or create driver entry in the Map
+                    // Update or create a driver entry in the Map
                     if (driversMap.has(courierId)) {
                         // Update existing driver's job assignments
                         const driver = driversMap.get(courierId);
-                        if(driver == null) throw new Error(
+                        if (driver == null) throw new Error(
                             `Driver ${courierId} not found in driversMap`
                         )
 
@@ -255,7 +294,7 @@ class MegaMapController extends BaseController {
                             jobNumber: job.jobNumber
                         });
                     } else {
-                        // Create new driver entry
+                        // Create a new driver entry
                         driversMap.set(courierId, {
                             courierId: courierId,
                             name: job.courierLocation.courierName,
@@ -281,7 +320,7 @@ class MegaMapController extends BaseController {
                 .join(", ")
         }));
 
-        console.log("Transformed data:", {
+        console.debug("Transformed data:", {
             pickups: pickups.length,
             deliveries: deliveries.length,
             drivers: drivers.length,
@@ -289,7 +328,7 @@ class MegaMapController extends BaseController {
         });
 
         this.flightRoutes = this.calculateFlightRoutes(jobs, pickups, deliveries);
-
+        
         return {
             pickups,
             deliveries,
@@ -338,105 +377,11 @@ class MegaMapController extends BaseController {
             .filter(route => route !== null);
     }
 
-    checkVisiblePoints() {
-        if (!this.map) {
-            console.warn("Map not initialized yet");
-            return;
-        }
-
-        const bounds = this.map.getBounds();
-        if (!bounds) {
-            console.warn("Map bounds not available");
-            return;
-        }
-
-        console.log("Current map bounds:", bounds.toJSON());
-
-        // Check pickups
-        this.pickupPoints.forEach(point => {
-            const isVisible = bounds.contains(new this.$window.google.maps.LatLng(point.lat, point.lng));
-            console.log(`Pickup ${point.jobNumber} visible: ${isVisible}`, point);
-        });
-
-        // Check deliveries
-        this.deliveryPoints.forEach(point => {
-            const isVisible = bounds.contains(new this.$window.google.maps.LatLng(point.lat, point.lng));
-            console.log(`Delivery ${point.jobNumber} visible: ${isVisible}`, point);
-        });
-
-        // Check drivers
-        this.drivers.forEach(driver => {
-            const isVisible = bounds.contains(new this.$window.google.maps.LatLng(driver.lat, driver.lng));
-            console.log(`Driver ${driver.name} visible: ${isVisible}`, driver);
-        });
-    }
-
-    getRoutePath(pickup: MapPoint) {
-        console.log("Getting route path for pickup:", pickup);
-        if (pickup.isFlightRoute) {
-            console.log("Drawing FLIGHT route for job:", pickup.jobId);
-            const delivery = this.getDeliveryPointForJob(pickup.jobId);
-            if (!delivery) return [];
-
-            // Direct line for flight routes
-            return [[pickup.lat, pickup.lng], [delivery.lat, delivery.lng]];
-        }
-
-        console.log("Drawing ROAD route for job:", pickup.jobId);
-        // Get cached road route if available
-        const cacheKey = `${pickup.jobId}`;
-        const cachedPath = this.routePaths.get(cacheKey);
-        if (cachedPath) {
-            return cachedPath;
-        }
-
-        // Calculate road route if not cached
-        const delivery = this.getDeliveryPointForJob(pickup.jobId);
-        if (!delivery) return [];
-
-        // Start calculating road route
-        this.calculateRoadRoute(pickup, delivery).then(path => {
-            if (path) {
-                this.routePaths.set(cacheKey, path);
-                if (this.map) {
-                    const center = this.map.getCenter();
-                    this.map.setCenter(center);
-                }
-            }
-        });
-
-        // Return direct line while calculating road route
-        return [[pickup.lat, pickup.lng], [delivery.lat, delivery.lng]];
-    }
-
-    async calculateRoadRoute(pickup: MapPoint, delivery: MapPoint): Promise<Array<Array<number>> | null> {
-        try {
-            const result = await new Promise<google.maps.DirectionsResult>((resolve, reject) => {
-                this.directionsService.route({
-                    origin: {lat: parseFloat(pickup.lat.toString()), lng: parseFloat(pickup.lng.toString())},
-                    destination: {lat: parseFloat(delivery.lat.toString()), lng: parseFloat(delivery.lng.toString())},
-                    travelMode: this.$window.google.maps.TravelMode.DRIVING,
-                    optimizeWaypoints: true
-                }, (response: google.maps.DirectionsResult, status: google.maps.DirectionsStatus) => {
-                    if (status === this.$window.google.maps.DirectionsStatus.OK) {
-                        resolve(response);
-                    } else {
-                        reject(status);
-                    }
-                });
-            });
-
-            return result.routes[0].overview_path.map((point: google.maps.LatLng) => [point.lat(), point.lng()]);
-        } catch (error) {
-            return null;
-        }
-    }
-
-    formatRoutePath(path: string[]) {
-        return path.map(point => `[${point[0]}, ${point[1]}]`).join(",");
-    }
-
-    calculateFlightPosition(startLat: number, startLng: number, endLat: number, endLng: number, flightInfo: AssignedFlight): { lat: number; lng: number; progress: number; } {
+    calculateFlightPosition(startLat: number, startLng: number, endLat: number, endLng: number, flightInfo: AssignedFlight): {
+        lat: number;
+        lng: number;
+        progress: number;
+    } {
         const now = new Date();
         const departureTime = flightInfo.expectedDeparture ? new Date(flightInfo.expectedDeparture) : null;
         const arrivalTime = flightInfo.expectedArrival ? new Date(flightInfo.expectedArrival) : null;
@@ -487,74 +432,38 @@ class MegaMapController extends BaseController {
         return angle;
     }
 
-    getInfoWindowContent(route: { flightNumber: any; jobNumber: any; notes: any; etd: any; eta: any; }) {
-        return `
-        <div class="flight-info-window">
-            <h4>Flight ${route.flightNumber}</h4>
-            <p>Job: ${route.jobNumber}</p>
-            ${route.notes ? `<p class="notes">${route.notes}</p>` : ""}
-            <p>ETD: ${this.formatDateTime(route.etd)}</p>
-            <p>ETA: ${this.formatDateTime(route.eta)}</p>
-        </div>
-    `;
-    }
-
-    formatDateTime(date: number | string | Date | VarDate) {
-        if (!date) return "Not scheduled";
-        return new Date(date.toString()).toLocaleString();
-    }
-
-    showPointInfo($event: MouseEvent) {
-        const element = $event.target as HTMLElement || $event.srcElement as HTMLElement;
-        if(element == null) return;
-
-        const scope = angular.element(element).scope() as angular.IScope & { point: MapPoint };
-        const point = scope.point;
-
+    showPointInfo(point: MapPoint): void {
         if (!point) {
-            console.error("Could not get point data from event");
+            console.error("Could not get point data");
             return;
         }
 
         if (!this.jobs) {
             console.error("No jobs saved!");
+            return;
         }
-        this.selectedJob = this.jobs.find(job => job.jobId === point.jobId);
 
-        console.log(this.selectedJob);
+        this.selectedJob = this.jobs.find(job => job.jobId === point.jobId);
 
         if (!this.selectedJob) {
             console.error("Could not find job data for point:", point);
             return;
         }
 
+        // Center on point with moderate zoom - don't use auto-zoom
         if (this.map) {
-            this.map.panTo(new this.$window.google.maps.LatLng(point.lat, point.lng));
+            this.map.setCenter({lat: point.lat, lng: point.lng});
+            this.map.setZoom(8); // Moderate zoom level
         }
     }
 
-    closeJobInfo() {
+    closeJobInfo(): void {
         this.selectedJob = null;
     }
 
-    isPickupPoint(point: MapPoint) {
-        return this.pickupPoints.some(p => p.jobId === point.jobId);
-    }
-
-    createClusterIcon(type: string) {
-        const color = type === "pickup" ? "#4CAF50" : "#F44336";
-        const svg = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
-                <circle cx="20" cy="20" r="19" fill="white" stroke="${color}" stroke-width="2"/>
-            </svg>
-        `;
-        return `data:image/svg+xml;base64,${btoa(svg)}`;
-    }
-
-    onZoomChanged() {
-        if (this.map) {
-            this.zoomLevel = this.map.getZoom();
-        }
+    formatDateTime(date: string | Date): string {
+        if (!date) return "Not scheduled";
+        return dayjs(date).format('M/D/YYYY, h:mm:ss A');
     }
 }
 
@@ -563,4 +472,5 @@ const MegaMapComponent: angular.IComponentOptions = {
     controller: MegaMapController,
     controllerAs: "ctrl"
 }
+
 export default MegaMapComponent;

@@ -13,6 +13,7 @@ using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using Serilog;
 using CourierLocation = DespatchWeb.Models.Response.CourierLocation;
 
@@ -551,18 +552,48 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             ArgumentNullException.ThrowIfNull(archivedJob);
 
             // Get charge here
-            var totalCharge = await Context.PricingBreakdowns
-                .Where(x => x.JobId == jobId)
-                .SumAsync(x => x.ChargeAmount);
+            var totalCharge = await Context.PricingBreakdownArchives
+                .Where(j => j.JobId == jobId)
+                .SumAsync(j => j.ChargeAmount);
             archivedJob.Charge = $"${totalCharge:F2}";
 
             // Get notes here
-            var notes = await Context.TucNotes
-                .Where(x => x.JobBookingId == jobId)
-                .Select(note => new TucNoteViewModel(note))
+            archivedJob.Notes = await Context.TucNoteArchives
+                .Join(Context.TucNoteTypes, 
+                    archive => archive.NoteTypeId, 
+                    noteType => noteType.NoteTypeId, 
+                    (archive, noteType) => new { archive, noteType })
+                .Join(Context.TucJobArchives,
+                    combined => combined.archive.JobId,
+                    job => job.UcjbId,
+                    (combined, job) => new { combined.archive, combined.noteType, job })
+                .Join(Context.TucStaffs,
+                    combined => combined.archive.CreatedBy,
+                    createdByStaff => createdByStaff.UcstId,
+                    (combined, createdByStaff) => new { combined.archive, combined.noteType, combined.job, createdByStaff })
+                .GroupJoin(Context.TucStaffs,
+                    combined => combined.archive.UpdatedBy,
+                    updatedByStaff => updatedByStaff.UcstId,
+                    (combined, updatedByStaffGroup) => new { combined, updatedByStaff = updatedByStaffGroup.FirstOrDefault() })
+                .Where(n => n.combined.archive.JobBookingId == jobId)
+                .Select(n => new TucNoteViewModel
+                {
+                    NoteId = n.combined.archive.NoteId,
+                    NoteTypeId = n.combined.archive.NoteTypeId,
+                    NoteTypeName = n.combined.noteType.NoteTypeName,
+                    CreatedBy = n.combined.archive.CreatedBy,
+                    CreatedByName = $"{n.combined.createdByStaff.UcstFirstName} {n.combined.createdByStaff.UcstLastName}",
+                    UpdatedBy = n.combined.archive.UpdatedBy,
+                    UpdatedByName = n.updatedByStaff != null ? $"{n.updatedByStaff.UcstFirstName} {n.updatedByStaff.UcstLastName}" : null,
+                    UpdatedDate = n.combined.archive.UpdatedDate,
+                    NoteText = n.combined.archive.NoteText,
+                    IsImportant = n.combined.archive.IsImportant,
+                    JobBookingId = n.combined.archive.JobBookingId,
+                    JobId = n.combined.archive.JobId,
+                    JobNumber = n.combined.job.UcjbNumber
+                })
                 .AsNoTracking()
                 .ToListAsync();
-            archivedJob.Notes = notes;
 
             return archivedJob;
         }
