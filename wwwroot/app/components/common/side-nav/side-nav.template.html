@@ -23,7 +23,7 @@
             <md-list>
                 <md-list-item class="nav-item"
                               md-selected="ctrl.isActive('home')"
-                              ng-class="{'md-primary': ctrl.isActive('home')}"
+                              ng-class="{'active': ctrl.isActive('home')}"
                               ui-sref="home">
                     <div class="nav-item-content">
                         <md-icon md-font-set="material-symbols-outlined">dashboard</md-icon>
@@ -34,7 +34,7 @@
 
                 <md-list-item class="nav-item"
                               md-selected="ctrl.isActive('nw')"
-                              ng-class="{'md-primary': ctrl.isActive('nw')}"
+                              ng-class="{'active': ctrl.isActive('nw')}"
                               ui-sref="nw">
                     <div class="nav-item-content">
                         <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
@@ -46,7 +46,7 @@
 
                 <md-list-item class="nav-item"
                               md-selected="ctrl.isActive('overview')"
-                              ng-class="{'md-primary': ctrl.isActive('overview')}"
+                              ng-class="{'active': ctrl.isActive('overview')}"
                               ui-sref="overview">
                     <div class="nav-item-content">
                         <md-icon md-font-set="material-symbols-outlined">inventory_2</md-icon>
@@ -57,7 +57,7 @@
 
                 <md-list-item class="nav-item"
                               md-selected="ctrl.isActive('taskDashboard')"
-                              ng-class="{'md-primary': ctrl.isActive('taskDashboard')}"
+                              ng-class="{'active': ctrl.isActive('taskDashboard')}"
                               ui-sref="taskDashboard">
                     <div class="nav-item-content">
                         <md-icon md-font-set="material-symbols-outlined">pinboard</md-icon>
@@ -68,7 +68,7 @@
 
                 <md-list-item class="nav-item"
                               md-selected="ctrl.isActive('cs')"
-                              ng-class="{'md-primary': ctrl.isActive('cs')}"
+                              ng-class="{'active': ctrl.isActive('cs')}"
                               ui-sref="cs">
                     <div class="nav-item-content">
                         <md-icon md-font-set="material-symbols-outlined">search</md-icon>
@@ -79,15 +79,15 @@
 
                 <md-list-item class="nav-item"
                               md-selected="ctrl.isActive('recurringJobs')"
-                              ng-class="{'md-primary': ctrl.isActive('recurringJobs')}"
+                              ng-class="{'active': ctrl.isActive('recurringJobs')}"
                               ui-sref="recurringJobs">
                     <div class="nav-item-content">
                         <md-icon md-font-set="material-symbols-outlined">event</md-icon>
                         <p>Recurring Jobs</p>
                     </div>
                     <div class="nav-indicator"></div>
-                </md-list-item>  
-                
+                </md-list-item>
+
                 <md-list-item class="nav-item"
                               md-selected="ctrl.isActive('megaMap')"
                               ng-class="{'md-primary': ctrl.isActive('megaMap')}"
@@ -98,7 +98,7 @@
                     </div>
                     <div class="nav-indicator"></div>
                 </md-list-item>
-                
+            
             </md-list>
         </md-content>
 
@@ -106,7 +106,7 @@
         <div class="nav-footer">
             <div class="copyright-text">
                 <p>&copy; {{::ctrl.currentYear}} Deliver Different. All rights reserved.</p>
-                <div class="nz-made" ng-if="::ctrl.isUsCustomer">
+                <div class="nz-made">
                     <md-icon md-font-set="material-symbols-outlined">favorite</md-icon>
                     <span>Made with aroha in New Zealand</span>
                 </div>

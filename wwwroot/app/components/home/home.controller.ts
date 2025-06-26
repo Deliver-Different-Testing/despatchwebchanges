@@ -9,7 +9,6 @@ import {
     ClearListViewModel,
     CourierData,
     IDispatchJob,
-    IJobNote,
     ILateCallRequest,
     JobQueryParams,
     Suggestion,
@@ -25,8 +24,6 @@ import {EditAddressDialogService} from "../dialogs/edit-address-dialog/edit-addr
 import {AppPages} from "../../enums/app-pages.enum";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import AddEventDialogService from "../dialogs/add-event-dialog/add-event-dialog.service";
-import {JobNoteType} from "../../enums/job-note-type.enum";
-import NoteService from "../../services/notes.service";
 import InterCourierChargeDialogService
     from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
 import {Coordinates} from "../overview/overview.interfaces";
@@ -37,7 +34,6 @@ import {DispatchState, ResendJobsRequest} from "./home.interfaces";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
 import {JobProperty} from "../../enums/job-property.enum";
 import NavigationService from "../../services/navigation.service";
-import JobSearchService from "../jobSearch/jobSearch.service";
 import greetUser from "../../functions/greetUser";
 import dayjs from "dayjs";
 import TruckCourierStatusDialogService
@@ -50,6 +46,7 @@ import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog
 import timezone from 'dayjs/plugin/timezone';
 import MessagingService from "../../services/messaging.service";
 import {StatusFilter} from "../task-dashboard/enums/status-filter";
+import TasksService from "../../services/tasks.service";
 
 class HomeController extends BaseController {
     static $inject = [
@@ -74,6 +71,7 @@ class HomeController extends BaseController {
         'jobAddStopService',
         'messagingDialogService',
         'messagingService',
+        'tasksService',
         '$scope',
         '$timeout',
         '$interval',
@@ -83,10 +81,9 @@ class HomeController extends BaseController {
         areaGroup: "#area-group .btn",
         driverLocations: "#driverLocations .listActive"
     } as const;
-    
-    private readonly STAFF_SUPPORT_FILTER_NAME: string = `selectedSupportTypeDispatchFilter-${ContactID}`;
-    private readonly EVENT_TYPE_SUPPORT_FILTER_NAME: string = `selectedSupportTypeDispatchFilter-${ContactID}`;
 
+    private readonly currentAppPage: AppPages = AppPages.Dispatch;
+    
     isLoadingData: boolean = false;
     showDriverLocationsNoData: boolean = false;
     showDriverLocationsData: boolean = false;
@@ -169,6 +166,7 @@ class HomeController extends BaseController {
     eventTypeFilter: string = StatusFilter.All;
     supportsFilter: string = StatusFilter.All;
     filteredSupports: ExtendedTask[] = [];
+    private supportsLoadingInBackground: boolean = false;
     
     constructor(
         private $document: angular.IDocumentService,
@@ -192,6 +190,7 @@ class HomeController extends BaseController {
         private jobAddStopService: JobAddStopService,
         private messagingDialogService: MessagingDialogService,
         private messagingService: MessagingService,
+        private tasksService: TasksService,
         $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
@@ -278,7 +277,7 @@ class HomeController extends BaseController {
         this.showInput = {};
 
         if (!ClientInternal) {
-            this.getClientContacts().then(() => console.debug("Get Data Complete!"));
+            this.getClientContacts().then(() => console.log("Get Data Complete!"));
         }
 
         this.queryParams = {
@@ -320,9 +319,6 @@ class HomeController extends BaseController {
                     this.autoZoomEnabled = true;
                 }
             }
-            
-            this.staffFilter = localStorage.getItem(this.STAFF_SUPPORT_FILTER_NAME) ?? StatusFilter.All;
-            this.eventTypeFilter = localStorage.getItem(this.EVENT_TYPE_SUPPORT_FILTER_NAME) ?? StatusFilter.All;
         }
 
         this.jobList = [];
@@ -396,11 +392,7 @@ class HomeController extends BaseController {
         },];
 
         // Load supports list
-        this.loadLists()
-            .then(() => console.debug("Loaded Lists!"))
-            .catch(error => {
-                console.error('Initialization error:', error);
-            });
+        this.initializeTaskService();
     }
 
     $onInit() {
@@ -408,10 +400,10 @@ class HomeController extends BaseController {
 
         this.registerInterval(async () => {
             await this.getUnreadMessageCount();
-        }, 10000);
+        }, 60000);
 
         this.loadPageViews().then(async () => {
-            console.debug("Loaded Page Views and Data!");
+            console.log("Loaded Page Views and Data!");
 
             this.dateSearchRange = 1; // Default to 24 Hours
             this.startDate = dayjs(new Date(0)).toDate(); // Unix epoch start date
@@ -455,6 +447,23 @@ class HomeController extends BaseController {
         this.filteredSupports = this.supports;
     }
 
+    private initializeTaskService() {
+        try {
+            this.tasksService.loadLists().then(({ staffList, eventTypesList }) => {
+                this.staffList = staffList;
+                this.eventTypesList = eventTypesList;
+                this.applyScope();
+            });
+
+            // Load saved filters for this page
+            const filters = this.tasksService.initializePageFilters(this.currentAppPage);
+            this.staffFilter = filters.staffFilter;
+            this.eventTypeFilter = filters.eventTypeFilter;
+        } catch (error) {
+            console.error('Error initializing task service:', error);
+        }
+    }
+    
     private updateBoxMetrics() {
         if (!this.layout || !this.layout.columns) return;
 
@@ -916,8 +925,8 @@ class HomeController extends BaseController {
     }
 
     async handleDispatchSelection(selectedCourier: Suggestion, model: Suggestion, label: string, $event: MouseEvent, job: IDispatchJob) {
-        console.debug("DISPATCH CALLED FROM:", new Error().stack);
-        console.debug("Typeahead params:", {selectedCourier, model, label});
+        console.log("DISPATCH CALLED FROM:", new Error().stack);
+        console.log("Typeahead params:", {selectedCourier, model, label});
 
         // Prevent duplicate dispatch attempts
         if ($event === undefined) return;
@@ -1077,9 +1086,9 @@ class HomeController extends BaseController {
         const operationType = isPickup ? "pickup" : "delivery";
         const currentValue = isPickup ? job.lp : job.ld;
 
-        console.debug(`Current ${operationType} = ${currentValue}`);
-        console.debug(`Param minsAway = ${minsAway}`);
-        console.debug(obj);
+        console.log(`Current ${operationType} = ${currentValue}`);
+        console.log(`Param minsAway = ${minsAway}`);
+        console.log(obj);
 
         try {
             const lateCallRequest: ILateCallRequest = {
@@ -1096,7 +1105,7 @@ class HomeController extends BaseController {
             await this.getData();
             this.toastrService.showSuccessToast("Late call applied successfully");
 
-            console.debug(`Late ${operationType} call completed successfully`);
+            console.log(`Late ${operationType} call completed successfully`);
         } catch (error) {
             console.error(`Error in late ${operationType} call:`, error);
         }
@@ -1192,7 +1201,7 @@ class HomeController extends BaseController {
             }
 
         } catch (error: any) {
-            console.debug("Error updating data:", error);
+            console.log("Error updating data:", error);
         }
     }
 
@@ -1253,11 +1262,11 @@ class HomeController extends BaseController {
 
             if (callData.splitJobs.length > 0 && foundCourier) {
                 await this.DispatchData.restoreSplitJobs(callData.jobs);
-                console.debug("Restore split jobs complete");
+                console.log("Restore split jobs complete");
             }
             if (callData.jobs.length > 0 && foundCourier) {
                 await this.DispatchData.restoreJobs(callData.jobs);
-                console.debug("Restore Jobs complete");
+                console.log("Restore Jobs complete");
             }
 
             this.registerTimeout(() => {
@@ -1268,7 +1277,7 @@ class HomeController extends BaseController {
             }, 1000);
         } catch (error: any) {
             if (error === undefined) {
-                console.debug("User canceled dialog");
+                console.log("User canceled dialog");
             } else {
                 console.error("Error occured restoring jobs");
             }
@@ -1362,9 +1371,9 @@ class HomeController extends BaseController {
     async addRestoreEvent(job: IDispatchJob) {
         try {
             await this.DispatchData.addRestoreEvent(job.id);
-            console.debug("Restore event added successfully");
+            console.log("Restore event added successfully");
         } catch (error: any) {
-            console.debug("Error adding restore event:", error);
+            console.log("Error adding restore event:", error);
             throw error;
         }
     }
@@ -1383,7 +1392,7 @@ class HomeController extends BaseController {
             await Promise.all(promises);
             this.toastrService.showSuccessToast("Jobs restored successfully");
         } catch (error: any) {
-            console.debug("Error restoring jobs:", error);
+            console.log("Error restoring jobs:", error);
             throw error;
         }
     }
@@ -1402,9 +1411,9 @@ class HomeController extends BaseController {
             }
         } catch (error: any) {
             if (error instanceof Error) {
-                console.debug(error.message);
+                console.log(error.message);
             }
-            console.debug("Splitting job failed:", error);
+            console.log("Splitting job failed:", error);
         }
     }
 
@@ -1467,7 +1476,7 @@ class HomeController extends BaseController {
             if (!selectedJob) return;
 
             await this.selectJob(selectedJob);
-            console.debug("Job selection complete");
+            console.log("Job selection complete");
         } catch (error: any) {
             console.error("Error in JobRecordSelected:", error);
         }
@@ -1624,10 +1633,10 @@ class HomeController extends BaseController {
             this.jobsCurrentList = await this.DispatchData.getJobsCurrent(courierId, false);
 
             if (this.jobsCurrentList && this.jobsCurrentList.length > 0) {
-                console.debug(`Setting mapJobList for courier ${courierId} with ${this.jobsCurrentList.length} jobs`);
+                console.log(`Setting mapJobList for courier ${courierId} with ${this.jobsCurrentList.length} jobs`);
                 this.mapJobList = [...this.jobsCurrentList];
             } else {
-                console.debug(`No jobs found for courier ${courierId}`);
+                console.log(`No jobs found for courier ${courierId}`);
                 this.mapJobList = [];
             }
         } catch (error: any) {
@@ -1658,7 +1667,7 @@ class HomeController extends BaseController {
     }
 
     async selectSupportJobDetail(task: TaskViewModel) {
-        console.debug('[selectSupportJobDetail] Starting with task:', {
+        console.log(' Starting with task:', {
             jobId: task.jobId,
             jobNumber: task.jobNumber,
             taskId: task.id
@@ -1666,16 +1675,21 @@ class HomeController extends BaseController {
 
         this.currentSupport = task;
 
+        if (!this.tasksService.validateTaskJobId(task, (message) => {
+            this.toastrService.showWarningToast(message);
+        })) {
+            return;
+        }
+
         try {
-            if (!task.jobId) {
-                this.toastrService.showWarningToast("No job is attached to this support.");
-                console.warn('[selectSupportJobDetail] No jobId provided, returning early');
-                return;
-            }
+            console.log(' Fetching job details for jobId:', task.jobId);
 
-            console.debug('[selectSupportJobDetail] Fetching job details for jobId:', task.jobId);
+            // Use TasksService to find job in local lists first
+            const jobLists = [
+                { list: this.jobList, name: 'jobList' }
+            ];
 
-            let attachedJob = this.jobList.find((job) => job.id === task.jobId);
+            let attachedJob = this.tasksService.findTaskJobInLists(task.jobId, jobLists);
 
             // If not found locally, fetch from database
             if (!attachedJob) {
@@ -1684,31 +1698,35 @@ class HomeController extends BaseController {
 
             if (!attachedJob) {
                 this.toastrService.showWarningToast("This task has no job attached");
-                console.warn('[selectTaskJobDetail] No job found for jobId:', task.jobId);
+                console.warn(' No job found for jobId:', task.jobId);
                 return;
             }
 
             await this.selectJob(attachedJob);
-            console.debug('[selectSupportJobDetail] Job selected successfully');
+            console.log(' Job selected successfully');
 
             this.currentSelection = ` for Job ${attachedJob.jobNo}`;
         } catch (error) {
             this.toastrService.showErrorToast("Error loading job information");
-            console.error('[selectSupportJobDetail] Error loading job information', error);
+            console.error(' Error loading job information', error);
         }
     }
-
+    
     async selectJob(job: IDispatchJob) {
-        console.debug("Selected job run...");
-        console.debug(job);
+        console.log("Selected job run...");
+        console.log(job);
 
         if (!job) return;
 
+        // Cancel any existing task loading for previous job
+        if (this.currentJobId && this.currentJobId !== job.id) {
+            this.tasksService.cancelJobTaskLoading(this.currentAppPage, this.currentJobId);
+        }
+        
         this.markJobReadStatus(job.id, true);
 
-        // Refresh tasks
-        await this.loadSupports();
-
+        // Load tasks in background without blocking job selection
+        this.loadSupportsInBackground(undefined, job.id);
 
         this.selectedJobs = [];
         this.currentSupport = null;
@@ -1735,12 +1753,12 @@ class HomeController extends BaseController {
         try {
             if (!job.courier && !job.assignedCourier) {
                 // Scenario 2: Job has no courier assigned - show only this job
-                console.debug("Selected job has no courier - showing only this job on map");
+                console.log("Selected job has no courier - showing only this job on map");
                 this.mapJobList = [job];
                 await this.handleUndispatchedJob(job);
             } else {
                 // Scenario 3: Job has a courier assigned - show this courier's jobs
-                console.debug("Selected job has courier assigned - loading courier's jobs");
+                console.log("Selected job has courier assigned - loading courier's jobs");
                 this.potentialCouriers = false;
 
                 if (job.courierData && job.courierData.courierId) {
@@ -1802,6 +1820,45 @@ class HomeController extends BaseController {
         this.focusDispatchField(job.id);
 
         this.applyScope();
+    }
+
+    private loadSupportsInBackground(filterType: string = this.supportsFilter, jobId?: number): void {
+        const effectiveJobId = jobId || this.currentJobId;
+
+        if (this.supportsLoadingInBackground) {
+            console.log("Supports already loading in background, cancelling previous");
+            this.tasksService.cancelJobTaskLoading(this.currentAppPage, this.currentJobId);
+        }
+
+        this.supportsLoadingInBackground = true;
+
+        const filterRequest = this.tasksService.buildFilterRequest(
+            filterType,
+            effectiveJobId,
+            this.staffFilter,
+            this.eventTypeFilter,
+            this.currentAppPage
+        );
+
+        this.tasksService.loadTasksInBackground(filterRequest, (tasks, error) => {
+            // Only process if this is still the current job
+            if (effectiveJobId === this.currentJobId) {
+                this.supportsLoadingInBackground = false;
+
+                if (error) {
+                    console.error("Error loading supports in background:", error);
+                    this.supports = [];
+                    this.filteredSupports = [];
+                } else {
+                    this.supports = tasks;
+                    this.filteredSupports = tasks;
+                }
+
+                this.applyScope();
+            } else {
+                console.log(`Ignoring task results for old job ${effectiveJobId}, current is ${this.currentJobId}`);
+            }
+        }, this.currentAppPage, effectiveJobId);
     }
 
     async handleUndispatchedJob(job: IDispatchJob) {
@@ -1908,7 +1965,7 @@ class HomeController extends BaseController {
             this.isLoadingData = true;
 
             if (!this.viewsInitialized && this.selectedViews.length === 0) {
-                console.debug('Views not initialized yet, loading defaults');
+                console.log('Views not initialized yet, loading defaults');
                 this.selectedViews = this.loadViewsFromStorage();
 
                 // If still no views, add at least one default view
@@ -2042,7 +2099,7 @@ class HomeController extends BaseController {
         try {
             this.pickClients = await this.DispatchData.getClientContacts(ContactID);
         } catch (error: any) {
-            console.debug("Error getting client contacts:", error);
+            console.log("Error getting client contacts:", error);
         }
     }
 
@@ -2055,11 +2112,11 @@ class HomeController extends BaseController {
                 this.currentCourier = null;
             }
 
-            await this.loadSupports();
+            this.loadSupportsInBackground();
             await this.getJobList();
 
             if (!this.currentCourier && !this.currentJob) {
-                console.debug("Initial load: showing all jobs on map");
+                console.log("Initial load: showing all jobs on map");
                 this.mapJobList = [...this.jobList];
             }
         } catch (error: any) {
@@ -2082,15 +2139,15 @@ class HomeController extends BaseController {
     async getDriverLocationsData() {
         try {
             if (!this.selectedViews || this.selectedViews.length === 0) {
-                console.debug('No selected views available for driver locations');
+                console.log('No selected views available for driver locations');
                 this.driverLocations = {areas: []};
                 this.updateDriverLocationsDisplay();
                 return;
             }
 
-            console.debug('Fetching driver locations for views:', this.selectedViews);
+            console.log('Fetching driver locations for views:', this.selectedViews);
             this.driverLocations = await this.DispatchData.getDriverLocations(this.selectedViews);
-            console.debug('Driver locations received:', this.driverLocations);
+            console.log('Driver locations received:', this.driverLocations);
             this.updateDriverLocationsDisplay();
         } catch (error: any) {
             console.error("Error getting driver locations data:", error);
@@ -2108,15 +2165,15 @@ class HomeController extends BaseController {
 
             await this.handleNewAddressForSplitJobs(newAddress, currentJob);
         } catch (error: any) {
-            console.debug(error.message);
+            console.log(error.message);
         } finally {
-            console.debug("Split jobs process completed.");
+            console.log("Split jobs process completed.");
         }
     }
 
     async handleNewAddressForSplitJobs(addressDetails: AddressViewModel, currentJob: IDispatchJob) {
         if (!addressDetails) {
-            console.debug("Split jobs canceled!");
+            console.log("Split jobs canceled!");
             return;
         }
 
@@ -2139,8 +2196,8 @@ class HomeController extends BaseController {
         await this.getData();
 
         this.toastrService.showSuccessToast("Job Successfully Split");
-        console.debug("Job splitting complete!");
-        console.debug("Dialog closed!");
+        console.log("Job splitting complete!");
+        console.log("Dialog closed!");
 
         return this.getJobList();
     }
@@ -2157,7 +2214,7 @@ class HomeController extends BaseController {
                 await this.processNewJob(newJobId);
             }
         } catch (error: any) {
-            console.debug("Error in createNewJob:", error);
+            console.log("Error in createNewJob:", error);
         }
     }
 
@@ -2203,7 +2260,7 @@ class HomeController extends BaseController {
             this.hasAttachedFile = response;
             return response;
         } catch (error: any) {
-            console.debug("Error checking for attachments:", error);
+            console.log("Error checking for attachments:", error);
             this.hasAttachedFile = false;
             throw error;
         } finally {
@@ -2300,10 +2357,10 @@ class HomeController extends BaseController {
     }
 
     async filterByStatus(statusGroup: string) {
-        console.debug('filterByStatus called with:', statusGroup);
+        console.log('filterByStatus called with:', statusGroup);
         this.queryParams.order = statusGroup;
         await this.getJobList();
-        console.debug(`Jobs ordered by status group: ${statusGroup}`);
+        console.log(`Jobs ordered by status group: ${statusGroup}`);
     }
 
     private applyLayoutDimensions() {
@@ -2385,24 +2442,26 @@ class HomeController extends BaseController {
     async loadSupports(filterType: string = this.supportsFilter): Promise<void> {
         try {
             this.supportsLoading = true;
+            this.applyScope();
 
-            // Build filter request based on a filter type
-            const filterRequest = this.buildFilterRequest(filterType);
-            console.debug('Filter request:', filterRequest);
+            const filterRequest = this.tasksService.buildFilterRequest(
+                filterType,
+                this.currentJobId,
+                this.staffFilter,
+                this.eventTypeFilter
+            );
 
-            try {
-                this.supports = await this.DispatchData.getAllTasks(filterRequest);
-                this.filteredSupports = this.supports;
-            } catch (serviceError) {
-                console.error("Service error getting supports:", serviceError);
-                this.toastrService.showErrorToast("Failed to load support items");
+            console.log('Filter request:', filterRequest);
 
-                this.supports = [];
-                this.filteredSupports = [];
-            }
+            const tasks = await this.tasksService.loadTasks(filterRequest);
+            this.supports = tasks;
+            this.filteredSupports = tasks;
+
         } catch (error) {
             console.error("Error loading supports:", error);
             this.toastrService.showErrorToast("Error loading support tasks");
+            this.supports = [];
+            this.filteredSupports = [];
         } finally {
             this.supportsLoading = false;
             this.applyScope();
@@ -2411,7 +2470,29 @@ class HomeController extends BaseController {
 
     async filterSupports(filterType: string): Promise<void> {
         this.supportsFilter = filterType;
-        await this.loadSupports(filterType);
+
+        this.tasksService.loadTasksWithDebounce(
+            this.tasksService.buildFilterRequest(
+                filterType,
+                this.currentJobId,
+                this.staffFilter,
+                this.eventTypeFilter,
+                this.currentAppPage
+            ),
+            (tasks, error) => {
+                if (error) {
+                    console.error("Error filtering supports:", error);
+                    this.toastrService.showErrorToast("Error filtering support tasks");
+                    this.supports = [];
+                    this.filteredSupports = [];
+                } else {
+                    this.supports = tasks;
+                    this.filteredSupports = tasks;
+                }
+                this.applyScope();
+            },
+            this.currentAppPage
+        );
     }
 
     getContextMenuOptions(job: IDispatchJob) {
@@ -2482,24 +2563,7 @@ class HomeController extends BaseController {
     }
 
     getTasksStatusCount(statusType: string): number {
-        if (!this.supports || !Array.isArray(this.supports)) {
-            return 0;
-        }
-
-        switch (statusType) {
-            case 'mine':
-                return this.supports.filter(support => support.assignee.id === ContactID).length;
-            case 'unassigned':
-                return this.supports.filter(support => !support.assignee.id).length;
-            case 'newest':
-                // For newest/oldest filters, we return the total count since they're
-                // sorting options rather than filtering options
-                return this.supports.length;
-            case 'oldest':
-                return this.supports.length;
-            default:
-                return this.supports.length;
-        }
+        return this.tasksService.getTasksStatusCount(this.supports, statusType);
     }
 
     async filterTasks(filterType: string): Promise<void> {
@@ -2516,35 +2580,7 @@ class HomeController extends BaseController {
             };
         }
     }
-
-    async refreshJobList(currentJobId?: number, currentCourierId?: number) {
-        try {
-            console.debug("[HomeRefresh] - Refreshing job list");
-
-            await this.getJobList();
-
-            // Restore current job selection if applicable
-            if (currentJobId) {
-                const updatedJob = this.jobList.find(job => job.id === currentJobId);
-                if (updatedJob) {
-                    // Update currentJob with fresh data while maintaining the selection
-                    this.currentJob = updatedJob;
-
-                    // Mark as read since it was previously selected
-                    this.markJobReadStatus(updatedJob.id, true);
-                }
-            }
-
-            if (currentCourierId && this.currentCourier) {
-                await this.getCurrentJobs(currentCourierId);
-            }
-
-            console.debug("[HomeRefresh] - Job list refresh complete");
-        } catch (error) {
-            console.error("[HomeRefresh] - Error refreshing job list:", error);
-        }
-    }
-
+    
     async openHubUrl() {
         await this.navigationService.openHubUrl();
     }
@@ -2567,7 +2603,7 @@ class HomeController extends BaseController {
     private updateDriverLocationsDisplay() {
         const hasAreas = this.driverLocations && this.driverLocations.areas && this.driverLocations.areas.length > 0;
 
-        console.debug('Updating driver locations display:', {
+        console.log('Updating driver locations display:', {
             loading: this.driverLocationsLoading,
             hasDriverLocations: !!this.driverLocations,
             areasCount: this.driverLocations?.areas?.length || 0,
@@ -2624,21 +2660,7 @@ class HomeController extends BaseController {
         this.applyScope();
     }
 
-    private async loadLists() {
-        try {
-            const [staffList, eventTypesList] = await Promise.all([
-                this.DispatchData.getActiveStaff(),
-                this.DispatchData.getEventTypes()
-            ]);
 
-            this.staffList = staffList;
-            this.eventTypesList = eventTypesList;
-        } catch (error) {
-            console.error('Error loading lists:', error);
-            throw error;
-        }
-    }
-    
     async filterByStaff(selectedStaff: string | Suggestion) {
         if (typeof selectedStaff === 'string') {
             this.staffFilter = selectedStaff;
@@ -2646,13 +2668,10 @@ class HomeController extends BaseController {
             this.staffFilter = selectedStaff.id?.toString() || 'all';
         }
 
-        if (Modernizr.localstorage) {
-            localStorage.setItem(this.STAFF_SUPPORT_FILTER_NAME, this.staffFilter);
-        }
-        
+        this.tasksService.saveStaffFilter(this.staffFilter, this.currentAppPage);
         await this.loadSupports();
     }
-    
+
     async filterBySupportType(selectedType: string | Suggestion) {
         if (typeof selectedType === 'string') {
             this.eventTypeFilter = selectedType;
@@ -2660,24 +2679,17 @@ class HomeController extends BaseController {
             this.eventTypeFilter = selectedType.id?.toString() || 'all';
         }
 
-        if (Modernizr.localstorage) {
-            localStorage.setItem(this.EVENT_TYPE_SUPPORT_FILTER_NAME, this.eventTypeFilter);
-        }
-        
+        this.tasksService.saveEventTypeFilter(this.eventTypeFilter, this.currentAppPage);
         await this.loadSupports();
     }
 
     getActiveSupportFilterNames(): string {
-        if (this.staffFilter === StatusFilter.All && this.eventTypeFilter === StatusFilter.All) {
-            return ' - (All Tasks)';
-        }
-
-        const staffText = this.staffList?.find(s => s.id?.toString() === this.staffFilter)?.text ?? '';
-        const eventTypeText = this.eventTypesList?.find(et => et.id?.toString() === this.eventTypeFilter)?.text ?? '';
-
-        const filters = [staffText, eventTypeText].filter(Boolean).join(', ');
-
-        return `- (${filters})`;
+        return this.tasksService.getActiveFilterNames(
+            this.staffFilter,
+            this.eventTypeFilter,
+            this.staffList,
+            this.eventTypesList
+        );
     }
 }
 

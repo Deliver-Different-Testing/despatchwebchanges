@@ -1,16 +1,83 @@
+import {ExtendedTask, TaskTableFiltersRequest, TaskViewModel} from "../components/task-dashboard/task-dashboard.interfaces";
+import {Suggestion} from "../interfaces/job.interface";
+import {StatusFilter} from "../components/task-dashboard/enums/status-filter";
+import {AppPages} from "../enums/app-pages.enum";
+import {ContactID} from "../contants";
+
+interface PageFilterNames {
+    staff: string;
+    eventType: string;
+}
+
 class TasksService implements angular.IServiceProvider {
     static $inject = [
-        "$http"
+        "$http",
+        'DispatchData'
     ];
-
-    constructor(private $http: angular.IHttpService) {
-        console.log("Tasks service initialized");
-    }
     
+    private readonly PAGE_FILTER_MAPPING: Record<AppPages, PageFilterNames> = {
+        [AppPages.Dispatch]: {
+            staff: `selectedSupportTypeDispatchFilter-${ContactID}`,
+            eventType: `selectedSupportTypeDispatchFilter-${ContactID}`
+        },
+        [AppPages.Domestic]: {
+            staff: `selectedSupportTypeNWFilter-${ContactID}`,
+            eventType: `selectedSupportTypeNWFilter-${ContactID}`
+        },
+        [AppPages.Tasks]: {
+            staff: `selectedSupportTypeTasksFilter-${ContactID}`,
+            eventType: `selectedSupportTypeTasksFilter-${ContactID}`
+        },
+        [AppPages.JobSearch]: {
+            staff: `selectedSupportTypeJobSearchFilter-${ContactID}`,
+            eventType: `selectedSupportTypeJobSearchFilter-${ContactID}`
+        },
+        [AppPages.Recurring]: {
+            staff: `selectedSupportTypeRecurringFilter-${ContactID}`,
+            eventType: `selectedSupportTypeRecurringFilter-${ContactID}`
+        },
+        [AppPages.Overview]: {
+            staff: `selectedSupportTypeOverviewFilter-${ContactID}`,
+            eventType: `selectedSupportTypeOverviewFilter-${ContactID}`
+        },
+        [AppPages.MegaMap]: {
+            staff: `selectedSupportTypeMegaMapFilter-${ContactID}`,
+            eventType: `selectedSupportTypeMegaMapFilter-${ContactID}`
+        }
+    };
+
+
+    // Cache for staff and event types to avoid repeated API calls
+    private staffListCache?: Suggestion[];
+    private eventTypesListCache?: Suggestion[];
+    private staffListPromise?: Promise<Suggestion[]>;
+    private eventTypesPromise?: Promise<Suggestion[]>;
+
+    // Page-specific loading states to prevent conflicts
+    private loadTasksDebounced?: ReturnType<typeof setTimeout>;
+    private backgroundLoadingStates: Record<AppPages, boolean> = {} as Record<AppPages, boolean>;
+
+    private jobTaskLoadingStates: Record<string, boolean> = {};
+
+    constructor(
+        private $http: angular.IHttpService,
+        private DispatchData: any
+    ) {
+        console.log("Tasks service initialized");
+
+        // Initialize background loading states for all pages
+        Object.values(AppPages).forEach(page => {
+            if (typeof page === 'number') {
+                this.backgroundLoadingStates[page as AppPages] = false;
+            }
+        });
+    }
+
     $get() {
         return this;
     }
 
+    // Existing methods from your TasksService
     async markTaskAsClosed(eventId: number, closed: boolean) {
         await this.$http.post("task/MarkTaskAsClosed",
             null, {
@@ -41,7 +108,6 @@ class TasksService implements angular.IServiceProvider {
             });
     }
 
-
     async reassignTaskToStaff(eventId: number, staffId: number) {
         await this.$http.post("task/ReassignTask",
             null, {
@@ -50,6 +116,377 @@ class TasksService implements angular.IServiceProvider {
                     staffId
                 }
             });
+    }
+
+    /**
+     * Get staff list with caching
+     */
+    async getStaffList(): Promise<Suggestion[] | undefined> {
+        if (this.staffListCache) {
+            return this.staffListCache;
+        }
+
+        if (this.staffListPromise) {
+            return this.staffListPromise;
+        }
+
+        this.staffListPromise = this.DispatchData.getActiveStaff()
+            .then((staff: Suggestion[]) => {
+                this.staffListCache = staff;
+                return staff;
+            })
+            .catch((error: any) => {
+                console.error('Error loading staff list:', error);
+                this.staffListPromise = undefined;
+                return [];
+            });
+
+        return this.staffListPromise;
+    }
+
+    /**
+     * Get event types list with caching
+     */
+    async getEventTypesList(): Promise<Suggestion[] | undefined> {
+        if (this.eventTypesListCache) {
+            return this.eventTypesListCache;
+        }
+
+        if (this.eventTypesPromise) {
+            return this.eventTypesPromise;
+        }
+
+        this.eventTypesPromise = this.DispatchData.getEventTypes()
+            .then((eventTypes: Suggestion[]) => {
+                this.eventTypesListCache = eventTypes;
+                return eventTypes;
+            })
+            .catch((error: any) => {
+                console.error('Error loading event types list:', error);
+                this.eventTypesPromise = undefined;
+                return [];
+            });
+
+        return this.eventTypesPromise;
+    }
+
+    /**
+     * Load both staff and event types lists
+     */
+    async loadLists(): Promise<{staffList: Suggestion[] | undefined, eventTypesList: Suggestion[] | undefined}> {
+        try {
+            const [staffList, eventTypesList] = await Promise.all([
+                this.getStaffList(),
+                this.getEventTypesList()
+            ]);
+
+            return { staffList, eventTypesList };
+        } catch (error) {
+            console.error('Error loading lists:', error);
+            return { staffList: [], eventTypesList: [] };
+        }
+    }
+
+    /**
+     * Clear cache (useful for logout or data refresh)
+     */
+    clearCache(): void {
+        this.staffListCache = undefined;
+        this.eventTypesListCache = undefined;
+        this.staffListPromise = undefined;
+        this.eventTypesPromise = undefined;
+    }
+
+    /**
+     * Build filter request for tasks with page-specific context
+     */
+    buildFilterRequest(
+        filterType: string,
+        currentJobId?: number,
+        staffFilter?: string,
+        eventTypeFilter?: string,
+        appPage?: AppPages
+    ): TaskTableFiltersRequest {
+        let filters: TaskTableFiltersRequest = {};
+        filters.jobId = currentJobId;
+        filters.showCompleted = false;
+
+        if (staffFilter && staffFilter !== StatusFilter.All) {
+            filters.staffId = parseInt(staffFilter, 10);
+        }
+
+        if (eventTypeFilter && eventTypeFilter !== StatusFilter.All) {
+            filters.eventTypeId = parseInt(eventTypeFilter, 10);
+        }
+
+        // Add page context for potential future use
+        if (appPage) {
+            // This could be used for page-specific filtering logic if needed
+            console.log(`Building filter request for page: ${AppPages[appPage]}`);
+        }
+
+        switch (filterType) {
+            case 'mine':
+                filters.staffId = ContactID;
+                filters.orderBy = 'assignedTo';
+                filters.orderDirection = 'desc';
+                break;
+            case 'unassigned':
+                filters.staffId = -1;
+                filters.orderBy = 'assignedTo';
+                filters.orderDirection = 'desc';
+                break;
+            case 'newest':
+                filters.orderBy = 'created';
+                filters.orderDirection = 'desc';
+                break;
+            case 'oldest':
+                filters.orderBy = 'created';
+                filters.orderDirection = 'asc';
+                break;
+            default:
+                filters.orderBy = 'created';
+                filters.orderDirection = 'desc';
+                break;
+        }
+
+        return filters;
+    }
+
+    /**
+     * Load tasks asynchronously without blocking
+     */
+    async loadTasks(
+        filterRequest: TaskTableFiltersRequest,
+        onProgress?: (loading: boolean) => void,
+        onError?: (error: any) => void
+    ): Promise<ExtendedTask[]> {
+        try {
+            if (onProgress) onProgress(true);
+
+            const tasks = await this.DispatchData.getAllTasks(filterRequest);
+
+            if (onProgress) onProgress(false);
+            return tasks || [];
+        } catch (error) {
+            console.error("Error loading tasks:", error);
+            if (onError) onError(error);
+            if (onProgress) onProgress(false);
+            return [];
+        }
+    }
+
+    /**
+     * Load tasks in background without blocking UI (page-specific)
+     */
+    loadTasksInBackground(
+        filterRequest: TaskTableFiltersRequest,
+        callback: (tasks: ExtendedTask[], error?: any) => void,
+        appPage: AppPages = AppPages.Dispatch,
+        jobId?: number // Add jobId parameter
+    ): void {
+        const loadingKey = `${appPage}-${jobId || 'all'}`;
+
+        // Cancel previous loading for this job if still in progress
+        if (this.jobTaskLoadingStates[loadingKey]) {
+            console.log(`Cancelling previous task loading for job ${jobId} on ${AppPages[appPage]}`);
+            return; // Skip this request
+        }
+
+        this.jobTaskLoadingStates[loadingKey] = true;
+
+        setTimeout(async () => {
+            try {
+                // Check if this loading is still relevant
+                if (!this.jobTaskLoadingStates[loadingKey]) {
+                    console.log(`Task loading cancelled for job ${jobId}`);
+                    return;
+                }
+
+                const tasks = await this.DispatchData.getAllTasks(filterRequest);
+
+                // Only callback if still relevant
+                if (this.jobTaskLoadingStates[loadingKey]) {
+                    callback(tasks || []);
+                }
+            } catch (error) {
+                if (this.jobTaskLoadingStates[loadingKey]) {
+                    console.error(`Error loading tasks for job ${jobId}:`, error);
+                    callback([], error);
+                }
+            } finally {
+                delete this.jobTaskLoadingStates[loadingKey];
+            }
+        }, 0);
+    }
+
+    cancelJobTaskLoading(appPage: AppPages, jobId?: number): void {
+        const loadingKey = `${appPage}-${jobId || 'all'}`;
+        if (this.jobTaskLoadingStates[loadingKey]) {
+            console.log(`Manually cancelling task loading for job ${jobId}`);
+            this.jobTaskLoadingStates[loadingKey] = false;
+        }
+    }
+
+    /**
+     * Get task status count
+     */
+    getTasksStatusCount(tasks: ExtendedTask[], statusType: string): number {
+        if (!tasks || !Array.isArray(tasks)) {
+            return 0;
+        }
+
+        switch (statusType) {
+            case 'mine':
+                return tasks.filter(task => task.assignee.id === ContactID).length;
+            case 'unassigned':
+                return tasks.filter(task => !task.assignee.id).length;
+            case 'newest':
+            case 'oldest':
+                return tasks.length;
+            default:
+                return tasks.length;
+        }
+    }
+
+    /**
+     * Get saved staff filter from localStorage (page-specific)
+     */
+    getSavedStaffFilter(appPage: AppPages): string {
+        if (!Modernizr.localstorage) return StatusFilter.All;
+
+        const filterName = this.PAGE_FILTER_MAPPING[appPage]?.staff;
+        if (!filterName) {
+            console.warn(`No staff filter mapping found for page: ${AppPages[appPage]}`);
+            return StatusFilter.All;
+        }
+
+        return localStorage.getItem(filterName) ?? StatusFilter.All;
+    }
+
+    /**
+     * Get saved event type filter from localStorage (page-specific)
+     */
+    getSavedEventTypeFilter(appPage: AppPages): string {
+        if (!Modernizr.localstorage) return StatusFilter.All;
+
+        const filterName = this.PAGE_FILTER_MAPPING[appPage]?.eventType;
+        if (!filterName) {
+            console.warn(`No event type filter mapping found for page: ${AppPages[appPage]}`);
+            return StatusFilter.All;
+        }
+
+        return localStorage.getItem(filterName) ?? StatusFilter.All;
+    }
+
+    /**
+     * Save staff filter to localStorage (page-specific)
+     */
+    saveStaffFilter(filter: string, appPage: AppPages): void {
+        if (!Modernizr.localstorage) return;
+
+        const filterName = this.PAGE_FILTER_MAPPING[appPage]?.staff;
+        if (!filterName) {
+            console.warn(`No staff filter mapping found for page: ${AppPages[appPage]}`);
+            return;
+        }
+
+        localStorage.setItem(filterName, filter);
+    }
+
+    /**
+     * Save event type filter to localStorage (page-specific)
+     */
+    saveEventTypeFilter(filter: string, appPage: AppPages): void {
+        if (!Modernizr.localstorage) return;
+
+        const filterName = this.PAGE_FILTER_MAPPING[appPage]?.eventType;
+        if (!filterName) {
+            console.warn(`No event type filter mapping found for page: ${AppPages[appPage]}`);
+            return;
+        }
+
+        localStorage.setItem(filterName, filter);
+    }
+
+    /**
+     * Initialize filters for a specific page
+     */
+    initializePageFilters(appPage: AppPages): {staffFilter: string, eventTypeFilter: string} {
+        return {
+            staffFilter: this.getSavedStaffFilter(appPage),
+            eventTypeFilter: this.getSavedEventTypeFilter(appPage)
+        };
+    }
+    
+    /**
+     * Get active filter names for display
+     */
+    getActiveFilterNames(
+        staffFilter: string,
+        eventTypeFilter: string,
+        staffList?: Suggestion[],
+        eventTypesList?: Suggestion[]
+    ): string {
+        if (staffFilter === StatusFilter.All && eventTypeFilter === StatusFilter.All) {
+            return ' - (All Tasks)';
+        }
+
+        const staffText = staffList?.find(s => s.id?.toString() === staffFilter)?.text ?? '';
+        const eventTypeText = eventTypesList?.find(et => et.id?.toString() === eventTypeFilter)?.text ?? '';
+
+        const filters = [staffText, eventTypeText].filter(Boolean).join(', ');
+
+        return `- (${filters})`;
+    }
+
+    /**
+     * Find task's job in local job lists
+     */
+    findTaskJobInLists(
+        taskJobId: number,
+        jobLists: { list: any[], name: string }[]
+    ): any | undefined {
+        for (const { list } of jobLists) {
+            if (list) {
+                const job = list.find(job => job.id === taskJobId);
+                if (job) return job;
+            }
+        }
+        return undefined;
+    }
+
+    /**
+     * Validate task job ID
+     */
+    validateTaskJobId(task: TaskViewModel, onWarning: (message: string) => void): boolean {
+        const hasJobId = !!task.jobId;
+        if (!hasJobId) {
+            const message = "This task has no job attached";
+            onWarning(message);
+            console.warn('[TaskService] No jobId provided for task:', task.id);
+        }
+        return hasJobId;
+    }
+    
+    loadTasksWithDebounce(
+        filterRequest: TaskTableFiltersRequest,
+        callback: (tasks: ExtendedTask[], error?: any) => void,
+        delay: number = 300
+    ): void {
+        if (this.loadTasksDebounced) {
+            clearTimeout(this.loadTasksDebounced);
+        }
+
+        this.loadTasksDebounced = setTimeout(async () => {
+            try {
+                const tasks = await this.DispatchData.getAllTasks(filterRequest);
+                callback(tasks || []);
+            } catch (error) {
+                console.error("Error loading tasks with debounce:", error);
+                callback([], error);
+            }
+        }, delay);
     }
 }
 

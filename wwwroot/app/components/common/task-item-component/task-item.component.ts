@@ -158,7 +158,7 @@ export class TaskListItemController extends BaseController {
 
     private handleError(error: any) {
         if (!error) {
-            console.debug("Dialog Closed");
+            console.log("Dialog Closed");
             return;
         }
 
@@ -166,13 +166,13 @@ export class TaskListItemController extends BaseController {
     }
 
     handleTaskClick($event: MouseEvent) {
-        console.debug('[TaskListItemController.handleTaskClick] Starting click handler');
+        console.log('[TaskListItemController.handleTaskClick] Starting click handler');
         if (this.config?.onTaskClick && this.onTaskClick && this.task) {
-            console.debug('[TaskListItemController.handleTaskClick] Conditions met, executing onTaskClick with task:', this.task);
+            console.log('[TaskListItemController.handleTaskClick] Conditions met, executing onTaskClick with task:', this.task);
             $event.stopPropagation();
             this.onTaskClick({task: this.task});
         } else {
-            console.debug('[TaskListItemController.handleTaskClick] Click handler conditions not met', {
+            console.log('[TaskListItemController.handleTaskClick] Click handler conditions not met', {
                 hasConfigOnTaskClick: !!this.config?.onTaskClick,
                 hasOnTaskClick: !!this.onTaskClick,
                 hasTask: !!this.task

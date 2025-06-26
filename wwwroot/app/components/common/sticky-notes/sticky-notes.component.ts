@@ -46,20 +46,20 @@ class StickyNoteController extends BaseController {
     }
 
     $onChanges(changes: angular.IOnChangesObject) {
-        console.debug('StickyNoteController - $onChanges called with changes:', JSON.stringify(changes));
+        console.log('StickyNoteController - $onChanges called with changes:', JSON.stringify(changes));
 
         if (changes['jobId']) {
             const currentValue = changes['jobId'].currentValue;
 
             if (currentValue && typeof currentValue === 'number') {
-                console.debug('StickyNoteController - Valid jobId detected:', currentValue);
+                console.log('StickyNoteController - Valid jobId detected:', currentValue);
 
                 if (this.previousJobId !== currentValue) {
                     this.previousJobId = currentValue;
                     this.loadNotes();
                 }
             } else {
-                console.debug('StickyNoteController - No valid jobId change detected', {
+                console.log('StickyNoteController - No valid jobId change detected', {
                     currentValue,
                     type: typeof currentValue
                 });

@@ -62,7 +62,7 @@ class MegaMapController extends BaseController {
             ? appConfig.US_Coordinates_Center
             : appConfig.NZ_Coordinates_Center;
 
-        this.initializeMap().then(_ => console.debug("HERE Map initialized"));
+        this.initializeMap().then(_ => console.log("HERE Map initialized"));
 
         // Set up auto-refresh every 30 seconds
         this.registerInterval(async () => {
@@ -114,7 +114,7 @@ class MegaMapController extends BaseController {
     }
 
     onMapReady(mapData: { map: any, platform: any }) {
-        console.debug("HERE Map is ready", mapData);
+        console.log("HERE Map is ready", mapData);
         this.map = mapData.map;
         this.platform = mapData.platform;
     }
@@ -228,7 +228,7 @@ class MegaMapController extends BaseController {
 
 
     transformMapData(jobs: MegaMapResponse[]) {
-        console.debug("Starting transformMapData with %d jobs", jobs.length);
+        console.log("Starting transformMapData with %d jobs", jobs.length);
 
         const pickups: MapPoint[] = [];
         const deliveries: MapPoint[] = [];
@@ -241,7 +241,7 @@ class MegaMapController extends BaseController {
         }>();
 
         jobs.forEach(job => {
-            console.debug("Processing job %s:", job.jobNumber, job);
+            console.log("Processing job %s:", job.jobNumber, job);
 
             const isFlightRoute = job?.isFlightJob || false;
 
@@ -251,7 +251,7 @@ class MegaMapController extends BaseController {
                 const lng = job.pickupLocation.longitude;
 
                 if (!isNaN(lat) && !isNaN(lng)) {
-                    console.debug("Adding pickup point for job %s at [%d, %d]",
+                    console.log("Adding pickup point for job %s at [%d, %d]",
                         job.jobNumber, lat, lng
                     );
 
@@ -276,7 +276,7 @@ class MegaMapController extends BaseController {
                 const lng = job.deliveryLocation.longitude;
 
                 if (!isNaN(lat) && !isNaN(lng)) {
-                    console.debug("Adding delivery point for job %s at [%d, %d]",
+                    console.log("Adding delivery point for job %s at [%d, %d]",
                         job.jobNumber, lat, lng
                     );
 
@@ -343,7 +343,7 @@ class MegaMapController extends BaseController {
                 .join(", ")
         }));
 
-        console.debug("Transformed data:", {
+        console.log("Transformed data:", {
             pickups: pickups.length,
             deliveries: deliveries.length,
             drivers: drivers.length,
