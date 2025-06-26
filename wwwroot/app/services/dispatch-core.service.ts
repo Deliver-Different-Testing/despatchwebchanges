@@ -179,8 +179,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async validateSwapPOD(jobNumber: string) {
-        const response = await this.$http.post(
+    async validateSwapPOD(jobNumber: string): Promise<number> {
+        const response = await this.$http.post<number>(
             `Job/ValidateSwapPOD`,
             null, {
                 params: {
@@ -1188,6 +1188,17 @@ class DispatchCoreService implements angular.IServiceProvider {
             console.error("Error updating packages:", error);
             throw error;
         }
+    }
+
+    async restoreNationwideJob(jobId: number): Promise<void> {
+        await this.$http.post("nationwideJob/RestoreJob", {
+            jobId,
+        });
+    }
+
+    async reSendJobs(jobIds: number[]) {
+        const response = await this.$http.post(`job/ReSendSelected?jobIds=${jobIds}`, null);
+        return response.data;
     }
 }
 

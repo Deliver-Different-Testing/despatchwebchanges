@@ -58,7 +58,6 @@ class HomeController extends BaseController {
         '$window',
         'toastrService',
         'DispatchData',
-        'uCSData',
         'dispatchJobService',
         'APP_CONFIG',
         '$mdSidenav',
@@ -67,7 +66,6 @@ class HomeController extends BaseController {
         'editAddressDialogService',
         'jobFileUploadDialogService',
         'addEventDialogService',
-        'noteService',
         'interCourierChargeDialogService',
         'jobContextMenuService',
         '$mdEditDialog',
@@ -89,7 +87,6 @@ class HomeController extends BaseController {
     private readonly STAFF_SUPPORT_FILTER_NAME: string = `selectedSupportTypeDispatchFilter-${ContactID}`;
     private readonly EVENT_TYPE_SUPPORT_FILTER_NAME: string = `selectedSupportTypeDispatchFilter-${ContactID}`;
 
-    showMessageView: boolean = false;
     isLoadingData: boolean = false;
     showDriverLocationsNoData: boolean = false;
     showDriverLocationsData: boolean = false;
@@ -116,11 +113,10 @@ class HomeController extends BaseController {
     viewsInitialized: boolean = false;
     mapCenter: Coordinates;
     autoZoomEnabled: boolean;
-    selected: any;
     supports: ExtendedTask[];
     driverLocations?: ClearListViewModel;
     truckCourierStatus?: TruckCourierStatusViewModel;
-    boxes: any;
+    boxes?: Record<string, IBox>;
     dispatchState: DispatchState;
     pickService: any;
     pickClients: any;
@@ -171,7 +167,7 @@ class HomeController extends BaseController {
     eventTypesList?: Suggestion[];
     staffFilter: string = StatusFilter.All;
     eventTypeFilter: string = StatusFilter.All;
-    supportsFilter: string = 'all';
+    supportsFilter: string = StatusFilter.All;
     filteredSupports: ExtendedTask[] = [];
     
     constructor(
@@ -180,7 +176,6 @@ class HomeController extends BaseController {
         private $window: angular.IWindowService,
         private toastrService: ToastrService,
         private DispatchData: DispatchCoreService,
-        private uCSData: JobSearchService,
         private dispatchJobService: DispatchExecutorService,
         private APP_CONFIG: AppConfig,
         private $mdSidenav: angular.material.ISidenavService,
@@ -189,7 +184,6 @@ class HomeController extends BaseController {
         private editAddressDialogService: EditAddressDialogService,
         private jobFileUploadDialogService: JobFileUploadDialogService,
         private addEventDialogService: AddEventDialogService,
-        private noteService: NoteService,
         private interCourierChargeDialogService: InterCourierChargeDialogService,
         private jobContextMenuService: JobContextMenuService,
         private $mdEditDialog: any,
@@ -321,8 +315,8 @@ class HomeController extends BaseController {
                 try {
                     const parsedMapZoom = JSON.parse(savedMapZoom);
                     this.autoZoomEnabled = parsedMapZoom.display;
-                } catch (e) {
-                    console.error("Error parsing saved map zoom:", e);
+                } catch (error) {
+                    console.error("Error parsing saved map zoom:", error);
                     this.autoZoomEnabled = true;
                 }
             }
@@ -331,7 +325,6 @@ class HomeController extends BaseController {
             this.eventTypeFilter = localStorage.getItem(this.EVENT_TYPE_SUPPORT_FILTER_NAME) ?? StatusFilter.All;
         }
 
-        this.selected = [];
         this.jobList = [];
         this.supports = [];
 
@@ -510,7 +503,7 @@ class HomeController extends BaseController {
                 columns: [
                     {
                         id: "col1",
-                        width: "65%",
+                        width: "50%",
                         boxes: [{name: DispatchBoxes.JobsList, height: "45%"}, {
                             name: DispatchBoxes.JobDetail,
                             height: "65%"
@@ -518,7 +511,7 @@ class HomeController extends BaseController {
                     },
                     {
                         id: "col2",
-                        width: "17.5%",
+                        width: "25%",
                         boxes: [
                             {name: DispatchBoxes.CurrentWork, height: "50%"},
                             {name: DispatchBoxes.Supports, height: "50%"}
@@ -526,7 +519,7 @@ class HomeController extends BaseController {
                     },
                     {
                         id: "col3",
-                        width: "17.5%",
+                        width: "25%",
                         boxes: [{name: DispatchBoxes.DriverLocations, height: "50%"}, {
                             name: DispatchBoxes.Map,
                             height: "50%"
@@ -535,7 +528,6 @@ class HomeController extends BaseController {
                 ],
             },
         };
-
 
         // Load saved layouts or use default
         if (Modernizr.localstorage) {
@@ -673,7 +665,18 @@ class HomeController extends BaseController {
     }
 
     toggleSidenav() {
-        this.$mdSidenav("right").toggle();
+        try {
+            this.$mdSidenav("right").toggle();
+        } catch (error) {
+            console.warn('Sidenav not available yet:', error);
+            this.registerTimeout(() => {
+                try {
+                    this.$mdSidenav("right").toggle();
+                } catch (retryError) {
+                    console.error('Sidenav still not available:', retryError);
+                }
+            }, 100);
+        }
     }
 
     async loadPageViews() {
@@ -968,15 +971,7 @@ class HomeController extends BaseController {
             }
         });
     }
-
-    async handleDispatchKeydown(event: KeyboardEvent) {
-        if (event.key === 'Enter') {
-            const target = event.target as HTMLInputElement;
-            const courierId = parseInt(target.value, 10);
-            await this.dispatchJobs(courierId);
-        }
-    }
-
+    
     selectForDispatch(job: IDispatchJob) {
         const jobId = job.id;
 
@@ -1023,7 +1018,7 @@ class HomeController extends BaseController {
     }
 
     validateSwapPOD(jobNumber: string) {
-        return this.uCSData.validateSwapPOD(jobNumber);
+        return this.DispatchData.validateSwapPOD(jobNumber);
     }
 
     async showInvalidJobAlert() {
@@ -1046,7 +1041,7 @@ class HomeController extends BaseController {
     }
 
     async performSwapPOD(currentJobNo: string, jobNumber: string) {
-        await this.uCSData.swapPOD(currentJobNo, jobNumber);
+        await this.DispatchData.swapPOD(currentJobNo, jobNumber);
         this.toastrService.showSuccessToast("POD swapped successfully");
     }
 
@@ -1061,50 +1056,14 @@ class HomeController extends BaseController {
 
 
     async updateJobsAfterSwap(secondJobId: number, firstJobId: number) {
-        await this.uCSData.reSendJobs([secondJobId]);
-        await this.uCSData.reAssignJobs([firstJobId]);
-        await this.uCSData.reSendJobs([firstJobId]);
+        await this.DispatchData.reSendJobs([secondJobId, firstJobId]);
+        await this.DispatchData.reAssignJobs([firstJobId]);
     }
-
-    async voidJobForm(jobNumber: string, jobId: number) {
-        try {
-            const note: string = await this.$mdDialog
-                .show(this.$mdDialog
-                    .prompt()
-                    .title("Void Job " + jobNumber)
-                    .textContent("Add note to " + jobNumber)
-                    .placeholder("Note")
-                    .ariaLabel("Void job")
-                    .required(true)
-                    .ok("Void " + jobNumber)
-                    .cancel("Cancel"));
-
-            const jobNote: IJobNote = {
-                jobId: jobId,
-                createdDate: new Date(),
-                createdBy: ContactID,
-                noteText: note,
-                noteTypeId: JobNoteType.InternalNote,
-                isImportant: false
-            };
-
-            await this.noteService.createNote(jobNote);
-            await this.DispatchData.voidJob(jobId);
-            this.toastrService.showSuccessToast("Job voided successfully");
-            return await this.getData();
-        } catch (error: any) {
-            console.error("Job void canceled or error occurred", error);
-        }
-    }
-
+    
     async otherEventForm($event: MouseEvent, job: IDispatchJob) {
         await this.addEventDialogService.openAddEventDialog($event, job);
     }
-
-    selectAllContent($event: MouseEvent) {
-        ($event.target as HTMLInputElement)?.select();
-    }
-
+    
     async latePickup(minsAway: number, job: IDispatchJob, obj: any): Promise<void> {
         return await this.handleLateOperation(minsAway, job, obj, LateEventType.Pickup);
     }
@@ -1249,6 +1208,8 @@ class HomeController extends BaseController {
             }
         } catch (error: any) {
             console.error("Error restoring job:", error);
+        } finally {
+            this.applyScope();
         }
     }
 
@@ -1944,9 +1905,8 @@ class HomeController extends BaseController {
 
     async getJobList() {
         try {
-            this.isLoadingData = true; // Set flag before loading
+            this.isLoadingData = true;
 
-            // Ensure views are initialized before proceeding
             if (!this.viewsInitialized && this.selectedViews.length === 0) {
                 console.debug('Views not initialized yet, loading defaults');
                 this.selectedViews = this.loadViewsFromStorage();
@@ -2121,7 +2081,6 @@ class HomeController extends BaseController {
 
     async getDriverLocationsData() {
         try {
-            // Use this.selectedViews directly instead of filtering by view.selected
             if (!this.selectedViews || this.selectedViews.length === 0) {
                 console.debug('No selected views available for driver locations');
                 this.driverLocations = {areas: []};
@@ -2446,6 +2405,7 @@ class HomeController extends BaseController {
             this.toastrService.showErrorToast("Error loading support tasks");
         } finally {
             this.supportsLoading = false;
+            this.applyScope();
         }
     }
 

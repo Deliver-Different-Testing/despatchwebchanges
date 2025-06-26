@@ -1,17 +1,20 @@
-import ToastrService from "../../../services/toastr.service";
-import OverviewService from "../overview.service";
-import {AppConfig} from "../../../interfaces/app-config.interface";
-import ConfigService from "../../../services/config.service";
-import {Coordinates, MegaMapResponse} from "../overview.interfaces";
+import "./mega-map.styles.less";
 import {MapPoint} from "./mega-map.interfaces";
-import {AssignedFlight} from "../../../interfaces/job.interface";
-import BaseController from "../../base-controller";
-import {HereMapConfig, HereMapCredentials} from "../../../interfaces/hereMapCredentials.interfaces";
 import dayjs from "dayjs";
+import ToastrService from "../../services/toastr.service";
+import {Coordinates, MegaMapResponse} from "../overview/overview.interfaces";
+import BaseController from "../base-controller";
+import {HereMapConfig, HereMapCredentials} from "../../interfaces/hereMapCredentials.interfaces";
+import ConfigService from "../../services/config.service";
+import OverviewService from "../overview/overview.service";
+import {AppConfig} from "../../interfaces/app-config.interface";
+import GreetUser from "../../functions/greetUser";
+import {AssignedFlight} from "../../interfaces/job.interface";
 
 class MegaMapController extends BaseController {
     static $inject = [
         "toastrService",
+        "$mdSidenav",
         "overviewService",
         "configService",
         "$rootScope",
@@ -35,6 +38,7 @@ class MegaMapController extends BaseController {
 
     constructor(
         private toastrService: ToastrService,
+        private $mdSidenav: angular.material.ISidenavService,
         private overviewService: OverviewService,
         private configService: ConfigService,
         private $rootScope: angular.IRootScopeService,
@@ -65,7 +69,26 @@ class MegaMapController extends BaseController {
             await this.refreshData();
         }, 30000);
     }
+    
+    greetUser() {
+        return GreetUser(FirstName);
+    }
 
+    toggleSidenav() {
+        try {
+            this.$mdSidenav("right").toggle();
+        } catch (error) {
+            console.warn('Sidenav not available yet:', error);
+            this.registerTimeout(() => {
+                try {
+                    this.$mdSidenav("right").toggle();
+                } catch (retryError) {
+                    console.error('Sidenav still not available:', retryError);
+                }
+            }, 100);
+        }
+    }
+    
     async initializeMap(): Promise<void> {
         try {
             // Get HERE Maps API key from config service

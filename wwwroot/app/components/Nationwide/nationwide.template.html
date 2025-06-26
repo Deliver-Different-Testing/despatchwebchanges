@@ -358,6 +358,7 @@
                                             md-items="item in ctrl.jobRecordSearch(ctrl.jobRecordSearchText)"
                                             md-min-length="1"
                                             md-search-text="ctrl.jobRecordSearchText"
+                                            ng-model-options="{ debounce: 300 }"
                                             md-selected-item="ctrl.selectedJobRecord"
                                             md-selected-item-change="ctrl.jobRecordSelected(item.id)"
                                             ng-if="ctrl.showInput[box.name + '-' + $index]"

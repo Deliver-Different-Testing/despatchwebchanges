@@ -527,10 +527,20 @@ class JobSearchController extends BaseController {
     }
 
     toggleSidenav() {
-        this.$mdSidenav('right').toggle();
+        const sidenavElement = angular.element('material-sidenav');
+        const sidenavCtrl = sidenavElement.controller('materialSidenav');
+
+        if (sidenavCtrl && typeof sidenavCtrl.toggleSidenav === 'function') {
+            sidenavCtrl.toggleSidenav();
+        } else {
+            try {
+                this.$mdSidenav("right").toggle();
+            } catch (error) {
+                console.warn('Sidenav not available:', error);
+            }
+        }
     }
-
-
+    
     greetUser() {
         return greetUser(FirstName);
     }

@@ -245,8 +245,19 @@ class RecurringJobsController extends BaseController {
         return greetUser(FirstName);
     }
 
-    toggleSidenav(): void {
-        this.$mdSidenav("right").toggle();
+    toggleSidenav() {
+        try {
+            this.$mdSidenav("right").toggle();
+        } catch (error) {
+            console.warn('Sidenav not available yet:', error);
+            this.registerTimeout(() => {
+                try {
+                    this.$mdSidenav("right").toggle();
+                } catch (retryError) {
+                    console.error('Sidenav still not available:', retryError);
+                }
+            }, 100);
+        }
     }
 
     updateTable(): void {

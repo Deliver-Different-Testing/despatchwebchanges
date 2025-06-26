@@ -1,3 +1,4 @@
+
 // Style imports
 import "../css/udispatch.less";
 import "../css/toasts.less";
@@ -15,6 +16,7 @@ import "angular-messages";
 import "angular-sanitize";
 import "angular-material";
 import "@uirouter/angularjs";
+import "oclazyload";
 
 // Bootstrap
 import "bootstrap";
@@ -44,6 +46,7 @@ import "../lib/here-map-tracking/here-map-tracking.component";
 
 const app = angular.module("uDispatch", [
     "ui.router",
+    "oc.lazyLoad",
     "angularResizable",
     "ui.sortable",
     "ui.bootstrap",

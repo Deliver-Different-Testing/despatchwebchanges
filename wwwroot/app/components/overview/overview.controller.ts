@@ -8,6 +8,8 @@ import BaseController from "../base-controller";
 import {Suggestion} from "../../interfaces/job.interface";
 import greetUser from "../../functions/greetUser";
 import dayjs, {Dayjs} from "dayjs";
+import {DateRangeDialogController} from "../dialogs/date-range-dialog/date-range-dialog.controller";
+import {MapDialogController} from "../dialogs/map-dialog/map-dialog.controller";
 
 class OverviewController extends BaseController {
     static $inject = [
@@ -319,7 +321,18 @@ class OverviewController extends BaseController {
     }
 
     toggleSidenav() {
-        this.$mdSidenav("right").toggle();
+        try {
+            this.$mdSidenav("right").toggle();
+        } catch (error) {
+            console.warn('Sidenav not available yet:', error);
+            this.registerTimeout(() => {
+                try {
+                    this.$mdSidenav("right").toggle();
+                } catch (retryError) {
+                    console.error('Sidenav still not available:', retryError);
+                }
+            }, 100);
+        }
     }
 
     transformStatus(status: string): string {
@@ -343,7 +356,7 @@ class OverviewController extends BaseController {
             };
 
             const result = await this.$mdDialog.show({
-                controller: "DateRangeDialogController",
+                controller: DateRangeDialogController,
                 controllerAs: "ctrl",
                 targetEvent: $event,
                 template: require("../dialogs/date-range-dialog/date-range-dialog.html"),
@@ -414,7 +427,7 @@ class OverviewController extends BaseController {
 
     async showMap(delivery: OverviewTableParentJob) {
         await this.$mdDialog.show({
-            controller: "MapDialogController",
+            controller: MapDialogController,
             controllerAs: "ctrl",
             template: require("../dialogs/map-dialog/map-dialog.template.html"),
             parent: this.$document.parent(),
