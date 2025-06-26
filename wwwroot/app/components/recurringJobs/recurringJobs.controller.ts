@@ -135,7 +135,7 @@ class RecurringJobsController extends BaseController {
         });
 
         // Initial data load
-        this.refreshData().then(() => console.debug("Data Refreshed"));
+        this.refreshData().then(() => console.log("Data Refreshed"));
     }
 
     saveLayout() {
@@ -339,7 +339,7 @@ class RecurringJobsController extends BaseController {
     }
 
     goToRunViewer(): void {
-        console.debug("goToRunViewer.");
+        console.log("goToRunViewer.");
         this.$state.go("home");
     }
 
@@ -391,7 +391,7 @@ class RecurringJobsController extends BaseController {
     }
 
     async selectJobDetail(jobId: number): Promise<void> {
-        console.debug('Selected job run: ', jobId);
+        console.log('Selected job run: ', jobId);
         if (!jobId) return;
         this.currentJobId = jobId;
     }
@@ -441,9 +441,9 @@ class RecurringJobsController extends BaseController {
             );
         } catch (error) {
             if (!error) {
-                console.debug("User Canceled");
+                console.log("User Canceled");
             } else {
-                console.debug("Error inactivating recurring jobs:", error);
+                console.log("Error inactivating recurring jobs:", error);
 
                 // Show an error dialog to the user
                 this.$mdDialog.show(
@@ -485,9 +485,9 @@ class RecurringJobsController extends BaseController {
             );
         } catch (error) {
             if (!error) {
-                console.debug("User Canceled");
+                console.log("User Canceled");
             } else {
-                console.debug("Error inactivating recurring job:", error);
+                console.log("Error inactivating recurring job:", error);
 
                 // Show an error dialog to the user
                 await this.$mdDialog.show(
@@ -532,9 +532,9 @@ class RecurringJobsController extends BaseController {
             );
         } catch (error) {
             if (!error) {
-                console.debug("User Canceled");
+                console.log("User Canceled");
             } else {
-                console.debug("Error sending prebook jobs:", error);
+                console.log("Error sending prebook jobs:", error);
 
                 // Show an error dialog to the user
                 await this.$mdDialog.show(
@@ -575,9 +575,9 @@ class RecurringJobsController extends BaseController {
             );
         } catch (error) {
             if (!error) {
-                console.debug("User Canceled");
+                console.log("User Canceled");
             } else {
-                console.debug("Error sending prebook job:", error);
+                console.log("Error sending prebook job:", error);
 
                 // Show an error dialog to the user
                 await this.$mdDialog.show(

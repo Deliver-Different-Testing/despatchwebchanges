@@ -4,7 +4,6 @@ import OverviewService from "./overview.service";
 import OverviewFiltersService from "./services/overview-filters.service";
 import {DateRangeDialogController} from "../dialogs/date-range-dialog/date-range-dialog.controller";
 import {MapDialogController} from "../dialogs/map-dialog/map-dialog.controller";
-import {minutesToTimeFilter, timezoneShortFilter} from "../../filters";
 
 const overviewModule = angular.module('uDispatch.overview', [
     'ui.router',
@@ -23,8 +22,6 @@ overviewModule
     .service("overviewService", OverviewService)
     .service("overviewFiltersService", OverviewFiltersService)
     .controller('DateRangeDialogController', DateRangeDialogController)
-    .controller('MapDialogController', MapDialogController)
-    .filter('timezoneShort', () => timezoneShortFilter)
-    .filter('minutesToTime', () => minutesToTimeFilter);
+    .controller('MapDialogController', MapDialogController);
 
 export default overviewModule;

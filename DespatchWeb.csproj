@@ -442,7 +442,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\app\components\dialogs\event-group-dialog\" />
-    <Folder Include="wwwroot\app\components\overview\mega-map\" />
     <Folder Include="wwwroot\dist\" />
   </ItemGroup>
 </Project>

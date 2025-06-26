@@ -247,7 +247,7 @@ class TaskCalendarViewController extends BaseController {
     }
 
     handleTaskStatusChange(task: ExtendedTask): void {
-        console.debug('Task status changed:', task.id, 'closed:', task.closed);
+        console.log('Task status changed:', task.id, 'closed:', task.closed);
         if (this.onTaskStatusChange) {
             this.onTaskStatusChange({task: task});
         }

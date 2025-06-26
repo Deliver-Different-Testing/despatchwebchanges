@@ -17,6 +17,6 @@ const taskDashboardModule = angular.module('uDispatch.taskDashboard', [
 
 taskDashboardModule
     .component("taskDashboardComponent", TaskDashboardComponent)
-    .component("taskCalendarViewComponent", TaskCalendarViewComponent);
+    .component("taskCalendarView", TaskCalendarViewComponent);
 
 export default taskDashboardModule;

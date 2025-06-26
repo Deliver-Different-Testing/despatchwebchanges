@@ -5,7 +5,6 @@ import {MaterialSidenavComponent} from "./components/common/side-nav/side-nav.co
 import HomeComponent from "./components/home/home.controller";
 import {AutoCompleteDialogController} from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.controller";
 import {CreateJobDialogController} from "./components/dialogs/create-job-dialog/create-job-dialog.controller";
-import {DateRangeDialogController} from "./components/dialogs/date-range-dialog/date-range-dialog.controller";
 import {
     EditParcelDimensionsDialogController
 } from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.controller";
@@ -13,7 +12,6 @@ import {
     FeatureInDevelopmentDialogController
 } from "./components/dialogs/feature-in-development-dialog/feature-in-development-dialog.controller";
 import {SelectDialogController} from "./components/dialogs/select-dialog/select-dialog.controller";
-import {MapDialogController} from "./components/dialogs/map-dialog/map-dialog.controller";
 import {
     FeatureInDevelopmentDialogService
 } from "./components/dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
@@ -69,8 +67,6 @@ import EditParcelDimensionsDialogService
     from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
 import AutoCompleteDialogService from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.service";
 import JobAddStopService from "./services/job-add-stop.service";
-import FlightAgentConfirmationDialogService
-    from "./components/dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.service";
 import AddressLookupService from "./services/address-lookup.service";
 import dayjs from "dayjs";
 import 'dayjs/locale/en';
@@ -212,11 +208,9 @@ app.controller("AddEventDialogController", AddEventDialogController);
 app.controller("AdditionalServicesDialogController", AdditionalServicesDialogController);
 app.controller("AutoCompleteDialogController", AutoCompleteDialogController);
 app.controller("CreateJobDialogController", CreateJobDialogController);
-app.controller("DateRangeDialogController", DateRangeDialogController);
 app.controller("EditParcelDimensionsDialogController", EditParcelDimensionsDialogController);
 app.controller("FeatureInDevelopmentDialogController", FeatureInDevelopmentDialogController);
 app.controller("SelectDialogController", SelectDialogController);
-app.controller("MapDialogController", MapDialogController);
 app.controller('EventGroupDialogController', EventGroupDialogController);
 app.controller("EditDateTimeDialogController", EditDateTimeDialogController);
 app.controller("EditAddressDialogController", EditAddressDialogController);
@@ -248,7 +242,6 @@ app.service("jobContextMenuService", JobContextMenuService);
 app.service("editParcelDimensionsDialogService", EditParcelDimensionsDialogService);
 app.service("autoCompleteDialogService", AutoCompleteDialogService);
 app.service("jobAddStopService", JobAddStopService);
-app.service("flightAgentConfirmationDialogService", FlightAgentConfirmationDialogService)
 app.service("addressLookupService", AddressLookupService)
 app.service("tasksService", TasksService)
 app.service("truckCourierStatusDialogService", TruckCourierStatusDialogService)

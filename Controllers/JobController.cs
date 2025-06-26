@@ -458,160 +458,94 @@ public class JobController(
         string bucketName,
         string pattern,
         int year,
-        int month)
+        int month
+    )
     {
         var allResults = new List<S3Object>();
-
+        // Calculate next month and year (handling December rollover)
+        var nextMonth = month == 12 ? 1 : month + 1;
+        var nextYear = month == 12 ? year + 1 : year;
         try
         {
-            // Search in the current month and next month to handle edge cases
-            var searchPeriods = GetSearchPeriods(year, month);
+            var monthPrefixes = new[] { $"{year}/{month:D2}/", $"{nextYear}/{nextMonth:D2}/" };
+
             var folders = new[] { "DeliverySignatures", "DeliveryPhotos" };
 
             foreach (var folder in folders)
             {
-                foreach (var (searchYear, searchMonth) in searchPeriods)
+                foreach (var monthPrefix in monthPrefixes)
                 {
-                    var prefix = $"{folder}/{searchYear}/{searchMonth:D2}/{pattern}";
-                    Log.Debug("Searching S3 with prefix: {Prefix}", prefix);
+                    var request = new ListObjectsV2Request
+                    {
+                        BucketName = bucketName,
+                        Prefix = $"{folder}/{monthPrefix}{pattern}",
+                        MaxKeys = 1000
+                    };
 
-                    var objects = await ListS3ObjectsWithPrefixAsync(bucketName, prefix);
-                    allResults.AddRange(objects);
-
-                    // Early exit if we found files in the current folder/month combination
-                    if (objects.Count == 0) continue;
-                    Log.Debug("Found {ObjectCount} objects with prefix {Prefix}", objects.Count, prefix);
-                    break;
+                    var response = await s3Client.ListObjectsV2Async(request);
+                    allResults.AddRange(response.S3Objects);
+                    if (allResults.Count > 0)
+                    {
+                        break;
+                    }
                 }
             }
         }
-        catch (Exception ex)
+        catch (AmazonS3Exception e)
         {
-            Log.Error(ex, "Error searching for delivery files with pattern {Pattern} in {Year}-{Month:D2}",
-                pattern, year, month);
-            throw;
+            Log.Error(
+                e,
+                "Error encountered on server. Message:'{EMessage}' when writing an object", e.Message
+            );
+        }
+        catch (Exception e)
+        {
+            Log.Error(
+                e,
+                "Unknown encountered on server. Message:'{EMessage}' when writing an object", e.Message
+            );
         }
 
         return allResults;
     }
 
-    private async Task<List<S3Object>> ListS3ObjectsWithPrefixAsync(string bucketName, string prefix)
-    {
-        var objects = new List<S3Object>();
-        string continuationToken = null;
-
-        do
-        {
-            var request = new ListObjectsV2Request
-            {
-                BucketName = bucketName,
-                Prefix = prefix,
-                MaxKeys = 1000,
-                ContinuationToken = continuationToken
-            };
-
-            try
-            {
-                var response = await s3Client.ListObjectsV2Async(request);
-                objects.AddRange(response.S3Objects);
-                continuationToken = response.NextContinuationToken;
-            }
-            catch (AmazonS3Exception ex)
-            {
-                Log.Error(ex, "S3 error while listing objects with prefix {Prefix}: {ErrorCode} - {ErrorMessage}",
-                    prefix, ex.ErrorCode, ex.Message);
-                throw;
-            }
-        } while (continuationToken != null);
-
-        return objects;
-    }
-
-    private static (int Year, int Month)[] GetSearchPeriods(int year, int month)
-    {
-        // Handle December rollover
-        var nextMonth = month == 12 ? 1 : month + 1;
-        var nextYear = month == 12 ? year + 1 : year;
-
-        return
-        [
-            (year, month), // Current month
-            (nextYear, nextMonth) // Next month (for edge cases)
-        ];
-    }
-
     public async Task<IActionResult> GetJobDeliveryPhotosAndSignature(
         int jobId,
         int year,
-        int month)
+        int month
+    )
     {
+        var all = new List<byte[]>();
         try
         {
-            Log.Debug("Getting delivery photos and signatures for Job {JobId}, {Year}-{Month:D2}",
-                jobId, year, month);
-
             var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            if (string.IsNullOrEmpty(bucketName))
-            {
-                Log.Error("S3BucketMars environment variable is not configured");
-                return BadRequest("S3 bucket configuration is missing");
-            }
-
-            var filePattern = $"{jobId}-";
-            var s3Objects = await SearchDeliveryFilesByPatternAsync(bucketName, filePattern, year, month);
-
-            if (s3Objects.Count == 0)
-            {
-                Log.Debug("No delivery files found for Job {JobId}", jobId);
-                return Json(new List<byte[]>());
-            }
-
-            Log.Debug("Found {FileCount} delivery files for Job {JobId}", s3Objects.Count, jobId);
-
-            var fileContents = new List<byte[]>();
-            var downloadTasks = s3Objects.Select(async s3Object =>
-            {
-                try
+            var key = $"{jobId}-";
+            Log.Debug("Get S3 Object List for {Key}", key);
+            var s3List =
+                await SearchDeliveryFilesByPatternAsync(bucketName, key, year, month);
+            Log.Debug("Found {S3ListCount} objects for {Key}", s3List.Count, key);
+            foreach (
+                var getObjectRequest in s3List.Select(s3Object => new GetObjectRequest
                 {
-                    Log.Debug("Downloading file: {FileName}", s3Object.Key);
-                    return await DownloadFileFromS3Async(bucketName, s3Object.Key);
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex, "Failed to download file {FileName}", s3Object.Key);
-                    return null;
-                }
-            });
-
-            var downloadResults = await Task.WhenAll(downloadTasks);
-
-            // Filter out failed downloads
-            fileContents.AddRange(downloadResults.Where(content => content != null));
-
-            Log.Debug("Successfully downloaded {SuccessCount} out of {TotalCount} files for Job {JobId}",
-                fileContents.Count, s3Objects.Count, jobId);
-
-            return Json(fileContents);
+                    BucketName = bucketName,
+                    Key = s3Object.Key
+                })
+            )
+            {
+                using var response = await s3Client.GetObjectAsync(getObjectRequest);
+                await using var responseStream = response.ResponseStream;
+                using var reader = new StreamReader(responseStream);
+                using var memoryStream = new MemoryStream();
+                await response.ResponseStream.CopyToAsync(memoryStream);
+                all.Add(memoryStream.ToArray());
+            }
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            Log.Error(ex, "Error retrieving delivery photos and signatures for Job {JobId}", jobId);
-            return StatusCode(500, "An error occurred while retrieving delivery files");
+            Log.Error(e, $"{nameof(GetJobDeliveryPhotosAndSignature)} Error: ");
         }
-    }
 
-    private async Task<byte[]> DownloadFileFromS3Async(string bucketName, string key)
-    {
-        var request = new GetObjectRequest
-        {
-            BucketName = bucketName,
-            Key = key
-        };
-
-        using var response = await s3Client.GetObjectAsync(request);
-        using var memoryStream = new MemoryStream();
-        await response.ResponseStream.CopyToAsync(memoryStream);
-        return memoryStream.ToArray();
+        return Json(all);
     }
 
     public async Task<IActionResult> RecurringJobDetail(int jobId)

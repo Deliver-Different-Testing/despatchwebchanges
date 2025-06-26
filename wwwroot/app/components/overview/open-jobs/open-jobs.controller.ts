@@ -74,7 +74,7 @@ class OpenJobsWidgetController extends BaseController {
 
     private loadSavedLimit() {
         const savedLimit = localStorage.getItem(this.limitName);
-        console.debug(`Saved limit is: ${savedLimit}`);
+        console.log(`Saved limit is: ${savedLimit}`);
         if (savedLimit) {
             this.tableQuery.limit = parseInt(savedLimit);
         }

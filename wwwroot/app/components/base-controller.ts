@@ -101,11 +101,11 @@ class BaseController implements angular.IController {
         if (result instanceof Promise) {
             return result.finally(() => {
                 this.performanceMetrics[key] = performance.now() - startTime;
-                console.debug(`[Performance] ${key}: ${this.performanceMetrics[key].toFixed(2)}ms`);
+                console.log(`[Performance] ${key}: ${this.performanceMetrics[key].toFixed(2)}ms`);
             });
         } else {
             this.performanceMetrics[key] = performance.now() - startTime;
-            console.debug(`[Performance] ${key}: ${this.performanceMetrics[key].toFixed(2)}ms`);
+            console.log(`[Performance] ${key}: ${this.performanceMetrics[key].toFixed(2)}ms`);
             return result;
         }
     }
@@ -181,7 +181,7 @@ class BaseController implements angular.IController {
             events: this.eventDeregistrations.length
         };
 
-        console.debug('[Memory Usage]', usage);
+        console.log('[Memory Usage]', usage);
 
         // Warn if too many resources
         if (usage.watchers > 50 || usage.cacheSize > 100) {
@@ -341,7 +341,7 @@ class BaseController implements angular.IController {
         this.dataCache.clear();
 
         // Log final memory state
-        console.debug('BaseController destroyed, resources cleaned up');
+        console.log('BaseController destroyed, resources cleaned up');
     }
 }
 

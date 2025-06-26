@@ -21,6 +21,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+    /* Ensure sidenav takes full height */
 
     &.elevation-1 {
       box-shadow: @elevation-1;
@@ -53,12 +54,14 @@
     margin: 0;
 
     .account-avatar {
+      background-color: @primary-color-light;
       border-radius: 50%;
       padding: 12px;
       margin-bottom: 8px;
 
       md-icon {
-        font-size: 42px;
+        color: @primary-color;
+        font-size: 32px;
         height: 32px;
         width: 32px;
       }
@@ -82,6 +85,7 @@
         display: block;
         margin-top: 4px;
         font-size: 12px;
+        color: @primary-color;
       }
     }
   }
@@ -111,11 +115,24 @@
       position: relative;
       transition: all 0.2s ease;
 
-      &.active {
+      &:hover {
         .nav-item-content {
 
           md-icon,
           p {
+            color: @primary-color;
+          }
+        }
+      }
+
+      &.active {
+        background-color: @primary-color-light;
+
+        .nav-item-content {
+
+          md-icon,
+          p {
+            color: @primary-color;
             font-weight: 500;
           }
         }
@@ -145,6 +162,7 @@
       }
 
       .nav-indicator {
+        background-color: @primary-color;
         border-radius: 100px;
         height: 32px;
         opacity: 0;
@@ -186,7 +204,7 @@
         padding: 8px 12px;
 
         md-icon {
-          color: @scroll-bar-color;
+          color: @primary-color;
           font-size: 18px;
           height: 18px;
           width: 18px;

@@ -38,5 +38,4 @@ nationwideModule
     .controller("flightAgentConformationDialogController", FlightAgentConformationDialogController)
     .controller("flightDetailsDialogController", FlightDetailsDialogController);
 
-
 export default nationwideModule;
