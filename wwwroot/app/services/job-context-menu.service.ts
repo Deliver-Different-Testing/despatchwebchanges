@@ -26,7 +26,6 @@ class JobContextMenuService implements angular.IServiceProvider {
         "noteService",
         "eventGroupDialogService",
         "addEventDialogService",
-        "NWData",
         "jobAddStopService",
     ];
 
@@ -40,7 +39,6 @@ class JobContextMenuService implements angular.IServiceProvider {
         private noteService: NoteService,
         private eventGroupDialogService: EventGroupDialogService,
         private addEventDialogService: AddEventDialogService,
-        private nationwideService: NationwideService,
         private jobAddStopService: JobAddStopService
     ) {
         console.log("JobContextMenuService initialized");
@@ -356,7 +354,7 @@ class JobContextMenuService implements angular.IServiceProvider {
                     .ok("Unassign")
                     .cancel("Cancel")
             );
-            await this.nationwideService.restoreJob(job.id);
+            await this.DispatchData.restoreNationwideJob(job.id);
             this.toastrService.showSuccessToast(successMessage);
             if (onRefresh) {
                 onRefresh();

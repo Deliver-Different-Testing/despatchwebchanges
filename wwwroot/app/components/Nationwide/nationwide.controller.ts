@@ -569,7 +569,18 @@ class NationwideControl extends BaseController {
     }
 
     toggleSidenav() {
-        this.$mdSidenav('right').toggle();
+        try {
+            this.$mdSidenav("right").toggle();
+        } catch (error) {
+            console.warn('Sidenav not available yet:', error);
+            this.registerTimeout(() => {
+                try {
+                    this.$mdSidenav("right").toggle();
+                } catch (retryError) {
+                    console.error('Sidenav still not available:', retryError);
+                }
+            }, 100);
+        }
     }
 
     async loadPageViews() {

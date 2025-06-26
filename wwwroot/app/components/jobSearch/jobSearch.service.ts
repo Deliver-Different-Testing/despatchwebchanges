@@ -103,14 +103,7 @@ class JobSearchService implements angular.IServiceProvider {
         );
         return response.data;
     }
-
-    async getCourierRoute(code: string, start: Date, end: Date) {
-        const response = await this.$http.get(
-            `/courier/route?code=${code}&start=${start.toISOString()}&end=${end.toISOString()}`
-        );
-        return response.data;
-    }
-
+    
     async getJobDetail(jobId: number) {
         const response = await this.$http.get(`/Job/Detail?jobId=${jobId}`);
         return response.data;
@@ -142,16 +135,7 @@ class JobSearchService implements angular.IServiceProvider {
         const response = await this.$http.get("courier/AllActive");
         return response.data;
     }
-
-
-    async addEventNote(eventId: number, note: string) {
-        const response = await this.$http.post(
-            `CS/AddEventNote?eventId=${eventId}&note=${note}&userName=${FirstName}`, null
-        );
-
-        return response.data;
-    }
-
+    
     async validateSwapPOD(jobNumber: string) {
         const response = await this.$http.post<number>(`Job/ValidateSwapPOD?job=${jobNumber}`, null);
         return response.data;
@@ -177,14 +161,7 @@ class JobSearchService implements angular.IServiceProvider {
         );
         return response.data;
     }
-
-    async closeEvent(eventId: number, userName: string) {
-        const response = await this.$http.post(
-            `CS/CloseEvent?eventId=${eventId}&userName=${`${FirstName}-${userName}`}`, null
-        );
-        return response.data;
-    }
-
+    
     async reSendJobs(jobIds: number[]) {
         const response = await this.$http.post(`job/ReSendSelected?jobIds=${jobIds}`, null);
         return response.data;
@@ -222,8 +199,7 @@ class JobSearchService implements angular.IServiceProvider {
             console.error("Book/CreateEvent error", error);
         }
     }
-
-
+    
     async getActiveClients(searchTerm: string) {
         const response = await this.$http.get(`/home/ActiveClients?searchTerm=${searchTerm}`);
         return response.data;
@@ -232,10 +208,6 @@ class JobSearchService implements angular.IServiceProvider {
     async getActiveCouriersSearch(searchTerm: string) {
         const response = await this.$http.get(`/courier/AllActiveSearch?searchTerm=${searchTerm}`);
         return response.data;
-    }
-
-    downloadJobs(params: any) {
-        return this.$http.post("/Job/Download", params.data, {responseType: "blob"});
     }
 }
 
