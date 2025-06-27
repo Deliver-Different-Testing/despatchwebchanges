@@ -106,7 +106,8 @@
         <div class="nav-footer">
             <div class="copyright-text">
                 <p>&copy; {{::ctrl.currentYear}} Deliver Different. All rights reserved.</p>
-                <div class="nz-made">
+                <p class="version-text">Version {{::ctrl.appVersion}}</p>
+                <div class="nz-made" ng-if="::ctrl.isUsCustomer">
                     <md-icon md-font-set="material-symbols-outlined">favorite</md-icon>
                     <span>Made with aroha in New Zealand</span>
                 </div>

@@ -13,7 +13,7 @@ class MaterialSidenavComponentController extends BaseController {
         "APP_CONFIG"
     ];
 
-    // Read-only properties computed once
+    readonly appVersion: string = '[VI]{{inject}}[/VI]';
     readonly isUsCustomer: boolean;
     readonly userName?: string;
     readonly companyName: string = "DFRNT";
