@@ -33,8 +33,10 @@ public partial class HomeController(
 
             if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(tenantId))
             {
+                var hubUrl = Environment.GetEnvironmentVariable("HubUrl");
+
                 Log.Error("Connection string or tenant ID is missing.");
-                return BadRequest(new { error = "Connection string or tenant ID is missing." });
+                return Redirect(hubUrl ?? "https://deliverdifferent.com/");
             }
 
             Log.Debug("Found Identity for StaffID:{StaffId}", staffId);
