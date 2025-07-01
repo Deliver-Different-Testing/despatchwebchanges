@@ -2,7 +2,6 @@ import {AppConfig} from "./interfaces/app-config.interface";
 import {AppPages} from "./enums/app-pages.enum";
 import {PodPhotoViewerComponent} from "./components/common/pod-photo-viewer/pod-photo-viewer.component";
 import {MaterialSidenavComponent} from "./components/common/side-nav/side-nav.component";
-import HomeComponent from "./components/home/home.controller";
 import {AutoCompleteDialogController} from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.controller";
 import {CreateJobDialogController} from "./components/dialogs/create-job-dialog/create-job-dialog.controller";
 import {
@@ -199,11 +198,8 @@ app.component("jobDetailWidget", JobDetailComponent);
 app.component("materialSidenav", MaterialSidenavComponent);
 app.component("podPhotoViewer", PodPhotoViewerComponent);
 app.component("dispatchMap", DispatchMapComponent);
-app.component("taskItemComponent", TaskItemComponent);
-app.component("homeComponent", HomeComponent);
 app.component("noData", NoDataComponent);
 app.component("stickyNote", StickyNoteComponent);
-app.component("jobsList", JobsListComponent);
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);
@@ -218,34 +214,28 @@ app.controller("EditDateTimeDialogController", EditDateTimeDialogController);
 app.controller("EditAddressDialogController", EditAddressDialogController);
 app.controller("jobFileUploadController", JobFileUploadController);
 app.controller("jobNoteEditorDialogController", NoteManagementDialogController);
-app.controller("InterCourierChargeDialog", InterCourierChargeDialogController);
 app.controller("TruckCourierStatusDialogController", TruckCourierStatusDialogController);
 app.controller("messagingDialogController", MessagingDialogController);
 
 // Services
 app.service("configService", ConfigService);
 app.service("DispatchData", DispatchCoreService);
-app.service("dispatchJobService", DispatchExecutorService);
 app.service("navigationService", NavigationService);
 app.service("toastrService", ToastrService);
-app.service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService);
 app.service('selectDialogService', SelectDialogService);
 app.service('eventGroupDialogService', EventGroupDialogService);
 app.service("editDateTimeDialogService", EditDateTimeDialogService);
 app.service("editAddressDialogService", EditAddressDialogService);
 app.service("priceBreakdownDialogService", PriceBreakdownDialogService);
-app.service("additionalServicesDialogService", AdditionalServicesDialogService);
 app.service("jobFileUploadDialogService", JobFileUploadDialogService);
 app.service("noteManagementDialogService", NoteManagementDialogService);
 app.service("noteService", NoteService);
 app.service("addEventDialogService", AddEventDialogService);
-app.service("interCourierChargeDialogService", InterCourierChargeDialogService);
 app.service("jobContextMenuService", JobContextMenuService);
 app.service("editParcelDimensionsDialogService", EditParcelDimensionsDialogService);
 app.service("autoCompleteDialogService", AutoCompleteDialogService);
 app.service("jobAddStopService", JobAddStopService);
 app.service("addressLookupService", AddressLookupService)
-app.service("tasksService", TasksService)
 app.service("truckCourierStatusDialogService", TruckCourierStatusDialogService)
 app.service("messagingService", MessagingService)
 app.service("messagingDialogService", MessagingDialogService)

@@ -98,6 +98,7 @@ class Bundler {
             entryPoints: {
                 vendor: path.join(this.rootDir, "wwwroot/app/index.ts"),
                 app: path.join(this.rootDir, "wwwroot/app/app.ts"),
+                home: path.join(this.rootDir, "wwwroot/app/components/home/home.module.ts"),
                 nationwide: path.join(this.rootDir, "wwwroot/app/components/Nationwide/nationwide.module.ts"),
                 overview: path.join(this.rootDir, "wwwroot/app/components/overview/overview.module.ts"),
                 jobSearch: path.join(this.rootDir, "wwwroot/app/components/jobSearch/jobSearch.module.ts"),

@@ -331,6 +331,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\enums\DispatchBoxes.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\home\home.module.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\podSearchResponse.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.module.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.service.ts" />

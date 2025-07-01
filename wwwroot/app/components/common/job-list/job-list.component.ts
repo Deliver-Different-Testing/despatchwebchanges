@@ -11,8 +11,8 @@ import DispatchCoreService from "../../../services/dispatch-core.service";
 import JobListType from "./enums/jobListType";
 
 class JobsListController extends BaseController {
-    private readonly DENSE_MODE_SAVE_KEY: string = `jobListComponentDenseViewMode_${ContactID}`; 
-    
+    private readonly DENSE_MODE_SAVE_KEY: string = `jobListComponentDenseViewMode_${ContactID}`;
+
     // Parent-provided data
     jobs?: IDispatchJob[];
     selectedJob?: IDispatchJob;
@@ -74,7 +74,7 @@ class JobsListController extends BaseController {
         this.calculateStats();
         this.applyFilters();
     }
-    
+
     private setupJobListVariables() {
         switch (this.jobListType) {
             case JobListType.DispatchJobList:
@@ -82,16 +82,24 @@ class JobsListController extends BaseController {
                 this.allowSearch = true;
                 this.densityMode = DensityMode.Normal;
                 break;
-                case JobListType.CurrentWorkList:
-                    this.allowDispatch = false;
-                    this.allowSearch = false;
-                    this.densityMode = DensityMode.Dense;
+            case JobListType.CurrentWorkList:
+                this.allowDispatch = false;
+                this.allowSearch = false;
+                this.densityMode = DensityMode.Dense;
+                break;
+            case JobListType.NationwideJobList:
+            case JobListType.NationwidePodJobList:
+            case JobListType.NationwideRepriceJobList:
+                this.allowDispatch = false;
+                this.allowSearch = true;
+                this.densityMode = DensityMode.Dense;
+                break;
         }
 
         // Use saved dense mode variable if exists
         if (Modernizr.localstorage) {
             const savedDenseMode = localStorage.getItem(`${this.DENSE_MODE_SAVE_KEY}_${this.jobListType}`);
-            if(savedDenseMode) this.densityMode = savedDenseMode as DensityMode;
+            if (savedDenseMode) this.densityMode = savedDenseMode as DensityMode;
         }
     }
 
@@ -553,6 +561,23 @@ class JobsListController extends BaseController {
 
     isMultiPartJob(job: IDispatchJob): boolean {
         return (job.isParentOrSingle && job._groupChildren && job._groupChildren.length > 0) ?? false;
+    }
+
+    getFlightIcon(jobNumber: string) {
+        if (!jobNumber) return '';
+
+        const lastChar = jobNumber.toString().slice(-1);
+
+        switch (lastChar) {
+            case '1':
+                return 'flight_takeoff';
+            case '2':
+                return 'local_airport';
+            case '3':
+                return 'flight_land';
+            default:
+                return '';
+        }
     }
 
     isChildJob(job: IDispatchJob): boolean {

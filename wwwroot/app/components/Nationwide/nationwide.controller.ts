@@ -41,6 +41,7 @@ import MessagingService from "../../services/messaging.service";
 import {ContactID} from "../../contants";
 import {StatusFilter} from "../task-dashboard/enums/status-filter";
 import TasksService from "../../services/tasks.service";
+import JobListType from "../common/job-list/enums/jobListType";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -72,12 +73,13 @@ class NationwideControl extends BaseController {
         'tasksService',
     ];
 
-    public readonly nationwidePageId: number = AppPages.Domestic;
-    public readonly isUsCustomer: boolean = false;
-
+    readonly nationwideJobList: JobListType = JobListType.NationwideJobList;
+    readonly nationwidePodJobList: JobListType = JobListType.NationwidePodJobList;
+    readonly nationwideRepriceJobList: JobListType = JobListType.NationwideRepriceJobList;
+    
+    readonly nationwidePageId: number = AppPages.Domestic;
+    readonly isUsCustomer: boolean = false;
     private tasksLoadingInBackground: boolean = false;
-
-
     greeting: string;
     isDataLoading: boolean = false;
     layouts: any[] = [];
@@ -516,7 +518,7 @@ class NationwideControl extends BaseController {
 
     private initializeTaskService() {
         try {
-            this.tasksService.loadLists().then(({ staffList, eventTypesList }) => {
+            this.tasksService.loadLists().then(({staffList, eventTypesList}) => {
                 this.staffList = staffList;
                 this.eventTypesList = eventTypesList;
                 this.applyScope();
@@ -853,82 +855,6 @@ class NationwideControl extends BaseController {
             });
             throw error;
         }
-    }
-
-    async onReorderJobList() {
-        console.log('[onReorderJobList] Called with order:', this.jobFilters?.order);
-        this.processOrderParam(this.jobFilters?.order, this.jobFilters);
-        await this.getJobList(JobDataType.NEW);
-    }
-
-    async onReorderPodList() {
-        console.log('[onReorderPodList] Called with order:', this.jobPodFilters?.order);
-        this.processOrderParam(this.jobPodFilters?.order, this.jobPodFilters);
-        await this.getJobList(JobDataType.POD);
-    }
-
-    async onReorderRepriceList() {
-        console.log('[onReorderRepriceList] Called with order:', this.jobRepriceFilters?.order);
-        this.processOrderParam(this.jobRepriceFilters?.order, this.jobRepriceFilters);
-        await this.getJobList(JobDataType.REPRICE);
-    }
-
-    private processOrderParam(orderParam: string | undefined, filtersObj: JobQueryParams): void {
-        let orderBy = orderParam || '';
-        let orderDirection = "asc";
-
-        if (orderBy && orderBy.startsWith("-")) {
-            orderBy = orderBy.substring(1);
-            orderDirection = "desc";
-        }
-
-        console.log(`Parsed order: ${orderBy}, direction: ${orderDirection}`);
-
-        // Update filters with parsed values
-        if (filtersObj) {
-            filtersObj.order = orderBy;
-            filtersObj.orderDirection = orderDirection;
-        }
-    }
-
-    attention(job: IDispatchJob) {
-        let temp = "";
-
-        if (job.direct) {
-            temp += "DIRECT ";
-        }
-        if (job.van) {
-            temp += "VAN ";
-        }
-        if (job.truck || job.speedId === 45) {
-            temp += "TRUCK ";
-        }
-        if (job.return) {
-            temp += "RTN ";
-        }
-        if (job.size?.id === 2 && !job.van && !job.truck && job.speedId !== 45) {
-            temp = "CAR " + temp;
-        }
-        if (job.size?.id === 5) {
-            temp = "Scoot " + temp;
-        }
-
-        if (job.childNotes && job.childNotes?.length > 0) {
-            temp += job.childNotes;
-        }
-        if (job.pickupFrom === 1) {
-            temp += "R ";
-        } else {
-            if (job.pickupFrom === 2) {
-                temp += "D ";
-            }
-        }
-
-        if (job.saturdayDelivery) {
-            temp += "Sat Del";
-        }
-
-        return temp.trim();
     }
 
     openSearch(boxName: string, index: number) {
@@ -1442,109 +1368,6 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async filterNewJobsByStatus(statusGroup: string) {
-        console.log('filterNewJobsByStatus called with:', statusGroup);
-        this.jobFilters.order = statusGroup;
-        await this.getJobList(JobDataType.NEW);
-        console.log(`Jobs filtered by status group: ${statusGroup}`);
-    }
-
-    async filterPodJobsByStatus(statusGroup: string) {
-        console.log('filterPodJobsByStatus called with:', statusGroup);
-        this.jobPodFilters.order = statusGroup;
-        await this.getJobList(JobDataType.POD);
-        console.log(`POD jobs filtered by status group: ${statusGroup}`);
-    }
-
-    async filterRepriceJobsByStatus(statusGroup: string) {
-        console.log('filterRepriceJobsByStatus called with:', statusGroup);
-        this.jobRepriceFilters.order = statusGroup;
-        await this.getJobList(JobDataType.REPRICE);
-        console.log(`Reprice jobs filtered by status group: ${statusGroup}`);
-    }
-
-    getNewJobsStatusCount(statusGroup: string): number {
-        return this.getStatusCount(statusGroup, JobDataType.NEW);
-    }
-
-    getPodJobsStatusCount(statusGroup: string): number {
-        return this.getStatusCount(statusGroup, JobDataType.POD);
-    }
-
-    getRepriceJobsStatusCount(statusGroup: string): number {
-        return this.getStatusCount(statusGroup, JobDataType.REPRICE);
-    }
-
-    getStatusCount(statusType: string, jobDataType: JobDataType): number {
-        let jobList: IDispatchJob[] | undefined;
-
-        switch (jobDataType) {
-            case JobDataType.NEW:
-                jobList = this.jobList;
-                break;
-            case JobDataType.POD:
-                jobList = this.jobListPOD;
-                break;
-            case JobDataType.REPRICE:
-                jobList = this.jobListReprice;
-                break;
-            default:
-                return 0;
-        }
-
-        if (!jobList || !Array.isArray(jobList)) {
-            return 0;
-        }
-
-        const normalizedStatusType = statusType.toLowerCase().replace(/\s+/g, '-');
-
-        const statusGroups: Record<string, JobStatus[]> = {
-            'pending': [
-                JobStatus.New,
-                JobStatus.Dispatched,
-                JobStatus.ReadyForPacking,
-                JobStatus.ReadyToPickup,
-                JobStatus.AwaitingProcessing,
-                JobStatus.Preassigned
-            ],
-            'in-transit': [
-                JobStatus.Accepted,
-                JobStatus.PickedUp,
-                JobStatus.InTransit,
-                JobStatus.OutForDelivery
-            ],
-            'completed': [
-                JobStatus.Completed,
-                JobStatus.AssumingCompleted
-            ],
-            'problem': [
-                JobStatus.Rejected,
-                JobStatus.LatePickup,
-                JobStatus.Warning,
-                JobStatus.LateDelivery,
-                JobStatus.AwaitingPod,
-                JobStatus.Undeliverable
-            ]
-        };
-
-        // Check if we're looking for a status group
-        if (statusGroups[normalizedStatusType]) {
-            return jobList.filter(job =>
-                job.statusId !== undefined &&
-                statusGroups[normalizedStatusType].includes(job.statusId)
-            ).length;
-        }
-
-        // Otherwise, check for a specific status name match
-        return jobList.filter(job => {
-            if (!job.statusName) {
-                return false;
-            }
-            const normalizedJobStatus = job.statusName.toLowerCase().replace(/\s+/g, '-');
-            return normalizedJobStatus === normalizedStatusType;
-        }).length;
-    }
-
     private updateDateFilters(dataTypes: JobDataType | JobDataType[] = JobDataType.ALL) {
         if (dataTypes.includes(JobDataType.NEW)) {
             this.jobFilters.startDate = this.startDate;
@@ -1692,10 +1515,6 @@ class NationwideControl extends BaseController {
         }
     }
 
-    jobClass(job: IDispatchJob): string {
-        return getJobTableRowClass(job, this.currentJob);
-    }
-
     private handleError(error: any) {
         if (!error) {
             console.log('User canceled!');
@@ -1816,7 +1635,7 @@ class NationwideControl extends BaseController {
             this.applyScope();
         }
     }
-    
+
     async filterTasks(filterType: string): Promise<void> {
         this.tasksFilter = filterType;
         await this.loadTasks(filterType);
@@ -1831,13 +1650,13 @@ class NationwideControl extends BaseController {
         }
 
         try {
-            if(!this.jobList || !this.jobListPOD || !this.jobListReprice) return;
-            
+            if (!this.jobList || !this.jobListPOD || !this.jobListReprice) return;
+
             // Use TasksService to find a job in local lists first
             let attachedJob = this.tasksService.findTaskJobInLists(task.jobId, [
-                { list: this.jobList, name: 'jobList' },
-                { list: this.jobListPOD, name: 'jobListPOD' },
-                { list: this.jobListReprice, name: 'jobListReprice' }
+                {list: this.jobList, name: 'jobList'},
+                {list: this.jobListPOD, name: 'jobListPOD'},
+                {list: this.jobListReprice, name: 'jobListReprice'}
             ]);
 
             // If not found in local lists, fetch from a database
@@ -1934,21 +1753,6 @@ class NationwideControl extends BaseController {
         updateJobList(this.jobListReprice);
 
         this.applyScope();
-    }
-
-    getUnreadNewCount() {
-        if (!this.jobList) return;
-        return this.jobList.filter(job => !job.hasBeenRead).length;
-    }
-
-    getUnreadPodCount() {
-        if (!this.jobListPOD) return;
-        return this.jobListPOD.filter(job => !job.hasBeenRead).length;
-    }
-
-    getUnreadRepriceCount() {
-        if (!this.jobListReprice) return;
-        return this.jobListReprice.filter(job => !job.hasBeenRead).length;
     }
 
     async refreshJobLists(currentJobId?: number) {
@@ -2197,6 +2001,33 @@ class NationwideControl extends BaseController {
             this.eventTypesList
         );
     }
+
+    async onJobSelect(data: { job: IDispatchJob }): Promise<void> {
+        await this.selectJob(data.job);
+    }
+
+    async onJobAction(data: { action: string, job: IDispatchJob, params?: any }): Promise<void> {
+        try {
+            switch (data.action) {
+                case 'restore':
+                    await this.restoreJob(data.job);
+                    break;
+                case 'reallocate':
+                    await this.reAllocateJobs(data.job);
+                    break;
+                default:
+                    console.warn(`Unknown job action: ${data.action}`);
+            }
+        } catch (error) {
+            console.error(`Error handling job action ${data.action}:`, error);
+            this.toastrService.showErrorToast(`Failed to ${data.action} job`);
+        }
+    }
+
+    getJobListContextMenuOptions(data: { job: IDispatchJob }): any[] {
+        return this.getContextMenuOptions(data.job);
+    }
+
 }
 
 const NationwideComponent: angular.IComponentOptions = {

@@ -111,7 +111,7 @@
 
             <!-- Job Rows -->
             <tr ng-repeat-start="job in ctrl.filteredJobs track by job.id"
-                class="md-table-row {{ctrl.getJobPriorityClass(job)}}"
+                class="md-table-row {{::ctrl.getJobPriorityClass(job)}}"
                 ng-class="{
             'selected': ctrl.selectedJob && ctrl.selectedJob.id === job.id,
             'unread': !job.hasBeenRead,
@@ -126,10 +126,10 @@
 
                 <!-- Time Column -->
                 <td class="md-time-cell" ng-if="ctrl.isColumnVisible('time')">
-                    <div class="md-delivery-time">{{ctrl.formatDeliveryTime(job.time)}}</div>
-                    <div class="md-time-remaining {{ctrl.getTimeRemaining(job).class}}"
+                    <div class="md-delivery-time">{{::ctrl.formatDeliveryTime(job.time)}}</div>
+                    <div class="md-time-remaining {{::ctrl.getTimeRemaining(job).class}}"
                          ng-if="!ctrl.shouldShowMinimalDetails()">
-                        {{ctrl.getTimeRemaining(job).text}}
+                        {{::ctrl.getTimeRemaining(job).text}}
                     </div>
                 </td>
 
@@ -142,12 +142,16 @@
                         <md-icon class="md-package-icon" md-font-set="material-symbols-outlined"
                                  ng-class="{'multi-part': ctrl.isMultiPartJob(job)}"
                                  ng-if="ctrl.shouldShowFullDetails()">
-                            {{ctrl.isMultiPartJob(job) ? 'inventory' : 'inventory_2'}}
+                            {{::ctrl.isMultiPartJob(job) ? 'inventory' : 'inventory_2'}}
                         </md-icon>
 
+                        <md-icon md-font-set="material-symbols-outlined" ng-if="job.fromAirportId || job.toAirportId">
+                            {{::ctrl.getFlightIcon(job.jobNo)}}
+                        </md-icon>
+                        
                         <!-- Show the full job number in normal mode, abbreviated in ultra-dense -->
                         <span ng-if="ctrl.shouldShowMinimalDetails()">
-                {{ctrl.getAbbreviatedJobNumber(job.jobNo)}}
+                {{::ctrl.getAbbreviatedJobNumber(job.jobNo)}}
             </span>
                         <span ng-if="!ctrl.shouldShowMinimalDetails()">
                 {{job.jobNo}}
@@ -156,20 +160,12 @@
                         <!-- Add parts badge for multi-part jobs -->
                         <span ng-if="ctrl.isMultiPartJob(job)" class="md-parts-badge">
                 <span ng-if="ctrl.shouldShowFullDetails()">
-                    {{ctrl.getChildCount(job)}} parts
+                    {{::ctrl.getChildCount(job)}} parts
                 </span>
                 <span ng-if="!ctrl.shouldShowFullDetails()">
-                    {{ctrl.getChildCount(job)}}
+                    {{::ctrl.getChildCount(job)}}
                 </span>
             </span>
-
-                        <!-- Add scan indicators and barcodes for child jobs -->
-                        <span ng-if="!job.isParentOrSingle && ctrl.hasConNote(job)"
-                              class="md-scan-indicator"
-                              ng-class="{'scanned': job.scanned, 'pending': !job.scanned}"
-                              title="{{job.scanned ? 'Scanned and ready' : 'Awaiting scan'}}"></span>
-                        <span ng-if="!job.isParentOrSingle && ctrl.hasConNote(job)"
-                              class="md-barcode">{{ctrl.getConNote(job)}}</span>
                     </div>
                     <div class="md-job-client" ng-if="!ctrl.shouldShowMinimalDetails()">
                         <span ng-if="!job.isParentOrSingle">{{job.client}}</span>
@@ -183,10 +179,10 @@
                         <!-- Pickup Location -->
                         <div class="md-route-location md-route-from">
                             <div class="md-address-primary">
-                                {{ctrl.getPickupLocationName(job)}}
+                                {{::ctrl.getPickupLocationName(job)}}
                             </div>
                             <div class="md-address-secondary" ng-if="!ctrl.shouldShowMinimalDetails()">
-                                {{ctrl.getPickupAddress(job)}}
+                                {{::ctrl.getPickupAddress(job)}}
                             </div>
                         </div>
 
@@ -200,10 +196,10 @@
                         <!-- Delivery Location -->
                         <div class="md-route-location md-route-to">
                             <div class="md-address-primary">
-                                {{ctrl.getDeliveryLocationName(job)}}
+                                {{::ctrl.getDeliveryLocationName(job)}}
                             </div>
                             <div class="md-address-secondary" ng-if="!ctrl.shouldShowMinimalDetails()">
-                                {{ctrl.getDeliveryAddress(job)}}
+                                {{::ctrl.getDeliveryAddress(job)}}
                             </div>
                         </div>
                     </div>
@@ -295,7 +291,7 @@
                     </md-menu>
 
                     <!-- Child Jobs Expand Button -->
-                    <md-button ng-if="ctrl.isMultiPartJob(job)"
+                    <md-button ng-if="::ctrl.isMultiPartJob(job)"
                                class="md-icon-button"
                                ng-click="ctrl.toggleJobGroup(job); $event.stopPropagation()"
                                aria-label="{{job._isExpanded ? 'Collapse' : 'Expand'}} group">
@@ -313,7 +309,7 @@
             <tr ng-repeat-end
                 ng-if="job._isExpanded && ctrl.isMultiPartJob(job)"
                 ng-repeat="childJob in job._groupChildren track by childJob.id"
-                class="md-table-row child-job {{ctrl.getJobPriorityClass(childJob)}}"
+                class="md-table-row child-job {{::ctrl.getJobPriorityClass(childJob)}}"
                 ng-class="{
             'selected': ctrl.selectedJob && ctrl.selectedJob.id === childJob.id,
             'unread': !childJob.hasBeenRead
@@ -324,11 +320,10 @@
                 ng-click="ctrl.selectJob(childJob)"
                 ng-style="{'height': ctrl.getRowHeight() + 'px', 'font-size': ctrl.getFontSize() + 'px'}">
 
-                <!-- Rest of your child job content stays the same -->
                 <!-- Time Column -->
                 <td class="md-time-cell" ng-if="ctrl.isColumnVisible('time')">
-                    <div class="md-delivery-time">{{ctrl.formatDeliveryTime(childJob.time)}}</div>
-                    <div class="md-time-remaining {{ctrl.getTimeRemaining(childJob).class}}"
+                    <div class="md-delivery-time">{{::ctrl.formatDeliveryTime(childJob.time)}}</div>
+                    <div class="md-time-remaining {{::ctrl.getTimeRemaining(childJob).class}}"
                          ng-if="!ctrl.shouldShowMinimalDetails()">
                         {{ctrl.getTimeRemaining(childJob).text}}
                     </div>
@@ -342,19 +337,11 @@
 
                         <!-- Show the full job number in normal mode, abbreviated in ultra-dense -->
                         <span ng-if="ctrl.shouldShowMinimalDetails()">
-                {{ctrl.getAbbreviatedJobNumber(childJob.jobNo)}}
+                {{::ctrl.getAbbreviatedJobNumber(childJob.jobNo)}}
             </span>
                         <span ng-if="!ctrl.shouldShowMinimalDetails()">
                 {{childJob.jobNo}}
             </span>
-
-                        <!-- Add scan indicators and barcodes for child jobs -->
-                        <span ng-if="ctrl.hasConNote(childJob)"
-                              class="md-scan-indicator"
-                              ng-class="{'scanned': childJob.scanned, 'pending': !childJob.scanned}"
-                              title="{{childJob.scanned ? 'Scanned and ready' : 'Awaiting scan'}}"></span>
-                        <span ng-if="ctrl.hasConNote(childJob)"
-                              class="md-barcode">{{ctrl.getConNote(childJob)}}</span>
                     </div>
                     <div class="md-job-client" ng-if="!ctrl.shouldShowMinimalDetails()">
                         {{ctrl.getChildJobNotes(childJob)}}
@@ -367,10 +354,10 @@
                         <!-- Pickup Location -->
                         <div class="md-route-location md-route-from">
                             <div class="md-address-primary">
-                                {{ctrl.getPickupLocationName(childJob)}}
+                                {{::ctrl.getPickupLocationName(childJob)}}
                             </div>
                             <div class="md-address-secondary" ng-if="!ctrl.shouldShowMinimalDetails()">
-                                {{ctrl.getPickupAddress(childJob)}}
+                                {{::ctrl.getPickupAddress(childJob)}}
                             </div>
                         </div>
 
@@ -384,10 +371,10 @@
                         <!-- Delivery Location -->
                         <div class="md-route-location md-route-to">
                             <div class="md-address-primary">
-                                {{ctrl.getDeliveryLocationName(childJob)}}
+                                {{::ctrl.getDeliveryLocationName(childJob)}}
                             </div>
                             <div class="md-address-secondary" ng-if="!ctrl.shouldShowMinimalDetails()">
-                                {{ctrl.getDeliveryAddress(childJob)}}
+                                {{::ctrl.getDeliveryAddress(childJob)}}
                             </div>
                         </div>
                     </div>
