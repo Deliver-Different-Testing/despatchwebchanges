@@ -47,6 +47,7 @@ import timezone from 'dayjs/plugin/timezone';
 import MessagingService from "../../services/messaging.service";
 import {StatusFilter} from "../task-dashboard/enums/status-filter";
 import TasksService from "../../services/tasks.service";
+import JobListType from "../common/job-list/enums/jobListType";
 
 class HomeController extends BaseController {
     static $inject = [
@@ -77,6 +78,9 @@ class HomeController extends BaseController {
         '$interval',
     ];
 
+    readonly currentWorkListName: JobListType = JobListType.CurrentWorkList;
+    readonly dispatchListName: JobListType = JobListType.DispatchJobList;
+    
     private readonly DOM_SELECTORS = {
         areaGroup: "#area-group .btn",
         driverLocations: "#driverLocations .listActive"
@@ -99,8 +103,6 @@ class HomeController extends BaseController {
     queryParams: JobQueryParams;
     isUsCustomer: boolean;
     selectedCourier: any;
-    jobRecordSearchText: string;
-    dispatchCourierSearchTest: string;
     jobDetailFabIsOpen: boolean;
     courierListFabIsOpen: boolean;
     isCheckingAttachments: boolean;
@@ -290,8 +292,6 @@ class HomeController extends BaseController {
         this.selectedCourier = null;
 
         this.courierSearchText = "";
-        this.jobRecordSearchText = "";
-        this.dispatchCourierSearchTest = "";
 
         this.jobDetailFabIsOpen = false;
         this.courierListFabIsOpen = false;
@@ -513,9 +513,9 @@ class HomeController extends BaseController {
                     {
                         id: "col1",
                         width: "50%",
-                        boxes: [{name: DispatchBoxes.JobsList, height: "45%"}, {
+                        boxes: [{name: DispatchBoxes.JobsList, height: "50%"}, {
                             name: DispatchBoxes.JobDetail,
-                            height: "65%"
+                            height: "50%"
                         }],
                     },
                     {
@@ -783,14 +783,6 @@ class HomeController extends BaseController {
         });
     }
 
-    onCourierSearchClick($event: MouseEvent) {
-        const target = $event.target as HTMLElement;
-        if (target?.tagName === "INPUT") {
-            (target as HTMLInputElement).value = "";
-            this.courierSearchText = "";
-        }
-    }
-
     attention(job: IDispatchJob) {
         const components = [];
 
@@ -950,12 +942,6 @@ class HomeController extends BaseController {
             job.assignedCourier = undefined;
         }
     }
-
-    formatCourierDisplay(model: any) {
-        if (!model) return '';
-        return model.text || model.label || model.name || '';
-    }
-
     handleDispatchFieldClick(event: MouseEvent, job: IDispatchJob) {
         // Prevent the job row click event
         event.stopPropagation();
@@ -1446,39 +1432,6 @@ class HomeController extends BaseController {
             this.potentialCouriers = await this.DispatchData.getPotentialCouriers(jobId);
         } catch (error: any) {
             console.error("Error getting potential couriers:", error);
-        }
-    }
-
-    courierSearch(searchText: string) {
-        if (!searchText || searchText.length < 2) {
-            return [];
-        }
-
-        try {
-            const url = "/courier/AllActiveSearch";
-            return this.DispatchData.autocompleteSearch(searchText, url);
-        } catch (error: any) {
-            console.error("Error in courier search:", error.message);
-            return [];
-        }
-    }
-
-
-    jobRecordSearch(searchText: string) {
-        return this.jobList
-            .filter((job) => job.jobNo.toLowerCase().includes(searchText.toLowerCase()))
-            .map((job) => ({id: job.id, text: job.jobNo}));
-    }
-
-    async JobRecordSelected(selectedJobId: number) {
-        try {
-            const selectedJob = this.jobList.find((job) => job.id === selectedJobId);
-            if (!selectedJob) return;
-
-            await this.selectJob(selectedJob);
-            console.log("Job selection complete");
-        } catch (error: any) {
-            console.error("Error in JobRecordSelected:", error);
         }
     }
 
@@ -2690,6 +2643,48 @@ class HomeController extends BaseController {
             this.staffList,
             this.eventTypesList
         );
+    }
+
+    handleJobSelection(job: IDispatchJob) {
+        return this.selectJob(job);
+    }
+
+    async handleJobDispatch(job: IDispatchJob, courierId: number) {
+        try {
+            this.dispatchState.selectedJobs.add(job.id);
+            await this.dispatchJobs(courierId);
+            this.dispatchState.selectedJobs.clear();
+
+            // Update the job's assigned courier display
+            job.assignedCourier = { id: courierId, text: '' };
+
+            return true;
+        } catch (error: any) {
+            console.error("Error in dispatch:", error);
+            this.dispatchState.selectedJobs.delete(job.id);
+            throw error;
+        }
+    }
+
+    async handleJobAction(action: string, job: IDispatchJob, params?: any) {
+        switch (action) {
+            case 'restore':
+                return await this.restoreJob(job);
+            case 'reallocate':
+                return await this.reAllocateJobs(job);
+            case 'split':
+                return await this.splitJob(params.$event, job);
+            case 'latePickup':
+                return await this.latePickup(params.minsAway, job, params.obj);
+            case 'lateDelivery':
+                return await this.lateDelivery(params.minsAway, job, params.obj);
+            default:
+                console.warn(`Unknown job action: ${action}`);
+        }
+    }
+    
+    getJobContextMenuOptions() {
+        return (job: IDispatchJob) => this.getContextMenuOptions(job);
     }
 }
 

@@ -21,7 +21,7 @@ public class CourierController(
             if (despatchViewIds == null || despatchViewIds.Count == 0)
                 despatchViewIds = [49];
 
-            var result = await courierRepository.GetClearListsAsync(despatchViewIds, isUsTenant);
+            var result = await courierRepository.GetClearListsAsync(despatchViewIds);
             return Json(result);
         }
         catch (Exception e)

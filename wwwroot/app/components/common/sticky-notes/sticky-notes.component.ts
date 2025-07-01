@@ -124,7 +124,7 @@ class StickyNoteController extends BaseController {
             isImportant: false,
             jobId: !this.isRecurringJob ? this.jobId : undefined,
             jobBookingId: this.isRecurringJob ? this.jobId : undefined,
-            createdDate: new Date(),
+            createdDate: dayjs().toDate(),
             createdBy: ContactID
         };
 

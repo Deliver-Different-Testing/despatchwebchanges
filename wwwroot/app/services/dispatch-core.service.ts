@@ -29,6 +29,7 @@ import {JobProperty} from "../enums/job-property.enum";
 import ConfigService from "./config.service";
 import {UpdateJobTimeRequest, UpdatePodDetailsRequest} from "../interfaces/requests.interfaces";
 import dayjs from "dayjs";
+import {JobEventData} from "../components/dialogs/add-event-dialog/add-event-dialog.interfaces";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [
@@ -1199,6 +1200,22 @@ class DispatchCoreService implements angular.IServiceProvider {
     async reSendJobs(jobIds: number[]) {
         const response = await this.$http.post(`job/ReSendSelected?jobIds=${jobIds}`, null);
         return response.data;
+    }
+
+    async exsalerateActivity(eventName: string, notes: string, clientId: number, jobNumber: string, despatcherName: string) {
+        await this.$http.post(`job/ExsalerateActivity`,
+            null, {
+                params: {
+                    eventName,
+                    notes, clientId,
+                    jobNumber,
+                    despatcherName,
+                }
+            });
+    }
+
+    async addEvent(eventData: JobEventData): Promise<void> {
+        await this.$http.post('job/addEvent', eventData);
     }
 }
 

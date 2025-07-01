@@ -447,8 +447,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
     }
 
     public async Task<ClearListViewModel> GetClearListsAsync(
-        List<int> despatchViewIds,
-        bool isUsTenant
+        List<int> despatchViewIds
     )
     {
         if (despatchViewIds.Count == 0) return new ClearListViewModel();

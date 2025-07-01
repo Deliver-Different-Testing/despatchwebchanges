@@ -2,7 +2,6 @@ import ToastrService from "../../../services/toastr.service";
 import {DfrntEvent, IJob, Suggestion, IJobNote} from "../../../interfaces/job.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import BaseController from "../../base-controller";
-import NationwideService from "../../Nationwide/nationwide.service";
 import NoteService from "../../../services/notes.service";
 import {JobNoteType} from "../../../enums/job-note-type.enum";
 import {EventType} from "../../../enums/event-type";
@@ -14,7 +13,6 @@ class AddEventDialogController extends BaseController {
         "$mdDialog",
         "DispatchData",
         "toastrService",
-        "NWData",
         "noteService",
         "job",
         "dispatcherName",
@@ -32,7 +30,6 @@ class AddEventDialogController extends BaseController {
         private $mdDialog: angular.material.IDialogService,
         private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
-        private NWData: NationwideService,
         private noteService: NoteService,
         private job: IJob,
         private dispatcherName: string,
@@ -92,7 +89,7 @@ class AddEventDialogController extends BaseController {
 
             // Exsalerate Event
             if (eventId === EventType.Compliment || eventId === EventType.Complaint) {
-                await this.NWData.exsalerateActivity(
+                await this.DispatchData.exsalerateActivity(
                     eventName,
                     event.notes ?? '',
                     this.job.clientId ?? 0,
@@ -131,7 +128,7 @@ class AddEventDialogController extends BaseController {
                 eventDueDate: dayjs(event.eventDate).utc().format()
             }
 
-            await this.NWData.addEvent(eventData);
+            await this.DispatchData.addEvent(eventData);
 
             if (eventId === EventType.CancelJob) {
                 await this.DispatchData.voidJob(this.job.id);

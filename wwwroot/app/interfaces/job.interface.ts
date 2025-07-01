@@ -402,9 +402,12 @@ export interface IJobNote {
 
 export interface IDispatchJob {
     // Core identifiers
+    showCourierSearch: boolean;
     id: number;
     jobNo: string;
     hasBeenRead: boolean;
+    isParentOrSingle?: boolean;
+    parentId: number;
 
     // Status and timing information
     speedId?: number;
@@ -432,7 +435,9 @@ export interface IDispatchJob {
     pickUpLatitude?: number;
     deliveryLongitude?: number;
     deliveryLatitude?: number;
-
+    pickupContact?: string;
+    deliveryContact?: string;
+    
     // Routing data
     direct?: boolean;
     speed?: string;
@@ -487,6 +492,9 @@ export interface IDispatchJob {
     toAirportId?: number;
     van?: boolean;
     truck?: boolean;
+
+    _isExpanded?: boolean;
+    _groupChildren?: IDispatchJob[];
 }
 
 export interface IClearListEnvelope {

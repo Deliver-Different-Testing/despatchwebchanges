@@ -26,7 +26,7 @@ public interface ICourierRepository
     Task<List<ActiveCouriersViewModel>> AllActiveCouriersAsync();
 
     CourierLocation Location(string code);
-    Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds, bool isUsTenant);
+    Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds);
 
     Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(
         int clearListAreaId,

@@ -22,22 +22,6 @@ class NationwideService implements angular.IServiceProvider {
         return this;
     }
 
-    async addEvent(eventData: JobEventData): Promise<void> {
-        await this.$http.post('job/addEvent', eventData);
-    }
-
-    async exsalerateActivity(eventName: string, notes: string, clientId: number, jobNumber: string, despatcherName: string) {
-        await this.$http.post(`job/ExsalerateActivity`,
-            null, {
-                params: {
-                    eventName,
-                    notes, clientId,
-                    jobNumber,
-                    despatcherName,
-                }
-            });
-    }
-
     async getNationwideJobs(
         endpoint: string,
         queryParams: JobQueryParams,
@@ -45,15 +29,15 @@ class NationwideService implements angular.IServiceProvider {
         internal: boolean,
         selectedAreas: DfrntPageViewModel[]
     ): Promise<IDispatchJob[]> {
-        const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
-
+        const despatchViewIds = selectedAreas.map(area => area.id);
+        
         const defaultParams = {
             status: 'all',
             order: 'time',
             orderDirection: 'asc'
         };
 
-        const paramObject = {
+        const params = {
             order: String(queryParams.order ?? defaultParams.order),
             orderDirection: String(queryParams.orderDirection ?? defaultParams.orderDirection),
             startDate: String(queryParams.startDate ? dayjs(queryParams.startDate).format() : null),
@@ -61,18 +45,13 @@ class NationwideService implements angular.IServiceProvider {
             isInternal: String(internal),
             cid: String(ContactID),
             clientIds: selectedClients.length ? selectedClients.join(',') : '',
+            despatchViewIds
         };
-        const params = new URLSearchParams(paramObject);
 
-        // Add despatch view IDs
-        if (despatchViewIds.length) {
-            despatchViewIds.forEach(id => {
-                params.append('despatchViewIds', String(id));
-            });
-        }
-
-        const url = `nationwidejob/${endpoint}?${params.toString()}`;
-        const response = await this.$http.get<IDispatchJob[]>(url);
+        const url = `nationwidejob/${endpoint}}`;
+        const response = await this.$http.get<IDispatchJob[]>(url, {
+            params
+        });
         return response.data;
     }
 
@@ -231,12 +210,6 @@ class NationwideService implements angular.IServiceProvider {
             }
         });
         return response.data;
-    }
-
-    private _prepareViewIdsForRequest(selectedAreas: DfrntPageViewModel[] | Suggestion[]): number[] {
-        return selectedAreas.map(area => {
-            return typeof area === "object" && area.id ? area.id : 0;
-        });
     }
 }
 
