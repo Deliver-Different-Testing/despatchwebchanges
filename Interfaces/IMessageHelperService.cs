@@ -12,29 +12,9 @@ public interface IMessageHelperService
     MessageParticipant GetOtherParty(TucManualMessage message, int currentStaffId);
 
     /// <summary>
-    /// Gets complete message direction information
-    /// </summary>
-    MessageDirection GetMessageDirection(TucManualMessage message, int currentStaffId);
-
-    /// <summary>
     /// Checks if message is incoming to the specified staff member
     /// </summary>
     bool IsIncomingMessage(TucManualMessage message, int staffId);
-
-    /// <summary>
-    /// Checks if message is outgoing from the specified staff member
-    /// </summary>
-    bool IsOutgoingMessage(TucManualMessage message, int staffId);
-
-    /// <summary>
-    /// Gets formatted name for courier or staff
-    /// </summary>
-    string GetParticipantName(TucCourier courier = null, TucStaff staff = null);
-
-    /// <summary>
-    /// Gets initials for courier or staff
-    /// </summary>
-    string GetParticipantInitials(TucCourier courier = null, TucStaff staff = null);
 
     /// <summary>
     /// Gets courier online/offline status

@@ -304,6 +304,10 @@
   <ItemGroup>
     <TypeScriptCompile Include="wwwroot\app\components\base-controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\job-list\enums\densityMode.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\job-list\enums\jobCategory.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\job-list\enums\jobListTypes.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\job-list\job-list.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\pod-photo-viewer\pod-photo-viewer.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\side-nav\side-nav.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\sticky-notes\sticky-notes.component.ts" />

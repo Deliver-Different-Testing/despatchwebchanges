@@ -79,6 +79,7 @@ import TruckCourierStatusDialogService
 import MessagingService from "./services/messaging.service";
 import MessagingDialogService from "./components/dialogs/messaging-dialog/messaging-dialog.service";
 import MessagingDialogController from "./components/dialogs/messaging-dialog/messaging-dialog.controller";
+import JobsListComponent from "./components/common/job-list/job-list.component";
 
 const app = (window as any).uDispatchApp;
 
@@ -202,6 +203,7 @@ app.component("taskItemComponent", TaskItemComponent);
 app.component("homeComponent", HomeComponent);
 app.component("noData", NoDataComponent);
 app.component("stickyNote", StickyNoteComponent);
+app.component("jobsList", JobsListComponent);
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);

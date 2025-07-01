@@ -103,7 +103,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 RefA = j.ClientRefa,
                 RefB = j.ClientRefb,
                 OurRef = j.OurRef,
-                SigNotRequired = leave.Name ?? "",
+                SigNotRequired = leave.Name ?? string.Empty,
                 Charge = $"{j.Amount:C}",
                 PickUpLatitude = decimal.Parse(j.PickUpLatitude),
                 PickUpLongitude = decimal.Parse(j.PickUpLongitude),
@@ -161,9 +161,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 && x.BookDate <= toDate
                 && (!clientSet || x.ClientId == clientId)
                 && (!courierSet || x.CourierId == courierId)
-                && (job == "" || EF.Functions.Like(x.JobNumber.ToLower(), jobParam))
+                && (job == string.Empty || EF.Functions.Like(x.JobNumber.ToLower(), jobParam))
                 && (
-                    wild == ""
+                    wild == string.Empty
                     || EF.Functions.Like(
                         x.FromAddress
                         + " "
@@ -177,11 +177,11 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                         + " "
                         + x.ToSuburb
                         + " "
-                        + (x.ClientRefa ?? "")
+                        + (x.ClientRefa ?? string.Empty)
                         + " "
-                        + (x.ClientRefb ?? "")
+                        + (x.ClientRefb ?? string.Empty)
                         + " "
-                        + (x.OurRef ?? "")
+                        + (x.OurRef ?? string.Empty)
                         + " "
                         + x.JobNumber.ToLower(),
                         wildParam
@@ -262,11 +262,11 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 Speed = v.Speed,
                 PreBook = false,
                 SpeedId = v.SpeedId,
-                Booked = DateTime.Parse(
+                Booked = v.BookedDate.HasValue && v.Time.HasValue ? DateTime.Parse(
                     v.BookedDate.Value.ToString("yyyy-MM-dd")
                     + " "
                     + v.Time.Value.ToString("HH:mm:ss")
-                )
+                ) : DateTime.MinValue
             })
             .ToList();
         stopwatch.Stop();
@@ -496,26 +496,30 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             try
             {
                 // Check if price is actually changing
-                bool priceChanged = Math.Round(match.UcjbAmount ?? 0, 4) != Math.Round(d.Amount.Value, 4) ||
-                                   Math.Round(match.FuelSurchargeAmount ?? 0, 4) != Math.Round(d.Fuel.Value, 4) ||
-                                   Math.Round(match.PpdexclusiveAmount ?? 0, 4) != Math.Round(d.Ppd.Value, 4);
-
-                if (priceChanged)
+                if (d.Amount.HasValue && d.Ppd.HasValue && d.Fuel.HasValue && d.CourierPayment.HasValue &&
+                    d.CourierFuel.HasValue && d.CourierBonus.HasValue)
                 {
-                    // Apply updates cautiously
-                    match.UcjbAmount = Math.Round(d.Amount.Value, 4, MidpointRounding.AwayFromZero);
-                    match.FuelSurchargeAmount = Math.Round(d.Fuel.Value, 4, MidpointRounding.AwayFromZero);
-                    match.PpdexclusiveAmount = Math.Round(d.Ppd.Value, 4, MidpointRounding.AwayFromZero);
-                    match.RawBaseAmount = match.UcjbAmount - match.FuelSurchargeAmount - match.PpdexclusiveAmount;
-                    // Mark this job for pricing breakdown update
-                    jobsWithChangedPrices.Add(d.Id);
-                    Log.Information("Job {DId} has price change - updating", d.Id);
-                }
-                else
-                {
-                    Log.Information("Job {DId} price unchanged - skipping pricing breakdown update", d.Id);
-                }
+                    bool priceChanged = Math.Round(match.UcjbAmount ?? 0, 4) != Math.Round(d.Amount.Value, 4) ||
+                                        Math.Round(match.FuelSurchargeAmount ?? 0, 4) != Math.Round(d.Fuel.Value, 4) ||
+                                        Math.Round(match.PpdexclusiveAmount ?? 0, 4) != Math.Round(d.Ppd.Value, 4);
 
+                    if (priceChanged)
+                    {
+                        // Apply updates cautiously
+                        match.UcjbAmount = Math.Round(d.Amount.Value, 4, MidpointRounding.AwayFromZero);
+                        match.FuelSurchargeAmount = Math.Round(d.Fuel.Value, 4, MidpointRounding.AwayFromZero);
+                        match.PpdexclusiveAmount = Math.Round(d.Ppd.Value, 4, MidpointRounding.AwayFromZero);
+                        match.RawBaseAmount = match.UcjbAmount - match.FuelSurchargeAmount - match.PpdexclusiveAmount;
+                        // Mark this job for a pricing breakdown update
+                        jobsWithChangedPrices.Add(d.Id);
+                        Log.Information("Job {DId} has price change - updating", d.Id);
+                    }
+                    else
+                    {
+                        Log.Information("Job {DId} price unchanged - skipping pricing breakdown update", d.Id);
+                    }
+                }
+                
                 // Always update these fields, regardless of price change
                 match.CourierPercentage = null;
                 match.CourierPayment = Math.Round(d.CourierPayment.Value, 4, MidpointRounding.AwayFromZero);
@@ -585,7 +589,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     parentJob.PpdexclusiveAmount = totalPpd;
                     parentJob.RawBaseAmount = totalAmount - totalFuel - totalPpd;
 
-                    // Mark this parent job for pricing breakdown update
+                    // Mark this parent job for a pricing breakdown update
                     jobsWithChangedPrices.Add(x.Key);
                     Log.Information("Parent job {XKey} has price change - updating", x.Key);
                 }
@@ -595,7 +599,6 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 }
 
                 processedJobIds.Add(x.Key);
-
             }
             catch (Exception ex)
             {
@@ -665,15 +668,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         }
 
         // Finally, update all jobs to locked state
-        foreach (var d in dbData.Where(j => processedJobIds.Contains(j.UcjbId)))
-        {
-            d.UcjbLocked = true;
-        }
+        foreach (var d in dbData.Where(j => processedJobIds.Contains(j.UcjbId))) d.UcjbLocked = true;
 
-        foreach (var d in dbDataArchive.Where(j => processedJobIds.Contains(j.UcjbId)))
-        {
-            d.UcjbLocked = 1;
-        }
+        foreach (var d in dbDataArchive.Where(j => processedJobIds.Contains(j.UcjbId))) d.UcjbLocked = 1;
 
         try
         {
@@ -718,9 +715,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 && x.Date <= toDate
                 && (!clientSet || x.ClientId == clientId)
                 && (!courierSet || x.CourierId == courierId)
-                && (job == "" || EF.Functions.Like(x.Number.ToLower(), jobParam))
+                && (job == string.Empty || EF.Functions.Like(x.Number.ToLower(), jobParam))
                 && (
-                    wild == ""
+                    wild == string.Empty
                     || EF.Functions.Like(nationwide.UcnwConNote, wildParam)
                     || EF.Functions.Like(
                         x.FromAddress
@@ -735,11 +732,11 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                         + " "
                         + zo.UcsuName
                         + " "
-                        + (x.ClientReferenceA ?? "")
+                        + (x.ClientReferenceA ?? string.Empty)
                         + " "
-                        + (x.ClientReferenceB ?? "")
+                        + (x.ClientReferenceB ?? string.Empty)
                         + " "
-                        + (x.OurRef ?? "")
+                        + (x.OurRef ?? string.Empty)
                         + " "
                         + x.Number.ToLower(),
                         wildParam
@@ -2042,7 +2039,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 viewModel.Amount,
                 viewModel.Reference,
                 $"From # {viewModel.FromCourierId}",
-                "",
+                string.Empty,
                 note,
                 currentTime,
                 viewModel.StaffId
@@ -2346,7 +2343,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             UcjbPaged = true,
             UcjbClientCode = "ZZZ!!",
             UcjbRefJobId = 0,
-            UcjbNotes = "",
+            UcjbNotes = string.Empty,
             UcjbStatus = 6,
             UcjbComplTime = currentTime,
             UcjbPodname = $"Courier {courierId}",

@@ -12,6 +12,9 @@ class BaseController implements angular.IController {
     protected $intervalService?: angular.IIntervalService;
     protected $scopeService?: angular.IScope;
 
+    private pendingApply = false;
+    protected debouncedApplyScope?: (...args: any[]) => void;
+    
     constructor() {
         console.log('BaseController: Controller instantiated');
     }
@@ -31,26 +34,7 @@ class BaseController implements angular.IController {
             this.pendingApply = false;
         }, 16); // ~60fps
     }
-
-    protected watchOnce(
-        watchExpression: string | Function,
-        listener: (newValue: any, oldValue: any, scope: angular.IScope) => void
-    ): void {
-        if (!this.$scopeService) throw new Error("Scope is undefined");
-
-        const deregister = this.$scopeService.$watch(watchExpression as any, (newVal, oldVal, scope) => {
-            if (newVal !== oldVal) {
-                listener(newVal, oldVal, scope);
-                deregister(); // Auto-deregister after first change
-            }
-        });
-
-        this.watchers.push(deregister);
-    }
-
-    private pendingApply = false;
-    protected debouncedApplyScope?: (...args: any[]) => void;
-
+    
     protected applyScope(): void {
         if (!this.pendingApply && this.debouncedApplyScope) {
             this.pendingApply = true;
@@ -60,36 +44,6 @@ class BaseController implements angular.IController {
             this.$scopeService.$evalAsync();
         }
     }
-
-    protected getCachedData<T>(key: string, ttl: number = 300000): T | null {
-        const cached = this.dataCache.get(key);
-        if (cached && (Date.now() - cached.timestamp) < cached.ttl) {
-            return cached.data;
-        }
-        return null;
-    }
-
-    protected setCachedData<T>(key: string, data: T, ttl: number = 300000): void {
-        this.dataCache.set(key, {
-            data,
-            timestamp: Date.now(),
-            ttl
-        });
-    }
-
-    protected clearCache(keyPattern?: string): void {
-        if (keyPattern) {
-            const regex = new RegExp(keyPattern);
-            for (const [key] of this.dataCache) {
-                if (regex.test(key)) {
-                    this.dataCache.delete(key);
-                }
-            }
-        } else {
-            this.dataCache.clear();
-        }
-    }
-
     protected measurePerformance<T>(
         key: string,
         operation: () => T | Promise<T>
@@ -125,70 +79,7 @@ class BaseController implements angular.IController {
         const deregister = this.$scopeService.$on(eventName, actualListener);
         this.eventDeregistrations.push(deregister);
     }
-
-    protected updateCollection<T>(
-        collection: T[],
-        newItems: T[],
-        keyProperty: keyof T
-    ): T[] {
-        if (!collection || !newItems) return newItems || [];
-
-        const existingMap = new Map(collection.map(item => [item[keyProperty], item]));
-        const result: T[] = [];
-
-        // Update existing items and add new ones
-        for (const newItem of newItems) {
-            const key = newItem[keyProperty];
-            const existing = existingMap.get(key);
-
-            if (existing) {
-                // Update existing item properties
-                Object.assign(existing, newItem);
-                result.push(existing);
-                existingMap.delete(key);
-            } else {
-                result.push(newItem);
-            }
-        }
-
-        return result;
-    }
-
-    protected batchDOMUpdates(updates: Array<() => void>): void {
-        this.registerTimeout(() => {
-            updates.forEach(update => update());
-        }, 0, false); // Don't trigger digest cycle
-    }
-
-    protected debounceWithPriority<T extends (...args: any[]) => any>(
-        func: T,
-        wait: number,
-        priority: 'high' | 'normal' | 'low' = 'normal',
-        key?: string
-    ): (...args: Parameters<T>) => void {
-        const delays = { high: wait, normal: wait * 1.5, low: wait * 2 };
-        const actualWait = delays[priority];
-
-        return this.debounce(func, actualWait, key);
-    }
-
-    protected trackMemoryUsage(): void {
-        const usage = {
-            watchers: this.watchers.length,
-            timeouts: this.timeouts.length,
-            intervals: this.intervals.length,
-            cacheSize: this.dataCache.size,
-            events: this.eventDeregistrations.length
-        };
-
-        console.log('[Memory Usage]', usage);
-
-        // Warn if too many resources
-        if (usage.watchers > 50 || usage.cacheSize > 100) {
-            console.warn('[Memory Warning] High resource usage detected', usage);
-        }
-    }
-
+    
     protected watchScope(
         watchExpression: string | Function | ((scope: angular.IScope) => any),
         listener: (newValue: any, oldValue: any, scope: angular.IScope) => void,

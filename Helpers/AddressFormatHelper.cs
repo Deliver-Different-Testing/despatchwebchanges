@@ -71,13 +71,13 @@ public static class AddressFormatter
         string line7 = null,
         string line8 = null)
     {
-        public string Line1 { get; set; } = line1;
-        public string Line2 { get; set; } = line2;
-        public string Line3 { get; set; } = line3;
-        public string Line4 { get; set; } = line4;
-        public string Line5 { get; set; } = line5;
-        public string Line6 { get; set; } = line6;
-        public string Line7 { get; set; } = line7;
-        public string Line8 { get; set; } = line8;
+        public string Line1 { get; } = line1;
+        public string Line2 { get; } = line2;
+        public string Line3 { get; } = line3;
+        public string Line4 { get; } = line4;
+        public string Line5 { get; } = line5;
+        public string Line6 { get; } = line6;
+        public string Line7 { get; } = line7;
+        public string Line8 { get; } = line8;
     }
 }

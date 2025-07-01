@@ -1,89 +1,21 @@
-<div class="droppable-box nationwide-job-list">
-    <md-table-container ng-if="ctrl.jobsCurrentList && ctrl.jobsCurrentList.length > 0">
-        <table md-progress="ctrl.currentListLoading" md-table>
-            <thead md-head>
-            <tr md-row>
-                <th md-column>T</th>
-                <th md-column>Speed</th>
-                <th md-column>Job</th>
-                <th md-column>Client</th>
-                <th md-column>From</th>
-                <th md-column>To</th>
-                <th md-column>Remain</th>
-                <th md-column>S</th>
-                <th md-column>LP</th>
-                <th md-column>LD</th>
-            </tr>
-            </thead>
+<jobs-list
+        ng-if="ctrl.jobsCurrentList && ctrl.jobsCurrentList.length > 0"
+        jobs="ctrl.jobsCurrentList"
+        selected-job="ctrl.selectedJob"
+        on-job-select="ctrl.selectJob({job: job})"
+        on-job-dispatch="ctrl.handleJobDispatch({job: job, courierId: courierId})"
+        on-job-action="ctrl.handleJobAction({action: action, job: job, params: params})"
+        get-context-menu-options="ctrl.getContextMenuOptions({job: job})"
+        dispatch-state="ctrl.dispatchState"
+        query-params="ctrl.queryParams"
+        refresh-interval="30000"
+        job-list-type="ctrl.dispatchListName">
+</jobs-list>
 
-            <tbody md-body>
-            <tr md-row
-                md-dense
-                context-menu="ctrl.getContextMenuOptions(job)"
-                context-menu-on="contextmenu"
-                context-menu-class="job-context-menu"
-                ng-repeat="job in ctrl.jobsCurrentList | filter: box.searchBox"
-                ng-click="ctrl.selectJob(job)">
-
-                <td md-cell>{{job.time | momentFormat:"HH:mm"}} ({{::ctrl.timeZone | timezoneShort}})</td>
-
-                <td md-cell>{{job.speed}}</td>
-
-                <td md-cell>{{job.jobNo}}</td>
-
-                <td md-cell>{{job.client}}</td>
-
-                <td md-cell md-truncate>
-                    {{::ctrl.isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
-                    <md-icon md-font-set="material-symbols-outlined" ng-if="::!job.pickUpLongitude">warning</md-icon>
-                </td>
-
-                <td md-cell md-truncate>
-                    {{::ctrl.isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}
-                    <md-icon md-font-set="material-symbols-outlined" ng-if="::!job.deliveryLongitude">warning</md-icon>
-                </td>
-
-                <td md-cell>
-                    <span class="remain-time">{{job.remain}}</span>
-                </td>
-
-                <td md-cell>
-                    <md-chip class="status {{job.statusName | lowercase | replace:' ':'-'}}">
-                        {{job.status}}
-                    </md-chip>
-                </td>
-
-                <td md-cell class="late-call-cell" ng-click="ctrl.openEditDialog($event, job, 'lp', 'Late Pickup')"
-                    title="Click to edit Late Pickup">
-                    {{::job.lp ? job.lp : 'LP'}}
-                </td>
-
-                <td md-cell class="late-call-cell" ng-click="ctrl.openEditDialog($event, job, 'ld', 'Late Delivery')"
-                    title="Click to edit Late Delivery">
-                    {{::job.ld ? job.ld : 'LD'}}
-                </td>
-
-            </tr>
-            </tbody>
-        </table>
-    </md-table-container>
-
-    <!-- No Data Message -->
-    <no-data
-            ng-if="!ctrl.currentListLoading && ctrl.jobsCurrentList && ctrl.jobsCurrentList.length === 0"
-            title="No Available Work"
-            message="This Courier Does Not Have Any Available Work"
-            icon="local_shipping"
-            show-action="false">
-    </no-data>
-
-
-    <!-- No list in the scope indicator -->
-    <no-data
-            ng-if="!ctrl.jobsCurrentList"
-            title="No Courier Selected"
-            message="Please Select a Courier to View Available Work"
-            icon="local_shipping"
-            show-action="false">
-    </no-data>
-</div>
+<no-data
+        ng-if="!ctrl.jobsCurrentList"
+        title="No Courier Selected"
+        message="Please Select a Courier to View Available Work"
+        icon="local_shipping"
+        show-action="false">
+</no-data>

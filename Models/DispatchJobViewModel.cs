@@ -10,6 +10,8 @@ public class DispatchJobViewModel
     public string JobNo { get; set; }
 
     public bool HasBeenRead { get; set; }
+    public bool IsParentOrSingle { get; set; }
+    public int? ParentId { get; set; }
 
     // Status and timing information
     public int? InternalStatusId { get; set; }
@@ -36,6 +38,9 @@ public class DispatchJobViewModel
     public decimal? PickUpLatitude { get; set; }
     public decimal? DeliveryLongitude { get; set; }
     public decimal? DeliveryLatitude { get; set; }
+    
+    public string PickupContact { get; set; }
+    public string DeliveryContact { get; set; }
 
     // Routing data
     public bool? Direct { get; set; }

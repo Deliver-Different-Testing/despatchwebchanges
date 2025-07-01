@@ -19,6 +19,8 @@ public static class JobMappings
             Id = j.UcjbId,
             JobNo = j.UcjbNumber,
             HasBeenRead = j.TucJobReadTracker != null && j.TucJobReadTracker.HasBeenRead,
+            IsParentOrSingle = !j.ParentId.HasValue,
+            ParentId = j.ParentId,
 
             InternalStatusId = j.InternalStatus,
             SpeedId = j.UcjbSpeed,
@@ -81,6 +83,9 @@ public static class JobMappings
             PickUpLongitude = j.PickUpLongitude,
             DeliveryLatitude = j.DeliveryLatitude,
             DeliveryLongitude = j.DeliveryLongitude,
+            PickupContact = j.PickupFromContact,
+            DeliveryContact = j.DeliverToContact,
+            
 
             Direct = j.Direct,
             Speed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : null,

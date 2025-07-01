@@ -366,17 +366,14 @@ public class TaskRepository(
 
                 if (clientContactJobType != null)
                 {
-                    switch (type)
+                    automaticResponse = type switch
                     {
                         // Late pickup
-                        case (int)EventType.LatePickUp:
-                            automaticResponse = AutoResponseTypes.Contains(clientContactJobType.PickupType);
-                            break;
+                        (int)EventType.LatePickUp => AutoResponseTypes.Contains(clientContactJobType.PickupType),
                         // Late delivery
-                        case (int)EventType.LateDelivery:
-                            automaticResponse = AutoResponseTypes.Contains(clientContactJobType.DeliveryType);
-                            break;
-                    }
+                        (int)EventType.LateDelivery => AutoResponseTypes.Contains(clientContactJobType.DeliveryType),
+                        _ => false
+                    };
                 }
             }
 

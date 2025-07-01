@@ -62,7 +62,7 @@ export class EventGroupDialogController extends BaseController{
 
             activeEvents.forEach(event => {
                 if (event.dueTime !== undefined) {
-                    event.dueTime = dayjs(event.dueTime).utc().format();
+                    event.dueTime = dayjs(event.dueTime).format();
                 }
             })
 

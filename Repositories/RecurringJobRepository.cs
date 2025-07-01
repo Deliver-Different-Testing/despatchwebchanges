@@ -63,9 +63,9 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
                 && x.UcbkNextDue <= toDate
                 && (!clientSet || x.UcbkClientId == clientId)
                 && (!courierSet || x.CourierId == courierId)
-                && (job == "" || EF.Functions.Like(x.UcbkJobNumber.ToLower(), jobParam))
+                && (job == string.Empty || EF.Functions.Like(x.UcbkJobNumber.ToLower(), jobParam))
                 && (
-                    wild == ""
+                    wild == string.Empty
                     || EF.Functions.Like(
                         x.UcbkFromAddr
                         + " "
@@ -79,11 +79,11 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
                         + " "
                         + zo.UcsuName
                         + " "
-                        + (x.UcbkClientRefa ?? "")
+                        + (x.UcbkClientRefa ?? string.Empty)
                         + " "
-                        + (x.UcbkClientRefa ?? "")
+                        + (x.UcbkClientRefa ?? string.Empty)
                         + " "
-                        + (x.UcbkOurRef ?? "")
+                        + (x.UcbkOurRef ?? string.Empty)
                         + " "
                         + x.UcbkJobNumber.ToLower(),
                         wildParam
