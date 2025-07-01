@@ -8,6 +8,18 @@ import AgentInfoDialogController from "../dialogs/agent-info-dialog/agent-info-d
 import AgentInfoDialogService from "../dialogs/agent-info-dialog/agent-info-dialog.service";
 import FlightAgentConformationDialogController
     from "../dialogs/flight-agent-conformation-dialog/flight-agent-conformation-dialog.controller";
+import JobsListComponent from "../common/job-list/job-list.component";
+import TasksService from "../../services/tasks.service";
+import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
+import InterCourierChargeDialogService
+    from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
+import InterCourierChargeDialogController
+    from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.controller";
+import DispatchExecutorService from "../../services/dispatch-executor.service";
+import {TaskItemComponent} from "../common/task-item-component/task-item.component";
+import {
+    FeatureInDevelopmentDialogService
+} from "../dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
 
 const nationwideModule = angular.module('uDispatch.nationwide', [
     'ngMap',
@@ -23,19 +35,30 @@ const nationwideModule = angular.module('uDispatch.nationwide', [
     'ui.bootstrap.contextMenu'
 ]);
 
+// Register components
 nationwideModule
     .component("nationwideComponent", NationwideComponent)
+    .component("jobsList", JobsListComponent)  
+    .component("taskItemComponent", TaskItemComponent);
+
+
+// Register services
+nationwideModule
     .service("NWData", NationwideService)
-    .controller("flightDetailsDialogController", FlightDetailsDialogController)
+    .service("tasksService", TasksService)
     .service("flightDetailsDialogService", FlightDetailsDialogService)
-    .controller("flightAgentConformationDialogController", FlightAgentConformationDialogController)
     .service("flightAgentConfirmationDialogService", FlightAgentConfirmationDialogService)
-    .controller("agentInfoDialogController", AgentInfoDialogController)
     .service("agentInfoDialogService", AgentInfoDialogService)
-    .service("flightDetailsDialogService", FlightDetailsDialogService)
-    .service("agentInfoDialogService", AgentInfoDialogService)
-    .controller("agentInfoDialogController", AgentInfoDialogController)
+    .service("additionalServicesDialogService", AdditionalServicesDialogService)
+    .service("interCourierChargeDialogService", InterCourierChargeDialogService)
+    .service("dispatchJobService", DispatchExecutorService)
+    .service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService);
+
+// Register controllers
+nationwideModule
+    .controller("flightDetailsDialogController", FlightDetailsDialogController)
     .controller("flightAgentConformationDialogController", FlightAgentConformationDialogController)
-    .controller("flightDetailsDialogController", FlightDetailsDialogController);
+    .controller("agentInfoDialogController", AgentInfoDialogController)
+    .controller("InterCourierChargeDialog", InterCourierChargeDialogController);
 
 export default nationwideModule;

@@ -8,12 +8,10 @@ class RouterConfig {
 
     private configureRoutes(): void {
             this.$urlRouterProvider.otherwise("/");
-
-            // Core route (no lazy loading)
-            this.configureHomeState();
-
-            // Lazy-loaded routes
-            this.configureNationwideState()
+            
+            // Configure routes
+            this.configureHomeState()
+                .configureNationwideState()
                 .configureCSState()
                 .configureJobSearchState()
                 .configurePrebooksState()
@@ -21,17 +19,28 @@ class RouterConfig {
                 .configureMegaMapState()
                 .configureTaskDashboardState();
         }
-        
+
     private configureHomeState(): this {
         this.$stateProvider.state("home", {
             url: "/?jobId",
-            component: "homeComponent",
             params: {
                 jobId: {
                     value: null,
                     squash: true
                 }
-            }
+            },
+            resolve: {
+                jobId: ['$stateParams', ($stateParams: any) => {
+                    return $stateParams.jobId ? parseInt($stateParams.jobId, 10) : null;
+                }],
+                loadModule: ['$ocLazyLoad', ($ocLazyLoad: oc.ILazyLoad) => {
+                    return $ocLazyLoad.load([
+                        'dist/home.js',
+                        'dist/home.css'
+                    ]);
+                }]
+            },
+            component: "homeComponent"
         });
         return this;
     }

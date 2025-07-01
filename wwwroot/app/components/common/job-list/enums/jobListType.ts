@@ -1,6 +1,9 @@
 ﻿enum JobListType {
     DispatchJobList = 'dispatchJobList',
-    CurrentWorkList = 'currentWorkList'
+    CurrentWorkList = 'currentWorkList',
+    NationwideJobList = 'nationwideJobList',
+    NationwidePodJobList = 'nationwidePodJobList',
+    NationwideRepriceJobList = 'nationwideRepriceJobList'
 }
 
 export default JobListType;
