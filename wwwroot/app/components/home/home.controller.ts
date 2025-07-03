@@ -1601,24 +1601,6 @@ class HomeController extends BaseController {
         }
     }
 
-    async selectJobDetail(job: IDispatchJob) {
-        this.currentJob = job;
-        this.currentSupport = null;
-        this.potentialCouriers = false;
-        this.potentialCouriersSelection = ` for Job ${job.jobNo}`;
-        this.currentSelection = ` for Job ${job.jobNo}`;
-
-        await this.checkForAttachments(job.id);
-
-        if (job.rootParentId && job.clientId) {
-            try {
-                job.relatedJobs = await this.DispatchData.getRelatedJobs(job.rootParentId, job.clientId);
-            } catch (error: any) {
-                console.error("Error getting related jobs:", error);
-            }
-        }
-    }
-
     async selectSupportJobDetail(task: TaskViewModel) {
         console.log(' Starting with task:', {
             jobId: task.jobId,
@@ -1637,14 +1619,12 @@ class HomeController extends BaseController {
         try {
             console.log(' Fetching job details for jobId:', task.jobId);
 
-            // Use TasksService to find job in local lists first
             const jobLists = [
                 { list: this.jobList, name: 'jobList' }
             ];
 
             let attachedJob = this.tasksService.findTaskJobInLists(task.jobId, jobLists);
 
-            // If not found locally, fetch from database
             if (!attachedJob) {
                 attachedJob = await this.DispatchData.getDispatchJobDetail(task.jobId);
             }
@@ -1855,23 +1835,6 @@ class HomeController extends BaseController {
         }
 
         this.applyScope();
-    }
-
-    async showJobContextMenu($event: MouseEvent, job: IDispatchJob) {
-        try {
-            await this.selectJob(job);
-
-            const contextMenuElement = angular.element('context-menu');
-            const contextMenuCtrl = contextMenuElement.controller('contextMenu');
-
-            if (contextMenuCtrl) {
-                await contextMenuCtrl.showJobContextMenu($event, job);
-            } else {
-                console.error('Context menu controller not found');
-            }
-        } catch (error) {
-            console.error('Error selecting job:', error);
-        }
     }
 
     async setTruckMode(mode: string) {

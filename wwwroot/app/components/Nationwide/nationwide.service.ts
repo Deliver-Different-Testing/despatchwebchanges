@@ -26,7 +26,7 @@ class NationwideService implements angular.IServiceProvider {
         endpoint: string,
         queryParams: JobQueryParams,
         selectedClients: string[],
-        internal: boolean,
+        isInternal: boolean,
         selectedAreas: DfrntPageViewModel[]
     ): Promise<IDispatchJob[]> {
         const despatchViewIds = selectedAreas.map(area => area.id);
@@ -37,20 +37,18 @@ class NationwideService implements angular.IServiceProvider {
             orderDirection: 'asc'
         };
 
-        const params = {
-            order: String(queryParams.order ?? defaultParams.order),
-            orderDirection: String(queryParams.orderDirection ?? defaultParams.orderDirection),
-            startDate: String(queryParams.startDate ? dayjs(queryParams.startDate).format() : null),
-            dateCutoff: String(queryParams.dateCutoff ? dayjs(queryParams.dateCutoff).format() : null),
-            isInternal: String(internal),
-            cid: String(ContactID),
-            clientIds: selectedClients.length ? selectedClients.join(',') : '',
-            despatchViewIds
-        };
-
-        const url = `nationwidejob/${endpoint}}`;
+        const url = `nationwidejob/${endpoint}`;
         const response = await this.$http.get<IDispatchJob[]>(url, {
-            params
+            params: {
+                order: queryParams.order ?? defaultParams.order,
+                orderDirection: queryParams.orderDirection ?? defaultParams.orderDirection,
+                startDate: queryParams.startDate ? dayjs(queryParams.startDate).format() : null,
+                dateCutoff: queryParams.dateCutoff ? dayjs(queryParams.dateCutoff).format() : null,
+                isInternal: isInternal,
+                cid: ContactID,
+                clientIds: selectedClients,
+                despatchViewIds
+            }
         });
         return response.data;
     }
@@ -60,7 +58,7 @@ class NationwideService implements angular.IServiceProvider {
     }
 
     async getNationwideJobsPOD(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]) {
-        return await this.getNationwideJobs("nationwideJobListPOD", queryParams, selectedClients, internal, selectedAreas);
+        return await this.getNationwideJobs("NationwideJobListPod", queryParams, selectedClients, internal, selectedAreas);
     }
 
     async getNationwideJobsReprice(queryParams: JobQueryParams, selectedClients: string[], internal: boolean, selectedAreas: DfrntPageViewModel[]) {

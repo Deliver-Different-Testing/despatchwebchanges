@@ -1,10 +1,9 @@
 <jobs-list
         jobs="ctrl.jobListPOD"
         selected-job="ctrl.currentJob"
-        on-job-select="ctrl.onJobSelect(data)"
-        on-job-dispatch="ctrl.onJobDispatch(data)"
-        on-job-action="ctrl.onJobAction(data)"
-        get-context-menu-options="ctrl.getJobListContextMenuOptions(data)"
+        on-job-select="ctrl.handleJobSelection(job)"
+        on-job-action="ctrl.handleJobAction(action, job, params)"
+        get-context-menu-options="ctrl.getJobContextMenuOptions()"
         job-list-type="ctrl.nationwidePodJobList"
         query-params="ctrl.jobPodFilters">
 </jobs-list>

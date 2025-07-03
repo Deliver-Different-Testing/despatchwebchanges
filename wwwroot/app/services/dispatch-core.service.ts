@@ -91,14 +91,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         const response = await this.$http.get<Suggestion[]>("task/GetStaff");
         return response.data;
     }
-
-    async getTimeZoneOptions(): Promise<TimeZoneSuggestion[]> {
-        const response = await this.$http.get<TimeZoneSuggestion[]>(
-            "job/GetTimeZoneOptions"
-        );
-        return response.data;
-    }
-
+    
     async isJobParent(jobId: number) {
         const response = await this.$http.get<boolean>(
             "job/IsJobParent", {
