@@ -70,7 +70,10 @@ class JobsListController extends BaseController {
 
     $onInit() {
         this.setupJobListVariables();
-        this.groupJobs();
+
+        // Group jobs by parent if not nationwide
+        if(!this.isNationwideList) this.groupJobs();
+        
         this.calculateStats();
         this.applyFilters();
     }
@@ -105,7 +108,9 @@ class JobsListController extends BaseController {
 
     $onChanges(changes: angular.IOnChangesObject) {
         if (changes['jobs'] && changes['jobs'].currentValue) {
-            this.groupJobs();
+            // Group jobs by parent if not nationwide
+            if(!this.isNationwideList) this.groupJobs();
+            
             this.calculateStats();
             this.applyFilters();
         }
@@ -113,6 +118,10 @@ class JobsListController extends BaseController {
         if (changes['selectedJob'] && changes['selectedJob'].currentValue) {
             this.selectedJob = changes['selectedJob'].currentValue;
         }
+    }
+    
+    private isNationwideList(): boolean {
+        return this.jobListType.toLowerCase().includes('Nationwide'.toLowerCase())
     }
 
     private groupJobs() {
@@ -212,7 +221,7 @@ class JobsListController extends BaseController {
                 // Remove existing density classes
                 componentElement.classList.remove('normal', 'dense', 'ultra-dense');
 
-                // Add new density class
+                // Add a new density class
                 switch (mode) {
                     case DensityMode.Dense:
                         componentElement.classList.add('dense');

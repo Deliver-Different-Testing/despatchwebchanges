@@ -11,6 +11,9 @@ import {TaskItemComponent} from "../common/task-item-component/task-item.compone
 import {
     FeatureInDevelopmentDialogService
 } from "../dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
+import AdditionalServicesDialogController
+    from "../dialogs/additional-services-dialog/additional-services-dialog.controller";
+import DispatchMapComponent from "../common/dispatch-map/dispatch-map.component";
 
 const homeModule = angular.module('uDispatch.home', [
     'ngMap',
@@ -40,7 +43,8 @@ const homeModule = angular.module('uDispatch.home', [
 homeModule
     .component("homeComponent", HomeComponent)
     .component("jobsList", JobsListComponent)
-    .component("taskItemComponent", TaskItemComponent);
+    .component("taskItemComponent", TaskItemComponent)
+    .component("dispatchMap", DispatchMapComponent);
 
 // Register services
 homeModule
@@ -51,6 +55,7 @@ homeModule
     .service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService);
 
 homeModule
-    .controller("InterCourierChargeDialog", InterCourierChargeDialogController);
+    .controller("InterCourierChargeDialog", InterCourierChargeDialogController)
+    .controller("AdditionalServicesDialogController", AdditionalServicesDialogController);
 
 export default homeModule;

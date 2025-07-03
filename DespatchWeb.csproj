@@ -373,6 +373,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\mega-map\mega-map.module.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\enums\JobDataType.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\enums\NationwideBoxes.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\filters\minutesToTimeFilter.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.module.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.service.ts" />
@@ -393,7 +394,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\task-dashboard.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\task-dashboard\task-dashboard.module.ts" />
     <TypeScriptCompile Include="wwwroot\app\contants.ts" />
-    <TypeScriptCompile Include="wwwroot\app\directives.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\app-pages.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\dangerous-goods.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\days-of-week.enum.ts" />
