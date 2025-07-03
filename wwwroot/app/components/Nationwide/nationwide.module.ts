@@ -20,6 +20,8 @@ import {TaskItemComponent} from "../common/task-item-component/task-item.compone
 import {
     FeatureInDevelopmentDialogService
 } from "../dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
+import AdditionalServicesDialogController from "../dialogs/additional-services-dialog/additional-services-dialog.controller";
+import {minutesToTimeFilter} from "./filters/minutesToTimeFilter";
 
 const nationwideModule = angular.module('uDispatch.nationwide', [
     'ngMap',
@@ -41,7 +43,6 @@ nationwideModule
     .component("jobsList", JobsListComponent)  
     .component("taskItemComponent", TaskItemComponent);
 
-
 // Register services
 nationwideModule
     .service("NWData", NationwideService)
@@ -59,6 +60,10 @@ nationwideModule
     .controller("flightDetailsDialogController", FlightDetailsDialogController)
     .controller("flightAgentConformationDialogController", FlightAgentConformationDialogController)
     .controller("agentInfoDialogController", AgentInfoDialogController)
-    .controller("InterCourierChargeDialog", InterCourierChargeDialogController);
+    .controller("InterCourierChargeDialog", InterCourierChargeDialogController)
+    .controller("AdditionalServicesDialogController", AdditionalServicesDialogController);
+
+nationwideModule
+    .filter('minutesToTime', () => minutesToTimeFilter);
 
 export default nationwideModule;

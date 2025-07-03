@@ -11,12 +11,8 @@ import {
     FeatureInDevelopmentDialogController
 } from "./components/dialogs/feature-in-development-dialog/feature-in-development-dialog.controller";
 import {SelectDialogController} from "./components/dialogs/select-dialog/select-dialog.controller";
-import {
-    FeatureInDevelopmentDialogService
-} from "./components/dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
 import ConfigService from "./services/config.service";
 import DispatchCoreService from "./services/dispatch-core.service";
-import DispatchExecutorService from "./services/dispatch-executor.service";
 import NavigationService from "./services/navigation.service";
 import ToastrService from "./services/toastr.service";
 import {SelectDialogService} from "./components/dialogs/select-dialog/select-dialog.service";
@@ -26,15 +22,9 @@ import {
     EditDateTimeDialogController
 } from "./components/dialogs/edit-date-time-dialog/edit-date-time-dialog.controller";
 import {EditDateTimeDialogService} from "./components/dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
-import DispatchMapComponent from "./components/common/dispatch-map/dispatch-map.component";
 import EditAddressDialogController from "./components/dialogs/edit-address-dialog/edit-address-dialog.controller";
 import {EditAddressDialogService} from "./components/dialogs/edit-address-dialog/edit-address-dialog.service";
-import {TaskItemComponent} from "./components/common/task-item-component/task-item.component";
 import PriceBreakdownDialogService from "./components/dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
-import AdditionalServicesDialogService
-    from "./components/dialogs/additional-services-dialog/additional-services-dialog.service";
-import AdditionalServicesDialogController
-    from "./components/dialogs/additional-services-dialog/additional-services-dialog.controller";
 import JobDetailComponent from "./components/common/job-details/job-details.component";
 import JobFileUploadController from "./components/dialogs/job-file-upload-dialog/job-file-upload.controller";
 import JobFileUploadDialogService from "./components/dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
@@ -42,23 +32,14 @@ import NoteManagementDialogService from "./components/dialogs/note-management-di
 import NoteManagementDialogController
     from "./components/dialogs/note-management-dialog/note-management-dialog.component";
 import NoteService from "./services/notes.service";
-import {
-    mdAutocompleteEnterSelectDirective,
-    ngRightClickDirective,
-    rightClickDirective
-} from "./directives";
 import RouterConfig from "./routes";
 import ThemeConfig from "./materialTheme";
 import AddEventDialogController from "./components/dialogs/add-event-dialog/add-event-dialog.controller";
 import AddEventDialogService from "./components/dialogs/add-event-dialog/add-event-dialog.service";
-import InterCourierChargeDialogController
-    from "./components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.controller";
-import InterCourierChargeDialogService
-    from "./components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
 import {
-    bytesFilter, getByAttrFilter, jobStatusIconFilter,
+    bytesFilter,
     momentFormatFilter,
-    replaceFilter, selectedToTopFilter, switchFilter, timezoneShortFilter, uniqueFilter, urlFixFilter, minutesToTimeFilter
+    replaceFilter, timezoneShortFilter
 } from "./filters";
 import JobContextMenuService from "./services/job-context-menu.service";
 import StickyNoteComponent from "./components/common/sticky-notes/sticky-notes.component";
@@ -70,7 +51,6 @@ import AddressLookupService from "./services/address-lookup.service";
 import dayjs from "dayjs";
 import 'dayjs/locale/en';
 import NoDataComponent from "./components/common/no-data/no-data.component";
-import TasksService from "./services/tasks.service";
 import TruckCourierStatusDialogController
     from "./components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.controller";
 import TruckCourierStatusDialogService
@@ -78,7 +58,6 @@ import TruckCourierStatusDialogService
 import MessagingService from "./services/messaging.service";
 import MessagingDialogService from "./components/dialogs/messaging-dialog/messaging-dialog.service";
 import MessagingDialogController from "./components/dialogs/messaging-dialog/messaging-dialog.controller";
-import JobsListComponent from "./components/common/job-list/job-list.component";
 
 const app = (window as any).uDispatchApp;
 
@@ -176,34 +155,20 @@ app.config(["$qProvider", ($qProvider: angular.IQProvider) => {
     }]);
 
 // Filters
-app.filter("unique", () => uniqueFilter);
-app.filter("urlFix", () => urlFixFilter);
-app.filter("getByAttr", () => getByAttrFilter);
-app.filter("switch", () => switchFilter);
-app.filter("selectedToTop", () => selectedToTopFilter);
 app.filter("bytes", () => bytesFilter);
-app.filter("jobStatusIcon", () => jobStatusIconFilter);
 app.filter("replace", () => replaceFilter);
 app.filter('momentFormat', () => momentFormatFilter);
 app.filter('timezoneShort', () => timezoneShortFilter);
-app.filter('minutesToTime', () => minutesToTimeFilter);
-
-// Directives
-app.directive('ngRightClick', ngRightClickDirective);
-app.directive('mdAutocompleteEnterSelect', mdAutocompleteEnterSelectDirective);
-app.directive("rightClick", rightClickDirective);
 
 // Components
 app.component("jobDetailWidget", JobDetailComponent);
 app.component("materialSidenav", MaterialSidenavComponent);
 app.component("podPhotoViewer", PodPhotoViewerComponent);
-app.component("dispatchMap", DispatchMapComponent);
 app.component("noData", NoDataComponent);
 app.component("stickyNote", StickyNoteComponent);
 
 // Dialogs
 app.controller("AddEventDialogController", AddEventDialogController);
-app.controller("AdditionalServicesDialogController", AdditionalServicesDialogController);
 app.controller("AutoCompleteDialogController", AutoCompleteDialogController);
 app.controller("CreateJobDialogController", CreateJobDialogController);
 app.controller("EditParcelDimensionsDialogController", EditParcelDimensionsDialogController);
