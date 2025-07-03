@@ -76,7 +76,7 @@ class NationwideControl extends BaseController {
     readonly nationwideJobList: JobListType = JobListType.NationwideJobList;
     readonly nationwidePodJobList: JobListType = JobListType.NationwidePodJobList;
     readonly nationwideRepriceJobList: JobListType = JobListType.NationwideRepriceJobList;
-    
+
     readonly nationwidePageId: number = AppPages.Domestic;
     readonly isUsCustomer: boolean = false;
     private tasksLoadingInBackground: boolean = false;
@@ -2002,32 +2002,24 @@ class NationwideControl extends BaseController {
         );
     }
 
-    async onJobSelect(data: { job: IDispatchJob }): Promise<void> {
-        await this.selectJob(data.job);
+    handleJobSelection(job: IDispatchJob) {
+        return this.selectJob(job);
     }
 
-    async onJobAction(data: { action: string, job: IDispatchJob, params?: any }): Promise<void> {
-        try {
-            switch (data.action) {
-                case 'restore':
-                    await this.restoreJob(data.job);
-                    break;
-                case 'reallocate':
-                    await this.reAllocateJobs(data.job);
-                    break;
-                default:
-                    console.warn(`Unknown job action: ${data.action}`);
-            }
-        } catch (error) {
-            console.error(`Error handling job action ${data.action}:`, error);
-            this.toastrService.showErrorToast(`Failed to ${data.action} job`);
+    async handleJobAction(action: string, job: IDispatchJob, _params?: any) {
+        switch (action) {
+            case 'restore':
+                return await this.restoreJob(job);
+            case 'reallocate':
+                return await this.reAllocateJobs(job);
+            default:
+                console.warn(`Unknown job action: ${action}`);
         }
     }
 
-    getJobListContextMenuOptions(data: { job: IDispatchJob }): any[] {
-        return this.getContextMenuOptions(data.job);
-    }
-
+    getJobContextMenuOptions() {
+        return (job: IDispatchJob) => this.getContextMenuOptions(job);
+    } 
 }
 
 const NationwideComponent: angular.IComponentOptions = {
