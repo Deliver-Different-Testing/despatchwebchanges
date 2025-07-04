@@ -275,17 +275,14 @@ class JobsListController extends BaseController {
         }
     }
 
-    // Determine if we should show full details based on density
     shouldShowFullDetails(): boolean {
         return this.densityMode === DensityMode.Normal;
     }
 
-    // Determine if we should show abbreviated details
     shouldShowAbbreviatedDetails(): boolean {
         return this.densityMode === DensityMode.Dense;
     }
 
-    // Determine if we should show minimal details
     shouldShowMinimalDetails(): boolean {
         return this.densityMode === DensityMode.UltraDense;
     }
@@ -625,7 +622,8 @@ class JobsListController extends BaseController {
 
     getJobPriorityClass(job: IDispatchJob): string {
         if (this.isUrgent(job)) return 'urgent';
-        if (this.needsDispatch(job)) return 'warning';
+        if (this.needsDispatch(job)) return 'needs-dispatch';
+        if (this.isNationwideList() && this.hasRelatedJobs(job)) return 'related-job';
         if (job.parentId) return 'parent-job';
         if (job.parentId && job.id !== job.parentId) return 'child-job';
         return 'normal';
@@ -853,6 +851,24 @@ class JobsListController extends BaseController {
     formatCourierDisplay(model: any) {
         if (!model) return '';
         return model.text || model.label || model.name || '';
+    }
+
+    hasRelatedJobs(job: IDispatchJob): boolean {
+        return (this.isNationwideList() && job.relatedJobs && job.relatedJobs.length > 0) ?? false;
+    }
+
+    getRelatedJobsCount(job: IDispatchJob): number {
+        return job.relatedJobs ? job.relatedJobs.length : 0;
+    }
+    
+    getRelatedJobsText(job: IDispatchJob): string {
+        if (!job.relatedJobs || job.relatedJobs.length === 0) return '';
+
+        if (job.relatedJobs.length === 1) {
+            return job.relatedJobs[0].text;
+        } else {
+            return `${job.relatedJobs.length} related jobs`;
+        }
     }
 }
 
