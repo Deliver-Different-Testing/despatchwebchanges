@@ -72,7 +72,7 @@ class JobsListController extends BaseController {
         this.setupJobListVariables();
 
         // Group jobs by parent if not nationwide
-        if(!this.isNationwideList) this.groupJobs();
+        if(!this.isNationwideList()) this.groupJobs();
         
         this.calculateStats();
         this.applyFilters();
@@ -109,7 +109,7 @@ class JobsListController extends BaseController {
     $onChanges(changes: angular.IOnChangesObject) {
         if (changes['jobs'] && changes['jobs'].currentValue) {
             // Group jobs by parent if not nationwide
-            if(!this.isNationwideList) this.groupJobs();
+            if(!this.isNationwideList()) this.groupJobs();
             
             this.calculateStats();
             this.applyFilters();
@@ -318,7 +318,7 @@ class JobsListController extends BaseController {
 
         if (this.densityMode === DensityMode.UltraDense) {
             // Show only initials in ultra-dense
-            return this.getCourierInitials(job.assignedCourier);
+            return this.getCourierInitials(job.assignedCourier?.text);
         } else if (this.densityMode === DensityMode.Dense) {
             // Show first name only in dense
             return fullName.split(' ')[0];
@@ -326,22 +326,7 @@ class JobsListController extends BaseController {
 
         return fullName;
     }
-
-    getVisibleColumns(): string[] {
-        switch (this.densityMode) {
-            case DensityMode.UltraDense:
-                return ['time', 'job', 'route', 'courier', 'status'];
-            case DensityMode.Dense:
-                return ['time', 'job', 'route', 'courier', 'status', 'actions'];
-            default:
-                return ['time', 'job', 'route', 'courier', 'status', 'actions'];
-        }
-    }
-
-    isColumnVisible(column: string): boolean {
-        return this.getVisibleColumns().includes(column);
-    }
-
+    
     getTableMaxHeight(): string {
         const baseHeight = 600;
         const rowHeight = this.getRowHeight();
@@ -522,14 +507,9 @@ class JobsListController extends BaseController {
     }
 
     getPickupAddress(job: IDispatchJob): string {
-        let address = '';
-        if (this.isUsCustomer) {
-            address = job.pickupAddress?.addressLine5 && job.pickupAddress?.addressLine6
-                ? `${job.pickupAddress.addressLine5}, ${job.pickupAddress.addressLine6}`
-                : '';
-        } else {
-            address = job.from || '';
-        }
+        const address = this.isUsCustomer
+            ? (job.pickupAddress?.fullAddress || '')
+            : (job.from || '');
 
         return this.densityMode === DensityMode.UltraDense ?
             this.getAbbreviatedAddress(address) : address;
@@ -691,17 +671,12 @@ class JobsListController extends BaseController {
         }
     }
 
-    getCourierInitials(courier?: Suggestion): string {
-        if (!courier?.text) return '?';
-        return courier.text.split(' ').map(n => n[0]).join('').toUpperCase();
+    getCourierInitials(textToEdit?: string): string {
+        if (!textToEdit) return '?';
+        return textToEdit.split(' ').map(n => n[0]).join('').toUpperCase();
     }
 
-    getStatusChipClass(status: string): string {
-        const statusLower = status?.toLowerCase() || '';
-        return statusLower.replace(/\s+/g, '-');
-    }
-
-    // Accordion functionality for multipasrt jobs
+    // Accordion functionality for multipart jobs
     toggleJobAccordion(job: IDispatchJob) {
         if (!job.id) return;
 

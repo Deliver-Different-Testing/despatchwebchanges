@@ -1058,44 +1058,6 @@ class HomeController extends BaseController {
     async otherEventForm($event: MouseEvent, job: IDispatchJob) {
         await this.addEventDialogService.openAddEventDialog($event, job);
     }
-    
-    async latePickup(minsAway: number, job: IDispatchJob, obj: any): Promise<void> {
-        return await this.handleLateOperation(minsAway, job, obj, LateEventType.Pickup);
-    }
-
-    async lateDelivery(minsAway: number, job: IDispatchJob, obj: any): Promise<void> {
-        return await this.handleLateOperation(minsAway, job, obj, LateEventType.Delivery);
-    }
-
-    private async handleLateOperation(minsAway: number, job: IDispatchJob, obj: any, lateType: LateEventType): Promise<void> {
-        const isPickup = lateType === LateEventType.Pickup;
-        const operationType = isPickup ? "pickup" : "delivery";
-        const currentValue = isPickup ? job.lp : job.ld;
-
-        console.log(`Current ${operationType} = ${currentValue}`);
-        console.log(`Param minsAway = ${minsAway}`);
-        console.log(obj);
-
-        try {
-            const lateCallRequest: ILateCallRequest = {
-                jobId: job.id,
-                lateType,
-                lateTime: minsAway,
-                calculationRequired: true,
-                staffId: ContactID,
-                despatcherName: FirstName
-            };
-
-            await this.DispatchData.lateCall(lateCallRequest);
-
-            await this.getData();
-            this.toastrService.showSuccessToast("Late call applied successfully");
-
-            console.log(`Late ${operationType} call completed successfully`);
-        } catch (error) {
-            console.error(`Error in late ${operationType} call:`, error);
-        }
-    }
 
     jobClass(job: IDispatchJob): string {
         return getJobTableRowClass(job, this.currentJob);
@@ -2267,11 +2229,7 @@ class HomeController extends BaseController {
             return normalizedJobStatus === normalizedStatusType;
         }).length;
     }
-
-    getUnreadCount() {
-        return this.jobList.filter(job => !job.hasBeenRead).length;
-    }
-
+    
     async filterByStatus(statusGroup: string) {
         console.log('filterByStatus called with:', statusGroup);
         this.queryParams.order = statusGroup;
@@ -2438,46 +2396,6 @@ class HomeController extends BaseController {
         }
     }
 
-    openEditDialog($event: MouseEvent, job: IDispatchJob, field: 'lp' | 'ld', fieldName: string) {
-        $event.stopPropagation(); // Prevent row selection
-
-        const isLatePickup = field === 'lp';
-
-        try {
-            this.$mdEditDialog.small({
-                modelValue: job[field] || '',
-                placeholder: fieldName,
-                save: (input: any) => {
-                    const minutes = input.$modelValue;
-                    if (!minutes) return;
-
-                    try {
-                        // Convert to a Date object if it's a string
-                        const minAway: number = typeof minutes === 'string' ? parseInt(minutes) : minutes;
-
-                        // Call the appropriate late call function
-                        if (isLatePickup) {
-                            return this.latePickup(minAway, job, null);
-                        } else {
-                            return this.lateDelivery(minAway, job, null);
-                        }
-                    } catch (error) {
-                        console.error(`Error saving ${fieldName}:`, error);
-                        this.toastrService.showErrorToast(`Failed to save ${fieldName}`);
-                    }
-                },
-                targetEvent: $event,
-                validators: {
-                    'pattern': '[0-9]*'
-                },
-                type: 'number'
-            });
-        } catch (error) {
-            console.error('Error opening edit dialog:', error);
-            this.toastrService.showErrorToast(`Failed to open ${fieldName} dialog`);
-        }
-    }
-
     getTasksStatusCount(statusType: string): number {
         return this.tasksService.getTasksStatusCount(this.supports, statusType);
     }
@@ -2626,23 +2544,6 @@ class HomeController extends BaseController {
             console.error("Error in dispatch:", error);
             this.dispatchState.selectedJobs.delete(job.id);
             throw error;
-        }
-    }
-
-    async handleJobAction(action: string, job: IDispatchJob, params?: any) {
-        switch (action) {
-            case 'restore':
-                return await this.restoreJob(job);
-            case 'reallocate':
-                return await this.reAllocateJobs(job);
-            case 'split':
-                return await this.splitJob(params.$event, job);
-            case 'latePickup':
-                return await this.latePickup(params.minsAway, job, params.obj);
-            case 'lateDelivery':
-                return await this.lateDelivery(params.minsAway, job, params.obj);
-            default:
-                console.warn(`Unknown job action: ${action}`);
         }
     }
     
