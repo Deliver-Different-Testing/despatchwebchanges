@@ -3,10 +3,9 @@ import ToastrService from "./toastr.service";
 import NoteService from "./notes.service";
 import {EventGroupDialogService} from "../components/dialogs/event-group-dialog/event-group-dialog.service";
 import AddEventDialogService from "../components/dialogs/add-event-dialog/add-event-dialog.service";
-import {IDispatchJob, IJobNote, Suggestion,} from "../interfaces/job.interface";
+import {IDispatchJob, IJobNote, ILateCallRequest, Suggestion,} from "../interfaces/job.interface";
 import {JobNoteType} from "../enums/job-note-type.enum";
 import IContextMenuOption from "../interfaces/context-menu-option.interface";
-import NationwideService from "../components/Nationwide/nationwide.service";
 import InternalJobStatus from "../enums/job-internal-status.enum";
 import JobInternalStatusEnum from "../enums/job-internal-status.enum";
 import {JobProperty} from "../enums/job-property.enum";
@@ -16,6 +15,9 @@ import {isFlightJob} from "../functions/isFlightJob";
 import JobSuffix from "../enums/job-suffix.enum";
 import {AppPages} from "../enums/app-pages.enum";
 import {IPrebookListModel} from "../components/recurringJobs/recurringJobs.interface";
+import DispatchExecutorService from "./dispatch-executor.service";
+import {LateEventType} from "../enums/late-event-type.enum";
+import {ContactID, FirstName} from "../contants";
 
 class JobContextMenuService implements angular.IServiceProvider {
     static $inject = [
@@ -27,6 +29,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         "eventGroupDialogService",
         "addEventDialogService",
         "jobAddStopService",
+        "dispatchJobService",
     ];
 
     private eventGroupsCache: Suggestion[] = [];
@@ -39,7 +42,8 @@ class JobContextMenuService implements angular.IServiceProvider {
         private noteService: NoteService,
         private eventGroupDialogService: EventGroupDialogService,
         private addEventDialogService: AddEventDialogService,
-        private jobAddStopService: JobAddStopService
+        private jobAddStopService: JobAddStopService,
+        private dispatchJobService: DispatchExecutorService,
     ) {
         console.log("JobContextMenuService initialized");
         this.preloadEventGroups();
@@ -117,6 +121,23 @@ class JobContextMenuService implements angular.IServiceProvider {
             });
         }
 
+        if (appPage === AppPages.Dispatch || appPage === AppPages.JobSearch) {
+            menuOptions.push({
+                text: "Late Pickup",
+                icon: "schedule",
+                click: (_$itemScope: any, $event: MouseEvent) =>
+                    this.latePickup($event, job, callbacks.onRefresh),
+                hasBottomDivider: true,
+            });
+
+            menuOptions.push({
+                text: "Late Delivery",
+                icon: "local_shipping",
+                click: (_$itemScope: any, $event: MouseEvent) =>
+                    this.latePickup($event, job, callbacks.onRefresh),
+                hasBottomDivider: true,
+            });
+        }
 
         // Reprice Job
         if (
@@ -170,6 +191,14 @@ class JobContextMenuService implements angular.IServiceProvider {
             text: "Set First Job",
             icon: "first_page",
             click: () => this.setFirstJobAction(job, callbacks.onRefreshCourierJobs),
+            hasBottomDivider: true,
+        });
+
+        // Restore
+        menuOptions.push({
+            text: "Restore",
+            icon: "redo",
+            click: () => this.restoreJob(job, callbacks.onRefresh),
         });
 
         return menuOptions;
@@ -472,6 +501,90 @@ class JobContextMenuService implements angular.IServiceProvider {
             }
         } catch (error) {
             console.error("Action cancelled or error occurred:", error);
+        }
+    }
+
+    private async restoreJob(
+        job: IDispatchJob,
+        onRefresh?: () => void) {
+        await this.dispatchJobService.restoreJob(job);
+
+        if (onRefresh) {
+            onRefresh();
+        }
+    }
+
+    private async latePickup($event: MouseEvent, job: IDispatchJob, onRefresh: () => void): Promise<void> {
+        try {
+            const confirm = this.$mdDialog.prompt()
+                .title('Late Pickup')
+                .textContent('Enter the number of minutes the courier is running late for pickup:')
+                .ariaLabel('late pickup')
+                .targetEvent($event)
+                .required(true)
+                .ok('Save')
+                .cancel('Cancel');
+
+            const minsAway: number = await this.$mdDialog.show(confirm);
+            await this.handleLateOperation(minsAway, job, LateEventType.Pickup);
+
+            if (onRefresh) {
+                onRefresh();
+            }
+        } catch (error) {
+            if (!error) return;
+            console.error('Error in late pickup:', error);
+        }
+    }
+
+    async lateDelivery($event: MouseEvent, job: IDispatchJob, onRefresh: () => void): Promise<void> {
+        try {
+            const confirm = this.$mdDialog.prompt()
+                .title('Late Delivery')
+                .textContent('Enter the number of minutes the courier is running late for delivery:')
+                .ariaLabel('late delivery')
+                .targetEvent($event)
+                .required(true)
+                .ok('Save')
+                .cancel('Cancel');
+
+            const minsAway: number = await this.$mdDialog.show(confirm);
+            await this.handleLateOperation(minsAway, job, LateEventType.Delivery);
+
+            if (onRefresh) {
+                onRefresh();
+            }
+        } catch (error) {
+            if (!error) return;
+            console.error('Error in late pickup:', error);
+        }
+    }
+
+    private async handleLateOperation(minsAway: number, job: IDispatchJob, lateType: LateEventType): Promise<void> {
+        const isPickup = lateType === LateEventType.Pickup;
+        const operationType = isPickup ? "pickup" : "delivery";
+        const currentValue = isPickup ? job.lp : job.ld;
+
+        console.log(`Current ${operationType} = ${currentValue}`);
+        console.log(`Param minsAway = ${minsAway}`);
+
+        try {
+            const lateCallRequest: ILateCallRequest = {
+                jobId: job.id,
+                lateType,
+                lateTime: minsAway,
+                calculationRequired: true,
+                staffId: ContactID,
+                despatcherName: FirstName
+            };
+
+            await this.DispatchData.lateCall(lateCallRequest);
+
+            this.toastrService.showSuccessToast("Late call applied successfully");
+
+            console.log(`Late ${operationType} call completed successfully`);
+        } catch (error) {
+            console.error(`Error in late ${operationType} call:`, error);
         }
     }
 }

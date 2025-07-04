@@ -595,7 +595,7 @@
     }
   }
 
-  // Expand button for grouping
+  // Expand button for grouping - UPDATED for first column
   .md-expand-btn {
     background: none;
     border: none;
@@ -620,6 +620,39 @@
       height: 18px;
       color: #2196F3;
     }
+  }
+
+  // NEW: Parent job indicator for the first column
+  .md-parent-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    background: rgba(33, 150, 243, 0.1);
+    border: 1px solid rgba(33, 150, 243, 0.2);
+    color: #2196F3;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(33, 150, 243, 0.2);
+      border-color: rgba(33, 150, 243, 0.3);
+    }
+
+    &.multi-part {
+      background: rgba(33, 150, 243, 0.15);
+      border-color: rgba(33, 150, 243, 0.3);
+    }
+  }
+
+  // First column styling - UPDATED
+  .md-first-column {
+    width: 50px;
+    text-align: center;
+    padding: 6px 4px !important;
   }
 
   // Child indicator for grouping
@@ -650,7 +683,7 @@
 
     .md-delivery-time {
       font-weight: normal; // Change from 800 to normal as default
-      font-size: 16px;
+      font-size: 14px;
       color: #1e293b;
       line-height: 1;
     }
@@ -681,318 +714,152 @@
     }
   }
 
-  // Enhanced Job Details Column - Material Design
   .md-job-details {
-    min-width: 200px;
+    min-width: 160px;
+    max-width: 180px;
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 3px;
 
     .md-job-number {
-      font-weight: normal;
-      color: #1e293b;
-      font-size: 14px;
-      align-items: center;
-      gap: 8px;
-      position: relative;
-      flex-wrap: wrap;
-
-      // Enhanced package icon with better visual treatment
-      .md-package-icon {
-        font-size: 18px;
-        color: #64748b;
-        transition: all 0.2s ease;
-        border-radius: 4px;
-        padding: 2px;
-        background: rgba(100, 116, 139, 0.1);
-
-        &.multi-part {
-          color: #2196F3;
-          background: rgba(33, 150, 243, 0.1);
-          font-weight: 600;
-        }
-
-        &:hover {
-          background: rgba(100, 116, 139, 0.2);
-        }
-      }
-
-      // Main job number styling (for existing span elements)
-      > span {
-        font-weight: 500;
-        letter-spacing: 0.5px;
-        color: #1e293b;
-        font-size: 13px;
-
-        // Add subtle background for better readability
-        background: rgba(30, 41, 59, 0.05);
-        padding: 2px 6px;
-        border-radius: 4px;
-        border: 1px solid rgba(30, 41, 59, 0.1);
-        transition: all 0.2s ease;
-
-        &:hover {
-          background: rgba(30, 41, 59, 0.1);
-          border-color: rgba(30, 41, 59, 0.2);
-        }
-      }
-
-      // Enhanced job number text with better typography (for new class)
-      .md-job-number-text {
-        font-weight: 500;
-        letter-spacing: 0.5px;
-        color: #1e293b;
-        font-size: 13px;
-
-        // Add subtle background for better readability
-        background: rgba(30, 41, 59, 0.05);
-        padding: 2px 6px;
-        border-radius: 4px;
-        border: 1px solid rgba(30, 41, 59, 0.1);
-        transition: all 0.2s ease;
-
-        &:hover {
-          background: rgba(30, 41, 59, 0.1);
-          border-color: rgba(30, 41, 59, 0.2);
-        }
-      }
-
-      // Enhanced parts badge with Material Design elevation
-      .md-parts-badge {
-        background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-        color: white;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 10px;
-        font-weight: 600;
-        margin-left: 6px;
-        box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
-        transition: all 0.2s ease;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-
-        &:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 8px rgba(33, 150, 243, 0.4);
-        }
-      }
-
-      // Enhanced scan indicators with better visual feedback
-      .md-scan-indicator {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        display: inline-block;
-        margin-left: 6px;
-        position: relative;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        transition: all 0.2s ease;
-
-        &.scanned {
-          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-
-          // Add checkmark icon overlay
-          &::after {
-            content: '✓';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 8px;
-            font-weight: bold;
-          }
-        }
-
-        &.pending {
-          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-
-          // Add clock icon overlay
-          &::after {
-            content: '⏱';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 7px;
-          }
-        }
-
-        &:hover {
-          transform: scale(1.2);
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-      }
-
-      // Enhanced barcode styling with better contrast
-      .md-barcode {
-        font-size: 9px;
-        color: #475569;
-        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-        padding: 2px 6px;
-        border-radius: 4px;
-        margin-left: 6px;
-        font-weight: 500;
-        border: 1px solid #cbd5e1;
-        transition: all 0.2s ease;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-
-        &:hover {
-          background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
-          border-color: #94a3b8;
-        }
-      }
-
-      // Priority indicator for urgent jobs
-      .md-priority-indicator {
-        position: absolute;
-        top: -2px;
-        right: -2px;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: #ef4444;
-        box-shadow: 0 0 0 2px white, 0 2px 4px rgba(239, 68, 68, 0.3);
-        animation: pulse 2s infinite;
-
-        &.urgent {
-          background: #ef4444;
-        }
-
-        &.warning {
-          background: #f59e0b;
-        }
-      }
-    }
-
-    // Enhanced child job indicator
-    .md-child-indicator {
-      color: #2196F3;
-      margin-right: 6px;
-      font-weight: bold;
-      font-size: 14px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 20px;
-      height: 20px;
-      background: rgba(33, 150, 243, 0.1);
-      border-radius: 4px;
-      transition: all 0.2s ease;
-
-      &:hover {
-        background: rgba(33, 150, 243, 0.2);
-        transform: scale(1.1);
-      }
-    }
-
-    // Enhanced job status badges
-    .md-job-status-badges {
       display: flex;
       align-items: center;
       gap: 6px;
-      flex-wrap: wrap;
+      font-weight: normal;
+      color: #1e293b;
+      font-size: 13px;
+      position: relative;
 
-      .md-status-badge {
+      // Clean job number display
+      .md-job-number-text {
+        font-family: 'Roboto Mono', monospace;
+        font-weight: 600;
+        letter-spacing: 0.25px;
+        color: #1565c0;
+        font-size: 12px;
+        background: #e3f2fd;
+        padding: 3px 6px;
+        border-radius: 6px;
+        border: 1px solid #bbdefb;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: #bbdefb;
+          border-color: #90caf9;
+          transform: translateY(-1px);
+          box-shadow: 0 2px 4px rgba(21, 101, 192, 0.2);
+        }
+      }
+
+      // Status indicators as clean badges
+      .md-status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
         padding: 2px 6px;
-        border-radius: 8px;
+        border-radius: 12px;
         font-size: 9px;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        transition: all 0.2s ease;
-
-        &.flight {
-          background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-          color: white;
-          box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
-        }
 
         &.express {
-          background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-          color: white;
-          box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+          background: #ffebee;
+          color: #c62828;
+          border: 1px solid #ffcdd2;
         }
 
         &.fragile {
-          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-          color: white;
-          box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+          background: #fff3e0;
+          color: #ef6c00;
+          border: 1px solid #ffcc02;
         }
 
-        &:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        &.flight {
+          background: #f3e5f5;
+          color: #7b1fa2;
+          border: 1px solid #ce93d8;
         }
       }
-    }
 
-    // Enhanced hover effects for the entire cell
-    &:hover {
-      .md-job-number-text {
-        background: rgba(30, 41, 59, 0.1);
-        border-color: rgba(30, 41, 59, 0.2);
-      }
-
-      .md-package-icon {
-        transform: scale(1.1);
-      }
-
+      // Multi-part indicator
       .md-parts-badge {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(33, 150, 243, 0.4);
+        background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+        color: white;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-size: 9px;
+        font-weight: 700;
+        margin-left: 4px;
+        box-shadow: 0 1px 3px rgba(25, 118, 210, 0.4);
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+
+        &::before {
+          content: '●';
+          font-size: 6px;
+        }
+      }
+
+      // Priority indicator
+      .md-priority-indicator {
+        position: absolute;
+        top: -3px;
+        right: -3px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        box-shadow: 0 0 0 2px white;
+
+        &.urgent {
+          background: #d32f2f;
+          animation: pulse-urgent 2s infinite;
+        }
+
+        &.warning {
+          background: #f57c00;
+          animation: pulse-warning 2s infinite;
+        }
       }
     }
 
-    // Dense mode adjustments
-    .dense & {
-      .md-job-number {
+    // Client information row
+    .md-job-client {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: #546e7a;
+      margin-top: 2px;
+
+      .md-client-icon {
         font-size: 12px;
-        gap: 6px;
+        color: #78909c;
+      }
 
-        .md-package-icon {
-          font-size: 16px;
-        }
-
-        .md-job-number-text {
-          font-size: 11px;
-          padding: 1px 4px;
-        }
-
-        .md-parts-badge {
-          font-size: 8px;
-          padding: 1px 6px;
-        }
+      .md-client-name {
+        font-weight: 500;
+        color: #37474f;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
     }
 
-    // Ultra-dense mode adjustments
-    .ultra-dense & {
-      .md-job-number {
-        font-size: 10px;
-        gap: 4px;
-
-        .md-package-icon {
-          font-size: 14px;
-        }
-
-        .md-job-number-text {
-          font-size: 9px;
-          padding: 1px 3px;
-        }
-
-        .md-parts-badge {
-          font-size: 7px;
-          padding: 1px 4px;
-        }
-      }
-
-      .md-job-status-badges {
-        display: none; // Hide status badges in ultra-dense mode
-      }
+    // Notes section
+    .md-job-notes {
+      font-size: 9px;
+      color: #607d8b;
+      font-style: italic;
+      margin-top: 1px;
+      line-height: 1.2;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
     }
   }
 
@@ -1043,7 +910,7 @@
   .md-table-row.child-job {
     .md-job-details {
       .md-job-number {
-        padding-left: 8px;
+        padding-left: 6px; // Reduced from 8px
 
         .md-job-number-text {
           background: rgba(33, 150, 243, 0.05);
@@ -1053,70 +920,15 @@
     }
   }
 
-  // Animations
-  @keyframes pulse {
-    0% {
-      transform: scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: scale(1.2);
-      opacity: 0.7;
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-
-  // Enhanced unread job styling
-  .md-table-row.unread {
-    .md-job-details {
-      .md-job-number {
-        .md-job-number-text {
-          font-weight: 700;
-          background: rgba(33, 150, 243, 0.1);
-          border-color: rgba(33, 150, 243, 0.2);
-          color: #1976D2;
-        }
-      }
-    }
-  }
-
-  // Enhanced multi-part parent job styling
-  .md-table-row.multi-part-parent {
-    .md-job-details {
-      .md-job-number {
-        .md-job-number-text {
-          background: rgba(33, 150, 243, 0.1);
-          border-color: rgba(33, 150, 243, 0.3);
-          font-weight: 600;
-        }
-      }
-    }
-  }
-
-  // Enhanced child job styling
-  .md-table-row.child-job {
-    .md-job-details {
-      .md-job-number {
-        padding-left: 8px;
-
-        .md-job-number-text {
-          background: rgba(33, 150, 243, 0.05);
-          border-color: rgba(33, 150, 243, 0.1);
-        }
-      }
-    }
-  }
-  
+  // UPDATED Route Cell - Enhanced for better horizontal layout
   .md-route-cell {
-    min-width: 260px;
+    min-width: 320px; // Increased from 260px for more horizontal space
+    max-width: 400px; // Added max-width constraint
 
     .md-route {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px; // Increased from 6px for better spacing
       font-size: 12px;
 
       .md-route-location {
@@ -1125,33 +937,22 @@
         border-radius: 4px;
         font-size: 11px;
         line-height: 1.3;
-
-        &.md-route-from {
-          background: #eff6ff;
-          border: 1px solid #dbeafe;
-          color: #1e40af;
-        }
-
-        &.md-route-to {
-          background: #f0fdf4;
-          border: 1px solid #dcfce7;
-          color: #166534;
-        }
+        word-wrap: break-word; // Allow text to wrap to new line
+        overflow-wrap: break-word; // Modern standard for word wrapping
+        max-width: 150px; // Limit individual location width
 
         .md-address-primary {
           font-weight: 600;
           color: currentColor;
-        }
-
-        .md-address-secondary {
-          color: @text-muted;
-          font-size: 9px;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
       }
-
+      
       .md-route-arrow {
         color: @text-muted;
-        font-size: 10px;
+        font-size: 12px; // Increased from 10px for better visibility
+        flex-shrink: 0; // Prevent arrow from shrinking
       }
     }
   }
@@ -1293,8 +1094,19 @@
     }
   }
 
-  // Dense mode adjustments
+  // Dense mode adjustments - UPDATED
   &.dense {
+    .md-first-column {
+      width: 40px; // Reduced for dense mode
+      padding: 4px 2px !important;
+    }
+
+    .md-parent-indicator {
+      width: 20px;
+      height: 20px;
+      font-size: 10px;
+    }
+
     .md-app-bar {
       height: 32px;
       padding: 8px 16px;
@@ -1355,38 +1167,22 @@
       }
     }
 
-    .md-job-details {
-      .md-job-number {
-        font-size: 12px;
-        gap: 6px;
-
-        .md-package-icon {
-          font-size: 14px;
-        }
-
-        .md-parts-badge {
-          font-size: 7px;
-          padding: 1px 4px;
-        }
-      }
-    }
-
     .md-route-cell {
+      min-width: 280px; // Reduced for dense mode
+      max-width: 350px;
+
       .md-route {
         font-size: 10px;
-        gap: 4px;
+        gap: 6px;
 
         .md-route-location {
-          padding: 2px 4px;
+          padding: 2px 6px;
           font-size: 9px;
-
-          .md-address-secondary {
-            font-size: 8px;
-          }
+          max-width: 130px; // Reduced for dense mode
         }
 
         .md-route-arrow {
-          font-size: 8px;
+          font-size: 10px;
         }
       }
     }
@@ -1478,6 +1274,17 @@
 
   // Ultra-dense mode
   &.ultra-dense {
+    .md-first-column {
+      width: 35px; // Further reduced for ultra-dense mode
+      padding: 2px 1px !important;
+    }
+
+    .md-parent-indicator {
+      width: 18px;
+      height: 18px;
+      font-size: 9px;
+    }
+
     .md-app-bar {
       height: 28px;
       padding: 6px 16px;
@@ -1538,41 +1345,22 @@
       }
     }
 
-    .md-job-details {
-      .md-job-number {
-        font-size: 10px;
-        gap: 4px;
-
-        .md-package-icon {
-          font-size: 12px;
-        }
-
-        .md-parts-badge {
-          font-size: 6px;
-          padding: 0 3px;
-        }
-      }
-    }
-
     .md-route-cell {
+      min-width: 250px; // Further reduced for ultra-dense mode
+      max-width: 300px;
+
       .md-route {
         font-size: 9px;
-        gap: 2px;
-        flex-direction: column;
-        align-items: flex-start;
+        gap: 4px;
 
         .md-route-location {
-          padding: 1px 3px;
+          padding: 1px 4px;
           font-size: 8px;
-          width: 100%;
-
-          .md-address-secondary {
-            display: none; // Hide secondary address in ultra-dense mode
-          }
+          max-width: 110px; // Further reduced for ultra-dense mode
         }
 
         .md-route-arrow {
-          display: none; // Hide arrow in ultra-dense mode
+          font-size: 8px;
         }
       }
     }
@@ -1722,11 +1510,13 @@
       }
 
       .md-route-cell {
-        min-width: 180px;
+        min-width: 200px; // Reduced for mobile
+        max-width: 250px;
 
         .md-route-location {
           padding: 2px 4px;
           font-size: 9px;
+          max-width: 90px;
         }
       }
     }
@@ -1768,5 +1558,41 @@
   @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+  }
+
+  @keyframes pulse-urgent {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+      box-shadow: 0 0 0 2px white, 0 0 0 4px rgba(211, 47, 47, 0.3);
+    }
+    50% {
+      transform: scale(1.1);
+      opacity: 0.8;
+      box-shadow: 0 0 0 2px white, 0 0 0 6px rgba(211, 47, 47, 0.5);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+      box-shadow: 0 0 0 2px white, 0 0 0 4px rgba(211, 47, 47, 0.3);
+    }
+  }
+
+  @keyframes pulse-warning {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+      box-shadow: 0 0 0 2px white, 0 0 0 4px rgba(245, 124, 0, 0.3);
+    }
+    50% {
+      transform: scale(1.1);
+      opacity: 0.8;
+      box-shadow: 0 0 0 2px white, 0 0 0 6px rgba(245, 124, 0, 0.5);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+      box-shadow: 0 0 0 2px white, 0 0 0 4px rgba(245, 124, 0, 0.3);
+    }
   }
 }
