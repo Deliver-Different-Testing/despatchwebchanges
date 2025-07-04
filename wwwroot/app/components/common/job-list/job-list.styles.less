@@ -448,6 +448,20 @@
       transition: all 0.1s ease;
       cursor: pointer;
 
+      &.related-job {
+        background: #e3f2fd; // Light blue background
+        border-left: 3px solid #2196F3; // Blue border
+
+        &:hover {
+          background: #bbdefb; // Slightly darker blue on hover
+        }
+
+        &.selected {
+          background: #1976d2 !important; // Darker blue when selected
+          color: white;
+        }
+      }
+
       &.unread {
         .md-job-number,
         .md-delivery-time,
@@ -646,6 +660,21 @@
       background: rgba(33, 150, 243, 0.15);
       border-color: rgba(33, 150, 243, 0.3);
     }
+  }
+
+  .md-related-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(33, 150, 243, 0.1);
+    border: 1px solid rgba(33, 150, 243, 0.3);
+    color: #2196F3;
+    font-size: 10px;
+    font-weight: 600;
+    margin-right: 6px;
   }
 
   // First column styling - UPDATED
