@@ -133,43 +133,197 @@
                     </div>
                 </td>
 
-                <!-- Job Details Column -->
+                <!-- Enhanced Job Details Column Template -->
                 <td class="md-job-details" ng-if="ctrl.isColumnVisible('job')">
+                    <!-- Main job number row with all primary elements -->
                     <div class="md-job-number">
-                        <!-- Child job indicator -->
-                        <span ng-if="!job.isParentOrSingle" class="md-child-indicator">↳</span>
+                        <!-- Priority indicator for urgent jobs -->
+                        <div class="md-priority-indicator"
+                             ng-class="ctrl.getJobPriorityClass(job)"
+                             ng-if="ctrl.isUrgent(job) || ctrl.isWarning(job)"></div>
 
-                        <md-icon class="md-package-icon" md-font-set="material-symbols-outlined"
+                        <!-- Child job indicator -->
+                        <span ng-if="::!job.isParentOrSingle && !ctrl.isNationwideList()"
+                              class="md-child-indicator">↳</span>
+
+                        <!-- Enhanced package icon -->
+                        <md-icon class="md-package-icon"
+                                 md-font-set="material-symbols-outlined"
                                  ng-class="{'multi-part': ctrl.isMultiPartJob(job)}"
                                  ng-if="ctrl.shouldShowFullDetails()">
+                            <md-tooltip md-direction="bottom">
+                                {{::ctrl.isMultiPartJob(job) ? 'Multi-part job' : 'Single job'}}
+                            </md-tooltip>
                             {{::ctrl.isMultiPartJob(job) ? 'inventory' : 'inventory_2'}}
                         </md-icon>
 
-                        <md-icon md-font-set="material-symbols-outlined" ng-if="job.fromAirportId || job.toAirportId">
+                        <!-- Flight icon for airport jobs -->
+                        <md-icon class="md-package-icon"
+                                 md-font-set="material-symbols-outlined"
+                                 ng-if="::job.fromAirportId || job.toAirportId"
+                                 md-tooltip="Airport delivery">
                             {{::ctrl.getFlightIcon(job.jobNo)}}
                         </md-icon>
-                        
-                        <!-- Show the full job number in normal mode, abbreviated in ultra-dense -->
-                        <span ng-if="ctrl.shouldShowMinimalDetails()">
-                {{::ctrl.getAbbreviatedJobNumber(job.jobNo)}}
-            </span>
-                        <span ng-if="!ctrl.shouldShowMinimalDetails()">
-                {{job.jobNo}}
-            </span>
 
-                        <!-- Add parts badge for multi-part jobs -->
-                        <span ng-if="ctrl.isMultiPartJob(job)" class="md-parts-badge">
-                <span ng-if="ctrl.shouldShowFullDetails()">
-                    {{::ctrl.getChildCount(job)}} parts
-                </span>
-                <span ng-if="!ctrl.shouldShowFullDetails()">
-                    {{::ctrl.getChildCount(job)}}
-                </span>
-            </span>
+                        <!-- Enhanced job number -->
+                        <span class="md-job-number-text">
+                            {{::ctrl.getAbbreviatedJobNumber(job.jobNo)}}
+                        </span>
+
+                        <!-- Enhanced parts badge -->
+                        <span ng-if="::ctrl.isMultiPartJob(job)"
+                              class="md-parts-badge">
+                         <md-tooltip md-direction="bottom">
+                                {{::ctrl.getChildCount(job)}} parts in this job
+                         </md-tooltip>
+                            
+                            <span ng-if="ctrl.shouldShowFullDetails()">
+                                {{::ctrl.getChildCount(job)}} parts
+                            </span>
+                            <span ng-if="!ctrl.shouldShowFullDetails()">
+                                {{::ctrl.getChildCount(job)}}
+                            </span>
+                        </span>
                     </div>
+                    
+                    <!-- Status badges row -->
+                    <div class="md-job-status-badges" ng-if="ctrl.shouldShowFullDetails()">
+        <span class="md-status-badge flight"
+              ng-if="::job.fromAirportId || job.toAirportId"
+              md-tooltip="Airport delivery"
+              md-tooltip-position="top">
+            Flight
+        </span>
+
+                        <span class="md-status-badge express"
+                              ng-if="::job.isExpress"
+                              md-tooltip="Express delivery"
+                              md-tooltip-position="top">
+            Express
+        </span>
+
+                        <span class="md-status-badge fragile"
+                              ng-if="::job.isFragile"
+                              md-tooltip="Fragile item"
+                              md-tooltip-position="top">
+            Fragile
+        </span>
+                    </div>
+                </td>
+
+                <!-- Enhanced Child Job Details -->
+                <td class="md-job-details" ng-if="ctrl.isColumnVisible('job')" ng-show="job._isExpanded">
+                    <div class="md-job-number">
+                        <!-- Enhanced child job indicator -->
+                        <span class="md-child-indicator">↳</span>
+
+                        <!-- Enhanced job number display -->
+                        <span class="md-job-number-text" ng-if="ctrl.shouldShowMinimalDetails()">
+            {{::ctrl.getAbbreviatedJobNumber(childJob.jobNo)}}
+        </span>
+                        <span class="md-job-number-text" ng-if="!ctrl.shouldShowMinimalDetails()">
+            {{childJob.jobNo}}
+        </span>
+
+                        <!-- Enhanced scan indicators for child jobs -->
+                        <span ng-if="::childJob.scanStatus"
+                              class="md-scan-indicator"
+                              ng-class="childJob.scanStatus"
+                              md-tooltip="Scan status: {{childJob.scanStatus}}"
+                              md-tooltip-position="top"></span>
+                    </div>
+
+                    <!-- Enhanced child job client information -->
                     <div class="md-job-client" ng-if="!ctrl.shouldShowMinimalDetails()">
-                        <span ng-if="!job.isParentOrSingle">{{job.client}}</span>
-                        <span ng-if="!job.isParentOrSingle">{{ctrl.getChildJobNotes(job)}}</span>
+                        <md-icon class="md-client-icon"
+                                 md-font-set="material-symbols-outlined"
+                                 ng-if="ctrl.shouldShowFullDetails()">
+                            business
+                        </md-icon>
+
+                        <span class="md-client-name">
+            {{childJob.client}}
+        </span>
+
+                        <!-- Child job notes -->
+                        <div class="md-job-notes" ng-if="ctrl.getChildJobNotes(childJob)">
+                            {{::ctrl.getChildJobNotes(childJob)}}
+                        </div>
+                    </div>
+
+                    <!-- Child job status badges -->
+                    <div class="md-job-status-badges" ng-if="ctrl.shouldShowFullDetails()">
+        <span class="md-status-badge express"
+              ng-if="::childJob.isExpress"
+              md-tooltip="Express delivery"
+              md-tooltip-position="top">
+            Express
+        </span>
+
+                        <span class="md-status-badge fragile"
+                              ng-if="::childJob.isFragile"
+                              md-tooltip="Fragile item"
+                              md-tooltip-position="top">
+            Fragile
+        </span>
+                    </div>
+                </td>
+
+                <!-- Enhanced Child Job Details -->
+                <td class="md-job-details" ng-if="ctrl.isColumnVisible('job')" ng-show="job._isExpanded">
+                    <div class="md-job-number">
+                        <!-- Enhanced child job indicator -->
+                        <span class="md-child-indicator">↳</span>
+
+                        <!-- Enhanced job number display -->
+                        <span class="md-job-number-text" ng-if="ctrl.shouldShowMinimalDetails()">
+            {{::ctrl.getAbbreviatedJobNumber(childJob.jobNo)}}
+        </span>
+                        <span class="md-job-number-text" ng-if="!ctrl.shouldShowMinimalDetails()">
+            {{childJob.jobNo}}
+        </span>
+
+                        <!-- Enhanced scan indicators for child jobs -->
+                        <span ng-if="::childJob.scanStatus"
+                              class="md-scan-indicator"
+                              ng-class="childJob.scanStatus"
+                              md-tooltip="Scan status: {{childJob.scanStatus}}"
+                              md-tooltip-position="top"></span>
+                    </div>
+
+                    <!-- Enhanced child job client information -->
+                    <div class="md-job-client" ng-if="!ctrl.shouldShowMinimalDetails()">
+                        <md-icon class="md-client-icon"
+                                 md-font-set="material-symbols-outlined"
+                                 ng-if="ctrl.shouldShowFullDetails()">
+                            business
+                        </md-icon>
+
+                        <span class="md-client-name">
+            {{childJob.client}}
+        </span>
+
+                        <!-- Child job notes -->
+                        <div class="md-job-notes" ng-if="ctrl.getChildJobNotes(childJob)">
+                            {{::ctrl.getChildJobNotes(childJob)}}
+                        </div>
+                    </div>
+
+                    <!-- Child job status badges -->
+                    <div class="md-job-status-badges" ng-if="ctrl.shouldShowFullDetails()">
+        <span class="md-status-badge express"
+              ng-if="::childJob.isExpress"
+              md-tooltip="Express delivery"
+              md-tooltip-position="top">
+            Express
+        </span>
+
+                        <span class="md-status-badge fragile"
+                              ng-if="::childJob.isFragile"
+                              md-tooltip="Fragile item"
+                              md-tooltip-position="top">
+            Fragile
+        </span>
                     </div>
                 </td>
 
@@ -223,7 +377,7 @@
                     <button ng-if="!ctrl.hasAssignedCourier(job) && !job.showCourierSearch"
                             class="md-assign-button"
                             ng-click="ctrl.showCourierAssignment(job)"
-                            ng-disabled="!ctrl.allowDispatch">
+                            ng-disabled="::!ctrl.allowDispatch">
                         <span ng-if="!ctrl.shouldShowMinimalDetails()">Assign</span>
                         <span ng-if="ctrl.shouldShowMinimalDetails()">+</span>
                     </button>
@@ -344,7 +498,7 @@
             </span>
                     </div>
                     <div class="md-job-client" ng-if="!ctrl.shouldShowMinimalDetails()">
-                        {{ctrl.getChildJobNotes(childJob)}}
+                        {{::ctrl.getChildJobNotes(childJob)}}
                     </div>
                 </td>
 
@@ -454,12 +608,12 @@
                                 Redispatch
                             </md-button>
 
-                            <md-button ng-if="ctrl.isUrgent(job)">
+                            <md-button ng-if="::ctrl.isUrgent(job)">
                                 <md-icon md-font-set="material-symbols-outlined">phone</md-icon>
                                 Late Call
                             </md-button>
 
-                            <md-button ng-if="ctrl.isUrgent(job)">
+                            <md-button ng-if="::ctrl.isUrgent(job)">
                                 <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
                                 Late Delivery
                             </md-button>

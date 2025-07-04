@@ -2018,8 +2018,8 @@ class NationwideControl extends BaseController {
     }
 
     getJobContextMenuOptions() {
-        return (job: IDispatchJob) => this.getContextMenuOptions(job);
-    } 
+        return (data: any) => this.getContextMenuOptions(data.job);
+    }
 }
 
 const NationwideComponent: angular.IComponentOptions = {

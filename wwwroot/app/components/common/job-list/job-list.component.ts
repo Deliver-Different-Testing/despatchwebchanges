@@ -120,7 +120,7 @@ class JobsListController extends BaseController {
         }
     }
     
-    private isNationwideList(): boolean {
+    isNationwideList(): boolean {
         return this.jobListType.toLowerCase().includes('Nationwide'.toLowerCase())
     }
 
