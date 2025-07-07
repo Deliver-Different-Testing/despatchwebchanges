@@ -101,6 +101,8 @@ public static class JobMappings
 
             Client = j.UcjbClientCode,
             ClientId = j.UcjbClientId,
+            ClientName = j.UcjbClient != null ? j.UcjbClient.UcclName : string.Empty,
+            
             JobType = (int)(j.UcjbType ?? 0),
             PickupTime = null,
             DeliveryTime = null,

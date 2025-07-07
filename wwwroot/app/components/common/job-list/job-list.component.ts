@@ -44,10 +44,6 @@ class JobsListController extends BaseController {
         issues: 0
     };
 
-    // Expanded job IDs for accordion functionality
-    expandedJobs: Set<number> = new Set();
-    densityModeChanging: boolean = false;
-
     static $inject = [
         'DispatchData',
         'APP_CONFIG',
@@ -206,7 +202,6 @@ class JobsListController extends BaseController {
     }
 
     setDensityMode(mode: DensityMode) {
-        this.densityModeChanging = true;
         this.densityMode = mode;
 
         // Save to local storage
@@ -234,11 +229,6 @@ class JobsListController extends BaseController {
                         break;
                 }
             }
-
-            // Hide loading indicator after DOM updates
-            this.registerTimeout(() => {
-                this.densityModeChanging = false;
-            }, 100);
         });
     }
 
@@ -308,28 +298,176 @@ class JobsListController extends BaseController {
         // Show only the last 6 characters for ultra-dense
         return jobNo.length > 6 ? '...' + jobNo.slice(-6) : jobNo;
     }
+    
+    formatDeliveryDate(job: IDispatchJob): string {
+        if (!job.time && !job.booked) return '';
 
-    getAbbreviatedCourierName(job: IDispatchJob): string {
-        const fullName = this.getCourierName(job);
-        if (!fullName) return '';
+        const date = dayjs(job.time || job.booked);
+        const now = dayjs();
 
-        if (this.densityMode === DensityMode.UltraDense) {
-            // Show only initials in ultra-dense
-            return this.getCourierInitials(job.assignedCourier?.text);
-        } else if (this.densityMode === DensityMode.Dense) {
-            // Show first name only in dense
-            return fullName.split(' ')[0];
+        if (date.isSame(now, 'day')) {
+            return date.format('MM/DD');
+        } else if (date.isSame(now.subtract(1, 'day'), 'day')) {
+            return date.format('MM/DD');
+        } else {
+            return date.format('MM/DD');
         }
-
-        return fullName;
     }
 
-    getTableMaxHeight(): string {
-        const baseHeight = 600;
-        const rowHeight = this.getRowHeight();
-        const estimatedRows = Math.floor(baseHeight / rowHeight);
+    isOverdue(job: IDispatchJob): boolean {
+        const now = dayjs();
+        const deliveryTime = dayjs(job.time || job.booked);
+        return deliveryTime.isBefore(now);
+    }
 
-        return `${estimatedRows * rowHeight}px`;
+    getPickupAddress(job: IDispatchJob): string {
+        if (this.densityMode === DensityMode.Dense || this.densityMode === DensityMode.UltraDense) {
+            if (job.pickupAddress?.addressLine5) {
+                return job.pickupAddress.addressLine5 + ', ' + job.pickupAddress.addressLine6;
+            }
+
+            const fromLines = (job.from || '').split(',');
+            return fromLines[0]?.trim() || '';
+        }
+
+        // In normal mode, show the full address starting from line 2
+        if (job.pickupAddress) {
+            const addr = job.pickupAddress;
+            const addressParts = [
+                addr.addressLine2,
+                addr.addressLine3,
+                addr.addressLine4,
+                addr.addressLine5,
+                addr.addressLine6,
+                addr.addressLine7,
+                addr.addressLine8
+            ].filter(line => line && line.trim());
+
+            return addressParts.join(', ');
+        }
+
+        // For non-structured addresses, parse the 'from' field and start from line 2
+        const fromLines = (job.from || '').split(',').map(line => line.trim());
+        return fromLines.slice(1).join(', ');
+    }
+
+    getPickupCityState(job: IDispatchJob): string {
+        // In dense and ultra-dense modes, show secondary address info
+        if (this.densityMode === DensityMode.Dense || this.densityMode === DensityMode.UltraDense) {
+            if (job.pickupAddress) {
+                const addr = job.pickupAddress;
+                const parts = [addr.addressLine2, addr.our_suburb, addr.addressLine3].filter(Boolean);
+                return parts.join(', ');
+            }
+
+            const fromLines = (job.from || '').split(',').map(line => line.trim());
+            return fromLines.slice(1).join(', ');
+        }
+
+        // In normal mode, show the primary address line
+        if (job.pickupAddress?.addressLine1) {
+            return job.pickupAddress.addressLine1;
+        }
+
+        const fromLines = (job.from || '').split(',');
+        return fromLines[0]?.trim() || '';
+    }
+
+    getDeliveryAddress(job: IDispatchJob): string {
+        // In dense and ultra-dense modes, show only city/state
+        if (this.densityMode === DensityMode.Dense || this.densityMode === DensityMode.UltraDense) {
+            if (job.deliveryAddress?.addressLine5) {
+                return job.deliveryAddress.addressLine5 + ', ' + job.deliveryAddress.addressLine6;
+            }
+
+            const toLines = (job.toAddress || '').split(',');
+            return toLines[0]?.trim() || '';
+        }
+
+        // In normal mode, show the full address starting from line 2
+        if (job.deliveryAddress) {
+            const addr = job.deliveryAddress;
+            // Start from address line 2 and include all relevant lines
+            const addressParts = [
+                addr.addressLine2,
+                addr.addressLine3,
+                addr.addressLine4,
+                addr.addressLine5,
+                addr.addressLine6,
+                addr.addressLine7,
+                addr.addressLine8
+            ].filter(line => line && line.trim());
+
+            return addressParts.join(', ');
+        }
+
+        // For non-structured addresses, parse the 'toAddress' field and start from line 2
+        const toLines = (job.toAddress || '').split(',').map(line => line.trim());
+        return toLines.slice(1).join(', ');
+    }
+
+    getDeliveryCityState(job: IDispatchJob): string {
+        // In dense and ultra-dense modes, show secondary address info
+        if (this.densityMode === DensityMode.Dense || this.densityMode === DensityMode.UltraDense) {
+            if (job.deliveryAddress) {
+                const addr = job.deliveryAddress;
+                const parts = [addr.addressLine2, addr.our_suburb, addr.addressLine3].filter(Boolean);
+                return parts.join(', ');
+            }
+
+            const toLines = (job.toAddress || '').split(',').map(line => line.trim());
+            return toLines.slice(1).join(', ');
+        }
+
+        // In normal mode, show the primary address line
+        if (job.deliveryAddress?.addressLine1) {
+            return job.deliveryAddress.addressLine1;
+        }
+
+        const toLines = (job.toAddress || '').split(',');
+        return toLines[0]?.trim() || '';
+    }
+
+    getCourierInitials(job: IDispatchJob): string {
+        const name = this.getCourierName(job);
+        if (!name) return '?';
+
+        return name.split(' ')
+            .map(word => word.charAt(0))
+            .join('')
+            .toUpperCase()
+            .substring(0, 2);
+    }
+
+    getCourierColor(job: IDispatchJob): string {
+        const name = this.getCourierName(job);
+        if (!name) return '#3b82f6';
+
+        // Generate a consistent color based on name
+        const colors = [
+            '#3b82f6', // blue
+            '#8b5cf6', // purple  
+            '#06b6d4', // cyan
+            '#10b981', // emerald
+            '#f59e0b', // amber
+            '#ef4444', // red
+            '#84cc16', // lime
+            '#ec4899', // pink
+        ];
+
+        const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        return colors[hash % colors.length];
+    }
+
+    getStatusAbbreviation(job: IDispatchJob): string {
+        const status = job.status || job.statusName || '';
+
+        // Return the first letter for ultra-dense, full status otherwise
+        if (this.densityMode === DensityMode.UltraDense) {
+            return status.charAt(0).toUpperCase();
+        }
+
+        return status;
     }
 
     private applyFilters() {
@@ -495,11 +633,6 @@ class JobsListController extends BaseController {
     getJobStatus(job: IDispatchJob): string {
         return job.status || job.statusName || '';
     }
-
-    getChildJobNotes(childJob: IDispatchJob): string {
-        return childJob.childNotes || childJob.client || '';
-    }
-
     hasAssignedCourier(job: IDispatchJob): boolean {
         return !!(job.assignedCourier || job.courier);
     }
@@ -563,28 +696,7 @@ class JobsListController extends BaseController {
         if (job.parentId && job.id !== job.parentId) return 'child-job';
         return 'normal';
     }
-
-    getTimeRemaining(job: IDispatchJob): { text: string; class: string } {
-        const now = dayjs();
-        const deliveryTime = dayjs(job.time);
-        const minutesUntilDelivery = deliveryTime.diff(now, 'minutes');
-
-        if (minutesUntilDelivery <= 0) {
-            return {text: 'Overdue', class: 'critical'};
-        } else if (minutesUntilDelivery <= 30) {
-            return {text: `${minutesUntilDelivery}min left`, class: 'critical'};
-        } else if (minutesUntilDelivery <= 60) {
-            return {text: `${minutesUntilDelivery}min left`, class: 'warning'};
-        } else {
-            const hours = Math.floor(minutesUntilDelivery / 60);
-            const minutes = minutesUntilDelivery % 60;
-            return {
-                text: `${hours}hr${minutes > 0 ? ` ${minutes}min` : ''}`,
-                class: 'good'
-            };
-        }
-    }
-
+    
     formatDeliveryTime(job: IDispatchJob): string {
         const showFullDate = this.densityMode == DensityMode.Normal;
 
@@ -610,11 +722,6 @@ class JobsListController extends BaseController {
         } else {
             return date.format('MM/DD/YYYY HH:mm');
         }
-    }
-
-    getCourierInitials(textToEdit?: string): string {
-        if (!textToEdit) return '?';
-        return textToEdit.split(' ').map(n => n[0]).join('').toUpperCase();
     }
 
     selectJob(job: IDispatchJob) {

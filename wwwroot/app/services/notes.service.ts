@@ -74,21 +74,7 @@ class NoteService {
             return [];
         }
     }
-
-    async getNoteById(noteId: number): Promise<IJobNote | null> {
-        try {
-            const response = await this.$http.get<IJobNote>(`note/GetNote`, {
-                params: {
-                    noteId,
-                }
-            });
-            return response.data;
-        } catch (error) {
-            console.error('Error getting note by ID:', error);
-            return null;
-        }
-    }
-
+    
     async getNoteTypes(): Promise<INoteType[]> {
         try {
             const response = await this.$http.get<INoteType[]>('note/GetNoteTypes');
