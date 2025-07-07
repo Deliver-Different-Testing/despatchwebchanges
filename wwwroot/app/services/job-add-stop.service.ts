@@ -55,45 +55,45 @@ class JobAddStopService implements angular.IServiceProvider {
     }
 
     private async addPickUpStop(job: IDispatchJob, $event?: MouseEvent): Promise<number | undefined> {
-        if(!job.pickupAddress || !job.deliveryAddress) return;
+        if (!job.pickupAddress || !job.deliveryAddress) return;
 
         const newAddress = this.generateBlankAddress();
         const newPickUpAddress = await this.editAddressDialogService.openEditAddressDialog(newAddress,
             $event, "Add Pick Up Stop", "Add Stop", true);
-        if(!newPickUpAddress) return;
+        if (!newPickUpAddress) return;
 
-       return await this.DispatchData.addStopToJob(job.id, newPickUpAddress, undefined);
+        return await this.DispatchData.addStopToJob(job.id, newPickUpAddress, undefined);
     }
 
     private async addPickUpStopRecurringJob(job: IPrebookListModel, $event?: MouseEvent): Promise<number | undefined> {
-        if(!job.pickupAddress || !job.deliveryAddress) return;
+        if (!job.pickupAddress || !job.deliveryAddress) return;
 
         const newAddress = this.generateBlankAddress();
         const newPickUpAddress = await this.editAddressDialogService.openEditAddressDialog(newAddress,
             $event, "Add Pick Up Stop", "Add Stop", true);
-        if(!newPickUpAddress) return;
+        if (!newPickUpAddress) return;
 
-       return await this.DispatchData.addStopToRecurringJob(job.id, newPickUpAddress, undefined);
+        return await this.DispatchData.addStopToRecurringJob(job.id, newPickUpAddress, undefined);
     }
 
-    private async addDeliveryStop(job: IDispatchJob, $event?: MouseEvent): Promise<number| undefined> {
-        if(!job.pickupAddress || !job.deliveryAddress) return;
+    private async addDeliveryStop(job: IDispatchJob, $event?: MouseEvent): Promise<number | undefined> {
+        if (!job.pickupAddress || !job.deliveryAddress) return;
 
         const newAddress = this.generateBlankAddress();
         const newDeliveryAddress = await this.editAddressDialogService.openEditAddressDialog(newAddress,
             $event, "Add Delivery Stop", "Add Stop", true);
-        if(!newDeliveryAddress) return;
+        if (!newDeliveryAddress) return;
 
-       return await this.DispatchData.addStopToJob(job.id, undefined, newDeliveryAddress);
+        return await this.DispatchData.addStopToJob(job.id, undefined, newDeliveryAddress);
     }
 
-    private async addDeliveryStopToRecurringJob(job: IPrebookListModel, $event?: MouseEvent): Promise<number| undefined> {
-        if(!job.pickupAddress || !job.deliveryAddress) return;
+    private async addDeliveryStopToRecurringJob(job: IPrebookListModel, $event?: MouseEvent): Promise<number | undefined> {
+        if (!job.pickupAddress || !job.deliveryAddress) return;
 
         const newAddress = this.generateBlankAddress();
         const newDeliveryAddress = await this.editAddressDialogService.openEditAddressDialog(newAddress,
             $event, "Add Delivery Stop", "Add Stop", true);
-        if(!newDeliveryAddress) return;
+        if (!newDeliveryAddress) return;
 
         return await this.DispatchData.addStopToRecurringJob(job.id, undefined, newDeliveryAddress);
     }

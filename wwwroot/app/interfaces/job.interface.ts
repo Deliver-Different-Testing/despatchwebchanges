@@ -447,6 +447,8 @@ export interface IDispatchJob {
     // Job properties
     client?: string;
     clientId?: number;
+    clientName?: string;
+    
     jobType?: number;
     minutes?: number;
     pickupTime?: number;

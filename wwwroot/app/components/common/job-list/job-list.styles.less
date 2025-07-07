@@ -1,1763 +1,818 @@
 ﻿@import '../../../../css/variables';
 
 .job-list-component {
-  margin-top: -1.5em;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
   background: #f8fafc;
-  font-size: 13px;
+  color: #1e293b;
   line-height: 1.4;
   height: 100%;
   display: flex;
   flex-direction: column;
-  color: @text-dark;
 
-  // Dropdown for view mode selection
-  .md-dropdown {
-    position: relative;
-    display: inline-block;
-    margin-right: 8px;
-
-    .md-dropdown-btn {
-      background: #f5f5f5;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      padding: 8px 12px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      transition: all 0.2s ease;
-      min-width: 120px;
-      justify-content: space-between;
-
-      &:hover {
-        background: #e0e0e0;
-        border-color: #bbb;
-      }
-
-      .md-dropdown-arrow {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
-        transition: transform 0.2s ease;
-      }
-    }
-
-    &.open {
-      .md-dropdown-btn {
-        background: #e0e0e0;
-        border-color: #bbb;
-        border-bottom-left-radius: 0;
-        border-bottom-right-radius: 0;
-
-        .md-dropdown-arrow {
-          transform: rotate(180deg);
-        }
-      }
-
-      .md-dropdown-menu {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(0);
-      }
-    }
-
-    .md-dropdown-menu {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      background: white;
-      border: 1px solid #ddd;
-      border-top: none;
-      border-radius: 0 0 6px 6px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-      z-index: 1000;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(-8px);
-      transition: all 0.2s ease;
-
-      .md-dropdown-item {
-        background: none;
-        border: none;
-        width: 100%;
-        padding: 12px 16px;
-        text-align: left;
-        cursor: pointer;
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        transition: background-color 0.15s ease;
-        border-bottom: 1px solid #f1f5f9;
-
-        &:last-child {
-          border-bottom: none;
-          border-radius: 0 0 6px 6px;
-        }
-
-        &:hover {
-          background: #f8f9fa;
-        }
-
-        &.active {
-          background: #e3f2fd;
-          color: #2196F3;
-
-          md-icon {
-            color: #2196F3;
-          }
-        }
-
-        md-icon {
-          font-size: 18px;
-          width: 18px;
-          height: 18px;
-          color: #666;
-          margin-top: 2px;
-        }
-
-        span:first-of-type {
-          font-size: 13px;
-          font-weight: 500;
-          color: #1e293b;
-          line-height: 1.2;
-        }
-
-        .md-dropdown-description {
-          font-size: 11px;
-          color: #64748b;
-          margin-top: 2px;
-          line-height: 1.3;
-        }
-
-        &.active span:first-of-type {
-          color: #2196F3;
-        }
-      }
-    }
-  }
-
-  // Header with search controls
-  .job-list-header {
-    padding: 8px 16px;
-    background: #f1f5f9;
+  .stats-header {
+    background: white;
     border-bottom: 1px solid #e2e8f0;
-    flex-shrink: 0;
-
-    .search-controls {
-      display: flex;
-      gap: 16px;
-      align-items: center;
-
-      .job-record-search,
-      .courier-search {
-        min-width: 200px;
-
-        .md-input-container {
-          margin: 0;
-          padding: 0;
-
-          input {
-            font-size: 12px;
-            padding: 6px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            background: white;
-            transition: border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-
-            &:focus {
-              outline: none;
-              border-color: @primary-blue;
-              border-width: 2px;
-              padding: 5px 11px;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // Material Design App Bar
-  .md-app-bar {
-    background: @primary-color;
-    color: @text-light;
-    padding: 12px 16px;
+    padding: 12px 20px;
     display: flex;
+    justify-content: center;
     align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 10;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     flex-shrink: 0;
-    height: 40px;
 
-    .md-app-bar-title {
+    .stats {
       display: flex;
       align-items: center;
-      gap: 12px;
-
-      .material-icons {
-        font-size: 20px;
-      }
-
-      .md-headline {
-        font-size: 18px;
-        font-weight: 700;
-        line-height: 1.2;
-        margin: 0;
-      }
-
-      .md-chip {
-        background: rgba(255, 255, 255, 0.2);
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 11px;
-        font-weight: 600;
-      }
-    }
-
-    .md-stats {
-      display: flex;
       gap: 16px;
-      align-items: center;
-      font-size: 11px;
+      font-size: 13px;
+      font-weight: 500;
 
-      .md-stat {
+      .total-jobs {
+        font-weight: 600;
+        color: #1e293b;
+      }
+
+      .stat-item {
         display: flex;
         align-items: center;
         gap: 6px;
 
-        .md-stat-indicator {
+        .stat-dot {
           width: 8px;
           height: 8px;
           border-radius: 50%;
 
-          &.urgent { background: @error-red; }
-          &.active { background: @primary-blue; }
+          &.urgent { background: #ef4444; }
+          &.active { background: #06b6d4; }
           &.transit { background: #8b5cf6; }
-          &.done { background: @primary-green; }
-          &.issues { background: @primary-warning; }
+          &.done { background: #10b981; }
+          &.issues { background: #f59e0b; }
         }
       }
     }
   }
 
-  // Material Design Toolbar
-  .md-toolbar {
-    background: #f1f5f9;
+  .controls-header {
+    background: white;
     border-bottom: 1px solid #e2e8f0;
-    padding: 8px 16px;
+    padding: 12px 20px;
     display: flex;
+    justify-content: center;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
     flex-shrink: 0;
 
-    .md-tabs {
+    .controls {
       display: flex;
-      gap: 4px;
+      align-items: center;
+      gap: 12px;
 
-      .md-tab {
-        background: none;
-        border: none;
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-size: 11px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-        color: @text-muted;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-
-        &.active {
-          background: #1e293b;
-          color: @text-light;
-        }
-
-        &:hover:not(.active) {
-          background: @hover-color;
-        }
-      }
-    }
-
-    .md-search-field {
-      position: relative;
-      flex: 1;
-      max-width: 300px;
-
-      .md-text-field {
-        width: 100%;
-        padding: 6px 12px;
-        border: 1px solid #d1d5db;
-        border-radius: 6px;
-        font-size: 12px;
-        background: white;
-        transition: border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-
-        &:focus {
-          outline: none;
-          border-color: @primary-blue;
-          border-width: 2px;
-          padding: 5px 11px;
-        }
-      }
-    }
-
-    .md-button-group {
-      display: flex;
-      background: #e2e8f0;
-      border-radius: 4px;
-      padding: 2px;
-      position: relative;
-
-      .md-density-loading {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(255, 255, 255, 0.9);
+      .filter-tabs {
         display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        border-radius: 4px;
-        font-size: 10px;
-        font-weight: 600;
-        color: @primary-blue;
-        z-index: 10;
+        gap: 4px;
 
-        .md-density-spinner {
-          width: 12px;
-          height: 12px;
-          border-top: 2px solid @primary-blue;
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-        }
-      }
-
-      .md-density-btn {
-        background: none;
-        border: none;
-        padding: 4px 8px;
-        border-radius: 3px;
-        font-size: 10px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-        color: @text-muted;
-
-        &.active {
+        .tab {
+          padding: 6px 12px;
+          border: 1px solid #e2e8f0;
           background: white;
-          color: #1e293b;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-        }
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 500;
+          transition: all 0.2s;
+          border-radius: 0;
 
-        &:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-      }
-    }
-  }
+          &.active {
+            background: #1e293b;
+            color: white;
+            border-color: #1e293b;
+          }
 
-  // Table Container
-  .md-table-container {
-    max-height: 600px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: @scroll-bar-color transparent;
-    flex: 1;
-
-    &::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: #f1f5f9;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: @scroll-bar-color;
-      border-radius: 4px;
-    }
-  }
-
-  // Data Table
-  .md-data-table {
-    width: 100%;
-    border-collapse: collapse;
-
-    .md-table-header {
-      background: #f1f5f9;
-      border-bottom: 2px solid #e2e8f0;
-      position: sticky;
-      top: 0;
-      z-index: 5;
-
-      th {
-        padding: 8px 6px;
-        text-align: left;
-        font-size: 10px;
-        font-weight: 700;
-        color: @text-muted;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-right: 1px solid #f1f5f9;
-
-        &:last-child {
-          border-right: none;
+          &:hover:not(.active) {
+            background: #f8fafc;
+          }
         }
       }
-    }
 
-    .md-group-header {
-      background: linear-gradient(135deg, #e2e8f0 0%, #f1f5f9 100%);
-      font-weight: 700;
-      font-size: 11px;
-      color: @brand;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+      .search-container {
+        position: relative;
 
-      td {
-        padding: 6px 12px;
-        border-bottom: 1px solid #cbd5e1;
+        .search-input {
+          padding: 8px 12px;
+          border: 1px solid #e2e8f0;
+          border-radius: 6px;
+          font-size: 13px;
+          width: 280px;
+          background: white;
+          transition: border-color 0.2s;
 
-        .md-group-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          background: #1e293b;
-          color: @text-light;
-          padding: 3px 8px;
-          border-radius: 12px;
-          font-size: 9px;
-          font-weight: 700;
+          &:focus {
+            outline: none;
+            border-color: #3b82f6;
+          }
 
-          .material-icons {
-            font-size: 12px;
+          &::placeholder {
+            color: #64748b;
+          }
+        }
+      }
+
+      .view-options {
+        display: flex;
+        gap: 4px;
+
+        .view-btn {
+          padding: 6px 10px;
+          border: 1px solid #e2e8f0;
+          background: white;
+          font-size: 11px;
+          cursor: pointer;
+          transition: all 0.2s;
+          border-radius: 0;
+
+          &.active {
+            background: #1e293b;
+            color: white;
+            border-color: #1e293b;
+          }
+
+          &:hover:not(.active) {
+            background: #f8fafc;
           }
         }
       }
     }
+  }
 
-    .md-table-row {
+  .jobs-container {
+    padding: 0 20px;
+    flex: 1;
+    overflow-y: auto;
+
+    .jobs-header {
+      display: grid;
+      grid-template-columns: 60px 80px 120px 1fr 1fr 120px 80px;
+      gap: 16px;
+      padding: 12px 0;
+      border-bottom: 2px solid #e2e8f0;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #64748b;
+      background: white;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .job-row {
+      display: grid;
+      grid-template-columns: 60px 80px 120px 1fr 1fr 120px 80px;
+      gap: 16px;
+      padding: 10px 0;
       border-bottom: 1px solid #f1f5f9;
-      transition: all 0.1s ease;
+      align-items: center;
+      background: white;
+      transition: background-color 0.2s;
+      font-size: 13px;
       cursor: pointer;
 
-      &.related-job {
-        background: #e3f2fd; // Light blue background
-        border-left: 3px solid #2196F3; // Blue border
+      &:hover {
+        background: #f8fafc;
+      }
 
-        &:hover {
-          background: #bbdefb; // Slightly darker blue on hover
-        }
-
-        &.selected {
-          background: #1976d2 !important; // Darker blue when selected
-          color: white;
-        }
+      &.selected {
+        background: #eff6ff;
+        border-left: 3px solid #3b82f6;
       }
 
       &.unread {
-        .md-job-number,
-        .md-delivery-time,
-        .md-courier-name {
-          font-weight: 700;
+        .job-id,
+        .courier-name {
+          font-weight: 600;
         }
       }
 
-      // Ensure read jobs have normal font weight
-      &:not(.unread) {
-        .md-job-number,
-        .md-delivery-time,
-        .md-courier-name {
-          font-weight: normal;
-        }
-      }
-
-      &.multi-part-parent {
-        border-left: 3px solid #2196F3;
-        background-color: #f8f9fa;
-        font-weight: 500;
+      &.urgent {
+        border-left: 3px solid #ef4444;
+        background: #fef2f2;
 
         &:hover {
-          background-color: #e3f2fd;
+          background: #fee2e2;
         }
       }
 
       &.child-job {
-        // Default child job styling - blue theme
-        background: #e3f2fd; // Light blue background
-        border-left: 3px solid #2196F3; // Blue border
+        background: #f8fafc;
+        border-left: 3px solid #64748b;
 
         &:hover {
-          background: #bbdefb; // Slightly darker blue on hover
-        }
-
-        // Child jobs with urgent priority - red styling
-        &.urgent {
-          background: #fef7f7; // Light red background
-          border-left: 3px solid #f44336; // Red border
-
-          &:hover {
-            background: #ffebee;
-          }
-        }
-
-        // Child jobs with warning priority - pink styling  
-        &.warning {
-          background: #fce4ec; // Light pink background
-          border-left: 3px solid #e91e63; // Pink border
-
-          &:hover {
-            background: #f8bbd9; // Slightly darker pink on hover
-          }
-        }
-
-        // Child jobs with normal priority - keep blue
-        &.normal {
-          background: #e3f2fd; // Light blue background
-          border-left: 3px solid #2196F3; // Blue border
-
-          &:hover {
-            background: #bbdefb;
-          }
-        }
-
-        // Undispatched child jobs - red styling
-        &.needs-dispatch,
-        &.unassigned {
-          background: #fef2f2; // Light red background
-          border-left: 3px solid #f44336; // Red border
-
-          &:hover {
-            background: #fee2e2;
-          }
+          background: #f1f5f9;
         }
       }
 
-      &:hover {
+      &.multi-part-parent {
         background: #f1f5f9;
+        border-left: 3px solid #3b82f6;
       }
 
-      &.urgent {
-        border-left: 3px solid @error-red;
-        background: #fef2f2;
+      .priority {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 12px;
+        color: white;
+        background: #3b82f6;
+        justify-self: center;
+        position: relative;
 
-        &:hover {
-          background: #fee2e2;
+        .expand-btn {
+          background: none;
+          border: none;
+          color: white;
+          cursor: pointer;
+          font-weight: 600;
+          font-size: 12px;
+          padding: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 2px;
+          transition: all 0.2s ease;
+          width: 100%;
+          height: 100%;
+          border-radius: 6px;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.1);
+          }
+
+          .expand-icon {
+            font-size: 10px;
+            line-height: 1;
+            margin-right: 2px;
+          }
         }
       }
 
-      // Removed yellow warning styling - warnings will now use normal styling
-      &.warning {
-        border-left: 3px solid #2196F3; // Use blue instead of yellow
-        background: #f1f5f9; // Use neutral background
-
-        &:hover {
-          background: #e2e8f0;
-        }
-      }
-
-      &.normal:hover {
-        background: #f0fdf4;
-      }
-
-      &.needs-dispatch,
-      &.unassigned {
-        background: #fef2f2;
-        border-left: 3px solid @error-red;
-
-        &:hover {
-          background: #fee2e2;
-        }
-      }
-
-      &.parent-job {
-        background: #f1f5f9;
-        border-left: 3px solid @primary-blue;
-      }
-
-      &.selected {
-        background: @status-blue !important;
-        border-left: 3px solid @primary-blue;
-
-        &.child-job {
-          background: #e8f4fd !important;
-          border-left: 3px solid #2196F3 !important;
-        }
-      }
-
-      td {
-        padding: 6px;
-        vertical-align: middle;
+      .time-cell {
         font-size: 12px;
         line-height: 1.3;
-        height: inherit; // Ensure all cells match row height
-      }
-    }
-  }
 
-  // Child rows styling for expanded sublists
-  .child-rows {
-    &.expanded {
-      display: table-row-group;
-    }
-  }
+        .date {
+          font-weight: 600;
+          color: #1e293b;
+        }
 
-  // Expand button for grouping - UPDATED for first column
-  .md-expand-btn {
-    background: none;
-    border: none;
-    padding: 2px;
-    margin-right: 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 22px;
-    height: 22px;
-    transition: background-color 0.2s ease;
+        .time {
+          color: #64748b;
+        }
 
-    &:hover {
-      background-color: rgba(33, 150, 243, 0.1);
-    }
-
-    md-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      color: #2196F3;
-    }
-  }
-
-  // NEW: Parent job indicator for the first column
-  .md-parent-indicator {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border-radius: 4px;
-    background: rgba(33, 150, 243, 0.1);
-    border: 1px solid rgba(33, 150, 243, 0.2);
-    color: #2196F3;
-    font-size: 12px;
-    font-weight: 600;
-    transition: all 0.2s ease;
-
-    &:hover {
-      background: rgba(33, 150, 243, 0.2);
-      border-color: rgba(33, 150, 243, 0.3);
-    }
-
-    &.multi-part {
-      background: rgba(33, 150, 243, 0.15);
-      border-color: rgba(33, 150, 243, 0.3);
-    }
-  }
-
-  .md-related-indicator {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: rgba(33, 150, 243, 0.1);
-    border: 1px solid rgba(33, 150, 243, 0.3);
-    color: #2196F3;
-    font-size: 10px;
-    font-weight: 600;
-    margin-right: 6px;
-  }
-
-  .md-first-column {
-    width: 50px;
-    text-align: center;
-    padding: 6px 4px !important;
-  }
-
-  .md-child-indicator {
-    color: #42A5F5;
-    margin-right: 6px;
-    font-weight: bold;
-    font-size: 14px;
-    display: inline-block;
-  }
-
-  // Group badge for multi-part jobs
-  .md-group-badge {
-    background-color: #2196F3;
-    color: white;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 500;
-    margin-left: 8px;
-    display: inline-block;
-  }
-
-  // Cell Styles
-  .md-time-cell {
-    text-align: center;
-    min-width: 70px;
-
-    .md-delivery-time {
-      font-weight: normal; // Change from 800 to normal as default
-      font-size: 14px;
-      color: #1e293b;
-      line-height: 1;
-    }
-
-    .md-time-remaining {
-      font-size: 9px;
-      font-weight: 600;
-      text-transform: uppercase;
-      margin-top: 2px;
-      padding: 2px 5px;
-      border-radius: 3px;
-      line-height: 1;
-
-      &.critical {
-        background: @status-undeliverable-bg;
-        color: @status-undeliverable-text;
+        .overdue {
+          color: #dc2626;
+          font-weight: 600;
+          font-size: 11px;
+        }
       }
 
-      &.warning {
-        background: @status-despatched-bg;
-        color: @status-despatched-text;
-      }
-
-      &.good {
-        background: @status-green;
-        color: @primary-green;
-      }
-    }
-  }
-
-  // UPDATED: Google Material Design style job details
-  .md-job-details {
-    min-width: 140px; // Increased for better readability
-    max-width: 160px; // Increased for better readability
-    position: relative;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 8px; // Increased gap for Google-style spacing
-    flex-wrap: wrap;
-    padding: 4px 0; // Add vertical padding
-
-    .md-job-number {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-weight: normal;
-      color: #1e293b;
-      font-size: 13px;
-      position: relative;
-      flex-shrink: 0;
-
-      // Google-style job number chip
-      .md-job-number-text {
-        font-family: 'Google Sans', 'Roboto', sans-serif;
-        font-weight: 500;
-        letter-spacing: 0.1px;
-        color: #1565c0;
+      .job-id {
         font-size: 12px;
-        background: #e8f0fe;
-        padding: 6px 12px; // More generous padding
-        border-radius: 16px; // More rounded like Google chips
-        border: none; // Remove border for cleaner look
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        white-space: nowrap;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); // Subtle shadow
-
-        &:hover {
-          background: #d2e3fc;
-          transform: translateY(-1px);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        }
+        font-weight: 600;
+        color: #1e293b;
       }
 
-      .md-child-indicator {
-        font-size: 14px;
-        margin-right: 4px;
-        color: #5f6368; // Google grey
-      }
-    }
+      .route-cell {
+        font-size: 12px;
+        line-height: 1.2;
+        position: relative;
 
-    // Google-style status indicators
-    .md-status-indicators {
-      display: flex;
-      gap: 4px;
-      align-items: center;
-      flex-shrink: 0;
-
-      .md-status-indicator {
-        display: inline-flex;
-        align-items: center;
-        gap: 2px;
-        padding: 4px 8px; // More generous padding
-        border-radius: 12px; // More rounded
-        font-size: 10px;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        white-space: nowrap;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-
-        &.express {
-          background: #fce8e6;
-          color: #d93025;
+        .address {
+          color: #1e293b;
+          margin-bottom: 1px;
         }
 
-        &.fragile {
-          background: #fef7e0;
-          color: #f29900;
+        .city-state {
+          color: #64748b;
+          font-size: 11px;
         }
 
-        &.flight {
-          background: #f3e8fd;
-          color: #9c27b0;
+        &.pickup-cell {
+          position: relative;
 
-          md-icon {
-            font-size: 24px;
+          &::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid #3b82f6;
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
           }
         }
 
-        &:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        &.delivery-cell {
+          position: relative;
+          padding-left: 8px;
+
+          &::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 6px;
+            background: #10b981;
+            border-radius: 50%;
+          }
         }
       }
-    }
 
-    // Google-style client chip
-    .md-job-client {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 11px;
-      flex-shrink: 0;
-
-      .md-client-chip {
-        background: #f8f9fa;
-        color: #3c4043;
-        padding: 4px 8px;
-        border-radius: 12px;
-        border: 1px solid #e8eaed;
-        font-size: 10px;
-        font-weight: 500;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        max-width: 80px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-
-        &:hover {
-          background: #f1f3f4;
-          border-color: #dadce0;
-          transform: translateY(-1px);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      .courier-cell {
+        .courier-info-container {
+          display: flex;
+          align-items: center;
+          gap: 6px;
         }
-      }
-    }
 
-    // Google-style notes chip
-    .md-job-notes {
-      flex-shrink: 1;
-      min-width: 0;
-
-      .md-notes-chip {
-        background: #f8f9fa;
-        color: #5f6368;
-        padding: 4px 8px;
-        border-radius: 12px;
-        border: 1px solid #e8eaed;
-        font-size: 9px;
-        font-weight: 400;
-        display: inline-block;
-        line-height: 1.2;
-        max-width: 60px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-
-        &:hover {
-          background: #f1f3f4;
-          border-color: #dadce0;
-          transform: translateY(-1px);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        }
-      }
-    }
-
-    // Google-style parts badge
-    .md-parts-badge {
-      background: #1a73e8;
-      color: white;
-      padding: 4px 8px;
-      border-radius: 12px;
-      font-size: 9px;
-      font-weight: 500;
-      box-shadow: 0 1px 3px rgba(26, 115, 232, 0.4);
-      display: inline-flex;
-      align-items: center;
-      gap: 2px;
-      flex-shrink: 0;
-      white-space: nowrap;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-      &:hover {
-        background: #1557b0;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(26, 115, 232, 0.4);
-      }
-
-      &::before {
-        content: '●';
-        font-size: 6px;
-      }
-    }
-  }
-  
-  // Animations
-  @keyframes pulse {
-    0% {
-      transform: scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: scale(1.2);
-      opacity: 0.7;
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-
-  // Enhanced unread job styling
-  .md-table-row.unread {
-    .md-job-details {
-      .md-job-number {
-        .md-job-number-text {
-          font-weight: 700;
-          background: rgba(33, 150, 243, 0.1);
-          border-color: rgba(33, 150, 243, 0.2);
-          color: #1976D2;
-        }
-      }
-    }
-  }
-
-  // Enhanced multi-part parent job styling
-  .md-table-row.multi-part-parent {
-    .md-job-details {
-      .md-job-number {
-        .md-job-number-text {
-          background: rgba(33, 150, 243, 0.1);
-          border-color: rgba(33, 150, 243, 0.3);
+        .courier-avatar {
+          width: 26px;
+          height: 26px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 10px;
           font-weight: 600;
+          color: white;
+          background: #3b82f6;
         }
-      }
-    }
-  }
 
-  // Enhanced child job styling
-  .md-table-row.child-job {
-    .md-job-details {
-      .md-job-number {
-        padding-left: 6px; // Reduced from 8px
+        .courier-info {
+          font-size: 11px;
+          line-height: 1.2;
 
-        .md-job-number-text {
-          background: rgba(33, 150, 243, 0.05);
-          border-color: rgba(33, 150, 243, 0.1);
+          .courier-name {
+            font-weight: 600;
+            color: #1e293b;
+          }
+
+          .courier-id {
+            color: #64748b;
+            font-size: 10px;
+          }
         }
-      }
-    }
-  }
 
-  // Google Material Design route styling
-  .md-route-cell {
-    min-width: 300px; // Increased for better readability
-    max-width: 350px;
-
-    .md-route {
-      display: flex;
-      align-items: center;
-      gap: 12px; // Increased gap
-      font-size: 12px;
-
-      .md-route-location {
-        flex: 1;
-        max-width: 140px;
-
-        .md-address-chip {
-          background: #f8f9fa;
-          color: #3c4043;
-          padding: 6px 12px; // More generous padding
-          border-radius: 16px; // More rounded
-          border: 1px solid #e8eaed;
+        .assign-btn {
+          padding: 6px 12px;
+          border: 1px solid #e2e8f0;
+          background: white;
+          border-radius: 4px;
           font-size: 11px;
           font-weight: 500;
-          display: inline-block;
-          line-height: 1.3;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-          width: 100%;
-          text-align: center;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+          cursor: pointer;
+          transition: all 0.2s;
+          color: #1e293b;
 
           &:hover {
-            background: #f1f3f4;
-            border-color: #dadce0;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            background: #f8fafc;
+            border-color: #3b82f6;
+            color: #3b82f6;
           }
+        }
 
-          &.from {
-            border-color: #4285f4;
-            background: #e8f0fe;
-            color: #1565c0;
-          }
+        .courier-search-container {
+          width: 100%;
 
-          &.to {
-            border-color: #34a853;
-            background: #e6f4ea;
-            color: #137333;
+          .courier-search-input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            font-size: 11px;
+            background: white;
+            transition: border-color 0.2s;
+
+            &:focus {
+              outline: none;
+              border-color: #3b82f6;
+              box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+            }
+
+            &::placeholder {
+              color: #64748b;
+              font-size: 10px;
+            }
           }
         }
       }
 
-      .md-route-arrow {
-        color: #5f6368; // Google grey
-        font-size: 14px;
-        flex-shrink: 0;
-        margin: 0 4px;
-      }
-    }
-  }
-
-  .md-courier-cell {
-    min-width: 120px;
-    text-align: center;
-
-    .md-avatar {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, @primary-blue 0%, #1d4ed8 100%);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      color: @text-light;
-      font-weight: 700;
-      font-size: 10px;
-      margin-bottom: 2px;
-    }
-
-    .md-courier-name {
-      font-size: 12px;
-      font-weight: normal; // Change from 600 to normal as default
-      color: #1e293b;
-      line-height: 1.2;
-    }
-
-    .md-courier-code {
-      font-size: 10px;
-      color: @text-muted;
-      background: #f1f5f9;
-      padding: 1px 4px;
-      border-radius: 3px;
-      margin-top: 2px;
-      display: inline-block;
-    }
-
-    .md-assign-button {
-      background: @status-despatched-bg;
-      color: @status-despatched-text;
-      border: 1px dashed @primary-warning;
-      border-radius: 6px;
-      padding: 4px 8px;
-      cursor: pointer;
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      transition: all 0.15s ease;
-
-      &:hover {
-        background: #fbbf24;
-        color: #92400e;
-      }
-    }
-
-    .material-typeahead-container {
-      position: relative;
-      display: inline-block;
-      width: 100%;
-
-      .material-typeahead-input {
-        width: 100%;
-        padding: 6px 8px;
-        border: 1px solid #ddd;
+      .status {
+        padding: 4px 8px;
         border-radius: 4px;
         font-size: 11px;
-        background: white;
-        transition: border-color 0.2s ease;
-
-        &:focus {
-          outline: none;
-          border-color: @primary-blue;
-          box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
-        }
-
-        &:disabled {
-          background-color: #f5f5f5;
-          color: @scroll-bar-color;
-          cursor: not-allowed;
-        }
-
-        &::placeholder {
-          color: @scroll-bar-color;
-          font-size: 10px;
-        }
+        font-weight: 600;
+        text-align: center;
+        background: #dcfce7;
+        color: #166534;
+        justify-self: center;
       }
     }
   }
 
-  .md-actions-cell {
-    min-width: 60px;
-    text-align: center;
-    position: relative;
-
-    .md-actions-compact {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-  }
-
-  // Summary Footer
-  .md-summary {
-    background: #f1f5f9;
+  .footer {
+    padding: 12px 20px;
+    background: white;
     border-top: 1px solid #e2e8f0;
-    padding: 8px 16px;
-    font-size: 11px;
-    color: @text-muted;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    font-size: 12px;
+    color: #64748b;
     flex-shrink: 0;
+  }
 
-    .md-summary-text {
-      display: flex;
-      gap: 16px;
-    }
+  .no-data {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    margin: 20px;
+    border-radius: 8px;
+    padding: 40px;
 
-    .md-summary-actions {
-      display: flex;
-      gap: 8px;
+    .no-data-content {
+      text-align: center;
 
-      .md-summary-button {
-        padding: 4px 8px;
-        border: 1px solid #d1d5db;
-        background: white;
-        border-radius: 4px;
-        font-size: 10px;
-        cursor: pointer;
-        color: @brand;
-        transition: background-color 0.15s ease;
+      .no-data-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+      }
 
-        &:hover {
-          background: #f9fafb;
-        }
+      .no-data-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 8px;
+      }
+
+      .no-data-message {
+        font-size: 14px;
+        color: #64748b;
       }
     }
   }
 
-  // Dense mode adjustments - UPDATED
+  // Dense mode adjustments
   &.dense {
-    .md-first-column {
-      width: 40px; // Reduced for dense mode
-      padding: 4px 2px !important;
-    }
+    .stats-header {
+      padding: 10px 20px;
 
-    .md-parent-indicator {
-      width: 20px;
-      height: 20px;
-      font-size: 10px;
-    }
-
-    .md-app-bar {
-      height: 32px;
-      padding: 8px 16px;
-
-      .md-app-bar-title .md-chip {
-        font-size: 10px;
-        padding: 1px 6px;
-      }
-
-      .md-stats {
-        font-size: 10px;
+      .stats {
+        font-size: 12px;
         gap: 12px;
 
-        .md-stat-indicator {
+        .stat-dot {
           width: 6px;
           height: 6px;
         }
       }
     }
 
-    .md-toolbar {
-      padding: 6px 16px;
+    .controls-header {
+      padding: 10px 20px;
 
-      .md-tab {
-        padding: 4px 8px;
-        font-size: 10px;
-      }
+      .controls {
+        gap: 8px;
 
-      .md-text-field {
-        padding: 4px 8px;
-        font-size: 11px;
-      }
-
-      .md-density-btn {
-        padding: 3px 6px;
-        font-size: 9px;
-      }
-    }
-
-    .md-table-header th {
-      padding: 6px 4px;
-      font-size: 9px;
-    }
-
-    .md-table-row td {
-      padding: 4px;
-      font-size: 11px;
-    }
-
-    .md-time-cell {
-      .md-delivery-time {
-        font-size: 14px;
-      }
-
-      .md-time-remaining {
-        font-size: 8px;
-        padding: 1px 4px;
-      }
-    }
-
-    .md-job-details {
-      min-width: 100px;
-      max-width: 120px;
-      gap: 2px; // Reduced gap for dense mode
-
-      .md-job-number .md-job-number-text {
-        font-size: 10px;
-        padding: 1px 3px;
-      }
-
-      .md-job-client .md-client-chip {
-        font-size: 7px;
-        padding: 1px 3px;
-        max-width: 50px;
-      }
-
-      .md-job-notes .md-notes-chip {
-        font-size: 6px;
-        padding: 1px 3px;
-        max-width: 40px;
-      }
-
-      .md-status-indicators .md-status-indicator {
-        font-size: 6px;
-        padding: 1px 2px;
-
-        &.flight {
-          md-icon {
-            font-size: 20px;
-          }
-        }
-      }
-    }
-    
-    .md-route-cell {
-      min-width: 240px;
-      max-width: 280px;
-
-      .md-route {
-        font-size: 10px;
-        gap: 4px;
-
-        .md-route-location {
-          max-width: 110px; // Reduced for dense mode
-
-          .md-address-chip {
-            padding: 2px 6px;
-            font-size: 9px;
-          }
+        .filter-tabs .tab {
+          padding: 4px 8px;
+          font-size: 11px;
         }
 
-        .md-route-arrow {
+        .search-container .search-input {
+          padding: 6px 10px;
+          font-size: 12px;
+          width: 240px;
+        }
+
+        .view-options .view-btn {
+          padding: 4px 8px;
           font-size: 10px;
         }
       }
     }
 
-    .md-courier-cell {
-      .md-avatar {
-        width: 20px;
-        height: 20px;
-        font-size: 8px;
-      }
+    .jobs-container {
+      padding: 0 16px;
 
-      .md-courier-name {
+      .jobs-header {
+        padding: 10px 0;
         font-size: 10px;
+        gap: 12px;
+        grid-template-columns: 50px 70px 100px 1fr 1fr 100px 70px;
       }
 
-      .md-courier-code {
-        font-size: 8px;
-      }
+      .job-row {
+        padding: 8px 0;
+        font-size: 12px;
+        gap: 12px;
+        grid-template-columns: 50px 70px 100px 1fr 1fr 100px 70px;
 
-      .md-assign-button {
-        padding: 3px 6px;
-        font-size: 9px;
-      }
+        .priority {
+          width: 24px;
+          height: 24px;
+          font-size: 11px;
 
-      .material-typeahead-input {
-        padding: 4px 6px;
-        font-size: 10px;
-      }
-    }
+          .expand-btn {
+            font-size: 11px;
 
-    .md-summary {
-      padding: 6px 16px;
-      font-size: 10px;
-    }
-
-    // Grouping adjustments for dense mode
-    .md-group-badge {
-      padding: 1px 6px;
-      font-size: 10px;
-    }
-
-    .md-expand-btn {
-      padding: 1px;
-      min-width: 18px;
-      height: 18px;
-      margin-right: 6px;
-
-      md-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
-      }
-    }
-
-    .md-child-indicator {
-      font-size: 12px;
-      margin-right: 6px;
-    }
-
-    // Dropdown adjustments for dense mode
-    .md-dropdown {
-      .md-dropdown-btn {
-        padding: 6px 10px;
-        font-size: 11px;
-        min-width: 100px;
-      }
-
-      .md-dropdown-menu {
-        .md-dropdown-item {
-          padding: 10px 12px;
-
-          md-icon {
-            font-size: 16px;
-            width: 16px;
-            height: 16px;
+            .expand-icon {
+              font-size: 9px;
+            }
           }
+        }
 
-          span:first-of-type {
-            font-size: 12px;
-          }
+        .time-cell {
+          font-size: 11px;
 
-          .md-dropdown-description {
+          .overdue {
             font-size: 10px;
           }
         }
+
+        .job-id {
+          font-size: 11px;
+        }
+
+        .route-cell {
+          font-size: 11px;
+
+          .city-state {
+            font-size: 10px;
+          }
+        }
+
+        .courier-cell {
+          .courier-avatar {
+            width: 22px;
+            height: 22px;
+            font-size: 9px;
+          }
+
+          .courier-info {
+            font-size: 10px;
+
+            .courier-id {
+              font-size: 9px;
+            }
+          }
+
+          .assign-btn {
+            padding: 4px 8px;
+            font-size: 10px;
+          }
+        }
+
+        .status {
+          font-size: 10px;
+          padding: 3px 6px;
+        }
       }
+    }
+
+    .footer {
+      padding: 10px 20px;
+      font-size: 11px;
     }
   }
 
-  // Ultra-dense mode
+  // Ultra-dense mode adjustments
   &.ultra-dense {
-    .md-first-column {
-      width: 35px; // Further reduced for ultra-dense mode
-      padding: 2px 1px !important;
-    }
+    .stats-header {
+      padding: 8px 16px;
 
-    .md-parent-indicator {
-      width: 18px;
-      height: 18px;
-      font-size: 9px;
-    }
-
-    .md-app-bar {
-      height: 28px;
-      padding: 6px 16px;
-
-      .md-app-bar-title .md-chip {
-        font-size: 9px;
-        padding: 1px 4px;
-      }
-
-      .md-stats {
-        font-size: 9px;
+      .stats {
+        font-size: 11px;
         gap: 8px;
 
-        .md-stat-indicator {
+        .stat-dot {
           width: 5px;
           height: 5px;
         }
       }
     }
 
-    .md-toolbar {
-      padding: 4px 16px;
+    .controls-header {
+      padding: 8px 16px;
 
-      .md-tab {
-        padding: 3px 6px;
-        font-size: 9px;
-      }
+      .controls {
+        gap: 6px;
 
-      .md-text-field {
-        padding: 3px 6px;
-        font-size: 10px;
-      }
-
-      .md-density-btn {
-        padding: 2px 4px;
-        font-size: 8px;
-      }
-    }
-
-    .md-table-header th {
-      padding: 4px 3px;
-      font-size: 8px;
-    }
-
-    .md-table-row td {
-      padding: 2px 4px;
-      font-size: 10px;
-      line-height: 1.2;
-    }
-
-    .md-time-cell {
-      .md-delivery-time {
-        font-size: 12px;
-      }
-
-      .md-time-remaining {
-        display: none; // Hide time remaining in ultra-dense mode
-      }
-    }
-
-    .md-job-details {
-      min-width: 80px;
-      max-width: 100px;
-      gap: 1px; // Minimal gap for ultra-dense
-
-      .md-job-number .md-job-number-text {
-        font-size: 9px;
-        padding: 1px 2px;
-      }
-
-      .md-job-client .md-client-chip {
-        font-size: 6px;
-        padding: 1px 2px;
-        max-width: 40px;
-      }
-
-      .md-job-notes .md-notes-chip {
-        display: none; // Hide notes in ultra-dense mode
-      }
-
-      .md-status-indicators .md-status-indicator {
-        font-size: 5px;
-        padding: 1px 2px;
-      }
-    }
-    
-    .md-route-cell {
-      min-width: 200px; // Further reduced for ultra-dense mode
-      max-width: 240px;
-
-      .md-route {
-        font-size: 9px;
-        gap: 3px;
-
-        .md-route-location {
-          max-width: 90px; // Further reduced for ultra-dense mode
-
-          .md-address-chip {
-            padding: 1px 4px;
-            font-size: 8px;
-          }
+        .filter-tabs .tab {
+          padding: 3px 6px;
+          font-size: 10px;
         }
 
-        .md-route-arrow {
-          font-size: 8px;
+        .search-container .search-input {
+          padding: 4px 8px;
+          font-size: 11px;
+          width: 200px;
+        }
+
+        .view-options .view-btn {
+          padding: 3px 6px;
+          font-size: 9px;
         }
       }
     }
 
-    .md-courier-cell {
-      .md-avatar {
-        width: 16px;
-        height: 16px;
-        font-size: 7px;
-        margin-bottom: 1px;
-      }
+    .jobs-container {
+      padding: 0 12px;
 
-      .md-courier-name {
+      .jobs-header {
+        padding: 8px 0;
         font-size: 9px;
+        gap: 8px;
+        grid-template-columns: 40px 60px 80px 1fr 1fr 80px 60px;
       }
 
-      .md-courier-code {
-        display: none; // Hide courier code in ultra-dense mode
-      }
+      .job-row {
+        padding: 6px 0;
+        font-size: 11px;
+        gap: 8px;
+        grid-template-columns: 40px 60px 80px 1fr 1fr 80px 60px;
 
-      .md-assign-button {
-        padding: 2px 4px;
-        font-size: 8px;
-      }
+        .priority {
+          width: 20px;
+          height: 20px;
+          font-size: 10px;
 
-      .material-typeahead-input {
-        padding: 2px 4px;
-        font-size: 9px;
-      }
-    }
+          .expand-btn {
+            font-size: 10px;
 
-    .md-summary {
-      padding: 4px 16px;
-      font-size: 9px;
-
-      .md-summary-actions {
-        display: none; // Hide action buttons in ultra-dense mode
-      }
-    }
-
-    // Hide group headers in ultra-dense mode
-    .md-group-header {
-      display: none;
-    }
-
-    // Grouping adjustments for ultra-dense mode
-    .md-group-badge {
-      padding: 1px 4px;
-      font-size: 9px;
-    }
-
-    .md-expand-btn {
-      padding: 1px;
-      min-width: 16px;
-      height: 16px;
-      margin-right: 4px;
-
-      md-icon {
-        font-size: 14px;
-        width: 14px;
-        height: 14px;
-      }
-    }
-
-    .md-child-indicator {
-      font-size: 10px;
-      margin-right: 4px;
-    }
-
-    .child-job .md-job-number {
-      padding-left: 12px;
-    }
-
-    // Dropdown adjustments for ultra-dense mode
-    .md-dropdown {
-      .md-dropdown-btn {
-        padding: 4px 8px;
-        font-size: 10px;
-        min-width: 80px;
-      }
-
-      .md-dropdown-menu {
-        .md-dropdown-item {
-          padding: 8px 10px;
-
-          md-icon {
-            font-size: 14px;
-            width: 14px;
-            height: 14px;
+            .expand-icon {
+              font-size: 8px;
+            }
           }
+        }
 
-          span:first-of-type {
-            font-size: 11px;
-          }
+        .time-cell {
+          font-size: 10px;
 
-          .md-dropdown-description {
+          .overdue {
             font-size: 9px;
           }
         }
+
+        .job-id {
+          font-size: 10px;
+        }
+
+        .route-cell {
+          font-size: 10px;
+
+          .city-state {
+            font-size: 9px;
+          }
+        }
+
+        .courier-cell {
+          .courier-avatar {
+            width: 18px;
+            height: 18px;
+            font-size: 8px;
+          }
+
+          .courier-info {
+            font-size: 9px;
+
+            .courier-id {
+              font-size: 8px;
+            }
+          }
+
+          .assign-btn {
+            padding: 3px 6px;
+            font-size: 9px;
+          }
+        }
+
+        .status {
+          font-size: 9px;
+          padding: 2px 4px;
+        }
       }
+    }
+
+    .footer {
+      padding: 8px 16px;
+      font-size: 10px;
     }
   }
 
   // Responsive design
   @media (max-width: 768px) {
-    .job-list-header {
-      .search-controls {
-        flex-direction: column;
-        gap: 8px;
+    .stats-header {
+      padding: 8px 12px;
 
-        .job-record-search,
-        .courier-search {
-          width: 100%;
-          min-width: auto;
+      .stats {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        font-size: 11px;
+
+        .stat-dot {
+          width: 6px;
+          height: 6px;
         }
       }
     }
 
-    .md-toolbar {
-      flex-direction: column;
-      gap: 8px;
-      align-items: stretch;
+    .controls-header {
+      padding: 8px 12px;
 
-      .md-tabs {
-        justify-content: center;
-        flex-wrap: wrap;
-      }
-
-      .md-search-field {
-        max-width: none;
-      }
-    }
-
-    .md-app-bar {
-      .md-stats {
-        flex-wrap: wrap;
+      .controls {
+        flex-direction: column;
         gap: 8px;
-        font-size: 10px;
-      }
-    }
+        width: 100%;
 
-    // Force dense mode on mobile
-    &.normal {
-      .md-table-row td {
-        padding: 4px 2px;
-        font-size: 10px;
-      }
+        .filter-tabs {
+          justify-content: center;
+          flex-wrap: wrap;
+          gap: 2px;
 
-      .md-route-cell {
-        min-width: 180px; // Reduced for mobile
-        max-width: 220px;
+          .tab {
+            padding: 4px 8px;
+            font-size: 10px;
+          }
+        }
 
-        .md-route-location {
-          max-width: 80px;
+        .search-container .search-input {
+          width: 100%;
+          padding: 6px 8px;
+          font-size: 12px;
+        }
 
-          .md-address-chip {
-            padding: 2px 4px;
-            font-size: 8px;
+        .view-options {
+          justify-content: center;
+
+          .view-btn {
+            padding: 4px 8px;
+            font-size: 10px;
           }
         }
       }
     }
 
-    // Dropdown mobile adjustments
-    .md-dropdown {
-      .md-dropdown-btn {
-        min-width: 100px;
+    .jobs-container {
+      padding: 0 10px;
+
+      .jobs-header,
+      .job-row {
+        grid-template-columns: 30px 60px 80px 1fr 1fr 80px 50px;
+        gap: 8px;
+        font-size: 11px;
       }
 
-      .md-dropdown-menu {
-        left: -50px;
-        right: -50px;
-        width: auto;
+      .job-row {
+        padding: 8px 0;
+
+        .priority {
+          width: 22px;
+          height: 22px;
+          font-size: 10px;
+
+          .expand-btn {
+            font-size: 10px;
+
+            .expand-icon {
+              font-size: 8px;
+            }
+          }
+        }
+
+        .route-cell {
+          font-size: 10px;
+
+          .city-state {
+            font-size: 9px;
+          }
+        }
       }
     }
-  }
 
-  // No data component styles  
-  no-data {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  // Animation for density mode changes
-  .md-table-row {
-    transition: all 0.2s ease-in-out;
-  }
-
-  .md-delivery-time,
-  .md-job-number,
-  .md-courier-name {
-    transition: font-size 0.2s ease-in-out;
-  }
-
-  // Keyframe for spinner animation
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
-  @keyframes pulse-urgent {
-    0% {
-      transform: scale(1);
-      opacity: 1;
-      box-shadow: 0 0 0 2px white, 0 0 0 4px rgba(211, 47, 47, 0.3);
-    }
-    50% {
-      transform: scale(1.1);
-      opacity: 0.8;
-      box-shadow: 0 0 0 2px white, 0 0 0 6px rgba(211, 47, 47, 0.5);
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-      box-shadow: 0 0 0 2px white, 0 0 0 4px rgba(211, 47, 47, 0.3);
-    }
-  }
-
-  @keyframes pulse-warning {
-    0% {
-      transform: scale(1);
-      opacity: 1;
-      box-shadow: 0 0 0 2px white, 0 0 0 4px rgba(245, 124, 0, 0.3);
-    }
-    50% {
-      transform: scale(1.1);
-      opacity: 0.8;
-      box-shadow: 0 0 0 2px white, 0 0 0 6px rgba(245, 124, 0, 0.5);
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-      box-shadow: 0 0 0 2px white, 0 0 0 4px rgba(245, 124, 0, 0.3);
+    .footer {
+      flex-direction: column;
+      gap: 8px;
+      text-align: center;
     }
   }
 }

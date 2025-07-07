@@ -51,6 +51,7 @@ public class DispatchJobViewModel
     // Job properties
     public string Client { get; set; }
     public int? ClientId { get; set; }
+    public string ClientName { get; set; }
     public int? JobType { get; set; }
     public string JobTypeDescription { get; set; }
 
