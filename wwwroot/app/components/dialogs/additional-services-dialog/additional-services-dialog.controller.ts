@@ -4,7 +4,12 @@ import {IJob} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 
 class AdditionalServicesDialogController extends BaseController {
-    static $inject = ["$mdDialog", "DispatchData", "toastrService", "job"];
+    static $inject = [
+        "$mdDialog", 
+        "DispatchData",
+        "toastrService",
+        "job"
+    ];
 
     private readonly jobId: number;
     private readonly clientId: number;

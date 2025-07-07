@@ -26,6 +26,7 @@ class JobsListController extends BaseController {
     jobListType: JobListType = JobListType.DispatchJobList;
     allowDispatch: boolean = false;
     allowSearch: boolean = true;
+    highlightedRelatedJobIds: number[] = [];
 
     // Local component state
     filteredJobs?: IDispatchJob[] = [];
@@ -725,13 +726,26 @@ class JobsListController extends BaseController {
     }
 
     selectJob(job: IDispatchJob) {
+        // Set the selected job
         this.selectedJob = job;
 
+        this.updateHighlightedRelatedJobs(job);
+
         if (this.onJobSelect) {
-            this.onJobSelect({job});
+            this.onJobSelect({ job });
         }
     }
 
+    private updateHighlightedRelatedJobs(selectedJob: IDispatchJob) {
+        this.highlightedRelatedJobIds = [];
+
+        if (!selectedJob.relatedJobs || selectedJob.relatedJobs.length === 0) {
+            return;
+        }
+
+        this.highlightedRelatedJobIds = selectedJob.relatedJobs.map(relatedJob => relatedJob.id);
+    }
+    
     showCourierAssignment(job: IDispatchJob) {
         if (!this.allowDispatch) return;
 
@@ -836,9 +850,13 @@ class JobsListController extends BaseController {
     }
 
     hasRelatedJobs(job: IDispatchJob): boolean {
-        return (this.isNationwideList() && job.relatedJobs && job.relatedJobs.length > 0) ?? false;
-    }
+        if (!this.isNationwideList()) {
+            return false;
+        }
 
+        return this.highlightedRelatedJobIds.includes(job.id);
+    }
+    
     getRelatedJobsCount(job: IDispatchJob): number {
         return job.relatedJobs ? job.relatedJobs.length : 0;
     }
@@ -872,7 +890,7 @@ class JobsListController extends BaseController {
                 ].filter(line => line && line.trim()).join(', ');
             }
         } else {
-            // For non-US customers, parse the 'from' field and skip first line
+            // For non-US customers, parse the 'from' field and skip the first line
             const fromLines = (job.from || '').split(',').map(line => line.trim());
             if (fromLines.length > 1) {
                 address = fromLines.slice(1).join(', ');
@@ -902,7 +920,7 @@ class JobsListController extends BaseController {
                 ].filter(line => line && line.trim()).join(', ');
             }
         } else {
-            // For non-US customers, parse the 'toAddress' field and skip first line
+            // For non-US customers, parse the 'toAddress' field and skip the first line
             const toLines = (job.toAddress || '').split(',').map(line => line.trim());
             if (toLines.length > 1) {
                 address = toLines.slice(1).join(', ');
