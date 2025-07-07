@@ -32,10 +32,17 @@ class Bundler {
         return path.relative(this.rootDir, filePath);
     }
 
-    private generateFileHash(filePath: string): string {
-        const fileBuffer = fs.readFileSync(filePath);
+    private generateFileHash(entryName: string): string {
+        const entryPoints = this.getCommonConfig().entryPoints! as Record<string, string>;
+        const entryPath = entryPoints[entryName];
+
+        if (!entryPath || !fs.existsSync(entryPath)) {
+            return 'fallback';
+        }
+
+        const sourceBuffer = fs.readFileSync(entryPath);
         const hashSum = crypto.createHash('sha256');
-        hashSum.update(fileBuffer);
+        hashSum.update(sourceBuffer);
         return hashSum.digest('hex').substring(0, 8);
     }
 
@@ -206,11 +213,13 @@ class Bundler {
         const filesToHash = ['vendor', 'app'];
 
         for (const entryName of filesToHash) {
+            // Generate hash using entry name (not file path)
+            const hash = this.generateFileHash(entryName);
+
             // Handle JS files
             const jsPath = path.join(this.distPath, `${entryName}.js`);
             if (fs.existsSync(jsPath)) {
-                const jsHash = this.generateFileHash(jsPath);
-                const newJsName = `${entryName}.${jsHash}.js`;
+                const newJsName = `${entryName}.${hash}.js`;
                 const newJsPath = path.join(this.distPath, newJsName);
                 fs.renameSync(jsPath, newJsPath);
                 console.log(`[HASH] Renamed ${entryName}.js to ${newJsName}`);
@@ -219,8 +228,7 @@ class Bundler {
             // Handle CSS files
             const cssPath = path.join(this.distPath, `${entryName}.css`);
             if (fs.existsSync(cssPath)) {
-                const cssHash = this.generateFileHash(cssPath);
-                const newCssName = `${entryName}.${cssHash}.css`;
+                const newCssName = `${entryName}.${hash}.css`;
                 const newCssPath = path.join(this.distPath, newCssName);
                 fs.renameSync(cssPath, newCssPath);
                 console.log(`[HASH] Renamed ${entryName}.css to ${newCssName}`);
@@ -229,22 +237,22 @@ class Bundler {
             // Handle source maps
             const jsMapPath = path.join(this.distPath, `${entryName}.js.map`);
             if (fs.existsSync(jsMapPath)) {
-                const jsHash = this.generateFileHash(path.join(this.distPath, `${entryName}.${this.generateFileHash(jsPath)}.js`));
-                const newJsMapName = `${entryName}.${jsHash}.js.map`;
+                const newJsMapName = `${entryName}.${hash}.js.map`;
                 const newJsMapPath = path.join(this.distPath, newJsMapName);
                 fs.renameSync(jsMapPath, newJsMapPath);
 
                 // Update the source map reference in the JS file
-                const jsContent = fs.readFileSync(path.join(this.distPath, `${entryName}.${jsHash}.js`), 'utf8');
+                const jsFilePath = path.join(this.distPath, `${entryName}.${hash}.js`);
+                const jsContent = fs.readFileSync(jsFilePath, 'utf8');
                 const updatedJsContent = jsContent.replace(
                     `//# sourceMappingURL=${entryName}.js.map`,
                     `//# sourceMappingURL=${newJsMapName}`
                 );
-                fs.writeFileSync(path.join(this.distPath, `${entryName}.${jsHash}.js`), updatedJsContent);
+                fs.writeFileSync(jsFilePath, updatedJsContent);
             }
         }
     }
-
+    
     private async buildDev(): Promise<void> {
         console.log("[DEV] Building development bundles with file watching...");
 
@@ -276,6 +284,11 @@ class Bundler {
     }
 
     private incrementVersion(): void {
+        if (process.env.CI && fs.existsSync(path.join(this.distPath, "manifest.json"))) {
+            console.log("[VERSION] Skipping version increment - already built in CI");
+            return;
+        }
+
         try {
             const packageJsonPath = path.join(this.rootDir, "package.json");
             const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
@@ -298,6 +311,13 @@ class Bundler {
         console.log("[PROD] Building production bundles...");
         const startTime = Date.now();
 
+        // Check if we've already built (useful for CI environments)
+        const manifestPath = path.join(this.distPath, "manifest.json");
+        if (process.env.CI && fs.existsSync(manifestPath)) {
+            console.log("[PROD] Build already completed, skipping...");
+            return;
+        }
+
         this.incrementVersion();
 
         // Build all entry points
@@ -316,7 +336,7 @@ class Bundler {
         const manifest = this.generateManifestWithHashes();
 
         fs.writeFileSync(
-            path.join(this.distPath, "manifest.json"),
+            manifestPath,
             JSON.stringify(manifest, null, 2)
         );
 
@@ -324,7 +344,7 @@ class Bundler {
         console.log(`[PROD] Build completed in ${buildTime}s`);
         console.log(`[PROD] Manifest created with ${Object.keys(manifest).length} entries`);
     }
-
+    
     async build(): Promise<void> {
         const startTime = Date.now();
 
