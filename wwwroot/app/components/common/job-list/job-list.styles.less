@@ -677,16 +677,14 @@
     margin-right: 6px;
   }
 
-  // First column styling - UPDATED
   .md-first-column {
     width: 50px;
     text-align: center;
     padding: 6px 4px !important;
   }
 
-  // Child indicator for grouping
   .md-child-indicator {
-    color: #42A5F5; // Material Blue 400
+    color: #42A5F5;
     margin-right: 6px;
     font-weight: bold;
     font-size: 14px;
@@ -743,13 +741,17 @@
     }
   }
 
+  // UPDATED: Google Material Design style job details
   .md-job-details {
-    min-width: 160px;
-    max-width: 180px;
+    min-width: 140px; // Increased for better readability
+    max-width: 160px; // Increased for better readability
     position: relative;
     display: flex;
-    flex-direction: column;
-    gap: 3px;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px; // Increased gap for Google-style spacing
+    flex-wrap: wrap;
+    padding: 4px 0; // Add vertical padding
 
     .md-job-number {
       display: flex;
@@ -759,139 +761,179 @@
       color: #1e293b;
       font-size: 13px;
       position: relative;
+      flex-shrink: 0;
 
-      // Clean job number display
+      // Google-style job number chip
       .md-job-number-text {
-        font-family: 'Roboto Mono', monospace;
-        font-weight: 600;
-        letter-spacing: 0.25px;
+        font-family: 'Google Sans', 'Roboto', sans-serif;
+        font-weight: 500;
+        letter-spacing: 0.1px;
         color: #1565c0;
         font-size: 12px;
-        background: #e3f2fd;
-        padding: 3px 6px;
-        border-radius: 6px;
-        border: 1px solid #bbdefb;
-        transition: all 0.2s ease;
+        background: #e8f0fe;
+        padding: 6px 12px; // More generous padding
+        border-radius: 16px; // More rounded like Google chips
+        border: none; // Remove border for cleaner look
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: nowrap;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); // Subtle shadow
 
         &:hover {
-          background: #bbdefb;
-          border-color: #90caf9;
+          background: #d2e3fc;
           transform: translateY(-1px);
-          box-shadow: 0 2px 4px rgba(21, 101, 192, 0.2);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
       }
 
-      // Status indicators as clean badges
+      .md-child-indicator {
+        font-size: 14px;
+        margin-right: 4px;
+        color: #5f6368; // Google grey
+      }
+    }
+
+    // Google-style status indicators
+    .md-status-indicators {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      flex-shrink: 0;
+
       .md-status-indicator {
         display: inline-flex;
         align-items: center;
         gap: 2px;
-        padding: 2px 6px;
-        border-radius: 12px;
-        font-size: 9px;
-        font-weight: 600;
+        padding: 4px 8px; // More generous padding
+        border-radius: 12px; // More rounded
+        font-size: 10px;
+        font-weight: 500;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: nowrap;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 
         &.express {
-          background: #ffebee;
-          color: #c62828;
-          border: 1px solid #ffcdd2;
+          background: #fce8e6;
+          color: #d93025;
         }
 
         &.fragile {
-          background: #fff3e0;
-          color: #ef6c00;
-          border: 1px solid #ffcc02;
+          background: #fef7e0;
+          color: #f29900;
         }
 
         &.flight {
-          background: #f3e5f5;
-          color: #7b1fa2;
-          border: 1px solid #ce93d8;
-        }
-      }
+          background: #f3e8fd;
+          color: #9c27b0;
 
-      // Multi-part indicator
-      .md-parts-badge {
-        background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
-        color: white;
-        padding: 2px 6px;
-        border-radius: 10px;
-        font-size: 9px;
-        font-weight: 700;
-        margin-left: 4px;
-        box-shadow: 0 1px 3px rgba(25, 118, 210, 0.4);
-        display: inline-flex;
-        align-items: center;
-        gap: 2px;
-
-        &::before {
-          content: '●';
-          font-size: 6px;
-        }
-      }
-
-      // Priority indicator
-      .md-priority-indicator {
-        position: absolute;
-        top: -3px;
-        right: -3px;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        box-shadow: 0 0 0 2px white;
-
-        &.urgent {
-          background: #d32f2f;
-          animation: pulse-urgent 2s infinite;
+          md-icon {
+            font-size: 24px;
+          }
         }
 
-        &.warning {
-          background: #f57c00;
-          animation: pulse-warning 2s infinite;
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
       }
     }
 
-    // Client information row
+    // Google-style client chip
     .md-job-client {
       display: flex;
       align-items: center;
       gap: 4px;
-      font-size: 10px;
-      color: #546e7a;
-      margin-top: 2px;
+      font-size: 11px;
+      flex-shrink: 0;
 
-      .md-client-icon {
-        font-size: 12px;
-        color: #78909c;
-      }
-
-      .md-client-name {
+      .md-client-chip {
+        background: #f8f9fa;
+        color: #3c4043;
+        padding: 4px 8px;
+        border-radius: 12px;
+        border: 1px solid #e8eaed;
+        font-size: 10px;
         font-weight: 500;
-        color: #37474f;
-        flex: 1;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 80px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+
+        &:hover {
+          background: #f1f3f4;
+          border-color: #dadce0;
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
       }
     }
 
-    // Notes section
+    // Google-style notes chip
     .md-job-notes {
+      flex-shrink: 1;
+      min-width: 0;
+
+      .md-notes-chip {
+        background: #f8f9fa;
+        color: #5f6368;
+        padding: 4px 8px;
+        border-radius: 12px;
+        border: 1px solid #e8eaed;
+        font-size: 9px;
+        font-weight: 400;
+        display: inline-block;
+        line-height: 1.2;
+        max-width: 60px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+
+        &:hover {
+          background: #f1f3f4;
+          border-color: #dadce0;
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+      }
+    }
+
+    // Google-style parts badge
+    .md-parts-badge {
+      background: #1a73e8;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 12px;
       font-size: 9px;
-      color: #607d8b;
-      font-style: italic;
-      margin-top: 1px;
-      line-height: 1.2;
-      overflow: hidden;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
+      font-weight: 500;
+      box-shadow: 0 1px 3px rgba(26, 115, 232, 0.4);
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+      white-space: nowrap;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:hover {
+        background: #1557b0;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(26, 115, 232, 0.4);
+      }
+
+      &::before {
+        content: '●';
+        font-size: 6px;
+      }
     }
   }
-
+  
   // Animations
   @keyframes pulse {
     0% {
@@ -949,39 +991,64 @@
     }
   }
 
-  // UPDATED Route Cell - Enhanced for better horizontal layout
+  // Google Material Design route styling
   .md-route-cell {
-    min-width: 320px; // Increased from 260px for more horizontal space
-    max-width: 400px; // Added max-width constraint
+    min-width: 300px; // Increased for better readability
+    max-width: 350px;
 
     .md-route {
       display: flex;
       align-items: center;
-      gap: 8px; // Increased from 6px for better spacing
+      gap: 12px; // Increased gap
       font-size: 12px;
 
       .md-route-location {
         flex: 1;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        line-height: 1.3;
-        word-wrap: break-word; // Allow text to wrap to new line
-        overflow-wrap: break-word; // Modern standard for word wrapping
-        max-width: 150px; // Limit individual location width
+        max-width: 140px;
 
-        .md-address-primary {
-          font-weight: 600;
-          color: currentColor;
+        .md-address-chip {
+          background: #f8f9fa;
+          color: #3c4043;
+          padding: 6px 12px; // More generous padding
+          border-radius: 16px; // More rounded
+          border: 1px solid #e8eaed;
+          font-size: 11px;
+          font-weight: 500;
+          display: inline-block;
+          line-height: 1.3;
           word-wrap: break-word;
           overflow-wrap: break-word;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          width: 100%;
+          text-align: center;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+
+          &:hover {
+            background: #f1f3f4;
+            border-color: #dadce0;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+          }
+
+          &.from {
+            border-color: #4285f4;
+            background: #e8f0fe;
+            color: #1565c0;
+          }
+
+          &.to {
+            border-color: #34a853;
+            background: #e6f4ea;
+            color: #137333;
+          }
         }
       }
-      
+
       .md-route-arrow {
-        color: @text-muted;
-        font-size: 12px; // Increased from 10px for better visibility
-        flex-shrink: 0; // Prevent arrow from shrinking
+        color: #5f6368; // Google grey
+        font-size: 14px;
+        flex-shrink: 0;
+        margin: 0 4px;
       }
     }
   }
@@ -1196,18 +1263,55 @@
       }
     }
 
+    .md-job-details {
+      min-width: 100px;
+      max-width: 120px;
+      gap: 2px; // Reduced gap for dense mode
+
+      .md-job-number .md-job-number-text {
+        font-size: 10px;
+        padding: 1px 3px;
+      }
+
+      .md-job-client .md-client-chip {
+        font-size: 7px;
+        padding: 1px 3px;
+        max-width: 50px;
+      }
+
+      .md-job-notes .md-notes-chip {
+        font-size: 6px;
+        padding: 1px 3px;
+        max-width: 40px;
+      }
+
+      .md-status-indicators .md-status-indicator {
+        font-size: 6px;
+        padding: 1px 2px;
+
+        &.flight {
+          md-icon {
+            font-size: 20px;
+          }
+        }
+      }
+    }
+    
     .md-route-cell {
-      min-width: 280px; // Reduced for dense mode
-      max-width: 350px;
+      min-width: 240px;
+      max-width: 280px;
 
       .md-route {
         font-size: 10px;
-        gap: 6px;
+        gap: 4px;
 
         .md-route-location {
-          padding: 2px 6px;
-          font-size: 9px;
-          max-width: 130px; // Reduced for dense mode
+          max-width: 110px; // Reduced for dense mode
+
+          .md-address-chip {
+            padding: 2px 6px;
+            font-size: 9px;
+          }
         }
 
         .md-route-arrow {
@@ -1374,18 +1478,47 @@
       }
     }
 
+    .md-job-details {
+      min-width: 80px;
+      max-width: 100px;
+      gap: 1px; // Minimal gap for ultra-dense
+
+      .md-job-number .md-job-number-text {
+        font-size: 9px;
+        padding: 1px 2px;
+      }
+
+      .md-job-client .md-client-chip {
+        font-size: 6px;
+        padding: 1px 2px;
+        max-width: 40px;
+      }
+
+      .md-job-notes .md-notes-chip {
+        display: none; // Hide notes in ultra-dense mode
+      }
+
+      .md-status-indicators .md-status-indicator {
+        font-size: 5px;
+        padding: 1px 2px;
+      }
+    }
+    
     .md-route-cell {
-      min-width: 250px; // Further reduced for ultra-dense mode
-      max-width: 300px;
+      min-width: 200px; // Further reduced for ultra-dense mode
+      max-width: 240px;
 
       .md-route {
         font-size: 9px;
-        gap: 4px;
+        gap: 3px;
 
         .md-route-location {
-          padding: 1px 4px;
-          font-size: 8px;
-          max-width: 110px; // Further reduced for ultra-dense mode
+          max-width: 90px; // Further reduced for ultra-dense mode
+
+          .md-address-chip {
+            padding: 1px 4px;
+            font-size: 8px;
+          }
         }
 
         .md-route-arrow {
@@ -1539,13 +1672,16 @@
       }
 
       .md-route-cell {
-        min-width: 200px; // Reduced for mobile
-        max-width: 250px;
+        min-width: 180px; // Reduced for mobile
+        max-width: 220px;
 
         .md-route-location {
-          padding: 2px 4px;
-          font-size: 9px;
-          max-width: 90px;
+          max-width: 80px;
+
+          .md-address-chip {
+            padding: 2px 4px;
+            font-size: 8px;
+          }
         }
       }
     }
