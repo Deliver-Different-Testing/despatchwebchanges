@@ -72,8 +72,8 @@ class JobsListController extends BaseController {
         this.setupJobListVariables();
 
         // Group jobs by parent if not nationwide
-        if(!this.isNationwideList()) this.groupJobs();
-        
+        if (!this.isNationwideList()) this.groupJobs();
+
         this.calculateStats();
         this.applyFilters();
     }
@@ -109,8 +109,8 @@ class JobsListController extends BaseController {
     $onChanges(changes: angular.IOnChangesObject) {
         if (changes['jobs'] && changes['jobs'].currentValue) {
             // Group jobs by parent if not nationwide
-            if(!this.isNationwideList()) this.groupJobs();
-            
+            if (!this.isNationwideList()) this.groupJobs();
+
             this.calculateStats();
             this.applyFilters();
         }
@@ -119,7 +119,7 @@ class JobsListController extends BaseController {
             this.selectedJob = changes['selectedJob'].currentValue;
         }
     }
-    
+
     isNationwideList(): boolean {
         return this.jobListType.toLowerCase().includes('Nationwide'.toLowerCase())
     }
@@ -323,7 +323,7 @@ class JobsListController extends BaseController {
 
         return fullName;
     }
-    
+
     getTableMaxHeight(): string {
         const baseHeight = 600;
         const rowHeight = this.getRowHeight();
@@ -484,43 +484,6 @@ class JobsListController extends BaseController {
         );
     }
 
-    // Helper methods for safe property access
-    getPickupLocationName(job: IDispatchJob): string {
-        const name = job.pickupContact ||
-            job.pickupAddress?.addressLine1 ||
-            'Pickup Location';
-
-        return this.densityMode === DensityMode.UltraDense ?
-            this.getAbbreviatedAddress(name) : name;
-    }
-
-    getDeliveryLocationName(job: IDispatchJob): string {
-        const name = job.deliveryContact ||
-            job.deliveryAddress?.addressLine1 ||
-            'Delivery Location';
-
-        return this.densityMode === DensityMode.UltraDense ?
-            this.getAbbreviatedAddress(name) : name;
-    }
-
-    getPickupAddress(job: IDispatchJob): string {
-        const address = this.isUsCustomer
-            ? (job.pickupAddress?.fullAddress || '')
-            : (job.from || '');
-
-        return this.densityMode === DensityMode.UltraDense ?
-            this.getAbbreviatedAddress(address) : address;
-    }
-
-    getDeliveryAddress(job: IDispatchJob): string {
-        const address = this.isUsCustomer
-            ? (job.deliveryAddress?.fullAddress || '')
-            : (job.toAddress || '');
-
-        return this.densityMode === DensityMode.UltraDense ?
-            this.getAbbreviatedAddress(address) : address;
-    }
-
     getCourierName(job: IDispatchJob): string {
         return job.courierData?.courierName || job.assignedCourier?.text || '';
     }
@@ -531,10 +494,6 @@ class JobsListController extends BaseController {
 
     getJobStatus(job: IDispatchJob): string {
         return job.status || job.statusName || '';
-    }
-
-    getPartsCount(job: IDispatchJob): number {
-        return this.getChildJobs(job.id).length;
     }
 
     getChildJobNotes(childJob: IDispatchJob): string {
@@ -549,37 +508,12 @@ class JobsListController extends BaseController {
         return (job.isParentOrSingle && job._groupChildren && job._groupChildren.length > 0) ?? false;
     }
 
-    getFlightIcon(jobNumber: string) {
-        if (!jobNumber) return '';
-
-        const lastChar = jobNumber.toString().slice(-1);
-
-        switch (lastChar) {
-            case '1':
-                return 'flight_takeoff';
-            case '2':
-                return 'local_airport';
-            case '3':
-                return 'flight_land';
-            default:
-                return '';
-        }
-    }
-
     isChildJob(job: IDispatchJob): boolean {
         return !job.isParentOrSingle;
     }
 
     getChildCount(job: IDispatchJob): number {
         return job._groupChildren ? job._groupChildren.length : 0;
-    }
-
-    hasConNote(job: IDispatchJob): boolean {
-        return !!(job.conNote);
-    }
-
-    getConNote(job: IDispatchJob): string {
-        return job.conNote || '';
     }
 
     isUrgent(job: IDispatchJob): boolean {
@@ -622,6 +556,7 @@ class JobsListController extends BaseController {
 
     getJobPriorityClass(job: IDispatchJob): string {
         if (this.isUrgent(job)) return 'urgent';
+        if (this.isWarning(job)) return 'warning';
         if (this.needsDispatch(job)) return 'needs-dispatch';
         if (this.isNationwideList() && this.hasRelatedJobs(job)) return 'related-job';
         if (job.parentId) return 'parent-job';
@@ -650,8 +585,16 @@ class JobsListController extends BaseController {
         }
     }
 
-    formatDeliveryTime(dateTime: Date | string): string {
-        return dayjs(dateTime).format('HH:mm');
+    formatDeliveryTime(job: IDispatchJob): string {
+        const showFullDate = this.densityMode == DensityMode.Normal;
+
+        if (showFullDate) {
+            return this.isUsCustomer
+                ? dayjs(job.booked).format('MM/DD HH:mm')
+                : dayjs(job.booked).format('DD/MM HH:mm');
+        } else {
+            return dayjs(job.booked).format('HH:mm');
+        }
     }
 
     formatDate(dateTime: Date | undefined): string {
@@ -674,26 +617,6 @@ class JobsListController extends BaseController {
         return textToEdit.split(' ').map(n => n[0]).join('').toUpperCase();
     }
 
-    // Accordion functionality for multipart jobs
-    toggleJobAccordion(job: IDispatchJob) {
-        if (!job.id) return;
-
-        if (this.expandedJobs.has(job.id)) {
-            this.expandedJobs.delete(job.id);
-        } else {
-            this.expandedJobs.add(job.id);
-        }
-    }
-
-    isJobExpanded(job: IDispatchJob): boolean {
-        return job.id ? this.expandedJobs.has(job.id) : false;
-    }
-
-    getChildJobs(parentJobId: number): IDispatchJob[] {
-        return this.filteredJobs?.filter(job => job.parentId === parentJobId && job.id !== parentJobId) || [];
-    }
-
-    // Job selection and actions
     selectJob(job: IDispatchJob) {
         this.selectedJob = job;
 
@@ -741,48 +664,6 @@ class JobsListController extends BaseController {
             console.error("Error in dispatch:", error);
             job.assignedCourier = undefined;
         }
-    }
-
-    handleDispatchFieldClick(event: MouseEvent, job: IDispatchJob) {
-        event.stopPropagation();
-
-        if (job.courier || job.assignedCourier) return;
-
-        this.registerTimeout(() => {
-            const inputField = document.getElementById(`input_${job.id}`) as HTMLInputElement;
-            if (inputField) {
-                inputField.focus();
-                inputField.select();
-            }
-        });
-    }
-
-    jobClass(job: IDispatchJob): string {
-        let classList = ['job-row'];
-
-        if (this.selectedJob && this.selectedJob.id === job.id) classList.push('selected');
-        if (!job.hasBeenRead) classList.push('unread');
-        classList.push(this.getJobPriorityClass(job));
-
-        return classList.join(' ');
-    }
-
-    attention(job: IDispatchJob): string {
-        const components = [];
-
-        if (job.direct) components.push("DIRECT");
-        if (job.size?.text) components.push(job.size.text.toUpperCase());
-        if (job.return) components.push("RTN");
-        if (job.childNotes && Array.isArray(job.childNotes) && job.childNotes.length > 0) components.push(job.childNotes);
-
-        const pickupMap: { [key: number]: string } = {
-            1: "R", 2: "D",
-        };
-
-        if (job.pickupFrom && job.pickupFrom in pickupMap) components.push(pickupMap[job.pickupFrom]);
-        if (job.saturdayDelivery) components.push("Sat Del");
-
-        return components.join(" ").trim();
     }
 
     getJobContextMenuOptions(job: IDispatchJob) {
@@ -835,7 +716,6 @@ class JobsListController extends BaseController {
         return `Last updated: ${dayjs().format('h:mm A')}`;
     }
 
-    // Method for courier search callback
     async performCourierSearch(searchText: string): Promise<Suggestion[]> {
         if (!searchText || searchText.length < 2) return [];
 
@@ -848,11 +728,6 @@ class JobsListController extends BaseController {
         }
     }
 
-    formatCourierDisplay(model: any) {
-        if (!model) return '';
-        return model.text || model.label || model.name || '';
-    }
-
     hasRelatedJobs(job: IDispatchJob): boolean {
         return (this.isNationwideList() && job.relatedJobs && job.relatedJobs.length > 0) ?? false;
     }
@@ -860,7 +735,7 @@ class JobsListController extends BaseController {
     getRelatedJobsCount(job: IDispatchJob): number {
         return job.relatedJobs ? job.relatedJobs.length : 0;
     }
-    
+
     getRelatedJobsText(job: IDispatchJob): string {
         if (!job.relatedJobs || job.relatedJobs.length === 0) return '';
 
@@ -868,6 +743,91 @@ class JobsListController extends BaseController {
             return job.relatedJobs[0].text;
         } else {
             return `${job.relatedJobs.length} related jobs`;
+        }
+    }
+
+    getPickupAddressLine2(job: IDispatchJob): string {
+        let address = '';
+
+        if (this.isUsCustomer) {
+            // For US customers, get address line 2 and beyond
+            const pickupAddr = job.pickupAddress;
+            if (pickupAddr) {
+                address = [
+                    pickupAddr.addressLine2,
+                    pickupAddr.addressLine3,
+                    pickupAddr.addressLine4,
+                    pickupAddr.addressLine5,
+                    pickupAddr.addressLine6,
+                    pickupAddr.addressLine7,
+                    pickupAddr.addressLine8,
+                    pickupAddr.our_suburb
+                ].filter(line => line && line.trim()).join(', ');
+            }
+        } else {
+            // For non-US customers, parse the 'from' field and skip first line
+            const fromLines = (job.from || '').split(',').map(line => line.trim());
+            if (fromLines.length > 1) {
+                address = fromLines.slice(1).join(', ');
+            }
+        }
+
+        return this.densityMode === DensityMode.UltraDense ?
+            this.getAbbreviatedAddress(address) : address;
+    }
+
+    getDeliveryAddressLine2(job: IDispatchJob): string {
+        let address = '';
+
+        if (this.isUsCustomer) {
+            // For US customers, get address line 2 and beyond
+            const deliveryAddr = job.deliveryAddress;
+            if (deliveryAddr) {
+                address = [
+                    deliveryAddr.addressLine2,
+                    deliveryAddr.addressLine3,
+                    deliveryAddr.addressLine4,
+                    deliveryAddr.addressLine5,
+                    deliveryAddr.addressLine6,
+                    deliveryAddr.addressLine7,
+                    deliveryAddr.addressLine8,
+                    deliveryAddr.our_suburb
+                ].filter(line => line && line.trim()).join(', ');
+            }
+        } else {
+            // For non-US customers, parse the 'toAddress' field and skip first line
+            const toLines = (job.toAddress || '').split(',').map(line => line.trim());
+            if (toLines.length > 1) {
+                address = toLines.slice(1).join(', ');
+            }
+        }
+
+        return this.densityMode === DensityMode.UltraDense ?
+            this.getAbbreviatedAddress(address) : address;
+    }
+
+    isWarning(job: IDispatchJob): boolean {
+        return [
+            JobStatus.Warning,
+            JobStatus.LatePickup
+        ].includes(job.statusId || JobStatus.New);
+    }
+
+    getFlightIcon(job: IDispatchJob): string {
+        const jobNumber = job.jobNo;
+        if (!jobNumber) return '';
+
+        const lastChar = jobNumber.toString().slice(-1);
+
+        switch (lastChar) {
+            case '1':
+                return 'flight_takeoff';
+            case '2':
+                return 'local_airport';
+            case '3':
+                return 'flight_land';
+            default:
+                return 'question_mark';
         }
     }
 }
