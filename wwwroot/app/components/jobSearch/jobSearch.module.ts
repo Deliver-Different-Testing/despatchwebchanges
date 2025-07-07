@@ -4,6 +4,7 @@ import AdditionalServicesDialogService from "../dialogs/additional-services-dial
 import DispatchExecutorService from "../../services/dispatch-executor.service";
 import AdditionalServicesDialogController from "../dialogs/additional-services-dialog/additional-services-dialog.controller";
 import DispatchMapComponent from "../common/dispatch-map/dispatch-map.component";
+import JobContextMenuService from "../../services/job-context-menu.service";
 
 const jobSearchModule = angular.module('uDispatch.jobSearch', [
     'ngMap',
@@ -31,6 +32,7 @@ jobSearchModule
 jobSearchModule
     .service("uCSData", JobSearchService)
     .service("additionalServicesDialogService", AdditionalServicesDialogService)
-    .service("dispatchJobService", DispatchExecutorService);
+    .service("dispatchJobService", DispatchExecutorService)
+    .service("jobContextMenuService", JobContextMenuService);
 
 export default jobSearchModule;

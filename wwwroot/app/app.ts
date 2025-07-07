@@ -41,7 +41,6 @@ import {
     momentFormatFilter,
     replaceFilter, timezoneShortFilter
 } from "./filters";
-import JobContextMenuService from "./services/job-context-menu.service";
 import StickyNoteComponent from "./components/common/sticky-notes/sticky-notes.component";
 import EditParcelDimensionsDialogService
     from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
@@ -196,7 +195,6 @@ app.service("jobFileUploadDialogService", JobFileUploadDialogService);
 app.service("noteManagementDialogService", NoteManagementDialogService);
 app.service("noteService", NoteService);
 app.service("addEventDialogService", AddEventDialogService);
-app.service("jobContextMenuService", JobContextMenuService);
 app.service("editParcelDimensionsDialogService", EditParcelDimensionsDialogService);
 app.service("autoCompleteDialogService", AutoCompleteDialogService);
 app.service("jobAddStopService", JobAddStopService);
