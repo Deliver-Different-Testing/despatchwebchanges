@@ -1,6 +1,7 @@
 import esbuild from "esbuild";
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import {lessLoader} from "esbuild-plugin-less";
 import {esbuildPluginVersionInjector} from "esbuild-plugin-version-injector";
 
@@ -15,7 +16,7 @@ class Bundler {
         this.rootDir = __dirname;
         this.distPath = path.join(this.rootDir, "wwwroot/dist");
     }
-    
+
     private async cleanDistFolder(): Promise<void> {
         if (fs.existsSync(this.distPath)) {
             const files = fs.readdirSync(this.distPath);
@@ -29,6 +30,13 @@ class Bundler {
 
     private toRelativePath(filePath: string): string {
         return path.relative(this.rootDir, filePath);
+    }
+
+    private generateFileHash(filePath: string): string {
+        const fileBuffer = fs.readFileSync(filePath);
+        const hashSum = crypto.createHash('sha256');
+        hashSum.update(fileBuffer);
+        return hashSum.digest('hex').substring(0, 8);
     }
 
     private get htmlMinifierPlugin(): esbuild.Plugin {
@@ -163,7 +171,80 @@ class Bundler {
 
         return manifest;
     }
-    
+
+    private generateManifestWithHashes(): Record<string, string> {
+        const manifest: Record<string, string> = {};
+        const entryPoints = this.getCommonConfig().entryPoints! as Record<string, string>;
+        const filesToHash = ['vendor', 'app'];
+
+        // Scan the dist folder for generated files
+        const files = fs.readdirSync(this.distPath);
+
+        for (const entryName of Object.keys(entryPoints)) {
+            if (filesToHash.includes(entryName)) {
+                // For hashed files, find the actual hashed filename
+                const jsFile = files.find(file => file.startsWith(entryName) && file.endsWith('.js'));
+                if (jsFile) {
+                    manifest[`${entryName}.js`] = jsFile;
+                }
+
+                const cssFile = files.find(file => file.startsWith(entryName) && file.endsWith('.css'));
+                if (cssFile) {
+                    manifest[`${entryName}.css`] = cssFile;
+                }
+            } else {
+                // For non-hashed files, use original names
+                manifest[`${entryName}.js`] = `${entryName}.js`;
+                manifest[`${entryName}.css`] = `${entryName}.css`;
+            }
+        }
+
+        return manifest;
+    }
+
+    private renameFilesWithHashes(): void {
+        const filesToHash = ['vendor', 'app'];
+
+        for (const entryName of filesToHash) {
+            // Handle JS files
+            const jsPath = path.join(this.distPath, `${entryName}.js`);
+            if (fs.existsSync(jsPath)) {
+                const jsHash = this.generateFileHash(jsPath);
+                const newJsName = `${entryName}.${jsHash}.js`;
+                const newJsPath = path.join(this.distPath, newJsName);
+                fs.renameSync(jsPath, newJsPath);
+                console.log(`[HASH] Renamed ${entryName}.js to ${newJsName}`);
+            }
+
+            // Handle CSS files
+            const cssPath = path.join(this.distPath, `${entryName}.css`);
+            if (fs.existsSync(cssPath)) {
+                const cssHash = this.generateFileHash(cssPath);
+                const newCssName = `${entryName}.${cssHash}.css`;
+                const newCssPath = path.join(this.distPath, newCssName);
+                fs.renameSync(cssPath, newCssPath);
+                console.log(`[HASH] Renamed ${entryName}.css to ${newCssName}`);
+            }
+
+            // Handle source maps
+            const jsMapPath = path.join(this.distPath, `${entryName}.js.map`);
+            if (fs.existsSync(jsMapPath)) {
+                const jsHash = this.generateFileHash(path.join(this.distPath, `${entryName}.${this.generateFileHash(jsPath)}.js`));
+                const newJsMapName = `${entryName}.${jsHash}.js.map`;
+                const newJsMapPath = path.join(this.distPath, newJsMapName);
+                fs.renameSync(jsMapPath, newJsMapPath);
+
+                // Update the source map reference in the JS file
+                const jsContent = fs.readFileSync(path.join(this.distPath, `${entryName}.${jsHash}.js`), 'utf8');
+                const updatedJsContent = jsContent.replace(
+                    `//# sourceMappingURL=${entryName}.js.map`,
+                    `//# sourceMappingURL=${newJsMapName}`
+                );
+                fs.writeFileSync(path.join(this.distPath, `${entryName}.${jsHash}.js`), updatedJsContent);
+            }
+        }
+    }
+
     private async buildDev(): Promise<void> {
         console.log("[DEV] Building development bundles with file watching...");
 
@@ -178,7 +259,7 @@ class Bundler {
         // Start watching for file changes
         await ctx.watch();
 
-        // Create manifest
+        // Create manifest (no hashing in dev mode)
         const manifest = this.generateManifest();
 
         fs.writeFileSync(
@@ -193,7 +274,6 @@ class Bundler {
         // Keep the process running for watching
         await new Promise(() => {});
     }
-
 
     private incrementVersion(): void {
         try {
@@ -213,13 +293,13 @@ class Bundler {
             console.error("[ERROR] Failed to increment version:", error);
         }
     }
-    
+
     private async buildProd(): Promise<void> {
         console.log("[PROD] Building production bundles...");
         const startTime = Date.now();
 
         this.incrementVersion();
-        
+
         // Build all entry points
         console.log("[PROD] Building all bundles...");
         await esbuild.build({
@@ -228,8 +308,12 @@ class Bundler {
             metafile: true,
         });
 
-        // Create a manifest without hash-busting
-        const manifest = this.generateManifest();
+        // Add hash keys to filenames for cache busting
+        console.log("[PROD] Adding hash keys to filenames...");
+        this.renameFilesWithHashes();
+
+        // Create a manifest with hashed filenames
+        const manifest = this.generateManifestWithHashes();
 
         fs.writeFileSync(
             path.join(this.distPath, "manifest.json"),
@@ -238,8 +322,9 @@ class Bundler {
 
         const buildTime = ((Date.now() - startTime) / 1000).toFixed(2);
         console.log(`[PROD] Build completed in ${buildTime}s`);
+        console.log(`[PROD] Manifest created with ${Object.keys(manifest).length} entries`);
     }
-    
+
     async build(): Promise<void> {
         const startTime = Date.now();
 
