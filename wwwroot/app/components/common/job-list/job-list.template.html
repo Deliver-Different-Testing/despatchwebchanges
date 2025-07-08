@@ -132,7 +132,7 @@
             <!-- Time Column -->
             <div class="time-cell">
                 <div class="date">{{ctrl.formatDeliveryDate(job)}}</div>
-                <div class="time">{{ctrl.formatDeliveryTime(job)}} ({{::ctrl.job.deliveryTimeZone.text | timezoneShort}})</div>
+                <div class="time">{{ctrl.formatDeliveryTime(job)}} ({{::ctrl.timeZone | timezoneShort}})</div>
                 <div class="overdue" ng-if="ctrl.isOverdue(job)">OVERDUE</div>
             </div>
 

@@ -35,7 +35,7 @@ class JobsListController extends BaseController {
     selectedCategory: JobCategory = JobCategory.All;
     searchQuery: string = '';
     densityMode: DensityMode = DensityMode.Normal;
-
+    
     // Stats for the header
     stats = {
         total: 0,
