@@ -31,6 +31,7 @@ import {FileUploadType} from "../../../enums/file-upload-type.enum";
 import sortRelatedJobs from "../../../functions/sortRelatedJobs";
 import {UpdatePodDetailsRequest} from "../../../interfaces/requests.interfaces";
 import dayjs from "dayjs";
+import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -385,7 +386,7 @@ class JobDetailController extends BaseController {
             this.formattedPodPhotos = [];
         }
     }
-    
+
     private initializeJobData() {
         if (!this.job) return;
 
@@ -699,6 +700,22 @@ class JobDetailController extends BaseController {
     }
 
     async editFollowUpTime($event: MouseEvent, job: IJob) {
+        if (job.locked || job.internalStatusId === JobInternalStatusEnum.NewJobs
+            || job.internalStatusId === JobInternalStatusEnum.Reprice) {
+            // Can't edit follow-up time
+            await this.$mdDialog.show(
+                this.$mdDialog.alert()
+                    .clickOutsideToClose(true)
+                    .title('Cannot Edit Follow-up Time')
+                    .textContent('The follow-up time cannot be edited for jobs that are locked, have New Jobs status, or require repricing.')
+                    .ariaLabel('Follow-up Time Edit Restriction')
+                    .ok('Understood')
+                    .targetEvent($event)
+            );
+
+            return;
+        }
+
         await this.showEditDateAndTimeDialog(
             $event,
             job,

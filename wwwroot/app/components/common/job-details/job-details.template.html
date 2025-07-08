@@ -69,9 +69,7 @@
             <div flex></div>
 
             <md-button
-                    ng-click="!ctrl.job.locked && ctrl.job.internalStatusId !=1
-                     && ctrl.job.internalStatusId !=4
-                     && ctrl.editFollowUpTime($event, ctrl.job)">
+                    ng-click="ctrl.editFollowUpTime($event, ctrl.job)">
                 <md-icon
                         md-font-set="material-symbols-outlined"
                         style="margin-right: 5px">schedule

@@ -15,6 +15,7 @@ import AdditionalServicesDialogController
     from "../dialogs/additional-services-dialog/additional-services-dialog.controller";
 import DispatchMapComponent from "../common/dispatch-map/dispatch-map.component";
 import JobContextMenuService from "../../services/job-context-menu.service";
+import JobHighlightService from "../common/job-list/job-highlight.service";
 
 const homeModule = angular.module('uDispatch.home', [
     'ngMap',
@@ -54,7 +55,8 @@ homeModule
     .service("interCourierChargeDialogService", InterCourierChargeDialogService)
     .service("dispatchJobService", DispatchExecutorService)
     .service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService)
-    .service("jobContextMenuService", JobContextMenuService);
+    .service("jobContextMenuService", JobContextMenuService)
+    .service("jobHighlightService", JobHighlightService);
 
 homeModule
     .controller("InterCourierChargeDialog", InterCourierChargeDialogController)

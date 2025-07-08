@@ -73,7 +73,7 @@ class RouterConfig {
     private configureCSState(): this {
         this.$stateProvider.state("cs", {
             url: "/CS",
-            redirectTo: "jobSearch"  // Redirect to the new lazy-loaded route
+            redirectTo: "jobSearch"
         });
         return this;
     }

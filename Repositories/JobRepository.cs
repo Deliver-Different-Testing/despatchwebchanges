@@ -1448,7 +1448,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         }
     }
 
-    public async Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel, int staffId)
+    public async Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel)
     {
         if (viewModel.JobId is null && viewModel.PrebookJobId is null)
             return 0;
@@ -1483,7 +1483,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         return item.PricingBreakdownId;
     }
 
-    public async Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel, int staffId)
+    public async Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel)
     {
         if (viewModel.JobId is null && viewModel.PrebookJobId is null) return;
 
@@ -1512,7 +1512,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         await Context.SaveChangesAsync();
     }
 
-    public async Task DeleteJobPriceBreakdownAsync(int chargeId, int staffId)
+    public async Task DeleteJobPriceBreakdownAsync(int chargeId)
     {
         var breakdown = await Context.PricingBreakdowns
             .FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
