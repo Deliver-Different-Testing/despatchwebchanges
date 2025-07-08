@@ -85,6 +85,7 @@
       max-width: 100%;
 
       /* Scrollbar styling */
+
       &::-webkit-scrollbar {
         height: 8px;
       }
@@ -183,7 +184,7 @@
       }
     }
   }
-  
+
   .jobs-container {
     padding: 0 20px;
     flex: 1;
@@ -267,119 +268,96 @@
           color: #1e40af;
         }
       }
-      
+
       &.selected {
         background: #eff6ff;
         border-left: 3px solid #3b82f6;
       }
 
-
       &.unread {
-        background: #fefffe;
-        border-left: 4px solid #22c55e;
-        position: relative;
+        // Remove all background colors, borders, and special effects
+        background: white; // Keep normal background
 
-        &::before {
-          content: '';
-          position: absolute;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          width: 4px;
-          background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
-          box-shadow: 0 0 8px rgba(34, 197, 94, 0.3);
-        }
-
-        &::after {
-          content: 'NEW';
-          position: absolute;
-          top: 8px;
-          right: 12px;
-          background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-          color: white;
-          font-size: 9px;
-          font-weight: 700;
-          padding: 2px 6px;
-          border-radius: 10px;
-          letter-spacing: 0.5px;
-          box-shadow: 0 2px 4px rgba(34, 197, 94, 0.2);
-          z-index: 5;
-        }
-
-        &:hover {
-          background: #f9fefb;
-          box-shadow: 0 2px 8px rgba(34, 197, 94, 0.15);
-        }
-
+        // Make text extra bold and darker like Gmail unread emails
         .job-id {
-          font-weight: 700;
-          color: #14532d;
-          text-shadow: 0 1px 2px rgba(34, 197, 94, 0.1);
+          font-weight: 900; // Extra bold job ID
+          color: #0f172a; // Darker color
+          font-size: 13px; // Slightly larger
         }
 
         .courier-name {
-          font-weight: 700;
-          color: #14532d;
+          font-weight: 900; // Extra bold courier name
+          color: #0f172a; // Darker color
         }
 
-        .time-cell .date {
-          font-weight: 700;
-          color: #166534;
+        .time-cell {
+          .date {
+            font-weight: 900; // Extra bold date
+            color: #0f172a; // Darker color
+          }
+
+          .time {
+            font-weight: 600; // Semi-bold time
+            color: #374151; // Slightly darker than normal
+          }
         }
 
         .route-cell .address {
-          font-weight: 600;
-          color: #14532d;
+          font-weight: 900; // Extra bold addresses
+          color: #0f172a; // Darker color
         }
 
+        // Make the entire row stand out more
+        &:hover {
+          background: #f8fafc;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); // Subtle shadow for distinction
+        }
+
+        // Remove all pseudo-elements (NEW badge, border effects, etc.)
+        &::before,
+        &::after {
+          display: none;
+        }
+
+        // Remove special hover effects
+        &:hover {
+          background: #f8fafc; // Normal hover
+          box-shadow: none;
+        }
+
+        // Remove priority transform
         .priority {
-          background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-          box-shadow: 0 2px 6px rgba(34, 197, 94, 0.3);
-          transform: scale(1.05);
+          transform: none;
+          box-shadow: none;
         }
 
-        // Enhanced styling for child jobs when unread
-        &.child-job {
-          background: #fefffe;
-          border-left: 4px solid #22c55e;
-
-          &::after {
-            right: 8px;
-            top: 6px;
-          }
-        }
-
-        // Special styling for urgent unread jobs
+        // Remove special styling for urgent unread jobs
         &.urgent {
-          background: #fef2f2;
-          border-left: 4px solid #ef4444;
+          background: #fef2f2; // Keep urgent background
+          border-left: 3px solid #ef4444; // Keep urgent border
 
-          &::before {
-            background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
-            box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
-          }
-
+          &::before,
           &::after {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+            display: none; // Remove unread indicators
           }
 
           &:hover {
-            background: #fee2e2;
-            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+            background: #fee2e2; // Normal urgent hover
+            box-shadow: none;
+          }
+        }
+
+        // Remove special styling for child jobs when unread
+        &.child-job {
+          background: #f8fafc; // Normal child job background
+          border-left: 3px solid #64748b; // Normal child job border
+
+          &::after {
+            display: none; // Remove NEW badge
           }
         }
       }
       
-      &.urgent {
-        border-left: 3px solid #ef4444;
-        background: #fef2f2;
-
-        &:hover {
-          background: #fee2e2;
-        }
-      }
-
       &.child-job {
         background: #f8fafc;
         border-left: 3px solid #64748b;
@@ -421,7 +399,7 @@
             margin: 0 auto;
           }
         }
-        
+
         .expand-btn {
           background: none;
           border: none;
@@ -576,7 +554,7 @@
           &:hover {
             background: #f8fafc;
             border-color: #10b981;
-            color: #10b981; 
+            color: #10b981;
           }
         }
 
