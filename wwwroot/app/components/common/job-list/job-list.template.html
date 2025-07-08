@@ -83,9 +83,9 @@
     <div class="jobs-container">
         <!-- Jobs Header -->
         <div class="jobs-header">
-            <div>P</div>
             <div>TIME</div>
-            <div>JOB ID</div>
+            <div>JOB NO</div>
+            <div></div>
             <div>PICKUP</div>
             <div>DELIVERY</div>
             <div>COURIER</div>
@@ -107,6 +107,16 @@
              context-menu-on="contextmenu"
              context-menu-class="job-context-menu"
              ng-click="ctrl.selectJob(job)">
+            
+            <!-- Time Column -->
+            <div class="time-cell" style="margin-left: 5px;">
+                <div class="date">{{ctrl.formatDeliveryDate(job)}}</div>
+                <div class="time">{{ctrl.formatDeliveryTime(job)}} ({{::ctrl.timeZone | timezoneShort}})</div>
+                <div class="overdue" ng-if="ctrl.isOverdue(job)">OVERDUE</div>
+            </div>
+
+            <!-- Job ID Column -->
+            <div class="job-id">{{job.jobNo}}</div>
 
             <!-- Priority Column -->
             <div class="{{::ctrl.shouldShowPriorityColumn(job) ? 'priority' : ''}}">
@@ -130,15 +140,6 @@
                 </md-icon>
             </div>
 
-            <!-- Time Column -->
-            <div class="time-cell">
-                <div class="date">{{ctrl.formatDeliveryDate(job)}}</div>
-                <div class="time">{{ctrl.formatDeliveryTime(job)}} ({{::ctrl.timeZone | timezoneShort}})</div>
-                <div class="overdue" ng-if="ctrl.isOverdue(job)">OVERDUE</div>
-            </div>
-
-            <!-- Job ID Column -->
-            <div class="job-id">{{job.jobNo}}</div>
 
             <!-- Pickup Column -->
             <div class="route-cell pickup-cell">
