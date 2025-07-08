@@ -100,7 +100,8 @@
                      'unread': !job.hasBeenRead,
                      'multi-part-parent': ctrl.isMultiPartJob(job) && !!job.isParentOrSingle,
                      'child-job': !job.isParentOrSingle,
-                     'related-job': ctrl.isNationwideList() && ctrl.hasRelatedJobs(job)
+                     'related-job': ctrl.isNationwideList() && ctrl.hasRelatedJobs(job),
+                     'warning': ctrl.isWarning(job)
                  }"
              context-menu="ctrl.getJobContextMenuOptions(job)"
              context-menu-on="contextmenu"
@@ -137,7 +138,7 @@
             </div>
 
             <!-- Job ID Column -->
-            <div class="job-id">{{ctrl.getAbbreviatedJobNumber(job.jobNo)}}</div>
+            <div class="job-id">{{job.jobNo}}</div>
 
             <!-- Pickup Column -->
             <div class="route-cell pickup-cell">
@@ -303,14 +304,5 @@
     <div class="footer">
         <div>{{ctrl.getDisplayedJobsText()}}</div>
         <div ng-if="!ctrl.shouldShowMinimalDetails()">{{ctrl.getLastUpdatedText()}}</div>
-    </div>
-
-    <!-- No Data Message -->
-    <div ng-if="!ctrl.jobs || ctrl.jobs.length === 0" class="no-data">
-        <div class="no-data-content">
-            <div class="no-data-icon">📋</div>
-            <div class="no-data-title">No Jobs Available</div>
-            <div class="no-data-message">There are currently no jobs that match your criteria.</div>
-        </div>
     </div>
 </div>
