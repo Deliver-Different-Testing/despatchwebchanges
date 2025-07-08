@@ -110,16 +110,15 @@ public interface IJobRepository
 
     Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId, bool isPrebook);
 
-    Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel, int staffId);
-    Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel, int staffId);
-    Task DeleteJobPriceBreakdownAsync(int chargeId, int staffId);
+    Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel);
+    Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel);
+    Task DeleteJobPriceBreakdownAsync(int chargeId);
 
     Task AddPalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
     Task EditPalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
     Task DeletePalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
     Task SendPrebookJobAsync(int jobId);
     Task VoidPrebookJobAsync(int jobId, string despatcher, int staffId);
-    Task<TruckItemsSummary> TruckJobItemsAsync(int jobId, int truckWeightLimit);
     Task UpdateDeliveryAddressNzAsync(UpdateAddressRequestNz request);
     Task UpdateDeliveryAddressUsAsync(UpdateAddressRequestUs request);
     Task UpdateBookingDeliveryAddressNzAsync(UpdateAddressRequestNz request);

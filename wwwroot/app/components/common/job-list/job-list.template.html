@@ -94,7 +94,7 @@
 
         <!-- Job Rows -->
         <div ng-repeat-start="job in ctrl.filteredJobs track by job.id"
-             class="job-row {{::ctrl.getJobPriorityClass(job)}}"
+             class="job-row {{ctrl.getJobPriorityClass(job)}}"
              ng-class="{
                      'selected': ctrl.selectedJob && ctrl.selectedJob.id === job.id,
                      'unread': !job.hasBeenRead,
@@ -108,7 +108,7 @@
              ng-click="ctrl.selectJob(job)">
 
             <!-- Priority Column -->
-            <div class="priority">
+            <div class="{{::ctrl.shouldShowPriorityColumn(job) ? 'priority' : ''}}">
                 <!-- Expand/Collapse button for multipart jobs -->
                 <button ng-if="ctrl.isMultiPartJob(job) && job.isParentOrSingle"
                         class="expand-btn"
@@ -124,53 +124,61 @@
                 <md-icon
                         md-font-set="material-symbols-outlined"
                         class="airport-icon"
-                        ng-if="::job.fromAirportId || job.toAirportId">
-                    {{ ctrl.getFlightIcon(job) }}
+                        ng-if="job.fromAirportId || job.toAirportId">
+                    {{ ::ctrl.getFlightIcon(job) }}
                 </md-icon>
-
-                <span ng-if="!(job.fromAirportId || job.toAirportId) && !ctrl.isMultiPartJob(job) && job.isParentOrSingle">
-                    P
-                    <md-tooltip md-direction="bottom">Parent Job</md-tooltip>
-                </span>
-                
-                <span ng-if="!(job.fromAirportId || job.toAirportId) && !job.isParentOrSingle">
-                    C
-                    <md-tooltip md-direction="bottom">Child Job</md-tooltip>
-                </span>
             </div>
 
             <!-- Time Column -->
             <div class="time-cell">
-                <div class="date">{{::ctrl.formatDeliveryDate(job)}}</div>
-                <div class="time">{{::ctrl.formatDeliveryTime(job)}}</div>
-                <div class="overdue" ng-if="::ctrl.isOverdue(job)">OVERDUE</div>
+                <div class="date">{{ctrl.formatDeliveryDate(job)}}</div>
+                <div class="time">{{ctrl.formatDeliveryTime(job)}} ({{::ctrl.job.deliveryTimeZone.text | timezoneShort}})</div>
+                <div class="overdue" ng-if="ctrl.isOverdue(job)">OVERDUE</div>
             </div>
 
             <!-- Job ID Column -->
-            <div class="job-id">{{::ctrl.getAbbreviatedJobNumber(job.jobNo)}}</div>
+            <div class="job-id">{{ctrl.getAbbreviatedJobNumber(job.jobNo)}}</div>
 
             <!-- Pickup Column -->
             <div class="route-cell pickup-cell">
-                <div class="address">{{::ctrl.getPickupAddress(job)}}</div>
-                <div class="city-state">{{::ctrl.getPickupCityState(job)}}</div>
+                <div class="address">{{ctrl.getPickupAddress(job)}}</div>
+                <div class="city-state">{{ctrl.getPickupCityState(job)}}</div>
             </div>
 
             <!-- Delivery Column -->
             <div class="route-cell delivery-cell">
-                <div class="address">{{::ctrl.getDeliveryAddress(job)}}</div>
-                <div class="city-state">{{::ctrl.getDeliveryCityState(job)}}</div>
+                <div class="address">{{ctrl.getDeliveryAddress(job)}}</div>
+                <div class="city-state">{{ctrl.getDeliveryCityState(job)}}</div>
             </div>
 
             <!-- Courier Column -->
             <div class="courier-cell">
                 <!-- Show courier info if already assigned -->
-                <div ng-if="ctrl.hasAssignedCourier(job)" class="courier-info-container">
-                    <div class="courier-avatar" ng-style="{'background': ctrl.getCourierColor(job)}">
-                        {{::ctrl.getCourierInitials(job)}}
+                <div ng-if="job.assignedFlight" class="courier-info-container">
+                    <div class="courier-avatar">
+                       <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
                     </div>
                     <div class="courier-info">
-                        <div class="courier-name">{{::ctrl.getCourierName(job)}}</div>
-                        <div class="courier-id">{{::ctrl.getCourierCode(job)}}</div>
+                        <div class="courier-name">{{job.assignedFlight.flightNumber}}</div>
+                    </div>
+                </div>   
+                
+                <div ng-if="job.assignedAgent" class="courier-info-container">
+                    <div class="courier-avatar">
+                       <md-icon md-font-set="material-symbols-outlined">contacts_product</md-icon>
+                    </div>
+                    <div class="courier-info">
+                        <div class="courier-name">{{job.assignedAgent.agentName}}</div>
+                    </div>
+                </div>  
+                
+                <div ng-if="ctrl.hasAssignedCourier(job)" class="courier-info-container">
+                    <div class="courier-avatar" ng-style="{'background': ctrl.getCourierColor(job)}">
+                        {{ctrl.getCourierInitials(job)}}
+                    </div>
+                    <div class="courier-info">
+                        <div class="courier-name">{{ctrl.getCourierName(job)}}</div>
+                        <div class="courier-id">{{ctrl.getCourierCode(job)}}</div>
                     </div>
                 </div>
 
@@ -201,14 +209,16 @@
             </div>
 
             <!-- Status Column -->
-            <div class="status">{{::ctrl.getStatusAbbreviation(job)}}</div>
+            <md-chip class="status {{job.statusName | lowercase | replace:' ':'-'}}">
+                {{job.status}}
+            </md-chip>
         </div>
 
         <!-- Child Job Rows -->
         <div ng-repeat-end
              ng-if="job._isExpanded && ctrl.isMultiPartJob(job)"
              ng-repeat="childJob in job._groupChildren track by childJob.id"
-             class="job-row child-job {{::ctrl.getJobPriorityClass(childJob)}}"
+             class="job-row child-job {{ctrl.getJobPriorityClass(childJob)}}"
              ng-class="{
                      'selected': ctrl.selectedJob && ctrl.selectedJob.id === childJob.id,
                      'unread': !childJob.hasBeenRead
@@ -220,30 +230,29 @@
 
             <!-- Priority Column -->
             <div class="priority">
-                C
-                <md-tooltip md-direction="bottom">Child Job</md-tooltip>
+                <!-- Nothing is needed here -->
             </div>
 
             <!-- Time Column -->
             <div class="time-cell">
-                <div class="date">{{::ctrl.formatDeliveryDate(childJob)}}</div>
-                <div class="time">{{::ctrl.formatDeliveryTime(childJob)}}</div>
+                <div class="date">{{ctrl.formatDeliveryDate(childJob)}}</div>
+                <div class="time">{{ctrl.formatDeliveryTime(childJob)}}</div>
                 <div class="overdue" ng-if="ctrl.isOverdue(childJob)">OVERDUE</div>
             </div>
 
             <!-- Job ID Column -->
-            <div class="job-id">{{::ctrl.getAbbreviatedJobNumber(childJob.jobNo)}}</div>
+            <div class="job-id">{{ctrl.getAbbreviatedJobNumber(childJob.jobNo)}}</div>
 
             <!-- Pickup Column -->
             <div class="route-cell pickup-cell">
-                <div class="address">{{::ctrl.getPickupAddress(childJob)}}</div>
-                <div class="city-state">{{::ctrl.getPickupCityState(childJob)}}</div>
+                <div class="address">{{ctrl.getPickupAddress(childJob)}}</div>
+                <div class="city-state">{{ctrl.getPickupCityState(childJob)}}</div>
             </div>
 
             <!-- Delivery Column -->
             <div class="route-cell delivery-cell">
-                <div class="address">{{::ctrl.getDeliveryAddress(childJob)}}</div>
-                <div class="city-state">{{::ctrl.getDeliveryCityState(childJob)}}</div>
+                <div class="address">{{ctrl.getDeliveryAddress(childJob)}}</div>
+                <div class="city-state">{{ctrl.getDeliveryCityState(childJob)}}</div>
             </div>
 
             <!-- Courier Column -->
@@ -251,11 +260,11 @@
                 <!-- Show courier info if already assigned -->
                 <div ng-if="ctrl.hasAssignedCourier(childJob)" class="courier-info-container">
                     <div class="courier-avatar" ng-style="{'background': ctrl.getCourierColor(childJob)}">
-                        {{::ctrl.getCourierInitials(childJob)}}
+                        {{ctrl.getCourierInitials(childJob)}}
                     </div>
                     <div class="courier-info">
-                        <div class="courier-name">{{::ctrl.getCourierName(childJob)}}</div>
-                        <div class="courier-id">{{::ctrl.getCourierCode(childJob)}}</div>
+                        <div class="courier-name">{{ctrl.getCourierName(childJob)}}</div>
+                        <div class="courier-id">{{ctrl.getCourierCode(childJob)}}</div>
                     </div>
                 </div>
 

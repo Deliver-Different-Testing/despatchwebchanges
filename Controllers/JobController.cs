@@ -208,7 +208,7 @@ public class JobController(
 
             Log.Information("Adding price breakdown for job {JobId}", jobId);
 
-            var chargeId = await jobRepository.AddJobPriceBreakdownAsync(breakdown, staffId);
+            var chargeId = await jobRepository.AddJobPriceBreakdownAsync(breakdown);
 
             if (breakdown.JobId.HasValue)
             {
@@ -242,7 +242,7 @@ public class JobController(
             Log.Information("Updating price breakdown for job {JobId}",
                 breakdown.JobId ?? breakdown.PrebookJobId);
 
-            await jobRepository.UpdateJobPriceBreakdownAsync(breakdown, staffId);
+            await jobRepository.UpdateJobPriceBreakdownAsync(breakdown);
 
             if (breakdown.JobId.HasValue)
             {
@@ -271,7 +271,7 @@ public class JobController(
         {
             Log.Information("Deleting price breakdown for charge {chargeId}", chargeId);
 
-            await jobRepository.DeleteJobPriceBreakdownAsync(chargeId, staffId);
+            await jobRepository.DeleteJobPriceBreakdownAsync(chargeId);
 
             await taskRepository.AddEventAsync(
                 jobId,

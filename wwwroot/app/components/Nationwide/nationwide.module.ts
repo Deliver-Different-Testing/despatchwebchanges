@@ -23,6 +23,7 @@ import {
 import AdditionalServicesDialogController from "../dialogs/additional-services-dialog/additional-services-dialog.controller";
 import {minutesToTimeFilter} from "./filters/minutesToTimeFilter";
 import JobContextMenuService from "../../services/job-context-menu.service";
+import JobHighlightService from "../common/job-list/job-highlight.service";
 
 const nationwideModule = angular.module('uDispatch.nationwide', [
     'ngMap',
@@ -55,7 +56,8 @@ nationwideModule
     .service("interCourierChargeDialogService", InterCourierChargeDialogService)
     .service("dispatchJobService", DispatchExecutorService)
     .service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService)
-    .service("jobContextMenuService", JobContextMenuService);
+    .service("jobContextMenuService", JobContextMenuService)
+    .service("jobHighlightService", JobHighlightService);
 
 // Register controllers
 nationwideModule

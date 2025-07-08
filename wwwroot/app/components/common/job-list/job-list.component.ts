@@ -9,6 +9,7 @@ import {ContactID, TimeZone} from "../../../contants";
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import JobListType from "./enums/jobListType";
+import JobHighlightService from "./job-highlight.service";
 
 class JobsListController extends BaseController {
     private readonly DENSE_MODE_SAVE_KEY: string = `jobListComponentDenseViewMode_${ContactID}`;
@@ -47,14 +48,18 @@ class JobsListController extends BaseController {
 
     static $inject = [
         'DispatchData',
+        'jobHighlightService',
         'APP_CONFIG',
         '$timeout',
         '$interval',
         '$scope',
     ];
 
+    private unsubscribeFromHighlights?: () => void;
+
     constructor(
         private DispatchData: DispatchCoreService,
+        private jobHighlightService: JobHighlightService,
         appConfig: AppConfig,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
@@ -73,6 +78,23 @@ class JobsListController extends BaseController {
 
         this.calculateStats();
         this.applyFilters();
+
+        // Subscribe to highlight changes
+        this.unsubscribeFromHighlights = this.jobHighlightService.subscribe((jobIds: number[]) => {
+            this.highlightedRelatedJobIds = jobIds;
+            this.applyScope();
+        });
+
+        // Initialize with current highlights
+        this.highlightedRelatedJobIds = this.jobHighlightService.getHighlightedRelatedJobIds();
+    }
+    
+    $onDestroy() {
+        super.$onDestroy();
+
+        if (this.unsubscribeFromHighlights) {
+            this.unsubscribeFromHighlights();
+        }
     }
 
     private setupJobListVariables() {
@@ -729,7 +751,8 @@ class JobsListController extends BaseController {
         // Set the selected job
         this.selectedJob = job;
 
-        this.updateHighlightedRelatedJobs(job);
+        // Update highlights through the shared service
+        this.jobHighlightService.updateHighlightedRelatedJobs(job);
 
         if (this.onJobSelect) {
             this.onJobSelect({ job });
@@ -854,7 +877,7 @@ class JobsListController extends BaseController {
             return false;
         }
 
-        return this.highlightedRelatedJobIds.includes(job.id);
+        return this.jobHighlightService.isJobHighlighted(job.id);
     }
     
     getRelatedJobsCount(job: IDispatchJob): number {
@@ -954,6 +977,11 @@ class JobsListController extends BaseController {
             default:
                 return 'question_mark';
         }
+    }
+
+    shouldShowPriorityColumn(job: IDispatchJob): boolean {
+        return (this.isMultiPartJob(job) && !!job.isParentOrSingle) ||
+            (!!job.fromAirportId || !!job.toAirportId);
     }
 }
 
