@@ -312,15 +312,6 @@ class JobsListController extends BaseController {
 
         return address.substring(0, maxLength - 3) + '...';
     }
-
-    getAbbreviatedJobNumber(jobNo: string): string {
-        if (!jobNo || this.densityMode !== DensityMode.UltraDense) {
-            return jobNo;
-        }
-
-        // Show only the last 6 characters for ultra-dense
-        return jobNo.length > 6 ? '...' + jobNo.slice(-6) : jobNo;
-    }
     
     formatDeliveryDate(job: IDispatchJob): string {
         if (!job.time && !job.booked) return '';

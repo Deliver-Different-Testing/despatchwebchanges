@@ -1,4 +1,5 @@
 <jobs-list
+        ng-if="!ctrl.podListLoading && (ctrl.jobListPOD || ctrl.jobListPOD.length > 0)"
         jobs="ctrl.jobListPOD"
         selected-job="ctrl.currentJob"
         on-job-select="ctrl.handleJobSelection(job)"
@@ -7,3 +8,12 @@
         job-list-type="ctrl.nationwidePodJobList"
         query-params="ctrl.jobPodFilters">
 </jobs-list>
+
+<!-- No Data Message -->
+<no-data
+        ng-if="!ctrl.podListLoading && (!ctrl.jobListPOD || ctrl.jobListPOD.length === 0)"
+        title="No Awaiting POD Jobs Found"
+        message="There are currently no jobs awaiting proof of delivery."
+        icon="pending_actions"
+        show-action="false">
+</no-data>
