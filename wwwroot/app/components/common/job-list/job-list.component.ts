@@ -35,7 +35,7 @@ class JobsListController extends BaseController {
     selectedCategory: JobCategory = JobCategory.All;
     searchQuery: string = '';
     densityMode: DensityMode = DensityMode.Normal;
-    
+
     // Stats for the header
     stats = {
         total: 0,
@@ -88,7 +88,7 @@ class JobsListController extends BaseController {
         // Initialize with current highlights
         this.highlightedRelatedJobIds = this.jobHighlightService.getHighlightedRelatedJobIds();
     }
-    
+
     $onDestroy() {
         super.$onDestroy();
 
@@ -312,7 +312,7 @@ class JobsListController extends BaseController {
 
         return address.substring(0, maxLength - 3) + '...';
     }
-    
+
     formatDeliveryDate(job: IDispatchJob): string {
         if (!job.time && !job.booked) return '';
 
@@ -335,15 +335,6 @@ class JobsListController extends BaseController {
     }
 
     getPickupAddress(job: IDispatchJob): string {
-        if (this.densityMode === DensityMode.Dense || this.densityMode === DensityMode.UltraDense) {
-            if (job.pickupAddress?.addressLine5) {
-                return job.pickupAddress.addressLine5 + ', ' + job.pickupAddress.addressLine6;
-            }
-
-            const fromLines = (job.from || '').split(',');
-            return fromLines[0]?.trim() || '';
-        }
-
         // In normal mode, show the full address starting from line 2
         if (job.pickupAddress) {
             const addr = job.pickupAddress;
@@ -388,16 +379,6 @@ class JobsListController extends BaseController {
     }
 
     getDeliveryAddress(job: IDispatchJob): string {
-        // In dense and ultra-dense modes, show only city/state
-        if (this.densityMode === DensityMode.Dense || this.densityMode === DensityMode.UltraDense) {
-            if (job.deliveryAddress?.addressLine5) {
-                return job.deliveryAddress.addressLine5 + ', ' + job.deliveryAddress.addressLine6;
-            }
-
-            const toLines = (job.toAddress || '').split(',');
-            return toLines[0]?.trim() || '';
-        }
-
         // In normal mode, show the full address starting from line 2
         if (job.deliveryAddress) {
             const addr = job.deliveryAddress;
@@ -647,6 +628,7 @@ class JobsListController extends BaseController {
     getJobStatus(job: IDispatchJob): string {
         return job.status || job.statusName || '';
     }
+
     hasAssignedCourier(job: IDispatchJob): boolean {
         return !!(job.assignedCourier || job.courier);
     }
@@ -710,7 +692,7 @@ class JobsListController extends BaseController {
         if (job.parentId && job.id !== job.parentId) return 'child-job';
         return 'normal';
     }
-    
+
     formatDeliveryTime(job: IDispatchJob): string {
         const showFullDate = this.densityMode == DensityMode.Normal;
 
@@ -746,7 +728,7 @@ class JobsListController extends BaseController {
         this.jobHighlightService.updateHighlightedRelatedJobs(job);
 
         if (this.onJobSelect) {
-            this.onJobSelect({ job });
+            this.onJobSelect({job});
         }
     }
 
@@ -759,7 +741,7 @@ class JobsListController extends BaseController {
 
         this.highlightedRelatedJobIds = selectedJob.relatedJobs.map(relatedJob => relatedJob.id);
     }
-    
+
     showCourierAssignment(job: IDispatchJob) {
         if (!this.allowDispatch) return;
 
@@ -870,7 +852,7 @@ class JobsListController extends BaseController {
 
         return this.jobHighlightService.isJobHighlighted(job.id);
     }
-    
+
     getRelatedJobsCount(job: IDispatchJob): number {
         return job.relatedJobs ? job.relatedJobs.length : 0;
     }
