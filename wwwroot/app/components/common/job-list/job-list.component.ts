@@ -12,7 +12,20 @@ import JobListType from "./enums/jobListType";
 import JobHighlightService from "./job-highlight.service";
 
 class JobsListController extends BaseController {
+    static $inject = [
+        'DispatchData',
+        'jobHighlightService',
+        'APP_CONFIG',
+        '$timeout',
+        '$interval',
+        '$scope',
+    ];
+    
     private readonly DENSE_MODE_SAVE_KEY: string = `jobListComponentDenseViewMode_${ContactID}`;
+    private readonly COLUMN_WIDTHS_SAVE_KEY: string = `jobListColumnWidths_${ContactID}`;
+    private readonly SORT_STATE_SAVE_KEY: string = `jobListSortState_${ContactID}`;
+
+    private unsubscribeFromHighlights?: () => void;
 
     // Parent-provided data
     jobs?: IDispatchJob[];
@@ -46,17 +59,31 @@ class JobsListController extends BaseController {
         issues: 0
     };
 
-    static $inject = [
-        'DispatchData',
-        'jobHighlightService',
-        'APP_CONFIG',
-        '$timeout',
-        '$interval',
-        '$scope',
-    ];
+    // Column resizing
+    private defaultColumnWidths = {
+        priority: 80,
+        time: 120,
+        jobNo: 100,
+        pickup: 250,
+        delivery: 250,
+        courier: 150,
+        status: 100
+    };
+    columnWidths = { ...this.defaultColumnWidths };
+    isResizing = false;
+    resizingColumn: string | null = null;
+    startX = 0;
+    startWidth = 0;
 
-    private unsubscribeFromHighlights?: () => void;
-
+    // Sorting state
+    sortState: {
+        column: string | null;
+        direction: 'asc' | 'desc' | null;
+    } = {
+        column: null,
+        direction: null
+    };
+    
     constructor(
         private DispatchData: DispatchCoreService,
         private jobHighlightService: JobHighlightService,
@@ -72,6 +99,8 @@ class JobsListController extends BaseController {
 
     $onInit() {
         this.setupJobListVariables();
+        this.loadColumnWidths(); 
+        this.loadSortState();
 
         // Group jobs by parent if not nationwide
         if (!this.isNationwideList()) this.groupJobs();
@@ -95,6 +124,12 @@ class JobsListController extends BaseController {
         if (this.unsubscribeFromHighlights) {
             this.unsubscribeFromHighlights();
         }
+
+        // Clean up resize event listeners
+        document.removeEventListener('mousemove', this.onMouseMove);
+        document.removeEventListener('mouseup', this.onMouseUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
     }
 
     private setupJobListVariables() {
@@ -483,19 +518,8 @@ class JobsListController extends BaseController {
             filtered = filtered.filter(job => JobsListController.matchesSearch(job, this.searchQuery));
         }
 
-        // Sort by delivery time (urgent first)
-        filtered.sort((a, b) => {
-            const aUrgent = this.isUrgent(a);
-            const bUrgent = this.isUrgent(b);
-
-            if (aUrgent && !bUrgent) return -1;
-            if (!aUrgent && bUrgent) return 1;
-
-            const aTime = a.time ? dayjs(a.time).valueOf() : 0;
-            const bTime = b.time ? dayjs(b.time).valueOf() : 0;
-
-            return aTime - bTime;
-        });
+        // Apply sorting
+        filtered = this.sortJobs(filtered);
 
         this.filteredJobs = filtered;
     }
@@ -955,6 +979,195 @@ class JobsListController extends BaseController {
     shouldShowPriorityColumn(job: IDispatchJob): boolean {
         return (this.isMultiPartJob(job) && !!job.isParentOrSingle) ||
             (!!job.fromAirportId || !!job.toAirportId);
+    }
+
+    private loadColumnWidths(): void {
+        if (Modernizr.localstorage) {
+            const saved = localStorage.getItem(`${this.COLUMN_WIDTHS_SAVE_KEY}_${this.jobListType}`);
+            if (saved) {
+                try {
+                    const savedWidths = JSON.parse(saved);
+                    this.columnWidths = { ...this.defaultColumnWidths, ...savedWidths };
+                } catch (error) {
+                    console.error('Error loading column widths:', error);
+                }
+            }
+        }
+    }
+
+    private saveColumnWidths(): void {
+        if (Modernizr.localstorage) {
+            localStorage.setItem(`${this.COLUMN_WIDTHS_SAVE_KEY}_${this.jobListType}`, JSON.stringify(this.columnWidths));
+        }
+    }
+
+    private loadSortState(): void {
+        if (Modernizr.localstorage) {
+            const saved = localStorage.getItem(`${this.SORT_STATE_SAVE_KEY}_${this.jobListType}`);
+            if (saved) {
+                try {
+                    const savedSort = JSON.parse(saved);
+                    this.sortState = { ...this.sortState, ...savedSort };
+                } catch (error) {
+                    console.error('Error loading sort state:', error);
+                }
+            }
+        }
+    }
+
+    private saveSortState(): void {
+        if (Modernizr.localstorage) {
+            localStorage.setItem(`${this.SORT_STATE_SAVE_KEY}_${this.jobListType}`, JSON.stringify(this.sortState));
+        }
+    }
+
+    getGridTemplateColumns(): string {
+        return `${this.columnWidths.priority}px ${this.columnWidths.time}px ${this.columnWidths.jobNo}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.status}px`;
+    }
+
+    startResize(event: MouseEvent, column: string): void {
+        event.preventDefault();
+        event.stopPropagation();
+
+        this.isResizing = true;
+        this.resizingColumn = column;
+        this.startX = event.clientX;
+        this.startWidth = this.columnWidths[column as keyof typeof this.columnWidths];
+
+        document.addEventListener('mousemove', this.onMouseMove);
+        document.addEventListener('mouseup', this.onMouseUp);
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+    }
+
+    private onMouseMove = (event: MouseEvent): void => {
+        if (!this.isResizing || !this.resizingColumn) return;
+
+        const deltaX = event.clientX - this.startX;
+         // Minimum width of 50 px
+        this.columnWidths[this.resizingColumn as keyof typeof this.columnWidths] = Math.max(50, this.startWidth + deltaX);
+        this.applyScope();
+    };
+
+    private onMouseUp = (): void => {
+        this.isResizing = false;
+        this.resizingColumn = null;
+
+        document.removeEventListener('mousemove', this.onMouseMove);
+        document.removeEventListener('mouseup', this.onMouseUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+
+        this.saveColumnWidths();
+        this.applyScope();
+    };
+
+    resetColumnWidths(): void {
+        this.columnWidths = { ...this.defaultColumnWidths };
+        this.saveColumnWidths();
+        this.applyScope();
+    }
+
+    sortBy(column: string): void {
+        if (this.sortState.column === column) {
+            // Toggle direction: asc -> desc -> none -> asc
+            if (this.sortState.direction === 'asc') {
+                this.sortState.direction = 'desc';
+            } else if (this.sortState.direction === 'desc') {
+                this.sortState.column = null;
+                this.sortState.direction = null;
+            }
+        } else {
+            // New column, start with ascending
+            this.sortState.column = column;
+            this.sortState.direction = 'asc';
+        }
+
+        this.saveSortState();
+        this.applyFilters();
+    }
+
+    getSortIcon(column: string): string {
+        if (this.sortState.column !== column) {
+            return 'unfold_more';
+        }
+
+        switch (this.sortState.direction) {
+            case 'asc':
+                return 'keyboard_arrow_up';
+            case 'desc':
+                return 'keyboard_arrow_down';
+            default:
+                return 'unfold_more';
+        }
+    }
+
+    getSortClass(column: string): string {
+        if (this.sortState.column !== column) return '';
+        return this.sortState.direction === 'asc' ? 'sort-asc' : 'sort-desc';
+    }
+
+    private getSortValue(job: IDispatchJob, column: string): any {
+        switch (column) {
+            case 'time':
+                return job.time ? dayjs(job.time).valueOf() : (job.booked ? dayjs(job.booked).valueOf() : 0);
+            case 'jobNo':
+                return job.jobNo || '';
+            case 'pickup':
+                return this.getPickupAddress(job) || '';
+            case 'delivery':
+                return this.getDeliveryAddress(job) || '';
+            case 'courier':
+                return this.getCourierName(job) || '';
+            case 'status':
+                return job.status || job.statusName || '';
+            case 'priority':
+                // Priority sort: urgent first, then by delivery time
+                if (this.isUrgent(job)) return 0;
+                if (this.hasIssues(job)) return 1;
+                if (this.needsDispatch(job)) return 2;
+                if (this.isActive(job)) return 3;
+                if (this.isDelivered(job)) return 4;
+                return 5;
+            default:
+                return '';
+        }
+    }
+
+    private sortJobs(jobs: IDispatchJob[]): IDispatchJob[] {
+        if (!this.sortState.column || !this.sortState.direction) {
+            // Default sort: urgent first, then by delivery time
+            return jobs.sort((a, b) => {
+                const aUrgent = this.isUrgent(a);
+                const bUrgent = this.isUrgent(b);
+
+                if (aUrgent && !bUrgent) return -1;
+                if (!aUrgent && bUrgent) return 1;
+
+                const aTime = a.time ? dayjs(a.time).valueOf() : (a.booked ? dayjs(a.booked).valueOf() : 0);
+                const bTime = b.time ? dayjs(b.time).valueOf() : (b.booked ? dayjs(b.booked).valueOf() : 0);
+
+                return aTime - bTime;
+            });
+        }
+
+        return jobs.sort((a, b) => {
+            const aValue = this.getSortValue(a, this.sortState.column!);
+            const bValue = this.getSortValue(b, this.sortState.column!);
+
+            let comparison = 0;
+
+            if (typeof aValue === 'string' && typeof bValue === 'string') {
+                comparison = aValue.localeCompare(bValue);
+            } else if (typeof aValue === 'number' && typeof bValue === 'number') {
+                comparison = aValue - bValue;
+            } else {
+                // Handle mixed types or other cases
+                comparison = String(aValue).localeCompare(String(bValue));
+            }
+
+            return this.sortState.direction === 'desc' ? -comparison : comparison;
+        });
     }
 }
 

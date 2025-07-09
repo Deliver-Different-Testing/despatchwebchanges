@@ -182,6 +182,29 @@
           }
         }
       }
+
+      .column-controls {
+        display: flex;
+        gap: 4px;
+        flex-shrink: 0;
+
+        .reset-columns-btn {
+          padding: 6px 10px;
+          border: 1px solid #e2e8f0;
+          background: white;
+          font-size: 11px;
+          cursor: pointer;
+          transition: all 0.2s;
+          border-radius: 0;
+          white-space: nowrap;
+
+          &:hover {
+            background: #f8fafc;
+            border-color: #3b82f6;
+            color: #3b82f6;
+          }
+        }
+      }
     }
   }
 
@@ -192,8 +215,7 @@
 
     .jobs-header {
       display: grid;
-      grid-template-columns: 60px 80px 120px 1fr 1fr 120px 80px;
-      gap: 16px;
+      gap: 0;
       padding: 12px 0;
       border-bottom: 2px solid #e2e8f0;
       font-size: 11px;
@@ -204,12 +226,51 @@
       position: sticky;
       top: 0;
       z-index: 10;
+
+      .header-cell {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 8px;
+        position: relative;
+        border-right: 1px solid #e2e8f0;
+
+        &:last-child {
+          border-right: none;
+        }
+
+        .header-text {
+          flex: 1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .resize-handle {
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 4px;
+          height: 100%;
+          cursor: col-resize;
+          background: transparent;
+          border: none;
+          z-index: 11;
+
+          &:hover {
+            background: rgba(59, 130, 246, 0.3);
+          }
+
+          &:active {
+            background: rgba(59, 130, 246, 0.5);
+          }
+        }
+      }
     }
 
     .job-row {
       display: grid;
-      grid-template-columns: 60px 80px 120px 1fr 1fr 120px 80px;
-      gap: 16px;
+      gap: 0;
       padding: 10px 0;
       border-bottom: 1px solid #f1f5f9;
       align-items: center;
@@ -217,6 +278,16 @@
       transition: background-color 0.2s;
       font-size: 13px;
       cursor: pointer;
+
+      .job-cell {
+        padding: 0 8px;
+        border-right: 1px solid #f1f5f9;
+        overflow: hidden;
+
+        &:last-child {
+          border-right: none;
+        }
+      }
 
       &:hover {
         background: #f8fafc;
@@ -372,7 +443,7 @@
           }
         }
       }
-      
+
       &.child-job {
         background: #f8fafc;
         border-left: 3px solid #64748b;
@@ -478,11 +549,17 @@
         .address {
           color: #1e293b;
           margin-bottom: 1px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .city-state {
           color: #64748b;
           font-size: 11px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         &.pickup-cell {
@@ -491,7 +568,7 @@
           &::after {
             content: '';
             position: absolute;
-            right: -8px;
+            right: -4px;
             top: 50%;
             transform: translateY(-50%);
             width: 0;
@@ -504,12 +581,12 @@
 
         &.delivery-cell {
           position: relative;
-          padding-left: 8px;
+          padding-left: 12px;
 
           &::before {
             content: '';
             position: absolute;
-            left: 0;
+            left: 4px;
             top: 50%;
             transform: translateY(-50%);
             width: 6px;
@@ -543,15 +620,23 @@
         .courier-info {
           font-size: 11px;
           line-height: 1.2;
+          flex: 1;
+          min-width: 0;
 
           .courier-name {
             font-weight: 600;
             color: #1e293b;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
 
           .courier-id {
             color: #64748b;
             font-size: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
         }
 
@@ -612,7 +697,7 @@
     color: #64748b;
     flex-shrink: 0;
   }
-  
+
   // Dense mode adjustments
   &.dense {
     .stats-header {
@@ -650,6 +735,11 @@
           padding: 4px 8px;
           font-size: 10px;
         }
+
+        .column-controls .reset-columns-btn {
+          padding: 4px 8px;
+          font-size: 10px;
+        }
       }
     }
 
@@ -659,15 +749,19 @@
       .jobs-header {
         padding: 10px 0;
         font-size: 10px;
-        gap: 12px;
-        grid-template-columns: 50px 70px 100px 1fr 1fr 100px 70px;
+
+        .header-cell {
+          padding: 0 6px;
+        }
       }
 
       .job-row {
         padding: 8px 0;
         font-size: 12px;
-        gap: 12px;
-        grid-template-columns: 50px 70px 100px 1fr 1fr 100px 70px;
+
+        .job-cell {
+          padding: 0 6px;
+        }
 
         .priority {
           width: 24px;
@@ -769,6 +863,11 @@
           padding: 3px 6px;
           font-size: 9px;
         }
+
+        .column-controls .reset-columns-btn {
+          padding: 3px 6px;
+          font-size: 9px;
+        }
       }
     }
 
@@ -778,15 +877,19 @@
       .jobs-header {
         padding: 8px 0;
         font-size: 9px;
-        gap: 8px;
-        grid-template-columns: 40px 60px 80px 1fr 1fr 80px 60px;
+
+        .header-cell {
+          padding: 0 4px;
+        }
       }
 
       .job-row {
         padding: 6px 0;
         font-size: 11px;
-        gap: 8px;
-        grid-template-columns: 40px 60px 80px 1fr 1fr 80px 60px;
+
+        .job-cell {
+          padding: 0 4px;
+        }
 
         .priority {
           width: 20px;
@@ -902,6 +1005,15 @@
             font-size: 10px;
           }
         }
+
+        .column-controls {
+          justify-content: center;
+
+          .reset-columns-btn {
+            padding: 4px 8px;
+            font-size: 10px;
+          }
+        }
       }
     }
 
@@ -910,9 +1022,12 @@
 
       .jobs-header,
       .job-row {
-        grid-template-columns: 30px 60px 80px 1fr 1fr 80px 50px;
-        gap: 8px;
         font-size: 11px;
+
+        .header-cell,
+        .job-cell {
+          padding: 0 4px;
+        }
       }
 
       .job-row {
