@@ -1,68 +1,70 @@
-<md-table-container class="table-scroll-with-pagination">
-    <table md-dense md-progress="ctrl.bulkJobPromise" md-table>
-        <thead fix-head md-head md-on-reorder="ctrl.orderList('bulkJobList', ctrl.bulkJobQuery.order)"
-               md-order="ctrl.bulkJobQuery.order">
-        <tr md-row>
-            <th md-column md-order-by="booked">
-                <span>Booked</span>
-            </th>
-            <th md-column md-order-by="status">
-                <span>Status</span>
-            </th>
-            <th md-column md-order-by="speed">
-                <span>Speed</span>
-            </th>
-            <th md-column md-order-by="jobNo">
-                <span>Job</span>
-            </th>
-            <th md-column md-order-by="client">
-                <span>Client</span>
-            </th>
-            <th md-column md-order-by="from">
-                <span>From</span>
-            </th>
-            <th md-column md-order-by="to">
-                <span>To</span>
-            </th>
-        </tr>
-        </thead>
+<div ng-if="!ctrl.bulkJobPromise && (ctrl.bulkJobList || ctrl.bulkJobList.length > 0)">
+    <md-table-container class="table-scroll-with-pagination">
+        <table md-dense md-progress="ctrl.bulkJobPromise" md-table>
+            <thead fix-head md-head md-on-reorder="ctrl.orderList('bulkJobList', ctrl.bulkJobQuery.order)"
+                   md-order="ctrl.bulkJobQuery.order">
+            <tr md-row>
+                <th md-column md-order-by="booked">
+                    <span>Booked</span>
+                </th>
+                <th md-column md-order-by="status">
+                    <span>Status</span>
+                </th>
+                <th md-column md-order-by="speed">
+                    <span>Speed</span>
+                </th>
+                <th md-column md-order-by="jobNo">
+                    <span>Job</span>
+                </th>
+                <th md-column md-order-by="client">
+                    <span>Client</span>
+                </th>
+                <th md-column md-order-by="from">
+                    <span>From</span>
+                </th>
+                <th md-column md-order-by="to">
+                    <span>To</span>
+                </th>
+            </tr>
+            </thead>
 
-        <tbody md-body>
-        <tr
-            md-row
-            ng-click="ctrl.selectBulkJobDetail(job.id)"
-            ng-repeat="job in ctrl.bulkJobList | filter: box.searchBox | orderBy: ctrl.bulkJobQuery.order">
+            <tbody md-body>
+            <tr
+                    md-row
+                    ng-click="ctrl.selectBulkJobDetail(job.id)"
+                    ng-repeat="job in ctrl.bulkJobList | filter: box.searchBox | orderBy: ctrl.bulkJobQuery.order">
 
-            <td md-cell>{{job.booked | momentFormat:"DD/MM/YY HH:mm"}} ({{ctrl.timeZone | timezoneShort}})</td>
-            <td class="status" md-cell ng-class="job.status">{{job.status}}</td>
-            <td md-cell ng-click="ctrl.speedColumnClick($event); $event.stopPropagation()">{{job.speed}}</td>
-            <td md-cell>{{job.jobNo}}</td>
-            <td md-cell ng-click="ctrl.clientColumnClick($event); $event.stopPropagation()">{{job.client}}</td>
-            <td md-cell>
-                {{ctrl.isUsCustomer ? job.pickupAddress.addressLine5 + ' ' + job.pickupAddress.addressLine6 : job.from}}
-                <md-tooltip md-direction="bottom">{{ job.pickupAddress.fullAddress }}</md-tooltip>
-                <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
-            </td>
-            <td md-cell>
-                {{ctrl.isUsCustomer ? job.deliveryAddress.addressLine5 + ' ' + job.deliveryAddress.addressLine6 : job.to}}
-                <md-tooltip md-direction="bottom">{{ job.deliveryAddress.fullAddress }}</md-tooltip>
-                <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning
-                </md-icon>
-            </td>
-        </tr>
-        </tbody>
-    </table>
-</md-table-container>
+                <td md-cell>{{job.booked | momentFormat:"DD/MM/YY HH:mm"}} ({{ctrl.timeZone | timezoneShort}})</td>
+                <td class="status" md-cell ng-class="job.status">{{job.status}}</td>
+                <td md-cell ng-click="ctrl.speedColumnClick($event); $event.stopPropagation()">{{job.speed}}</td>
+                <td md-cell>{{job.jobNo}}</td>
+                <td md-cell ng-click="ctrl.clientColumnClick($event); $event.stopPropagation()">{{job.client}}</td>
+                <td md-cell>
+                    {{ctrl.isUsCustomer ? job.pickupAddress.addressLine5 + ' ' + job.pickupAddress.addressLine6 : job.from}}
+                    <md-tooltip md-direction="bottom">{{ job.pickupAddress.fullAddress }}</md-tooltip>
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
+                </td>
+                <td md-cell>
+                    {{ctrl.isUsCustomer ? job.deliveryAddress.addressLine5 + ' ' + job.deliveryAddress.addressLine6 : job.to}}
+                    <md-tooltip md-direction="bottom">{{ job.deliveryAddress.fullAddress }}</md-tooltip>
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning
+                    </md-icon>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </md-table-container>
 
-<md-table-pagination
-        ng-if="ctrl.bulkJobList && ctrl.bulkJobList.length > 0"
-        md-limit="ctrl.bulkJobQuery.limit"
-        md-limit-options="[5, 10, 25, 50]"
-        md-on-paginate="ctrl.bulkJobPageChanged"
-        md-page="ctrl.bulkJobQuery.page"
-        md-page-select
-        md-total="{{ctrl.bulkTotalCount}}">
-</md-table-pagination>
+    <md-table-pagination
+            ng-if="ctrl.bulkJobList && ctrl.bulkJobList.length > 0"
+            md-limit="ctrl.bulkJobQuery.limit"
+            md-limit-options="[5, 10, 25, 50]"
+            md-on-paginate="ctrl.bulkJobPageChanged"
+            md-page="ctrl.bulkJobQuery.page"
+            md-page-select
+            md-total="{{ctrl.bulkTotalCount}}">
+    </md-table-pagination>
+</div>
 
 <no-data
         ng-if="!ctrl.bulkJobPromise && (!ctrl.bulkJobList || ctrl.bulkJobList.length === 0)"
