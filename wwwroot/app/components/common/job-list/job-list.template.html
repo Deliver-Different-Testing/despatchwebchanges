@@ -188,8 +188,11 @@
             </div>
 
             <!-- Job ID Column -->
-            <div class="job-cell job-id">{{job.jobNo}}</div>
-
+            <div class="job-cell job-id-cell">
+                <div class="job-id">{{job.jobNo}}</div>
+                <div class="client-name">{{job.client}}</div>
+            </div>
+            
             <!-- Pickup Column -->
             <div class="job-cell route-cell pickup-cell">
                 <div class="address">{{ctrl.getPickupAddress(job)}}</div>
@@ -295,8 +298,11 @@
             </div>
 
             <!-- Job ID Column -->
-            <div class="job-cell job-id">{{ctrl.getAbbreviatedJobNumber(childJob.jobNo)}}</div>
-
+            <div class="job-cell job-id-cell">
+                <div class="job-id">{{childJob.jobNo}}</div>
+                <div class="client-name">{{childJob.client}}</div>
+            </div>
+            
             <!-- Pickup Column -->
             <div class="job-cell route-cell pickup-cell">
                 <div class="address">{{ctrl.getPickupAddress(childJob)}}</div>

@@ -300,54 +300,11 @@ class JobsListController extends BaseController {
                 return 'normal';
         }
     }
-
-    getRowHeight(): number {
-        switch (this.densityMode) {
-            case DensityMode.Dense:
-                return 32;
-            case DensityMode.UltraDense:
-                return 24;
-            default:
-                return 48;
-        }
-    }
-
-    getFontSize(): string {
-        switch (this.densityMode) {
-            case DensityMode.Dense:
-                return '11px';
-            case DensityMode.UltraDense:
-                return '10px';
-            default:
-                return '12px';
-        }
-    }
-
-    shouldShowFullDetails(): boolean {
-        return this.densityMode === DensityMode.Normal;
-    }
-
-    shouldShowAbbreviatedDetails(): boolean {
-        return this.densityMode === DensityMode.Dense;
-    }
-
+    
     shouldShowMinimalDetails(): boolean {
         return this.densityMode === DensityMode.UltraDense;
     }
-
-    getAbbreviatedAddress(address: string): string {
-        if (!address) return '';
-
-        // Truncate long addresses based on density mode
-        const maxLength = this.densityMode === DensityMode.UltraDense ? 15 : 25;
-
-        if (address.length <= maxLength) {
-            return address;
-        }
-
-        return address.substring(0, maxLength - 3) + '...';
-    }
-
+    
     formatDeliveryDate(job: IDispatchJob): string {
         if (!job.time && !job.booked) return '';
 
@@ -648,11 +605,7 @@ class JobsListController extends BaseController {
     getCourierCode(job: IDispatchJob): string {
         return job.courierData?.courier || '';
     }
-
-    getJobStatus(job: IDispatchJob): string {
-        return job.status || job.statusName || '';
-    }
-
+    
     hasAssignedCourier(job: IDispatchJob): boolean {
         return !!(job.assignedCourier || job.courier);
     }
@@ -660,15 +613,7 @@ class JobsListController extends BaseController {
     isMultiPartJob(job: IDispatchJob): boolean {
         return (job.isParentOrSingle && job._groupChildren && job._groupChildren.length > 0) ?? false;
     }
-
-    isChildJob(job: IDispatchJob): boolean {
-        return !job.isParentOrSingle;
-    }
-
-    getChildCount(job: IDispatchJob): number {
-        return job._groupChildren ? job._groupChildren.length : 0;
-    }
-
+    
     isUrgent(job: IDispatchJob): boolean {
         const now = dayjs();
         const deliveryTime = dayjs(job.time);
@@ -755,17 +700,7 @@ class JobsListController extends BaseController {
             this.onJobSelect({job});
         }
     }
-
-    private updateHighlightedRelatedJobs(selectedJob: IDispatchJob) {
-        this.highlightedRelatedJobIds = [];
-
-        if (!selectedJob.relatedJobs || selectedJob.relatedJobs.length === 0) {
-            return;
-        }
-
-        this.highlightedRelatedJobIds = selectedJob.relatedJobs.map(relatedJob => relatedJob.id);
-    }
-
+    
     showCourierAssignment(job: IDispatchJob) {
         if (!this.allowDispatch) return;
 
@@ -890,67 +825,7 @@ class JobsListController extends BaseController {
             return `${job.relatedJobs.length} related jobs`;
         }
     }
-
-    getPickupAddressLine2(job: IDispatchJob): string {
-        let address = '';
-
-        if (this.isUsCustomer) {
-            // For US customers, get address line 2 and beyond
-            const pickupAddr = job.pickupAddress;
-            if (pickupAddr) {
-                address = [
-                    pickupAddr.addressLine2,
-                    pickupAddr.addressLine3,
-                    pickupAddr.addressLine4,
-                    pickupAddr.addressLine5,
-                    pickupAddr.addressLine6,
-                    pickupAddr.addressLine7,
-                    pickupAddr.addressLine8,
-                    pickupAddr.our_suburb
-                ].filter(line => line && line.trim()).join(', ');
-            }
-        } else {
-            // For non-US customers, parse the 'from' field and skip the first line
-            const fromLines = (job.from || '').split(',').map(line => line.trim());
-            if (fromLines.length > 1) {
-                address = fromLines.slice(1).join(', ');
-            }
-        }
-
-        return this.densityMode === DensityMode.UltraDense ?
-            this.getAbbreviatedAddress(address) : address;
-    }
-
-    getDeliveryAddressLine2(job: IDispatchJob): string {
-        let address = '';
-
-        if (this.isUsCustomer) {
-            // For US customers, get address line 2 and beyond
-            const deliveryAddr = job.deliveryAddress;
-            if (deliveryAddr) {
-                address = [
-                    deliveryAddr.addressLine2,
-                    deliveryAddr.addressLine3,
-                    deliveryAddr.addressLine4,
-                    deliveryAddr.addressLine5,
-                    deliveryAddr.addressLine6,
-                    deliveryAddr.addressLine7,
-                    deliveryAddr.addressLine8,
-                    deliveryAddr.our_suburb
-                ].filter(line => line && line.trim()).join(', ');
-            }
-        } else {
-            // For non-US customers, parse the 'toAddress' field and skip the first line
-            const toLines = (job.toAddress || '').split(',').map(line => line.trim());
-            if (toLines.length > 1) {
-                address = toLines.slice(1).join(', ');
-            }
-        }
-
-        return this.densityMode === DensityMode.UltraDense ?
-            this.getAbbreviatedAddress(address) : address;
-    }
-
+    
     isWarning(job: IDispatchJob): boolean {
         return [
             JobStatus.Warning,
@@ -1155,7 +1030,7 @@ class JobsListController extends BaseController {
             const aValue = this.getSortValue(a, this.sortState.column!);
             const bValue = this.getSortValue(b, this.sortState.column!);
 
-            let comparison = 0;
+            let comparison: number;
 
             if (typeof aValue === 'string' && typeof bValue === 'string') {
                 comparison = aValue.localeCompare(bValue);

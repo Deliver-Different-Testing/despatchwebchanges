@@ -234,6 +234,7 @@
         padding: 0 8px;
         position: relative;
         border-right: 1px solid #e2e8f0;
+        min-height: 36px; // Add minimum height to accommodate wrapping
 
         &:last-child {
           border-right: none;
@@ -241,9 +242,9 @@
 
         .header-text {
           flex: 1;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          word-wrap: break-word;
+          word-break: break-word;
+          line-height: 1.2;
         }
 
         .resize-handle {
@@ -273,7 +274,7 @@
       gap: 0;
       padding: 10px 0;
       border-bottom: 1px solid #f1f5f9;
-      align-items: center;
+      align-items: start;
       background: white;
       transition: background-color 0.2s;
       font-size: 13px;
@@ -282,7 +283,10 @@
       .job-cell {
         padding: 0 8px;
         border-right: 1px solid #f1f5f9;
-        overflow: hidden;
+        overflow: visible; // Changed from 'hidden' to 'visible'
+        word-wrap: break-word; // Add word wrapping
+        word-break: break-word; // Add word breaking for long words
+        hyphens: auto; // Add hyphenation for better line breaks
 
         &:last-child {
           border-right: none;
@@ -535,12 +539,27 @@
         }
       }
 
-      .job-id {
+      .job-id-cell {
         font-size: 12px;
-        font-weight: 600;
-        color: #1e293b;
-      }
+        line-height: 1.2;
 
+        .job-id {
+          font-weight: 600;
+          color: #1e293b;
+          margin-bottom: 1px;
+          word-wrap: break-word;
+          word-break: break-word;
+        }
+
+        .client-name {
+          color: #64748b;
+          font-size: 11px;
+          word-wrap: break-word;
+          word-break: break-word;
+          hyphens: auto;
+        }
+      }
+      
       .route-cell {
         font-size: 12px;
         line-height: 1.2;
@@ -549,17 +568,17 @@
         .address {
           color: #1e293b;
           margin-bottom: 1px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          word-wrap: break-word;
+          word-break: break-word;
+          hyphens: auto;
         }
 
         .city-state {
           color: #64748b;
           font-size: 11px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          word-wrap: break-word;
+          word-break: break-word;
+          hyphens: auto;
         }
 
         &.pickup-cell {
@@ -626,17 +645,15 @@
           .courier-name {
             font-weight: 600;
             color: #1e293b;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            word-wrap: break-word;
+            word-break: break-word;
           }
 
           .courier-id {
             color: #64748b;
             font-size: 10px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            word-wrap: break-word;
+            word-break: break-word;
           }
         }
 
@@ -785,10 +802,18 @@
           }
         }
 
-        .job-id {
+        .job-id-cell {
           font-size: 11px;
-        }
 
+          .job-id {
+            font-size: 11px;
+          }
+
+          .client-name {
+            font-size: 10px;
+          }
+        }
+        
         .route-cell {
           font-size: 11px;
 
@@ -913,8 +938,16 @@
           }
         }
 
-        .job-id {
+        .job-id-cell {
           font-size: 10px;
+
+          .job-id {
+            font-size: 10px;
+          }
+
+          .client-name {
+            font-size: 9px;
+          }
         }
 
         .route-cell {
