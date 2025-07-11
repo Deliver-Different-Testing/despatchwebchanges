@@ -37,7 +37,6 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     }
 
     /* Bulk Job Detail*/
-
     public async Task<JobViewModel> BulkJobDetail(int bulkJobId)
     {
         var today = DateTime.Today.ResetTimeToStartOfDay();
@@ -262,11 +261,13 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 Speed = v.Speed,
                 PreBook = false,
                 SpeedId = v.SpeedId,
-                Booked = v.BookedDate.HasValue && v.Time.HasValue ? DateTime.Parse(
-                    v.BookedDate.Value.ToString("yyyy-MM-dd")
-                    + " "
-                    + v.Time.Value.ToString("HH:mm:ss")
-                ) : DateTime.MinValue
+                Booked = v.BookedDate.HasValue && v.Time.HasValue
+                    ? DateTime.Parse(
+                        v.BookedDate.Value.ToString("yyyy-MM-dd")
+                        + " "
+                        + v.Time.Value.ToString("HH:mm:ss")
+                    )
+                    : DateTime.MinValue
             })
             .ToList();
         stopwatch.Stop();
@@ -277,9 +278,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     public async Task<Tuple<int, List<JobViewModel>>> PodSearch(PodSearchRequest data)
     {
         var clientSet = data.ClientId.HasValue;
-        var courierSet =  data.CourierId.HasValue;
-        var jobParam = $"%{ data.Job}%";
-        var wildParam = $"%{ data.Wild}%";
+        var courierSet = data.CourierId.HasValue;
+        var jobParam = $"%{data.Job}%";
+        var wildParam = $"%{data.Wild}%";
 
         var jobsQuery =
             from j in Context.TblJobs
@@ -296,11 +297,11 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             join nw in Context.TucJobNationwides on j.JobId equals nw.UcnwJobId into nationwideJoin
             from nationwide in nationwideJoin.DefaultIfEmpty()
             where
-                j.Date >=  data.FromDate
-                && j.Date <=  data.ToDate
-                && (!clientSet || j.ClientId ==  data.ClientId)
-                && (!courierSet || j.CourierId ==  data.CourierId)
-                && ( data.Job == string.Empty || EF.Functions.Like(j.Number.ToLower(), jobParam))
+                j.Date >= data.FromDate
+                && j.Date <= data.ToDate
+                && (!clientSet || j.ClientId == data.ClientId)
+                && (!courierSet || j.CourierId == data.CourierId)
+                && (data.Job == string.Empty || EF.Functions.Like(j.Number.ToLower(), jobParam))
                 && (
                     data.Wild == string.Empty
                     || EF.Functions.Like(nationwide.UcnwFlightNo, wildParam)
@@ -438,7 +439,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 )
             )
         )
-            throw new ArgumentException("Invalid Values. Please check whether the Total is less than all other amounts");
+            throw new ArgumentException(
+                "Invalid Values. Please check whether the Total is less than all other amounts");
 
         var jobIds = data.Select(j => j.Id).Distinct().ToList();
 
@@ -462,7 +464,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         var dbData = await Context
             .TucJobs.Where(j =>
                 (ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value)))
-                 && j.UcjbLocked != true
+                && j.UcjbLocked != true
             )
             .ToListAsync();
 
@@ -475,7 +477,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
 
         // Log counts for diagnostics
-        Log.Information("Processing {DbDataCount} active jobs and {Count} archived jobs", dbData.Count, dbDataArchive.Count);
+        Log.Information("Processing {DbDataCount} active jobs and {Count} archived jobs", dbData.Count,
+            dbDataArchive.Count);
         // Keep track of jobs with changed prices
         var jobsWithChangedPrices = new HashSet<int>();
         var processedJobIds = new HashSet<int>();
@@ -519,7 +522,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                         Log.Information("Job {DId} price unchanged - skipping pricing breakdown update", d.Id);
                     }
                 }
-                
+
                 // Always update these fields, regardless of price change
                 match.CourierPercentage = null;
                 match.CourierPayment = Math.Round(d.CourierPayment.Value, 4, MidpointRounding.AwayFromZero);
@@ -579,8 +582,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
                 // Check if parent job's price is actually changing
                 bool parentPriceChanged = Math.Round(parentJob.UcjbAmount ?? 0, 4) != Math.Round(totalAmount, 4) ||
-                                         Math.Round(parentJob.FuelSurchargeAmount ?? 0, 4) != Math.Round(totalFuel, 4) ||
-                                         Math.Round(parentJob.PpdexclusiveAmount ?? 0, 4) != Math.Round(totalPpd, 4);
+                                          Math.Round(parentJob.FuelSurchargeAmount ?? 0, 4) !=
+                                          Math.Round(totalFuel, 4) ||
+                                          Math.Round(parentJob.PpdexclusiveAmount ?? 0, 4) != Math.Round(totalPpd, 4);
 
                 if (parentPriceChanged)
                 {
@@ -618,7 +622,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
             if (existingBreakdowns.Count != 0)
             {
-                Log.Information("Removing {ExistingBreakdownsCount} existing pricing breakdowns for {Count} jobs with changed prices", existingBreakdowns.Count, jobsWithChangedPrices.Count);
+                Log.Information(
+                    "Removing {ExistingBreakdownsCount} existing pricing breakdowns for {Count} jobs with changed prices",
+                    existingBreakdowns.Count, jobsWithChangedPrices.Count);
                 Context.PricingBreakdowns.RemoveRange(existingBreakdowns);
             }
 
@@ -833,7 +839,6 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     }
 
 
-
     public async Task<List<DispatchJobViewModel>> CurrentJobList(int courierId, bool done)
     {
         return await Context
@@ -901,7 +906,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 .ExecuteStoredNonQueryAsync();
         }
     }
-    
+
     public async Task ReAssignSelectedJobs(string jobIds)
     {
         foreach (var jid in jobIds.Split(",").ToList().Where(x => !string.IsNullOrWhiteSpace(x)))
@@ -1098,8 +1103,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         return (int)outputMaxParam.Value;
     }
 
-    public async Task<decimal> PpdExclusiveAmount(int clientId, decimal amount) => await CalculateAmountAsync(clientId, amount);
-    
+    public async Task<decimal> PpdExclusiveAmount(int clientId, decimal amount) =>
+        await CalculateAmountAsync(clientId, amount);
+
     public async Task ResetLateEvent(int jobId, int lateEventType)
     {
         var job = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
@@ -1415,36 +1421,39 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     {
         int effectivePrebookId;
         int effectiveJobId;
-        if (isPrebook) {
+        if (isPrebook)
+        {
             effectivePrebookId = await GetJobBookingRelationshipInfoAsync(jobId);
             return await Context.PricingBreakdowns
-            .Where(p => p.PrebookJobId == effectivePrebookId)
-            .Select(p => new ChargeViewModel
-            {
-                ChargeId = p.PricingBreakdownId,
-                Amount = p.ChargeAmount,
-                Name = p.ChargeName,
-                JobId = p.JobId,
-                PrebookJobId = p.PrebookJobId,
-                CostAmount = p.CostAmount
-            })
-            .AsNoTracking()
-            .ToListAsync();
-        } else {
+                .Where(p => p.PrebookJobId == effectivePrebookId)
+                .Select(p => new ChargeViewModel
+                {
+                    ChargeId = p.PricingBreakdownId,
+                    Amount = p.ChargeAmount,
+                    Name = p.ChargeName,
+                    JobId = p.JobId,
+                    PrebookJobId = p.PrebookJobId,
+                    CostAmount = p.CostAmount
+                })
+                .AsNoTracking()
+                .ToListAsync();
+        }
+        else
+        {
             effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
             return await Context.PricingBreakdowns
-            .Where(p => p.JobId == effectiveJobId)
-            .Select(p => new ChargeViewModel
-            {
-                ChargeId = p.PricingBreakdownId,
-                Amount = p.ChargeAmount,
-                Name = p.ChargeName,
-                JobId = p.JobId,
-                PrebookJobId = p.PrebookJobId,
-                CostAmount = p.CostAmount
-            })
-            .AsNoTracking()
-            .ToListAsync();
+                .Where(p => p.JobId == effectiveJobId)
+                .Select(p => new ChargeViewModel
+                {
+                    ChargeId = p.PricingBreakdownId,
+                    Amount = p.ChargeAmount,
+                    Name = p.ChargeName,
+                    JobId = p.JobId,
+                    PrebookJobId = p.PrebookJobId,
+                    CostAmount = p.CostAmount
+                })
+                .AsNoTracking()
+                .ToListAsync();
         }
     }
 
@@ -1463,7 +1472,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             ChargeName = viewModel.Name,
             JobId = !isPrebook ? effectiveJobId : null,
             PrebookJobId = isPrebook ? effectiveJobBookingId : null,
-            CostAmount = viewModel.CostAmount,
+            CostAmount = viewModel.CostAmount
         };
 
         var note = $"Added price component: {viewModel.Name} for ${viewModel.Amount:F2}";
@@ -1674,58 +1683,58 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             .FirstOrDefault() ?? new TruckItemsSummary();
     }
 
-   public async Task UpdateDeliveryAddressNzAsync(UpdateAddressRequestNz request)
-   {
-       try
-       {
-           var job = await Context.TucJobs.FindAsync(request.JobId);
-           ArgumentNullException.ThrowIfNull(job);
+    public async Task UpdateDeliveryAddressNzAsync(UpdateAddressRequestNz request)
+    {
+        try
+        {
+            var job = await Context.TucJobs.FindAsync(request.JobId);
+            ArgumentNullException.ThrowIfNull(job);
 
-           // Update job coordinates and address details
-           job.DeliveryLatitude = request.Latitude;
-           job.DeliveryLongitude = request.Longitude;
-           job.UcjbToAddr = request.Address;
-           job.UcjbTo = request.SuburbId;
-           job.UcjbCbd = request.Cbd;
+            // Update job coordinates and address details
+            job.DeliveryLatitude = request.Latitude;
+            job.DeliveryLongitude = request.Longitude;
+            job.UcjbToAddr = request.Address;
+            job.UcjbTo = request.SuburbId;
+            job.UcjbCbd = request.Cbd;
 
-           await Context.SaveChangesAsync();
-       }
-       catch (Exception ex)
-       {
-           Log.Error(ex, "An error occurred updating the delivery address for job {JobId}", request.JobId);
-           throw;
-       }
-   }
+            await Context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred updating the delivery address for job {JobId}", request.JobId);
+            throw;
+        }
+    }
 
-   public async Task UpdateDeliveryAddressUsAsync(UpdateAddressRequestUs request)
-   {
-       try
-       {
-           var address = request.Address;
-           var job = await Context.TucJobs.FindAsync(request.JobId);
-           ArgumentNullException.ThrowIfNull(job);
+    public async Task UpdateDeliveryAddressUsAsync(UpdateAddressRequestUs request)
+    {
+        try
+        {
+            var address = request.Address;
+            var job = await Context.TucJobs.FindAsync(request.JobId);
+            ArgumentNullException.ThrowIfNull(job);
 
-           // Update coordinates
-           job.DeliveryLatitude = address.Latitude;
-           job.DeliveryLongitude = address.Longitude;
+            // Update coordinates
+            job.DeliveryLatitude = address.Latitude;
+            job.DeliveryLongitude = address.Longitude;
 
-           // Update address lines
-           job.DeliveryAddressLine1 = address.AddressLine1;
-           job.DeliveryAddressLine2 = address.AddressLine2;
-           job.DeliveryAddressLine3 = address.AddressLine3;
-           job.DeliveryAddressLine4 = address.AddressLine4;
-           job.DeliveryAddressLine5 = address.AddressLine5;
-           job.DeliveryAddressLine6 = address.AddressLine6;
-           job.DeliveryAddressLine7 = address.AddressLine7;
+            // Update address lines
+            job.DeliveryAddressLine1 = address.AddressLine1;
+            job.DeliveryAddressLine2 = address.AddressLine2;
+            job.DeliveryAddressLine3 = address.AddressLine3;
+            job.DeliveryAddressLine4 = address.AddressLine4;
+            job.DeliveryAddressLine5 = address.AddressLine5;
+            job.DeliveryAddressLine6 = address.AddressLine6;
+            job.DeliveryAddressLine7 = address.AddressLine7;
 
-           await Context.SaveChangesAsync();
-       }
-       catch (Exception ex)
-       {
-           Log.Error(ex, "An error occurred updating the delivery address for job {JobId}", request.JobId);
-           throw;
-       }
-   }
+            await Context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred updating the delivery address for job {JobId}", request.JobId);
+            throw;
+        }
+    }
 
     public async Task UpdatePickupAddressNzAsync(UpdateAddressRequestNz request)
     {
@@ -1779,7 +1788,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             throw;
         }
     }
-    
+
     public async Task UpdateBookingPickupAddressNzAsync(UpdateAddressRequestNz request)
     {
         try
@@ -2401,5 +2410,262 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             .ToListAsync();
 
         return timeZones;
+    }
+
+    public async Task<List<DeliveryJourneyViewModel>> GetDeliveryJourneyForJobAsync(int jobId)
+    {
+        var isLiveJob = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
+        
+        var events = await GetEventsForDeliveryJourneyAsync(jobId);
+        var messages = await GetMessagesForDeliveryJourneyAsync(jobId);
+        var notes = await GetNotesForDeliveryJourneyAsync(jobId, isLiveJob);
+        var statusUpdates = await GetStatusUpdatesForDeliveryJourneyAsync(jobId, isLiveJob);
+
+        return events
+            .Concat(messages)
+            .Concat(notes)
+            .Concat(statusUpdates)
+            .OrderByDescending(x => x.Date)
+            .ToList();
+    }
+
+    private async Task<List<DeliveryJourneyViewModel>> GetEventsForDeliveryJourneyAsync(int jobId)
+    {
+        var eventsTempList = await Context.TucEvents
+            .Where(e => e.UcevJobId == jobId)
+            .AsNoTracking()
+            .Include(e => e.UcevStaffIdinNavigation)
+            .Include(e => e.UcevStaffIdoutNavigation)
+            .ToListAsync();
+
+        var events = eventsTempList.Select(e => new DeliveryJourneyViewModel
+        {
+            Id = Guid.NewGuid(),
+            JobId = jobId,
+            Title = e.UcevDescription,
+            Icon = "task",
+            Tags =
+            [
+                "Task",
+                e.UcevClosed ? "Completed" : "In Progress",
+                $"Created by {e.UcevDespatcher}",
+                e.UcevStaffIdinNavigation != null ? $"Assigned to {e.UcevStaffIdinNavigation.UcstFirstName} {e.UcevStaffIdinNavigation.UcstLastName}" : null,
+                e.UcevStaffIdoutNavigation != null ? $"Completed by {e.UcevStaffIdoutNavigation.UcstFirstName} {e.UcevStaffIdoutNavigation.UcstLastName}" : null
+            ],
+            Date = e.UcevDate ?? DateTime.MinValue
+        }).ToList();
+        
+        return events;
+    }
+
+    private async Task<List<DeliveryJourneyViewModel>> GetNotesForDeliveryJourneyAsync(int jobId, bool isLiveJob)
+    {
+        List<DeliveryJourneyViewModel> notes;
+
+        if (isLiveJob)
+        {
+            // Get notes from the live job table
+            var notesTempList = await Context.TucNotes
+                .Where(n => n.JobId == jobId)
+                .AsNoTracking()
+                .Include(n => n.CreatedByNavigation)
+                .Include(n => n.UpdatedByNavigation)
+                .ToListAsync();
+
+            notes = notesTempList.Select(n => new DeliveryJourneyViewModel
+            {
+                Id = Guid.NewGuid(),
+                JobId = jobId,
+                Title = n.CreatedByNavigation != null
+                    ? $"Note added by {n.CreatedByNavigation.UcstFirstName} {n.CreatedByNavigation.UcstLastName}"
+                    : "Note added by System",
+                Icon = "note",
+                Description = n.NoteText,
+                Date = n.UpdatedDate ?? n.CreatedDate,
+                Tags =
+                [
+                    "Note",
+                    n.CreatedByNavigation != null
+                        ? $"Created by {n.CreatedByNavigation.UcstFirstName} {n.CreatedByNavigation.UcstLastName} on {n.CreatedDate:dd/MM/yyyy HH:mm}"
+                        : null,
+                    n.UpdatedByNavigation != null && n.UpdatedDate.HasValue
+                        ? $"Updated by {n.UpdatedByNavigation.UcstFirstName} {n.UpdatedByNavigation.UcstLastName} on {n.UpdatedDate.Value:dd/MM/yyyy HH:mm}"
+                        : null
+                ]
+            }).ToList();
+        }
+        else
+        {
+            // Get notes from archived job table
+            var archivedNotesTempList = await Context.TucNoteArchives
+                .Where(n => n.JobId == jobId)
+                .AsNoTracking()
+                .ToListAsync();
+
+            notes = archivedNotesTempList.Select(n => new DeliveryJourneyViewModel
+            {
+                Id = Guid.NewGuid(),
+                JobId = jobId,
+                Title = "Note added by System",
+                Icon = "note",
+                Description = n.NoteText,
+                Date = n.UpdatedDate ?? n.CreatedDate ?? DateTime.MinValue,
+                Tags =
+                [
+                    "Note",
+                    n.CreatedDate.HasValue
+                        ? $"Created on {n.CreatedDate.Value:dd/MM/yyyy HH:mm}"
+                        : null,
+                    n.UpdatedDate.HasValue
+                        ? $"Updated on {n.UpdatedDate.Value:dd/MM/yyyy HH:mm}"
+                        : null
+                ]
+            }).ToList();
+        }
+
+        return notes;
+    }
+    
+    private async Task<List<DeliveryJourneyViewModel>> GetMessagesForDeliveryJourneyAsync(int jobId)
+    {
+        var messagesTempList = await Context.TucManualMessages
+            .Where(m => m.JobId == jobId)
+            .AsNoTracking()
+            .Include(m => m.UcmmSendFromStaff)
+            .Include(m => m.UcmmSendToStaff)
+            .Include(m => m.UcmmSendToCourier)
+            .Include(m => m.UcmmSendFromCourier)
+            .ToListAsync();
+
+        var messages = messagesTempList.Select(m => new DeliveryJourneyViewModel
+        {
+            Id = Guid.NewGuid(),
+            JobId = jobId,
+            Title = m.Subject,
+            Description = m.UcmmMessage,
+            Tags = new List<string>()
+                .Concat(m.UcmmSendToCourierId.HasValue || m.UcmmSendToStaffId.HasValue
+                    ? new[]
+                    {
+                        "Direct Message",
+                        m.UcmmSendToCourier != null ? $"{m.UcmmSendToCourier.UccrName}, {m.UcmmSendToCourier.UccrSurname}" : null,
+                        m.UcmmSendToStaff != null ? $"{m.UcmmSendToStaff.UcstFirstName}, {m.UcmmSendToStaff.UcstLastName}" : null,
+                        m.UcmmSendFromCourier != null ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}" : null,
+                        m.UcmmSendFromStaff != null ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}" : null,
+                        m.TimeRead.HasValue ? $"Read at {m.TimeRead?.ToString("g")}" : null
+                    }
+                    : Array.Empty<string>())
+                .Concat(!string.IsNullOrEmpty(m.SendToEmailAddress)
+                    ? new[] { "Email", 
+                        $"Sent to {m.SendToEmailAddress}" ,
+                        m.UcmmSendFromCourier != null ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}" : null,
+                        m.UcmmSendFromStaff != null ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}" : null
+                    }
+                    : Array.Empty<string>())
+                .Concat(!string.IsNullOrEmpty(m.SendToMobile)
+                    ? new[] { "SMS",
+                        $"Sent to {m.SendToMobile}" ,
+                        m.UcmmSendFromCourier != null ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}" : null,
+                        m.UcmmSendFromStaff != null ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}" : null
+                    }
+                    : Array.Empty<string>())
+                .ToList(),
+            Date = m.UcmmDate
+        }).ToList();
+
+        return messages;
+    }
+
+    private async Task<List<DeliveryJourneyViewModel>> GetStatusUpdatesForDeliveryJourneyAsync(int jobId,
+        bool isLiveJob)
+    {
+        List<DeliveryJourneyViewModel> statusUpdates;
+
+        if (isLiveJob)
+        {
+            // Get status updates from the live job table
+            var statusUpdatesTempList = await Context.JobDeliveryJourneys
+                .Where(j => j.JobId == jobId)
+                .AsNoTracking()
+                .Include(s => s.OldInternalStatus)
+                .Include(s => s.NewInternalStatus)
+                .Include(s => s.NewJobStatus)
+                .Include(s => s.OldJobStatus)
+                .Include(s => s.Staff)
+                .Include(s => s.Courier)
+                .Include(s => s.Flight)
+                .Include(s => s.NewAgent)
+                .Include(s => s.OldAgent)
+                .ToListAsync();
+
+            statusUpdates = statusUpdatesTempList.Select(s => new DeliveryJourneyViewModel
+            {
+                Id = Guid.NewGuid(),
+                JobId = jobId,
+                Date = s.UpdatedAt,
+                Title = s.NewInternalStatus != null && s.OldInternalStatus != null
+                    ? "Internal Status Changed"
+                    : "Status Changed",
+                Description = s.Comments,
+                Icon = "status",
+                Tags =
+                [
+                    s.ChangeType,
+                    $"Updated on {s.UpdatedAt:dd/MM/yyyy HH:mm}",
+                    s.Staff != null ? $"Updated by {s.Staff.UcstFirstName} {s.Staff.UcstLastName}" : null,
+                    s.Courier != null ? $"Updated by {s.Courier.UccrName}, {s.Courier.UccrSurname}" : null,
+                    s.Flight != null ? $"Flight {s.Flight.UcnwFlightNo} assigned" : null,
+                    s.NewAgent != null && s.OldAgent != null
+                        ? $"Reassigned from Agent {s.OldAgent.UcagName} to {s.NewAgent.UcagName}"
+                        : null,
+                    s.NewAgent != null && s.OldAgent == null ? $"Assigned to Agent {s.NewAgent.UcagName}" : null,
+                    s.FieldName != null ? $"Field {s.FieldName} updated" : null,
+                    s.FieldName != null && s.OldValue != null ? $"Old value: {s.OldValue}" : null,
+                    s.FieldName != null && s.NewValue != null ? $"New value: {s.NewValue}" : null,
+                    s.NewInternalStatus != null && s.OldInternalStatus != null
+                        ? $"Internal Status changed from {s.OldInternalStatus.TcisName} to {s.NewInternalStatus.TcisName}"
+                        : $"Status changed from {s.OldJobStatus.UcjsName} to {s.NewJobStatus?.UcjsName}"
+                ]
+            }).ToList();
+        }
+        else
+        {
+            // Get status updates from the archived job table
+            var archivedStatusUpdatesTempList = await Context.JobDeliveryJourneyArchives
+                .Where(j => j.JobId == jobId)
+                .AsNoTracking()
+                .ToListAsync();
+
+            statusUpdates = archivedStatusUpdatesTempList.Select(s => new DeliveryJourneyViewModel
+            {
+                Id = Guid.NewGuid(),
+                JobId = jobId,
+                Date = s.UpdatedAt,
+                Title = s.NewInternalStatusId != null && s.OldInternalStatusId != null
+                    ? "Internal Status Changed"
+                    : "Status Changed",
+                Description = s.NewInternalStatusId != null && s.OldInternalStatusId != null
+                    ? $"Internal Status changed from status ID {s.OldInternalStatusId} to {s.NewInternalStatusId}"
+                    : $"Status changed from status ID {s.OldJobStatusId} to {s.NewJobStatusId}",
+                Icon = "status",
+                Tags =
+                [
+                    s.ChangeType,
+                    $"Updated on {s.UpdatedAt:dd/MM/yyyy HH:mm}",
+                    s.UpdatedByType != null ? $"Updated by {s.UpdatedByType}" : null,
+                    s.FlightId != null ? $"Flight ID {s.FlightId} assigned" : null,
+                    s.NewAgentId != null && s.OldAgentId != null
+                        ? $"Reassigned from Agent ID {s.OldAgentId} to {s.NewAgentId}"
+                        : null,
+                    s.NewAgentId != null && s.OldAgentId == null ? $"Assigned to Agent ID {s.NewAgentId}" : null,
+                    s.FieldName != null ? $"Field {s.FieldName} updated" : null,
+                    s.FieldName != null && s.OldValue != null ? $"Old value: {s.OldValue}" : null,
+                    s.FieldName != null && s.NewValue != null ? $"New value: {s.NewValue}" : null,
+                    s.Comments != null ? $"Comments: {s.Comments}" : null
+                ]
+            }).ToList();
+        }
+
+        return statusUpdates;
     }
 }

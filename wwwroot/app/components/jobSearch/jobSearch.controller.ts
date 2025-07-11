@@ -14,9 +14,9 @@ import NavigationService from "../../services/navigation.service";
 import greetUser from "../../functions/greetUser";
 import {AppPages} from "../../enums/app-pages.enum";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
+import JobSearchBoxes from "./enums/jobSearchBoxes";
 
 class JobSearchController extends BaseController {
-
     static $inject = [
         '$scope',
         'uCSData',
@@ -236,42 +236,47 @@ class JobSearchController extends BaseController {
         };
 
         this.boxes = {
-            "pickDate": {
+            [JobSearchBoxes.SearchWidget]: {
                 "title": "Filters",
                 "icon": "filter_list",
                 "templateUrl": "app/components/jobSearch/partials/pickDate.html",
                 "showSearch": 0
             },
-            "jobList": {
+            [JobSearchBoxes.JobList]: {
                 "title": "Live Job Data",
                 "icon": "list_alt",
                 "templateUrl": "app/components/jobSearch/partials/jobList.html",
                 "showSearch": 1,
             },
-            "bulkJobList": {
+            [JobSearchBoxes.BulkJobList]: {
                 "title": "Bulk Job Data",
                 "icon": "format_list_bulleted",
                 "templateUrl": "app/components/jobSearch/partials/bulkJobList.html",
                 "showSearch": 1,
             },
-            "jobDetail": {
+            [JobSearchBoxes.JobDetail]: {
                 "title": "Detail",
                 "icon": "assignment",
                 "templateUrl": "app/components/jobSearch/partials/jobDetail.html",
                 "showSearch": 0,
                 "showDetailButtons": 1
             },
-            "scanList": {
+            [JobSearchBoxes.ScanList]: {
                 "title": "Scan Detail",
                 "icon": "document_scanner",
                 "templateUrl": "app/components/jobSearch/partials/scanList.html",
                 "showSearch": 0,
             },
-            "map": {
+            [JobSearchBoxes.Map]: {
                 "title": "Map",
                 "icon": "pin_drop",
                 "templateUrl": "app/components/jobSearch/partials/map.html",
                 "showSearch": 0
+            },
+            [JobSearchBoxes.JobHistory]: {
+                "title": "Job History",
+                "icon": "history",
+                "templateUrl": "app/components/jobSearch/partials/jobHistory.html",
             }
         };
 
@@ -383,21 +388,26 @@ class JobSearchController extends BaseController {
                     {
                         id: "col1",
                         width: "20%",
-                        boxes: [{name: "pickDate", height: "100%"}],
+                        boxes: [{name: JobSearchBoxes.SearchWidget, height: "100%"}],
                     },
                     {
                         id: "col2",
-                        width: "50%",
-                        boxes: [{name: "jobList", height: "50%"}, {name: "bulkJobList", height: "50%"}],
+                        width: "25%",
+                        boxes: [{name: JobSearchBoxes.JobList, height: "50%"}, {name: JobSearchBoxes.BulkJobList, height: "50%"}],
                     },
                     {
                         id: "col3",
-                        width: "30%",
-                        boxes: [{name: "jobDetail", height: "40%"}, {name: "scanList", height: "30%"}, {
-                            name: "map",
+                        width: "35%",
+                        boxes: [{name: JobSearchBoxes.JobDetail, height: "40%"}, {name: JobSearchBoxes.ScanList, height: "30%"}, {
+                            name: JobSearchBoxes.Map,
                             height: "30%"
                         }],
-                    }
+                    },
+                    {
+                        id: "col4",
+                        width: "20%",
+                        boxes: [{name: JobSearchBoxes.JobHistory, height: "100%"}],
+                    },
                 ],
             },
         };

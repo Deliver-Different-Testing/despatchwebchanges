@@ -1758,7 +1758,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             .Where(j => j.UcjbId == jobId)
             .Select(j => new
             {
-                EffectiveJobId = j.ParentId ?? j.UcjbId,
+                EffectiveJobId = j.ParentId ?? j.UcjbId
             })
             .AsNoTracking()
             .FirstOrDefaultAsync();
@@ -1773,7 +1773,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             .Where(j => j.UcbkId == bookingId)
             .Select(j => new
             {
-                EffectiveJobId = j.ParentId ?? j.UcbkId,
+                EffectiveJobId = j.ParentId ?? j.UcbkId
             })
             .AsNoTracking()
             .FirstOrDefaultAsync();

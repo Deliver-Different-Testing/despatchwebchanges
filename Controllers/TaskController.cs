@@ -20,7 +20,7 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting tasks: {Error}", ex.Message);
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -35,7 +35,7 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         catch (Exception ex)
         {
             Log.Error(ex, "Error marking event as closed: {Error}", ex.Message);
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -50,7 +50,7 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         catch (Exception ex)
         {
             Log.Error(ex, "Error updating event date: {Error}", ex.Message);
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -65,7 +65,7 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         catch (Exception ex)
         {
             Log.Error(ex, "Error updating event date: {Error}", ex.Message);
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -79,7 +79,7 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         catch (Exception ex)
         {
             Log.Error(ex, "Error updating event type groups: {Error}", ex.Message);
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -93,7 +93,7 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         catch (Exception ex)
         {
             Log.Error(ex, "Error updating event type groups: {Error}", ex.Message);
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -113,7 +113,7 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         catch (Exception ex)
         {
             Log.Error(ex, "Error adding events for job: {Error}", ex.Message);
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -127,7 +127,7 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting the list of assignable staff: {Error}", ex.Message);
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 
@@ -142,7 +142,7 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting the list of assignable staff: {Error}", ex.Message);
-            return StatusCode(500);
+            return StatusCode(500, ex.Message);
         }
     }
 }

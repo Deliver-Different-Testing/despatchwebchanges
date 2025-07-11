@@ -11,6 +11,7 @@ import {ContactID} from "../../contants";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import timezone from 'dayjs/plugin/timezone';
+import {ITaskHistoryConfig} from "../common/task-history/task-history.interfaces";
 
 class TaskDashboardController extends BaseController {
     static $inject = [
@@ -68,6 +69,13 @@ class TaskDashboardController extends BaseController {
     dateSearchRange: number = 1;
     startDate = dayjs(0).toDate();
     endDate = dayjs().add(24, 'hours').toDate();
+
+    // Task history
+    selectedTask?: ExtendedTask;
+    taskHistoryConfig: ITaskHistoryConfig = {
+        showSummaryStats: true,
+        refreshInterval: 5000,
+    };
 
     constructor(
         private $mdSidenav: angular.material.ISidenavService,
@@ -132,7 +140,7 @@ class TaskDashboardController extends BaseController {
             }, 100);
         }
     }
-    
+
     private generateTimeOptions(): void {
         this.timeOptions = [];
         for (let hour = 0; hour < 24; hour++) {
@@ -341,8 +349,7 @@ class TaskDashboardController extends BaseController {
     }
 
     selectTaskJobDetail(task: ExtendedTask) {
-        this.currentJobId = task.jobId;
-        this.currentSelection = "for Job " + task.jobNumber;
+        this.selectTaskForHistory(task);
     }
 
     async onSearchRangeChange(optionSelected: number) {
@@ -435,6 +442,22 @@ class TaskDashboardController extends BaseController {
 
     async openMessagingDialog($event: MouseEvent) {
         await this.messagingDialogService.openMessagingDialog($event);
+    }
+
+    selectTaskForHistory(task: ExtendedTask) {
+        this.selectedTask = task;
+        this.currentJobId = task.jobId;
+        this.currentSelection = "for Job " + task.jobNumber;
+    }
+
+    handleHistoryStepClick(step: any): void {
+        console.log('History step clicked:', step);
+        // Add logic to handle step clicks if needed
+    }
+
+    handleHistoryAutomationClick(automation: any): void {
+        console.log('History automation clicked:', automation);
+        // Add logic to handle automation clicks if needed
     }
 }
 

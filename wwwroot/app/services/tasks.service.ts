@@ -1,8 +1,13 @@
-import {ExtendedTask, TaskTableFiltersRequest, TaskViewModel} from "../components/task-dashboard/task-dashboard.interfaces";
+import {
+    ExtendedTask,
+    TaskTableFiltersRequest,
+    TaskViewModel
+} from "../components/task-dashboard/task-dashboard.interfaces";
 import {Suggestion} from "../interfaces/job.interface";
 import {StatusFilter} from "../components/task-dashboard/enums/status-filter";
 import {AppPages} from "../enums/app-pages.enum";
 import {ContactID} from "../contants";
+import DispatchCoreService from "./dispatch-core.service";
 
 interface PageFilterNames {
     staff: string;
@@ -14,7 +19,7 @@ class TasksService implements angular.IServiceProvider {
         "$http",
         'DispatchData'
     ];
-    
+
     private readonly PAGE_FILTER_MAPPING: Record<AppPages, PageFilterNames> = {
         [AppPages.Dispatch]: {
             staff: `selectedSupportTypeDispatchFilter-${ContactID}`,
@@ -46,14 +51,11 @@ class TasksService implements angular.IServiceProvider {
         }
     };
 
-
-    // Cache for staff and event types to avoid repeated API calls
     private staffListCache?: Suggestion[];
     private eventTypesListCache?: Suggestion[];
     private staffListPromise?: Promise<Suggestion[]>;
     private eventTypesPromise?: Promise<Suggestion[]>;
 
-    // Page-specific loading states to prevent conflicts
     private loadTasksDebounced?: ReturnType<typeof setTimeout>;
     private backgroundLoadingStates: Record<AppPages, boolean> = {} as Record<AppPages, boolean>;
 
@@ -61,7 +63,7 @@ class TasksService implements angular.IServiceProvider {
 
     constructor(
         private $http: angular.IHttpService,
-        private DispatchData: any
+        private DispatchData: DispatchCoreService
     ) {
         console.log("Tasks service initialized");
 
@@ -77,7 +79,6 @@ class TasksService implements angular.IServiceProvider {
         return this;
     }
 
-    // Existing methods from your TasksService
     async markTaskAsClosed(eventId: number, closed: boolean) {
         await this.$http.post("task/MarkTaskAsClosed",
             null, {
@@ -118,9 +119,6 @@ class TasksService implements angular.IServiceProvider {
             });
     }
 
-    /**
-     * Get staff list with caching
-     */
     async getStaffList(): Promise<Suggestion[] | undefined> {
         if (this.staffListCache) {
             return this.staffListCache;
@@ -144,9 +142,6 @@ class TasksService implements angular.IServiceProvider {
         return this.staffListPromise;
     }
 
-    /**
-     * Get event types list with caching
-     */
     async getEventTypesList(): Promise<Suggestion[] | undefined> {
         if (this.eventTypesListCache) {
             return this.eventTypesListCache;
@@ -170,26 +165,20 @@ class TasksService implements angular.IServiceProvider {
         return this.eventTypesPromise;
     }
 
-    /**
-     * Load both staff and event types lists
-     */
-    async loadLists(): Promise<{staffList: Suggestion[] | undefined, eventTypesList: Suggestion[] | undefined}> {
+    async loadLists(): Promise<{ staffList: Suggestion[] | undefined, eventTypesList: Suggestion[] | undefined }> {
         try {
             const [staffList, eventTypesList] = await Promise.all([
                 this.getStaffList(),
                 this.getEventTypesList()
             ]);
 
-            return { staffList, eventTypesList };
+            return {staffList, eventTypesList};
         } catch (error) {
             console.error('Error loading lists:', error);
-            return { staffList: [], eventTypesList: [] };
+            return {staffList: [], eventTypesList: []};
         }
     }
 
-    /**
-     * Clear cache (useful for logout or data refresh)
-     */
     clearCache(): void {
         this.staffListCache = undefined;
         this.eventTypesListCache = undefined;
@@ -197,9 +186,6 @@ class TasksService implements angular.IServiceProvider {
         this.eventTypesPromise = undefined;
     }
 
-    /**
-     * Build filter request for tasks with page-specific context
-     */
     buildFilterRequest(
         filterType: string,
         currentJobId?: number,
@@ -253,9 +239,6 @@ class TasksService implements angular.IServiceProvider {
         return filters;
     }
 
-    /**
-     * Load tasks asynchronously without blocking
-     */
     async loadTasks(
         filterRequest: TaskTableFiltersRequest,
         onProgress?: (loading: boolean) => void,
@@ -276,9 +259,6 @@ class TasksService implements angular.IServiceProvider {
         }
     }
 
-    /**
-     * Load tasks in background without blocking UI (page-specific)
-     */
     loadTasksInBackground(
         filterRequest: TaskTableFiltersRequest,
         callback: (tasks: ExtendedTask[], error?: any) => void,
@@ -328,9 +308,6 @@ class TasksService implements angular.IServiceProvider {
         }
     }
 
-    /**
-     * Get task status count
-     */
     getTasksStatusCount(tasks: ExtendedTask[], statusType: string): number {
         if (!tasks || !Array.isArray(tasks)) {
             return 0;
@@ -349,9 +326,6 @@ class TasksService implements angular.IServiceProvider {
         }
     }
 
-    /**
-     * Get saved staff filter from localStorage (page-specific)
-     */
     getSavedStaffFilter(appPage: AppPages): string {
         if (!Modernizr.localstorage) return StatusFilter.All;
 
@@ -364,9 +338,6 @@ class TasksService implements angular.IServiceProvider {
         return localStorage.getItem(filterName) ?? StatusFilter.All;
     }
 
-    /**
-     * Get saved event type filter from localStorage (page-specific)
-     */
     getSavedEventTypeFilter(appPage: AppPages): string {
         if (!Modernizr.localstorage) return StatusFilter.All;
 
@@ -379,9 +350,6 @@ class TasksService implements angular.IServiceProvider {
         return localStorage.getItem(filterName) ?? StatusFilter.All;
     }
 
-    /**
-     * Save staff filter to localStorage (page-specific)
-     */
     saveStaffFilter(filter: string, appPage: AppPages): void {
         if (!Modernizr.localstorage) return;
 
@@ -394,9 +362,6 @@ class TasksService implements angular.IServiceProvider {
         localStorage.setItem(filterName, filter);
     }
 
-    /**
-     * Save event type filter to localStorage (page-specific)
-     */
     saveEventTypeFilter(filter: string, appPage: AppPages): void {
         if (!Modernizr.localstorage) return;
 
@@ -409,19 +374,13 @@ class TasksService implements angular.IServiceProvider {
         localStorage.setItem(filterName, filter);
     }
 
-    /**
-     * Initialize filters for a specific page
-     */
-    initializePageFilters(appPage: AppPages): {staffFilter: string, eventTypeFilter: string} {
+    initializePageFilters(appPage: AppPages): { staffFilter: string, eventTypeFilter: string } {
         return {
             staffFilter: this.getSavedStaffFilter(appPage),
             eventTypeFilter: this.getSavedEventTypeFilter(appPage)
         };
     }
-    
-    /**
-     * Get active filter names for display
-     */
+
     getActiveFilterNames(
         staffFilter: string,
         eventTypeFilter: string,
@@ -440,14 +399,11 @@ class TasksService implements angular.IServiceProvider {
         return `- (${filters})`;
     }
 
-    /**
-     * Find task's job in local job lists
-     */
     findTaskJobInLists(
         taskJobId: number,
         jobLists: { list: any[], name: string }[]
     ): any | undefined {
-        for (const { list } of jobLists) {
+        for (const {list} of jobLists) {
             if (list) {
                 const job = list.find(job => job.id === taskJobId);
                 if (job) return job;
@@ -455,10 +411,7 @@ class TasksService implements angular.IServiceProvider {
         }
         return undefined;
     }
-
-    /**
-     * Validate task job ID
-     */
+    
     validateTaskJobId(task: TaskViewModel, onWarning: (message: string) => void): boolean {
         const hasJobId = !!task.jobId;
         if (!hasJobId) {
@@ -468,7 +421,7 @@ class TasksService implements angular.IServiceProvider {
         }
         return hasJobId;
     }
-    
+
     loadTasksWithDebounce(
         filterRequest: TaskTableFiltersRequest,
         callback: (tasks: ExtendedTask[], error?: any) => void,

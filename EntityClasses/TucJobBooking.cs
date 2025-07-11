@@ -370,6 +370,8 @@ public partial class TucJobBooking
 
     public int? DimensionsType { get; set; }
 
+    public bool HasAttachments { get; set; }
+
     public virtual TucJobBooking BookingParent { get; set; }
 
     public virtual TucCourier Courier { get; set; }

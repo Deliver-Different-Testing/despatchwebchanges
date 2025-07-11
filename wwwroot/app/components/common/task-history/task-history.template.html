@@ -1,0 +1,167 @@
+﻿<div class="{{ctrl.getWidgetClass()}}" ng-if="ctrl.jobId">
+    <!-- Full Toolbar -->
+    <md-toolbar class="md-accent" ng-if="ctrl.showFullToolbar">
+        <div class="md-toolbar-tools">
+            <md-icon md-font-set="material-symbols-outlined">rocket_launch</md-icon>
+            <span class="md-headline-title" flex style="margin-left: 8px;">Delivery Journey</span>
+
+            <div flex></div>
+
+            <md-button class="md-icon-button dense-toggle-btn"
+                       ng-click="ctrl.toggleDenseMode()"
+                       aria-label="Toggle Dense Mode"
+                       md-tooltip="{{ctrl.isDenseMode ? 'Disable Dense Mode' : 'Enable Dense Mode'}}">
+                <md-icon md-font-set="material-symbols-outlined">
+                    {{ctrl.isDenseMode ? 'view_compact_alt' : 'view_compact'}}
+                </md-icon>
+            </md-button>
+
+            <md-button class="md-icon-button refresh-btn"
+                       ng-click="ctrl.refreshJourney()"
+                       aria-label="Refresh">
+                <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+            </md-button>
+        </div>
+    </md-toolbar>
+
+    <!-- Minimal Toolbar -->
+    <md-toolbar class="md-accent minimal-toolbar" ng-if="!ctrl.showFullToolbar">
+        <div class="md-toolbar-tools">
+            <div flex></div>
+
+            <md-button class="md-icon-button dense-toggle-btn"
+                       ng-click="ctrl.toggleDenseMode()"
+                       aria-label="Toggle Dense Mode"
+                       md-tooltip="{{ctrl.isDenseMode ? 'Disable Dense Mode' : 'Enable Dense Mode'}}">
+                <md-icon md-font-set="material-symbols-outlined">
+                    {{ctrl.isDenseMode ? 'view_compact_alt' : 'view_compact'}}
+                </md-icon>
+            </md-button>
+
+            <md-button class="md-icon-button refresh-btn"
+                       ng-click="ctrl.refreshJourney()"
+                       aria-label="Refresh">
+                <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+            </md-button>
+        </div>
+    </md-toolbar>
+
+    <!-- Progress indicator -->
+    <md-progress-linear md-mode="indeterminate"
+                        ng-show="ctrl.historyLoading"
+                        class="md-primary">
+    </md-progress-linear>
+
+    <!-- Widget Content -->
+    <div class="widget-content" ng-if="ctrl.timelineItems.length > 0">
+        <div class="journey-steps">
+            <div class="journey-line"></div>
+
+            <div ng-repeat="item in ctrl.timelineItems track by item.data.id"
+                 class="{{ctrl.getItemClass(item)}}"
+                 ng-class="{'animate-in': ctrl.shouldAnimate}"
+                 ng-style="{'animation-delay': ($index * 0.1) + 's'}"
+                 ng-click="ctrl.handleDeliveryEventClick($event, item.data)">
+
+                <!-- Step Icon -->
+                <div class="step-icon {{ctrl.getIconColorClass($index)}}">
+                    <md-icon md-font-set="material-symbols-outlined">
+                        {{ctrl.getEventIconForType(item.data)}}
+                    </md-icon>
+                </div>
+
+                <!-- Step Content -->
+                <div class="step-content">
+                    <div class="step-header">
+                        <div class="step-title">{{item.data.title}}</div>
+                        <div class="step-time">{{ctrl.formatDateTime(item.data.date)}}
+                            ({{::ctrl.timeZone | timezoneShort}})
+                        </div>
+                    </div>
+
+                    <div class="step-description" ng-if="item.data.description && !ctrl.isDenseMode">
+                        {{item.data.description}}
+                    </div>
+
+                    <div class="step-details" ng-if="item.data.tags && item.data.tags.length > 0">
+                        <span ng-repeat="tag in item.data.tags | limitTo:(ctrl.isDenseMode ? 3 : 10)"
+                              class="step-tag">
+                            <md-icon style="font-size: 20px;" md-font-set="material-symbols-outlined">info</md-icon>
+                             {{tag}}
+                        </span>
+                        <span ng-if="ctrl.isDenseMode && item.data.tags.length > 3"
+                              class="step-tag">
+                            +{{item.data.tags.length - 3}} more
+                        </span>
+                    </div>
+
+                    <!-- Notes Section -->
+                    <div class="step-notes" ng-if="item.data.notes && item.data.notes.length > 0 && !ctrl.isDenseMode">
+                        <div class="notes-label">Notes</div>
+                        <div class="notes-content">{{item.data.notes}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Automation Events Summary -->
+        <div class="automation-events" ng-if="ctrl.config.showSummaryStats !== false">
+            <div class="events-header">
+                <div class="events-title">
+                    <md-icon md-font-set="material-symbols-outlined">summarize</md-icon>
+                    Journey Summary
+                </div>
+                <div class="events-count">
+                    <span class="summary-item completed">
+                        <md-icon md-font-set="material-symbols-outlined">delivery_truck_speed</md-icon>
+                        {{ctrl.getCompletedCount()}}
+                    </span>
+                </div>
+            </div>
+
+            <div class="summary-stats">
+                <div class="stat-row">
+                    <span class="stat-label">Next Action:</span>
+                    <span class="stat-value" ng-class="{'urgent': ctrl.hasOverdueActions()}">
+                        {{ctrl.getNextAction()}}
+                    </span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Completion Rate:</span>
+                    <span class="stat-value">{{ctrl.getEventCompletionRate()}}%</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Next Trigger:</span>
+                    <span class="stat-value">{{ctrl.getNextTrigger()}}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" ng-if="ctrl.timelineItems.length === 0 && !ctrl.historyLoading">
+        <no-data
+                title="No Journey Events"
+                message="No delivery journey events found for this job. Events will appear here as they are created."
+                icon="package_2"
+                show-action="false">
+        </no-data>
+    </div>
+</div>
+
+<!-- No Job Selected State -->
+<div class="{{ctrl.getWidgetClass()}}" ng-if="!ctrl.jobId">
+    <md-toolbar class="md-accent">
+        <div class="md-toolbar-tools">
+            <md-icon md-font-set="material-symbols-outlined">rocket_launch</md-icon>
+            <span class="md-headline-title" flex style="margin-left: 8px;"> Delivery Journey</span>
+        </div>
+    </md-toolbar>
+
+    <no-data
+            title="Select Job First"
+            message="Select a job to view its delivery journey."
+            icon="task_alt"
+            show-action="false">
+    </no-data>
+</div>

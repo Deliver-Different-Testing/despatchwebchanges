@@ -87,6 +87,10 @@ public partial class TucAgent
 
     public virtual ICollection<AgentVehicle> AgentVehicles { get; set; } = new List<AgentVehicle>();
 
+    public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneyNewAgents { get; set; } = new List<JobDeliveryJourney>();
+
+    public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneyOldAgents { get; set; } = new List<JobDeliveryJourney>();
+
     public virtual TucAgentRanking Ranking { get; set; }
 
     public virtual ICollection<TblAfterHour> TblAfterHours { get; set; } = new List<TblAfterHour>();

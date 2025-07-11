@@ -362,7 +362,6 @@ const TaskCalendarViewComponent: angular.IComponentOptions = {
         onTaskClick: '&',
         onTaskStatusChange: '&',
         onViewChange: '&',
-        timezone: '@'
     }
 }
 

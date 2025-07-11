@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
+using ExcelDataReader.Log.Logger;
 using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories;
@@ -25,22 +27,8 @@ public class TaskRepository(
 
         query = ApplyOrdering(query, filters, today);
 
-        var tasks = await query.Select(x => new TaskViewModel
-            {
-                Id = x.UcevId,
-                Assignee = new Suggestion
-                {
-                    Id = x.UcevStaffIdin ?? 0,
-                    Text = x.UcevStaffIdinNavigation.UcstFirstName + " " + x.UcevStaffIdinNavigation.UcstLastName
-                },
-                Description = x.UcevNotes,
-                JobId = x.UcevJobId ?? 0,
-                Closed = x.UcevClosed,
-                DueDate = x.UcevDueTime,
-                Title = x.UcevTypeNavigation.UcetName,
-                EventType = x.UcevTypeNavigation.UcetGroup,
-                JobNumber = x.UcevJob.UcjbNumber
-            })
+        var tasks = await query
+            .Select(TaskMapping)
             .AsNoTracking()
             .ToListAsync();
 
@@ -219,11 +207,11 @@ public class TaskRepository(
     )
     {
         // Apply date filters based on the available parameters
-            if (filters.StartDate.HasValue && filters.EndDate.HasValue)
+        if (filters.StartDate.HasValue && filters.EndDate.HasValue)
         {
             // If both start and end dates are provided, filter for events within that range
             query = query.Where(e => e.UcevDueTime >= filters.StartDate.Value &&
-                                    e.UcevDueTime <= filters.EndDate.Value);
+                                     e.UcevDueTime <= filters.EndDate.Value);
         }
         else if (filters.StartDate.HasValue)
         {
@@ -272,10 +260,13 @@ public class TaskRepository(
             (e.UcevDescription != null && e.UcevDescription.ToLower().Contains(searchText))
             || (e.UcevNotes != null && e.UcevNotes.Contains(searchText))
             || (e.UcevDespatcher != null && e.UcevDespatcher.ToLower().Contains(searchText))
-            || (e.UcevJob != null && e.UcevJob.UcjbNumber != null && e.UcevJob.UcjbNumber.ToLower().Contains(searchText))
-            || (e.UcevJob != null && e.UcevJob.Parent != null && e.UcevJob.Parent.UcjbNumber != null && e.UcevJob.Parent.UcjbNumber.ToLower().Contains(searchText))
-            || (e.UcevJob != null && e.UcevJob.Parent != null && e.UcevJob.Parent.InverseParent != null && e.UcevJob.Parent.InverseParent.Any(j =>
-                j.UcjbNumber != null && j.UcjbNumber.ToLower().Contains(searchText)))
+            || (e.UcevJob != null && e.UcevJob.UcjbNumber != null &&
+                e.UcevJob.UcjbNumber.ToLower().Contains(searchText))
+            || (e.UcevJob != null && e.UcevJob.Parent != null && e.UcevJob.Parent.UcjbNumber != null &&
+                e.UcevJob.Parent.UcjbNumber.ToLower().Contains(searchText))
+            || (e.UcevJob != null && e.UcevJob.Parent != null && e.UcevJob.Parent.InverseParent != null &&
+                e.UcevJob.Parent.InverseParent.Any(j =>
+                    j.UcjbNumber != null && j.UcjbNumber.ToLower().Contains(searchText)))
         );
 
         return query;
@@ -417,4 +408,23 @@ public class TaskRepository(
         await Context.TucEvents.AddAsync(newEvent);
         await Context.SaveChangesAsync();
     }
+
+    private static readonly Expression<Func<TucEvent, TaskViewModel>> TaskMapping = e => new TaskViewModel
+    {
+        Id = e.UcevId,
+        Assignee = e.UcevStaffIdinNavigation != null
+            ? new Suggestion
+            {
+                Id = e.UcevStaffIdinNavigation.UcstId,
+                Text = e.UcevStaffIdinNavigation.UcstFirstName + " " + e.UcevStaffIdinNavigation.UcstLastName
+            }
+            : null,
+        Description = e.UcevNotes,
+        JobId = e.UcevJobId ?? 0,
+        Closed = e.UcevClosed,
+        DueDate = e.UcevDueTime,
+        Title = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : string.Empty,
+        EventType = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetGroup : string.Empty,
+        JobNumber = e.UcevJob.UcjbNumber
+    };
 }

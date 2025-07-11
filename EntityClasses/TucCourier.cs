@@ -273,6 +273,8 @@ public partial class TucCourier
 
     public virtual TblCourierLogInOut CourierLogInOut { get; set; }
 
+    public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneys { get; set; } = new List<JobDeliveryJourney>();
+
     public virtual TblBulkRegion Region { get; set; }
 
     public virtual ICollection<TblAfterHour> TblAfterHours { get; set; } = new List<TblAfterHour>();

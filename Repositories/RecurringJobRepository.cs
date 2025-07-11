@@ -27,7 +27,7 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
             .Select(p => new Suggestion
             {
                 Id = p.UcbkId,
-                Text = p.UcbkJobNumber,
+                Text = p.UcbkJobNumber
             }).ToList();
 
         return jobRecurringViewModel;

@@ -51,6 +51,10 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<GlobalAddressMapping> GlobalAddressMappings { get; set; }
 
+    public virtual DbSet<JobDeliveryJourney> JobDeliveryJourneys { get; set; }
+
+    public virtual DbSet<JobDeliveryJourneyArchive> JobDeliveryJourneyArchives { get; set; }
+
     public virtual DbSet<PricingBreakdown> PricingBreakdowns { get; set; }
 
     public virtual DbSet<PricingBreakdownArchive> PricingBreakdownArchives { get; set; }
@@ -998,6 +1002,137 @@ public partial class DespatchContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<JobDeliveryJourney>(entity =>
+        {
+            entity.HasKey(e => e.JourneyId).HasName("PK__JobDeliv__4159B9CFA99F08CB");
+
+            entity.ToTable("JobDeliveryJourney");
+
+            entity.HasIndex(e => e.ChangeType, "IX_JobDeliveryJourney_ChangeType");
+
+            entity.HasIndex(e => e.CourierId, "IX_JobDeliveryJourney_CourierID");
+
+            entity.HasIndex(e => new { e.CourierId, e.UpdatedAt }, "IX_JobDeliveryJourney_Courier_Date").HasFilter("([CourierID] IS NOT NULL)");
+
+            entity.HasIndex(e => e.JobId, "IX_JobDeliveryJourney_JobID");
+
+            entity.HasIndex(e => new { e.JobId, e.ChangeType, e.UpdatedAt }, "IX_JobDeliveryJourney_Job_ChangeType_Date");
+
+            entity.HasIndex(e => e.StaffId, "IX_JobDeliveryJourney_StaffID");
+
+            entity.HasIndex(e => new { e.StaffId, e.UpdatedAt }, "IX_JobDeliveryJourney_Staff_Date").HasFilter("([StaffID] IS NOT NULL)");
+
+            entity.HasIndex(e => e.UpdatedAt, "IX_JobDeliveryJourney_UpdatedAt");
+
+            entity.Property(e => e.JourneyId).HasColumnName("JourneyID");
+            entity.Property(e => e.ChangeType)
+                .IsRequired()
+                .HasMaxLength(30);
+            entity.Property(e => e.Comments).HasMaxLength(500);
+            entity.Property(e => e.CourierId).HasColumnName("CourierID");
+            entity.Property(e => e.FieldName).HasMaxLength(100);
+            entity.Property(e => e.FlightId).HasColumnName("FlightID");
+            entity.Property(e => e.JobId).HasColumnName("JobID");
+            entity.Property(e => e.NewAgentId).HasColumnName("NewAgentID");
+            entity.Property(e => e.NewCourierId).HasColumnName("NewCourierID");
+            entity.Property(e => e.NewInternalStatusId).HasColumnName("NewInternalStatusID");
+            entity.Property(e => e.NewJobStatusId).HasColumnName("NewJobStatusID");
+            entity.Property(e => e.OldAgentId).HasColumnName("OldAgentID");
+            entity.Property(e => e.OldCourierId).HasColumnName("OldCourierID");
+            entity.Property(e => e.OldInternalStatusId).HasColumnName("OldInternalStatusID");
+            entity.Property(e => e.OldJobStatusId).HasColumnName("OldJobStatusID");
+            entity.Property(e => e.StaffId).HasColumnName("StaffID");
+            entity.Property(e => e.UpdatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.UpdatedByType)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.HasOne(d => d.Courier).WithMany(p => p.JobDeliveryJourneys)
+                .HasForeignKey(d => d.CourierId)
+                .HasConstraintName("FK_JobDeliveryJourney_Courier");
+
+            entity.HasOne(d => d.Flight).WithMany(p => p.JobDeliveryJourneys)
+                .HasForeignKey(d => d.FlightId)
+                .HasConstraintName("FK_JobDeliveryJourney_Flight");
+
+            entity.HasOne(d => d.Job).WithMany(p => p.JobDeliveryJourneys)
+                .HasForeignKey(d => d.JobId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_JobDeliveryJourney_Job");
+
+            entity.HasOne(d => d.NewAgent).WithMany(p => p.JobDeliveryJourneyNewAgents)
+                .HasForeignKey(d => d.NewAgentId)
+                .HasConstraintName("FK_JobDeliveryJourney_NewAgent");
+
+            entity.HasOne(d => d.NewInternalStatus).WithMany(p => p.JobDeliveryJourneyNewInternalStatuses)
+                .HasForeignKey(d => d.NewInternalStatusId)
+                .HasConstraintName("FK_JobDeliveryJourney_NewInternalStatus");
+
+            entity.HasOne(d => d.NewJobStatus).WithMany(p => p.JobDeliveryJourneyNewJobStatuses)
+                .HasForeignKey(d => d.NewJobStatusId)
+                .HasConstraintName("FK_JobDeliveryJourney_NewJobStatus");
+
+            entity.HasOne(d => d.OldAgent).WithMany(p => p.JobDeliveryJourneyOldAgents)
+                .HasForeignKey(d => d.OldAgentId)
+                .HasConstraintName("FK_JobDeliveryJourney_OldAgent");
+
+            entity.HasOne(d => d.OldInternalStatus).WithMany(p => p.JobDeliveryJourneyOldInternalStatuses)
+                .HasForeignKey(d => d.OldInternalStatusId)
+                .HasConstraintName("FK_JobDeliveryJourney_OldInternalStatus");
+
+            entity.HasOne(d => d.OldJobStatus).WithMany(p => p.JobDeliveryJourneyOldJobStatuses)
+                .HasForeignKey(d => d.OldJobStatusId)
+                .HasConstraintName("FK_JobDeliveryJourney_OldJobStatus");
+
+            entity.HasOne(d => d.Staff).WithMany(p => p.JobDeliveryJourneys)
+                .HasForeignKey(d => d.StaffId)
+                .HasConstraintName("FK_JobDeliveryJourney_Staff");
+        });
+
+        modelBuilder.Entity<JobDeliveryJourneyArchive>(entity =>
+        {
+            entity.HasKey(e => e.JourneyId).HasName("PK__JobDeliv__4159B9CF15F138C3");
+
+            entity.ToTable("JobDeliveryJourneyArchive");
+
+            entity.HasIndex(e => e.ChangeType, "IX_JobDeliveryJourneyArchive_ChangeType");
+
+            entity.HasIndex(e => e.CourierId, "IX_JobDeliveryJourneyArchive_CourierID");
+
+            entity.HasIndex(e => e.JobId, "IX_JobDeliveryJourneyArchive_JobID");
+
+            entity.HasIndex(e => e.StaffId, "IX_JobDeliveryJourneyArchive_StaffID");
+
+            entity.HasIndex(e => e.UpdatedAt, "IX_JobDeliveryJourneyArchive_UpdatedAt");
+
+            entity.Property(e => e.JourneyId).HasColumnName("JourneyID");
+            entity.Property(e => e.ChangeType)
+                .IsRequired()
+                .HasMaxLength(30);
+            entity.Property(e => e.Comments).HasMaxLength(500);
+            entity.Property(e => e.CourierId).HasColumnName("CourierID");
+            entity.Property(e => e.FieldName).HasMaxLength(100);
+            entity.Property(e => e.FlightId).HasColumnName("FlightID");
+            entity.Property(e => e.JobId).HasColumnName("JobID");
+            entity.Property(e => e.NewAgentId).HasColumnName("NewAgentID");
+            entity.Property(e => e.NewCourierId).HasColumnName("NewCourierID");
+            entity.Property(e => e.NewInternalStatusId).HasColumnName("NewInternalStatusID");
+            entity.Property(e => e.NewJobStatusId).HasColumnName("NewJobStatusID");
+            entity.Property(e => e.OldAgentId).HasColumnName("OldAgentID");
+            entity.Property(e => e.OldCourierId).HasColumnName("OldCourierID");
+            entity.Property(e => e.OldInternalStatusId).HasColumnName("OldInternalStatusID");
+            entity.Property(e => e.OldJobStatusId).HasColumnName("OldJobStatusID");
+            entity.Property(e => e.StaffId).HasColumnName("StaffID");
+            entity.Property(e => e.UpdatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.UpdatedByType)
+                .IsRequired()
+                .HasMaxLength(20);
         });
 
         modelBuilder.Entity<PricingBreakdown>(entity =>
@@ -4370,6 +4505,16 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.UcjbSpeed, "IX_TucJob_Speed");
 
+            entity.HasIndex(e => e.UcjbCourierId, "IX_TucJobs_CourierId");
+
+            entity.HasIndex(e => new { e.UcjbDate, e.UcjbTime }, "IX_TucJobs_Date_Time");
+
+            entity.HasIndex(e => e.UcjbId, "IX_TucJobs_Lookup");
+
+            entity.HasIndex(e => new { e.ParentId, e.UcjbId }, "IX_TucJobs_ParentRelationship").HasFilter("([ParentId] IS NOT NULL)");
+
+            entity.HasIndex(e => new { e.UcjbStatus, e.UcjbDate }, "IX_TucJobs_Status_Date");
+
             entity.HasIndex(e => e.AgentId, "IX_tucJob_AgentID");
 
             entity.HasIndex(e => new { e.UcjbStatus, e.UcjbJobDone, e.UcjbVoid }, "IX_tucJob_Archive_Status");
@@ -4379,6 +4524,8 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.FdcourierId, "IX_tucJob_FDCourierID");
 
             entity.HasIndex(e => e.FromAirportId, "IX_tucJob_FromAirportId");
+
+            entity.HasIndex(e => e.HasAttachments, "IX_tucJob_HasAttachments");
 
             entity.HasIndex(e => e.SourceId, "IX_tucJob_SourceID");
 
@@ -4843,6 +4990,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.FromAirportId, "IX_tucJobArchive_FromAirportId");
 
+            entity.HasIndex(e => e.HasAttachments, "IX_tucJobArchive_HasAttachments");
+
             entity.HasIndex(e => e.ToAirportId, "IX_tucJobArchive_ToAirportId");
 
             entity.HasIndex(e => e.InformationParentId, "InformationParentID");
@@ -5236,6 +5385,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.FromAirportId, "IX_tucJobBooking_FromAirportID");
 
+            entity.HasIndex(e => e.HasAttachments, "IX_tucJobBooking_HasAttachments");
+
             entity.HasIndex(e => e.ToAirportId, "IX_tucJobBooking_ToAirportID");
 
             entity.HasIndex(e => e.InformationParentId, "InformationParentID");
@@ -5585,6 +5736,8 @@ public partial class DespatchContext : DbContext
 
             entity.ToTable("tucJobItems");
 
+            entity.HasIndex(e => e.JobId, "IX_TucJobItems_Job");
+
             entity.Property(e => e.JobId).HasColumnName("JobID");
             entity.Property(e => e.ItemId).HasColumnName("ItemID");
             entity.Property(e => e.Cubic).HasColumnType("decimal(18, 4)");
@@ -5606,6 +5759,8 @@ public partial class DespatchContext : DbContext
                 .HasAnnotation("SqlServer:FillFactor", 80);
 
             entity.ToTable("tucJobNationwide");
+
+            entity.HasIndex(e => e.UcnwJobId, "IX_TucJobNationwides_Job");
 
             entity.HasIndex(e => e.UcnwJobId, "IX_tucJobNationwide_ucnwJobID").HasFillFactor(80);
 
@@ -5698,6 +5853,8 @@ public partial class DespatchContext : DbContext
             entity.HasKey(e => e.JobId);
 
             entity.ToTable("tucJobReadTracker");
+
+            entity.HasIndex(e => new { e.JobId, e.HasBeenRead }, "IX_TucJobs_ReadTracker");
 
             entity.Property(e => e.JobId).ValueGeneratedNever();
             entity.Property(e => e.ReadTimestamp).HasColumnType("datetime");

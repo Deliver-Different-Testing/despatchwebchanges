@@ -75,6 +75,14 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[JobDeliveryJourney]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[JobDeliveryJourneyArchive]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[PricingBreakdown]",
          "ObjectType": 0
       },
