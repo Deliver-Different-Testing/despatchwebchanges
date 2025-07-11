@@ -1,8 +1,7 @@
-﻿export interface ITaskHistoryConfig {
+﻿export interface IDeliveryHistoryConfig {
     showSummaryStats?: boolean;
     denseMode?: boolean;
-    compactView?: boolean;
-    customClass?: string;
+    showFullToolbar: boolean;
 }
 
 export interface DeliveryJourneyViewModel {

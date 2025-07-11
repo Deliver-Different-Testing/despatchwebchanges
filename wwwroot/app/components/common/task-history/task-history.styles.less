@@ -35,13 +35,6 @@
   }
 }
 
-.minimal-toolbar {
-  .md-toolbar-tools {
-    min-height: 48px;
-    padding: 0 16px;
-  }
-}
-
 .widget-content {
   flex: 1;
   overflow-y: auto;
@@ -698,10 +691,23 @@
   }
 }
 
-/* Minimal toolbar styles */
-.minimal-toolbar {
-  .md-toolbar-tools {
-    min-height: 48px;
-    padding: 0 16px;
+.simple-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.02);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.header-actions {
+  display: flex;
+  gap: 4px;
+
+  .md-icon-button {
+    margin: 0;
+    min-width: 40px;
+    width: 40px;
+    height: 40px;
   }
 }

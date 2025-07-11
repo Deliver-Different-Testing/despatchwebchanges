@@ -1,4 +1,4 @@
-<div ng-if="!ctrl.jobListLoading && (ctrl.jobList || ctrl.jobList.length > 0)">
+<div ng-show="!ctrl.isJobListLoading && (ctrl.jobList || ctrl.jobList.length > 0)">
     <md-table-container class="table-scroll-with-pagination">
         <table md-progress="ctrl.jobListLoading" md-table>
             <thead fix-head md-head md-on-reorder="ctrl.orderList('jobList', ctrl.jobQuery.order)"
@@ -86,7 +86,7 @@
 </div>
 
 <no-data
-        ng-if="!ctrl.jobListLoading && (!ctrl.jobList || ctrl.jobList.length === 0)"
+        ng-if="!ctrl.isJobListLoading && (!ctrl.jobList || ctrl.jobList.length === 0)"
         title="No Jobs Found"
         message="There are currently no jobs to display."
         icon="assignment"

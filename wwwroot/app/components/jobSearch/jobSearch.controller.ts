@@ -15,6 +15,7 @@ import greetUser from "../../functions/greetUser";
 import {AppPages} from "../../enums/app-pages.enum";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import JobSearchBoxes from "./enums/jobSearchBoxes";
+import {IDeliveryHistoryConfig} from "../common/task-history/task-history.interfaces";
 
 class JobSearchController extends BaseController {
     static $inject = [
@@ -104,6 +105,9 @@ class JobSearchController extends BaseController {
         out: (e: JQueryEventObject, ui: any) => void;
         stop: (e: JQueryEventObject, ui: any) => void
     };
+    deliveryHistoryConfig: IDeliveryHistoryConfig;
+    isJobListLoading: boolean = false;
+    isBulkJobListLoading: boolean = false;
 
     constructor(
         private $scope: angular.IScope,
@@ -330,8 +334,15 @@ class JobSearchController extends BaseController {
                 this._saveCurrentLayout()
             }
         };
+        
 
-        // Default to fortnight
+        this.deliveryHistoryConfig = {
+            showSummaryStats: true,
+            denseMode: true,
+            showFullToolbar: false
+        }
+        
+        // Default to a fortnight
         this.onSearchRangeChange(this.dateSearchRange);
     }
 
@@ -928,6 +939,8 @@ class JobSearchController extends BaseController {
 
     async refreshData() {
         try {
+            this.isJobListLoading = true;
+            
             this.jobListLoading = this.uCSData.getPodJobs(
                 this.pickDateService.courier,
                 this.pickDateService.client,
@@ -944,11 +957,15 @@ class JobSearchController extends BaseController {
             this.totalCount = data.item1;
         } catch (error) {
             this._handleError(error);
+        } finally {
+            this.isJobListLoading = false;
         }
     }
 
     async refreshBulkData() {
         try {
+            this.isBulkJobListLoading = true;
+            
             this.bulkJobPromise = this.uCSData.searchBulkJobs(this.pickDateService.courier, this.pickDateService.client, (this.pickDateService.job || ""), (this.pickDateService.wild || ""),
                 this.pickDateService.from_date, this.pickDateService.to_date, this.bulkJobQuery.page, this.bulkJobQuery.limit);
 
@@ -957,6 +974,8 @@ class JobSearchController extends BaseController {
             this.bulkTotalCount = data.item1;
         } catch (error) {
             console.error('Error in refreshBulkData:', error);
+        } finally {
+            this.isBulkJobListLoading = false;
         }
     }
 
@@ -1069,7 +1088,7 @@ class JobSearchController extends BaseController {
                     lat: this.currentJob.pickupAddress.latitude,
                     lng: this.currentJob.pickupAddress.longitude
                 };
-                this.jobs = [this.currentJob as IDispatchJob];
+                this.jobs = [this.currentJob as any];
             }
 
             if (!this.currentJob?.bookedDate) return;
@@ -1093,7 +1112,7 @@ class JobSearchController extends BaseController {
                     lat: this.currentJob.pickupAddress.latitude,
                     lng: this.currentJob.pickupAddress.longitude
                 };
-                this.jobs = [this.currentJob as IDispatchJob];
+                this.jobs = [this.currentJob as any];
             }
 
             if (!this.currentJob?.bookedDate) return;
