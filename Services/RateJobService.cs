@@ -77,7 +77,7 @@ public class RateJobService(
                     PickupLat = jobDetails.PickupLat,
                     PickupLong = jobDetails.PickupLong,
                     DeliveryLat = jobDetails.DeliveryLat,
-                    DeliveryLong = jobDetails.DeliveryLong,
+                    DeliveryLong = jobDetails.DeliveryLong
                 }
             );
 

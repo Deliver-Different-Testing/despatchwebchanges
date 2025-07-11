@@ -311,6 +311,8 @@
     <TypeScriptCompile Include="wwwroot\app\components\common\pod-photo-viewer\pod-photo-viewer.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\side-nav\side-nav.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\sticky-notes\sticky-notes.component.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\task-history\task-history.component.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\common\task-history\task-history.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\task-item-component\task-item.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\task-item-component\task-item.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\add-event-dialog\add-event-dialog.interfaces.ts" />
@@ -332,6 +334,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\enums\DispatchBoxes.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\home.module.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\jobSearchBoxes.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\podSearchResponse.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.module.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.service.ts" />

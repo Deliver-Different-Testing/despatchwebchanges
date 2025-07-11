@@ -30,6 +30,7 @@ import ConfigService from "./config.service";
 import {UpdateJobTimeRequest, UpdatePodDetailsRequest} from "../interfaces/requests.interfaces";
 import dayjs from "dayjs";
 import {JobEventData} from "../components/dialogs/add-event-dialog/add-event-dialog.interfaces";
+import {DeliveryJourneyViewModel} from "../components/common/task-history/task-history.interfaces";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [
@@ -1126,6 +1127,16 @@ class DispatchCoreService implements angular.IServiceProvider {
             console.error("Error fetching tasks:", error);
             return [];
         }
+    }
+    
+    async getDeliveryJourney(jobId: number): Promise<DeliveryJourneyViewModel[]> {
+        const response = await this.$http.get<DeliveryJourneyViewModel[]>('/job/GetDeliveryJourney', {
+            params: {
+                jobId
+            }
+        });
+
+        return response.data;
     }
 
     async updateJobReadStatus(jobId: number, hasBeenRead: boolean) {

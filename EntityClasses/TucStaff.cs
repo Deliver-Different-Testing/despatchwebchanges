@@ -101,6 +101,8 @@ public partial class TucStaff
 
     public virtual ICollection<DfrntuserPageLayout> DfrntuserPageLayouts { get; set; } = new List<DfrntuserPageLayout>();
 
+    public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneys { get; set; } = new List<JobDeliveryJourney>();
+
     public virtual ICollection<TucEvent> TucEventUcevStaffIdinNavigations { get; set; } = new List<TucEvent>();
 
     public virtual ICollection<TucEvent> TucEventUcevStaffIdoutNavigations { get; set; } = new List<TucEvent>();

@@ -2,6 +2,7 @@
 
 .dfrnt-task-dashboard {
   .main-content-column {
+    padding-right: 8px; // Reduced padding for three columns
 
     .filters-container {
       margin-bottom: 16px;
@@ -23,7 +24,7 @@
       min-height: 200px;
       display: flex;
       flex-direction: column;
-      height: calc(100vh - 440px);
+      height: calc(100vh - 440px); // Adjust height for smaller column
 
       md-card-header {
         padding: 16px;
@@ -58,6 +59,7 @@
   }
 
   .job-detail-column {
+    padding: 0 4px; // Add padding between columns
 
     .job-detail-card {
       height: calc(100vh - 200px);
@@ -78,6 +80,32 @@
         flex: 1;
         overflow-y: auto;
         display: block;
+      }
+    }
+  }
+
+  // Add new task-history-column styles
+  .task-history-column {
+    padding-left: 8px;
+
+    .task-history-card {
+      height: calc(100vh - 200px);
+      display: flex;
+      flex-direction: column;
+
+      md-toolbar {
+        flex-shrink: 0;
+
+        .md-toolbar-tools {
+          .md-headline-title {
+            font-size: 16px;
+          }
+        }
+      }
+
+      .empty-state {
+        flex: 1;
+        text-align: center;
       }
     }
   }
@@ -294,19 +322,31 @@
     }
   }
 
-  // Responsive behavior
-  @media (max-width: 959px) {
+  // Update responsive behavior for three columns
+  @media (max-width: 1200px) {
     .main-content-column {
-      padding-right: 0;
-      margin-bottom: 16px;
+      flex: 50;
     }
 
-    .job-detail-column {
-      padding-left: 0;
+    .job-detail-column,
+    .task-history-column {
+      flex: 25;
+    }
+  }
 
-      .job-detail-card {
-        height: 500px;
-      }
+  // Responsive behavior
+  @media (max-width: 959px) {
+    .main-content-column,
+    .job-detail-column,
+    .task-history-column {
+      padding: 0;
+      margin-bottom: 16px;
+      flex: 100;
+    }
+
+    .job-detail-card,
+    .task-history-card {
+      height: 400px;
     }
   }
 

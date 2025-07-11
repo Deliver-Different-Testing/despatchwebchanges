@@ -2333,4 +2333,19 @@ public class JobController(
             return StatusCode(500, ex.Message);
         }
     }
+
+    public async Task<IActionResult> GetDeliveryJourney(int jobId)
+    {
+        try
+        {
+            var deliveryJourney = await jobRepository.GetDeliveryJourneyForJobAsync(jobId);
+            return Json(deliveryJourney);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error retrieving the delivery journey");
+            return StatusCode(500, ex.Message);
+        }
+        
+    }
 }

@@ -7,7 +7,8 @@
 
             <span flex></span>
 
-            <md-button aria-label="Open messages window" class="md-icon-button" ng-click="ctrl.openMessagingDialog($event)">
+            <md-button aria-label="Open messages window" class="md-icon-button"
+                       ng-click="ctrl.openMessagingDialog($event)">
                 <md-icon md-font-set="material-symbols-outlined">sms</md-icon>
                 <md-tooltip md-direction="bottom">Messages</md-tooltip>
             </md-button>
@@ -135,10 +136,10 @@
         </md-card-content>
     </md-card>
 
-    <!-- Main content area with persistent job details -->
+    <!-- Main content area with three columns -->
     <div layout="row" layout-xs="column">
-        <!-- Left column (60%) - List View or Calendar View -->
-        <div flex="60" flex-xs="100" class="main-content-column">
+        <!-- Left column -->
+        <div flex="30" flex-xs="100" class="main-content-column">
             <!-- List View -->
             <div ng-if="!ctrl.showFullCalendar">
                 <md-card class="filters-container">
@@ -228,7 +229,6 @@
             <div ng-if="ctrl.showFullCalendar" class="calendar-view-container">
                 <task-calendar-view
                         tasks="ctrl.filteredTasks"
-                        timezone="ctrl.timeZone"
                         on-task-update="ctrl.handleCalendarTaskUpdate()"
                         on-task-click="ctrl.handleCalendarTaskClick(task)"
                         on-task-status-change="ctrl.handleCalendarTaskStatusChange(task)"
@@ -237,7 +237,7 @@
             </div>
         </div>
 
-        <!-- Right column - Job Details (40%) - Always visible -->
+        <!-- Middle column - Job Details-->
         <div flex="40" flex-xs="100" class="job-detail-column">
             <md-card class="job-detail-card">
                 <md-toolbar class="md-accent">
@@ -252,5 +252,17 @@
                 <job-detail-widget job-id="ctrl.currentJobId"></job-detail-widget>
             </md-card>
         </div>
+
+        <!-- Right column - Task History -->
+        <div flex="30" flex-xs="100" class="task-history-column">
+            <div style="height: calc(100vh - 200px); overflow-y: auto;">
+                <task-history
+                        job-id="ctrl.selectedTask.jobId"
+                        config="ctrl.taskHistoryConfig"
+                        show-full-toolbar="true">
+                </task-history>
+            </div>
+        </div>
+        
     </div>
 </div>

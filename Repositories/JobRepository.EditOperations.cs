@@ -13,43 +13,89 @@ public partial class JobRepository
 {
     public async Task UpdateDeliverByTime(UpdateJobTimeRequest data)
     {
-        if (data.IsRecurring) {
+        if (data.IsRecurring)
+        {
             var jobBooking = await Context.TucJobBookings.FindAsync(data.JobId);
             ArgumentNullException.ThrowIfNull(jobBooking);
 
             jobBooking.DeliverByTime = DateTime.Parse(data.DateTime);
             jobBooking.DeliverByTimeZoneId = data.TimeZoneId;
-        } else {
-            var job = await Context.TucJobs.FindAsync(data.JobId);
+        }
+        else
+        {
+            var job = await Context.TucJobs
+                .Where(j => j.UcjbId == data.JobId)
+                .Include(j => j.DeliverByTimeZone)
+                .FirstOrDefaultAsync();
             ArgumentNullException.ThrowIfNull(job);
 
+            var oldDeliverByTime = $"{job.DeliverByTime:dd/MM/yyyy HH:mm}";
+            var oldDeliveryByTimeZone = job.DeliverByTimeZone?.Name;
+            
             job.DeliverByTime = DateTime.Parse(data.DateTime);
             job.DeliverByTimeZoneId = data.TimeZoneId;
-        }
+            
+            var journeyRecord = new JobDeliveryJourney
+            {
+                JobId = data.JobId,
+                FieldName = nameof(JobProperty.DeliverBy),
+                OldValue = $"{oldDeliverByTime} { oldDeliveryByTimeZone}",
+                NewValue = $"{job.DeliverByTime:dd/MM/yyyy HH:mm} {job.DeliverByTimeZone?.Name}",
+                ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+                StaffId = _infoService.GetStaffId(),
+                UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
+            };
 
+            await Context.JobDeliveryJourneys.AddAsync(journeyRecord);
+        }
+        
         await Context.SaveChangesAsync();
     }
-    
+
     public async Task UpdatePickUpTime(UpdateJobTimeRequest data)
     {
-        if (data.IsRecurring) {
+        if (data.IsRecurring)
+        {
             var jobBooking = await Context.TucJobBookings.FindAsync(data.JobId);
             ArgumentNullException.ThrowIfNull(jobBooking);
 
             jobBooking.UcbkTime = DateTime.Parse(data.DateTime);
             jobBooking.PickupTimeZoneId = data.TimeZoneId;
-        } else {
-            var job = await Context.TucJobs.FindAsync(data.JobId);
+        }
+        else
+        {
+            var job = await Context.TucJobs
+                .Where(j => j.UcjbId == data.JobId)
+                .Include(j => j.PickupTimeZone)
+                .FirstOrDefaultAsync();
             ArgumentNullException.ThrowIfNull(job);
 
+            var oldPickUpTime = $"{job.UcjbTime:dd/MM/yyyy HH:mm}";
+            var oldPickUpTimeZone = job.PickupTimeZone?.Name;
+            
             job.UcjbTime = DateTime.Parse(data.DateTime);
             job.PickupTimeZoneId = data.TimeZoneId;
+            
+            var journeyRecord = new JobDeliveryJourney
+            {
+                JobId = data.JobId,
+                FieldName = nameof(JobProperty.Time),
+                OldValue = $"{oldPickUpTime} { oldPickUpTimeZone}",
+                NewValue = $"{job.UcjbTime:dd/MM/yyyy HH:mm} {job.PickupTimeZone?.Name}",
+                ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+                StaffId = _infoService.GetStaffId(),
+                UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
+            };
+
+            await Context.JobDeliveryJourneys.AddAsync(journeyRecord);
         }
+
         await Context.SaveChangesAsync();
     }
 
     private async Task UpdateTucJob(int jobId, JobProperty property, string value)
     {
+        var staffId = _infoService.GetStaffId();
         var job = await Context
             .TucJobs.Where(j => j.UcjbId == jobId)
             .Include(j => j.TucJobNationwides)
@@ -63,20 +109,36 @@ public partial class JobRepository
             .Include(j => j.NotifiedJobType)
             .Include(j => j.UcjbSpeedNavigation)
             .Include(j => j.DeliverToLeave)
+            .Include(j => j.UcjbStatusNavigation)
             .FirstOrDefaultAsync();
 
         ArgumentNullException.ThrowIfNull(job);
 
         var updateNote = string.Empty;
+        var oldValue = string.Empty;
+
+        // Internal Status handled separately 
+        if (property == JobProperty.InternalStatusID)
+        {
+            await UpdateJobInternalStatusAsync(job, value, staffId);
+            return;
+        }
 
         // Update the correct field prop
         switch (property)
         {
             case JobProperty.ConNote:
                 if (job.ParentId != null)
+                {
+                    oldValue = job.Parent.Connote;
                     job.Parent.Connote = value;
+                }
                 else
+                {
+                    oldValue = job.Connote;
                     job.Connote = value;
+                }
+
                 break;
             case JobProperty.AirportOnly:
                 var airportOnly = bool.Parse(value);
@@ -94,13 +156,16 @@ public partial class JobRepository
                 updateNote = $"Changed Size to {job.UcjbSize}";
                 break;
             case JobProperty.Items:
+                oldValue = job.UcjbQty.ToString();
                 job.UcjbQty = short.Parse(value);
                 break;
             case JobProperty.SpeedID:
+                oldValue = job.UcjbSpeedNavigation?.UcjtName;
                 job.UcjbSpeed = short.Parse(value);
                 updateNote = $"Changed Speed to {job.UcjbSpeedNavigation?.UcjtName}";
                 break;
             case JobProperty.AcceptedJobTypeID when !job.UcjbJobDone:
+                oldValue = job.UcjbSpeedNavigation?.UcjtName;
                 job.UcjbSpeed = short.Parse(value);
                 break;
             case JobProperty.Weight:
@@ -110,18 +175,18 @@ public partial class JobRepository
                 if (job.Parent != null)
                 {
                     job.Parent.UcjbWeight = weight;
-                    if (job.Parent.InverseParent.Count != 0) 
-                        foreach (var siblingJob in job.Parent.InverseParent) 
+                    if (job.Parent.InverseParent.Count != 0)
+                        foreach (var siblingJob in job.Parent.InverseParent)
                             siblingJob.UcjbWeight = weight;
                 }
                 else
                 {
                     job.UcjbWeight = weight;
-                    if (job.InverseParent != null && job.InverseParent.Count != 0) 
-                        foreach (var childJob in job.InverseParent) 
+                    if (job.InverseParent != null && job.InverseParent.Count != 0)
+                        foreach (var childJob in job.InverseParent)
                             childJob.UcjbWeight = weight;
                 }
-                
+
                 updateNote = $"Changed Weight to {weight}";
                 break;
             case JobProperty.ClientID:
@@ -130,6 +195,7 @@ public partial class JobRepository
                 updateNote = $"Changed Client to {job.UcjbClient?.UcclCode}";
                 break;
             case JobProperty.ClientCode:
+                oldValue = job.UcjbClientCode;
                 job.UcjbClientCode = value[..Math.Min(value.Length, 5)];
                 break;
             case JobProperty.ContactID:
@@ -158,41 +224,8 @@ public partial class JobRepository
             case JobProperty.VanOK:
                 job.VanOk = bool.Parse(value);
                 break;
-            case JobProperty.InternalStatusID:
-                var internalStatusId = int.Parse(value);
-                job.InternalStatus = internalStatusId;
-
-                // Handle followup time
-                if (!new[]
-                    {
-                        (int)InternalJobStatus.NewJobs,
-                        (int)InternalJobStatus.Reprice
-                    }.Contains(internalStatusId))
-                {
-                    // Safely handle DefaultMinutes when InternalStatusNavigation is null
-                    var defaultMinutes = job.InternalStatusNavigation?.DefaultMinutes ?? 0;
-                    job.FollowupTime = _infoService.GetCurrentTenantTime().AddMinutes(defaultMinutes);
-                }
-                else
-                {
-                    job.FollowupTime = null;
-                }
-
-                job.UcjbStatus = internalStatusId switch
-                {
-                    // Handle status changes
-                    3 when job.UcjbStatus != 9 => 9,
-                    1 when job.UcjbStatus != 1 => 1,
-                    4 when job.UcjbStatus != 6 => 6,
-                    _ => job.UcjbStatus
-                };
-
-                // Safely handle TcisName when InternalStatusNavigation is null
-                updateNote = job.InternalStatusNavigation != null
-                    ? $"Changed Job Follow Up to {job.InternalStatusNavigation.TcisName}"
-                    : $"Changed Job Follow Up to status {internalStatusId}";
-                break;
             case JobProperty.Status:
+                oldValue = job.UcjbStatusNavigation?.UcjsName;
                 job.UcjbStatus = int.Parse(value);
                 break;
             case JobProperty.RefA:
@@ -205,9 +238,11 @@ public partial class JobRepository
                 job.UcjbOurRef = value[..Math.Min(value.Length, 20)];
                 break;
             case JobProperty.FromContactName:
+                oldValue = job.PickupFromContact;
                 job.PickupFromContact = value[..Math.Min(value.Length, 100)];
                 break;
             case JobProperty.ToContactName:
+                oldValue = job.DeliverToContact;
                 job.DeliverToContact = value[..Math.Min(value.Length, 100)];
                 break;
             case JobProperty.FromContactPhone:
@@ -244,6 +279,7 @@ public partial class JobRepository
 
                 break;
             case JobProperty.CompletedTime:
+                oldValue = job.UcjbComplTime.ToString();
                 job.UcjbComplTime = DateTime.Parse(value);
                 break;
             case JobProperty.DGClass:
@@ -267,16 +303,20 @@ public partial class JobRepository
                 updateNote = "Job marked as void";
                 break;
             case JobProperty.TrackingMobile:
+                oldValue = job.TrackingMobile;
                 job.TrackingMobile = value[..Math.Min(value.Length, 100)];
                 break;
             case JobProperty.TrackingEmail:
+                oldValue = job.TrackingEmail;
                 job.TrackingEmail = value[..Math.Min(value.Length, 100)];
                 break;
             case JobProperty.PODName:
             case JobProperty.PodName:
+                oldValue = job.UcjbPodname;
                 job.UcjbPodname = value[..Math.Min(value.Length, 100)];
                 break;
             case JobProperty.Amount:
+                oldValue = job.UcjbAmount.ToString();
                 job.UcjbAmount = decimal.Parse(value);
                 job.RatedManually = true;
                 break;
@@ -305,18 +345,22 @@ public partial class JobRepository
                 job.AcceptedJobTypeId = short.Parse(value);
                 break;
             case JobProperty.Locked:
+                oldValue = job.UcjbLocked.ToString();
                 job.UcjbLocked = bool.Parse(value);
                 break;
             case JobProperty.PuTime:
                 job.PickUpTime = DateTime.Parse(value);
                 break;
             case JobProperty.DeliverBy:
+                oldValue = job.DeliverByTime.ToString();
                 job.DeliverByTime = DateTime.Parse(value);
                 break;
             case JobProperty.BookedTime:
+                oldValue = job.UcjbDate.ToLongDateString();
                 job.UcjbDate = DateTime.Parse(value);
                 break;
             case JobProperty.FollowupTime:
+                oldValue = job.FollowupTime?.ToLongDateString();
                 job.FollowupTime = DateTime.Parse(value);
                 updateNote = $"Followup Time updated to {job.FollowupTime:dd/MM/yyyy HH:mm}";
                 break;
@@ -330,23 +374,35 @@ public partial class JobRepository
             case JobProperty.DaysOfWeek:
             case JobProperty.Frequency:
             case JobProperty.HolidayDelivery:
+            case JobProperty.InternalStatusID:
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
         }
-        
-       await Context.SaveChangesAsync();
 
-        if (!string.IsNullOrEmpty(updateNote))
-            await JobUpdateAddNote(jobId, true, updateNote);
+        var journeyRecord = new JobDeliveryJourney
+        {
+            JobId = jobId,
+            Comments = updateNote,
+            FieldName = property.ToString(),
+            OldValue = oldValue,
+            NewValue = value,
+            ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+            StaffId = staffId,
+            UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
+        };
+
+        await Context.JobDeliveryJourneys.AddAsync(journeyRecord);
+        await Context.SaveChangesAsync();
 
         // Add additional notes for undeliverable location
         if (property == JobProperty.UndeliverableLocationID && job.UndeliverableLocation?.Message != null)
             await JobUpdateAddNote(jobId, true, job.UndeliverableLocation.Message);
     }
-    
 
     private async Task UpdateTucJobArchive(int jobId, JobProperty property, string value)
     {
+        var staffId = _infoService.GetStaffId();
+
         var archive = await Context
             .TucJobArchives.Join(
                 Context.TucClients,
@@ -554,12 +610,16 @@ public partial class JobRepository
                 if (archive.Job.ParentId != null)
                 {
                     archive.Parent.UcjbWeight = weight;
-                    if (archive.InverseParent.Any()) foreach (var siblingJob in archive.InverseParent) siblingJob.UcjbWeight = weight;
+                    if (archive.InverseParent.Any())
+                        foreach (var siblingJob in archive.InverseParent)
+                            siblingJob.UcjbWeight = weight;
                 }
                 else
                 {
                     archive.Job.UcjbWeight = weight;
-                    if (archive.InverseParent.Any()) foreach (var childJob in archive.InverseParent) childJob.UcjbWeight = weight;
+                    if (archive.InverseParent.Any())
+                        foreach (var childJob in archive.InverseParent)
+                            childJob.UcjbWeight = weight;
                 }
 
                 break;
@@ -763,15 +823,26 @@ public partial class JobRepository
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
         }
 
-        if (!string.IsNullOrEmpty(updateNote)) await JobUpdateAddNote(jobId, false, updateNote);
+        var journeyRecord = new JobDeliveryJourneyArchive
+        {
+            JobId = jobId,
+            Comments = updateNote,
+            FieldName = property.ToString(),
+            NewValue = value,
+            ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+            StaffId = staffId,
+            UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
+        };
 
+        await Context.JobDeliveryJourneyArchives.AddAsync(journeyRecord);
+        
         // Add additional notes for undeliverable location
         if (property == JobProperty.UndeliverableLocationID && archive.UndeliverableLocation?.Message != null)
             await JobUpdateAddNote(jobId, false, archive.UndeliverableLocation.Message);
 
         await Context.SaveChangesAsync();
     }
-    
+
     private async Task JobUpdateAddNote(int jobId, bool isLiveJob, string updateNote)
     {
         var staffId = _infoService.GetStaffId();
@@ -787,7 +858,57 @@ public partial class JobRepository
             NoteTypeId = (int)NoteType.InternalNote,
             IsImportant = false
         };
-        
+
         await Context.TucNotes.AddAsync(newNote);
+    }
+
+    private async Task UpdateJobInternalStatusAsync(TucJob job, string value, int staffId)
+    {
+        var newInternalStatusId = int.Parse(value);
+        var oldInternalStatusId = job.InternalStatus;
+        job.InternalStatus = newInternalStatusId;
+
+        // Handle followup time
+        if (!new[]
+            {
+                (int)InternalJobStatus.NewJobs,
+                (int)InternalJobStatus.Reprice
+            }.Contains(newInternalStatusId))
+        {
+            // Safely handle DefaultMinutes when InternalStatusNavigation is null
+            var defaultMinutes = job.InternalStatusNavigation?.DefaultMinutes ?? 0;
+            job.FollowupTime = _infoService.GetCurrentTenantTime().AddMinutes(defaultMinutes);
+        }
+        else
+        {
+            job.FollowupTime = null;
+        }
+
+        job.UcjbStatus = newInternalStatusId switch
+        {
+            // Handle status changes
+            3 when job.UcjbStatus != 9 => 9,
+            1 when job.UcjbStatus != 1 => 1,
+            4 when job.UcjbStatus != 6 => 6,
+            _ => job.UcjbStatus
+        };
+
+        var comment = job.InternalStatusNavigation != null
+            ? $"Changed Job Follow Up to {job.InternalStatusNavigation.TcisName}"
+            : $"Changed Job Follow Up to status {newInternalStatusId}";
+
+        var journeyRecord = new JobDeliveryJourney
+        {
+            JobId = job.UcjbId,
+            OldInternalStatusId = oldInternalStatusId,
+            NewInternalStatusId =  newInternalStatusId,
+            Comments = comment,
+            ChangeType = nameof(DeliveryJourneyChangeType.InternalStatus),
+            StaffId = staffId,
+            UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
+        };
+
+        await Context.JobDeliveryJourneys.AddAsync(journeyRecord);
+        await Context.SaveChangesAsync();
     }
 }

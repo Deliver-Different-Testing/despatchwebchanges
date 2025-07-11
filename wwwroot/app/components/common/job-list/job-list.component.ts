@@ -133,23 +133,23 @@ class JobsListController extends BaseController {
     }
 
     private setupJobListVariables() {
+        // Default all too dense
+        this.densityMode = DensityMode.Dense;
+        
         switch (this.jobListType) {
             case JobListType.DispatchJobList:
                 this.allowDispatch = true;
                 this.allowSearch = true;
-                this.densityMode = DensityMode.Normal;
                 break;
             case JobListType.CurrentWorkList:
                 this.allowDispatch = false;
                 this.allowSearch = false;
-                this.densityMode = DensityMode.Dense;
                 break;
             case JobListType.NationwideJobList:
             case JobListType.NationwidePodJobList:
             case JobListType.NationwideRepriceJobList:
                 this.allowDispatch = false;
                 this.allowSearch = true;
-                this.densityMode = DensityMode.Dense;
                 break;
         }
 

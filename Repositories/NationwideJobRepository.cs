@@ -159,6 +159,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 }
             }
 
+            // Note Record
             var note = new TucNote
             {
                 JobId = jobId,
@@ -167,8 +168,19 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 CreatedBy = _infoService.GetStaffId(),
                 CreatedDate = currentTime
             };
-
-            await Context.AddAsync(note);
+            await Context.TucNotes.AddAsync(note);
+                   
+            // Delivery Journey Record
+            var journeyRecord = new JobDeliveryJourney
+            {
+                JobId = jobId,
+                FlightId = jobNationwide.UcnwId,
+                ChangeType = nameof(DeliveryJourneyChangeType.FlightAssignment),
+                StaffId = _infoService.GetStaffId(),
+                UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
+            };
+            await Context.JobDeliveryJourneys.AddAsync(journeyRecord);
+            
             await Context.SaveChangesAsync();
         }
         catch (Exception e)
@@ -356,6 +368,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             }
         }
 
+        // Note Record
         var note = new TucNote
         {
             JobId = jobId,
@@ -364,8 +377,18 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             CreatedBy = _infoService.GetStaffId(),
             CreatedDate = currentDate
         };
-
-        await Context.AddAsync(note);
+        await Context.TucNotes.AddAsync(note);
+        
+        var journeyRecord = new JobDeliveryJourney
+        {
+            JobId = jobId,
+            NewAgentId = agentId,
+            ChangeType = nameof(DeliveryJourneyChangeType.AgentAssignment),
+            StaffId = _infoService.GetStaffId(),
+            UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
+        };
+        await Context.JobDeliveryJourneys.AddAsync(journeyRecord);
+        
         await Context.SaveChangesAsync();
 
         return true;

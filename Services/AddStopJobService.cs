@@ -244,7 +244,7 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
             PickupTimeZoneId = job.PickupTimeZoneId,
             DeliverByTimeZoneId = job.DeliverByTimeZoneId,
             TotalDistance = null,
-            RatedManually = true,
+            RatedManually = true
         };
 
         // Insert the new job stop

@@ -11,8 +11,7 @@ import {AppConfig} from "../../../interfaces/app-config.interface";
 import dayjs from "dayjs";
 import TasksService from "../../../services/tasks.service";
 
-export class TaskListItemController extends BaseController {
-    readonly isUsCustomer: boolean = false;
+class TaskListItemController extends BaseController {
     static $inject = [
         'selectDialogService',
         'editDateTimeDialogService',
@@ -24,6 +23,7 @@ export class TaskListItemController extends BaseController {
         'APP_CONFIG',
     ];
 
+    readonly isUsCustomer: boolean = false;
     task?: ExtendedTask;
     config?: ITaskListItemConfig;
     onTaskUpdated?: () => void;

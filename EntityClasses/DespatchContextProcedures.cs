@@ -440,7 +440,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DES_stpJob_AutoDespatchChildJobsAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<DES_stpJob_AutoDespatchChildJobsResult>> DES_stpJob_AutoDespatchChildJobsAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -459,7 +459,7 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DES_stpJob_AutoDespatchChildJobs] @JobID = @JobID", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<DES_stpJob_AutoDespatchChildJobsResult>("EXEC @returnValue = [dbo].[DES_stpJob_AutoDespatchChildJobs] @JobID = @JobID", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
@@ -511,7 +511,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DES_stpJob_DisplayInDespatchAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<DES_stpJob_DisplayInDespatchResult>> DES_stpJob_DisplayInDespatchAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -530,7 +530,7 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DES_stpJob_DisplayInDespatch] @JobID = @JobID", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<DES_stpJob_DisplayInDespatchResult>("EXEC @returnValue = [dbo].[DES_stpJob_DisplayInDespatch] @JobID = @JobID", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
@@ -828,7 +828,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DESWEB_stpJob_AddNotesAsync(int? jobID, string notes, string username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<DESWEB_stpJob_AddNotesResult>> DESWEB_stpJob_AddNotesAsync(int? jobID, string notes, string username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -861,7 +861,7 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpJob_AddNotes] @JobID = @JobID, @Notes = @Notes, @Username = @Username", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<DESWEB_stpJob_AddNotesResult>("EXEC @returnValue = [dbo].[DESWEB_stpJob_AddNotes] @JobID = @JobID, @Notes = @Notes, @Username = @Username", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
@@ -907,7 +907,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DESWEB_stpJobItems_DeleteAsync(int? jobID, int? itemID, bool? prebook, string username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<DESWEB_stpJobItems_DeleteResult>> DESWEB_stpJobItems_DeleteAsync(int? jobID, int? itemID, bool? prebook, string username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -945,14 +945,14 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpJobItems_Delete] @JobID = @JobID, @ItemID = @ItemID, @Prebook = @Prebook, @Username = @Username", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<DESWEB_stpJobItems_DeleteResult>("EXEC @returnValue = [dbo].[DESWEB_stpJobItems_Delete] @JobID = @JobID, @ItemID = @ItemID, @Prebook = @Prebook, @Username = @Username", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
             return _;
         }
 
-        public virtual async Task<int> DESWEB_stpJobItems_InsertAsync(int? jobID, int? items, double? weight, double? length, double? height, double? depth, bool? pU, bool? dO, int? dGClass, string notes, bool? prebook, string username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<DESWEB_stpJobItems_InsertResult>> DESWEB_stpJobItems_InsertAsync(int? jobID, int? items, double? weight, double? length, double? height, double? depth, bool? pU, bool? dO, int? dGClass, string notes, bool? prebook, string username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -1039,14 +1039,14 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpJobItems_Insert] @JobID = @JobID, @Items = @Items, @Weight = @Weight, @Length = @Length, @Height = @Height, @Depth = @Depth, @PU = @PU, @DO = @DO, @DGClass = @DGClass, @Notes = @Notes, @Prebook = @Prebook, @Username = @Username", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<DESWEB_stpJobItems_InsertResult>("EXEC @returnValue = [dbo].[DESWEB_stpJobItems_Insert] @JobID = @JobID, @Items = @Items, @Weight = @Weight, @Length = @Length, @Height = @Height, @Depth = @Depth, @PU = @PU, @DO = @DO, @DGClass = @DGClass, @Notes = @Notes, @Prebook = @Prebook, @Username = @Username", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
             return _;
         }
 
-        public virtual async Task<int> DESWEB_stpJobItems_UpdateAsync(int? jobID, int? itemID, int? items, double? weight, double? length, double? height, double? depth, bool? pU, bool? dO, int? dGClass, string notes, bool? prebook, string username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<DESWEB_stpJobItems_UpdateResult>> DESWEB_stpJobItems_UpdateAsync(int? jobID, int? itemID, int? items, double? weight, double? length, double? height, double? depth, bool? pU, bool? dO, int? dGClass, string notes, bool? prebook, string username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -1139,7 +1139,7 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpJobItems_Update] @JobID = @JobID, @ItemID = @ItemID, @Items = @Items, @Weight = @Weight, @Length = @Length, @Height = @Height, @Depth = @Depth, @PU = @PU, @DO = @DO, @DGClass = @DGClass, @Notes = @Notes, @Prebook = @Prebook, @Username = @Username", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<DESWEB_stpJobItems_UpdateResult>("EXEC @returnValue = [dbo].[DESWEB_stpJobItems_Update] @JobID = @JobID, @ItemID = @ItemID, @Items = @Items, @Weight = @Weight, @Length = @Length, @Height = @Height, @Depth = @Depth, @PU = @PU, @DO = @DO, @DGClass = @DGClass, @Notes = @Notes, @Prebook = @Prebook, @Username = @Username", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
@@ -1886,7 +1886,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DESWEB_stpUpdateJobTypeAsync(int? jobID, int? jobType, string username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<DESWEB_stpUpdateJobTypeResult>> DESWEB_stpUpdateJobTypeAsync(int? jobID, int? jobType, string username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -1918,7 +1918,7 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpUpdateJobType] @JobID = @JobID, @JobType = @JobType, @Username = @Username", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<DESWEB_stpUpdateJobTypeResult>("EXEC @returnValue = [dbo].[DESWEB_stpUpdateJobType] @JobID = @JobID, @JobType = @JobType, @Username = @Username", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 

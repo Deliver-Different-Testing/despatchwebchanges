@@ -455,6 +455,8 @@ public partial class TucJob
 
     public string PickupCondition { get; set; }
 
+    public bool HasAttachments { get; set; }
+
     public virtual TucJobType AcceptedJobType { get; set; }
 
     public virtual TucAgent Agent { get; set; }
@@ -474,6 +476,8 @@ public partial class TucJob
     public virtual TucJobInternalStatus InternalStatusNavigation { get; set; }
 
     public virtual ICollection<TucJob> InverseParent { get; set; } = new List<TucJob>();
+
+    public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneys { get; set; } = new List<JobDeliveryJourney>();
 
     public virtual TblJobRelationshipType JobRelationshipType { get; set; }
 

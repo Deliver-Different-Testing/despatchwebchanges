@@ -1,7 +1,8 @@
 enum ToastType {
     SUCCESS = 'success',
     ERROR = 'error',
-    WARNING = 'warning'
+    WARNING = 'warning',
+    INFO = 'info',
 }
 
 class ToastrService implements angular.IServiceProvider {
@@ -21,13 +22,18 @@ class ToastrService implements angular.IServiceProvider {
         return this;
     }
 
+    showInfoToast(infoMessage: string) {
+        console.info("Info:", infoMessage);
+        return this.showToast(infoMessage, ToastType.INFO);
+    }
+
     showErrorToast(errorMessage: string = "An unexpected error occurred. Please try again or contact support") {
         console.error("Error:", errorMessage);
         return this.showToast(errorMessage, ToastType.ERROR);
     }
 
     showSuccessToast(successMessage: string) {
-        console.log("Success:", successMessage);
+        console.debug("Success:", successMessage);
         return this.showToast(successMessage, ToastType.SUCCESS);
     }
 

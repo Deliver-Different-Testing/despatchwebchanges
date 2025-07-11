@@ -228,4 +228,5 @@ public interface IJobRepository
         where T : class;
 
     Task SaveChangesAsync();
+    Task<List<DeliveryJourneyViewModel>> GetDeliveryJourneyForJobAsync(int jobId);
 }
