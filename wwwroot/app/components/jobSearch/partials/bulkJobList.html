@@ -1,4 +1,4 @@
-<div ng-if="!ctrl.bulkJobPromise && (ctrl.bulkJobList || ctrl.bulkJobList.length > 0)">
+<div ng-if="!ctrl.isBulkJobListLoading && (ctrl.bulkJobList || ctrl.bulkJobList.length > 0)">
     <md-table-container class="table-scroll-with-pagination">
         <table md-dense md-progress="ctrl.bulkJobPromise" md-table>
             <thead fix-head md-head md-on-reorder="ctrl.orderList('bulkJobList', ctrl.bulkJobQuery.order)"
@@ -34,7 +34,7 @@
                     ng-click="ctrl.selectBulkJobDetail(job.id)"
                     ng-repeat="job in ctrl.bulkJobList | filter: box.searchBox | orderBy: ctrl.bulkJobQuery.order">
 
-                <td md-cell>{{job.booked | momentFormat:"DD/MM/YY HH:mm"}} ({{ctrl.timeZone | timezoneShort}})</td>
+                <td md-cell>{{job.booked | momentFormat:"DD/MM/YY HH:mm"}} ({{::ctrl.timeZone | timezoneShort}})</td>
                 <td class="status" md-cell ng-class="job.status">{{job.status}}</td>
                 <td md-cell ng-click="ctrl.speedColumnClick($event); $event.stopPropagation()">{{job.speed}}</td>
                 <td md-cell>{{job.jobNo}}</td>
@@ -67,7 +67,7 @@
 </div>
 
 <no-data
-        ng-if="!ctrl.bulkJobPromise && (!ctrl.bulkJobList || ctrl.bulkJobList.length === 0)"
+        ng-if="!ctrl.isBulkJobListLoading && (!ctrl.bulkJobList || ctrl.bulkJobList.length === 0)"
         title="No Bulk Jobs Found"
         message="There are currently no bulk jobs to display."
         icon="content_paste"

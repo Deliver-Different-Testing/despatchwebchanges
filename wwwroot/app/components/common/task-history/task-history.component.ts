@@ -1,6 +1,6 @@
 ﻿import "./task-history.styles.less";
 import BaseController from "../../base-controller";
-import {ITaskHistoryConfig, DeliveryJourneyViewModel} from "./task-history.interfaces";
+import {IDeliveryHistoryConfig, DeliveryJourneyViewModel} from "./task-history.interfaces";
 import ToastrService from "../../../services/toastr.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import dayjs from "dayjs";
@@ -19,7 +19,7 @@ class TaskHistoryController extends BaseController {
     readonly isUsCustomer: boolean = false;
 
     jobId?: number;
-    config?: ITaskHistoryConfig;
+    config?: IDeliveryHistoryConfig;
     onDeliveryEventClick?: (params: { deliveryEvent: DeliveryJourneyViewModel }) => void;
     timeZone: string;
     shouldAnimate: boolean = false;
@@ -34,9 +34,9 @@ class TaskHistoryController extends BaseController {
         timestamp: string;
     }> = [];
 
-    isDenseMode: boolean = false;
-    showFullToolbar: boolean = true;
-    historyLoading: boolean = false;
+    isDenseMode?: boolean;
+    showFullToolbar?: boolean;
+    historyLoading?: boolean;
 
     constructor(
         private toastrService: ToastrService,
@@ -52,28 +52,21 @@ class TaskHistoryController extends BaseController {
 
         this.isUsCustomer = appConfig.US_Customer;
         this.timeZone = TimeZone;
-
-        this.config = {
-            showSummaryStats: true,
-            denseMode: false,
-        };
     }
 
     $onInit() {
         this.loadDeliveryJourney();
         this.startAnimation();
         this.setUpRefreshInterval();
-        this.updateDenseMode();
+
+        this.isDenseMode = this.config?.denseMode || false;
+        this.showFullToolbar = this.config?.showFullToolbar || false;
     }
 
     $onChanges(changes: angular.IOnChangesObject) {
         if (changes.jobId) this.loadDeliveryJourney();
     }
-
-    private updateDenseMode() {
-        this.isDenseMode = this.config?.denseMode || false;
-    }
-
+    
     toggleDenseMode() {
         this.isDenseMode = !this.isDenseMode;
         if (this.config) {
@@ -281,7 +274,6 @@ export const TaskHistoryComponent: angular.IComponentOptions = {
     bindings: {
         jobId: '<',
         config: '<',
-        showFullToolbar: '<',
         onDeliveryEventClick: '&'
     },
 }

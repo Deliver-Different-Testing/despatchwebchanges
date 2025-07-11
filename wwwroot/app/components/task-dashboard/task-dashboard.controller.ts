@@ -11,7 +11,7 @@ import {ContactID} from "../../contants";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import timezone from 'dayjs/plugin/timezone';
-import {ITaskHistoryConfig} from "../common/task-history/task-history.interfaces";
+import {IDeliveryHistoryConfig} from "../common/task-history/task-history.interfaces";
 
 class TaskDashboardController extends BaseController {
     static $inject = [
@@ -72,7 +72,7 @@ class TaskDashboardController extends BaseController {
 
     // Task history
     selectedTask?: ExtendedTask;
-    taskHistoryConfig: ITaskHistoryConfig = {
+    taskHistoryConfig: IDeliveryHistoryConfig = {
         showSummaryStats: true,
         refreshInterval: 5000,
     };

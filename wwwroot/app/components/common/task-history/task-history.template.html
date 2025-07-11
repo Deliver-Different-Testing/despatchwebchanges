@@ -25,26 +25,21 @@
     </md-toolbar>
 
     <!-- Minimal Toolbar -->
-    <md-toolbar class="md-accent minimal-toolbar" ng-if="!ctrl.showFullToolbar">
-        <div class="md-toolbar-tools">
-            <div flex></div>
-
-            <md-button class="md-icon-button dense-toggle-btn"
+    <div class="simple-header" ng-if="!ctrl.showFullToolbar">
+        <div class="header-actions">
+            <md-button class="md-icon-button"
                        ng-click="ctrl.toggleDenseMode()"
-                       aria-label="Toggle Dense Mode"
                        md-tooltip="{{ctrl.isDenseMode ? 'Disable Dense Mode' : 'Enable Dense Mode'}}">
                 <md-icon md-font-set="material-symbols-outlined">
                     {{ctrl.isDenseMode ? 'view_compact_alt' : 'view_compact'}}
                 </md-icon>
             </md-button>
-
-            <md-button class="md-icon-button refresh-btn"
-                       ng-click="ctrl.refreshJourney()"
-                       aria-label="Refresh">
+            <md-button class="md-icon-button"
+                       ng-click="ctrl.refreshJourney()">
                 <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
             </md-button>
         </div>
-    </md-toolbar>
+    </div>
 
     <!-- Progress indicator -->
     <md-progress-linear md-mode="indeterminate"
@@ -151,7 +146,7 @@
 
 <!-- No Job Selected State -->
 <div class="{{ctrl.getWidgetClass()}}" ng-if="!ctrl.jobId">
-    <md-toolbar class="md-accent">
+    <md-toolbar class="md-accent" ng-if="ctrl.showFullToolbar">
         <div class="md-toolbar-tools">
             <md-icon md-font-set="material-symbols-outlined">rocket_launch</md-icon>
             <span class="md-headline-title" flex style="margin-left: 8px;"> Delivery Journey</span>
