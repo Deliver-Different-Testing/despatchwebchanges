@@ -218,8 +218,8 @@ class HomeController extends BaseController {
             this.currentSelection = ` for Job ${newJob.jobNo}`;
         });
 
-        this.watchEvent('jobReadChanged', (_, data: IJobReadChanged) => {
-            this.markJobReadStatus(data.jobId, data.isRead);
+        this.watchEvent('jobReadChanged', async (_, data: IJobReadChanged) => {
+            await this.markJobReadStatus(data.jobId, data.isRead);
         });
 
         this.boxSortableOptions = {
@@ -1611,14 +1611,14 @@ class HomeController extends BaseController {
 
         if (!job) return;
 
-        // Cancel any existing task loading for previous job
+        // Cancel any existing task loading for a previous job
         if (this.currentJobId && this.currentJobId !== job.id) {
             this.tasksService.cancelJobTaskLoading(this.currentAppPage, this.currentJobId);
         }
         
-        this.markJobReadStatus(job.id, true);
+        await this.markJobReadStatus(job.id, true);
 
-        // Load tasks in background without blocking job selection
+        // Load tasks in the background without blocking job selection
         this.loadSupportsInBackground(undefined, job.id);
 
         this.selectedJobs = [];
@@ -2403,7 +2403,7 @@ class HomeController extends BaseController {
         await this.loadSupports(filterType);
     }
 
-    private markJobReadStatus(jobId: number, isRead: boolean) {
+    private async markJobReadStatus(jobId: number, isRead: boolean) {
         const jobIndex = this.jobList.findIndex((job) => job.id === jobId);
         if (jobIndex !== -1) {
             this.jobList[jobIndex] = {
@@ -2411,6 +2411,8 @@ class HomeController extends BaseController {
                 hasBeenRead: isRead
             };
         }
+
+        await this.DispatchData.updateJobReadStatus(jobId, isRead);
     }
     
     async openHubUrl() {
