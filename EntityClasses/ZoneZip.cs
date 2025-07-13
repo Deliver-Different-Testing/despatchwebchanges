@@ -27,5 +27,7 @@ public partial class ZoneZip
 
     public bool? ApplyCongestion { get; set; }
 
+    public int? ZoneZipGroupId { get; set; }
+
     public virtual ZoneName ZoneName { get; set; }
 }

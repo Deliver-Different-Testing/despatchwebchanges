@@ -19,6 +19,7 @@ namespace DespatchWeb.EntityClasses
         Task<List<DES_qryTruckCourierStatusResult>> DES_qryTruckCourierStatusAsync(string courierID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_stpJob_AutoDespatchChildJobsResult>> DES_stpJob_AutoDespatchChildJobsAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_stpJob_ColsolidateMarsInformationResult>> DES_stpJob_ColsolidateMarsInformationAsync(int? jobID, bool? consolidate, string userName, int? despatchChangesID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<DES_stpJob_DirectToASAPResult>> DES_stpJob_DirectToASAPAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_stpJob_DisplayInDespatchResult>> DES_stpJob_DisplayInDespatchAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_stpJob_SplitJobResult>> DES_stpJob_SplitJobAsync(int? jobID, bool? preBookJob, string userName, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_stpJob_SplitJobRestoreResult>> DES_stpJob_SplitJobRestoreAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);

@@ -51,5 +51,9 @@ public partial class TucInvoiceNo
 
     public DateTime? DueDate { get; set; }
 
+    public string PpdCode { get; set; }
+
+    public string PpdItemCode { get; set; }
+
     public virtual TucClient UcinClient { get; set; }
 }

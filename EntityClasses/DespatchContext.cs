@@ -4418,6 +4418,8 @@ public partial class DespatchContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("PostedOA");
             entity.Property(e => e.Ppd).HasColumnType("numeric(18, 2)");
+            entity.Property(e => e.PpdCode).HasMaxLength(50);
+            entity.Property(e => e.PpdItemCode).HasMaxLength(50);
             entity.Property(e => e.PpdTax).HasColumnType("numeric(18, 2)");
             entity.Property(e => e.ProcessId).HasColumnName("ProcessID");
             entity.Property(e => e.Sent).HasPrecision(3);
@@ -4524,8 +4526,6 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.FdcourierId, "IX_tucJob_FDCourierID");
 
             entity.HasIndex(e => e.FromAirportId, "IX_tucJob_FromAirportId");
-
-            entity.HasIndex(e => e.HasAttachments, "IX_tucJob_HasAttachments");
 
             entity.HasIndex(e => e.SourceId, "IX_tucJob_SourceID");
 
@@ -4990,8 +4990,6 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.FromAirportId, "IX_tucJobArchive_FromAirportId");
 
-            entity.HasIndex(e => e.HasAttachments, "IX_tucJobArchive_HasAttachments");
-
             entity.HasIndex(e => e.ToAirportId, "IX_tucJobArchive_ToAirportId");
 
             entity.HasIndex(e => e.InformationParentId, "InformationParentID");
@@ -5384,8 +5382,6 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
 
             entity.HasIndex(e => e.FromAirportId, "IX_tucJobBooking_FromAirportID");
-
-            entity.HasIndex(e => e.HasAttachments, "IX_tucJobBooking_HasAttachments");
 
             entity.HasIndex(e => e.ToAirportId, "IX_tucJobBooking_ToAirportID");
 
@@ -6655,6 +6651,7 @@ public partial class DespatchContext : DbContext
                 .IsRequired()
                 .HasMaxLength(20);
             entity.Property(e => e.ZoneNameId).HasColumnName("ZoneNameID");
+            entity.Property(e => e.ZoneZipGroupId).HasColumnName("ZoneZipGroupID");
 
             entity.HasOne(d => d.ZoneName).WithMany(p => p.ZoneZips)
                 .HasForeignKey(d => d.ZoneNameId)

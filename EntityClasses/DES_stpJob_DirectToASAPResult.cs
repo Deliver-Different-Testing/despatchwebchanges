@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DespatchWeb.EntityClasses
 {
-    public partial class MAP_stpClearListArea_EnvelopeResult
+    public partial class DES_stpJob_DirectToASAPResult
     {
     }
 }

@@ -471,8 +471,6 @@ public partial class TucJobArchive
 
     public string PickupCondition { get; set; }
 
-    public bool HasAttachments { get; set; }
-
     public virtual TucAgent Agent { get; set; }
 
     public virtual TimeZone DeliverByTimeZone { get; set; }
