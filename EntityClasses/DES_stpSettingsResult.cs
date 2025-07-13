@@ -243,5 +243,9 @@ namespace DespatchWeb.EntityClasses
         public string DefaultItemCode { get; set; }
         [StringLength(50)]
         public string DefaultItemCodeFuel { get; set; }
+        [StringLength(200)]
+        public string AccountsRefreshToken { get; set; }
+        [StringLength(200)]
+        public string AccountsTenantId { get; set; }
     }
 }

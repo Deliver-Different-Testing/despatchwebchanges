@@ -427,15 +427,72 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .FirstOrDefaultAsync();
 
         // If no airport ID found, get the closest one
-        if (airportId == null)
-        {
-            var nearbyAirports = await GetNearbyAirportsAsync(jobId);
-            if (nearbyAirports.Count != 0)
-            {
-                airportId = nearbyAirports.First().Id;
-                Log.Information("Using nearest airport {AirportId} for job {JobId}", airportId, jobId);
-            }
-        }
+        if (airportId != null)
+            return await Context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .Select(j => new NationwideJobDetail
+                {
+                    AirPortId = airportId,
+                    VehicleSizeId = j.UcjbSize,
+                    ClientId = j.UcjbClientId,
+                    FromZipCode = j.PickupAddressLine7,
+                    ToZipCode = j.DeliveryAddressLine7,
+                    TotalMiles = 20,
+                    TotalWeight = (decimal)j.UcjbWeight,
+                    BookTime = new DateTime(
+                        j.UcjbDate.Year,
+                        j.UcjbDate.Month,
+                        j.UcjbDate.Day,
+                        j.UcjbTime != null ? j.UcjbTime.Value.Hour : 0,
+                        j.UcjbTime != null ? j.UcjbTime.Value.Minute : 0,
+                        j.UcjbTime != null ? j.UcjbTime.Value.Second : 0
+                    ),
+                    DangerousGoods = j.Dgdocument,
+                    DryIceWeight = j.DryIceWeight,
+                    Quantity = j.UcjbQty,
+                    FromState = j.PickupAddressLine5,
+                    ToState = j.DeliveryAddressLine5,
+                    TotalPallets = null,
+                    ExtraStopOffs = true,
+                    WaitTime = null,
+                    Cubic = null
+                })
+                .FirstOrDefaultAsync();
+        
+        var nearbyAirports = await GetNearbyAirportsAsync(jobId);
+        if (nearbyAirports.Count == 0)
+            return await Context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .Select(j => new NationwideJobDetail
+                {
+                    AirPortId = airportId,
+                    VehicleSizeId = j.UcjbSize,
+                    ClientId = j.UcjbClientId,
+                    FromZipCode = j.PickupAddressLine7,
+                    ToZipCode = j.DeliveryAddressLine7,
+                    TotalMiles = 20,
+                    TotalWeight = (decimal)j.UcjbWeight,
+                    BookTime = new DateTime(
+                        j.UcjbDate.Year,
+                        j.UcjbDate.Month,
+                        j.UcjbDate.Day,
+                        j.UcjbTime != null ? j.UcjbTime.Value.Hour : 0,
+                        j.UcjbTime != null ? j.UcjbTime.Value.Minute : 0,
+                        j.UcjbTime != null ? j.UcjbTime.Value.Second : 0
+                    ),
+                    DangerousGoods = j.Dgdocument,
+                    DryIceWeight = j.DryIceWeight,
+                    Quantity = j.UcjbQty,
+                    FromState = j.PickupAddressLine5,
+                    ToState = j.DeliveryAddressLine5,
+                    TotalPallets = null,
+                    ExtraStopOffs = true,
+                    WaitTime = null,
+                    Cubic = null
+                })
+                .FirstOrDefaultAsync();
+        airportId = nearbyAirports.First().Id;
+        Log.Information("Using nearest airport {AirportId} for job {JobId}", airportId, jobId);
 
         return await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
