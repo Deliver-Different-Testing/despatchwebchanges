@@ -16,9 +16,7 @@ public interface ITaskRepository
     Task<List<Suggestion>> GetEventGroupsAsync();
     Task<List<EventGroupViewModel>> GetEventTypeGroupsAsync(int eventGroupId);
 
-    Task CreateEventsForJobAsync(
-        int jobId,
-        List<EventGroupViewModel> eventGroupViewModels);
+    Task CreateEventsForJobAsync(int jobId, List<EventGroupViewModel> eventGroupViewModels);
     Task<List<Suggestion>> GetActiveStaffAsync();
 
     Task AddEventAsync(

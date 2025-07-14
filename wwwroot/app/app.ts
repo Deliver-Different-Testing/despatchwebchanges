@@ -57,6 +57,7 @@ import TruckCourierStatusDialogService
 import MessagingService from "./services/messaging.service";
 import MessagingDialogService from "./components/dialogs/messaging-dialog/messaging-dialog.service";
 import MessagingDialogController from "./components/dialogs/messaging-dialog/messaging-dialog.controller";
+import ResolutionWarningService from "./services/resolution-warning.service";
 
 const app = (window as any).uDispatchApp;
 
@@ -96,8 +97,8 @@ app.config(["$mdThemingProvider", "APP_CONFIG",
 
 // Configs
 app.config(["$qProvider", ($qProvider: angular.IQProvider) => {
-        $qProvider.errorOnUnhandledRejections(false);
-    }])
+    $qProvider.errorOnUnhandledRejections(false);
+}])
     .config(["$mdDateLocaleProvider", "APP_CONFIG", (
         $mdDateLocaleProvider: angular.material.IDateLocaleProvider,
         appConfig: AppConfig) => {
@@ -153,6 +154,10 @@ app.config(["$qProvider", ($qProvider: angular.IQProvider) => {
         }
     }]);
 
+app.run(['resolutionWarningService', (resolutionWarningService: ResolutionWarningService) => {
+    resolutionWarningService.checkAndShowResolutionWarning();
+}]);
+
 // Filters
 app.filter("bytes", () => bytesFilter);
 app.filter("replace", () => replaceFilter);
@@ -198,9 +203,10 @@ app.service("addEventDialogService", AddEventDialogService);
 app.service("editParcelDimensionsDialogService", EditParcelDimensionsDialogService);
 app.service("autoCompleteDialogService", AutoCompleteDialogService);
 app.service("jobAddStopService", JobAddStopService);
-app.service("addressLookupService", AddressLookupService)
-app.service("truckCourierStatusDialogService", TruckCourierStatusDialogService)
-app.service("messagingService", MessagingService)
-app.service("messagingDialogService", MessagingDialogService)
+app.service("addressLookupService", AddressLookupService);
+app.service("truckCourierStatusDialogService", TruckCourierStatusDialogService);
+app.service("messagingService", MessagingService);
+app.service("messagingDialogService", MessagingDialogService);
+app.service('resolutionWarningService', ResolutionWarningService);
 
 export default app;

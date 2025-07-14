@@ -143,16 +143,15 @@ public class TaskRepository(
         return eventGroups;
     }
 
-    public async Task CreateEventsForJobAsync(
-        int jobId,
-        List<EventGroupViewModel> eventGroupViewModels)
+    public async Task CreateEventsForJobAsync(int jobId, List<EventGroupViewModel> eventGroupViewModels)
     {
         var job = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
-        ArgumentNullException.ThrowIfNull(job, nameof(job));
+        ArgumentNullException.ThrowIfNull(job);
+        ArgumentNullException.ThrowIfNull(job.UcjbClientId);
 
         var currentDate = infoService.GetCurrentTenantTime();
         var staffId = infoService.GetStaffId();
-        var despatcher = await Context.TucStaffs
+        var dispatcherName = await Context.TucStaffs
             .Where(s => s.UcstId == staffId)
             .Select(s => s.UcstFirstName + " " + s.UcstLastName)
             .FirstOrDefaultAsync();
@@ -178,7 +177,7 @@ public class TaskRepository(
                 description: eventGroup.EventType.Text,
                 courierId: job.UcjbCourierId,
                 jobId: job.UcjbId,
-                despatcher: despatcher,
+                despatcher: dispatcherName,
                 jobType: job.UcjbSpeed,
                 dueTime: eventGroup.DueTime
             );
@@ -192,7 +191,7 @@ public class TaskRepository(
             .Select(s => new Suggestion
             {
                 Id = s.UcstId,
-                Text = s.UcstFirstName + " " + s.UcstLastName
+                Text = $"{s.UcstFirstName} {s.UcstLastName}"
             })
             .OrderBy(s => s.Text)
             .AsNoTracking()
@@ -402,7 +401,7 @@ public class TaskRepository(
             UcevJobId = jobId,
             UcevDespatcher = despatcher,
             UcevJobType = jobType,
-            UcevDueTime = dueTime.HasValue ? infoService.ConvertUtcToTenantTime(dueTime.Value) : currentDate
+            UcevDueTime = dueTime ?? currentDate
         };
 
         await Context.TucEvents.AddAsync(newEvent);
