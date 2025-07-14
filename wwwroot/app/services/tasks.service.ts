@@ -309,15 +309,13 @@ class TasksService implements angular.IServiceProvider {
     }
 
     getTasksStatusCount(tasks: ExtendedTask[], statusType: string): number {
-        if (!tasks || !Array.isArray(tasks)) {
-            return 0;
-        }
+        if (!tasks || !Array.isArray(tasks)) return 0;
 
         switch (statusType) {
             case 'mine':
-                return tasks.filter(task => task.assignee.id === ContactID).length;
+                return tasks.filter(task => task.assignee?.id === ContactID).length;
             case 'unassigned':
-                return tasks.filter(task => !task.assignee.id).length;
+                return tasks.filter(task => !task.assignee?.id).length;
             case 'newest':
             case 'oldest':
                 return tasks.length;

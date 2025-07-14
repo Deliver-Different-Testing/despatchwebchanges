@@ -87,7 +87,7 @@
                                 </md-button>
 
                                 <!--Refresh-->
-                                <md-button class="md-icon-button md-primary"
+                                <md-button class="md-icon-button"
                                            ng-click="ctrl.refreshData()"
                                            ng-if="::ctrl.boxes[box.name].showRefresh">
                                     <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
@@ -95,7 +95,7 @@
 
                                 <!--Inactive Filter-->
                                 <md-menu ng-if="::ctrl.boxes[box.name].showFilter">
-                                    <md-button class="md-icon-button md-primary"
+                                    <md-button class="md-icon-button"
                                                ng-click="$mdMenu.open($event)">
                                         <md-icon md-font-set="material-symbols-outlined">filter_list</md-icon>
                                     </md-button>
