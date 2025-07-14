@@ -1,4 +1,9 @@
 ﻿class ResolutionWarningService implements angular.IServiceProvider {
+    static $inject = [
+        '$mdDialog',
+        '$window'
+    ];
+
     private readonly STORAGE_KEY = `resolution-warning-shown_${ContactID}`;
     private readonly MIN_WIDTH = 1920;
     private readonly MIN_HEIGHT = 1200;
