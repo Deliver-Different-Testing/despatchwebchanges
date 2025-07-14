@@ -278,9 +278,9 @@ class JobSearchController extends BaseController {
                 "templateUrl": "app/components/jobSearch/partials/map.html",
                 "showSearch": 0
             },
-            [JobSearchBoxes.JobHistory]: {
-                "title": "Job History",
-                "icon": "history",
+            [JobSearchBoxes.DeliveryJourney]: {
+                "title": "Delivery Journey",
+                "icon": "rocket_launch",
                 "templateUrl": "app/components/jobSearch/partials/jobHistory.html",
             }
         };
@@ -417,7 +417,7 @@ class JobSearchController extends BaseController {
                     {
                         id: "col4",
                         width: "20%",
-                        boxes: [{name: JobSearchBoxes.JobHistory, height: "100%"}],
+                        boxes: [{name: JobSearchBoxes.DeliveryJourney, height: "100%"}],
                     },
                 ],
             },

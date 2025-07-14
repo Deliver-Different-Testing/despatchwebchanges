@@ -2479,7 +2479,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 Title = n.CreatedByNavigation != null
                     ? $"Note added by {n.CreatedByNavigation.UcstFirstName} {n.CreatedByNavigation.UcstLastName}"
                     : "Note added by System",
-                Icon = "note",
+                Icon = "sticky_note_2",
                 Description = n.NoteText,
                 Date = n.UpdatedDate ?? n.CreatedDate,
                 Tags =
@@ -2507,7 +2507,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 Id = Guid.NewGuid(),
                 JobId = jobId,
                 Title = "Note added by System",
-                Icon = "note",
+                Icon = "sticky_note_2",
                 Description = n.NoteText,
                 Date = n.UpdatedDate ?? n.CreatedDate ?? DateTime.MinValue,
                 Tags =
@@ -2543,6 +2543,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             JobId = jobId,
             Title = m.Subject,
             Description = m.UcmmMessage,
+            Icon = "sms",
             Tags = new List<string>()
                 .Concat(m.UcmmSendToCourierId.HasValue || m.UcmmSendToStaffId.HasValue
                     ? new[]
@@ -2607,7 +2608,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     ? "Internal Status Changed"
                     : "Status Changed",
                 Description = s.Comments,
-                Icon = "status",
+                Icon = "update",
                 Tags =
                 [
                     s.ChangeType,
@@ -2647,7 +2648,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 Description = s.NewInternalStatusId != null && s.OldInternalStatusId != null
                     ? $"Internal Status changed from status ID {s.OldInternalStatusId} to {s.NewInternalStatusId}"
                     : $"Status changed from status ID {s.OldJobStatusId} to {s.NewJobStatusId}",
-                Icon = "status",
+                Icon = "update",
                 Tags =
                 [
                     s.ChangeType,

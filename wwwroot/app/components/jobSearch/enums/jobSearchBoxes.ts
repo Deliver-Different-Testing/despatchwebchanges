@@ -5,7 +5,7 @@
     JobDetail = "jobDetail",
     ScanList = "scanList",
     Map = "map",
-    JobHistory = "jobHistory"
+    DeliveryJourney = "deliveryJourney"
 }
 
 export default JobSearchBoxes;

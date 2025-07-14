@@ -1,12 +1,7 @@
 ﻿<div class="task-history">
-    <!-- Full Toolbar -->
-    <md-toolbar class="md-accent">
-        <div class="md-toolbar-tools">
-            <md-icon md-font-set="material-symbols-outlined">rocket_launch</md-icon>
-            <span class="md-headline-title" flex style="margin-left: 8px;">Delivery Journey</span>
-
-            <div flex></div>
-
+    <!-- Simple Header Bar -->
+    <div class="simple-header" ng-if="ctrl.jobId">
+        <div class="header-actions">
             <md-button class="md-icon-button dense-toggle-btn"
                        ng-click="ctrl.cycleDensityMode()"
                        aria-label="Cycle Density Mode"
@@ -14,18 +9,16 @@
                 <md-icon md-font-set="material-symbols-outlined">
                     {{ctrl.getDensityModeIcon()}}
                 </md-icon>
-                <md-tooltip md-direction="bottom">Switch Density</md-tooltip>
             </md-button>
 
             <md-button class="md-icon-button refresh-btn"
                        ng-click="ctrl.refreshJourney()"
                        aria-label="Refresh">
                 <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
-                <md-tooltip md-direction="bottom">Switch Density</md-tooltip>
             </md-button>
         </div>
-    </md-toolbar>
-    
+    </div>
+
     <div class="{{ctrl.getWidgetClass()}}" ng-if="ctrl.jobId">
         <!-- Progress indicator -->
         <md-progress-linear md-mode="indeterminate"
@@ -47,7 +40,7 @@
                     <!-- Step Icon -->
                     <div class="step-icon {{ctrl.getIconColorClass($index)}}">
                         <md-icon md-font-set="material-symbols-outlined">
-                            {{ctrl.getEventIconForType(item.data)}}
+                            {{ item.data.icon || 'inventory_2' }}
                         </md-icon>
                     </div>
 
@@ -55,19 +48,22 @@
                     <div class="step-content">
                         <div class="step-header">
                             <div class="step-title">{{item.data.title}}</div>
-                            <div class="step-time" ng-if="ctrl.densityMode !== ctrl.DensityMode.UltraDense">{{ctrl.formatDateTime(item.data.date)}}
+                            <div class="step-time" ng-if="ctrl.densityMode !== ctrl.DensityMode.UltraDense">
+                                {{ctrl.formatDateTime(item.data.date)}}
                                 <span ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">({{::ctrl.timeZone | timezoneShort}})</span>
                             </div>
                         </div>
 
-                        <div class="step-description" ng-if="item.data.description && ctrl.densityMode === ctrl.DensityMode.Normal">
+                        <div class="step-description"
+                             ng-if="item.data.description && ctrl.densityMode === ctrl.DensityMode.Normal">
                             {{item.data.description}}
                         </div>
 
                         <div class="step-details" ng-if="item.data.tags && item.data.tags.length > 0">
                         <span ng-repeat="tag in item.data.tags | limitTo:(ctrl.densityMode === ctrl.DensityMode.UltraDense ? 2 : ctrl.densityMode === ctrl.DensityMode.Dense ? 3 : 10)"
                               class="step-tag">
-                            <md-icon style="font-size: 20px;" md-font-set="material-symbols-outlined" ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">info</md-icon>
+                            <md-icon style="font-size: 20px;" md-font-set="material-symbols-outlined"
+                                     ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">info</md-icon>
                              {{tag}}
                         </span>
                             <span ng-if="ctrl.densityMode !== ctrl.DensityMode.Normal && item.data.tags.length > (ctrl.densityMode === ctrl.DensityMode.UltraDense ? 2 : 3)"
@@ -87,15 +83,19 @@
             </div>
 
             <!-- Automation Events Summary -->
-            <div class="automation-events" ng-if="ctrl.config.showSummaryStats !== false && ctrl.densityMode !== ctrl.DensityMode.UltraDense">
+            <div class="automation-events"
+                 ng-if="ctrl.config.showSummaryStats !== false && ctrl.densityMode !== ctrl.DensityMode.UltraDense">
                 <div class="events-header">
                     <div class="events-title">
-                        <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">summarize</md-icon>
+                        <md-icon md-font-set="material-symbols-outlined"
+                                 ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">summarize
+                        </md-icon>
                         Journey Summary
                     </div>
                     <div class="events-count">
                     <span class="summary-item completed">
-                        <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">delivery_truck_speed</md-icon>
+                        <md-icon md-font-set="material-symbols-outlined"
+                                 ng-if="ctrl.densityMode === ctrl.DensityMode.Normal">delivery_truck_speed</md-icon>
                         {{ctrl.getCompletedCount()}}
                     </span>
                     </div>

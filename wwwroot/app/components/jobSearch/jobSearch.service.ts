@@ -64,7 +64,8 @@ class JobSearchService implements angular.IServiceProvider {
                     fromDate: dayjs(fromDate).format(),
                     toDate: dayjs(toDate).format()
                 },
-                responseType: "blob"}
+                responseType: "blob"
+            }
         );
     }
 

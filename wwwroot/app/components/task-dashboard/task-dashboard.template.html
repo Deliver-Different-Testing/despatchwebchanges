@@ -255,13 +255,19 @@
 
         <!-- Right column - Task History -->
         <div flex="30" flex-xs="100" class="task-history-column">
-            <div style="height: calc(100vh - 200px); overflow-y: auto;">
+            <md-card class="task-history-card">
+                <md-toolbar class="md-accent">
+                    <div class="md-toolbar-tools">
+                        <md-icon md-font-set="material-symbols-outlined">rocket_launch</md-icon>
+                        <span class="md-headline-title" flex style="margin-left: 8px;">Delivery Journey</span>
+                    </div>
+                </md-toolbar>
+
                 <task-history
                         job-id="ctrl.selectedTask.jobId"
-                        config="ctrl.taskHistoryConfig"
-                        show-full-toolbar="true">
+                        config="ctrl.taskHistoryConfig">
                 </task-history>
-            </div>
+            </md-card>
         </div>
         
     </div>

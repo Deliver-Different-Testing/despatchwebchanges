@@ -189,22 +189,7 @@ class TaskHistoryController extends BaseController {
         const now = dayjs();
         return now.isAfter(eventDate) && event.status !== 'completed';
     }
-
-    getEventIconForType(event: DeliveryJourneyViewModel): string {
-        if (event.icon) return event.icon;
-
-        switch (event.status) {
-            case 'completed':
-                return 'check_circle';
-            case 'todo':
-                return 'error';
-            case 'pending':
-                return 'schedule';
-            default:
-                return 'inventory_2';
-        }
-    }
-
+    
     getIconColorClass(index: number): string {
         const colors = [
             'icon-color-1',
