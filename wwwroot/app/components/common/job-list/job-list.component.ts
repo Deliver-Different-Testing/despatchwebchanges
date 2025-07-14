@@ -3,13 +3,13 @@ import {AddressViewModel, AssignedFlight, IDispatchJob, Suggestion} from "../../
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
 import JobCategory from "./enums/jobCategory";
-import DensityMode from "./enums/densityMode";
 import {JobStatus} from "../../../enums/job-status.enum";
 import {ContactID, TimeZone} from "../../../contants";
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import JobListType from "./enums/jobListType";
 import JobHighlightService from "./job-highlight.service";
+import DensityMode from "../../../enums/densityMode";
 
 class JobsListController extends BaseController {
     static $inject = [

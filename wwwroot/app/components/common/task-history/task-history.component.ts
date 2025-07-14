@@ -6,6 +6,7 @@ import {AppConfig} from "../../../interfaces/app-config.interface";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import DispatchCoreService from "../../../services/dispatch-core.service";
+import DensityMode from "../../../enums/densityMode";
 
 class TaskHistoryController extends BaseController {
     static $inject = [
@@ -17,6 +18,7 @@ class TaskHistoryController extends BaseController {
     ];
 
     readonly isUsCustomer: boolean = false;
+    readonly DensityMode = DensityMode;
 
     jobId?: number;
     config?: IDeliveryHistoryConfig;
@@ -34,9 +36,8 @@ class TaskHistoryController extends BaseController {
         timestamp: string;
     }> = [];
 
-    isDenseMode?: boolean;
-    showFullToolbar?: boolean;
     historyLoading?: boolean;
+    densityMode: DensityMode = DensityMode.Normal;
 
     constructor(
         private toastrService: ToastrService,
@@ -59,27 +60,56 @@ class TaskHistoryController extends BaseController {
         this.startAnimation();
         this.setUpRefreshInterval();
 
-        this.isDenseMode = this.config?.denseMode || false;
-        this.showFullToolbar = this.config?.showFullToolbar || false;
+        this.densityMode = this.config?.densityMode || DensityMode.Normal;
     }
 
     $onChanges(changes: angular.IOnChangesObject) {
         if (changes.jobId) this.loadDeliveryJourney();
     }
-    
-    toggleDenseMode() {
-        this.isDenseMode = !this.isDenseMode;
+
+    cycleDensityMode() {
+        const modes: DensityMode[] = [DensityMode.Normal, DensityMode.Dense, DensityMode.UltraDense];
+        const currentIndex = modes.indexOf(this.densityMode);
+        const nextIndex = (currentIndex + 1) % modes.length;
+        this.densityMode = modes[nextIndex];
+
         if (this.config) {
-            this.config.denseMode = this.isDenseMode;
+            this.config.densityMode = this.densityMode;
+        }
+    }
+    
+    getWidgetClass(): string {
+        const baseClass = 'journey-widget';
+        const densityClass = this.densityMode !== DensityMode.Normal ? `${this.densityMode}-mode` : '';
+        return `${baseClass} ${densityClass}`.trim();
+    }
+
+    getDensityModeLabel(): string {
+        switch (this.densityMode) {
+            case DensityMode.Normal:
+                return 'Normal View';
+            case DensityMode.Dense:
+                return 'Dense View';
+            case DensityMode.UltraDense:
+                return 'Ultra-Dense View';
+            default:
+                return 'Normal View';
         }
     }
 
-    getWidgetClass(): string {
-        const baseClass = 'journey-widget';
-        const denseClass = this.isDenseMode ? 'dense-mode' : '';
-        return `${baseClass} ${denseClass}`.trim();
+    getDensityModeIcon(): string {
+        switch (this.densityMode) {
+            case DensityMode.Normal:
+                return 'view_agenda';
+            case DensityMode.Dense:
+                return 'view_compact';
+            case DensityMode.UltraDense:
+                return 'view_compact_alt';
+            default:
+                return 'view_agenda';
+        }
     }
-
+    
     private startAnimation() {
         this.registerTimeout(() => {
             this.shouldAnimate = true;

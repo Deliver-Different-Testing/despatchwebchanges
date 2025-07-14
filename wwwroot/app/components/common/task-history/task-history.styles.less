@@ -1,10 +1,11 @@
 ﻿@import '../../../../css/variables';
 
 .task-history {
+  margin-top: -12px;
+
   /* Journey Widget Styles */
 
   .journey-widget {
-    margin-top: -12px;
     background: white;
     border: 1px solid #e2e8f0;
     display: flex;
@@ -558,6 +559,114 @@
     }
   }
 
+  /* Ultra-Dense Mode Styles */
+
+  .journey-widget.ultra-dense-mode {
+    min-height: 300px;
+
+    .widget-content {
+      padding: 8px;
+    }
+
+    .step-item {
+      margin-bottom: 8px;
+      padding-left: 24px;
+
+      &:hover {
+        transform: translateX(2px);
+      }
+    }
+
+    .step-icon {
+      left: -8px;
+      width: 16px;
+      height: 16px;
+      border: 2px solid white;
+
+      md-icon {
+        font-size: 10px;
+      }
+    }
+
+    .journey-line {
+      left: 16px;
+      width: 2px;
+    }
+
+    .step-content {
+      padding: 4px 6px;
+      border-radius: 4px;
+    }
+
+    .step-header {
+      margin-bottom: 2px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+
+    .step-title {
+      font-size: 0.75rem;
+      font-weight: 500;
+      line-height: 1.2;
+    }
+
+    .step-time {
+      font-size: 0.6rem;
+      padding: 1px 3px;
+      align-self: flex-end;
+    }
+
+    .step-description {
+      display: none; // Hidden in ultra-dense mode
+    }
+
+    .step-tag {
+      font-size: 0.6rem;
+      padding: 1px 3px;
+      border-radius: 2px;
+    }
+
+    .step-notes {
+      display: none; // Hidden in ultra-dense mode
+    }
+
+    .automation-events {
+      margin-top: 12px;
+      padding-top: 8px;
+    }
+
+    .events-header {
+      margin-bottom: 8px;
+    }
+
+    .events-title {
+      font-size: 0.75rem;
+    }
+
+    .summary-item {
+      font-size: 0.6rem;
+      padding: 1px 4px;
+    }
+
+    .summary-stats {
+      gap: 4px;
+    }
+
+    .stat-row {
+      padding: 2px 0;
+    }
+
+    .stat-label, .stat-value {
+      font-size: 0.65rem;
+    }
+
+    .journey-steps {
+      max-height: 300px;
+      padding-left: 16px;
+    }
+  }
+
   /* Responsive Design */
   @media (max-width: 768px) {
     .journey-widget {
@@ -617,6 +726,28 @@
         align-self: flex-end;
       }
     }
+
+    // Ultra-dense mobile adjustments
+    .journey-widget.ultra-dense-mode {
+      .step-item {
+        padding-left: 20px;
+      }
+
+      .step-icon {
+        left: -6px;
+        width: 12px;
+        height: 12px;
+
+        md-icon {
+          font-size: 8px;
+        }
+      }
+
+      .journey-line {
+        left: 12px;
+        width: 1px;
+      }
+    }
   }
 
   @media (max-width: 480px) {
@@ -663,6 +794,36 @@
         flex-direction: column;
         align-items: flex-start;
         gap: 2px;
+      }
+    }
+
+    // Ultra-dense small mobile adjustments
+    .journey-widget.ultra-dense-mode {
+      .step-item {
+        padding-left: 18px;
+      }
+
+      .step-icon {
+        left: -5px;
+        width: 10px;
+        height: 10px;
+
+        md-icon {
+          font-size: 7px;
+        }
+      }
+
+      .journey-line {
+        left: 10px;
+        width: 1px;
+      }
+
+      .step-title {
+        font-size: 0.7rem;
+      }
+
+      .step-time {
+        font-size: 0.55rem;
       }
     }
   }

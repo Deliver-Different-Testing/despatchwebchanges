@@ -16,6 +16,7 @@ import {AppPages} from "../../enums/app-pages.enum";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import JobSearchBoxes from "./enums/jobSearchBoxes";
 import {IDeliveryHistoryConfig} from "../common/task-history/task-history.interfaces";
+import DensityMode from "../../enums/densityMode";
 
 class JobSearchController extends BaseController {
     static $inject = [
@@ -338,8 +339,7 @@ class JobSearchController extends BaseController {
 
         this.deliveryHistoryConfig = {
             showSummaryStats: true,
-            denseMode: true,
-            showFullToolbar: false
+            densityMode: DensityMode.Dense
         }
         
         // Default to a fortnight

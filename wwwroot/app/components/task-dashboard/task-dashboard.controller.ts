@@ -12,6 +12,7 @@ import DispatchCoreService from "../../services/dispatch-core.service";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import timezone from 'dayjs/plugin/timezone';
 import {IDeliveryHistoryConfig} from "../common/task-history/task-history.interfaces";
+import DensityMode from "../../enums/densityMode";
 
 class TaskDashboardController extends BaseController {
     static $inject = [
@@ -74,7 +75,7 @@ class TaskDashboardController extends BaseController {
     selectedTask?: ExtendedTask;
     taskHistoryConfig: IDeliveryHistoryConfig = {
         showSummaryStats: true,
-        refreshInterval: 5000,
+        densityMode: DensityMode.Normal
     };
 
     constructor(

@@ -1,7 +1,8 @@
-﻿export interface IDeliveryHistoryConfig {
+﻿import DensityMode from "../../../enums/densityMode";
+
+export interface IDeliveryHistoryConfig {
     showSummaryStats?: boolean;
-    denseMode?: boolean;
-    showFullToolbar: boolean;
+    densityMode?: DensityMode;
 }
 
 export interface DeliveryJourneyViewModel {

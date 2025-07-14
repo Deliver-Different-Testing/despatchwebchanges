@@ -304,7 +304,6 @@
   <ItemGroup>
     <TypeScriptCompile Include="wwwroot\app\components\base-controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\common\job-list\enums\densityMode.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\enums\jobCategory.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\job-highlight.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\job-list.component.ts" />
@@ -400,6 +399,7 @@
     <TypeScriptCompile Include="wwwroot\app\enums\app-pages.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\dangerous-goods.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\days-of-week.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\densityMode.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\event-type.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\file-upload-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\frequency.enum.ts" />
