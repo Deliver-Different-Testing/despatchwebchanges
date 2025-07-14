@@ -15,6 +15,7 @@ class JobsListController extends BaseController {
     static $inject = [
         'DispatchData',
         'jobHighlightService',
+        '$document',
         'APP_CONFIG',
         '$timeout',
         '$interval',
@@ -69,7 +70,7 @@ class JobsListController extends BaseController {
         courier: 150,
         status: 100
     };
-    columnWidths = { ...this.defaultColumnWidths };
+    columnWidths = {...this.defaultColumnWidths};
     isResizing = false;
     resizingColumn: string | null = null;
     startX = 0;
@@ -83,10 +84,11 @@ class JobsListController extends BaseController {
         column: null,
         direction: null
     };
-    
+
     constructor(
         private DispatchData: DispatchCoreService,
         private jobHighlightService: JobHighlightService,
+        private $document: angular.IDocumentService,
         appConfig: AppConfig,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
@@ -99,7 +101,7 @@ class JobsListController extends BaseController {
 
     $onInit() {
         this.setupJobListVariables();
-        this.loadColumnWidths(); 
+        this.loadColumnWidths();
         this.loadSortState();
 
         // Group jobs by parent if not nationwide
@@ -126,16 +128,16 @@ class JobsListController extends BaseController {
         }
 
         // Clean up resize event listeners
-        document.removeEventListener('mousemove', this.onMouseMove);
-        document.removeEventListener('mouseup', this.onMouseUp);
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
+        this.$document.off('mousemove', this.onMouseMove);
+        this.$document.off('mouseup', this.onMouseUp);
+        this.$document.find('body').css('cursor', '');
+        this.$document.find('body').css('userSelect', '');
     }
 
     private setupJobListVariables() {
         // Default all too dense
         this.densityMode = DensityMode.Dense;
-        
+
         switch (this.jobListType) {
             case JobListType.DispatchJobList:
                 this.allowDispatch = true;
@@ -148,6 +150,8 @@ class JobsListController extends BaseController {
             case JobListType.NationwideJobList:
             case JobListType.NationwidePodJobList:
             case JobListType.NationwideRepriceJobList:
+            case JobListType.JobSearchMainList:
+            case JobListType.JobSearchBulkList:
                 this.allowDispatch = false;
                 this.allowSearch = true;
                 break;
@@ -269,21 +273,21 @@ class JobsListController extends BaseController {
 
         // Apply CSS class to component root
         this.registerTimeout(() => {
-            const componentElement = document.querySelector('.job-list-component');
-            if (componentElement) {
+            const componentElement = angular.element('.job-list-component');
+            if (componentElement.length > 0) {
                 // Remove existing density classes
-                componentElement.classList.remove('normal', 'dense', 'ultra-dense');
+                componentElement.removeClass('normal dense ultra-dense');
 
                 // Add a new density class
                 switch (mode) {
                     case DensityMode.Dense:
-                        componentElement.classList.add('dense');
+                        componentElement.addClass('dense');
                         break;
                     case DensityMode.UltraDense:
-                        componentElement.classList.add('ultra-dense');
+                        componentElement.addClass('ultra-dense');
                         break;
                     default:
-                        componentElement.classList.add('normal');
+                        componentElement.addClass('normal');
                         break;
                 }
             }
@@ -300,11 +304,11 @@ class JobsListController extends BaseController {
                 return 'normal';
         }
     }
-    
+
     shouldShowMinimalDetails(): boolean {
         return this.densityMode === DensityMode.UltraDense;
     }
-    
+
     formatDeliveryDate(job: IDispatchJob): string {
         if (!job.time && !job.booked) return '';
 
@@ -605,7 +609,7 @@ class JobsListController extends BaseController {
     getCourierCode(job: IDispatchJob): string {
         return job.courierData?.courier || '';
     }
-    
+
     hasAssignedCourier(job: IDispatchJob): boolean {
         return !!(job.assignedCourier || job.courier);
     }
@@ -613,7 +617,7 @@ class JobsListController extends BaseController {
     isMultiPartJob(job: IDispatchJob): boolean {
         return (job.isParentOrSingle && job._groupChildren && job._groupChildren.length > 0) ?? false;
     }
-    
+
     isUrgent(job: IDispatchJob): boolean {
         const now = dayjs();
         const deliveryTime = dayjs(job.time);
@@ -700,16 +704,16 @@ class JobsListController extends BaseController {
             this.onJobSelect({job});
         }
     }
-    
+
     showCourierAssignment(job: IDispatchJob) {
         if (!this.allowDispatch) return;
 
         job.showCourierSearch = true;
 
         this.registerTimeout(() => {
-            const inputField = document.getElementById(`input_${job.id}`) as HTMLInputElement;
-            if (inputField) {
-                inputField.focus();
+            const inputField = angular.element(`#input_${job.id}`);
+            if (inputField.length > 0) {
+                inputField[0].focus();
             }
         });
     }
@@ -825,7 +829,7 @@ class JobsListController extends BaseController {
             return `${job.relatedJobs.length} related jobs`;
         }
     }
-    
+
     isWarning(job: IDispatchJob): boolean {
         return [
             JobStatus.Warning,
@@ -862,7 +866,7 @@ class JobsListController extends BaseController {
             if (saved) {
                 try {
                     const savedWidths = JSON.parse(saved);
-                    this.columnWidths = { ...this.defaultColumnWidths, ...savedWidths };
+                    this.columnWidths = {...this.defaultColumnWidths, ...savedWidths};
                 } catch (error) {
                     console.error('Error loading column widths:', error);
                 }
@@ -882,7 +886,7 @@ class JobsListController extends BaseController {
             if (saved) {
                 try {
                     const savedSort = JSON.parse(saved);
-                    this.sortState = { ...this.sortState, ...savedSort };
+                    this.sortState = {...this.sortState, ...savedSort};
                 } catch (error) {
                     console.error('Error loading sort state:', error);
                 }
@@ -909,36 +913,37 @@ class JobsListController extends BaseController {
         this.startX = event.clientX;
         this.startWidth = this.columnWidths[column as keyof typeof this.columnWidths];
 
-        document.addEventListener('mousemove', this.onMouseMove);
-        document.addEventListener('mouseup', this.onMouseUp);
-        document.body.style.cursor = 'col-resize';
-        document.body.style.userSelect = 'none';
+        this.$document.on('mousemove', this.onMouseMove);
+        this.$document.on('mouseup', this.onMouseUp);
+        this.$document.find('body').css('cursor', 'col-resize');
+        this.$document.find('body').css('userSelect', 'none');
     }
 
-    private onMouseMove = (event: MouseEvent): void => {
+    private onMouseMove = (eventObject: JQueryEventObject): void => {
         if (!this.isResizing || !this.resizingColumn) return;
 
+        const event = eventObject.originalEvent as MouseEvent;
         const deltaX = event.clientX - this.startX;
-         // Minimum width of 50 px
+        // Minimum width of 50 px
         this.columnWidths[this.resizingColumn as keyof typeof this.columnWidths] = Math.max(50, this.startWidth + deltaX);
         this.applyScope();
     };
 
-    private onMouseUp = (): void => {
+    private onMouseUp = (eventObject: JQueryEventObject): void => {
         this.isResizing = false;
         this.resizingColumn = null;
 
-        document.removeEventListener('mousemove', this.onMouseMove);
-        document.removeEventListener('mouseup', this.onMouseUp);
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
+        this.$document.off('mousemove', this.onMouseMove);
+        this.$document.off('mouseup', this.onMouseUp);
+        this.$document.find('body').css('cursor', '');
+        this.$document.find('body').css('userSelect', '');
 
         this.saveColumnWidths();
         this.applyScope();
     };
 
     resetColumnWidths(): void {
-        this.columnWidths = { ...this.defaultColumnWidths };
+        this.columnWidths = {...this.defaultColumnWidths};
         this.saveColumnWidths();
         this.applyScope();
     }

@@ -3,7 +3,9 @@
     CurrentWorkList = 'currentWorkList',
     NationwideJobList = 'nationwideJobList',
     NationwidePodJobList = 'nationwidePodJobList',
-    NationwideRepriceJobList = 'nationwideRepriceJobList'
+    NationwideRepriceJobList = 'nationwideRepriceJobList',
+    JobSearchMainList = 'jobSearchMainList',
+    JobSearchBulkList = 'jobSearchBulkList'   
 }
 
 export default JobListType;
