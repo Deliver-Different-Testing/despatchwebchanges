@@ -1,92 +1,90 @@
-<div ng-show="!ctrl.isJobListLoading && (ctrl.jobList || ctrl.jobList.length > 0)">
-    <md-table-container class="table-scroll-with-pagination">
-        <table md-progress="ctrl.jobListLoading" md-table>
-            <thead fix-head md-head md-on-reorder="ctrl.orderList('jobList', ctrl.jobQuery.order)"
-                   md-order="ctrl.jobQuery.order">
-            <tr md-dense md-row>
-                <th md-column md-order-by="booked">
-                    <span>Booked</span>
-                </th>
-                <th md-column>
-                    <span>Is Archived</span>
-                </th>
-                <th md-column>
-                    <span>Status</span>
-                </th>
-                <th md-column md-order-by="speed">
-                    <span>Speed</span>
-                </th>
-                <th md-column md-order-by="jobNo">
-                    <span>Job</span>
-                </th>
-                <th md-column md-order-by="client">
-                    <span>Client</span>
-                </th>
-                <th md-column md-order-by="from">
-                    <span>From</span>
-                </th>
-                <th md-column md-order-by="to">
-                    <span>To</span>
-                </th>
-            </tr>
-            </thead>
+<md-table-container class="table-scroll-with-pagination">
+    <table md-progress="ctrl.jobListLoading" md-table>
+        <thead fix-head md-head md-on-reorder="ctrl.orderList('jobList', ctrl.jobQuery.order)"
+               md-order="ctrl.jobQuery.order">
+        <tr md-dense md-row>
+            <th md-column md-order-by="booked">
+                <span>Booked</span>
+            </th>
+            <th md-column>
+                <span>Is Archived</span>
+            </th>
+            <th md-column>
+                <span>Status</span>
+            </th>
+            <th md-column md-order-by="speed">
+                <span>Speed</span>
+            </th>
+            <th md-column md-order-by="jobNo">
+                <span>Job</span>
+            </th>
+            <th md-column md-order-by="client">
+                <span>Client</span>
+            </th>
+            <th md-column md-order-by="from">
+                <span>From</span>
+            </th>
+            <th md-column md-order-by="to">
+                <span>To</span>
+            </th>
+        </tr>
+        </thead>
 
-            <tbody md-body>
-            <tr md-row
-                context-menu="ctrl.getContextMenuOptions(job)"
-                context-menu-on="contextmenu"
-                context-menu-class="job-context-menu"
-                ng-click="ctrl.selectJobDetail(job.id)"
-                ng-repeat="job in ctrl.jobList | filter: box.searchBox">
+        <tbody md-body>
+        <tr md-row
+            context-menu="ctrl.getContextMenuOptions(job)"
+            context-menu-on="contextmenu"
+            context-menu-class="job-context-menu"
+            ng-click="ctrl.selectJobDetail(job.id)"
+            ng-repeat="job in ctrl.jobList | filter: box.searchBox">
 
-                <td md-cell>{{job.booked | momentFormat:"DD/MM/YY HH:mm"}} ({{ctrl.timeZone | timezoneShort}})</td>
+            <td md-cell>{{job.booked | momentFormat:"DD/MM/YY HH:mm"}} ({{ctrl.timeZone | timezoneShort}})</td>
 
-                <td md-cell>
-                    <md-checkbox
-                            ng-disabled="true"
-                            ng-model="job.isArchived"
-                            aria-label="is job archived">
-                    </md-checkbox>
-                </td>
+            <td md-cell>
+                <md-checkbox
+                        ng-disabled="true"
+                        ng-model="job.isArchived"
+                        aria-label="is job archived">
+                </md-checkbox>
+            </td>
 
-                <td md-cell>
-                    <md-chip class="status {{job.statusName | lowercase | replace:' ':'-'}}">
-                        {{job.status}}
-                    </md-chip>
-                </td>
+            <td md-cell>
+                <md-chip class="status {{job.statusName | lowercase | replace:' ':'-'}}">
+                    {{job.status}}
+                </md-chip>
+            </td>
 
-                <td md-cell>{{job.speed}}</td>
-                <td md-cell>{{job.jobNo}}</td>
-                <td md-cell>{{job.client}}</td>
-                <td md-cell md-truncate>
-                    {{ctrl.isUsCustomer ? job.pickupAddress.addressLine5 + ', ' + job.pickupAddress.addressLine6 : job.from}}
-                    <md-tooltip md-direction="bottom">{{ job.pickupAddress.fullAddress }}</md-tooltip>
-                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
-                </td>
-                <td md-cell md-truncate="">
-                    {{ctrl.isUsCustomer ? job.deliveryAddress.addressLine5 + ', ' + job.deliveryAddress.addressLine6 : job.to}}
-                    <md-tooltip md-direction="bottom">{{ job.deliveryAddress.fullAddress }}</md-tooltip>
-                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning
-                    </md-icon>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-    </md-table-container>
+            <td md-cell>{{job.speed}}</td>
+            <td md-cell>{{job.jobNo}}</td>
+            <td md-cell>{{job.client}}</td>
+            <td md-cell md-truncate>
+                {{ctrl.isUsCustomer ? job.pickupAddress.addressLine5 + ', ' + job.pickupAddress.addressLine6 : job.from}}
+                <md-tooltip md-direction="bottom">{{ job.pickupAddress.fullAddress }}</md-tooltip>
+                <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
+            </td>
+            <td md-cell md-truncate="">
+                {{ctrl.isUsCustomer ? job.deliveryAddress.addressLine5 + ', ' + job.deliveryAddress.addressLine6 : job.to}}
+                <md-tooltip md-direction="bottom">{{ job.deliveryAddress.fullAddress }}</md-tooltip>
+                <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning
+                </md-icon>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</md-table-container>
 
-    <md-table-pagination
-            ng-if="ctrl.jobList && ctrl.jobList.length > 0"
-            md-limit="ctrl.jobQuery.limit"
-            md-limit-options="[5, 10, 25, 50, 75, 100, 200]"
-            md-on-paginate="ctrl.jobPageChanged"
-            md-page="ctrl.jobQuery.page"
-            md-page-select
-            md-total="{{ctrl.totalCount}}">
-    </md-table-pagination>
-</div>
+<md-table-pagination
+        ng-if="ctrl.jobList && ctrl.jobList.length > 0"
+        md-limit="ctrl.jobQuery.limit"
+        md-limit-options="[5, 10, 25, 50, 75, 100, 200]"
+        md-on-paginate="ctrl.jobPageChanged"
+        md-page="ctrl.jobQuery.page"
+        md-page-select
+        md-total="{{ctrl.totalCount}}">
+</md-table-pagination>
 
 <no-data
-        ng-if="!ctrl.isJobListLoading && (!ctrl.jobList || ctrl.jobList.length === 0)"
+        ng-if="!ctrl.jobListLoading && (!ctrl.jobList || ctrl.jobList.length === 0)"
         title="No Jobs Found"
         message="There are currently no jobs to display."
         icon="assignment"

@@ -1,5 +1,6 @@
 import {IJob} from "../../interfaces/job.interface";
 import PodSearchResponse from "./enums/podSearchResponse";
+import dayjs from "dayjs";
 
 class JobSearchService implements angular.IServiceProvider {
     static $inject = [
@@ -15,28 +16,7 @@ class JobSearchService implements angular.IServiceProvider {
     $get() {
         return this;
     }
-
-    async allocateJobs(courierId: number, dispatcherId: number, jobIds: number[]) {
-        return this.$http.post(`job/Allocate?courierId=${courierId}&dispId=${dispatcherId}&jobIds=${jobIds}`, null);
-    }
-
-    async addRestoreEvent(
-        jobNo: string,
-        clientId: number,
-        contact: number,
-        staffId: number,
-        courierId: number,
-        jobId: number,
-        jobType: number,
-        despatcherName: string
-    ) {
-        const response = await this.$http.post(
-            `job/AddRestoreEvent?jobNo=${jobNo}&clientId=${clientId}&contact=${contact}&staffId=${staffId}&courierId=${courierId}&jobId=${jobId}&jobType=${jobType
-            }&despatcherName=${despatcherName}`, null
-        );
-        return response.data;
-    }
-
+    
     async getPodJobs(
         courierId: number,
         clientId: number,
@@ -74,8 +54,17 @@ class JobSearchService implements angular.IServiceProvider {
         toDate: Date
     ) {
         return this.$http.get(
-            `/Job/PODSearchDownload?courierId=${courierId}&clientId=${clientId}&wild=${wild}&job=${job}&fromDate=${fromDate.toISOString()}&toDate=${toDate.toISOString()}`,
-            {responseType: "blob"}
+            `/Job/PODSearchDownload`,
+            {
+                params: {
+                    courierId,
+                    clientId,
+                    wild,
+                    job,
+                    fromDate: dayjs(fromDate).format(),
+                    toDate: dayjs(toDate).format()
+                },
+                responseType: "blob"}
         );
     }
 
@@ -99,114 +88,117 @@ class JobSearchService implements angular.IServiceProvider {
         pageSize: number
     ) {
         const response = await this.$http.get(
-            `/Job/BulkSearch?courierId=${courierId}&clientId=${clientId}&job=${job}&wild=${wild}&fromDate=${fromDate.toISOString()}&toDate=${toDate.toISOString()}&pageIndex=${pageIndex}&pageSize=${pageSize}`
+            `/Job/BulkSearch`,
+            {
+                params: {
+                    courierId,
+                    clientId,
+                    job,
+                    wild,
+                    fromDate: dayjs(fromDate).format(),
+                    toDate: dayjs(toDate).format(),
+                    pageIndex,
+                    pageSize
+                }
+            }
         );
-        return response.data;
-    }
-    
-    async getJobDetail(jobId: number) {
-        const response = await this.$http.get(`/Job/Detail?jobId=${jobId}`);
-        return response.data;
-    }
-
-    async getRelatedJobs(parentId: number, clientId: number) {
-        const response = await this.$http.get(`/Job/Related?parentId=${parentId}&clientId=${clientId}`);
         return response.data;
     }
 
     async getScanDetail(runDate: Date, scan: string) {
         const response = await this.$http.get(
-            `/Job/ScanJobDetail?runDate=${runDate.toISOString()}&scan=${scan}`
+            `/Job/ScanJobDetail`, {
+                params: {
+                    runDate: dayjs(runDate).format(),
+                    scan
+                }
+            }
         );
         return response.data;
     }
 
     async getBulkJobDetail(bulkJobId: number) {
-        const response = await this.$http.get<IJob>(`/Job/BulkDetail?bulkJobId=${bulkJobId}`);
-        return response.data;
-    }
-
-    async getActiveCouriers() {
-        const response = await this.$http.get("courier/active");
-        return response.data;
-    }
-
-    async getAllCouriers() {
-        const response = await this.$http.get("courier/AllActive");
+        const response = await this.$http.get<IJob>(`/Job/BulkDetail`, {
+            params: {
+                bulkJobId
+            }
+        });
         return response.data;
     }
     
     async validateSwapPOD(jobNumber: string) {
-        const response = await this.$http.post<number>(`Job/ValidateSwapPOD?job=${jobNumber}`, null);
+        const response = await this.$http.post<number>(`Job/ValidateSwapPOD`, null, {
+            params: {
+                jobNumber
+            }
+        });
         return response.data;
     }
-
-    async restoreJobs(courierId: number, dispatcherId: number, jobIds: number[]) {
-        const response = await this.$http.post(
-            `job/RestoreJobs?courierId=${courierId}&dispId=${dispatcherId}&jobIds=${jobIds}`, null
-        );
-        return response.data;
-    }
-
-    async restoreSplitJobs(courierId: number, dispatcherId: number, jobIds: number[]) {
-        const response = await this.$http.post(
-            `job/RestoreSplitJobs?courierId=${courierId}&dispId=${dispatcherId}&jobIds=${jobIds}`, null
-        );
-        return response.data;
-    }
-
     async swapPOD(jobNumber1: string, jobNumber2: string) {
         const response = await this.$http.post(
-            `Job/SwapPOD?job1=${jobNumber1}&job2=${jobNumber2}`, null
+            `Job/SwapPOD`, null, {
+                params: {
+                    jobNumber1,
+                    jobNumber2
+                }
+            }
         );
         return response.data;
     }
     
     async reSendJobs(jobIds: number[]) {
-        const response = await this.$http.post(`job/ReSendSelected?jobIds=${jobIds}`, null);
+        const response = await this.$http.post(`job/ReSendSelected`, null, {
+            params: {
+                jobIds
+            }
+        });
         return response.data;
     }
 
     async reAssignJobs(jobIds: number[]) {
-        const response = await this.$http.post(`job/ReAssignSelected?jobIds=${jobIds}`, null);
+        const response = await this.$http.post(`job/ReAssignSelected`, null, {
+            params: {
+                jobIds
+            }
+        });
         return response.data;
     }
 
     async sendPOD(jobId: number, email: string) {
-        const response = await this.$http.get(`job/SendPOD?jobId=${jobId}&toEmail=${email}`);
+        const response = await this.$http.get(`job/SendPOD`, {
+            params: {
+                jobId,
+                email
+            }
+        });
         return response.data;
     }
 
     async unSplitJob(jobId: number) {
-        const response = await this.$http.post<string>(`job/UnSplitJob?jobId=${jobId}`, null);
+        const response = await this.$http.post<string>(`job/UnSplitJob`, null, {
+            params: {
+                jobId
+            }
+        });
         return response.data;
-    }
-
-    async generateDirectLink(eventId: number, clientId: number) {
-        const response = await this.$http.get(`/CS/GenerateDirectLink?eventId=${eventId}&clientId=${clientId}`);
-        return response.data;
-    }
-
-    async createEvent(data: any, notify: boolean) {
-        try {
-            const response1 = await this.$http({
-                url: `book/CreateEvent?clientInternal=${ClientInternal}&notify=${notify}&clientName=${FirstName}`,
-                method: "POST",
-                data: data,
-            });
-            return response1.data;
-        } catch (error) {
-            console.error("Book/CreateEvent error", error);
-        }
     }
     
     async getActiveClients(searchTerm: string) {
-        const response = await this.$http.get(`/home/ActiveClients?searchTerm=${searchTerm}`);
+        const response = await this.$http.get(`/home/ActiveClients`, {
+            params: {
+                searchTerm
+            }
+        });
         return response.data;
     }
 
     async getActiveCouriersSearch(searchTerm: string) {
-        const response = await this.$http.get(`/courier/AllActiveSearch?searchTerm=${searchTerm}`);
+        const response = await this.$http.get(`/courier/AllActiveSearch`,
+            {
+                params: {
+                    searchTerm
+                }
+            });
         return response.data;
     }
 }
