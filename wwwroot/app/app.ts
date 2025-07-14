@@ -154,10 +154,6 @@ app.config(["$qProvider", ($qProvider: angular.IQProvider) => {
         }
     }]);
 
-app.run(['resolutionWarningService', (resolutionWarningService: ResolutionWarningService) => {
-    resolutionWarningService.checkAndShowResolutionWarning();
-}]);
-
 // Filters
 app.filter("bytes", () => bytesFilter);
 app.filter("replace", () => replaceFilter);
@@ -208,5 +204,9 @@ app.service("truckCourierStatusDialogService", TruckCourierStatusDialogService);
 app.service("messagingService", MessagingService);
 app.service("messagingDialogService", MessagingDialogService);
 app.service('resolutionWarningService', ResolutionWarningService);
+
+app.run(['resolutionWarningService', (resolutionWarningService: ResolutionWarningService) => {
+    resolutionWarningService.checkAndShowResolutionWarning();
+}]);
 
 export default app;
