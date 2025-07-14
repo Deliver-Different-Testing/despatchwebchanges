@@ -191,7 +191,7 @@ public class TaskRepository(
             .Select(s => new Suggestion
             {
                 Id = s.UcstId,
-                Text = $"{s.UcstFirstName} {s.UcstLastName}"
+                Text = s.UcstFirstName + " " + s.UcstLastName
             })
             .OrderBy(s => s.Text)
             .AsNoTracking()
