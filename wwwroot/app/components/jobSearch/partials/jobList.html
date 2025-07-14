@@ -82,11 +82,3 @@
         md-page-select
         md-total="{{ctrl.totalCount}}">
 </md-table-pagination>
-
-<no-data
-        ng-if="!ctrl.jobListLoading && (!ctrl.jobList || ctrl.jobList.length === 0)"
-        title="No Jobs Found"
-        message="There are currently no jobs to display."
-        icon="assignment"
-        show-action="false">
-</no-data>

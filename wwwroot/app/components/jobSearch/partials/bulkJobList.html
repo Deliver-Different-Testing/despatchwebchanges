@@ -63,11 +63,3 @@
         md-page-select
         md-total="{{ctrl.bulkTotalCount}}">
 </md-table-pagination>
-
-<no-data
-        ng-if="!ctrl.bulkJobPromise && (!ctrl.bulkJobList || ctrl.bulkJobList.length === 0)"
-        title="No Bulk Jobs Found"
-        message="There are currently no bulk jobs to display."
-        icon="content_paste"
-        show-action="false">
-</no-data>
