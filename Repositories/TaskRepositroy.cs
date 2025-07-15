@@ -21,7 +21,7 @@ public class TaskRepository(
     {
         var today = filters?.Date ?? infoService.GetCurrentTenantTime().AddDays(1);
 
-        var query = Context.TucEvents.AsQueryable();
+        var query = Context.TucEvents.Where(t => t.UcevTypeNavigation.UcetGroup != nameof(TaskGroup.CS));
 
         if (filters != null) query = ApplyFilters(query, filters);
 
