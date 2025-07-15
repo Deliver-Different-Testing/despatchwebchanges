@@ -1945,7 +1945,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         // Generate request number
         var jobNumber = await GenerateJobNumberAsync(staffId, request.SpeedId);
 
-        // Create new job
+        // Create a new job
         var job = new TucJob
         {
             UcjbClientId = request.ClientId,

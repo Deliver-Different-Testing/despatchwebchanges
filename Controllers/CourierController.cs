@@ -14,7 +14,7 @@ public class CourierController(
     ITaskRepository taskRepository
 ) : Controller
 {
-    public async Task<IActionResult> Index([FromQuery] List<int> despatchViewIds, [FromQuery] bool isUsTenant)
+    public async Task<IActionResult> Index([FromQuery] List<int> despatchViewIds)
     {
         try
         {

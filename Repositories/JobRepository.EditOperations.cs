@@ -63,7 +63,6 @@ public partial class JobRepository
 
     private async Task UpdateTucJob(int jobId, JobProperty property, string value)
     {
-        var staffId = _infoService.GetStaffId();
         var job = await Context
             .TucJobs.Where(j => j.UcjbId == jobId)
             .Include(j => j.TucJobNationwides)
@@ -77,7 +76,8 @@ public partial class JobRepository
             .Include(j => j.NotifiedJobType)
             .Include(j => j.UcjbSpeedNavigation)
             .Include(j => j.DeliverToLeave)
-            .Include(j => j.UcjbStatusNavigation).Include(tucJob => tucJob.PickupTimeZone)
+            .Include(j => j.UcjbStatusNavigation)
+            .Include(j => j.PickupTimeZone)
             .FirstOrDefaultAsync();
 
         ArgumentNullException.ThrowIfNull(job);
@@ -560,7 +560,7 @@ public partial class JobRepository
                 break;
             case JobProperty.Van:
                 archive.Job.UcjbVan = bool.Parse(value);
-                archive.Job.Truck = false; // Set truck to false when van is selected
+                archive.Job.Truck = false; // Set truck to false when a van is selected
                 break;
             case JobProperty.VanOK:
                 archive.Job.VanOk = bool.Parse(value);
@@ -775,9 +775,9 @@ public partial class JobRepository
         job.UcjbStatus = newInternalStatusId switch
         {
             // Handle status changes
-            3 when job.UcjbStatus != 9 => 9,
-            1 when job.UcjbStatus != 1 => 1,
-            4 when job.UcjbStatus != 6 => 6,
+           (int)InternalJobStatus.AwaitingPod when job.UcjbStatus != (int)JobStatus.AwaitingPod => (int)JobStatus.AwaitingPod,
+            (int)InternalJobStatus.NewJobs when job.UcjbStatus != (int)JobStatus.Dispatched => (int)JobStatus.Dispatched,
+            (int)InternalJobStatus.Reprice when job.UcjbStatus != (int)JobStatus.Completed => (int)JobStatus.Completed,
             _ => job.UcjbStatus
         };
         

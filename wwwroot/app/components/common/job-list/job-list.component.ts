@@ -21,7 +21,7 @@ class JobsListController extends BaseController {
         '$interval',
         '$scope',
     ];
-    
+
     private readonly DENSE_MODE_SAVE_KEY: string = `jobListComponentDenseViewMode_${ContactID}`;
     private readonly COLUMN_WIDTHS_SAVE_KEY: string = `jobListColumnWidths_${ContactID}`;
     private readonly SORT_STATE_SAVE_KEY: string = `jobListSortState_${ContactID}`;
@@ -310,18 +310,10 @@ class JobsListController extends BaseController {
     }
 
     formatDeliveryDate(job: IDispatchJob): string {
-        if (!job.time && !job.booked) return '';
+        if (!job.booked) return '';
 
-        const date = dayjs(job.time || job.booked);
-        const now = dayjs();
-
-        if (date.isSame(now, 'day')) {
-            return date.format('MM/DD');
-        } else if (date.isSame(now.subtract(1, 'day'), 'day')) {
-            return date.format('MM/DD');
-        } else {
-            return date.format('MM/DD');
-        }
+        if (this.isUsCustomer) return dayjs(job.booked).format('MM/DD');
+        return dayjs(job.booked).format('DD/MM');
     }
 
     isOverdue(job: IDispatchJob): boolean {
@@ -667,15 +659,7 @@ class JobsListController extends BaseController {
     }
 
     formatDeliveryTime(job: IDispatchJob): string {
-        const showFullDate = this.densityMode == DensityMode.Normal;
-
-        if (showFullDate) {
-            return this.isUsCustomer
-                ? dayjs(job.booked).format('MM/DD HH:mm')
-                : dayjs(job.booked).format('DD/MM HH:mm');
-        } else {
-            return dayjs(job.booked).format('HH:mm');
-        }
+        return dayjs(job.booked).format('HH:mm');
     }
 
     formatDate(dateTime: Date | undefined): string {
