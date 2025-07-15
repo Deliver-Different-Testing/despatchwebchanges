@@ -77,7 +77,7 @@ public partial class JobRepository
             .Include(j => j.NotifiedJobType)
             .Include(j => j.UcjbSpeedNavigation)
             .Include(j => j.DeliverToLeave)
-            .Include(j => j.UcjbStatusNavigation)
+            .Include(j => j.UcjbStatusNavigation).Include(tucJob => tucJob.PickupTimeZone)
             .FirstOrDefaultAsync();
 
         ArgumentNullException.ThrowIfNull(job);
@@ -162,13 +162,19 @@ public partial class JobRepository
                 break;
             case JobProperty.Van:
                 job.UcjbVan = bool.Parse(value);
-                job.Truck = false; // Set truck to false when van is selected
+                job.Truck = false; // Set truck to false when a van is selected
                 break;
             case JobProperty.VanOK:
                 job.VanOk = bool.Parse(value);
                 break;
             case JobProperty.Status:
-                job.UcjbStatus = int.Parse(value);
+                var newStatus = int.Parse(value);
+                job.UcjbStatus = newStatus;
+
+                if (newStatus == (int)JobStatus.PickedUp)
+                {
+                    job.PickUpTime = _infoService.GetCurrentTimeFromTimeZone(job.PickupTimeZone);
+                }
                 break;
             case JobProperty.RefA:
                 job.UcjbClientRefa = value[..Math.Min(value.Length, 20)];

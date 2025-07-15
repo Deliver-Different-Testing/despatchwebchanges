@@ -2496,7 +2496,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         }
         else
         {
-            // Get notes from archived job table
+            // Get notes from the archived job table
             var archivedNotesTempList = await Context.TucNoteArchives
                 .Where(n => n.JobId == jobId)
                 .AsNoTracking()
@@ -2586,10 +2586,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         {
             // Get status updates from the live job table
             var statusUpdatesTempList = await Context.JobDeliveryJourneys
-                .Where(j => j.JobId == jobId)
+                .Where(j => j.JobId == jobId && j.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus))
                 .AsNoTracking()
-                .Include(s => s.OldInternalStatus)
-                .Include(s => s.NewInternalStatus)
                 .Include(s => s.NewJobStatus)
                 .Include(s => s.OldJobStatus)
                 .Include(s => s.Staff)
@@ -2604,9 +2602,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 Id = Guid.NewGuid(),
                 JobId = jobId,
                 Date = s.UpdatedAt,
-                Title = s.NewInternalStatus != null && s.OldInternalStatus != null
-                    ? "Internal Status Changed"
-                    : "Status Changed",
+                Title = "Status Changed",
                 Description = s.Comments,
                 Icon = "update",
                 Tags =
@@ -2620,12 +2616,11 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                         ? $"Reassigned from Agent {s.OldAgent.UcagName} to {s.NewAgent.UcagName}"
                         : null,
                     s.NewAgent != null && s.OldAgent == null ? $"Assigned to Agent {s.NewAgent.UcagName}" : null,
+                    s.NewAgent == null && s.OldAgent != null ? $"Unassigned from Agent {s.OldAgent.UcagName}" : null,
                     s.FieldName != null ? $"Field {s.FieldName} updated" : null,
                     s.FieldName != null && s.OldValue != null ? $"Old value: {s.OldValue}" : null,
                     s.FieldName != null && s.NewValue != null ? $"New value: {s.NewValue}" : null,
-                    s.NewInternalStatus != null && s.OldInternalStatus != null
-                        ? $"Internal Status changed from {s.OldInternalStatus.TcisName} to {s.NewInternalStatus.TcisName}"
-                        : $"Status changed from {s.OldJobStatus.UcjsName} to {s.NewJobStatus?.UcjsName}"
+                    s.NewJobStatus != null && s.OldJobStatus != null ? $"Status changed from {s.OldJobStatus.UcjsName} to {s.NewJobStatus?.UcjsName}" : null
                 ]
             }).ToList();
         }
@@ -2633,7 +2628,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         {
             // Get status updates from the archived job table
             var archivedStatusUpdatesTempList = await Context.JobDeliveryJourneyArchives
-                .Where(j => j.JobId == jobId)
+                .Where(j => j.JobId == jobId && j.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus))
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -2642,12 +2637,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 Id = Guid.NewGuid(),
                 JobId = jobId,
                 Date = s.UpdatedAt,
-                Title = s.NewInternalStatusId != null && s.OldInternalStatusId != null
-                    ? "Internal Status Changed"
-                    : "Status Changed",
-                Description = s.NewInternalStatusId != null && s.OldInternalStatusId != null
-                    ? $"Internal Status changed from status ID {s.OldInternalStatusId} to {s.NewInternalStatusId}"
-                    : $"Status changed from status ID {s.OldJobStatusId} to {s.NewJobStatusId}",
+                Title = "Status Changed",
+                Description = s.OldJobStatusId != null && s.NewJobStatusId != null 
+                    ? $"Status changed from status ID {s.OldJobStatusId} to {s.NewJobStatusId}" : null,
                 Icon = "update",
                 Tags =
                 [
@@ -2662,7 +2654,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     s.FieldName != null ? $"Field {s.FieldName} updated" : null,
                     s.FieldName != null && s.OldValue != null ? $"Old value: {s.OldValue}" : null,
                     s.FieldName != null && s.NewValue != null ? $"New value: {s.NewValue}" : null,
-                    s.Comments != null ? $"Comments: {s.Comments}" : null
+                    s.Comments != null ? $"Comments: {s.Comments}" : null,
+                    s.OldJobStatusId != null && s.NewJobStatusId != null ? $"Status changed from status ID {s.OldJobStatusId} to {s.NewJobStatusId}" : null
                 ]
             }).ToList();
         }
