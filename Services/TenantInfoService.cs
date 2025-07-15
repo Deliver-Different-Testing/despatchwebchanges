@@ -4,6 +4,7 @@ using System.Linq;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using Microsoft.AspNetCore.Http;
+using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Services;
 
@@ -18,12 +19,14 @@ public class TenantInfoService(IHttpContextAccessor contextAccessor) : ITenantIn
         return TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tenantTimeZoneInfo);
     }
 
-    public DateTime ConvertUtcToTenantTime(DateTime utcDateTime)
+    public DateTime GetCurrentTimeFromTimeZone(TimeZone timeZone)
     {
-        var tenantTimeZone = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
-        var tenantTimeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTimeZone ?? string.Empty);
+        if (timeZone is null) return GetCurrentTenantTime();
+        
+        var currentTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, 
+            TimeZoneInfo.FindSystemTimeZoneById(timeZone.Name));
 
-        return TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tenantTimeZoneInfo);
+        return currentTime;
     }
 
     public string FormatDateForTenant(DateTime? dateTime)
