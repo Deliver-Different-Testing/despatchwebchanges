@@ -33,5 +33,7 @@ public partial class WeightBreak
 
     public virtual ICollection<WeightBreakGroup> WeightBreakGroupSecondWeightBreakNavigations { get; set; } = new List<WeightBreakGroup>();
 
+    public virtual ICollection<WeightBreakGroup> WeightBreakGroupSixthWeightBreakNavigations { get; set; } = new List<WeightBreakGroup>();
+
     public virtual ICollection<WeightBreakGroup> WeightBreakGroupThirdWeightBreakNavigations { get; set; } = new List<WeightBreakGroup>();
 }

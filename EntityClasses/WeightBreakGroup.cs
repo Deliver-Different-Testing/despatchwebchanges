@@ -31,6 +31,8 @@ public partial class WeightBreakGroup
 
     public bool AverageWeight { get; set; }
 
+    public int? SixthWeightBreak { get; set; }
+
     public virtual ICollection<AirFreightRate> AirFreightRates { get; set; } = new List<AirFreightRate>();
 
     public virtual WeightBreak FifthWeightBreakNavigation { get; set; }
@@ -40,6 +42,8 @@ public partial class WeightBreakGroup
     public virtual WeightBreak FourthWeightBreakNavigation { get; set; }
 
     public virtual WeightBreak SecondWeightBreakNavigation { get; set; }
+
+    public virtual WeightBreak SixthWeightBreakNavigation { get; set; }
 
     public virtual WeightBreak ThirdWeightBreakNavigation { get; set; }
 }
