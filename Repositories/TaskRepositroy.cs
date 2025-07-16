@@ -8,7 +8,6 @@ using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
-using ExcelDataReader.Log.Logger;
 using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories;
@@ -21,12 +20,12 @@ public class TaskRepository(
     {
         var today = filters?.Date ?? infoService.GetCurrentTenantTime().AddDays(1);
 
-        var query = Context.TucEvents.Where(t => t.UcevTypeNavigation.UcetGroup != nameof(TaskGroup.CS));
+        var query = Context.TucEvents.Where(t => t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.CS));
 
         if (filters != null) query = ApplyFilters(query, filters);
 
         query = ApplyOrdering(query, filters, today);
-
+        
         var tasks = await query
             .Select(TaskMapping)
             .AsNoTracking()

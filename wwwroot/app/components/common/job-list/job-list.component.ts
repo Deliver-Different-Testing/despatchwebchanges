@@ -118,6 +118,7 @@ class JobsListController extends BaseController {
 
         // Initialize with current highlights
         this.highlightedRelatedJobIds = this.jobHighlightService.getHighlightedRelatedJobIds();
+        this.ensureHeaderSticky();
     }
 
     $onDestroy() {
@@ -1032,6 +1033,23 @@ class JobsListController extends BaseController {
 
             return this.sortState.direction === 'desc' ? -comparison : comparison;
         });
+    }
+
+    private ensureHeaderSticky(): void {
+        this.registerTimeout(() => {
+            const headerElement = angular.element('.jobs-header');
+
+            if (headerElement.length) {
+                // Force recalculation of sticky positioning
+                headerElement.css('position', 'relative');
+                headerElement.css('position', 'sticky');
+                headerElement.css('z-index', '1000');
+                headerElement.css('background', 'white');
+
+                // Force grid template columns to be applied
+                headerElement.css('grid-template-columns', this.getGridTemplateColumns());
+            }
+        }, 100);
     }
 }
 

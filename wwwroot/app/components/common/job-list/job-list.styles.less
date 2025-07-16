@@ -209,14 +209,13 @@
   }
 
   .jobs-container {
-    padding: 0 20px;
     flex: 1;
     overflow-y: auto;
+    position: relative;
 
     .jobs-header {
       display: grid;
       gap: 0;
-      padding: 12px 0;
       border-bottom: 2px solid #e2e8f0;
       font-size: 11px;
       font-weight: 600;
@@ -225,20 +224,21 @@
       background: white;
       position: sticky;
       top: 0;
-      z-index: 10;
+      z-index: 1000;
+      width: 100%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      min-height: 36px;
+      left: 0;
+      right: 0;
+      margin-left: -20px;
+      margin-right: -20px;
+      padding: 12px 20px;
 
-      .header-cell {
+      .header-content {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0 8px;
-        position: relative;
-        border-right: 1px solid #e2e8f0;
-        min-height: 36px; // Add minimum height to accommodate wrapping
-
-        &:last-child {
-          border-right: none;
-        }
+        width: 100%;
 
         .header-text {
           flex: 1;
@@ -247,24 +247,29 @@
           line-height: 1.2;
         }
 
-        .resize-handle {
-          position: absolute;
-          top: 0;
-          right: 0;
-          width: 4px;
-          height: 100%;
-          cursor: col-resize;
-          background: transparent;
-          border: none;
-          z-index: 11;
+        .sort-icon {
+          margin-left: 4px;
+          font-size: 16px;
+        }
+      }
 
-          &:hover {
-            background: rgba(59, 130, 246, 0.3);
-          }
+      .resize-handle {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 4px;
+        height: 100%;
+        cursor: col-resize;
+        background: transparent;
+        border: none;
+        z-index: 1001;
 
-          &:active {
-            background: rgba(59, 130, 246, 0.5);
-          }
+        &:hover {
+          background: rgba(59, 130, 246, 0.3);
+        }
+
+        &:active {
+          background: rgba(59, 130, 246, 0.5);
         }
       }
     }
@@ -279,6 +284,8 @@
       transition: background-color 0.2s;
       font-size: 13px;
       cursor: pointer;
+      position: relative;
+      z-index: 1;
 
       .job-cell {
         padding: 0 8px;
@@ -761,8 +768,6 @@
     }
 
     .jobs-container {
-      padding: 0 16px;
-
       .jobs-header {
         padding: 10px 0;
         font-size: 10px;
@@ -1096,4 +1101,5 @@
       text-align: center;
     }
   }
+
 }
