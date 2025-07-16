@@ -89,274 +89,278 @@
 
     <!-- Jobs Container -->
     <div class="jobs-container">
-        <!-- Jobs Header -->
-        <div class="jobs-header" ng-style="{'grid-template-columns': ctrl.getGridTemplateColumns()}">
-            <div class="header-cell" ng-class="ctrl.getSortClass('priority')" ng-click="ctrl.sortBy('priority')">
-                <div class="header-content">
-                    <span class="header-text"></span>
-                    <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('priority')}}</md-icon>
-                </div>
-                <button class="resize-handle" ng-mousedown="ctrl.startResize($event, 'priority'); $event.stopPropagation()"></button>
-            </div>
-            <div class="header-cell" ng-class="ctrl.getSortClass('time')" ng-click="ctrl.sortBy('time')">
-                <div class="header-content">
-                    <span class="header-text">TIME</span>
-                    <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('time')}}</md-icon>
-                </div>
-                <button class="resize-handle" ng-mousedown="ctrl.startResize($event, 'time'); $event.stopPropagation()"></button>
-            </div>
-            <div class="header-cell" ng-class="ctrl.getSortClass('jobNo')" ng-click="ctrl.sortBy('jobNo')">
-                <div class="header-content">
-                    <span class="header-text">JOB NO</span>
-                    <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('jobNo')}}</md-icon>
-                </div>
-                <button class="resize-handle" ng-mousedown="ctrl.startResize($event, 'jobNo'); $event.stopPropagation()"></button>
-            </div>
-            <div class="header-cell" ng-class="ctrl.getSortClass('pickup')" ng-click="ctrl.sortBy('pickup')">
-                <div class="header-content">
-                    <span class="header-text">PICKUP</span>
-                    <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('pickup')}}</md-icon>
-                </div>
-                <button class="resize-handle" ng-mousedown="ctrl.startResize($event, 'pickup'); $event.stopPropagation()"></button>
-            </div>
-            <div class="header-cell" ng-class="ctrl.getSortClass('delivery')" ng-click="ctrl.sortBy('delivery')">
-                <div class="header-content">
-                    <span class="header-text">DELIVERY</span>
-                    <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('delivery')}}</md-icon>
-                </div>
-                <button class="resize-handle" ng-mousedown="ctrl.startResize($event, 'delivery'); $event.stopPropagation()"></button>
-            </div>
-            <div class="header-cell" ng-class="ctrl.getSortClass('courier')" ng-click="ctrl.sortBy('courier')">
-                <div class="header-content">
-                    <span class="header-text">COURIER</span>
-                    <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('courier')}}</md-icon>
-                </div>
-                <button class="resize-handle" ng-mousedown="ctrl.startResize($event, 'courier'); $event.stopPropagation()"></button>
-            </div>
-            <div class="header-cell" ng-class="ctrl.getSortClass('status')" ng-click="ctrl.sortBy('status')">
-                <div class="header-content">
-                    <span class="header-text">STATUS</span>
-                    <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('status')}}</md-icon>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Job Rows -->
-        <div ng-repeat-start="job in ctrl.filteredJobs track by job.id"
-             class="job-row {{ctrl.getJobPriorityClass(job)}}"
-             ng-class="{
-                     'selected': ctrl.selectedJob && ctrl.selectedJob.id === job.id,
-                     'unread': !job.hasBeenRead,
-                     'multi-part-parent': ctrl.isMultiPartJob(job) && !!job.isParentOrSingle,
-                     'child-job': !job.isParentOrSingle,
-                     'related-job': ctrl.isNationwideList() && ctrl.hasRelatedJobs(job),
-                     'warning': ctrl.isWarning(job)
-                 }"
-             ng-style="{'grid-template-columns': ctrl.getGridTemplateColumns()}"
-             context-menu="ctrl.getJobContextMenuOptions(job)"
-             context-menu-on="contextmenu"
-             context-menu-class="job-context-menu"
-             ng-click="ctrl.selectJob(job)">
-
-            <!-- Priority Column -->
-            <div class="job-cell {{::ctrl.shouldShowPriorityColumn(job) ? 'priority' : ''}}">
-                <!-- Expand/Collapse button for multipart jobs -->
-                <button ng-if="ctrl.isMultiPartJob(job) && job.isParentOrSingle"
-                        class="expand-btn"
-                        ng-click="ctrl.toggleJobGroup(job); $event.stopPropagation()"
-                        aria-label="{{job._isExpanded ? 'Collapse' : 'Expand'}} group">
-                    <span class="expand-icon">{{job._isExpanded ? '▼' : '▶'}}</span>
-                    <md-tooltip md-direction="bottom">Multi-part Job - Click to
-                        {{job._isExpanded ? 'collapse' : 'expand'}} parts
-                    </md-tooltip>
-                </button>
-
-                <!-- Static indicators for non-expandable jobs -->
-                <md-icon
-                        md-font-set="material-symbols-outlined"
-                        class="airport-icon"
-                        ng-if="job.fromAirportId || job.toAirportId">
-                    {{ ::ctrl.getFlightIcon(job) }}
-                </md-icon>
-            </div>
-
-            <!-- Time Column -->
-            <div class="job-cell time-cell">
-                <div class="date">{{ctrl.formatDeliveryTime(job)}} ({{::ctrl.timeZone | timezoneShort}})</div>
-                <div class="time">{{ctrl.formatDeliveryDate(job)}}</div>
-                <div class="overdue" ng-if="ctrl.isOverdue(job)">OVERDUE ({{ job.remain }})</div>
-            </div>
-
-            <!-- Job ID Column -->
-            <div class="job-cell job-id-cell">
-                <div class="job-id">{{job.jobNo}}</div>
-                <div class="client-name">{{job.clientName}}</div>
-            </div>
-            
-            <!-- Pickup Column -->
-            <div class="job-cell route-cell pickup-cell">
-                <div class="address">{{ctrl.getPickupAddress(job)}}</div>
-                <div class="city-state">{{ctrl.getPickupCityState(job)}}</div>
-            </div>
-
-            <!-- Delivery Column -->
-            <div class="job-cell route-cell delivery-cell">
-                <div class="address">{{ctrl.getDeliveryAddress(job)}}</div>
-                <div class="city-state">{{ctrl.getDeliveryCityState(job)}}</div>
-            </div>
-
-            <!-- Courier Column -->
-            <div class="job-cell courier-cell">
-                <!-- Show courier info if already assigned -->
-                <div ng-if="job.assignedFlight" class="courier-info-container">
-                    <div class="courier-avatar">
-                        <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
+        <div class="jobs-scroll-container">
+            <div class="jobs-content">
+                <!-- Jobs Header -->
+                <div class="jobs-header" ng-style="{'grid-template-columns': ctrl.getGridTemplateColumns()}">
+                    <div class="header-cell" ng-class="ctrl.getSortClass('priority')" ng-click="ctrl.sortBy('priority')">
+                        <div class="header-content">
+                            <span class="header-text"></span>
+                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('priority')}}</md-icon>
+                        </div>
+                        <button class="resize-handle" ng-mousedown="ctrl.startResize($event, 'priority'); $event.stopPropagation()"></button>
                     </div>
-                    <div class="courier-info">
-                        <div class="courier-name">{{job.assignedFlight.flightNumber}}</div>
+                    <div class="header-cell" ng-class="ctrl.getSortClass('time')" ng-click="ctrl.sortBy('time')">
+                        <div class="header-content">
+                            <span class="header-text">TIME</span>
+                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('time')}}</md-icon>
+                        </div>
+                        <button class="resize-handle" ng-mousedown="ctrl.startResize($event, 'time'); $event.stopPropagation()"></button>
+                    </div>
+                    <div class="header-cell" ng-class="ctrl.getSortClass('jobNo')" ng-click="ctrl.sortBy('jobNo')">
+                        <div class="header-content">
+                            <span class="header-text">JOB NO</span>
+                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('jobNo')}}</md-icon>
+                        </div>
+                        <button class="resize-handle" ng-mousedown="ctrl.startResize($event, 'jobNo'); $event.stopPropagation()"></button>
+                    </div>
+                    <div class="header-cell" ng-class="ctrl.getSortClass('pickup')" ng-click="ctrl.sortBy('pickup')">
+                        <div class="header-content">
+                            <span class="header-text">PICKUP</span>
+                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('pickup')}}</md-icon>
+                        </div>
+                        <button class="resize-handle" ng-mousedown="ctrl.startResize($event, 'pickup'); $event.stopPropagation()"></button>
+                    </div>
+                    <div class="header-cell" ng-class="ctrl.getSortClass('delivery')" ng-click="ctrl.sortBy('delivery')">
+                        <div class="header-content">
+                            <span class="header-text">DELIVERY</span>
+                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('delivery')}}</md-icon>
+                        </div>
+                        <button class="resize-handle" ng-mousedown="ctrl.startResize($event, 'delivery'); $event.stopPropagation()"></button>
+                    </div>
+                    <div class="header-cell" ng-class="ctrl.getSortClass('courier')" ng-click="ctrl.sortBy('courier')">
+                        <div class="header-content">
+                            <span class="header-text">COURIER</span>
+                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('courier')}}</md-icon>
+                        </div>
+                        <button class="resize-handle" ng-mousedown="ctrl.startResize($event, 'courier'); $event.stopPropagation()"></button>
+                    </div>
+                    <div class="header-cell" ng-class="ctrl.getSortClass('status')" ng-click="ctrl.sortBy('status')">
+                        <div class="header-content">
+                            <span class="header-text">STATUS</span>
+                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('status')}}</md-icon>
+                        </div>
                     </div>
                 </div>
 
-                <div ng-if="job.assignedAgent" class="courier-info-container">
-                    <div class="courier-avatar">
-                        <md-icon md-font-set="material-symbols-outlined">contacts_product</md-icon>
+                <!-- Job Rows -->
+                <div ng-repeat-start="job in ctrl.filteredJobs track by job.id"
+                     class="job-row {{ctrl.getJobPriorityClass(job)}}"
+                     ng-class="{
+                             'selected': ctrl.selectedJob && ctrl.selectedJob.id === job.id,
+                             'unread': !job.hasBeenRead,
+                             'multi-part-parent': ctrl.isMultiPartJob(job) && !!job.isParentOrSingle,
+                             'child-job': !job.isParentOrSingle,
+                             'related-job': ctrl.isNationwideList() && ctrl.hasRelatedJobs(job),
+                             'warning': ctrl.isWarning(job)
+                         }"
+                     ng-style="{'grid-template-columns': ctrl.getGridTemplateColumns()}"
+                     context-menu="ctrl.getJobContextMenuOptions(job)"
+                     context-menu-on="contextmenu"
+                     context-menu-class="job-context-menu"
+                     ng-click="ctrl.selectJob(job)">
+
+                    <!-- Priority Column -->
+                    <div class="job-cell {{::ctrl.shouldShowPriorityColumn(job) ? 'priority' : ''}}">
+                        <!-- Expand/Collapse button for multipart jobs -->
+                        <button ng-if="ctrl.isMultiPartJob(job) && job.isParentOrSingle"
+                                class="expand-btn"
+                                ng-click="ctrl.toggleJobGroup(job); $event.stopPropagation()"
+                                aria-label="{{job._isExpanded ? 'Collapse' : 'Expand'}} group">
+                            <span class="expand-icon">{{job._isExpanded ? '▼' : '▶'}}</span>
+                            <md-tooltip md-direction="bottom">Multi-part Job - Click to
+                                {{job._isExpanded ? 'collapse' : 'expand'}} parts
+                            </md-tooltip>
+                        </button>
+
+                        <!-- Static indicators for non-expandable jobs -->
+                        <md-icon
+                                md-font-set="material-symbols-outlined"
+                                class="airport-icon"
+                                ng-if="job.fromAirportId || job.toAirportId">
+                            {{ ::ctrl.getFlightIcon(job) }}
+                        </md-icon>
                     </div>
-                    <div class="courier-info">
-                        <div class="courier-name">{{job.assignedAgent.agentName}}</div>
+
+                    <!-- Time Column -->
+                    <div class="job-cell time-cell">
+                        <div class="date">{{ctrl.formatDeliveryTime(job)}} ({{::ctrl.timeZone | timezoneShort}})</div>
+                        <div class="time">{{ctrl.formatDeliveryDate(job)}}</div>
+                        <div class="overdue" ng-if="ctrl.isOverdue(job)">OVERDUE ({{ job.remain }})</div>
+                    </div>
+
+                    <!-- Job ID Column -->
+                    <div class="job-cell job-id-cell">
+                        <div class="job-id">{{job.jobNo}}</div>
+                        <div class="client-name">{{job.clientName}}</div>
+                    </div>
+
+                    <!-- Pickup Column -->
+                    <div class="job-cell route-cell pickup-cell">
+                        <div class="address">{{ctrl.getPickupAddress(job)}}</div>
+                        <div class="city-state">{{ctrl.getPickupCityState(job)}}</div>
+                    </div>
+
+                    <!-- Delivery Column -->
+                    <div class="job-cell route-cell delivery-cell">
+                        <div class="address">{{ctrl.getDeliveryAddress(job)}}</div>
+                        <div class="city-state">{{ctrl.getDeliveryCityState(job)}}</div>
+                    </div>
+
+                    <!-- Courier Column -->
+                    <div class="job-cell courier-cell">
+                        <!-- Show courier info if already assigned -->
+                        <div ng-if="job.assignedFlight" class="courier-info-container">
+                            <div class="courier-avatar">
+                                <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
+                            </div>
+                            <div class="courier-info">
+                                <div class="courier-name">{{job.assignedFlight.flightNumber}}</div>
+                            </div>
+                        </div>
+
+                        <div ng-if="job.assignedAgent" class="courier-info-container">
+                            <div class="courier-avatar">
+                                <md-icon md-font-set="material-symbols-outlined">contacts_product</md-icon>
+                            </div>
+                            <div class="courier-info">
+                                <div class="courier-name">{{job.assignedAgent.agentName}}</div>
+                            </div>
+                        </div>
+
+                        <div ng-if="ctrl.hasAssignedCourier(job)" class="courier-info-container">
+                            <div class="courier-avatar" ng-style="{'background': ctrl.getCourierColor(job)}">
+                                {{ctrl.getCourierInitials(job)}}
+                            </div>
+                            <div class="courier-info">
+                                <div class="courier-name">{{ctrl.getCourierName(job)}}</div>
+                                <div class="courier-id">{{ctrl.getCourierCode(job)}}</div>
+                            </div>
+                        </div>
+
+                        <!-- Show assign button when no courier assigned -->
+                        <button ng-if="!ctrl.hasAssignedCourier(job) && !job.showCourierSearch && ctrl.allowDispatch"
+                                class="assign-btn"
+                                ng-click="ctrl.showCourierAssignment(job)">
+                            Assign
+                        </button>
+
+                        <!-- Show typeahead when in assignment mode -->
+                        <div class="courier-search-container"
+                             ng-if="!ctrl.hasAssignedCourier(job) && job.showCourierSearch">
+                            <input type="text"
+                                   ng-model="job.searchText"
+                                   uib-typeahead="item as item.text for item in ctrl.performCourierSearch($viewValue)"
+                                   typeahead-loading="job.courierSearchLoading"
+                                   typeahead-min-length="2"
+                                   typeahead-wait-ms="300"
+                                   typeahead-select-on-blur="true"
+                                   typeahead-focus-first="true"
+                                   typeahead-editable="false"
+                                   typeahead-on-select="ctrl.handleDispatchSelection($item, $model, $label, $event, job)"
+                                   class="courier-search-input"
+                                   placeholder="Search Courier..."
+                                   ng-blur="ctrl.hideCourierAssignment(job)">
+                        </div>
+                    </div>
+
+                    <!-- Status Column -->
+                    <div class="job-cell">
+                        <md-chip class="status {{job.statusName | lowercase | replace:' ':'-'}}">
+                            {{job.status}}
+                        </md-chip>
                     </div>
                 </div>
 
-                <div ng-if="ctrl.hasAssignedCourier(job)" class="courier-info-container">
-                    <div class="courier-avatar" ng-style="{'background': ctrl.getCourierColor(job)}">
-                        {{ctrl.getCourierInitials(job)}}
+                <!-- Child Job Rows -->
+                <div ng-repeat-end
+                     ng-if="job._isExpanded && ctrl.isMultiPartJob(job)"
+                     ng-repeat="childJob in job._groupChildren track by childJob.id"
+                     class="job-row child-job {{ctrl.getJobPriorityClass(childJob)}}"
+                     ng-class="{
+                             'selected': ctrl.selectedJob && ctrl.selectedJob.id === childJob.id,
+                             'unread': !childJob.hasBeenRead
+                         }"
+                     ng-style="{'grid-template-columns': ctrl.getGridTemplateColumns()}"
+                     context-menu="ctrl.getJobContextMenuOptions(childJob)"
+                     context-menu-on="contextmenu"
+                     context-menu-class="job-context-menu"
+                     ng-click="ctrl.selectJob(childJob)">
+
+                    <!-- Priority Column -->
+                    <div class="job-cell">
+                        <!-- Nothing is needed here -->
                     </div>
-                    <div class="courier-info">
-                        <div class="courier-name">{{ctrl.getCourierName(job)}}</div>
-                        <div class="courier-id">{{ctrl.getCourierCode(job)}}</div>
+
+                    <!-- Time Column -->
+                    <div class="job-cell time-cell">
+                        <div class="date">{{ctrl.formatDeliveryDate(childJob)}}</div>
+                        <div class="time">{{ctrl.formatDeliveryTime(childJob)}}</div>
+                        <div class="overdue" ng-if="ctrl.isOverdue(childJob)">OVERDUE ({{ childjob.remain }})</div>
                     </div>
-                </div>
 
-                <!-- Show assign button when no courier assigned -->
-                <button ng-if="!ctrl.hasAssignedCourier(job) && !job.showCourierSearch && ctrl.allowDispatch"
-                        class="assign-btn"
-                        ng-click="ctrl.showCourierAssignment(job)">
-                    Assign
-                </button>
-
-                <!-- Show typeahead when in assignment mode -->
-                <div class="courier-search-container"
-                     ng-if="!ctrl.hasAssignedCourier(job) && job.showCourierSearch">
-                    <input type="text"
-                           ng-model="job.searchText"
-                           uib-typeahead="item as item.text for item in ctrl.performCourierSearch($viewValue)"
-                           typeahead-loading="job.courierSearchLoading"
-                           typeahead-min-length="2"
-                           typeahead-wait-ms="300"
-                           typeahead-select-on-blur="true"
-                           typeahead-focus-first="true"
-                           typeahead-editable="false"
-                           typeahead-on-select="ctrl.handleDispatchSelection($item, $model, $label, $event, job)"
-                           class="courier-search-input"
-                           placeholder="Search Courier..."
-                           ng-blur="ctrl.hideCourierAssignment(job)">
-                </div>
-            </div>
-
-            <!-- Status Column -->
-            <div class="job-cell">
-                <md-chip class="status {{job.statusName | lowercase | replace:' ':'-'}}">
-                    {{job.status}}
-                </md-chip>
-            </div>
-        </div>
-
-        <!-- Child Job Rows -->
-        <div ng-repeat-end
-             ng-if="job._isExpanded && ctrl.isMultiPartJob(job)"
-             ng-repeat="childJob in job._groupChildren track by childJob.id"
-             class="job-row child-job {{ctrl.getJobPriorityClass(childJob)}}"
-             ng-class="{
-                     'selected': ctrl.selectedJob && ctrl.selectedJob.id === childJob.id,
-                     'unread': !childJob.hasBeenRead
-                 }"
-             ng-style="{'grid-template-columns': ctrl.getGridTemplateColumns()}"
-             context-menu="ctrl.getJobContextMenuOptions(childJob)"
-             context-menu-on="contextmenu"
-             context-menu-class="job-context-menu"
-             ng-click="ctrl.selectJob(childJob)">
-
-            <!-- Priority Column -->
-            <div class="job-cell">
-                <!-- Nothing is needed here -->
-            </div>
-
-            <!-- Time Column -->
-            <div class="job-cell time-cell">
-                <div class="date">{{ctrl.formatDeliveryDate(childJob)}}</div>
-                <div class="time">{{ctrl.formatDeliveryTime(childJob)}}</div>
-                <div class="overdue" ng-if="ctrl.isOverdue(childJob)">OVERDUE ({{ childjob.remain }})</div>
-            </div>
-
-            <!-- Job ID Column -->
-            <div class="job-cell job-id-cell">
-                <div class="job-id">{{childJob.jobNo}}</div>
-                <div class="client-name">{{childJob.client}}</div>
-            </div>
-            
-            <!-- Pickup Column -->
-            <div class="job-cell route-cell pickup-cell">
-                <div class="address">{{ctrl.getPickupAddress(childJob)}}</div>
-                <div class="city-state">{{ctrl.getPickupCityState(childJob)}}</div>
-            </div>
-
-            <!-- Delivery Column -->
-            <div class="job-cell route-cell delivery-cell">
-                <div class="address">{{ctrl.getDeliveryAddress(childJob)}}</div>
-                <div class="city-state">{{ctrl.getDeliveryCityState(childJob)}}</div>
-            </div>
-
-            <!-- Courier Column -->
-            <div class="job-cell courier-cell">
-                <!-- Show courier info if already assigned -->
-                <div ng-if="ctrl.hasAssignedCourier(childJob)" class="courier-info-container">
-                    <div class="courier-avatar" ng-style="{'background': ctrl.getCourierColor(childJob)}">
-                        {{ctrl.getCourierInitials(childJob)}}
+                    <!-- Job ID Column -->
+                    <div class="job-cell job-id-cell">
+                        <div class="job-id">{{childJob.jobNo}}</div>
+                        <div class="client-name">{{childJob.client}}</div>
                     </div>
-                    <div class="courier-info">
-                        <div class="courier-name">{{ctrl.getCourierName(childJob)}}</div>
-                        <div class="courier-id">{{ctrl.getCourierCode(childJob)}}</div>
+
+                    <!-- Pickup Column -->
+                    <div class="job-cell route-cell pickup-cell">
+                        <div class="address">{{ctrl.getPickupAddress(childJob)}}</div>
+                        <div class="city-state">{{ctrl.getPickupCityState(childJob)}}</div>
+                    </div>
+
+                    <!-- Delivery Column -->
+                    <div class="job-cell route-cell delivery-cell">
+                        <div class="address">{{ctrl.getDeliveryAddress(childJob)}}</div>
+                        <div class="city-state">{{ctrl.getDeliveryCityState(childJob)}}</div>
+                    </div>
+
+                    <!-- Courier Column -->
+                    <div class="job-cell courier-cell">
+                        <!-- Show courier info if already assigned -->
+                        <div ng-if="ctrl.hasAssignedCourier(childJob)" class="courier-info-container">
+                            <div class="courier-avatar" ng-style="{'background': ctrl.getCourierColor(childJob)}">
+                                {{ctrl.getCourierInitials(childJob)}}
+                            </div>
+                            <div class="courier-info">
+                                <div class="courier-name">{{ctrl.getCourierName(childJob)}}</div>
+                                <div class="courier-id">{{ctrl.getCourierCode(childJob)}}</div>
+                            </div>
+                        </div>
+
+                        <!-- Show assign button when no courier assigned -->
+                        <button ng-if="!ctrl.hasAssignedCourier(childJob) && !childJob.showCourierSearch && ctrl.allowDispatch"
+                                class="assign-btn"
+                                ng-click="ctrl.showCourierAssignment(childJob)">
+                            Assign
+                        </button>
+
+                        <!-- Show typeahead when in assignment mode -->
+                        <div class="courier-search-container"
+                             ng-if="!ctrl.hasAssignedCourier(childJob) && childJob.showCourierSearch">
+                            <input type="text"
+                                   ng-model="childJob.searchText"
+                                   uib-typeahead="item as item.text for item in ctrl.performCourierSearch($viewValue)"
+                                   typeahead-loading="childJob.courierSearchLoading"
+                                   typeahead-min-length="2"
+                                   typeahead-wait-ms="300"
+                                   typeahead-select-on-blur="true"
+                                   typeahead-focus-first="true"
+                                   typeahead-editable="false"
+                                   typeahead-on-select="ctrl.handleDispatchSelection($item, $model, $label, $event, childJob)"
+                                   class="courier-search-input"
+                                   placeholder="Search Courier..."
+                                   ng-blur="ctrl.hideCourierAssignment(childJob)">
+                        </div>
+                    </div>
+
+                    <!-- Status Column -->
+                    <div class="job-cell">
+                        <div class="status">{{ctrl.getStatusAbbreviation(childJob)}}</div>
                     </div>
                 </div>
-
-                <!-- Show assign button when no courier assigned -->
-                <button ng-if="!ctrl.hasAssignedCourier(childJob) && !childJob.showCourierSearch && ctrl.allowDispatch"
-                        class="assign-btn"
-                        ng-click="ctrl.showCourierAssignment(childJob)">
-                    Assign
-                </button>
-
-                <!-- Show typeahead when in assignment mode -->
-                <div class="courier-search-container"
-                     ng-if="!ctrl.hasAssignedCourier(childJob) && childJob.showCourierSearch">
-                    <input type="text"
-                           ng-model="childJob.searchText"
-                           uib-typeahead="item as item.text for item in ctrl.performCourierSearch($viewValue)"
-                           typeahead-loading="childJob.courierSearchLoading"
-                           typeahead-min-length="2"
-                           typeahead-wait-ms="300"
-                           typeahead-select-on-blur="true"
-                           typeahead-focus-first="true"
-                           typeahead-editable="false"
-                           typeahead-on-select="ctrl.handleDispatchSelection($item, $model, $label, $event, childJob)"
-                           class="courier-search-input"
-                           placeholder="Search Courier..."
-                           ng-blur="ctrl.hideCourierAssignment(childJob)">
-                </div>
-            </div>
-
-            <!-- Status Column -->
-            <div class="job-cell">
-                <div class="status">{{ctrl.getStatusAbbreviation(childJob)}}</div>
             </div>
         </div>
     </div>

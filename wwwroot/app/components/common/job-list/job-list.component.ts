@@ -172,6 +172,7 @@ class JobsListController extends BaseController {
 
             this.calculateStats();
             this.applyFilters();
+            this.ensureHeaderSticky();
         }
 
         if (changes['selectedJob'] && changes['selectedJob'].currentValue) {
@@ -1043,7 +1044,7 @@ class JobsListController extends BaseController {
                 // Force recalculation of sticky positioning
                 headerElement.css('position', 'relative');
                 headerElement.css('position', 'sticky');
-                headerElement.css('z-index', '1000');
+                headerElement.css('z-index', '49');
                 headerElement.css('background', 'white');
 
                 // Force grid template columns to be applied
