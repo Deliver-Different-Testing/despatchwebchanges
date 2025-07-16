@@ -4455,6 +4455,7 @@ public partial class DespatchContext : DbContext
                 {
                     tb.HasTrigger("TR_tucJob_PricingBreakdown_Sync");
                     tb.HasTrigger("trg_TucJob_Notes_Update");
+                    tb.HasTrigger("trg_tucJob_Update");
                     tb.HasTrigger("tucJob_ChangeAmount");
                     tb.HasTrigger("tucJob_ChangeWeight");
                     tb.HasTrigger("tucJob_InsertJob");
@@ -4954,6 +4955,7 @@ public partial class DespatchContext : DbContext
                 {
                     tb.HasTrigger("AutomaticSpeedUpdate_Archive");
                     tb.HasTrigger("trg_TucJobArchive_Notes_Update");
+                    tb.HasTrigger("trg_tucJobArchive_Update");
                     tb.HasTrigger("tucJobArchive_Update_AddPickupAmountToNationwideAmount");
                     tb.HasTrigger("tucJobArchive_Update_AutomaticSpeedUpdate");
                     tb.HasTrigger("tucJobArchive_Update_BlockChanges");
@@ -6555,6 +6557,10 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.SecondWeightBreakNavigation).WithMany(p => p.WeightBreakGroupSecondWeightBreakNavigations)
                 .HasForeignKey(d => d.SecondWeightBreak)
                 .HasConstraintName("FK__WeightBre__Secon__25924E90");
+
+            entity.HasOne(d => d.SixthWeightBreakNavigation).WithMany(p => p.WeightBreakGroupSixthWeightBreakNavigations)
+                .HasForeignKey(d => d.SixthWeightBreak)
+                .HasConstraintName("FK__WeightBre__Sixth__3084DE4F");
 
             entity.HasOne(d => d.ThirdWeightBreakNavigation).WithMany(p => p.WeightBreakGroupThirdWeightBreakNavigations)
                 .HasForeignKey(d => d.ThirdWeightBreak)
