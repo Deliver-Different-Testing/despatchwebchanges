@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using Microsoft.EntityFrameworkCore;
-using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Repositories;
 
