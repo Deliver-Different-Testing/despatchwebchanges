@@ -1,14 +1,22 @@
 <div class="flight-details-dialog">
     <!-- Header -->
-    <div class="dialog-header">
-        <div class="header-content">
-            <md-icon md-font-set="material-symbols-outlined" class="header-icon">flight</md-icon>
-            <h1 class="header-title">Flight Details</h1>
-            <button class="close-button" ng-click="ctrl.cancel()" aria-label="Close dialog">
-                <md-icon md-font-set="material-symbols-outlined">close</md-icon>
-            </button>
+    <md-toolbar>
+        <div class="md-toolbar-tools">
+            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">
+                flight
+            </md-icon>
+            <h2>Flight Details</h2>
+            <span flex></span>
+            <md-button class="md-icon-button" ng-click="ctrl.cancel()">
+                <md-tooltip md-direction="bottom">Cancel</md-tooltip>
+                <md-icon
+                        aria-label="Close dialog"
+                        md-font-set="material-symbols-outlined">
+                    close
+                </md-icon>
+            </md-button>
         </div>
-    </div>
+    </md-toolbar>
 
     <!-- Segment tabs for multi-segment flights -->
     <div class="segment-tabs" ng-if="ctrl.flight.isMultiSegment">

@@ -5,18 +5,18 @@
 @surface-container: #f3edf7;
 @surface-container-high: #ede7f0;
 @surface-container-highest: #e8e0e5;
-@primary: #6750a4;
-@primary-container: #e8def8;
-@secondary: #625b71;
-@secondary-container: #e8def8;
-@tertiary: #7d5260;
-@tertiary-container: #ffd8e4;
-@outline: #79747e;
-@outline-variant: #cac4d0;
+@primary: #3EAFC2;
+@primary-container: #c7f0f8;
+@secondary: #5b6971;
+@secondary-container: #def0f8;
+@tertiary: #5d7260;
+@tertiary-container: #d8f0e4;
+@outline: #74797e;
+@outline-variant: #c4cad0;
 @on-surface: #1c1b1f;
-@on-surface-variant: #49454f;
+@on-surface-variant: #454f49;
 @on-primary: #ffffff;
-@on-primary-container: #21005d;
+@on-primary-container: #003d47;
 @error: #ba1a1a;
 @error-container: #ffdad6;
 @warning: #6b5b00;
@@ -25,59 +25,8 @@
 .flight-details-dialog {
   width: min(90vw, 800px);
   max-height: 90vh;
-  border-radius: 28px;
   background: @surface;
-  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
-
-  // Header
-  .dialog-header {
-    background: @primary;
-    color: @on-primary;
-    border-radius: 28px 28px 0 0;
-    padding: 24px;
-    position: relative;
-
-    .header-content {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .header-icon {
-      font-size: 28px;
-      color: @on-primary;
-    }
-
-    .header-title {
-      font-size: 24px;
-      font-weight: 500;
-      margin: 0;
-      flex: 1;
-    }
-
-    .close-button {
-      color: @on-primary;
-      background: transparent;
-      border: none;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background-color 0.2s;
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.1);
-      }
-
-      md-icon {
-        font-size: 24px;
-      }
-    }
-  }
-
+  
   // Tab navigation for multi-segment flights
   .segment-tabs {
     background: @surface-container;
@@ -196,14 +145,13 @@
         }
 
         .aircraft-info {
-          display: flex;
           align-items: center;
           gap: 8px;
           color: @on-surface-variant;
           font-size: 14px;
 
           md-icon {
-            font-size: 16px;
+            font-size: 20px;
           }
         }
       }
@@ -320,14 +268,13 @@
       }
 
       .terminal-info {
-        display: flex;
         align-items: center;
         gap: 8px;
         font-size: 14px;
         color: @on-surface-variant;
 
         md-icon {
-          font-size: 16px;
+          font-size: 20px;
         }
       }
     }
@@ -379,11 +326,11 @@
 
         .plane-icon {
           position: absolute;
-          top: 50%;
+          top: 12px;
           left: 50%;
           transform: translate(-50%, -50%) rotate(90deg);
           color: @primary;
-          font-size: 24px;
+          font-size: 18px;
           background: @surface;
           border-radius: 50%;
           padding: 4px;
@@ -517,7 +464,6 @@
         color: @warning;
         padding: 12px;
         border-radius: 12px;
-        display: flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
