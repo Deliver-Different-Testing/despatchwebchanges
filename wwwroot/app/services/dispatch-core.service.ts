@@ -707,14 +707,14 @@ class DispatchCoreService implements angular.IServiceProvider {
     async updateJobTime(
         jobId: number,
         field: JobProperty,
-        dateTime: string,
+        dateTime: string | Date | number | boolean,
         isRecurring: boolean,
         selectedTimeZoneId: number
     ) {
         const requestData: UpdateJobTimeRequest = {
-            jobId: jobId,
-            dateTime: dateTime,
-            isRecurring: isRecurring,
+            jobId,
+            dateTime,
+            isRecurring,
             timeZoneId: selectedTimeZoneId,
         };
 
@@ -748,7 +748,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             return await this.updateJobTime(
                 jobId,
                 field,
-                String(value),
+                value,
                 isRecurring,
                 selectedTimeZoneId ?? 0
             );

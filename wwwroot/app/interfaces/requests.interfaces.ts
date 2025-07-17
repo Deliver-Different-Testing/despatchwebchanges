@@ -1,6 +1,6 @@
 export interface UpdateJobTimeRequest {
     jobId: number;
-    dateTime: string;
+    dateTime: string | Date | number | boolean;
     isRecurring: boolean;
     timeZoneId: number;
 }

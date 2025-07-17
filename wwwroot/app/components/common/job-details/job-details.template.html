@@ -11,7 +11,8 @@
         <md-card-content>
             <div layout="row" layout-align="start center">
                 <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
-                <span class="warning-text" ng-if="::ctrl.job.isArchived">Job archived. Some fields can't be edited</span>
+                <span class="warning-text"
+                      ng-if="::ctrl.job.isArchived">Job archived. Some fields can't be edited</span>
                 <span class="warning-text"
                       ng-if="::ctrl.job.preBook">Recurring job. Some fields may require confirmation</span>
             </div>
