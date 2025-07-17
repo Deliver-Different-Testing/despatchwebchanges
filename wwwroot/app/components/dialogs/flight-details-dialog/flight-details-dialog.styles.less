@@ -1,380 +1,592 @@
 @import "../../../../css/variables.less";
 
+// MD3 Design tokens
+@surface: #fef7ff;
+@surface-container: #f3edf7;
+@surface-container-high: #ede7f0;
+@surface-container-highest: #e8e0e5;
+@primary: #6750a4;
+@primary-container: #e8def8;
+@secondary: #625b71;
+@secondary-container: #e8def8;
+@tertiary: #7d5260;
+@tertiary-container: #ffd8e4;
+@outline: #79747e;
+@outline-variant: #cac4d0;
+@on-surface: #1c1b1f;
+@on-surface-variant: #49454f;
+@on-primary: #ffffff;
+@on-primary-container: #21005d;
+@error: #ba1a1a;
+@error-container: #ffdad6;
+@warning: #6b5b00;
+@warning-container: #fff0c4;
+
 .flight-details-dialog {
- width: 60%;
+  width: min(90vw, 800px);
+  max-height: 90vh;
+  border-radius: 28px;
+  background: @surface;
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
 
-  .connection-tabs {
-    background-color: #fff;
+  // Header
+  .dialog-header {
+    background: @primary;
+    color: @on-primary;
+    border-radius: 28px 28px 0 0;
+    padding: 24px;
+    position: relative;
 
-    md-tab-item:focus {
-      outline: none;
+    .header-content {
+      display: flex;
+      align-items: center;
+      gap: 16px;
     }
-  }
 
-  // Warning Section
-  .warning-section {
-    margin: 0 0 12px 0;
-    background-color: #FFF8E1;
-    border-left: 4px solid #FFB300;
-
-    .md-card-content {
-      padding: 8px 16px;
+    .header-icon {
+      font-size: 28px;
+      color: @on-primary;
     }
 
-    md-icon {
-      color: #FF8F00;
-      margin-right: 16px;
+    .header-title {
       font-size: 24px;
-    }
-
-    .warning-text {
-      color: black;
       font-weight: 500;
-      font-size: 14px;
+      margin: 0;
+      flex: 1;
     }
 
-    @media (max-width: 599px) {
-      margin-bottom: 2px;
+    .close-button {
+      color: @on-primary;
+      background: transparent;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s;
 
-      .md-card-content {
-        padding: 8px 12px;
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
       }
 
       md-icon {
-        margin-right: 12px;
-        font-size: 20px;
+        font-size: 24px;
       }
     }
   }
 
-  .flight-header-card {
-    margin-bottom: 16px;
+  // Tab navigation for multi-segment flights
+  .segment-tabs {
+    background: @surface-container;
+    border-bottom: 1px solid @outline-variant;
 
-    md-card-content {
-      padding: 16px;
-    }
+    .tab-list {
+      display: flex;
+      padding: 0 24px;
+      gap: 8px;
+      overflow-x: auto;
 
-    .airline-info {
-      .md-title {
-        margin: 0;
-        color: rgba(0, 0, 0, 0.87);
-      }
-
-      .flight-number {
-        line-height: 1.2;
-        margin: 4px 0;
-        color: @primary-color;
+      .tab-button {
+        background: transparent;
+        border: none;
+        padding: 16px 24px;
+        border-radius: 24px 24px 0 0;
+        color: @on-surface-variant;
         font-weight: 500;
-      }
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
 
-      .airline-logo {
-        margin-right: 16px;
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        background-color: rgba(0, 0, 0, 0.05);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-    }
+        &.active {
+          background: @primary-container;
+          color: @on-primary-container;
+        }
 
-    .flight-status {
-      .flight-chip {
-        border-radius: 16px;
-        font-weight: 500;
-        height: 32px;
-        line-height: 32px;
-
-        md-icon {
-          margin-right: 4px;
+        &:hover:not(.active) {
+          background: rgba(103, 80, 164, 0.08);
         }
       }
+    }
+  }
 
-      .flight-date {
-        text-align: right;
-        margin-top: 8px;
-        color: rgba(0, 0, 0, 0.54);
+  // Content area
+  .dialog-content {
+    padding: 24px;
+    overflow-y: auto;
+    max-height: calc(90vh - 200px);
+
+    .content-section {
+      margin-bottom: 24px;
+
+      &:last-child {
+        margin-bottom: 0;
       }
     }
   }
 
-  .connection-summary {
-    margin-bottom: 16px;
+  // Flight status chip
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
 
-    .connection-divider {
-      margin: 0 8px;
-      color: rgba(0, 0, 0, 0.38);
+    &.nonstop {
+      background: @tertiary-container;
+      color: @tertiary;
+    }
+
+    &.connection {
+      background: @warning-container;
+      color: @warning;
     }
 
     md-icon {
-      margin: 0 4px;
+      font-size: 18px;
+    }
+  }
+
+  // Flight header card
+  .flight-header {
+    background: @surface-container;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+
+    .airline-section {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+
+      .airline-logo {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        background: @primary-container;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: @on-primary-container;
+        font-weight: 600;
+        font-size: 16px;
+      }
+
+      .airline-info {
+        flex: 1;
+
+        .airline-name {
+          font-size: 18px;
+          font-weight: 500;
+          color: @on-surface;
+          margin: 0 0 4px 0;
+        }
+
+        .flight-number {
+          font-size: 24px;
+          font-weight: 600;
+          color: @primary;
+          margin: 0 0 8px 0;
+        }
+
+        .aircraft-info {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: @on-surface-variant;
+          font-size: 14px;
+
+          md-icon {
+            font-size: 16px;
+          }
+        }
+      }
+
+      .flight-status {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 12px;
+
+        .flight-date {
+          color: @on-surface-variant;
+          font-size: 14px;
+        }
+      }
+    }
+
+    .route-summary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 16px 0;
+      border-top: 1px solid @outline-variant;
+
+      .airport-code {
+        font-size: 18px;
+        font-weight: 600;
+        color: @on-surface;
+      }
+
+      .route-icon {
+        color: @primary;
+        font-size: 24px;
+      }
+
+      .duration-badge {
+        background: @secondary-container;
+        color: @secondary;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+
+        md-icon {
+          font-size: 16px;
+        }
+      }
+    }
+  }
+
+  // Flight route details
+  .flight-route {
+    background: @surface-container;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+
+    .route-container {
+      display: flex;
+      align-items: stretch;
+      gap: 24px;
+
+      @media (max-width: 768px) {
+        flex-direction: column;
+        gap: 16px;
+      }
+    }
+
+    .route-point {
+      flex: 1;
+
+      &.departure {
+        text-align: right;
+
+        @media (max-width: 768px) {
+          text-align: left;
+        }
+      }
+
+      &.arrival {
+        text-align: left;
+      }
+
+      .point-label {
+        font-size: 14px;
+        font-weight: 500;
+        color: @on-surface-variant;
+        margin-bottom: 12px;
+      }
+
+      .airport-name {
+        font-size: 20px;
+        font-weight: 600;
+        color: @on-surface;
+        margin-bottom: 4px;
+      }
+
+      .airport-location {
+        font-size: 14px;
+        color: @on-surface-variant;
+        margin-bottom: 12px;
+      }
+
+      .flight-time {
+        font-size: 16px;
+        font-weight: 500;
+        color: @on-surface;
+        margin-bottom: 8px;
+      }
+
+      .terminal-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: @on-surface-variant;
+
+        md-icon {
+          font-size: 16px;
+        }
+      }
+    }
+
+    .route-divider {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 120px;
+
+      @media (max-width: 768px) {
+        min-width: auto;
+        flex-direction: row;
+        justify-content: space-between;
+      }
+
+      .duration-display {
+        background: @primary-container;
+        color: @on-primary-container;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        @media (max-width: 768px) {
+          margin-bottom: 0;
+        }
+
+        md-icon {
+          font-size: 16px;
+        }
+      }
+
+      .flight-line {
+        width: 100%;
+        height: 3px;
+        background: @primary;
+        border-radius: 2px;
+        position: relative;
+
+        @media (max-width: 768px) {
+          width: 60px;
+        }
+
+        .plane-icon {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) rotate(90deg);
+          color: @primary;
+          font-size: 24px;
+          background: @surface;
+          border-radius: 50%;
+          padding: 4px;
+        }
+      }
+    }
+  }
+
+  // Multi-segment timeline
+  .segments-timeline {
+    background: @surface-container;
+    border-radius: 16px;
+    padding: 24px;
+
+    .timeline-header {
+      font-size: 18px;
+      font-weight: 600;
+      color: @on-surface;
+      margin-bottom: 24px;
+    }
+
+    .segment-item {
+      margin-bottom: 32px;
+      padding-bottom: 32px;
+      border-bottom: 1px dashed @outline-variant;
+
+      &:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+      }
+
+      .segment-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+
+        .segment-number {
+          font-size: 14px;
+          font-weight: 500;
+          color: @on-surface-variant;
+        }
+
+        .segment-flight {
+          font-size: 14px;
+          font-weight: 600;
+          color: @primary;
+        }
+      }
+
+      .segment-route {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+
+        .route-point {
+          flex: 0 0 140px;
+          text-align: center;
+
+          .time {
+            font-size: 16px;
+            font-weight: 600;
+            color: @on-surface;
+          }
+
+          .airport {
+            font-size: 14px;
+            font-weight: 500;
+            color: @on-surface;
+            margin: 4px 0;
+          }
+
+          .terminal {
+            font-size: 12px;
+            color: @on-surface-variant;
+          }
+
+          .airport-name {
+            font-size: 11px;
+            color: @on-surface-variant;
+            margin-top: 4px;
+          }
+        }
+
+        .route-line {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+
+          .duration {
+            font-size: 12px;
+            color: @on-surface-variant;
+          }
+
+          .line {
+            width: 100%;
+            height: 2px;
+            background: @primary;
+            border-radius: 1px;
+            position: relative;
+
+            &::after {
+              content: '';
+              position: absolute;
+              right: -4px;
+              top: -3px;
+              width: 0;
+              height: 0;
+              border-left: 8px solid @primary;
+              border-top: 4px solid transparent;
+              border-bottom: 4px solid transparent;
+            }
+          }
+
+          .equipment {
+            font-size: 11px;
+            color: @on-surface-variant;
+            background: @surface-container-high;
+            padding: 4px 8px;
+            border-radius: 12px;
+          }
+        }
+      }
+
+      .layover-info {
+        margin-top: 16px;
+        background: @warning-container;
+        color: @warning;
+        padding: 12px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+
+        md-icon {
+          font-size: 18px;
+        }
+
+        .layover-time {
+          font-weight: 600;
+        }
+      }
     }
   }
 
   // Loading state
-  .loading-container {
-    padding: 24px;
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+    gap: 16px;
 
     .loading-text {
-      margin-left: 16px;
+      color: @on-surface-variant;
+      font-size: 16px;
     }
   }
 
-  .error-container, .no-data-container {
-    padding: 24px;
-    text-align: center;
+  // Error state
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+    gap: 16px;
 
     md-icon {
       font-size: 48px;
-      height: 48px;
-      width: 48px;
-      margin-bottom: 16px;
+      color: @error;
+    }
+
+    .error-text {
+      color: @on-surface;
+      font-size: 16px;
+      text-align: center;
     }
   }
 
-  // Flight route section
-  .flight-route {
-    padding: 8px 0;
+  // Responsive design
+  @media (max-width: 768px) {
+    width: 95vw;
+    border-radius: 16px;
 
-    .airport-name, .time {
-      margin-top: 4px;
+    .dialog-header {
+      padding: 16px;
+      border-radius: 16px 16px 0 0;
     }
 
-    .airport-location {
-      margin-top: 2px;
+    .dialog-content {
+      padding: 16px;
     }
 
-    .terminal {
-      margin-top: 8px;
-      display: flex;
-      align-items: center;
-
-      md-icon {
-        margin-right: 4px;
-        font-size: 18px;
-        height: 18px;
-        width: 18px;
-      }
+    .flight-header,
+    .flight-route,
+    .segments-timeline {
+      padding: 16px;
     }
   }
-
-  // Flight divider
-  .flight-divider {
-    position: relative;
-    padding: 10px;
-
-    .duration-badge {
-      background-color: rgba(0, 0, 0, 0.05);
-      padding: 4px 8px;
-      border-radius: 16px;
-      font-size: 12px;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-
-      md-icon {
-        font-size: 14px;
-        height: 14px;
-        width: 14px;
-        margin-right: 4px;
-      }
-    }
-
-    .flight-line {
-      position: relative;
-      height: 2px;
-      background-color: @primary-color;
-      width: 100%;
-
-      .flight-icon {
-        position: absolute;
-        font-size: 24px;
-        height: 24px;
-        width: 24px;
-        top: -11px;
-        left: calc(50% - 12px);
-        color: @primary-color;
-        transform: rotate(90deg);
-      }
-    }
-  }
-
-  // Airport tab content
-  .airport-tab-content {
-    h3.md-title {
-      margin-top: 0;
-      margin-bottom: 16px;
-    }
-  }
-
-  // Airline info in header
-  .airline-info {
-    .flight-number {
-      line-height: 1.2;
-    }
-  }
-
-  // Dialog actions
-  md-dialog-actions {
-    padding: 8px 16px;
-  }
-
-  // Remove unwanted margin on lists
-  md-list-item .md-list-item-text h3,
-  md-list-item .md-list-item-text p {
-    line-height: 1.2;
-  }
-
-  // Fix spacing in list items
-  .md-2-line > .md-avatar-icon,
-  .md-2-line > .md-no-style > .md-avatar-icon {
-    margin-top: 12px;
-    margin-bottom: 12px;
-  }
-}
-
-.flight-segments-timeline {
-    margin: 16px 0;
-
-    .segment-timeline-item {
-        margin-bottom: 24px;
-        padding-bottom: 24px;
-        border-bottom: 1px dashed #e0e0e0;
-
-        &:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-
-        .segment-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 12px;
-
-            .segment-number {
-                font-weight: 500;
-                color: rgba(0, 0, 0, 0.54);
-            }
-
-            .segment-flight-number {
-                font-weight: 500;
-                color: #2196F3;
-            }
-        }
-
-        .segment-journey {
-            display: flex;
-            align-items: center;
-
-            .journey-point {
-                flex: 0 0 120px;
-                text-align: center;
-
-                .time {
-                    font-size: 16px;
-                    font-weight: bold;
-                }
-
-                .airport {
-                    font-size: 14px;
-                    margin: 4px 0;
-                }
-
-                .terminal {
-                    font-size: 12px;
-                    color: rgba(0, 0, 0, 0.54);
-                }
-
-                .airport-name, .city {
-                    font-size: 11px;
-                    color: rgba(0, 0, 0, 0.54);
-                    max-width: 120px;
-                    white-space: normal;
-                    margin-top: 4px;
-                }
-            }
-
-            .journey-line {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                padding: 0 16px;
-
-                .duration {
-                    font-size: 12px;
-                    color: rgba(0, 0, 0, 0.54);
-                    margin-bottom: 8px;
-                }
-
-                .line {
-                    height: 2px;
-                    width: 100%;
-                    background-color: #2196F3;
-                    position: relative;
-
-                    &:after {
-                        content: "";
-                        position: absolute;
-                        right: -4px;
-                        top: -3px;
-                        border-top: 4px solid transparent;
-                        border-bottom: 4px solid transparent;
-                        border-left: 8px solid #2196F3;
-                    }
-                }
-
-                .equipment {
-                    font-size: 11px;
-                    margin-top: 8px;
-                    padding: 2px 6px;
-                    background-color: rgba(0, 0, 0, 0.05);
-                    border-radius: 12px;
-                    text-align: center;
-                    max-width: 140px;
-                    white-space: normal;
-                }
-            }
-        }
-
-        .layover-info {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-top: 16px;
-            padding: 8px;
-            color: #FF9800;
-            background-color: rgba(255, 152, 0, 0.1);
-            border-radius: 4px;
-
-            .layover-info-content {
-                display: flex;
-                align-items: center;
-
-                md-icon {
-                    margin-right: 8px;
-                    font-size: 18px;
-                }
-
-                .layover-time {
-                    font-weight: bold;
-                }
-            }
-        }
-    }
-}
-
-.airline-logo {
-    .airline-code {
-        display: inline-block;
-        padding: 8px;
-        border-radius: 4px;
-        color: white;
-        font-weight: bold;
-        margin-right: 12px;
-        min-width: 32px;
-        text-align: center;
-    }
 }

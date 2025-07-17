@@ -29,8 +29,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             ArgumentNullException.ThrowIfNull(flights);
             ArgumentNullException.ThrowIfNull(webhookIds);
 
-            if (flights.FlightSegments.Count == 0)
-                throw new ArgumentException("Flight list cannot be empty", nameof(flights));
+            if (flights.FlightSegments.Count == 0) throw new ArgumentException("Flight list cannot be empty", nameof(flights));
 
             // Get the primary flight (first leg)
             var primaryFlight = flights.FlightSegments.First();
@@ -40,7 +39,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
             var job = await Context.TucJobs
                 .Include(j => j.Parent)
-                .ThenInclude(tucJob => tucJob.InverseParent)
+                .ThenInclude(j => j.InverseParent)
                 .Where(j => j.UcjbId == jobId)
                 .FirstOrDefaultAsync();
 
@@ -118,7 +117,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             job.UcjbDispTime = currentTime;
 
             await Context.SaveChangesAsync();
-            await Context.TucJobNationwides.AddAsync(jobNationwide);
+            await Context.AddAsync(jobNationwide);
 
             // Add additional flight legs if there is multiple
             if (flights.FlightSegments.Count > 1)
@@ -155,7 +154,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                         AircraftName = leg.AircraftName
                     };
 
-                    await Context.TucJobNationwides.AddAsync(connectionSegment);
+                    await Context.AddAsync(connectionSegment);
                 }
             }
 
@@ -168,7 +167,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 CreatedBy = _infoService.GetStaffId(),
                 CreatedDate = currentTime
             };
-            await Context.TucNotes.AddAsync(note);
+            await Context.AddAsync(note);
                    
             // Delivery Journey Record
             var journeyRecord = new JobDeliveryJourney
@@ -179,7 +178,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 StaffId = _infoService.GetStaffId(),
                 UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
             };
-            await Context.JobDeliveryJourneys.AddAsync(journeyRecord);
+            await Context.AddAsync(journeyRecord);
             
             await Context.SaveChangesAsync();
         }

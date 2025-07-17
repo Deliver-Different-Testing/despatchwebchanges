@@ -1473,7 +1473,7 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdateDeliverByTime(UpdateJobTimeRequest requestData)
+    public async Task<IActionResult> UpdateDeliverByTime([FromBody] UpdateJobTimeRequest requestData)
     {
         try
         {
@@ -1488,7 +1488,7 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdatePickUpTime(UpdateJobTimeRequest requestData)
+    public async Task<IActionResult> UpdatePickUpTime([FromBody] UpdateJobTimeRequest requestData)
     {
         try
         {

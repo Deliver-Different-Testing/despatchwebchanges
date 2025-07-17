@@ -8,7 +8,6 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 namespace DespatchWeb.Controllers;
@@ -147,89 +146,14 @@ public class NationwideJobController(
                 return BadRequest("No flight data was provided. Unable to assign to job.");
 
             // Get flight details
-            AddFlightToJobDto flight;
+            var flight = await GetFlightDetails(request);
+            if (flight == null) return BadRequest("Flight details could not be retrieved.");
 
-            if (request.FlightSegments != null && request.FlightSegments.Count != 0)
-            {
-                var firstSegment = request.FlightSegments.First();
-                var lastSegment = request.FlightSegments.Last();
+            // Create webhooks for flight segments
+            var webhookIds = await CreateWebhooks(flight);
 
-                // Map flight segments from request
-                flight = new AddFlightToJobDto
-                {
-                    AirlineName = firstSegment.AirlineName ??
-                                  (firstSegment.CarrierFsCode != null
-                                      ? $"{firstSegment.CarrierFsCode} Airlines"
-                                      : null),
-                    ArrivalTime = lastSegment.ArrivalTime,
-                    CarrierFsCode = firstSegment.CarrierFsCode,
-                    DepartureTime = firstSegment.DepartureTime,
-                    FlightNumber = firstSegment.FlightNumber,
-                    FlightSegments = request.FlightSegments
-                };
-            }
-            else
-            {
-                try
-                {
-                    // Updated to pass jobId for route information
-                    flight = await flightService.GetFlightDetailsByFlightNumberAsync(
-                        request.FlightNumber,
-                        request.DepartureDate,
-                        request.JobId);
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex, "Error retrieving flight details for flight {FlightNumber}", request.FlightNumber);
-                    return StatusCode(500, ex.Message);
-                }
-            }
-
-            if (flight == null)
-            {
-                return BadRequest("Flight details could not be retrieved.");
-            }
-
-            // Create webhook
-            var webhookIds = new List<string>();
-            try
-            {
-                foreach (var segment in flight.FlightSegments)
-                {
-                    // Generate a webhookId for each flight segment
-                    var webhookId = await flightService.CreateFlightRuleByDepartureAsync(
-                        segment.CarrierFsCode + segment.FlightNumber,
-                        segment.DepartureTime,
-                        segment.DepartureAirportFsCode) ?? string.Empty;
-
-                    if (!string.IsNullOrEmpty(webhookId))
-                    {
-                        webhookIds.Add(webhookId);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error creating flight rule webhook for flight {FlightNumber}",
-                    request.FlightNumber);
-                return StatusCode(500, ex.Message);
-            }
-
-            // Add a job
-            try
-            {
-                await repository.AddJobNationwideAsync(request.JobId, flight, webhookIds);
-            }
-            catch (DbUpdateException ex)
-            {
-                Log.Error(ex, "Database error while adding job {JobId}", request.JobId);
-                return StatusCode(500, "Unable to save job information");
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error adding nationwide job for JobId: {JobId}", request.JobId);
-                return StatusCode(500, "Unable to complete job assignment");
-            }
+            // Save job assignment
+            await repository.AddJobNationwideAsync(request.JobId, flight, webhookIds);
 
             return Ok();
         }
@@ -240,15 +164,72 @@ public class NationwideJobController(
         }
     }
 
+    private async Task<AddFlightToJobDto> GetFlightDetails(AssignFlightToJobRequest request)
+    {
+        // Use provided flight segments if available
+        if (request.FlightSegments?.Count > 0)
+        {
+            var firstSegment = request.FlightSegments.First();
+            var lastSegment = request.FlightSegments.Last();
+
+            return new AddFlightToJobDto
+            {
+                AirlineName = firstSegment.AirlineName ??
+                              (firstSegment.CarrierFsCode != null ? $"{firstSegment.CarrierFsCode} Airlines" : null),
+                ArrivalTime = lastSegment.ArrivalTime,
+                CarrierFsCode = firstSegment.CarrierFsCode,
+                DepartureTime = firstSegment.DepartureTime,
+                FlightNumber = firstSegment.FlightNumber,
+                FlightSegments = request.FlightSegments
+            };
+        }
+
+        // Otherwise get flight details from service
+        try
+        {
+            return await flightService.GetFlightDetailsByFlightNumberAsync(
+                request.FlightNumber,
+                request.DepartureDate,
+                request.JobId);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error retrieving flight details for flight {FlightNumber}", request.FlightNumber);
+            throw;
+        }
+    }
+
+    private async Task<List<string>> CreateWebhooks(AddFlightToJobDto flight)
+    {
+        var webhookIds = new List<string>();
+
+        try
+        {
+            foreach (var segment in flight.FlightSegments)
+            {
+                var webhookId = await flightService.CreateFlightRuleByDepartureAsync(
+                    segment.CarrierFsCode + segment.FlightNumber,
+                    segment.DepartureTime,
+                    segment.DepartureAirportFsCode) ?? string.Empty;
+
+                if (!string.IsNullOrEmpty(webhookId)) webhookIds.Add(webhookId);
+            }
+
+            return webhookIds;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error creating flight rule webhook");
+            throw;
+        }
+    }
+
     public async Task<IActionResult> GetAgentsForJob(int jobId)
     {
         try
         {
             var agents = await repository.GetAgentsAsync(jobId);
-            if (agents != null && agents.Count != 0)
-            {
-                return Json(agents);
-            }
+            if (agents != null && agents.Count != 0) return Json(agents);
 
             Log.Information("No agents found for job {JobId}", jobId);
             return Json(new List<AgentViewModel>());
@@ -268,28 +249,13 @@ public class NationwideJobController(
             if (jobRequestModel?.AgentId == null || jobRequestModel.JobId == null)
                 return BadRequest("Oops, no agent data was provided. Unable to assign to job.");
 
-            try
-            {
-                var addToDb =
-                    await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value, jobRequestModel.JobId.Value,
-                        jobRequestModel.IncludeStopJobs ?? false);
-                if (!addToDb)
-                    return BadRequest("An error occurred while assigning the agent to the job.");
+            var addToDb =
+                await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value, jobRequestModel.JobId.Value,
+                    jobRequestModel.IncludeStopJobs ?? false);
+            if (!addToDb)
+                return BadRequest("An error occurred while assigning the agent to the job.");
 
-                return Ok();
-            }
-            catch (DbUpdateException ex)
-            {
-                Log.Error(ex, "Database error while assigning agent {AgentId} to job {JobId}",
-                    jobRequestModel.AgentId, jobRequestModel.JobId);
-                return StatusCode(500, "Unable to save agent assignment");
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error assigning agent {AgentId} to job {JobId}",
-                    jobRequestModel.AgentId, jobRequestModel.JobId);
-                return StatusCode(500, "Unable to complete agent assignment");
-            }
+            return Ok();
         }
         catch (Exception ex)
         {
