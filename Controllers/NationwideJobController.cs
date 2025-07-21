@@ -208,7 +208,7 @@ public class NationwideJobController(
             foreach (var segment in flight.FlightSegments)
             {
                 var webhookId = await flightService.CreateFlightRuleByDepartureAsync(
-                    segment.CarrierFsCode + segment.FlightNumber,
+                   $"{segment.CarrierFsCode}{segment.FlightNumber}",
                     segment.DepartureTime,
                     segment.DepartureAirportFsCode) ?? string.Empty;
 
