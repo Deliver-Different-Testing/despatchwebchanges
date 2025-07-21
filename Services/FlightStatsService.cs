@@ -30,7 +30,7 @@ public class FlightStatsService(
     private readonly string _webhookUrl = Environment.GetEnvironmentVariable("FlightWebhook");
 
     public async Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
-        string departureAirportCode)
+        string departureAirportCode, string events = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(completeFlightNumber);
         ArgumentException.ThrowIfNullOrEmpty(departureAirportCode);
@@ -46,14 +46,14 @@ public class FlightStatsService(
         ArgumentException.ThrowIfNullOrEmpty(tenantId);
 
         var token = AuthenticationExtensions.CreateApiToken(userName, int.Parse(tenantId), connectionString, timeZone);
-
         var requestToken = new JwtSecurityTokenHandler().WriteToken(token);
 
         var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
         var (year, month, day, _, _) = SplitDate(departureTime);
 
-        var relativeUrl =
-            $"json/create/{carrierCode}/{flightNumber}/from/{departureAirportCode}/departing/{year}/{month}/{day}";
+        // Build the URL directly
+        var url =
+            $"{AlertUrl}/json/create/{carrierCode}/{flightNumber}/from/{departureAirportCode}/departing/{year}/{month}/{day}";
 
         var query = HttpUtility.ParseQueryString(string.Empty);
         query["appId"] = _appId;
@@ -61,30 +61,59 @@ public class FlightStatsService(
         query["name"] = uniqueWebhookId.ToString();
         query["type"] = "JSON";
         query["deliverTo"] = _webhookUrl;
-        query["_token"] = requestToken;
+        query["events"] = events ?? "dep,arr,div,can,depDelay30,arrDelay30"; // Default events if not specified
+        query["_jobToken"] = requestToken;
 
-        // Construct the final URI
-        var fullUrl = $"{AlertUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
-        var uriBuilder = new UriBuilder(fullUrl)
+        var uriBuilder = new UriBuilder(url)
         {
             Query = query.ToString() ?? string.Empty
         };
 
         var uri = uriBuilder.Uri;
         Log.Debug("DeliverTo: {WebhookUrl}", _webhookUrl);
-        Log.Debug("r: {Uri}", uri);
+        Log.Debug("CreateFlightRule Request: {Uri}", uri);
 
-        var response = await httpClient.GetAsync(uri);
+        try
+        {
+            var response = await httpClient.GetAsync(uri);
+            Log.Debug("FlightService StatusCode: {ResponseStatusCode}", response.StatusCode);
 
-        Log.Debug("FlightService StatusCode: {ResponseStatusCode}", response.StatusCode);
-        if (!response.IsSuccessStatusCode)
-            throw new Exception($"Failed to retrieve alert information: {response.ReasonPhrase}");
+            var content = await response.Content.ReadAsStringAsync();
+            Log.Debug("CreateRule content response: {Content}", content);
 
-        var content = await response.Content.ReadAsStringAsync();
-        Log.Debug("CreateRule content response string: {Content}", content);
+            if (!response.IsSuccessStatusCode)
+            {
+                Log.Error("Failed to create flight alert. Status: {StatusCode}, Content: {Content}",
+                    response.StatusCode, content);
+                throw new Exception($"Failed to create flight alert: {response.ReasonPhrase}. Response: {content}");
+            }
 
-        var createAlertResponse = JsonSerializer.Deserialize<CreateAlertResponse>(content);
-        return createAlertResponse.Rule?.Id;
+            var createAlertResponse = JsonSerializer.Deserialize<CreateAlertResponse>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (createAlertResponse?.Rule?.Id == null)
+            {
+                Log.Warning("CreateAlertResponse or Rule ID is null. Full response: {Content}", content);
+                return null;
+            }
+
+            Log.Information("Successfully created flight alert with ID: {RuleId} for flight {FlightNumber}",
+                createAlertResponse.Rule.Id, completeFlightNumber);
+
+            return createAlertResponse.Rule.Id;
+        }
+        catch (HttpRequestException ex)
+        {
+            Log.Error(ex, "HTTP error creating flight rule for {FlightNumber}", completeFlightNumber);
+            throw;
+        }
+        catch (JsonException ex)
+        {
+            Log.Error(ex, "JSON deserialization error for flight rule response");
+            throw;
+        }
     }
 
     public async Task DeleteFlightRuleById(string webhookId)
@@ -145,7 +174,7 @@ public class FlightStatsService(
         ArgumentNullException.ThrowIfNull(flightsFrom);
 
         var (year, month, day, hour, minute) = SplitDate(flightsFrom);
-        
+
         var relativeUrl =
             $"json/firstflightout/{departureAirportCode}/to/{destinationAirportCode}/leaving_after/{year}/{month}/{day}/{hour}/{minute}";
 
@@ -214,7 +243,8 @@ public class FlightStatsService(
 
         var flightOptions = connections
             .Where(conn => conn.ScheduledFlight.Count != 0 &&
-                   conn.ScheduledFlight.All(segment => segment.Stops < 1)) // Exclude connections with segments having more than 1 stop
+                           conn.ScheduledFlight.All(segment =>
+                               segment.Stops < 1)) // Exclude connections with segments having more than 1 stop
             .Select(conn =>
             {
                 var firstFlight = conn.ScheduledFlight.First();
@@ -242,7 +272,8 @@ public class FlightStatsService(
                             CarrierFsCode = segment.CarrierFsCode,
                             FlightNumber = segment.FlightNumber,
                             DepartureTime = segment.DepartureTime,
-                            ArrivalTime = AdjustArrivalTimeForOvernightFlight(segment.DepartureTime, segment.ArrivalTime),
+                            ArrivalTime =
+                                AdjustArrivalTimeForOvernightFlight(segment.DepartureTime, segment.ArrivalTime),
                             DepartureAirportFsCode = segment.DepartureAirportFsCode,
                             DepartureTerminal = segment.DepartureTerminal,
                             ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
@@ -279,7 +310,8 @@ public class FlightStatsService(
                     AirlineCode = firstFlight.CarrierFsCode,
                     FlightNumber = firstFlight.CarrierFsCode + firstFlight.FlightNumber,
                     DepartureTime = firstFlight.DepartureTime,
-                    ArrivalTime = AdjustArrivalTimeForOvernightFlight(firstFlight.DepartureTime, lastFlight.ArrivalTime),
+                    ArrivalTime =
+                        AdjustArrivalTimeForOvernightFlight(firstFlight.DepartureTime, lastFlight.ArrivalTime),
                     DepartureAirport = firstFlight.DepartureAirportFsCode,
                     ArrivalAirport = lastFlight.ArrivalAirportFsCode,
                     Duration = lastFlight.ArrivalTime - firstFlight.DepartureTime,
@@ -440,17 +472,16 @@ public class FlightStatsService(
 
     private static (string carrierCode, string flightNumber) SplitFlightCode(string completeFlightNumber) =>
         (completeFlightNumber?[..2], completeFlightNumber?[2..]);
-    
+
     private static DateTime AdjustArrivalTimeForOvernightFlight(DateTime departureTime, DateTime arrivalTime)
     {
         // If arrival time is earlier than departure time, it means the flight goes overnight
-        if (arrivalTime.TimeOfDay < departureTime.TimeOfDay) 
+        if (arrivalTime.TimeOfDay < departureTime.TimeOfDay)
             return arrivalTime.AddDays(1);
 
         // For multi-day flights, ensure the arrival date is at least the departure date
         if (arrivalTime.Date >= departureTime.Date) return arrivalTime;
         var daysDifference = (departureTime.Date - arrivalTime.Date).Days;
         return arrivalTime.AddDays(daysDifference);
-
     }
 }

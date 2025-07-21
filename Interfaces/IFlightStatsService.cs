@@ -9,7 +9,7 @@ namespace DespatchWeb.Interfaces;
 public interface IFlightStatsService
 {
     Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
-        string departureAirportCode);
+        string departureAirportCode, string events = null);
 
     Task DeleteFlightRuleById(string webhookId);
 
