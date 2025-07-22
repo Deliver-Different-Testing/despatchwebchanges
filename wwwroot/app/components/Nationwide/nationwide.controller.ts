@@ -1034,6 +1034,7 @@ class NationwideControl extends BaseController {
         if (isFlightJob(job)) {
             console.log('[NationwideController] Getting nearby airports');
             this.outboundAirportOptions = await this.nationwideService.getNearbyAirports(job.id, true);
+            this.inboundAirportOptions = await this.nationwideService.getNearbyAirports(job.id, false);
             console.log('[NationwideController] Got nearby airports:', this.outboundAirportOptions);
 
             if (this.outboundAirportOptions && this.outboundAirportOptions.length > 0) {

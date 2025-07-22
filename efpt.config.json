@@ -423,6 +423,10 @@
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[DES_stpJob_Void]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DES_stpJobBooking_InsertJobAndChildren]",
          "ObjectType": 1
       },
