@@ -1489,7 +1489,7 @@
     >
         <img
                 alt="POD Photo {{ctrl.selectedPhotoIndex + 1}}"
-                ng-src="{{ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].url}}"
+                ng-src="{{'data:image/png;base64,' + ctrl.formattedPodPhotos[ctrl.selectedPhotoIndex].url}}"
         />
 
         <div class="pod-photo-info">
@@ -1541,7 +1541,7 @@
                     ng-repeat="photo in ctrl.formattedPodPhotos track by $index">
                 <img
                         alt="Photo {{$index + 1}}"
-                        ng-src="{{photo.url}}"
+                        ng-src="{{'data:image/png;base64,' + photo.url}}"
                 />
                 <md-grid-tile-footer>
                     <h3>
