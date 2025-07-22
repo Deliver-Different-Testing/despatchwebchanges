@@ -199,20 +199,23 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .FirstOrDefaultAsync();
     }
 
-    public async Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId)
+    public async Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true)
     {
         const double maxDistanceMiles = 250;
 
-        // Get pickup coordinates and nearby airports in a single query
-        var pickupAndAirports = await (
+        // Get job coordinates and nearby airports in a single query
+        var jobAndAirports = await (
                 from job in Context.TucJobs
-                where job.UcjbId == jobId && job.PickUpLatitude != null && job.PickUpLongitude != null
+                where job.UcjbId == jobId &&
+                      (usePickup
+                          ? job.PickUpLatitude != null && job.PickUpLongitude != null
+                          : job.DeliveryLatitude != null && job.DeliveryLongitude != null)
                 join airport in Context.TblAirports on 1 equals 1
                 where airport.Active && airport.Latitude != null && airport.Longitude != null
                 select new
                 {
-                    PickupLatitude = job.PickUpLatitude.Value,
-                    PickupLongitude = job.PickUpLongitude.Value,
+                    JobLatitude = usePickup ? job.PickUpLatitude.Value : job.DeliveryLatitude.Value,
+                    JobLongitude = usePickup ? job.PickUpLongitude.Value : job.DeliveryLongitude.Value,
                     airport.AirportId,
                     airport.Name,
                     AirportLatitude = airport.Latitude.Value,
@@ -222,21 +225,21 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             .ToListAsync();
 
         // Return an empty list if no valid job found
-        if (pickupAndAirports.Count == 0) return [];
+        if (jobAndAirports.Count == 0) return [];
 
-        // Extract pickup coordinates from the first result (all have the same pickup coordinates)
-        var pickupLatitude = pickupAndAirports.First().PickupLatitude;
-        var pickupLongitude = pickupAndAirports.First().PickupLongitude;
+        // Extract job coordinates from the first result (all have the same job coordinates)
+        var jobLatitude = jobAndAirports.First().JobLatitude;
+        var jobLongitude = jobAndAirports.First().JobLongitude;
 
         // Calculate distances, filter and sort
-        return pickupAndAirports
+        return jobAndAirports
             .Select(item => new
             {
                 item.AirportId,
                 item.Name,
                 Distance = DistanceCalculator.CalculateDistance(
-                    pickupLatitude,
-                    pickupLongitude,
+                    jobLatitude,
+                    jobLongitude,
                     item.AirportLatitude,
                     item.AirportLongitude)
             })

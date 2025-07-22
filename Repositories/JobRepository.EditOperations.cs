@@ -241,6 +241,7 @@ public partial class JobRepository
                 break;
             case JobProperty.Void:
                 job.UcjbVoid = bool.Parse(value);
+                await VoidTasks(jobId);
                 break;
             case JobProperty.TrackingMobile:
                 job.TrackingMobile = value[..Math.Min(value.Length, 100)];
@@ -660,6 +661,7 @@ public partial class JobRepository
                 break;
             case JobProperty.Void:
                 archive.Job.UcjbVoid = bool.Parse(value);
+                await VoidTasks(jobId);
                 break;
             case JobProperty.TrackingMobile:
                 archive.Job.TrackingMobile = value[..Math.Min(value.Length, 100)];
@@ -782,5 +784,14 @@ public partial class JobRepository
         };
         
         await Context.SaveChangesAsync();
+    }
+
+    private async Task VoidTasks(int jobId)
+    {
+        await Context.TucEvents
+            .Where(t => t.UcevJobId == jobId)
+            .ExecuteUpdateAsync(t => t.SetProperty(e => e.UcevClosed, true));
+
+        await SaveChangesAsync();
     }
 }

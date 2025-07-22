@@ -70,6 +70,7 @@ class NationwideService implements angular.IServiceProvider {
         departureDate: string | Date,
         airlineId?: number,
         departureAirportId?: number,
+        arrivalAirportId?: number,
         minimumLayoverMinutes: number = 0
     ): Promise<{
         flights: IFlightViewModel[];
@@ -98,6 +99,7 @@ class NationwideService implements angular.IServiceProvider {
                     jobId,
                     airlineId,
                     departureAirportId,
+                    arrivalAirportId,
                     minimumLayoverMinutes
                 }
             });
@@ -179,12 +181,14 @@ class NationwideService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getNearbyAirports(jobId: number): Promise<Suggestion[]> {
+    async getNearbyAirports(jobId: number, usePickup: boolean = true): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>("nationwideJob/GetNearbyAirports", {
             params: {
                 jobId,
+                usePickup
             }
         });
+        
         return response.data;
     }
 

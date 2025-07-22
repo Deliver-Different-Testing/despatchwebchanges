@@ -37,25 +37,7 @@
              show-action="false">
     </no-data>
 
-    <!-- No Flights Available -->
-    <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading && (!ctrl.flightOptions || ctrl.flightOptions.length === 0)">
-        <no-data title="No Flights Available"
-                 message="{{ctrl.flightMessage || 'No flights available for the specified criteria.'}}"
-                 icon="flight_takeoff"
-                 show-action="false">
-        </no-data>
-
-        <div class="table-footer-actions md-padding" layout="row" layout-align="end center">
-            <md-button class="md-raised" ng-click="ctrl.loadFlights()">
-                Load More Flights
-            </md-button>
-            <md-button class="md-raised" ng-click="ctrl.loadNextDayFlights()">
-                Next Day
-            </md-button>
-        </div>
-    </div>
-
-    <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading && ctrl.flightOptions && ctrl.flightOptions.length > 0">
+    <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading">
         <!-- Airline Filter Chips -->
         <div class="airline-filter-container">
             <!-- All Airlines Filter Chip -->
@@ -76,36 +58,85 @@
 
             <div flex></div>
 
+            <!-- Departure Airport -->
             <md-menu>
-                <md-button aria-label="View nearby airports" class="md-raised md-primary"
+                <md-button aria-label="View nearby outbound airports" class="md-raised md-primary"
                            ng-click="$mdMenu.open($event)">
-                    <span>{{ctrl.selectedAirport ? 'Flights for ' + ctrl.formatAirportCodeForDropdown(ctrl.selectedAirport.text) : 'Nearby Airports'}}</span>
+                    <span>{{ctrl.selectedOutboundAirport ? 'Flights departing ' + ctrl.formatAirportCodeForDropdown(ctrl.selectedOutboundAirport.text) : 'Nearby Outbound Airports'}}</span>
                     <md-icon md-font-set="material-symbols-outlined">arrow_drop_down</md-icon>
+                    <md-tooltip md-direction="top">
+                        <md-icon md-font-set="material-symbols-outlined">multiple_airports</md-icon>
+                        View nearby outbound airports
+                    </md-tooltip>
                 </md-button>
                 <md-menu-content class="md-dense" width="4">
                     <!-- Option to clear selection -->
-                    <md-menu-item ng-if="ctrl.selectedAirport">
-                        <md-button ng-click="ctrl.selectedAirport = null; ctrl.onAirportSelectionChanged();">
+                    <md-menu-item ng-if="ctrl.selectedOutboundAirport">
+                        <md-button ng-click="ctrl.selectedOutboundAirport = null; ctrl.onOutboundAirportSelectionChanged();">
                             <md-icon md-font-set="material-symbols-outlined">clear</md-icon>
                             Clear selection
                         </md-button>
                     </md-menu-item>
 
                     <!-- Airport options -->
-                    <md-menu-item ng-repeat="airport in ctrl.airportOptions">
-                        <md-button ng-click="ctrl.selectedAirport = airport; ctrl.onAirportSelectionChanged(); $mdMenu.close()">
+                    <md-menu-item ng-repeat="airport in ctrl.outboundAirportOptions">
+                        <md-button ng-click="ctrl.selectedOutboundAirport = airport; ctrl.onOutboundAirportSelectionChanged(); $mdMenu.close()">
                             <md-icon md-font-set="material-symbols-outlined"
-                                     ng-if="ctrl.selectedAirport.id === airport.id">
+                                     ng-if="ctrl.selectedOutboundAirport.id === airport.id">
                                 check
                             </md-icon>
-                            <span ng-if="ctrl.selectedAirport.id !== airport.id"
+                            <span ng-if="ctrl.selectedOutboundAirport.id !== airport.id"
                                   style="width: 24px; display: inline-block;"></span>
                             {{airport.text}}
                         </md-button>
                     </md-menu-item>
 
-                    <!-- No results message -->
-                    <md-menu-item ng-if="ctrl.airportOptions.length > 0 && ctrl.airportOptions.length === 0">
+                    <!-- No result message -->
+                    <md-menu-item ng-if="ctrl.outboundAirportOptions.length > 0 && ctrl.outboundAirportOptions.length === 0">
+                        <div class="md-padding">
+                            No other airports are within the specified radius.
+                        </div>
+                    </md-menu-item>
+                </md-menu-content>
+            </md-menu>
+            
+            <md-icon md-font-set="material-symbols-outlined">arrow_right_alt</md-icon>
+            
+            <!-- Arrival Airport-->
+            <md-menu>
+                <md-button aria-label="View nearby inbound airports" class="md-raised md-primary"
+                           ng-click="$mdMenu.open($event)">
+                    <span>{{ctrl.selectedInboundAirport ? 'Flights arriving ' + ctrl.formatAirportCodeForDropdown(ctrl.selectedInboundAirport.text) : 'Nearby Inbound Airports'}}</span>
+                    <md-icon md-font-set="material-symbols-outlined">arrow_drop_down</md-icon>
+                    <md-tooltip md-direction="top">
+                        <md-icon md-font-set="material-symbols-outlined">multiple_airports</md-icon>
+                        View nearby inbound airports
+                    </md-tooltip>
+                </md-button>
+                <md-menu-content class="md-dense" width="4">
+                    <!-- Option to clear selection -->
+                    <md-menu-item ng-if="ctrl.selectedInboundAirport">
+                        <md-button ng-click="ctrl.selectedInboundAirport = null; ctrl.onInboundAirportSelectionChanged();">
+                            <md-icon md-font-set="material-symbols-outlined">clear</md-icon>
+                            Clear selection
+                        </md-button>
+                    </md-menu-item>
+
+                    <!-- Airport options -->
+                    <md-menu-item ng-repeat="airport in ctrl.inboundAirportOptions">
+                        <md-button ng-click="ctrl.selectedInboundAirport = airport; ctrl.onInboundAirportSelectionChanged(); $mdMenu.close()">
+                            <md-icon md-font-set="material-symbols-outlined"
+                                     ng-if="ctrl.selectedInboundAirport.id === airport.id">
+                                check
+                            </md-icon>
+                            <span ng-if="ctrl.selectedInboundAirport.id !== airport.id"
+                                  style="width: 24px; display: inline-block;"></span>
+                            {{airport.text}}
+                        </md-button>
+                    </md-menu-item>
+
+                    <!-- No result message -->
+                    <md-menu-item ng-if="ctrl.inboundAirportOptions.length > 0 && ctrl.inboundAirportOptions.length === 0">
                         <div class="md-padding">
                             No other airports are within the specified radius.
                         </div>
@@ -116,7 +147,7 @@
 
         <md-divider></md-divider>
 
-        <md-table-container class="table-scroll">
+        <md-table-container class="table-scroll" ng-if="ctrl.flightOptions && ctrl.flightOptions.length > 0">
             <table md-progress="ctrl.flightListPromise" md-table ng-model="ctrl.selectedFlight">
                 <thead md-head md-order="ctrl.flightTableQuery.order">
                     <tr md-row>

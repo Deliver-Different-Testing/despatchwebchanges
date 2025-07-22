@@ -82,6 +82,7 @@ public class NationwideJobController(
         int jobId,
         int? airlineId,
         int? departureAirportId,
+        int? arrivalAirportId,
         int minimumLayoverMinutes = 60) //minimumLayover allowed
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -97,6 +98,7 @@ public class NationwideJobController(
                 departureDate,
                 airlineId,
                 departureAirportId,
+                arrivalAirportId,
                 flightBuffer: 0,
                 codeType: null,
                 extendedOptions: null,
@@ -297,11 +299,11 @@ public class NationwideJobController(
         }
     }
 
-    public async Task<IActionResult> GetNearbyAirports(int jobId)
+    public async Task<IActionResult> GetNearbyAirports(int jobId, bool usePickup)
     {
         try
         {
-            var airports = await repository.GetNearbyAirportsAsync(jobId);
+            var airports = await repository.GetNearbyAirportsAsync(jobId, usePickup);
             return Json(airports);
         }
         catch (Exception e)

@@ -148,8 +148,10 @@ class NationwideControl extends BaseController {
     activeAirlineOptions?: Suggestion[];
     timeZone: string;
     lastDepartureTime?: Date;
-    airportOptions?: Suggestion[];
-    selectedAirport?: Suggestion;
+    outboundAirportOptions?: Suggestion[];
+    inboundAirportOptions?: Suggestion[];
+    selectedOutboundAirport?: Suggestion;
+    selectedInboundAirport?: Suggestion;
     isDeliveryJobType: boolean = false;
 
 // Flight section visibility flags
@@ -1022,7 +1024,8 @@ class NationwideControl extends BaseController {
         this.flightMessage = undefined;
         this.agentMessage = undefined;
         this.selected = null;
-        this.selectedAirport = undefined;
+        this.selectedOutboundAirport = undefined;
+        this.selectedInboundAirport = undefined;
 
         // Refresh tasks
         await this.loadTasks();
@@ -1030,17 +1033,21 @@ class NationwideControl extends BaseController {
         // Show flight table
         if (isFlightJob(job)) {
             console.log('[NationwideController] Getting nearby airports');
-            this.airportOptions = await this.nationwideService.getNearbyAirports(job.id);
-            console.log('[NationwideController] Got nearby airports:', this.airportOptions);
+            this.outboundAirportOptions = await this.nationwideService.getNearbyAirports(job.id, true);
+            console.log('[NationwideController] Got nearby airports:', this.outboundAirportOptions);
 
-            if (this.airportOptions && this.airportOptions.length > 0) {
-                const defaultAirport = this.airportOptions.find(airport => airport.id === job.fromAirportId);
-                console.log('Default airport:', defaultAirport);
-                if (defaultAirport) {
-                    this.selectedAirport = defaultAirport;
-                }
+            if (this.outboundAirportOptions && this.outboundAirportOptions.length > 0) {
+                const defaultOutboundAirport = this.outboundAirportOptions.find(airport => airport.id === job.fromAirportId);
+                console.log('Default Outbound Airport:', defaultOutboundAirport);
+                if (defaultOutboundAirport) this.selectedOutboundAirport = defaultOutboundAirport;
+            }    
+            
+            if (this.inboundAirportOptions && this.inboundAirportOptions.length > 0) {
+                const defaultInboundAirport = this.inboundAirportOptions.find(airport => airport.id === job.toAirportId);
+                console.log('Default Inbound Airport:', defaultInboundAirport);
+                if (defaultInboundAirport) this.selectedInboundAirport = defaultInboundAirport;
             }
-
+            
             // Reset search parameters
             this.lastDepartureTime = undefined;
             await this.loadFlights();
@@ -1215,7 +1222,8 @@ class NationwideControl extends BaseController {
             }
 
             const airlineId = this.selected?.airline?.id;
-            const departureAirportId = this.selectedAirport?.id;
+            const departureAirportId = this.selectedOutboundAirport?.id;
+            const arrivalAirportId = this.selectedInboundAirport?.id;
             const minimumLayoverMinutes = 60;
 
             console.log('Loading flights with params:', {
@@ -1223,6 +1231,7 @@ class NationwideControl extends BaseController {
                 departureDate: departureDate,
                 airlineId: airlineId,
                 departureAirportId: departureAirportId,
+                arrivalAirportId: arrivalAirportId,
                 minimumLayoverMinutes: minimumLayoverMinutes
             });
 
@@ -1231,6 +1240,7 @@ class NationwideControl extends BaseController {
                 departureDate.toDate(),
                 airlineId,
                 departureAirportId,
+                arrivalAirportId,
                 minimumLayoverMinutes
             );
 
@@ -1252,14 +1262,7 @@ class NationwideControl extends BaseController {
             this.applyScope();
         }
     }
-
-    resetAirportSelection() {
-        this.selectedAirport = undefined;
-        if (!this.currentJob) return;
-        return this.onAirportSelectionChanged();
-    }
-
-    async loadNextDayFlights() {
+    async loadNextDayFlights(): Promise<void> {
         if (!this.currentJob) {
             this.toastrService.showWarningToast("Please select a job to view flight options");
             return;
@@ -1280,11 +1283,11 @@ class NationwideControl extends BaseController {
         return this.loadFlights();
     }
 
-    async openFlightMoreInfo($event: MouseEvent, flight: IFlightViewModel) {
+    async openFlightMoreInfo($event: MouseEvent, flight: IFlightViewModel): Promise<void> {
         await this.flightDetailsDialogService.openFlightDetailsDialog($event, flight);
     }
 
-    async addFlightToJob($event: MouseEvent, flight: IFlightViewModel, job: IDispatchJob) {
+    async addFlightToJob($event: MouseEvent, flight: IFlightViewModel, job: IDispatchJob): Promise<void> {
         try {
             const result = await this.flightAgentConfirmationDialogService.flightConfirmationDialog($event, job, flight)
             if (!result.shouldAssign) return;
@@ -1330,7 +1333,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async addAgentToJob($event: MouseEvent, agent: IAgent, job: IDispatchJob) {
+    async addAgentToJob($event: MouseEvent, agent: IAgent, job: IDispatchJob): Promise<void> {
         const selectedAgent: Suggestion = {
             id: agent.agentId, text: agent.agentName
         };
@@ -1338,7 +1341,7 @@ class NationwideControl extends BaseController {
         await this.addSelectedAgentToJob($event, selectedAgent, job)
     }
 
-    async addSelectedAgentToJob($event: MouseEvent, agent: Suggestion, job: IDispatchJob) {
+    async addSelectedAgentToJob($event: MouseEvent, agent: Suggestion, job: IDispatchJob): Promise<void> {
         try {
             const result = await this.flightAgentConfirmationDialogService.agentConfirmationDialog($event, job, agent)
             if (!result.shouldAssign) return;
@@ -1368,7 +1371,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    private updateDateFilters(dataTypes: JobDataType | JobDataType[] = JobDataType.ALL) {
+    private updateDateFilters(dataTypes: JobDataType | JobDataType[] = JobDataType.ALL): void {
         if (dataTypes.includes(JobDataType.NEW)) {
             this.jobFilters.startDate = this.startDate;
             this.jobFilters.dateCutoff = this.endDate;
@@ -1705,9 +1708,7 @@ class NationwideControl extends BaseController {
     }
 
     async filterFlightsByAirline(airlineId?: number): Promise<void> {
-        if (!this.currentJob) {
-            return;
-        }
+        if (!this.currentJob) return;
 
         // Store the airline selection
         this.selected = {airline: {id: airlineId}};
@@ -1719,22 +1720,33 @@ class NationwideControl extends BaseController {
         await this.loadFlights();
     }
 
-    async onAirportSelectionChanged(): Promise<void> {
-        // Reset search when changing airport filter
-        this.lastDepartureTime = undefined;
-
-        console.log('Airport selection changed to:',
-            this.selectedAirport ? this.selectedAirport.text : 'All airports');
-
-        this.flightsLoading = true;
-
+    async onOutboundAirportSelectionChanged(): Promise<void> {
         try {
+            // Reset search when changing airport filter
+            this.lastDepartureTime = undefined;
+
+            console.log('Airport selection changed to:',
+                this.selectedOutboundAirport ? this.selectedOutboundAirport.text : 'All airports');
+            
             // Reload flights with the new airport selection
             await this.loadFlights();
-            this.flightsLoading = false;
         } catch (error) {
             console.error('Error loading flights after airport change:', error);
-            this.flightsLoading = false;
+        }
+    } 
+    
+    async onInboundAirportSelectionChanged(): Promise<void> {
+        try {
+            // Reset search when changing airport filter
+            this.lastDepartureTime = undefined;
+
+            console.log('Airport selection changed to:',
+                this.selectedInboundAirport ? this.selectedInboundAirport.text : 'All airports');
+            
+            // Reload flights with the new airport selection
+            await this.loadFlights();
+        } catch (error) {
+            console.error('Error loading flights after airport change:', error);
         }
     }
 
