@@ -18,6 +18,7 @@ public interface IFlightStatsService
         DateTime? departureDateTime = null,
         int? airlineId = null,
         int? departureAirportId = null,
+        int? arrivalAirportId = null,
         int flightBuffer = 0,
         string codeType = null,
         List<string> extendedOptions = null,

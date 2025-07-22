@@ -149,6 +149,7 @@ public class FlightStatsService(
         DateTime? departureDateTime = null,
         int? airlineId = null,
         int? departureAirportId = null,
+        int? arrivalAirportId = null,
         int flightBuffer = 0,
         string codeType = null,
         List<string> extendedOptions = null,
@@ -159,15 +160,19 @@ public class FlightStatsService(
         Log.Information("Flight search started for job {JobId} with departure {DepartureDateTime}",
             jobId, departureDateTime);
 
-        var (destinationAirportCode, departureAirportCode) = await repository.GetAirportCodesByJobIdAsync(jobId);
+        // Airports
+        var (arrivalAirportCode, departureAirportCode) = await repository.GetAirportCodesByJobIdAsync(jobId);
         if (departureAirportId.HasValue)
             departureAirportCode = await repository.GetSingleAirportCodeByIdAsync(departureAirportId.Value);
+        if(arrivalAirportId.HasValue) 
+            arrivalAirportCode = await repository.GetSingleAirportCodeByIdAsync(arrivalAirportId.Value);
+        
 
         var activeAirlines = await repository.GetActiveAirlineOptionsAsync();
         var activeAirlineCodes = activeAirlines.Select(x => x.Text).ToList();
 
         ArgumentException.ThrowIfNullOrEmpty(departureAirportCode);
-        ArgumentException.ThrowIfNullOrEmpty(destinationAirportCode);
+        ArgumentException.ThrowIfNullOrEmpty(arrivalAirportCode);
 
         var flightsFrom = departureDateTime ?? DateTime.UtcNow;
         flightsFrom = flightsFrom.AddMinutes(flightBuffer);
@@ -176,7 +181,7 @@ public class FlightStatsService(
         var (year, month, day, hour, minute) = SplitDate(flightsFrom);
 
         var relativeUrl =
-            $"json/firstflightout/{departureAirportCode}/to/{destinationAirportCode}/leaving_after/{year}/{month}/{day}/{hour}/{minute}";
+            $"json/firstflightout/{departureAirportCode}/to/{arrivalAirportCode}/leaving_after/{year}/{month}/{day}/{hour}/{minute}";
 
         var query = HttpUtility.ParseQueryString(string.Empty);
         query["appId"] = _appId;
