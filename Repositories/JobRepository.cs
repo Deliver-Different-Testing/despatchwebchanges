@@ -1256,10 +1256,11 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
     public async Task VoidJob(int jobId)
     {
-        await Context
-            .LoadStoredProc("DES_stpJob_Void")
-            .WithSqlParam("@JobID", jobId)
-            .ExecuteStoredNonQueryAsync();
+        // Void Job
+        await Context.Procedures.DES_stpJob_VoidAsync(jobId);
+        
+        // Close Associated Tasks
+        await CloseAllTasks(jobId);
     }
 
     public async Task SplitJob(int jobId, string user)
@@ -2661,5 +2662,14 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         }
 
         return statusUpdates;
+    }
+    
+    private async Task CloseAllTasks(int jobId)
+    {
+        await Context.TucEvents
+            .Where(t => t.UcevJobId == jobId)
+            .ExecuteUpdateAsync(t => t.SetProperty(e => e.UcevClosed, true));
+
+        await SaveChangesAsync();
     }
 }

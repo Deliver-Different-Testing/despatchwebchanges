@@ -30,11 +30,12 @@
     </no-data>
 
     <!-- Missing Airport Information -->
-    <no-data ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && (!ctrl.currentJob.toAirportId || !ctrl.currentJob.fromAirportId)"
-             title="Missing Airport Info"
-             message="Airport information not applicable or not provided for this job. If needed, please update the job details with relevant airport data."
-             icon="local_airport"
-             show-action="false">
+    <no-data
+            ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && (!ctrl.currentJob.toAirportId || !ctrl.currentJob.fromAirportId)"
+            title="Missing Airport Info"
+            message="Airport information not applicable or not provided for this job. If needed, please update the job details with relevant airport data."
+            icon="local_airport"
+            show-action="false">
     </no-data>
 
     <div ng-if="ctrl.currentJob && !ctrl.currentJob.assignedFlight && ctrl.currentJob.toAirportId && ctrl.currentJob.fromAirportId && !ctrl.flightsLoading">
@@ -60,83 +61,92 @@
 
             <!-- Departure Airport -->
             <md-menu>
-                <md-button aria-label="View nearby outbound airports" class="md-raised md-primary"
-                           ng-click="$mdMenu.open($event)">
-                    <span>{{ctrl.selectedOutboundAirport ? 'Flights departing ' + ctrl.formatAirportCodeForDropdown(ctrl.selectedOutboundAirport.text) : 'Nearby Outbound Airports'}}</span>
-                    <md-icon md-font-set="material-symbols-outlined">arrow_drop_down</md-icon>
-                    <md-tooltip md-direction="top">
-                        <md-icon md-font-set="material-symbols-outlined">multiple_airports</md-icon>
-                        View nearby outbound airports
+                <md-button
+                        aria-label="View nearby outbound airports"
+                        class="md-button airline-chip"
+                        ng-click="$mdMenu.open($event)">
+                    <md-icon md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
+                    <span class="airline-label">{{ctrl.formatAirportCodeForDropdown(ctrl.selectedOutboundAirport.text)}}</span>
+                    <md-tooltip md-direction="bottom">
+                        {{ctrl.selectedOutboundAirport ? 'Flights departing ' + ctrl.formatAirportCodeForDropdown(ctrl.selectedOutboundAirport.text) : 'Nearby Outbound Airports'}}
                     </md-tooltip>
                 </md-button>
+
                 <md-menu-content class="md-dense" width="4">
                     <!-- Option to clear selection -->
                     <md-menu-item ng-if="ctrl.selectedOutboundAirport">
-                        <md-button ng-click="ctrl.selectedOutboundAirport = null; ctrl.onOutboundAirportSelectionChanged();">
+                        <md-button
+                                ng-click="ctrl.selectedOutboundAirport = null; ctrl.onOutboundAirportSelectionChanged();">
                             <md-icon md-font-set="material-symbols-outlined">clear</md-icon>
                             Clear selection
                         </md-button>
                     </md-menu-item>
 
                     <!-- Airport options -->
-                    <md-menu-item ng-repeat="airport in ctrl.outboundAirportOptions">
-                        <md-button ng-click="ctrl.selectedOutboundAirport = airport; ctrl.onOutboundAirportSelectionChanged(); $mdMenu.close()">
+                    <md-menu-item ng-repeat="outboundAirport in ctrl.outboundAirportOptions">
+                        <md-button
+                                ng-click="ctrl.selectedOutboundAirport = outboundAirport; ctrl.onOutboundAirportSelectionChanged(); $mdMenu.close()">
                             <md-icon md-font-set="material-symbols-outlined"
-                                     ng-if="ctrl.selectedOutboundAirport.id === airport.id">
+                                     ng-if="ctrl.selectedOutboundAirport.id === outboundAirport.id">
                                 check
                             </md-icon>
-                            <span ng-if="ctrl.selectedOutboundAirport.id !== airport.id"
+                            <span ng-if="ctrl.selectedOutboundAirport.id !== outboundAirport.id"
                                   style="width: 24px; display: inline-block;"></span>
-                            {{airport.text}}
+                            {{outboundAirport.text}}
                         </md-button>
                     </md-menu-item>
 
                     <!-- No result message -->
-                    <md-menu-item ng-if="ctrl.outboundAirportOptions.length > 0 && ctrl.outboundAirportOptions.length === 0">
+                    <md-menu-item
+                            ng-if="ctrl.outboundAirportOptions.length > 0 && ctrl.outboundAirportOptions.length === 0">
                         <div class="md-padding">
                             No other airports are within the specified radius.
                         </div>
                     </md-menu-item>
                 </md-menu-content>
             </md-menu>
-            
+
             <md-icon md-font-set="material-symbols-outlined">arrow_right_alt</md-icon>
-            
+
             <!-- Arrival Airport-->
             <md-menu>
-                <md-button aria-label="View nearby inbound airports" class="md-raised md-primary"
-                           ng-click="$mdMenu.open($event)">
-                    <span>{{ctrl.selectedInboundAirport ? 'Flights arriving ' + ctrl.formatAirportCodeForDropdown(ctrl.selectedInboundAirport.text) : 'Nearby Inbound Airports'}}</span>
-                    <md-icon md-font-set="material-symbols-outlined">arrow_drop_down</md-icon>
-                    <md-tooltip md-direction="top">
-                        <md-icon md-font-set="material-symbols-outlined">multiple_airports</md-icon>
-                        View nearby inbound airports
+                <md-button
+                        aria-label="View nearby inbound airports"
+                        class="md-button airline-chip"
+                        ng-click="$mdMenu.open($event)">
+                    <md-icon md-font-set="material-symbols-outlined">flight_land</md-icon>
+                    <span class="airline-label">{{ctrl.formatAirportCodeForDropdown(ctrl.selectedInboundAirport.text)}}</span>
+                    <md-tooltip md-direction="bottom">
+                        {{ctrl.selectedInboundAirport ? 'Flights arriving ' + ctrl.formatAirportCodeForDropdown(ctrl.selectedInboundAirport.text) : 'Nearby Inbound Airports'}}
                     </md-tooltip>
                 </md-button>
                 <md-menu-content class="md-dense" width="4">
                     <!-- Option to clear selection -->
                     <md-menu-item ng-if="ctrl.selectedInboundAirport">
-                        <md-button ng-click="ctrl.selectedInboundAirport = null; ctrl.onInboundAirportSelectionChanged();">
+                        <md-button
+                                ng-click="ctrl.selectedInboundAirport = undefined; ctrl.onInboundAirportSelectionChanged();">
                             <md-icon md-font-set="material-symbols-outlined">clear</md-icon>
                             Clear selection
                         </md-button>
                     </md-menu-item>
 
                     <!-- Airport options -->
-                    <md-menu-item ng-repeat="airport in ctrl.inboundAirportOptions">
-                        <md-button ng-click="ctrl.selectedInboundAirport = airport; ctrl.onInboundAirportSelectionChanged(); $mdMenu.close()">
+                    <md-menu-item ng-repeat="inboundAirport in ctrl.inboundAirportOptions">
+                        <md-button
+                                ng-click="ctrl.selectedInboundAirport = inboundAirport; ctrl.onInboundAirportSelectionChanged(); $mdMenu.close()">
                             <md-icon md-font-set="material-symbols-outlined"
-                                     ng-if="ctrl.selectedInboundAirport.id === airport.id">
+                                     ng-if="ctrl.selectedInboundAirport.id === inboundAirport.id">
                                 check
                             </md-icon>
-                            <span ng-if="ctrl.selectedInboundAirport.id !== airport.id"
+                            <span ng-if="ctrl.selectedInboundAirport.id !== inboundAirport.id"
                                   style="width: 24px; display: inline-block;"></span>
-                            {{airport.text}}
+                            {{inboundAirport.text}}
                         </md-button>
                     </md-menu-item>
 
                     <!-- No result message -->
-                    <md-menu-item ng-if="ctrl.inboundAirportOptions.length > 0 && ctrl.inboundAirportOptions.length === 0">
+                    <md-menu-item
+                            ng-if="ctrl.inboundAirportOptions.length > 0 && ctrl.inboundAirportOptions.length === 0">
                         <div class="md-padding">
                             No other airports are within the specified radius.
                         </div>
@@ -150,117 +160,137 @@
         <md-table-container class="table-scroll" ng-if="ctrl.flightOptions && ctrl.flightOptions.length > 0">
             <table md-progress="ctrl.flightListPromise" md-table ng-model="ctrl.selectedFlight">
                 <thead md-head md-order="ctrl.flightTableQuery.order">
-                    <tr md-row>
-                        <th md-column md-order-by="airline">Airline</th>
-                        <th md-column md-order-by="flightNumber">Flight No</th>
-                        <th md-column md-order-by="departureTime">D</th>
-                        <th md-column md-order-by="arrivalTime">A</th>
-                        <th md-column md-order-by="elapsedTime">Duration</th>
-                        <th md-column md-order-by="stops">Stops</th>
-                        <th md-column md-order-by="amount">Rate</th>
-                        <th md-column md-order-by="aircraft">Aircraft</th>
-                        <th md-column>Actions</th>
-                    </tr>
+                <tr md-row>
+                    <th md-column md-order-by="airline">Airline</th>
+                    <th md-column md-order-by="flightNumber">Flight No</th>
+                    <th md-column md-order-by="departureTime">D</th>
+                    <th md-column md-order-by="arrivalTime">A</th>
+                    <th md-column md-order-by="elapsedTime">Duration</th>
+                    <th md-column md-order-by="stops">Stops</th>
+                    <th md-column md-order-by="amount">Rate</th>
+                    <th md-column md-order-by="aircraft">Aircraft</th>
+                    <th md-column>Actions</th>
+                </tr>
                 </thead>
 
                 <tbody md-body>
-                    <tr md-row ng-repeat-start="flight in ctrl.flightOptions | filter: box.searchBox | orderBy: ctrl.flightTableQuery.order"
-                        ng-class="{'has-segments': flight.isMultiSegment}">
-                        <td md-cell>
-                            <span class="airline-code {{flight.airline | lowercase}}">{{flight.airline}}</span>
-                            <span class="codeshare-marker" ng-if="flight.isCodeShare">*</span>
-                        </td>
-                        <td md-cell>
-                            <div class="flight-number-container">
-                                <span class="flight-number">{{flight.flightNumber}}</span>
-                                <md-icon ng-if="flight.isMultiSegment" md-font-set="material-symbols-outlined"
-                                         ng-click="flight.showSegments = !flight.showSegments"
-                                         class="segment-toggle">
-                                    {{flight.showSegments ? 'expand_less' : 'expand_more'}}
-                                </md-icon>
-                            </div>
-                        </td>
-                        <td md-cell>
-                            {{flight.departureTime | date: 'MM/dd/yyyy HH:mm'}}
-                            <div class="airport-code">{{flight.departureAirport}}</div>
-                        </td>
-                        <td md-cell>
-                            {{flight.arrivalTime | date: 'MM/dd/yyyy HH:mm'}}
-                            <div class="airport-code">{{flight.arrivalAirport}}</div>
-                        </td>
-                        <td md-cell>
-                            <span ng-if="flight.elapsedTime">{{flight.elapsedTime | minutesToTime}}</span>
-                            <span ng-if="!flight.elapsedTime">{{flight.duration | date: 'H:mm'}}</span>
-                        </td>
-                        <td md-cell>
-                            <span ng-if="flight.stops === 0" class="direct-flight">Nonstop</span>
-                            <span ng-if="flight.stops > 0" class="stops-badge">{{flight.stops}} stop<span ng-if="flight.stops > 1">s</span></span>
-                        </td>
-                        <td md-cell>{{flight.amount | currency}}</td>
-                        <td md-cell>{{flight.aircraft}}</td>
-                        <td class="actions" md-cell>
+                <tr md-row
+                    ng-repeat-start="flight in ctrl.flightOptions | filter: box.searchBox | orderBy: ctrl.flightTableQuery.order"
+                    ng-class="{'has-segments': flight.isMultiSegment}">
+                    <td md-cell>
+                        <span class="airline-code {{flight.airline | lowercase}}">{{flight.airline}}</span>
+                        <span class="codeshare-marker" ng-if="flight.isCodeShare">*</span>
+                    </td>
+                    <td md-cell>
+                        <div class="flight-number-container">
+                            <span class="flight-number">{{flight.flightNumber}}</span>
+                            <md-icon ng-if="flight.isMultiSegment" md-font-set="material-symbols-outlined"
+                                     ng-click="flight.showSegments = !flight.showSegments"
+                                     class="segment-toggle">
+                                {{flight.showSegments ? 'expand_less' : 'expand_more'}}
+                            </md-icon>
+                        </div>
+                    </td>
+                    <td md-cell>
+                        {{flight.departureTime | date: 'MM/dd/yyyy HH:mm'}}
+                        <div class="airport-code">{{flight.departureAirport}}</div>
+                    </td>
+                    <td md-cell>
+                        {{flight.arrivalTime | date: 'MM/dd/yyyy HH:mm'}}
+                        <div class="airport-code">{{flight.arrivalAirport}}</div>
+                    </td>
+                    <td md-cell>
+                        <span ng-if="flight.elapsedTime">{{flight.elapsedTime | minutesToTime}}</span>
+                        <span ng-if="!flight.elapsedTime">{{flight.duration | date: 'H:mm'}}</span>
+                    </td>
+                    <td md-cell>
+                        <span ng-if="flight.stops === 0" class="direct-flight">Nonstop</span>
+                        <span ng-if="flight.stops > 0" class="stops-badge">{{flight.stops}} stop<span
+                                ng-if="flight.stops > 1">s</span></span>
+                    </td>
+                    <td md-cell>{{flight.amount | currency}}</td>
+                    <td md-cell>{{flight.aircraft}}</td>
+                    <td class="actions" md-cell>
                             <span class="action-icon" ng-click="ctrl.addFlightToJob($event, flight, ctrl.currentJob)">
                                 <md-icon md-font-set="material-symbols-outlined">add</md-icon>
                                 <md-tooltip md-direction="left">Assign Flight</md-tooltip>
                             </span>
 
-                            <span class="action-icon" ng-click="ctrl.openFlightMoreInfo($event, flight)">
+                        <span class="action-icon" ng-click="ctrl.openFlightMoreInfo($event, flight)">
                                 <md-icon md-font-set="material-symbols-outlined">info</md-icon>
                                 <md-tooltip md-direction="left">More Info</md-tooltip>
                             </span>
-                        </td>
-                    </tr>
-                    <tr ng-repeat-end ng-if="flight.isMultiSegment && flight.showSegments" class="segment-details-row">
-                        <td colspan="9">
-                            <div class="segment-details">
-                                <div class="segment-journey">
-                                    <div ng-repeat="segment in flight.flightSegments" class="segment-item">
-                                        <div class="segment-header">
-                                            <span class="segment-number">Segment {{segment.segmentOrder + 1}} of {{flight.flightSegments.length}}</span>
-                                            <span class="segment-airline">{{segment.carrierFsCode}}{{segment.flightNumber}}</span>
-                                        </div>
-                                        <div class="segment-info">
-                                            <div class="segment-time">
-                                                <div class="departure">
-                                                    <div class="time">{{segment.departureTime | date: 'MM/dd/yyyy HH:mm'}}</div>
-                                                    <div class="airport">{{segment.departureAirportFsCode}}</div>
-                                                    <div class="terminal" ng-if="segment.departureTerminal">Terminal {{segment.departureTerminal}}</div>
-                                                    <div class="airport-name" ng-if="segment.departureAirportName">{{segment.departureAirportName}}</div>
+                    </td>
+                </tr>
+                <tr ng-repeat-end ng-if="flight.isMultiSegment && flight.showSegments" class="segment-details-row">
+                    <td colspan="9">
+                        <div class="segment-details">
+                            <div class="segment-journey">
+                                <div ng-repeat="segment in flight.flightSegments" class="segment-item">
+                                    <div class="segment-header">
+                                        <span class="segment-number">Segment {{segment.segmentOrder + 1}} of {{flight.flightSegments.length}}</span>
+                                        <span class="segment-airline">{{segment.carrierFsCode}}{{segment.flightNumber}}</span>
+                                    </div>
+                                    <div class="segment-info">
+                                        <div class="segment-time">
+                                            <div class="departure">
+                                                <div class="time">{{segment.departureTime | date: 'MM/dd/yyyy HH:mm'}}
                                                 </div>
-                                                <div class="flight-line">
-                                                    <div class="flight-duration">{{segment.elapsedTime | minutesToTime}}</div>
-                                                    <div class="flight-line-inner"></div>
-                                                    <div class="aircraft-info" ng-if="segment.aircraftName">{{segment.aircraftName}}</div>
+                                                <div class="airport">{{segment.departureAirportFsCode}}</div>
+                                                <div class="terminal" ng-if="segment.departureTerminal">Terminal
+                                                    {{segment.departureTerminal}}
                                                 </div>
-                                                <div class="arrival">
-                                                    <div class="time">{{segment.arrivalTime | date: 'MM/dd/yyyy HH:mm'}}</div>
-                                                    <div class="airport">{{segment.arrivalAirportFsCode}}</div>
-                                                    <div class="terminal" ng-if="segment.arrivalTerminal">Terminal {{segment.arrivalTerminal}}</div>
-                                                    <div class="airport-name" ng-if="segment.arrivalAirportName">{{segment.arrivalAirportName}}</div>
+                                                <div class="airport-name" ng-if="segment.departureAirportName">
+                                                    {{segment.departureAirportName}}
                                                 </div>
                                             </div>
-                                            <div class="segment-details-extra">
-                                                <div class="aircraft" ng-if="segment.aircraftName">{{segment.aircraftName}} ({{segment.flightEquipmentIataCode}})</div>
-                                                <div class="aircraft" ng-if="!segment.aircraftName">{{segment.flightEquipmentIataCode}}</div>
-                                                <div class="stops" ng-if="segment.stopsInSegment > 0">
-                                                    <md-icon md-font-set="material-symbols-outlined">flight_stop</md-icon>
-                                                    {{segment.stopsInSegment}} stop<span ng-if="segment.stopsInSegment > 1">s</span> in this flight
+                                            <div class="flight-line">
+                                                <div class="flight-duration">{{segment.elapsedTime | minutesToTime}}
+                                                </div>
+                                                <div class="flight-line-inner"></div>
+                                                <div class="aircraft-info" ng-if="segment.aircraftName">
+                                                    {{segment.aircraftName}}
+                                                </div>
+                                            </div>
+                                            <div class="arrival">
+                                                <div class="time">{{segment.arrivalTime | date: 'MM/dd/yyyy HH:mm'}}
+                                                </div>
+                                                <div class="airport">{{segment.arrivalAirportFsCode}}</div>
+                                                <div class="terminal" ng-if="segment.arrivalTerminal">Terminal
+                                                    {{segment.arrivalTerminal}}
+                                                </div>
+                                                <div class="airport-name" ng-if="segment.arrivalAirportName">
+                                                    {{segment.arrivalAirportName}}
                                                 </div>
                                             </div>
                                         </div>
+                                        <div class="segment-details-extra">
+                                            <div class="aircraft" ng-if="segment.aircraftName">{{segment.aircraftName}}
+                                                ({{segment.flightEquipmentIataCode}})
+                                            </div>
+                                            <div class="aircraft" ng-if="!segment.aircraftName">
+                                                {{segment.flightEquipmentIataCode}}
+                                            </div>
+                                            <div class="stops" ng-if="segment.stopsInSegment > 0">
+                                                <md-icon md-font-set="material-symbols-outlined">flight_stop</md-icon>
+                                                {{segment.stopsInSegment}} stop<span ng-if="segment.stopsInSegment > 1">s</span>
+                                                in this flight
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                        <!-- Connection time -->
-                                        <div class="connection-time" ng-if="!$last">
-                                            <div class="connection-time-content">
-                                                <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
-                                                <span class="layover-time">{{ctrl.getConnectionTime(segment, flight.flightSegments[$index + 1])}} layover</span>
-                                            </div>
+                                    <!-- Connection time -->
+                                    <div class="connection-time" ng-if="!$last">
+                                        <div class="connection-time-content">
+                                            <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
+                                            <span class="layover-time">{{ctrl.getConnectionTime(segment, flight.flightSegments[$index + 1])}} layover</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </td>
-                    </tr>
+                        </div>
+                    </td>
+                </tr>
                 </tbody>
             </table>
         </md-table-container>
