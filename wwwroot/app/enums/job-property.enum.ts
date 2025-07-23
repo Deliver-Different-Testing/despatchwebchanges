@@ -56,4 +56,5 @@ export enum JobProperty {
     Frequency = 'Frequency',
     HolidayDelivery = 'HolidayDelivery',
     CourierID = 'CourierID',
+    Active = 'Active',
 }

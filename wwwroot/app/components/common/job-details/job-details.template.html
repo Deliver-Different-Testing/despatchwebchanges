@@ -871,7 +871,7 @@
 
                             <md-list class="md-dense" flex>
                                 <!-- Days of Week -->
-                                <md-list-item class="info-row">
+                                <md-list-item class="md-2-line md-long-text">
                                     <md-icon
                                             class="md-avatar"
                                             aria-label="day selection"
@@ -1042,6 +1042,7 @@
                                             <md-switch
                                                     aria-label="Active"
                                                     ng-model="ctrl.job.active"
+                                                    ng-click="ctrl.updateActive(ctrl.job)"
                                                     ng-model-options="{ debounce: 500 }">
                                             </md-switch>
                                         </p>
