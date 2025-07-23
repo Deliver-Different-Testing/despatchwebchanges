@@ -6,13 +6,13 @@ class RecoveryAgentManagementService implements angular.IServiceProvider {
     static $inject = [
         '$mdDialog',
         "$document",
-        "NationwideService",
+        "NWData",
     ];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private $document: angular.IDocumentService,
-        private NationwideService: NationwideService,
+        private nationwideService: NationwideService,
     ) {
         console.log('RecoveryAgentManagementService: Service instantiated');
     }
@@ -22,7 +22,7 @@ class RecoveryAgentManagementService implements angular.IServiceProvider {
     }
 
     async openRecoveryAgentManagementDialog($event: MouseEvent, jobId: number): Promise<RecoveryAgentJobViewModel> {
-        const job: RecoveryAgentJobViewModel = await this.NationwideService.getAgentRecoveryJobs(jobId);
+        const job: RecoveryAgentJobViewModel = await this.nationwideService.getAgentRecoveryJobs(jobId);
 
         return this.$mdDialog
             .show({
