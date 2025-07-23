@@ -352,7 +352,7 @@ class JobDetailController extends BaseController {
                                                 "MM/DD/YYYY HH:mm"
                                             )
                                             : undefined,
-                                        uploadedBy: this.job?.courierData.courierName ?? "Unknown",
+                                        uploadedBy: this.job?.courierData?.courierName ?? "Unknown",
                                         coordinates: {
                                             lat: this.job?.deliveryAddress?.latitude ?? 0,
                                             lng: this.job?.deliveryAddress?.longitude ?? 0,
