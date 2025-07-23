@@ -7,18 +7,18 @@ class RouterConfig {
     }
 
     private configureRoutes(): void {
-            this.$urlRouterProvider.otherwise("/");
-            
-            // Configure routes
-            this.configureHomeState()
-                .configureNationwideState()
-                .configureCSState()
-                .configureJobSearchState()
-                .configurePrebooksState()
-                .configureOverviewState()
-                .configureMegaMapState()
-                .configureTaskDashboardState();
-        }
+        this.$urlRouterProvider.otherwise("/");
+
+        // Configure routes
+        this.configureHomeState()
+            .configureNationwideState()
+            .configureCSState()
+            .configureJobSearchState()
+            .configurePrebooksState()
+            .configureOverviewState()
+            .configureMegaMapState()
+            .configureTaskDashboardState();
+    }
 
     private configureHomeState(): this {
         this.$stateProvider.state("home", {
@@ -33,10 +33,22 @@ class RouterConfig {
                 jobId: ['$stateParams', ($stateParams: any) => {
                     return $stateParams.jobId ? parseInt($stateParams.jobId, 10) : null;
                 }],
-                loadModule: ['$ocLazyLoad', ($ocLazyLoad: oc.ILazyLoad) => {
+                manifest: ['$http', ($http: angular.IHttpService) => {
+                    return $http.get<Record<string, string>>('dist/manifest.json')
+                        .then(response => response.data)
+                        .catch(() => {
+                            console.warn('[ROUTES] Failed to load manifest for home state, using fallback names');
+                            return {
+                                'home.js': 'home.js',
+                                'home.css': 'home.css'
+                            };
+                        });
+                }],
+                loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                    const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
                     return $ocLazyLoad.load([
-                        'dist/home.js',
-                        'dist/home.css'
+                        getAssetPath('home.js'),
+                        getAssetPath('home.css')
                     ]);
                 }]
             },
@@ -59,10 +71,22 @@ class RouterConfig {
                 jobId: ['$stateParams', ($stateParams: any) => {
                     return $stateParams.jobId ? parseInt($stateParams.jobId, 10) : null;
                 }],
-                loadModule: ['$ocLazyLoad', ($ocLazyLoad: oc.ILazyLoad) => {
+                manifest: ['$http', ($http: angular.IHttpService) => {
+                    return $http.get<Record<string, string>>('dist/manifest.json')
+                        .then(response => response.data)
+                        .catch(() => {
+                            console.warn('[ROUTES] Failed to load manifest for nationwide state, using fallback names');
+                            return {
+                                'nationwide.js': 'nationwide.js',
+                                'nationwide.css': 'nationwide.css'
+                            };
+                        });
+                }],
+                loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                    const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
                     return $ocLazyLoad.load([
-                        'dist/nationwide.js',
-                        'dist/nationwide.css'
+                        getAssetPath('nationwide.js'),
+                        getAssetPath('nationwide.css')
                     ]);
                 }]
             }
@@ -82,8 +106,17 @@ class RouterConfig {
         this.$stateProvider.state("jobSearch", {
             url: "/jobSearch",
             resolve: {
-                loadModule: ['$ocLazyLoad', ($ocLazyLoad: oc.ILazyLoad) => {
-                    return $ocLazyLoad.load('dist/jobSearch.js');
+                manifest: ['$http', ($http: angular.IHttpService) => {
+                    return $http.get<Record<string, string>>('dist/manifest.json')
+                        .then(response => response.data)
+                        .catch(() => {
+                            console.warn('[ROUTES] Failed to load manifest for jobSearch state, using fallback names');
+                            return { 'jobSearch.js': 'jobSearch.js' };
+                        });
+                }],
+                loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                    const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
+                    return $ocLazyLoad.load(getAssetPath('jobSearch.js'));
                 }]
             },
             component: "jobSearchComponent",
@@ -91,13 +124,21 @@ class RouterConfig {
         return this;
     }
 
-
     private configurePrebooksState(): this {
         this.$stateProvider.state("recurringJobs", {
             url: "/recurringJobs",
             resolve: {
-                loadModule: ['$ocLazyLoad', ($ocLazyLoad: oc.ILazyLoad) => {
-                    return $ocLazyLoad.load('dist/recurringJobs.js');
+                manifest: ['$http', ($http: angular.IHttpService) => {
+                    return $http.get<Record<string, string>>('dist/manifest.json')
+                        .then(response => response.data)
+                        .catch(() => {
+                            console.warn('[ROUTES] Failed to load manifest for recurringJobs state, using fallback names');
+                            return { 'recurringJobs.js': 'recurringJobs.js' };
+                        });
+                }],
+                loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                    const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
+                    return $ocLazyLoad.load(getAssetPath('recurringJobs.js'));
                 }]
             },
             component: "recurringJobsComponent",
@@ -109,10 +150,22 @@ class RouterConfig {
         this.$stateProvider.state("overview", {
             url: "/overview",
             resolve: {
-                loadModule: ['$ocLazyLoad', ($ocLazyLoad: oc.ILazyLoad) => {
+                manifest: ['$http', ($http: angular.IHttpService) => {
+                    return $http.get<Record<string, string>>('dist/manifest.json')
+                        .then(response => response.data)
+                        .catch(() => {
+                            console.warn('[ROUTES] Failed to load manifest for overview state, using fallback names');
+                            return {
+                                'overview.js': 'overview.js',
+                                'overview.css': 'overview.css'
+                            };
+                        });
+                }],
+                loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                    const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
                     return $ocLazyLoad.load([
-                        'dist/overview.js',
-                        'dist/overview.css'
+                        getAssetPath('overview.js'),
+                        getAssetPath('overview.css')
                     ]);
                 }]
             },
@@ -125,10 +178,22 @@ class RouterConfig {
         this.$stateProvider.state("megaMap", {
             url: "/megaMap",
             resolve: {
-                loadModule: ['$ocLazyLoad', ($ocLazyLoad: oc.ILazyLoad) => {
+                manifest: ['$http', ($http: angular.IHttpService) => {
+                    return $http.get<Record<string, string>>('dist/manifest.json')
+                        .then(response => response.data)
+                        .catch(() => {
+                            console.warn('[ROUTES] Failed to load manifest for megaMap state, using fallback names');
+                            return {
+                                'megaMap.js': 'megaMap.js',
+                                'megaMap.css': 'megaMap.css'
+                            };
+                        });
+                }],
+                loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                    const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
                     return $ocLazyLoad.load([
-                        'dist/megaMap.js',
-                        'dist/megaMap.css'
+                        getAssetPath('megaMap.js'),
+                        getAssetPath('megaMap.css')
                     ]);
                 }]
             },
@@ -141,10 +206,22 @@ class RouterConfig {
         this.$stateProvider.state("taskDashboard", {
             url: "/taskDashboard",
             resolve: {
-                loadModule: ['$ocLazyLoad', ($ocLazyLoad: oc.ILazyLoad) => {
+                manifest: ['$http', ($http: angular.IHttpService) => {
+                    return $http.get<Record<string, string>>('dist/manifest.json')
+                        .then(response => response.data)
+                        .catch(() => {
+                            console.warn('[ROUTES] Failed to load manifest for taskDashboard state, using fallback names');
+                            return {
+                                'taskDashboard.js': 'taskDashboard.js',
+                                'taskDashboard.css': 'taskDashboard.css'
+                            };
+                        });
+                }],
+                loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                    const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
                     return $ocLazyLoad.load([
-                        'dist/taskDashboard.js',
-                        'dist/taskDashboard.css'
+                        getAssetPath('taskDashboard.js'),
+                        getAssetPath('taskDashboard.css')
                     ]);
                 }]
             },

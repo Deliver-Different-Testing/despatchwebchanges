@@ -4934,10 +4934,6 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.NotifiedJobType).WithMany(p => p.TucJobNotifiedJobTypes).HasForeignKey(d => d.NotifiedJobTypeId);
 
-            entity.HasOne(d => d.Parent).WithMany(p => p.InverseParent)
-                .HasForeignKey(d => d.ParentId)
-                .HasConstraintName("FK_tucJob_ParentId");
-
             entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TucJobPickupTimeZones)
                 .HasForeignKey(d => d.PickupTimeZoneId)
                 .HasConstraintName("FK__tucJob__PickupTi__33765993");

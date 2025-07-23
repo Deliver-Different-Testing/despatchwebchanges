@@ -182,7 +182,9 @@ class Bundler {
     private generateManifestWithHashes(): Record<string, string> {
         const manifest: Record<string, string> = {};
         const entryPoints = this.getCommonConfig().entryPoints! as Record<string, string>;
-        const filesToHash = ['vendor', 'app'];
+
+        // Define which files should be hashed
+        const filesToHash = ['vendor', 'app', 'home', 'nationwide', 'overview', 'jobSearch', 'megaMap', 'taskDashboard', 'recurringJobs'];
 
         // Scan the dist folder for generated files
         const files = fs.readdirSync(this.distPath);
@@ -210,7 +212,8 @@ class Bundler {
     }
 
     private renameFilesWithHashes(): void {
-        const filesToHash = ['vendor', 'app'];
+        // Now hash all lazy-loaded modules as well as vendor and app
+        const filesToHash = ['vendor', 'app', 'home', 'nationwide', 'overview', 'jobSearch', 'megaMap', 'taskDashboard', 'recurringJobs'];
 
         for (const entryName of filesToHash) {
             // Generate hash using entry name (not file path)
@@ -252,7 +255,7 @@ class Bundler {
             }
         }
     }
-    
+
     private async buildDev(): Promise<void> {
         console.log("[DEV] Building development bundles with file watching...");
 
@@ -344,7 +347,7 @@ class Bundler {
         console.log(`[PROD] Build completed in ${buildTime}s`);
         console.log(`[PROD] Manifest created with ${Object.keys(manifest).length} entries`);
     }
-    
+
     async build(): Promise<void> {
         const startTime = Date.now();
 
