@@ -5,14 +5,30 @@ class NoDataController implements angular.IController {
     title?: string;
     message?: string;
     icon?: string;
+    showAction?: string | boolean;
     actionText?: string;
+    onAction?: () => void;
 
     $onInit() {
         // Set default values
         this.title = this.title || 'No Data';
         this.message = this.message || 'No items to display.';
         this.icon = this.icon || 'info';
+        this.showAction = this.showAction || false;
         this.actionText = this.actionText || 'Refresh';
+    }
+
+    handleAction() {
+        if (this.onAction && typeof this.onAction === 'function') {
+            this.onAction();
+        }
+    }
+
+    shouldShowAction(): boolean {
+        if (typeof this.showAction === 'string') {
+            return this.showAction.toLowerCase() === 'true';
+        }
+        return !!this.showAction;
     }
 }
 
@@ -22,6 +38,7 @@ const NoDataComponent: angular.IComponentOptions = {
         title: '@?',
         message: '@?',
         icon: '@?',
+        showAction: '@?',
         actionText: '@?',
         onAction: '&?'
     },
