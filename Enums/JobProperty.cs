@@ -58,5 +58,6 @@ public enum JobProperty
     NextDue,
     DaysOfWeek,
     Frequency,
-    HolidayDelivery
+    HolidayDelivery,
+    Active
 }

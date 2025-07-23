@@ -271,7 +271,8 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
                 .Include(j => j.UcbkClient)
                 .Include(j => j.BookingParent)
                 .ThenInclude(j => j.InverseBookingParent)
-                .Include(j => j.UcbkSpeedNavigation).Include(tucJobBooking => tucJobBooking.InverseBookingParent)
+                .Include(j => j.UcbkSpeedNavigation)
+                .Include(j => j.InverseBookingParent)
                 .FirstOrDefaultAsync();
 
             ArgumentNullException.ThrowIfNull(job);
@@ -429,11 +430,13 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
                     var holidayEnum = (HolidayDeliveryOptions)job.HolidayDeliveryOption;
                     updateNote = $"Holiday Delivery Option set to: {holidayEnum.ToDisplayString()}";
                     break;
+                case JobProperty.Active:
+                    job.UcbkActive = bool.Parse(value);
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(property), property, null);
             }
 
-            Context.TucJobBookings.Update(job);
             await Context.SaveChangesAsync();
 
             if (!string.IsNullOrEmpty(updateNote))

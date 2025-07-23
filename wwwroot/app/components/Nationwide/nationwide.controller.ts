@@ -73,6 +73,7 @@ class NationwideControl extends BaseController {
         'messagingDialogService',
         'messagingService',
         'tasksService',
+        'recoveryAgentManagementService',
     ];
 
     readonly nationwideJobList: JobListType = JobListType.NationwideJobList;

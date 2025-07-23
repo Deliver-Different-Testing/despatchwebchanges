@@ -1975,6 +1975,20 @@ class JobDetailController extends BaseController {
             this.triggerDigestCycle();
         }
     }
+    
+    async updateActive(job: IJob) {
+        try {
+            await this.DispatchData.updateJobDetail(
+                job.id,
+                JobProperty.Active,
+                job.active ?? false,
+                true,
+            );
+        } catch (error) {
+            console.error("Error updating active:", error);
+            this.handleError(error);
+        }
+    }
 }
 
 const JobDetailComponent: angular.IComponentOptions = {
