@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
 
@@ -14,7 +15,6 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
     private const int AirportSuburbId = 152;
     private const int JobRelationshipTypeId = 13;
     private const decimal ExtraStopFuel = 0m;
-    private const int MaxAddressLength = 150;
 
     public async Task<int> AddStopInsertJobAsync(AddStopRequest request)
     {
@@ -40,10 +40,10 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
             CourierPayment = ExtraStopCourierPayment,
             UcjbSpeed = job.UcjbSpeed,
             UcjbFrom = job.UcjbFrom,
-            UcjbFromAddr = GetSafeAddress(request.PickUpAddress?.FullAddress, job.UcjbFromAddr),
+            UcjbFromAddr = AddressFormatter.GetSafeAddress(request.PickUpAddress?.FullAddress, job.UcjbFromAddr),
             UcjbTo = AirportSuburbId,
             UcjbToSpecial = null,
-            UcjbToAddr = GetSafeAddress(request.DeliveryAddress?.FullAddress, job.UcjbFromAddr),
+            UcjbToAddr = AddressFormatter.GetSafeAddress(request.DeliveryAddress?.FullAddress, job.UcjbFromAddr),
             UcjbSize = job.UcjbSize,
             UcjbQty = extras is { Quantity: not null } ? (short)extras.Quantity : job.UcjbQty,
             UcjbCbd = false,
@@ -173,10 +173,10 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
             CourierPayment = ExtraStopCourierPayment,
             UcbkSpeed = job.UcbkSpeed,
             UcbkFrom = job.UcbkFrom,
-            UcbkFromAddr = GetSafeAddress(request.PickUpAddress?.FullAddress, job.UcbkFromAddr),
+            UcbkFromAddr = AddressFormatter.GetSafeAddress(request.PickUpAddress?.FullAddress, job.UcbkFromAddr),
             UcbkTo = AirportSuburbId,
             UcbkToSpecial = null,
-            UcbkToAddr = GetSafeAddress(request.DeliveryAddress?.FullAddress, job.UcbkFromAddr),
+            UcbkToAddr = AddressFormatter.GetSafeAddress(request.DeliveryAddress?.FullAddress, job.UcbkFromAddr),
             UcbkSize = job.UcbkSize,
             Quantity = extras is { Quantity: not null } ? (short)extras.Quantity : job.Quantity,
             UcbkCbd = false,
@@ -269,17 +269,7 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         await repository.SaveChangesAsync();
 
         return newStopJob.UcbkId;
-    }
-
-    private static string GetSafeAddress(string address, string defaultAddress)
-    {
-        if (string.IsNullOrEmpty(address))
-            return defaultAddress;
-
-        return address.Length > MaxAddressLength
-            ? address[..MaxAddressLength]
-            : address;
-    }
+    }  
 
     private async Task<string> GenerateNewStopJobNumberAsync(string baseJobNumber)
     {

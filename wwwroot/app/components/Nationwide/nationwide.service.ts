@@ -1,8 +1,11 @@
 import {IAgent, IAgentInfoDialog, IDispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
 import {IFlightViewModel} from "./nationwide.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
-import {JobEventData} from "../dialogs/add-event-dialog/add-event-dialog.interfaces";
 import dayjs from "dayjs";
+import {
+    AddAgentRecoveryRequest,
+    RecoveryAgentJobViewModel
+} from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.interfaces";
 
 class NationwideService implements angular.IServiceProvider {
     static $inject = [
@@ -211,6 +214,35 @@ class NationwideService implements angular.IServiceProvider {
                 agentId,
             }
         });
+        return response.data;
+    }
+    
+    async getAgentRecoveryJobs(jobId: number): Promise<RecoveryAgentJobViewModel> {
+        const response = await this.$http.get<RecoveryAgentJobViewModel>("nationwideJob/GetAgentRecoveryJobs", {
+            params: {
+                jobId,
+            }
+        });
+        
+        return response.data;
+    }
+    
+    async addAgentRecoveryJob(data: AddAgentRecoveryRequest): Promise<void> {
+        await this.$http.post("nationwideJob/AddAgentRecoveryJob", data);
+    }
+    
+    async getAgentOptionsByAirport(airportId: number): Promise<Suggestion[]> {
+        const response = await this.$http.get<Suggestion[]>("nationwideJob/GetAgentOptionsByAirport", {
+            params: {
+                agentId: airportId,
+            }
+        });
+        
+        return response.data;
+    }
+    
+    async getAllActiveAirports(): Promise<Suggestion[]> {
+        const response = await this.$http.get<Suggestion[]>("nationwideJob/GetAllActiveAirports");
         return response.data;
     }
 }

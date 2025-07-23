@@ -103,6 +103,10 @@ public partial class TucStaff
 
     public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneys { get; set; } = new List<JobDeliveryJourney>();
 
+    public virtual ICollection<JobRecoveryAgent> JobRecoveryAgentCreatedByNavigations { get; set; } = new List<JobRecoveryAgent>();
+
+    public virtual ICollection<JobRecoveryAgent> JobRecoveryAgentUpdatedByNavigations { get; set; } = new List<JobRecoveryAgent>();
+
     public virtual ICollection<TucEvent> TucEventUcevStaffIdinNavigations { get; set; } = new List<TucEvent>();
 
     public virtual ICollection<TucEvent> TucEventUcevStaffIdoutNavigations { get; set; } = new List<TucEvent>();

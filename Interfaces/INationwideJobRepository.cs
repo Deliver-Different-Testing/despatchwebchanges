@@ -5,13 +5,13 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
-using DespatchWeb.Models.FlightStats;
 
 namespace DespatchWeb.Interfaces;
 
 public interface INationwideJobRepository
 {
     Task<T> GetByIdAsync<T>(int id) where T : class;
+
     Task<List<DispatchJobViewModel>> NationwideJobListAsync(JobQueryParams queryParams, bool isInternal,
         bool isUsTenant, string clientIds, NationwideWidget windowPane, List<int> selectedViewIds);
 
@@ -43,4 +43,9 @@ public interface INationwideJobRepository
         int vehicleSizeId, bool dangerousGoods, decimal dryIceWeight, int? waitTime,
         int? extraChargeId, bool isHoliday, bool isAfterHours, decimal fuelSurcharge,
         int? fromZoneCongestionId = null, int? toZoneCongestionId = null);
+
+    Task<string> GetAgentNameAsync(int agentId);
+    Task<RecoveryAgentJobViewModel> GetInfoForRecoveryAgentDialog(int jobId);
+    Task<List<Suggestion>> GetAgentOptionsByAirportAsync(int airportId);
+    Task<List<Suggestion>> GetAllActiveAirports();
 }

@@ -83,6 +83,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[JobRecoveryAgents]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[PricingBreakdown]",
          "ObjectType": 0
       },
@@ -407,6 +411,10 @@
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[DES_stpJob_AutoDespatchSelectedJobs_FSCourierID]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DES_stpJob_ColsolidateMarsInformation]",
          "ObjectType": 1
       },
@@ -428,6 +436,10 @@
       },
       {
          "Name": "[dbo].[DES_stpJobBooking_InsertJobAndChildren]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_qdfSwapPOD]",
          "ObjectType": 1
       },
       {
@@ -467,6 +479,14 @@
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[GEN_qdfSetting_GetMaxAutoLateDeliveryAlert]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[GEN_qdfSetting_GetMaxAutoLatePickupAlert]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[MAP_stpCourierGPS_LastPositionToday]",
          "ObjectType": 1
       },
@@ -480,6 +500,18 @@
       },
       {
          "Name": "[dbo].[sp_RateJob2]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[uspReassignJob]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[uspReDespatchJob]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[uspReDespatchJobByCourierID]",
          "ObjectType": 1
       },
       {

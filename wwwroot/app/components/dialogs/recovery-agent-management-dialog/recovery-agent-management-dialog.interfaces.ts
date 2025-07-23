@@ -1,0 +1,34 @@
+﻿import {Suggestion} from "../../../interfaces/job.interface";
+
+export interface RecoveryAgentJobViewModel {
+    jobId: number;
+    jobNumber: string;
+    assignedAgent: Suggestion;
+    airports: Suggestion[];
+    packageType: string;
+    priority: string;
+    lastKnownLocation: string;
+    customer: string;
+    recoveryJobs: RecoveryJobViewModel[];
+}
+
+export interface RecoveryJobViewModel {
+    jobId: number;
+    assignedAgent: Suggestion;
+    recoveryAgents: RecoveryAgentViewModel[];
+}
+
+export interface RecoveryAgentViewModel {
+    recoveryId: number;
+    agentName: string;
+    airport: string;
+    primaryRecoveryAgent: boolean;
+    assignStatus: string;
+}
+
+export interface AddAgentRecoveryRequest {
+    jobId: number;
+    agentId: number;
+    airportId: number;
+    isPrimaryRecoveryAgent: boolean;
+}

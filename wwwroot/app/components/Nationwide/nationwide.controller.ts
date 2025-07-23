@@ -42,6 +42,8 @@ import {ContactID} from "../../contants";
 import {StatusFilter} from "../task-dashboard/enums/status-filter";
 import TasksService from "../../services/tasks.service";
 import JobListType from "../common/job-list/enums/jobListType";
+import RecoveryAgentManagementService
+    from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.service";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -212,6 +214,7 @@ class NationwideControl extends BaseController {
         private messagingDialogService: MessagingDialogService,
         private messagingService: MessagingService,
         private tasksService: TasksService,
+        private recoveryAgentManagementService: RecoveryAgentManagementService,
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
@@ -2032,6 +2035,10 @@ class NationwideControl extends BaseController {
 
     getJobContextMenuOptions() {
         return (data: any) => this.getContextMenuOptions(data.job);
+    }
+    
+    async openRecoveryAgentDialog($event: MouseEvent, job: IDispatchJob) {
+        await this.recoveryAgentManagementService.openRecoveryAgentManagementDialog($event, job.id);
     }
 }
 

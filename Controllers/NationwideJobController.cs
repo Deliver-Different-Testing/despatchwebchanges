@@ -17,7 +17,8 @@ public class NationwideJobController(
     IFlightStatsService flightService,
     IClientAccessValidatorService clientAccessValidator,
     ICountryService countryService,
-    IFlightRateService flightRateService)
+    IFlightRateService flightRateService,
+    IAddAgentRecoveryJobService recoveryJobService)
     : Controller
 {
     public async Task<IActionResult> NationwideJobListNew([FromQuery] NationwideJobsRequestModel data)
@@ -210,7 +211,7 @@ public class NationwideJobController(
             foreach (var segment in flight.FlightSegments)
             {
                 var webhookId = await flightService.CreateFlightRuleByDepartureAsync(
-                   $"{segment.CarrierFsCode}{segment.FlightNumber}",
+                    $"{segment.CarrierFsCode}{segment.FlightNumber}",
                     segment.DepartureTime,
                     segment.DepartureAirportFsCode) ?? string.Empty;
 
@@ -358,6 +359,63 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting all agents");
+            return StatusCode(500, e.Message);
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AddAgentRecoveryJob([FromBody] AddAgentRecoveryRequest request)
+    {
+        try
+        {
+            var newStopJobId = await recoveryJobService.AddRecoveryAgentJobAsync(request);
+            return Json(newStopJobId);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An error occured getting all agents");
+            return StatusCode(500, e.Message);
+        }
+    }
+
+    public async Task<IActionResult> GetAgentRecoveryJobs(int jobId)
+    {
+        try
+        {
+            var agentRecoveryInfo = await repository.GetInfoForRecoveryAgentDialog(jobId);
+            return Json(agentRecoveryInfo);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An error occured getting the recovery info");
+            return StatusCode(500, e.Message);
+        }
+    }
+
+    public async Task<IActionResult> GetAgentOptionsByAirport(int airportId)
+    {
+        try
+        {
+            var airports = await repository.GetAgentOptionsByAirportAsync(airportId);
+            return Json(airports);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An error occured getting the airports specific to agent");
+            return StatusCode(500, e.Message);
+        }
+    } 
+    
+    public async Task<IActionResult> GetAllActiveAirports()
+    {
+        try
+        {
+            var airports = await repository.GetAllActiveAirports();
+            return Json(airports);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An error occured getting active airports");
             return StatusCode(500, e.Message);
         }
     }
