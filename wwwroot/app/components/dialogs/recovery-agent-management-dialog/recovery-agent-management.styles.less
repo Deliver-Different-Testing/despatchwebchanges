@@ -1,0 +1,429 @@
+﻿.recovery-dialog {
+  max-width: 1200px;
+  max-height: 90vh;
+
+  .job-header {
+    background: white;
+    padding: 20px;
+    margin-bottom: 20px;
+
+    .job-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    .job-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+
+      .detail-item {
+        display: flex;
+        flex-direction: column;
+
+        .detail-label {
+          font-size: 12px;
+          color: #7f8c8d;
+          text-transform: uppercase;
+          margin-bottom: 4px;
+          font-weight: 500;
+        }
+
+        .detail-value {
+          font-size: 14px;
+          color: #2c3e50;
+          font-weight: 500;
+        }
+      }
+    }
+
+    .route-info {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+
+      .route-path {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 18px;
+        font-weight: 600;
+
+        .route-arrow {
+          font-size: 16px;
+          opacity: 0.8;
+        }
+      }
+    }
+  }
+
+  .assigned-agents-section {
+    background: white;
+    padding: 20px;
+    margin-bottom: 20px;
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+
+      .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2c3e50;
+      }
+    }
+
+    .agent-card {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+      position: relative;
+
+      &.primary {
+        border-left: 4px solid #4CAF50;
+      }
+
+      &.additional {
+        border-left: 4px solid #2196F3;
+      }
+
+      .agent-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 10px;
+      }
+
+      .agent-info {
+        flex: 1;
+
+        .agent-name {
+          font-size: 16px;
+          font-weight: 600;
+          color: #2c3e50;
+          margin-bottom: 4px;
+        }
+
+        .agent-company {
+          font-size: 14px;
+          color: #6c757d;
+          margin-bottom: 8px;
+        }
+
+        .agent-location {
+          display: flex;
+          align-items: center;
+          font-size: 14px;
+          color: #495057;
+          margin-bottom: 8px;
+
+          .location-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 6px;
+          }
+        }
+
+        .agent-rating {
+          display: flex;
+          align-items: center;
+          margin-bottom: 8px;
+
+          .rating-stars {
+            display: flex;
+            margin-right: 8px;
+
+            .star {
+              color: #ffc107;
+              font-size: 14px;
+              margin-right: 2px;
+            }
+          }
+
+          .rating-text {
+            font-size: 12px;
+            color: #6c757d;
+          }
+        }
+      }
+
+      .agent-status {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+        text-transform: uppercase;
+
+        &.status-assigned {
+          background: #e8f5e8;
+          color: #2e7d32;
+        }
+
+        &.status-searching {
+          background: #e3f2fd;
+          color: #1565c0;
+        }
+
+        &.status-pending {
+          background: #fff3e0;
+          color: #ef6c00;
+        }
+
+        &.status-completed {
+          background: #f3e5f5;
+          color: #7b1fa2;
+        }
+      }
+
+      .agent-actions {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+      }
+    }
+
+    .assign-form {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+
+      .form-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 15px;
+      }
+
+      .form-row {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+
+        .form-group {
+          flex: 1;
+        }
+      }
+
+      .form-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+    }
+
+    .danger-notice {
+      background: #fff5f5;
+      border: 1px solid #fed7d7;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 20px;
+
+      .danger-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #c53030;
+        margin-bottom: 4px;
+      }
+
+      .danger-text {
+        font-size: 13px;
+        color: #742a2a;
+      }
+    }
+
+    .no-agents {
+      text-align: center;
+      padding: 40px 20px;
+      color: #6c757d;
+
+      p {
+        margin: 8px 0;
+      }
+
+      md-icon {
+        font-size: 48px !important;
+        color: #ccc !important;
+        display: block;
+        margin-bottom: 16px;
+      }
+    }
+  }
+
+  .dialog-actions {
+    padding: 16px 24px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  // Material Design overrides
+  &.md-dialog-container {
+    padding: 0;
+  }
+
+  md-dialog-content {
+    padding: 0;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  md-select {
+    .md-select-value {
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 5px;
+    }
+  }
+
+  .md-button {
+    &.md-raised {
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+
+      &.md-primary {
+        background-color: #4CAF50;
+        color: white;
+
+        &:not([disabled]):hover {
+          background-color: #45a049;
+        }
+      }
+
+      &.md-warn {
+        background-color: #f44336;
+        color: white;
+
+        &:not([disabled]):hover {
+          background-color: #d32f2f;
+        }
+      }
+    }
+
+    &.md-icon-button {
+      &.md-warn {
+        color: #f44336;
+
+        &:hover {
+          background-color: rgba(244, 67, 54, 0.1);
+        }
+      }
+    }
+  }
+
+  // Responsive design
+  @media (max-width: 768px) {
+    max-width: 95vw;
+
+    .job-header {
+      padding: 15px;
+
+      .job-details {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .route-path {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+
+        .route-arrow {
+          transform: rotate(90deg);
+        }
+      }
+    }
+
+    .assigned-agents-section {
+      padding: 15px;
+
+      .section-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+      }
+
+      .assign-form {
+        .form-row {
+          flex-direction: column;
+          gap: 0;
+        }
+      }
+    }
+
+    .dialog-actions {
+      padding: 12px 16px;
+      flex-direction: column-reverse;
+      gap: 8px;
+
+      .md-button {
+        width: 100%;
+        margin: 0;
+      }
+    }
+  }
+
+  // Animation states
+  .assign-form {
+    transition: all 0.3s ease-in-out;
+
+    &.ng-enter {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+
+    &.ng-enter-active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    &.ng-leave {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    &.ng-leave-active {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+  }
+
+  .agent-card {
+    transition: all 0.2s ease;
+
+    &:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transform: translateY(-1px);
+    }
+
+    &.ng-enter {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+
+    &.ng-enter-active {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    &.ng-leave {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    &.ng-leave-active {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+  }
+}

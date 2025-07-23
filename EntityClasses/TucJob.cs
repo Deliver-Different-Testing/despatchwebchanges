@@ -477,6 +477,8 @@ public partial class TucJob
 
     public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneys { get; set; } = new List<JobDeliveryJourney>();
 
+    public virtual ICollection<JobRecoveryAgent> JobRecoveryAgents { get; set; } = new List<JobRecoveryAgent>();
+
     public virtual TblJobRelationshipType JobRelationshipType { get; set; }
 
     public virtual TucCourier MasterCourier { get; set; }

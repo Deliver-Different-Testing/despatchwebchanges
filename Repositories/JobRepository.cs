@@ -881,14 +881,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         foreach (var jobId in jobIds) await Context.Procedures.DES_stpJob_AutoDespatchChildJobsAsync(jobId);
     }
 
-    public async Task SwapPod(string job1, string job2)
-    {
-        await Context
-            .LoadStoredProc("DESWEB_qdfSwapPOD")
-            .WithSqlParam("@ucjbNumber1", job1)
-            .WithSqlParam("@ucjbNumber2", job2)
-            .ExecuteStoredNonQueryAsync();
-    }
+    public async Task SwapPod(string job1, string job2) => 
+        await Context.Procedures.DESWEB_qdfSwapPODAsync(job1, job2);
 
     public async Task ReDispatchSelectedJobs(int courierId, int dispId, List<int> jobIds)
     {
@@ -898,34 +892,36 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
     public async Task ReSendSelectedJobs(string jobIds)
     {
-        foreach (var jid in jobIds.Split(",").ToList().Where(x => !string.IsNullOrWhiteSpace(x)))
+        if (string.IsNullOrWhiteSpace(jobIds))
+            return;
+
+        var jobIdArray = jobIds.Split(',', StringSplitOptions.RemoveEmptyEntries);
+        var validJobIds = jobIdArray.Where(id => int.TryParse(id.Trim(), out _));
+
+        foreach (var jobIdString in validJobIds)
         {
-            await Context
-                .LoadStoredProc("uspReDespatchJob")
-                .WithSqlParam("@intJobID", int.Parse(jid))
-                .ExecuteStoredNonQueryAsync();
+            var jobId = int.Parse(jobIdString.Trim());
+            await Context.Procedures.uspReDespatchJobAsync(jobId);
         }
     }
 
     public async Task ReAssignSelectedJobs(string jobIds)
     {
-        foreach (var jid in jobIds.Split(",").ToList().Where(x => !string.IsNullOrWhiteSpace(x)))
+        if (string.IsNullOrWhiteSpace(jobIds))
+            return;
+
+        var jobIdArray = jobIds.Split(',', StringSplitOptions.RemoveEmptyEntries);
+        var validJobIds = jobIdArray.Where(id => int.TryParse(id.Trim(), out _));
+
+        foreach (var jobIdString in validJobIds)
         {
-            await Context
-                .LoadStoredProc("uspReassignJob")
-                .WithSqlParam("@intJobID", int.Parse(jid))
-                .ExecuteStoredNonQueryAsync();
+            var jobId = int.Parse(jobIdString.Trim());
+            await Context.Procedures.uspReassignJobAsync(jobId);
         }
     }
 
-    public async Task SetFirstJob(int jobId, int courierId)
-    {
-        await Context
-            .LoadStoredProc("DES_stpJob_AutoDespatchSelectedJobs_FSCourierID")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@CourierID", courierId)
-            .ExecuteStoredNonQueryAsync();
-    }
+    public async Task SetFirstJob(int jobId, int courierId) =>
+        await Context.Procedures.DES_stpJob_AutoDespatchSelectedJobs_FSCourierIDAsync(jobId, courierId);
 
     public async Task UpdatePodDetails(UpdatePodDetailsRequest data)
     {
@@ -1057,51 +1053,21 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         }
     }
 
-    public async Task ReSendAllJobs(int courierId)
-    {
-        await Context
-            .LoadStoredProc("uspReDespatchJobByCourierID")
-            .WithSqlParam("@CourierID", courierId)
-            .ExecuteStoredNonQueryAsync();
-    }
+    public async Task ReSendAllJobs(int courierId) => await Context.Procedures.uspReDespatchJobByCourierIDAsync(courierId);
 
     public async Task<int> MaxAutoLatePickupAlert()
     {
-        DbParameter outputMaxParam = null;
-        await Context
-            .LoadStoredProc("GEN_qdfSetting_GetMaxAutoLatePickupAlert")
-            .WithSqlParam(
-                "@MaxAutoLatePickupAlert",
-                dbParam =>
-                {
-                    dbParam.Direction = ParameterDirection.Output;
-                    dbParam.DbType = DbType.Int32;
-                    outputMaxParam = dbParam;
-                }
-            )
-            .ExecuteStoredNonQueryAsync();
-
-        return (int)outputMaxParam.Value;
+        var maxAutoLatePickupAlert = new OutputParameter<int?>();
+        await Context.Procedures.GEN_qdfSetting_GetMaxAutoLatePickupAlertAsync(maxAutoLatePickupAlert);
+        return maxAutoLatePickupAlert.Value ?? 0;
     }
 
-    public async Task<int> MaxAutoLateDeliveryAlert()
-    {
-        DbParameter outputMaxParam = null;
-        await Context
-            .LoadStoredProc("GEN_qdfSetting_GetMaxAutoLateDeliveryAlert")
-            .WithSqlParam(
-                "@MaxAutoLateDeliveryAlert",
-                dbParam =>
-                {
-                    dbParam.Direction = ParameterDirection.Output;
-                    dbParam.DbType = DbType.Int32;
-                    outputMaxParam = dbParam;
-                }
-            )
-            .ExecuteStoredNonQueryAsync();
-
-        return (int)outputMaxParam.Value;
-    }
+  public async Task<int> MaxAutoLateDeliveryAlert()
+{
+    var maxAutoLateDeliveryAlert = new OutputParameter<int?>();
+    await Context.Procedures.GEN_qdfSetting_GetMaxAutoLateDeliveryAlertAsync(maxAutoLateDeliveryAlert);
+    return maxAutoLateDeliveryAlert.Value ?? 0;
+}
 
     public async Task<decimal> PpdExclusiveAmount(int clientId, decimal amount) =>
         await CalculateAmountAsync(clientId, amount);
@@ -1564,51 +1530,6 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         Context.Update(job);
     }
 
-    public async Task<DirectToASAPViewModel> DirectToAsap(int jobId)
-    {
-        var result = new List<DirectToASAPViewModel>();
-        await Context
-            .LoadStoredProc("DESWEB_stpJob_DirectToASAP")
-            .WithSqlParam("@JobID", jobId)
-            .ExecuteStoredProcAsync(handle => { result = handle.ReadToList<DirectToASAPViewModel>().ToList(); });
-        return result.FirstOrDefault();
-    }
-
-    public async Task<UpdateFirstAvailableSpeedResult> UpdateFirstAvailableSpeed(int jobId)
-    {
-        DbParameter outputParam = null;
-        DbParameter nameOutput = null;
-        await Context
-            .LoadStoredProc("DESWEB_stpJob_UpdateFirstAvailableSpeed")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam(
-                "@JobTypeID",
-                dbParam =>
-                {
-                    dbParam.Direction = ParameterDirection.Output;
-                    dbParam.DbType = DbType.Int32;
-                    outputParam = dbParam;
-                }
-            )
-            .WithSqlParam(
-                "@Name",
-                dbParam =>
-                {
-                    dbParam.Direction = ParameterDirection.Output;
-                    dbParam.DbType = DbType.String;
-                    dbParam.Size = 50;
-                    nameOutput = dbParam;
-                }
-            )
-            .ExecuteStoredNonQueryAsync();
-        var updateReturn = new UpdateFirstAvailableSpeedResult
-        {
-            JobTypeId = (int)outputParam.Value,
-            Name = (string)nameOutput.Value
-        };
-        return updateReturn;
-    }
-
     public async Task AddPalletInfoAsync(PalletInfo p, bool preBook, string despatcher)
     {
         await Context.Procedures.DESWEB_stpJobItems_InsertAsync(
@@ -1656,15 +1577,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         );
     }
 
-    public async Task SendPrebookJobAsync(int jobId)
-    {
-        await Context.Procedures.DES_stpJobBooking_InsertJobAndChildrenAsync(jobId);
-    }
+    public async Task SendPrebookJobAsync(int jobId) => await Context.Procedures.DES_stpJobBooking_InsertJobAndChildrenAsync(jobId);
 
-    public async Task VoidPrebookJobAsync(int jobId, string despatcher, int staffId)
-    {
-        await Context.Procedures.DESWEB_stpVoidPrebookJobAsync(jobId, despatcher, staffId);
-    }
+    public async Task VoidPrebookJobAsync(int jobId, string despatcher, int staffId) => await Context.Procedures.DESWEB_stpVoidPrebookJobAsync(jobId, despatcher, staffId);
 
     public async Task<TruckItemsSummary> TruckJobItemsAsync(int jobId, int truckWeightLimit)
     {
@@ -2204,40 +2119,6 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting open jobs");
-            throw;
-        }
-    }
-
-    public async Task<DriverStats> GetDriverStatsAsync(int courierId)
-    {
-        try
-        {
-            var stats = await Context
-                .TucCouriers.Where(d => d.UccrId == courierId)
-                .Select(d => new DriverStats
-                {
-                    DriverName = d.UccrName,
-                    CompletedToday = d.TucJobUcjbCouriers.Count(j =>
-                        j.UcjbStatus == (int)JobStatus.Completed
-                        && j.UcjbComplTime.HasValue
-                        && j.UcjbComplTime.Value.Date == _infoService.GetCurrentTenantTime()
-                    ),
-                    LastCompleted = d
-                        .TucJobUcjbCouriers.Where(j =>
-                            j.UcjbStatus == (int)JobStatus.Completed && j.UcjbComplTime.HasValue
-                        )
-                        .OrderByDescending(j => j.UcjbComplTime)
-                        .Select(j => j.UcjbComplTime)
-                        .FirstOrDefault()
-                })
-                .AsNoTracking()
-                .FirstOrDefaultAsync();
-
-            return stats;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error getting driver stats for {CourierId}", courierId);
             throw;
         }
     }

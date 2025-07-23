@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,180 +17,182 @@ using Serilog;
 
 namespace DespatchWeb.Repositories;
 
-public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextFactory, ITenantInfoService infoService)
+public class NationwideJobRepository(
+    IDbContextFactory<DespatchContext> contextFactory,
+    ITenantInfoService infoService)
     : BaseJobRepository(contextFactory, infoService), INationwideJobRepository
 {
     private readonly ITenantInfoService _infoService = infoService;
 
-  public async Task AddJobNationwideAsync(int jobId, AddFlightToJobDto flights, List<string> webhookIds)
-{
-    try
+    public async Task AddJobNationwideAsync(int jobId, AddFlightToJobDto flights, List<string> webhookIds)
     {
-        ArgumentNullException.ThrowIfNull(jobId);
-        ArgumentNullException.ThrowIfNull(flights);
-        ArgumentNullException.ThrowIfNull(webhookIds);
-
-        if (flights.FlightSegments.Count == 0)
-            throw new ArgumentException("Flight list cannot be empty", nameof(flights));
-
-        // Get the primary flight (first leg)
-        var primaryFlight = flights.FlightSegments.First();
-        ArgumentException.ThrowIfNullOrWhiteSpace(primaryFlight.CarrierFsCode);
-        ArgumentException.ThrowIfNullOrWhiteSpace(primaryFlight.FlightNumber);
-
-        var job = await Context.TucJobs
-            .Include(j => j.Parent)
-            .ThenInclude(tucJob => tucJob.InverseParent)
-            .Where(j => j.UcjbId == jobId)
-            .FirstOrDefaultAsync();
-
-        ArgumentNullException.ThrowIfNull(job);
-
-        // Create the main flight record
-        var jobNationwide = new TucJobNationwide
+        try
         {
-            UcnwJobId = job.UcjbId,
-            UcnwJobNumber = job.UcjbNumber,
-            UcnwClientId = job.UcjbClientId ?? 0,
-            UcnwFlightNo = primaryFlight.CarrierFsCode + primaryFlight.FlightNumber,
-            UcnwEtd = primaryFlight.DepartureTime,
-            UcnwEta = primaryFlight.ArrivalTime,
-            WebhookAlertId = webhookIds.First(),
-            GateNumber = primaryFlight.DepartureTerminal,
-            UcnwLegNumber = 1,
-            UcnwAirlineName = primaryFlight.AirlineName,
-            CarrierFsCode = primaryFlight.CarrierFsCode,
-            DepartureAirportFsCode = primaryFlight.DepartureAirportFsCode,
-            DepartureAirportName = primaryFlight.DepartureAirportName,
-            DepartureAirportCity = primaryFlight.DepartureAirportCity,
-            DepartureAirportCountry = primaryFlight.DepartureAirportCountry,
-            DepartureAirportTimeZone = primaryFlight.DepartureAirportTimeZone,
-            DepartureAirportTimeZoneId = await GetTimeZoneIdByNameAsync(primaryFlight.DepartureAirportTimeZone),
-            ArrivalAirportFsCode = primaryFlight.ArrivalAirportFsCode,
-            ArrivalAirportName = primaryFlight.ArrivalAirportName,
-            ArrivalAirportCity = primaryFlight.ArrivalAirportCity,
-            ArrivalAirportCountry = primaryFlight.ArrivalAirportCountry,
-            ArrivalAirportTimeZone = primaryFlight.ArrivalAirportTimeZone,
-            ArrivalAirportTimeZoneId = await GetTimeZoneIdByNameAsync(primaryFlight.ArrivalAirportTimeZone),
-            DepartureTerminal = primaryFlight.DepartureTerminal,
-            ArrivalTerminal = primaryFlight.ArrivalTerminal,
-            AircraftName = primaryFlight.AircraftName
-        };
+            ArgumentNullException.ThrowIfNull(jobId);
+            ArgumentNullException.ThrowIfNull(flights);
+            ArgumentNullException.ThrowIfNull(webhookIds);
 
-        // Update job status and properties
-        job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
-        job.UcjbStatus = (int)JobStatus.Dispatched;
-        job.UcjbDate = primaryFlight.DepartureTime;
-        job.UcjbTime = primaryFlight.DepartureTime;
+            if (flights.FlightSegments.Count == 0)
+                throw new ArgumentException("Flight list cannot be empty", nameof(flights));
 
-        // Set Pickup Job Deliver By
-        if (job.FromAirportId != null)
-        {
-            var airportProcessingTime = await GetAirportProcessingTimeAsync(job.FromAirportId.Value);
-            var pickUpJob = job.Parent.InverseParent.First(j => j.UcjbNumber.EndsWith('1'));
-            pickUpJob.DeliverByTime = primaryFlight.DepartureTime.AddMinutes(-airportProcessingTime);
-            pickUpJob.DeliverByTimeZoneId = job.PickupTimeZoneId;
-        }
+            // Get the primary flight (first leg)
+            var primaryFlight = flights.FlightSegments.First();
+            ArgumentException.ThrowIfNullOrWhiteSpace(primaryFlight.CarrierFsCode);
+            ArgumentException.ThrowIfNullOrWhiteSpace(primaryFlight.FlightNumber);
 
-        // Second part
-        var flightPart = flights.FlightSegments.Count > 1 ? flights.FlightSegments[1] : primaryFlight;
-        job.DeliverByTime = flightPart.ArrivalTime;
-        job.DeliverByTimeZoneId = await GetTimeZoneIdByNameAsync(flightPart.ArrivalAirportTimeZone);
+            var job = await Context.TucJobs
+                .Include(j => j.Parent)
+                .ThenInclude(tucJob => tucJob.InverseParent)
+                .Where(j => j.UcjbId == jobId)
+                .FirstOrDefaultAsync();
 
-        // Set delivery job pick-up time
-        if (job.ToAirportId != null)
-        {
-            var airportProcessingTime = await GetAirportProcessingTimeAsync(job.ToAirportId.Value);
-            var lastFlight = flights.FlightSegments.Last();
-            var deliveryJob = job.Parent.InverseParent.First(j => j.UcjbNumber.EndsWith('3'));
-            deliveryJob.UcjbTime = lastFlight.ArrivalTime.AddMinutes(airportProcessingTime);
+            ArgumentNullException.ThrowIfNull(job);
 
-            // Set TimeZone
-            var timeZoneForDeliveryJob = await GetTimeZoneIdByNameAsync(lastFlight.ArrivalAirportTimeZone);
-            deliveryJob.PickupTimeZoneId = timeZoneForDeliveryJob;
-            deliveryJob.DeliverByTimeZoneId = timeZoneForDeliveryJob;
-        }
-
-        var currentTime = _infoService.GetCurrentTenantTime();
-        job.UcjbDispDate = currentTime;
-        job.UcjbDispTime = currentTime;
-
-        // Add the main flight record
-        await Context.AddAsync(jobNationwide);
-
-        // Add additional flight legs if there is multiple
-        if (flights.FlightSegments.Count > 1)
-        {
-            for (var i = 1; i < flights.FlightSegments.Count; i++)
+            // Create the main flight record
+            var jobNationwide = new TucJobNationwide
             {
-                var leg = flights.FlightSegments[i];
-                var connectionSegment = new TucJobNationwide
-                {
-                    UcnwJobId = job.UcjbId,
-                    UcnwJobNumber = job.UcjbNumber,
-                    UcnwClientId = job.UcjbClientId ?? 0,
-                    UcnwFlightNo = leg.CarrierFsCode + leg.FlightNumber,
-                    UcnwEtd = leg.DepartureTime,
-                    UcnwEta = leg.ArrivalTime,
-                    WebhookAlertId = webhookIds[i],
-                    UcnwLegNumber = i + 1,
-                    UcnwAirlineName = leg.AirlineName,
-                    CarrierFsCode = leg.CarrierFsCode,
-                    DepartureAirportFsCode = leg.DepartureAirportFsCode,
-                    DepartureAirportName = leg.DepartureAirportName,
-                    DepartureAirportCity = leg.DepartureAirportCity,
-                    DepartureAirportCountry = leg.DepartureAirportCountry,
-                    DepartureAirportTimeZone = leg.DepartureAirportTimeZone,
-                    DepartureAirportTimeZoneId = await GetTimeZoneIdByNameAsync(leg.DepartureAirportTimeZone),
-                    ArrivalAirportFsCode = leg.ArrivalAirportFsCode,
-                    ArrivalAirportName = leg.ArrivalAirportName,
-                    ArrivalAirportCity = leg.ArrivalAirportCity,
-                    ArrivalAirportCountry = leg.ArrivalAirportCountry,
-                    ArrivalAirportTimeZone = leg.ArrivalAirportTimeZone,
-                    ArrivalAirportTimeZoneId = await GetTimeZoneIdByNameAsync(leg.ArrivalAirportTimeZone),
-                    DepartureTerminal = leg.DepartureTerminal,
-                    ArrivalTerminal = leg.ArrivalTerminal,
-                    AircraftName = leg.AircraftName
-                };
+                UcnwJobId = job.UcjbId,
+                UcnwJobNumber = job.UcjbNumber,
+                UcnwClientId = job.UcjbClientId ?? 0,
+                UcnwFlightNo = primaryFlight.CarrierFsCode + primaryFlight.FlightNumber,
+                UcnwEtd = primaryFlight.DepartureTime,
+                UcnwEta = primaryFlight.ArrivalTime,
+                WebhookAlertId = webhookIds.First(),
+                GateNumber = primaryFlight.DepartureTerminal,
+                UcnwLegNumber = 1,
+                UcnwAirlineName = primaryFlight.AirlineName,
+                CarrierFsCode = primaryFlight.CarrierFsCode,
+                DepartureAirportFsCode = primaryFlight.DepartureAirportFsCode,
+                DepartureAirportName = primaryFlight.DepartureAirportName,
+                DepartureAirportCity = primaryFlight.DepartureAirportCity,
+                DepartureAirportCountry = primaryFlight.DepartureAirportCountry,
+                DepartureAirportTimeZone = primaryFlight.DepartureAirportTimeZone,
+                DepartureAirportTimeZoneId = await GetTimeZoneIdByNameAsync(primaryFlight.DepartureAirportTimeZone),
+                ArrivalAirportFsCode = primaryFlight.ArrivalAirportFsCode,
+                ArrivalAirportName = primaryFlight.ArrivalAirportName,
+                ArrivalAirportCity = primaryFlight.ArrivalAirportCity,
+                ArrivalAirportCountry = primaryFlight.ArrivalAirportCountry,
+                ArrivalAirportTimeZone = primaryFlight.ArrivalAirportTimeZone,
+                ArrivalAirportTimeZoneId = await GetTimeZoneIdByNameAsync(primaryFlight.ArrivalAirportTimeZone),
+                DepartureTerminal = primaryFlight.DepartureTerminal,
+                ArrivalTerminal = primaryFlight.ArrivalTerminal,
+                AircraftName = primaryFlight.AircraftName
+            };
 
-                await Context.AddAsync(connectionSegment);
+            // Update job status and properties
+            job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
+            job.UcjbStatus = (int)JobStatus.Dispatched;
+            job.UcjbDate = primaryFlight.DepartureTime;
+            job.UcjbTime = primaryFlight.DepartureTime;
+
+            // Set Pickup Job Deliver By
+            if (job.FromAirportId != null)
+            {
+                var airportProcessingTime = await GetAirportProcessingTimeAsync(job.FromAirportId.Value);
+                var pickUpJob = job.Parent.InverseParent.First(j => j.UcjbNumber.EndsWith('1'));
+                pickUpJob.DeliverByTime = primaryFlight.DepartureTime.AddMinutes(-airportProcessingTime);
+                pickUpJob.DeliverByTimeZoneId = job.PickupTimeZoneId;
             }
+
+            // Second part
+            var flightPart = flights.FlightSegments.Count > 1 ? flights.FlightSegments[1] : primaryFlight;
+            job.DeliverByTime = flightPart.ArrivalTime;
+            job.DeliverByTimeZoneId = await GetTimeZoneIdByNameAsync(flightPart.ArrivalAirportTimeZone);
+
+            // Set delivery job pick-up time
+            if (job.ToAirportId != null)
+            {
+                var airportProcessingTime = await GetAirportProcessingTimeAsync(job.ToAirportId.Value);
+                var lastFlight = flights.FlightSegments.Last();
+                var deliveryJob = job.Parent.InverseParent.First(j => j.UcjbNumber.EndsWith('3'));
+                deliveryJob.UcjbTime = lastFlight.ArrivalTime.AddMinutes(airportProcessingTime);
+
+                // Set TimeZone
+                var timeZoneForDeliveryJob = await GetTimeZoneIdByNameAsync(lastFlight.ArrivalAirportTimeZone);
+                deliveryJob.PickupTimeZoneId = timeZoneForDeliveryJob;
+                deliveryJob.DeliverByTimeZoneId = timeZoneForDeliveryJob;
+            }
+
+            var currentTime = _infoService.GetCurrentTenantTime();
+            job.UcjbDispDate = currentTime;
+            job.UcjbDispTime = currentTime;
+
+            // Add the main flight record
+            await Context.AddAsync(jobNationwide);
+
+            // Add additional flight legs if there is multiple
+            if (flights.FlightSegments.Count > 1)
+            {
+                for (var i = 1; i < flights.FlightSegments.Count; i++)
+                {
+                    var leg = flights.FlightSegments[i];
+                    var connectionSegment = new TucJobNationwide
+                    {
+                        UcnwJobId = job.UcjbId,
+                        UcnwJobNumber = job.UcjbNumber,
+                        UcnwClientId = job.UcjbClientId ?? 0,
+                        UcnwFlightNo = leg.CarrierFsCode + leg.FlightNumber,
+                        UcnwEtd = leg.DepartureTime,
+                        UcnwEta = leg.ArrivalTime,
+                        WebhookAlertId = webhookIds[i],
+                        UcnwLegNumber = i + 1,
+                        UcnwAirlineName = leg.AirlineName,
+                        CarrierFsCode = leg.CarrierFsCode,
+                        DepartureAirportFsCode = leg.DepartureAirportFsCode,
+                        DepartureAirportName = leg.DepartureAirportName,
+                        DepartureAirportCity = leg.DepartureAirportCity,
+                        DepartureAirportCountry = leg.DepartureAirportCountry,
+                        DepartureAirportTimeZone = leg.DepartureAirportTimeZone,
+                        DepartureAirportTimeZoneId = await GetTimeZoneIdByNameAsync(leg.DepartureAirportTimeZone),
+                        ArrivalAirportFsCode = leg.ArrivalAirportFsCode,
+                        ArrivalAirportName = leg.ArrivalAirportName,
+                        ArrivalAirportCity = leg.ArrivalAirportCity,
+                        ArrivalAirportCountry = leg.ArrivalAirportCountry,
+                        ArrivalAirportTimeZone = leg.ArrivalAirportTimeZone,
+                        ArrivalAirportTimeZoneId = await GetTimeZoneIdByNameAsync(leg.ArrivalAirportTimeZone),
+                        DepartureTerminal = leg.DepartureTerminal,
+                        ArrivalTerminal = leg.ArrivalTerminal,
+                        AircraftName = leg.AircraftName
+                    };
+
+                    await Context.AddAsync(connectionSegment);
+                }
+            }
+
+            // Add note record
+            var note = new TucNote
+            {
+                JobId = jobId,
+                NoteTypeId = (int)NoteType.FlightUpdate,
+                NoteText = $"Flight {flights.FlightSegments[0]?.FlightNumber} added to job {jobId}",
+                CreatedBy = _infoService.GetStaffId(),
+                CreatedDate = currentTime
+            };
+            await Context.AddAsync(note);
+
+            await Context.SaveChangesAsync();
+
+            var journeyRecord = new JobDeliveryJourney
+            {
+                JobId = jobId,
+                FlightId = jobNationwide.UcnwId,
+                ChangeType = nameof(DeliveryJourneyChangeType.FlightAssignment),
+                StaffId = _infoService.GetStaffId(),
+                UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
+            };
+            await Context.AddAsync(journeyRecord);
+
+            // Final save for the journey record
+            await Context.SaveChangesAsync();
         }
-
-        // Add note record
-        var note = new TucNote
+        catch (Exception e)
         {
-            JobId = jobId,
-            NoteTypeId = (int)NoteType.FlightUpdate,
-            NoteText = $"Flight {flights.FlightSegments[0]?.FlightNumber} added to job {jobId}",
-            CreatedBy = _infoService.GetStaffId(),
-            CreatedDate = currentTime
-        };
-        await Context.AddAsync(note);
-
-        await Context.SaveChangesAsync();
-
-        var journeyRecord = new JobDeliveryJourney
-        {
-            JobId = jobId,
-            FlightId = jobNationwide.UcnwId,
-            ChangeType = nameof(DeliveryJourneyChangeType.FlightAssignment),
-            StaffId = _infoService.GetStaffId(),
-            UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
-        };
-        await Context.AddAsync(journeyRecord);
-
-        // Final save for the journey record
-        await Context.SaveChangesAsync();
+            Log.Error(e, "An error occured adding Flight {FlightFlightNumber} to job {JobId}",
+                flights.FlightSegments[0]?.FlightNumber,
+                jobId);
+            throw;
+        }
     }
-    catch (Exception e)
-    {
-        Log.Error(e, "An error occured adding Flight {FlightFlightNumber} to job {JobId}",
-            flights.FlightSegments[0]?.FlightNumber,
-            jobId);
-        throw;
-    }
-}
 
     private async Task<int> GetTimeZoneIdByNameAsync(string timeZoneName)
     {
@@ -299,108 +302,105 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         return results;
     }
 
-   public async Task<bool> AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false)
-{
-    try
+    public async Task<bool> AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false)
     {
-        var job = await Context.TucJobs
-            .Include(j => j.Parent).ThenInclude(j => j.InverseParent)
-            .Include(j => j.InverseParent)
-            .FirstOrDefaultAsync(j => j.UcjbId == jobId);
-        ArgumentNullException.ThrowIfNull(job);
-
-        var currentDate = _infoService.GetCurrentTenantTime();
-        var isDepartureAirportAgent = job.FromAirportId != null && job.ToAirportId == null;
-        var isGroundJob = !string.IsNullOrEmpty(job.UcjbNumber) && !char.IsDigit(job.UcjbNumber.Last());
-
-        job.AgentId = agentId;
-        job.UcjbStatus = isGroundJob ? (int)JobStatus.GroundAgentAssigned
-            : isDepartureAirportAgent ? (int)JobStatus.InboundAgentAssigned
-            : (int)JobStatus.OutboundAgentAssigned;
-
-        job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
-        job.UcjbDispDate = currentDate;
-        job.UcjbDispTime = currentDate;
-
-        // Get Agent Name
-        var agentName = Context.TucAgents
-            .Where(a => a.UcagId == agentId)
-            .Select(a => a.UcagName)
-            .FirstOrDefault();
-
-        if (includeStopJobs)
+        try
         {
-            var mainJobNumber = job.UcjbNumber;
-            if (string.IsNullOrEmpty(mainJobNumber)) throw new ArgumentNullException(nameof(mainJobNumber));
+            var job = await Context.TucJobs
+                .Include(j => j.Parent).ThenInclude(j => j.InverseParent)
+                .Include(j => j.InverseParent)
+                .FirstOrDefaultAsync(j => j.UcjbId == jobId);
+            ArgumentNullException.ThrowIfNull(job);
 
-            // Stop jobs have the pattern: mainJobNumber + letter (e.g., KT22451a, KT22451b, KT22451c)
-            var stopJobs = job.Parent != null
-                ? job.Parent.InverseParent.Where(j =>
-                    !string.IsNullOrEmpty(j.UcjbNumber) &&
-                    j.UcjbNumber.StartsWith(mainJobNumber) &&
-                    j.UcjbNumber.Length == mainJobNumber.Length + 1 &&
-                    char.IsLetter(j.UcjbNumber.Last()) &&
-                    j.UcjbId != jobId) // Exclude the main job itself
-                : job.InverseParent.Where(j =>
-                    !string.IsNullOrEmpty(j.UcjbNumber) &&
-                    j.UcjbNumber.StartsWith(mainJobNumber) &&
-                    j.UcjbNumber.Length == mainJobNumber.Length + 1 &&
-                    char.IsLetter(j.UcjbNumber.Last()) &&
-                    j.UcjbId != jobId); // Exclude the main job itself
+            var currentDate = _infoService.GetCurrentTenantTime();
+            var isDepartureAirportAgent = job.FromAirportId != null && job.ToAirportId == null;
+            var isGroundJob = !string.IsNullOrEmpty(job.UcjbNumber) && !char.IsDigit(job.UcjbNumber.Last());
 
-            foreach (var stopJob in stopJobs)
+            job.AgentId = agentId;
+            job.UcjbStatus = isGroundJob ? (int)JobStatus.GroundAgentAssigned
+                : isDepartureAirportAgent ? (int)JobStatus.InboundAgentAssigned
+                : (int)JobStatus.OutboundAgentAssigned;
+
+            job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
+            job.UcjbDispDate = currentDate;
+            job.UcjbDispTime = currentDate;
+
+            // Get Agent Name
+            var agentName = await GetAgentNameAsync(agentId);
+
+            if (includeStopJobs)
             {
-                stopJob.AgentId = agentId;
-                stopJob.UcjbStatus = isGroundJob ? (int)JobStatus.GroundAgentAssigned
-                    : isDepartureAirportAgent ? (int)JobStatus.InboundAgentAssigned
-                    : (int)JobStatus.OutboundAgentAssigned;
-                stopJob.UcjbDispDate = currentDate;
-                stopJob.UcjbDispTime = currentDate;
+                var mainJobNumber = job.UcjbNumber;
+                if (string.IsNullOrEmpty(mainJobNumber)) throw new ArgumentNullException(nameof(mainJobNumber));
 
-                var stopJobNote = new TucNote
+                // Stop jobs have the pattern: mainJobNumber + letter (e.g., KT22451a, KT22451b, KT22451c)
+                var stopJobs = job.Parent != null
+                    ? job.Parent.InverseParent.Where(j =>
+                        !string.IsNullOrEmpty(j.UcjbNumber) &&
+                        j.UcjbNumber.StartsWith(mainJobNumber) &&
+                        j.UcjbNumber.Length == mainJobNumber.Length + 1 &&
+                        char.IsLetter(j.UcjbNumber.Last()) &&
+                        j.UcjbId != jobId) // Exclude the main job itself
+                    : job.InverseParent.Where(j =>
+                        !string.IsNullOrEmpty(j.UcjbNumber) &&
+                        j.UcjbNumber.StartsWith(mainJobNumber) &&
+                        j.UcjbNumber.Length == mainJobNumber.Length + 1 &&
+                        char.IsLetter(j.UcjbNumber.Last()) &&
+                        j.UcjbId != jobId); // Exclude the main job itself
+
+                foreach (var stopJob in stopJobs)
                 {
-                    JobId = stopJob.UcjbId,
-                    NoteTypeId = (int)NoteType.AgentUpdate,
-                    NoteText = $"Agent {agentName} assigned",
-                    CreatedBy = _infoService.GetStaffId(),
-                    CreatedDate = currentDate
-                };
+                    stopJob.AgentId = agentId;
+                    stopJob.UcjbStatus = isGroundJob ? (int)JobStatus.GroundAgentAssigned
+                        : isDepartureAirportAgent ? (int)JobStatus.InboundAgentAssigned
+                        : (int)JobStatus.OutboundAgentAssigned;
+                    stopJob.UcjbDispDate = currentDate;
+                    stopJob.UcjbDispTime = currentDate;
 
-                await Context.AddAsync(stopJobNote);
+                    var stopJobNote = new TucNote
+                    {
+                        JobId = stopJob.UcjbId,
+                        NoteTypeId = (int)NoteType.AgentUpdate,
+                        NoteText = $"Agent {agentName} assigned",
+                        CreatedBy = _infoService.GetStaffId(),
+                        CreatedDate = currentDate
+                    };
+
+                    await Context.AddAsync(stopJobNote);
+                }
             }
+
+            // Note Record
+            var note = new TucNote
+            {
+                JobId = jobId,
+                NoteTypeId = (int)NoteType.AgentUpdate,
+                NoteText = $"Agent {agentName} assigned",
+                CreatedBy = _infoService.GetStaffId(),
+                CreatedDate = currentDate
+            };
+            await Context.TucNotes.AddAsync(note);
+
+            var journeyRecord = new JobDeliveryJourney
+            {
+                JobId = jobId,
+                NewAgentId = agentId,
+                ChangeType = nameof(DeliveryJourneyChangeType.AgentAssignment),
+                StaffId = _infoService.GetStaffId(),
+                UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
+            };
+            await Context.JobDeliveryJourneys.AddAsync(journeyRecord);
+
+            await Context.SaveChangesAsync();
+
+            return true;
         }
-
-        // Note Record
-        var note = new TucNote
+        catch (Exception e)
         {
-            JobId = jobId,
-            NoteTypeId = (int)NoteType.AgentUpdate,
-            NoteText = $"Agent {agentName} assigned",
-            CreatedBy = _infoService.GetStaffId(),
-            CreatedDate = currentDate
-        };
-        await Context.TucNotes.AddAsync(note);
-        
-        var journeyRecord = new JobDeliveryJourney
-        {
-            JobId = jobId,
-            NewAgentId = agentId,
-            ChangeType = nameof(DeliveryJourneyChangeType.AgentAssignment),
-            StaffId = _infoService.GetStaffId(),
-            UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
-        };
-        await Context.JobDeliveryJourneys.AddAsync(journeyRecord);
-        
-        await Context.SaveChangesAsync();
-
-        return true;
+            Log.Error(e, "An error occured adding Agent {AgentId} to job {JobId}", agentId, jobId);
+            return false;
+        }
     }
-    catch (Exception e)
-    {
-        Log.Error(e, "An error occured adding Agent {AgentId} to job {JobId}", agentId, jobId);
-        return false;
-    }
-}
 
     public async Task<List<DispatchJobViewModel>> NationwideJobListAsync(JobQueryParams queryParams, bool isInternal,
         bool isUsTenant,
@@ -460,7 +460,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                     Cubic = null
                 })
                 .FirstOrDefaultAsync();
-        
+
         var nearbyAirports = await GetNearbyAirportsAsync(jobId);
         if (nearbyAirports.Count == 0)
             return await Context.TucJobs
@@ -944,5 +944,102 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             Amount = result.Amount ?? 0,
             DriverPay = result.DriverPay ?? 0
         };
+    }
+
+    public async Task<string> GetAgentNameAsync(int agentId)
+    {
+        // Get Agent Name
+        var agentName = await Context.TucAgents
+            .Where(a => a.UcagId == agentId)
+            .Select(a => a.UcagName)
+            .FirstOrDefaultAsync();
+
+        return agentName;
+    }
+
+    public async Task<RecoveryAgentJobViewModel> GetInfoForRecoveryAgentDialog(int jobId)
+    {
+        var recoveryAgentData = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new RecoveryAgentJobViewModel
+            {
+                JobId = j.UcjbId,
+                JobNumber = j.UcjbNumber,
+                AssignedAgent = new Suggestion
+                {
+                    Id = j.Agent.UcagId,
+                    Text = j.Agent.UcagName
+                },
+                Airports = j.TucJobNationwides.Select(x => new Suggestion
+                {
+                    Id = x.UcnwLegNumber,
+                    Text = x.ArrivalAirportName
+                }),
+                PackageType = j.AcceptedJobType.UcjtName,
+                Priority = "High",
+                LastKnownLocation = "Unknown",
+                Customer = j.UcjbClient.UcclName,
+                RecoveryJobs = j.ParentId.HasValue
+                    ? j.Parent.InverseParent
+                        .Where(rj => EF.Functions.Like(rj.UcjbNumber, "R_"))
+                        .Select(RecoveryJobViewMapping.Compile())
+                    : j.InverseParent
+                        .Where(rj => EF.Functions.Like(rj.UcjbNumber, "R_"))
+                        .Select(RecoveryJobViewMapping.Compile()),
+            })
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        return recoveryAgentData;
+    }
+    
+    private static readonly Expression<Func<TucJob, RecoveryJobViewModel>> RecoveryJobViewMapping =
+        rj => new RecoveryJobViewModel
+        {
+            JobId = rj.UcjbId,
+            AssignedAgent = new Suggestion
+            {
+                Id = rj.Agent.UcagId,
+                Text = rj.Agent.UcagName
+            },
+            RecoveryAgents = rj.JobRecoveryAgents.Select(ra => new RecoveryAgentViewModel
+            {
+                RecoveryId = ra.RecoveryId,
+                AgentName = ra.Agent.UcagName,
+                Airport = ra.Airport.Name,
+                PrimaryRecoveryAgent = ra.IsPrimary,
+                AssignStatus = ra.IsActive ? "Currently Assigned" : "Not Assigned"
+            })
+        };
+
+    public async Task<List<Suggestion>> GetAgentOptionsByAirportAsync(int airportId)
+    {
+        var agents = await Context.TblAirports
+            .Where(a => a.AirportId == airportId)
+            .SelectMany(a => a.AgentVehicles)
+            .Select(agentVehicle => new Suggestion
+            {
+                Id = agentVehicle.Agent.UcagId,
+                Text = agentVehicle.Agent.UcagName
+            })
+            .AsNoTracking()
+            .ToListAsync();
+        
+        return agents;
+    }
+    
+    public async Task<List<Suggestion>> GetAllActiveAirports()
+    {
+        var agents = await Context.TblAirports
+            .Where(a => a.Active)
+            .Select(a => new Suggestion
+            {
+                Id = a.AirportId,
+                Text = a.Name
+            })
+            .AsNoTracking()
+            .ToListAsync();
+        
+        return agents;
     }
 }

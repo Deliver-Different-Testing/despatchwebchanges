@@ -55,6 +55,8 @@ public partial class TblBulkRunSchedule
 
     public int? PickupCutoff { get; set; }
 
+    public int? AutoBookScanAhead { get; set; }
+
     public virtual TucClient Client { get; set; }
 
     public virtual TucJobType ParentSpeed { get; set; }

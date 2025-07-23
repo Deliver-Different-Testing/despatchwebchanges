@@ -4,6 +4,8 @@ namespace DespatchWeb.Helpers;
 
 public static class AddressFormatter
 {
+    private const int MaxAddressLength = 150;
+
     /// <summary>
     /// Attempts to format the last line as a city, state zip combination
     /// </summary>
@@ -79,5 +81,15 @@ public static class AddressFormatter
         public string Line6 { get; } = line6;
         public string Line7 { get; } = line7;
         public string Line8 { get; } = line8;
+    }
+    
+    public static string GetSafeAddress(string address, string defaultAddress)
+    {
+        if (string.IsNullOrEmpty(address))
+            return defaultAddress;
+
+        return address.Length > MaxAddressLength
+            ? address[..MaxAddressLength]
+            : address;
     }
 }

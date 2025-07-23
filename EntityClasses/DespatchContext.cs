@@ -55,6 +55,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<JobDeliveryJourneyArchive> JobDeliveryJourneyArchives { get; set; }
 
+    public virtual DbSet<JobRecoveryAgent> JobRecoveryAgents { get; set; }
+
     public virtual DbSet<PricingBreakdown> PricingBreakdowns { get; set; }
 
     public virtual DbSet<PricingBreakdownArchive> PricingBreakdownArchives { get; set; }
@@ -1133,6 +1135,44 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UpdatedByType)
                 .IsRequired()
                 .HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<JobRecoveryAgent>(entity =>
+        {
+            entity.HasKey(e => e.RecoveryId).HasName("PK__JobRecov__EE4C84AC989929EC");
+
+            entity.Property(e => e.CreatedOn)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.UpdatedOn)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+
+            entity.HasOne(d => d.Agent).WithMany(p => p.JobRecoveryAgents)
+                .HasForeignKey(d => d.AgentId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_JobRecoveryAgents_Agent");
+
+            entity.HasOne(d => d.Airport).WithMany(p => p.JobRecoveryAgents)
+                .HasForeignKey(d => d.AirportId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_JobRecoveryAgents_Airport");
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.JobRecoveryAgentCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_JobRecoveryAgents_CreatedBy");
+
+            entity.HasOne(d => d.Job).WithMany(p => p.JobRecoveryAgents)
+                .HasForeignKey(d => d.JobId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_JobRecoveryAgents_Job");
+
+            entity.HasOne(d => d.UpdatedByNavigation).WithMany(p => p.JobRecoveryAgentUpdatedByNavigations)
+                .HasForeignKey(d => d.UpdatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_JobRecoveryAgents_UpdatedBy");
         });
 
         modelBuilder.Entity<PricingBreakdown>(entity =>
@@ -4896,7 +4936,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.Parent).WithMany(p => p.InverseParent)
                 .HasForeignKey(d => d.ParentId)
-                .HasConstraintName("FK_tucJob_ParentID");
+                .HasConstraintName("FK_tucJob_ParentId");
 
             entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TucJobPickupTimeZones)
                 .HasForeignKey(d => d.PickupTimeZoneId)

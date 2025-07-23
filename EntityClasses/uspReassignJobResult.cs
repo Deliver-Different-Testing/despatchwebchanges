@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DespatchWeb.EntityClasses
 {
-    public partial class DESWEB_stpJob_AutoDespatchSelectedJobsResult
+    public partial class uspReassignJobResult
     {
     }
 }

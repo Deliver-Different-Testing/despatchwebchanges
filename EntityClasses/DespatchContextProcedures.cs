@@ -439,6 +439,38 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
+        public virtual async Task<int> DES_stpJob_AutoDespatchSelectedJobs_FSCourierIDAsync(int? jobID, int? courierID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "JobID",
+                    Value = jobID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "CourierID",
+                    Value = courierID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DES_stpJob_AutoDespatchSelectedJobs_FSCourierID] @JobID = @JobID, @CourierID = @CourierID", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
         public virtual async Task<List<DES_stpJob_ColsolidateMarsInformationResult>> DES_stpJob_ColsolidateMarsInformationAsync(int? jobID, bool? consolidate, string userName, int? despatchChangesID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
@@ -627,6 +659,40 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
+        public virtual async Task<List<DESWEB_qdfSwapPODResult>> DESWEB_qdfSwapPODAsync(string ucjbNumber1, string ucjbNumber2, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "ucjbNumber1",
+                    Size = 50,
+                    Value = ucjbNumber1 ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.VarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "ucjbNumber2",
+                    Size = 50,
+                    Value = ucjbNumber2 ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.VarChar,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.SqlQueryAsync<DESWEB_qdfSwapPODResult>("EXEC @returnValue = [dbo].[DESWEB_qdfSwapPOD] @ucjbNumber1 = @ucjbNumber1, @ucjbNumber2 = @ucjbNumber2", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
         public virtual async Task<List<DESWEB_qryClientsActiveResult>> DESWEB_qryClientsActiveAsync(string searchTerm, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
@@ -680,7 +746,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<List<DESWEB_stpJob_AutoDespatchSelectedJobsResult>> DESWEB_stpJob_AutoDespatchSelectedJobsAsync(string jobIDs, int? courierID, int? dispID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<int> DESWEB_stpJob_AutoDespatchSelectedJobsAsync(string jobIDs, int? courierID, int? dispID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -712,7 +778,7 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.SqlQueryAsync<DESWEB_stpJob_AutoDespatchSelectedJobsResult>("EXEC @returnValue = [dbo].[DESWEB_stpJob_AutoDespatchSelectedJobs] @JobIDs = @JobIDs, @CourierID = @CourierID, @DispID = @DispID", sqlParameters, cancellationToken);
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpJob_AutoDespatchSelectedJobs] @JobIDs = @JobIDs, @CourierID = @CourierID, @DispID = @DispID", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
@@ -1113,6 +1179,64 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
+        public virtual async Task<int> GEN_qdfSetting_GetMaxAutoLateDeliveryAlertAsync(OutputParameter<int?> maxAutoLateDeliveryAlert, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterMaxAutoLateDeliveryAlert = new SqlParameter
+            {
+                ParameterName = "MaxAutoLateDeliveryAlert",
+                Direction = System.Data.ParameterDirection.InputOutput,
+                Value = maxAutoLateDeliveryAlert?._value ?? Convert.DBNull,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                parameterMaxAutoLateDeliveryAlert,
+                parameterreturnValue,
+            };
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[GEN_qdfSetting_GetMaxAutoLateDeliveryAlert] @MaxAutoLateDeliveryAlert = @MaxAutoLateDeliveryAlert OUTPUT", sqlParameters, cancellationToken);
+
+            maxAutoLateDeliveryAlert?.SetValue(parameterMaxAutoLateDeliveryAlert.Value);
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<int> GEN_qdfSetting_GetMaxAutoLatePickupAlertAsync(OutputParameter<int?> maxAutoLatePickupAlert, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterMaxAutoLatePickupAlert = new SqlParameter
+            {
+                ParameterName = "MaxAutoLatePickupAlert",
+                Direction = System.Data.ParameterDirection.InputOutput,
+                Value = maxAutoLatePickupAlert?._value ?? Convert.DBNull,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                parameterMaxAutoLatePickupAlert,
+                parameterreturnValue,
+            };
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[GEN_qdfSetting_GetMaxAutoLatePickupAlert] @MaxAutoLatePickupAlert = @MaxAutoLatePickupAlert OUTPUT", sqlParameters, cancellationToken);
+
+            maxAutoLatePickupAlert?.SetValue(parameterMaxAutoLatePickupAlert.Value);
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
         public virtual async Task<List<MAP_stpCourierGPS_LastPositionTodayResult>> MAP_stpCourierGPS_LastPositionTodayAsync(string courierCode, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
@@ -1333,6 +1457,84 @@ namespace DespatchWeb.EntityClasses
             var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[sp_RateJob2] @intClientID = @intClientID, @intFromID = @intFromID, @intToID = @intToID, @intSpeed = @intSpeed, @bolPedal = @bolPedal, @bolVan = @bolVan, @bolReturn = @bolReturn, @intWeight = @intWeight, @curAmount = @curAmount OUTPUT, @Size = @Size, @IncludeFuelSurcharge = @IncludeFuelSurcharge, @OurRef = @OurRef, @ClientRefA = @ClientRefA, @ClientRefB = @ClientRefB, @Quantity = @Quantity, @Booked = @Booked", sqlParameters, cancellationToken);
 
             curAmount?.SetValue(parametercurAmount.Value);
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<List<uspReassignJobResult>> uspReassignJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "intJobID",
+                    Value = intJobID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.SqlQueryAsync<uspReassignJobResult>("EXEC @returnValue = [dbo].[uspReassignJob] @intJobID = @intJobID", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<List<uspReDespatchJobResult>> uspReDespatchJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "intJobID",
+                    Value = intJobID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.SqlQueryAsync<uspReDespatchJobResult>("EXEC @returnValue = [dbo].[uspReDespatchJob] @intJobID = @intJobID", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<int> uspReDespatchJobByCourierIDAsync(int? courierID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "CourierID",
+                    Value = courierID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[uspReDespatchJobByCourierID] @CourierID = @CourierID", sqlParameters, cancellationToken);
+
             returnValue?.SetValue(parameterreturnValue.Value);
 
             return _;

@@ -1,0 +1,144 @@
+﻿<md-dialog class="recovery-dialog" aria-label="Recovery Agent Management">
+    <md-dialog-content>
+        <div class="job-header">
+            <div class="job-title">Job #{{ctrl.job.jobNumber}} - Lost Package Recovery</div>
+            <div class="route-info" ng-if="ctrl.job.airports.length > 0">
+                <div class="route-path">
+                        <span ng-repeat="airport in ctrl.job.airports">
+                            {{airport.text}}
+                            <span class="route-arrow" ng-if="!$last">→</span>
+                        </span>
+                </div>
+            </div>
+            <div class="job-details">
+                <div class="detail-item">
+                    <div class="detail-label">Package Type</div>
+                    <div class="detail-value">{{ctrl.job.packageType}}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Priority</div>
+                    <div class="detail-value">{{ctrl.job.priority}}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Last Known Location</div>
+                    <div class="detail-value">{{ctrl.job.lastKnownLocation}}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Customer</div>
+                    <div class="detail-value">{{ctrl.job.customer}}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="assigned-agents-section">
+            <div class="section-header">
+                <div class="section-title">Assigned Recovery Agents</div>
+                <md-button
+                        class="md-raised md-primary"
+                        ng-click="ctrl.showAssignAgentForm()"
+                        ng-hide="ctrl.showAssignForm">
+                    <md-icon md-font-set="material-symbols-outlined">add</md-icon>
+                    Assign Additional Agent
+                </md-button>
+            </div>
+
+            <!-- Assignment Form -->
+            <div class="assign-form" ng-show="ctrl.showAssignForm">
+                <div class="form-title">Assign Additional Recovery Agent</div>
+                <div class="danger-notice">
+                    <div class="danger-title">⚠️ Multi-Agent Assignment</div>
+                    <div class="danger-text">This will assign an additional agent to search for the package at the
+                        selected location. Multiple agents may be searching simultaneously.
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <md-input-container class="md-block">
+                            <label>Select Airport Location</label>
+                            <md-select ng-model="ctrl.selectedAirport"
+                                       ng-change="ctrl.getAgentOptionsForAirport(ctrl.selectedAirport)"
+                                       placeholder="Choose an airport...">
+                                <md-option ng-repeat="airport in ctrl.airportOptions" ng-value="airport">
+                                    {{airport.text}}
+                                </md-option>
+                            </md-select>
+                        </md-input-container>
+                    </div>
+                    <div class="form-group">
+                        <md-input-container class="md-block">
+                            <label>Select Available Agent</label>
+                            <md-select ng-model="ctrl.selectedAgent" ng-disabled="!ctrl.selectedAirport"
+                                       placeholder="Choose an agent...">
+                                <md-option ng-repeat="agent in ctrl.agentOptions" ng-value="agent">
+                                    {{agent.agentName}} - Rating: {{agent.rating}}/5
+                                </md-option>
+                            </md-select>
+                        </md-input-container>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <md-button ng-click="ctrl.hideAssignAgentForm()">Cancel</md-button>
+                    <md-button class="md-raised md-primary" ng-click="ctrl.assignAgent()">
+                        <md-icon md-font-set="material-symbols-outlined">check</md-icon>
+                        Assign Agent
+                    </md-button>
+                </div>
+            </div>
+
+            <!-- Primary Agent -->
+            <div class="agent-card primary" ng-if="ctrl.job.assignedAgent">
+                <div class="agent-actions">
+                    <md-button class="md-icon-button">
+                        <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
+                    </md-button>
+                </div>
+                <div class="agent-info">
+                    <div class="agent-name">{{ctrl.job.assignedAgent.text}}</div>
+                    <div class="agent-company">{{ctrl.getAgentTypeLabel(true)}}</div>
+                    <div class="agent-location">
+                        <md-icon md-font-set="material-symbols-outlined" class="location-icon">place</md-icon>
+                        Primary Assignment Location
+                    </div>
+                    <span class="agent-status status-assigned">{{ctrl.getStatusLabel('assigned')}}</span>
+                </div>
+            </div>
+
+            <!-- Recovery Jobs and Additional Agents -->
+            <div ng-repeat="recoveryJob in ctrl.job.recoveryJobs">
+                <div class="agent-card additional" ng-repeat="agent in recoveryJob.recoveryAgents">
+                    <div class="agent-actions">
+                        <md-button class="md-icon-button md-warn" ng-click="ctrl.removeAgent(agent)"
+                                   aria-label="Remove Agent">
+                            <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+                        </md-button>
+                    </div>
+                    <div class="agent-info">
+                        <div class="agent-name">{{agent.agentName}}</div>
+                        <div class="agent-company">{{ctrl.getAgentTypeLabel(agent.primaryRecoveryAgent)}}</div>
+                        <div class="agent-location">
+                            <md-icon md-font-set="material-symbols-outlined" class="location-icon">place</md-icon>
+                            {{agent.airport}}
+                        </div>
+                        <span class="agent-status" ng-class="ctrl.getStatusClass(agent.assignStatus)">
+                                {{ctrl.getStatusLabel(agent.assignStatus)}}
+                            </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- No Additional Agents Message -->
+            <div class="no-agents" ng-if="ctrl.job.recoveryJobs.length === 0 && !ctrl.showAssignForm">
+                <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px; color: #ccc;">group</md-icon>
+                <p>No additional agents are assigned yet.</p>
+                <p>Click "Assign Additional Agent" to add recovery agents at specific locations.</p>
+            </div>
+        </div>
+    </md-dialog-content>
+
+    <div class="dialog-actions">
+        <md-button ng-click="ctrl.cancel()">Cancel</md-button>
+        <md-button class="md-raised md-primary" ng-click="ctrl.close()">Done</md-button>
+    </div>
+</md-dialog>

@@ -24,6 +24,10 @@ import AdditionalServicesDialogController from "../dialogs/additional-services-d
 import {minutesToTimeFilter} from "./filters/minutesToTimeFilter";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import JobHighlightService from "../common/job-list/job-highlight.service";
+import RecoveryAgentManagementController
+    from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.controller";
+import RecoveryAgentManagementService
+    from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.service";
 
 const nationwideModule = angular.module('uDispatch.nationwide', [
     'ngMap',
@@ -57,7 +61,8 @@ nationwideModule
     .service("dispatchJobService", DispatchExecutorService)
     .service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService)
     .service("jobContextMenuService", JobContextMenuService)
-    .service("jobHighlightService", JobHighlightService);
+    .service("jobHighlightService", JobHighlightService)
+    .service("recoveryAgentManagementService", RecoveryAgentManagementService);
 
 // Register controllers
 nationwideModule
@@ -65,7 +70,8 @@ nationwideModule
     .controller("flightAgentConformationDialogController", FlightAgentConformationDialogController)
     .controller("agentInfoDialogController", AgentInfoDialogController)
     .controller("InterCourierChargeDialog", InterCourierChargeDialogController)
-    .controller("AdditionalServicesDialogController", AdditionalServicesDialogController);
+    .controller("AdditionalServicesDialogController", AdditionalServicesDialogController)
+    .controller("recoveryAgentManagementController", RecoveryAgentManagementController);
 
 nationwideModule
     .filter('minutesToTime', () => minutesToTimeFilter);
