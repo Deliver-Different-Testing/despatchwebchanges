@@ -28,11 +28,11 @@ public partial class JobRepository
                 .Include(j => j.DeliverByTimeZone)
                 .FirstOrDefaultAsync();
             ArgumentNullException.ThrowIfNull(job);
-            
+
             job.DeliverByTime = DateTime.Parse(data.DateTime);
             job.DeliverByTimeZoneId = data.TimeZoneId;
         }
-        
+
         await Context.SaveChangesAsync();
     }
 
@@ -53,7 +53,7 @@ public partial class JobRepository
                 .Include(j => j.PickupTimeZone)
                 .FirstOrDefaultAsync();
             ArgumentNullException.ThrowIfNull(job);
-            
+
             job.UcjbTime = DateTime.Parse(data.DateTime);
             job.PickupTimeZoneId = data.TimeZoneId;
         }
@@ -81,7 +81,7 @@ public partial class JobRepository
             .FirstOrDefaultAsync();
 
         ArgumentNullException.ThrowIfNull(job);
-        
+
         // Internal Status handled separately 
         if (property == JobProperty.InternalStatusID)
         {
@@ -134,6 +134,7 @@ public partial class JobRepository
                         foreach (var childJob in job.InverseParent)
                             childJob.UcjbWeight = weight;
                 }
+
                 break;
             case JobProperty.ClientID:
                 job.UcjbClientId = int.Parse(value);
@@ -175,6 +176,7 @@ public partial class JobRepository
                 {
                     job.PickUpTime = _infoService.GetCurrentTimeFromTimeZone(job.PickupTimeZone);
                 }
+
                 break;
             case JobProperty.RefA:
                 job.UcjbClientRefa = value[..Math.Min(value.Length, 20)];
@@ -309,7 +311,7 @@ public partial class JobRepository
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
         }
-        
+
         await Context.SaveChangesAsync();
 
         // Add additional notes for undeliverable location
@@ -319,255 +321,101 @@ public partial class JobRepository
 
     private async Task UpdateTucJobArchive(int jobId, JobProperty property, string value)
     {
-        var archive = await Context
-            .TucJobArchives.Join(
-                Context.TucClients,
-                job => job.UcjbClientId,
-                client => client.UcclId,
-                (job, client) => new { job, client }
-            )
-            .Join(
-                Context.TucClientContacts,
-                j => j.job.ContactId,
-                contact => contact.UcctId,
-                (j, contact) =>
-                    new
-                    {
-                        j.job,
-                        j.client,
-                        contact
-                    }
-            )
-            .Join(
-                Context.TucJobInternalStatuses,
-                j => j.job.InternalStatus,
-                status => status.Tcis,
-                (j, status) =>
-                    new
-                    {
-                        j.job,
-                        j.client,
-                        j.contact,
-                        status
-                    }
-            )
-            .Join(
-                Context.TblUndeliverableLocations,
-                j => j.job.UndeliverableLocationId,
-                loc => loc.UndeliverableLocationId,
-                (j, loc) =>
-                    new
-                    {
-                        j.job,
-                        j.client,
-                        j.contact,
-                        j.status,
-                        loc
-                    }
-            )
-            .Join(
-                Context.TucJobTypes,
-                j => j.job.NotifiedJobTypeId,
-                type => type.UcjtId,
-                (j, type) =>
-                    new
-                    {
-                        j.job,
-                        j.client,
-                        j.contact,
-                        j.status,
-                        j.loc,
-                        type
-                    }
-            )
-            .Join(
-                Context.TucJobTypes,
-                j => j.job.UcjbSpeed,
-                speed => speed.UcjtId,
-                (j, speed) =>
-                    new
-                    {
-                        j.job,
-                        j.client,
-                        j.contact,
-                        j.status,
-                        j.loc,
-                        j.type,
-                        speed
-                    }
-            )
-            .Join(
-                Context.TblJobLeaveNotHomes,
-                j => j.job.DeliverToLeaveId,
-                leave => leave.LeaveNotHomeId,
-                (j, leave) =>
-                    new
-                    {
-                        j.job,
-                        j.client,
-                        j.contact,
-                        j.status,
-                        j.loc,
-                        j.type,
-                        j.speed,
-                        leave
-                    }
-            )
-            .GroupJoin(
-                Context.TucJobArchives,
-                j => j.job.ParentId,
-                parent => parent.UcjbId,
-                (j, parent) =>
-                    new
-                    {
-                        j.job,
-                        j.client,
-                        j.contact,
-                        j.status,
-                        j.loc,
-                        j.type,
-                        j.speed,
-                        j.leave,
-                        parent
-                    }
-            )
-            .Select(j => new
-            {
-                j.job,
-                j.client,
-                j.contact,
-                j.status,
-                j.loc,
-                j.type,
-                j.speed,
-                j.leave,
-                parent = j.parent.FirstOrDefault(),
-                parentId = j.parent.Select(p => p.UcjbId).FirstOrDefault()
-            })
-            .GroupJoin(
-                Context.TucJobArchives,
-                j => j.parentId == 0 ? j.job.UcjbId : j.parentId,
-                child => child.ParentId,
-                (j, children) =>
-                    new
-                    {
-                        j.job,
-                        j.client,
-                        j.contact,
-                        j.status,
-                        j.loc,
-                        j.type,
-                        j.speed,
-                        j.leave,
-                        j.parent,
-                        children
-                    }
-            )
-            .GroupJoin(
-                Context.TucJobNationwides,
-                j => j.job.UcjbId,
-                nationwide => nationwide.UcnwJobId,
-                (j, nationwide) =>
-                    new
-                    {
-                        Job = j.job,
-                        UcjbClient = j.client,
-                        Contact = j.contact,
-                        InternalStatusNavigation = j.status,
-                        UndeliverableLocation = j.loc,
-                        NotifiedJobType = j.type,
-                        SpeedNavigation = j.speed,
-                        DeliverToLeave = j.leave,
-                        Parent = j.parent,
-                        InverseParent = j.children,
-                        Nationwide = nationwide.FirstOrDefault()
-                    }
-            )
-            .Where(j => j.Job.UcjbId == jobId)
+        var archive = await Context.TucJobArchives
+            .Include(j => j.UcjbClient)
+            .Include(j => j.Contact)
+            .Include(j => j.InternalStatusNavigation)
+            .Include(j => j.UndeliverableLocation)
+            .Include(j => j.NotifiedJobType)
+            .Include(j => j.SpeedNavigation)
+            .Include(j => j.DeliverToLeave)
+            .Include(j => j.Parent)
+            .Include(j => j.InverseParent)
+            .Include(j => j.Nationwide)
+            .Where(j => j.UcjbId == jobId)
             .FirstOrDefaultAsync();
 
-        if (archive == null)
-            throw new ArgumentException("Job not found");
+        ArgumentNullException.ThrowIfNull(archive);
 
         // Update the correct field prop
         switch (property)
         {
             case JobProperty.ConNote:
-                archive.Job.Connote = value;
+                archive.Connote = value;
                 break;
             case JobProperty.AirportOnly:
                 var airportOnly = bool.Parse(value);
                 archive.Nationwide.UcnwAirportOnly = airportOnly;
                 break;
             case JobProperty.Time:
-                archive.Job.UcjbTime = DateTime.Parse(value);
+                archive.UcjbTime = DateTime.Parse(value);
                 break;
             case JobProperty.Date:
-                archive.Job.UcjbDate = DateTime.Parse(value);
+                archive.UcjbDate = DateTime.Parse(value);
                 break;
             case JobProperty.Size:
-                archive.Job.UcjbSize = short.Parse(value);
+                archive.UcjbSize = short.Parse(value);
                 break;
             case JobProperty.Items:
-                archive.Job.UcjbQty = short.Parse(value);
+                archive.UcjbQty = short.Parse(value);
                 break;
             case JobProperty.SpeedID:
-            case JobProperty.AcceptedJobTypeID when !archive.Job.UcjbJobDone:
-                archive.Job.UcjbSpeed = short.Parse(value);
+            case JobProperty.AcceptedJobTypeID when !archive.UcjbJobDone:
+                archive.UcjbSpeed = short.Parse(value);
                 break;
             case JobProperty.Weight:
                 var weight = double.Parse(value);
-                if (archive.Job.ParentId != null)
+                if (archive.ParentId != null)
                 {
                     archive.Parent.UcjbWeight = weight;
-                    if (archive.InverseParent.Any())
+                    if (archive.InverseParent.Count != 0)
                         foreach (var siblingJob in archive.InverseParent)
                             siblingJob.UcjbWeight = weight;
                 }
                 else
                 {
-                    archive.Job.UcjbWeight = weight;
-                    if (archive.InverseParent.Any())
+                    archive.UcjbWeight = weight;
+                    if (archive.InverseParent.Count != 0)
                         foreach (var childJob in archive.InverseParent)
                             childJob.UcjbWeight = weight;
                 }
 
                 break;
             case JobProperty.ClientID:
-                archive.Job.UcjbClientId = int.Parse(value);
-                archive.Job.UcjbClientCode = archive.UcjbClient.UcclCode;
+                archive.UcjbClientId = int.Parse(value);
+                archive.UcjbClientCode = archive.UcjbClient.UcclCode;
                 break;
             case JobProperty.ClientCode:
-                archive.Job.UcjbClientCode = value[..Math.Min(value.Length, 5)];
+                archive.UcjbClientCode = value[..Math.Min(value.Length, 5)];
                 break;
             case JobProperty.ContactID:
                 var contactId = int.Parse(value);
-                archive.Job.ContactId = contactId;
-                archive.Job.UcjbContact = archive.Contact.UserName;
+                archive.ContactId = contactId;
+                archive.UcjbContact = archive.Contact.UserName;
                 break;
             case JobProperty.Pedal:
-                archive.Job.UcjbCbd = bool.Parse(value);
+                archive.UcjbCbd = bool.Parse(value);
                 break;
             case JobProperty.Attention:
-                archive.Job.UcjbAttention = bool.Parse(value);
+                archive.UcjbAttention = bool.Parse(value);
                 break;
             case JobProperty.Reprice:
-                archive.Job.Reprice = bool.Parse(value);
+                archive.Reprice = bool.Parse(value);
                 break;
             case JobProperty.Truck:
-                archive.Job.Truck = bool.Parse(value);
-                archive.Job.UcjbVan = false; // Set van to false when truck is selected
+                archive.Truck = bool.Parse(value);
+                archive.UcjbVan = false; // Set van to false when truck is selected
                 break;
             case JobProperty.Van:
-                archive.Job.UcjbVan = bool.Parse(value);
-                archive.Job.Truck = false; // Set truck to false when a van is selected
+                archive.UcjbVan = bool.Parse(value);
+                archive.Truck = false; // Set truck to false when a van is selected
                 break;
             case JobProperty.VanOK:
-                archive.Job.VanOk = bool.Parse(value);
+                archive.VanOk = bool.Parse(value);
                 break;
             case JobProperty.InternalStatusID:
                 var internalStatusId = int.Parse(value);
-                archive.Job.InternalStatus = internalStatusId;
+                archive.InternalStatus = internalStatusId;
 
                 // Handle followup time
                 if (
@@ -577,138 +425,138 @@ public partial class JobRepository
                         (int)InternalJobStatus.Reprice
                     }.Contains(internalStatusId)
                 )
-                    archive.Job.FollowupTime = _infoService.GetCurrentTenantTime().AddMinutes(
+                    archive.FollowupTime = _infoService.GetCurrentTenantTime().AddMinutes(
                         archive.InternalStatusNavigation.DefaultMinutes ?? 0
                     );
                 else
-                    archive.Job.FollowupTime = null;
+                    archive.FollowupTime = null;
 
-                archive.Job.UcjbStatus = internalStatusId switch
+                archive.UcjbStatus = internalStatusId switch
                 {
                     // Handle status changes
-                    3 when archive.Job.UcjbStatus != 9 => 9,
-                    1 when archive.Job.UcjbStatus != 1 => 1,
-                    4 when archive.Job.UcjbStatus != 6 => 6,
-                    _ => archive.Job.UcjbStatus
+                    3 when archive.UcjbStatus != (int)JobStatus.AwaitingPod => (int)JobStatus.AwaitingPod,
+                    1 when archive.UcjbStatus != (int)JobStatus.Dispatched => (int)JobStatus.Dispatched,
+                    4 when archive.UcjbStatus != (int)JobStatus.Completed => (int)JobStatus.Completed,
+                    _ => archive.UcjbStatus
                 };
                 break;
             case JobProperty.Status:
-                archive.Job.UcjbStatus = int.Parse(value);
+                archive.UcjbStatus = int.Parse(value);
                 break;
             case JobProperty.RefA:
-                archive.Job.UcjbClientRefa = value[..Math.Min(value.Length, 20)];
+                archive.UcjbClientRefa = value[..Math.Min(value.Length, 20)];
                 break;
             case JobProperty.RefB:
-                archive.Job.UcjbClientRefb = value[..Math.Min(value.Length, 15)];
+                archive.UcjbClientRefb = value[..Math.Min(value.Length, 15)];
                 break;
             case JobProperty.OurRef:
-                archive.Job.UcjbOurRef = value[..Math.Min(value.Length, 20)];
+                archive.UcjbOurRef = value[..Math.Min(value.Length, 20)];
                 break;
             case JobProperty.FromContactName:
-                archive.Job.PickUpFromContact = value[..Math.Min(value.Length, 100)];
+                archive.PickUpFromContact = value[..Math.Min(value.Length, 100)];
                 break;
             case JobProperty.ToContactName:
-                archive.Job.DeliverToContact = value[..Math.Min(value.Length, 100)];
+                archive.DeliverToContact = value[..Math.Min(value.Length, 100)];
                 break;
             case JobProperty.FromContactPhone:
-                archive.Job.PickUpFromPhone = value[..Math.Min(value.Length, 100)];
+                archive.PickUpFromPhone = value[..Math.Min(value.Length, 100)];
                 break;
             case JobProperty.ToContactPhone:
-                archive.Job.DeliverToPhone = value[..Math.Min(value.Length, 100)];
+                archive.DeliverToPhone = value[..Math.Min(value.Length, 100)];
                 break;
             case JobProperty.DeliverToLeaveID:
                 var leaveId = int.Parse(value);
-                archive.Job.DeliverToLeaveId = leaveId;
-                archive.Job.DeliverToPrivateBusiness = leaveId == 1 ? null : 1;
+                archive.DeliverToLeaveId = leaveId;
+                archive.DeliverToPrivateBusiness = leaveId == 1 ? null : 1;
                 break;
             case JobProperty.UndeliverableLocationID:
-                archive.Job.UndeliverableLocationId = int.Parse(value);
-                archive.Job.UcjbStatus = (int)JobStatus.Undeliverable;
-                archive.Job.UcjbJobDone = true;
-                archive.Job.UcjbComplTime = _infoService.GetCurrentTenantTime();
-                archive.Job.UcjbPodname =
+                archive.UndeliverableLocationId = int.Parse(value);
+                archive.UcjbStatus = (int)JobStatus.Undeliverable;
+                archive.UcjbJobDone = true;
+                archive.UcjbComplTime = _infoService.GetCurrentTenantTime();
+                archive.UcjbPodname =
                     archive.UndeliverableLocation != null
                         ? archive.UndeliverableLocation.Podname
                         : string.Empty;
                 break;
             case JobProperty.Delivered:
                 var delivered = bool.Parse(value);
-                archive.Job.UcjbJobDone = delivered;
+                archive.UcjbJobDone = delivered;
                 if (delivered)
                 {
-                    archive.Job.UcjbStatus = 6;
-                    archive.Job.UcjbComplTime = _infoService.GetCurrentTenantTime();
+                    archive.UcjbStatus = 6;
+                    archive.UcjbComplTime = _infoService.GetCurrentTenantTime();
                 }
 
                 break;
             case JobProperty.CompletedTime:
-                archive.Job.UcjbComplTime = DateTime.Parse(value);
+                archive.UcjbComplTime = DateTime.Parse(value);
                 break;
             case JobProperty.DGClass:
-                archive.Job.Dgclass = int.Parse(value);
+                archive.Dgclass = int.Parse(value);
                 break;
             case JobProperty.DGDocumentation:
                 var dgDoc = bool.Parse(value);
-                archive.Job.Dgdocument = dgDoc;
+                archive.Dgdocument = dgDoc;
                 break;
             case JobProperty.TrackingMethod:
                 var trackingMethodId = int.Parse(value);
-                archive.Job.TrackingMethod = trackingMethodId;
+                archive.TrackingMethod = trackingMethodId;
                 break;
             case JobProperty.Direct:
-                archive.Job.Direct = bool.Parse(value);
+                archive.Direct = bool.Parse(value);
                 break;
             case JobProperty.Void:
                 await VoidJob(jobId);
                 break;
             case JobProperty.TrackingMobile:
-                archive.Job.TrackingMobile = value[..Math.Min(value.Length, 100)];
+                archive.TrackingMobile = value[..Math.Min(value.Length, 100)];
                 break;
             case JobProperty.TrackingEmail:
-                archive.Job.TrackingEmail = value[..Math.Min(value.Length, 100)];
+                archive.TrackingEmail = value[..Math.Min(value.Length, 100)];
                 break;
             case JobProperty.PODName:
             case JobProperty.PodName:
-                archive.Job.UcjbPodname = value[..Math.Min(value.Length, 100)];
+                archive.UcjbPodname = value[..Math.Min(value.Length, 100)];
                 break;
             case JobProperty.Amount:
-                archive.Job.UcjbAmount = decimal.Parse(value);
+                archive.UcjbAmount = decimal.Parse(value);
                 break;
             case JobProperty.NotifiedJobTypeID:
                 var notifiedJobTypeId = short.Parse(value);
-                archive.Job.NotifiedJobTypeId = notifiedJobTypeId;
+                archive.NotifiedJobTypeId = notifiedJobTypeId;
 
                 if (
-                    notifiedJobTypeId > archive.Job.NotifiedJobTypeId
-                    && archive.Job.ContactId != null
+                    notifiedJobTypeId > archive.NotifiedJobTypeId
+                    && archive.ContactId != null
                     && archive.NotifiedJobType.UcjtName == "Email"
                     && archive.Contact?.HasEmail == true
                     && !string.IsNullOrEmpty(archive.Contact.UcctEmail)
                 )
                 {
-                    archive.Job.SpeedChangeNotificationHasBeenSent = false;
-                    archive.Job.WhenSpeedChangeNotificationSent = null;
+                    archive.SpeedChangeNotificationHasBeenSent = false;
+                    archive.WhenSpeedChangeNotificationSent = null;
                 }
                 else
                 {
-                    archive.Job.SpeedChangeNotificationHasBeenSent = true;
+                    archive.SpeedChangeNotificationHasBeenSent = true;
                 }
 
                 break;
             case JobProperty.AcceptedJobTypeID:
-                archive.Job.AcceptedJobTypeId = short.Parse(value);
+                archive.AcceptedJobTypeId = short.Parse(value);
                 break;
             case JobProperty.Locked:
-                archive.Job.UcjbLocked = int.Parse(value);
+                archive.UcjbLocked = int.Parse(value);
                 break;
             case JobProperty.PuTime:
-                archive.Job.PickUpTime = DateTime.Parse(value);
+                archive.PickUpTime = DateTime.Parse(value);
                 break;
             case JobProperty.DeliverBy:
-                archive.Job.DeliverByTime = DateTime.Parse(value);
+                archive.DeliverByTime = DateTime.Parse(value);
                 break;
             case JobProperty.BookedTime:
-                archive.Job.UcjbDate = DateTime.Parse(value);
+                archive.UcjbDate = DateTime.Parse(value);
                 break;
             case JobProperty.FollowupTime:
             case JobProperty.DeliverToContact:
@@ -724,7 +572,7 @@ public partial class JobRepository
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
         }
-        
+
         // Add additional notes for undeliverable location
         if (property == JobProperty.UndeliverableLocationID && archive.UndeliverableLocation?.Message != null)
             await JobUpdateAddNote(jobId, false, archive.UndeliverableLocation.Message);
@@ -775,12 +623,14 @@ public partial class JobRepository
         job.UcjbStatus = newInternalStatusId switch
         {
             // Handle status changes
-           (int)InternalJobStatus.AwaitingPod when job.UcjbStatus != (int)JobStatus.AwaitingPod => (int)JobStatus.AwaitingPod,
-            (int)InternalJobStatus.NewJobs when job.UcjbStatus != (int)JobStatus.Dispatched => (int)JobStatus.Dispatched,
+            (int)InternalJobStatus.AwaitingPod when job.UcjbStatus != (int)JobStatus.AwaitingPod => (int)JobStatus
+                .AwaitingPod,
+            (int)InternalJobStatus.NewJobs when job.UcjbStatus != (int)JobStatus.Dispatched =>
+                (int)JobStatus.Dispatched,
             (int)InternalJobStatus.Reprice when job.UcjbStatus != (int)JobStatus.Completed => (int)JobStatus.Completed,
             _ => job.UcjbStatus
         };
-        
+
         await Context.SaveChangesAsync();
     }
 }

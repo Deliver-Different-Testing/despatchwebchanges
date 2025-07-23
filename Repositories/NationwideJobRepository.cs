@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -982,35 +981,48 @@ public class NationwideJobRepository(
                 RecoveryJobs = j.ParentId.HasValue
                     ? j.Parent.InverseParent
                         .Where(rj => EF.Functions.Like(rj.UcjbNumber, "R_"))
-                        .Select(RecoveryJobViewMapping.Compile())
+                        .Select(rj => new RecoveryJobViewModel
+                        {
+                            JobId = rj.UcjbId,
+                            AssignedAgent = new Suggestion
+                            {
+                                Id = rj.Agent.UcagId,
+                                Text = rj.Agent.UcagName
+                            },
+                            RecoveryAgents = rj.JobRecoveryAgents.Select(ra => new RecoveryAgentViewModel
+                            {
+                                RecoveryId = ra.RecoveryId,
+                                AgentName = ra.Agent.UcagName,
+                                Airport = ra.Airport.Name,
+                                PrimaryRecoveryAgent = ra.IsPrimary,
+                                AssignStatus = ra.IsActive ? "Currently Assigned" : "Not Assigned"
+                            })
+                        })
                     : j.InverseParent
                         .Where(rj => EF.Functions.Like(rj.UcjbNumber, "R_"))
-                        .Select(RecoveryJobViewMapping.Compile()),
+                        .Select(rj => new RecoveryJobViewModel
+                        {
+                            JobId = rj.UcjbId,
+                            AssignedAgent = new Suggestion
+                            {
+                                Id = rj.Agent.UcagId,
+                                Text = rj.Agent.UcagName
+                            },
+                            RecoveryAgents = rj.JobRecoveryAgents.Select(ra => new RecoveryAgentViewModel
+                            {
+                                RecoveryId = ra.RecoveryId,
+                                AgentName = ra.Agent.UcagName,
+                                Airport = ra.Airport.Name,
+                                PrimaryRecoveryAgent = ra.IsPrimary,
+                                AssignStatus = ra.IsActive ? "Currently Assigned" : "Not Assigned"
+                            })
+                        })
             })
             .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return recoveryAgentData;
     }
-    
-    private static readonly Expression<Func<TucJob, RecoveryJobViewModel>> RecoveryJobViewMapping =
-        rj => new RecoveryJobViewModel
-        {
-            JobId = rj.UcjbId,
-            AssignedAgent = new Suggestion
-            {
-                Id = rj.Agent.UcagId,
-                Text = rj.Agent.UcagName
-            },
-            RecoveryAgents = rj.JobRecoveryAgents.Select(ra => new RecoveryAgentViewModel
-            {
-                RecoveryId = ra.RecoveryId,
-                AgentName = ra.Agent.UcagName,
-                Airport = ra.Airport.Name,
-                PrimaryRecoveryAgent = ra.IsPrimary,
-                AssignStatus = ra.IsActive ? "Currently Assigned" : "Not Assigned"
-            })
-        };
 
     public async Task<List<Suggestion>> GetAgentOptionsByAirportAsync(int airportId)
     {

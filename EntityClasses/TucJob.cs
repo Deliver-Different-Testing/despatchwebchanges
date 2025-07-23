@@ -473,8 +473,6 @@ public partial class TucJob
 
     public virtual TucJobInternalStatus InternalStatusNavigation { get; set; }
 
-    public virtual ICollection<TucJob> InverseParent { get; set; } = new List<TucJob>();
-
     public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneys { get; set; } = new List<JobDeliveryJourney>();
 
     public virtual ICollection<JobRecoveryAgent> JobRecoveryAgents { get; set; } = new List<JobRecoveryAgent>();
@@ -484,8 +482,6 @@ public partial class TucJob
     public virtual TucCourier MasterCourier { get; set; }
 
     public virtual TucJobType NotifiedJobType { get; set; }
-
-    public virtual TucJob Parent { get; set; }
 
     public virtual TimeZone PickupTimeZone { get; set; }
 
