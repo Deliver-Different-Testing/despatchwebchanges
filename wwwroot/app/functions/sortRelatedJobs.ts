@@ -41,7 +41,7 @@ function sortRelatedJobs(relatedJobs: Suggestion[]): JobGroup[] {
             return suffixA.localeCompare(suffixB);
         });
 
-        // Get main job and sub-jobs
+        // Get the main job and sub-jobs
         const mainJob = jobs.find(job => job.text === baseJob) || jobs[0];
         const subJobs = jobs.filter(job => job !== mainJob);
 

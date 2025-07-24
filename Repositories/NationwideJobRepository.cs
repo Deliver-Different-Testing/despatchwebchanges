@@ -983,29 +983,24 @@ public class NationwideJobRepository(
                     Id = j.Agent.UcagId,
                     Text = j.Agent.UcagName
                 },
-                Airports = j.TucJobNationwides
-                    .Where(x => !string.IsNullOrEmpty(x.ArrivalAirportName))
-                    .Join(Context.TblAirports,
-                        x => x.ArrivalAirportName,
-                        airport => airport.Name,
-                        (x, airport) => new Suggestion
-                        {
-                            Id = airport.AirportId,
-                            Text = airport.Name
-                        })
-                    .Union(
-                        j.TucJobNationwides
-                            .Where(x => !string.IsNullOrEmpty(x.DepartureAirportName))
-                            .Join(Context.TblAirports,
-                                x => x.DepartureAirportName,
-                                airport => airport.Name,
-                                (x, airport) => new Suggestion
-                                {
-                                    Id = airport.AirportId,
-                                    Text = airport.Name
-                                })
-                    )
-                    .Distinct(),
+                PickUpAddress = new AddressViewModel(
+                    j.PickupAddressLine1,
+                    j.PickupAddressLine2,
+                    j.PickupAddressLine3,
+                    j.PickupAddressLine4,
+                    j.PickupAddressLine5,
+                    j.PickupAddressLine6,
+                    j.PickupAddressLine7,
+                    j.PickupAddressLine8),    
+                DeliveryAddress = new AddressViewModel(
+                    j.DeliveryAddressLine1,
+                    j.DeliveryAddressLine2,
+                    j.DeliveryAddressLine3,
+                    j.DeliveryAddressLine4,
+                    j.DeliveryAddressLine5,
+                    j.DeliveryAddressLine6,
+                    j.DeliveryAddressLine7,
+                    j.DeliveryAddressLine8),
                 PackageType = j.AcceptedJobType.UcjtName,
                 Priority = "High",
                 LastKnownLocation = "Unknown",

@@ -33,16 +33,17 @@ class RouterConfig {
                 jobId: ['$stateParams', ($stateParams: any) => {
                     return $stateParams.jobId ? parseInt($stateParams.jobId, 10) : null;
                 }],
-                manifest: ['$http', ($http: angular.IHttpService) => {
-                    return $http.get<Record<string, string>>('dist/manifest.json')
-                        .then(response => response.data)
-                        .catch(() => {
-                            console.warn('[ROUTES] Failed to load manifest for home state, using fallback names');
-                            return {
-                                'home.js': 'home.js',
-                                'home.css': 'home.css'
-                            };
-                        });
+                manifest: ['$http', async ($http: angular.IHttpService) => {
+                    try {
+                        const response = await $http.get<Record<string, string>>('dist/manifest.json');
+                        return response.data;
+                    } catch {
+                        console.warn('[ROUTES] Failed to load manifest for home state, using fallback names');
+                        return {
+                            'home.js': 'home.js',
+                            'home.css': 'home.css'
+                        };
+                    }
                 }],
                 loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
@@ -71,16 +72,17 @@ class RouterConfig {
                 jobId: ['$stateParams', ($stateParams: any) => {
                     return $stateParams.jobId ? parseInt($stateParams.jobId, 10) : null;
                 }],
-                manifest: ['$http', ($http: angular.IHttpService) => {
-                    return $http.get<Record<string, string>>('dist/manifest.json')
-                        .then(response => response.data)
-                        .catch(() => {
-                            console.warn('[ROUTES] Failed to load manifest for nationwide state, using fallback names');
-                            return {
-                                'nationwide.js': 'nationwide.js',
-                                'nationwide.css': 'nationwide.css'
-                            };
-                        });
+                manifest: ['$http', async ($http: angular.IHttpService) => {
+                    try {
+                        const response = await $http.get<Record<string, string>>('dist/manifest.json');
+                        return response.data;
+                    } catch {
+                        console.warn('[ROUTES] Failed to load manifest for nationwide state, using fallback names');
+                        return {
+                            'nationwide.js': 'nationwide.js',
+                            'nationwide.css': 'nationwide.css'
+                        };
+                    }
                 }],
                 loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
@@ -106,13 +108,14 @@ class RouterConfig {
         this.$stateProvider.state("jobSearch", {
             url: "/jobSearch",
             resolve: {
-                manifest: ['$http', ($http: angular.IHttpService) => {
-                    return $http.get<Record<string, string>>('dist/manifest.json')
-                        .then(response => response.data)
-                        .catch(() => {
-                            console.warn('[ROUTES] Failed to load manifest for jobSearch state, using fallback names');
-                            return { 'jobSearch.js': 'jobSearch.js' };
-                        });
+                manifest: ['$http', async ($http: angular.IHttpService) => {
+                    try {
+                        const response = await $http.get<Record<string, string>>('dist/manifest.json');
+                        return response.data;
+                    } catch {
+                        console.warn('[ROUTES] Failed to load manifest for jobSearch state, using fallback names');
+                        return {'jobSearch.js': 'jobSearch.js'};
+                    }
                 }],
                 loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
@@ -128,13 +131,14 @@ class RouterConfig {
         this.$stateProvider.state("recurringJobs", {
             url: "/recurringJobs",
             resolve: {
-                manifest: ['$http', ($http: angular.IHttpService) => {
-                    return $http.get<Record<string, string>>('dist/manifest.json')
-                        .then(response => response.data)
-                        .catch(() => {
-                            console.warn('[ROUTES] Failed to load manifest for recurringJobs state, using fallback names');
-                            return { 'recurringJobs.js': 'recurringJobs.js' };
-                        });
+                manifest: ['$http', async ($http: angular.IHttpService) => {
+                    try {
+                        const response = await $http.get<Record<string, string>>('dist/manifest.json');
+                        return response.data;
+                    } catch {
+                        console.warn('[ROUTES] Failed to load manifest for recurringJobs state, using fallback names');
+                        return {'recurringJobs.js': 'recurringJobs.js'};
+                    }
                 }],
                 loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
@@ -150,16 +154,17 @@ class RouterConfig {
         this.$stateProvider.state("overview", {
             url: "/overview",
             resolve: {
-                manifest: ['$http', ($http: angular.IHttpService) => {
-                    return $http.get<Record<string, string>>('dist/manifest.json')
-                        .then(response => response.data)
-                        .catch(() => {
-                            console.warn('[ROUTES] Failed to load manifest for overview state, using fallback names');
-                            return {
-                                'overview.js': 'overview.js',
-                                'overview.css': 'overview.css'
-                            };
-                        });
+                manifest: ['$http', async ($http: angular.IHttpService) => {
+                    try {
+                        const response = await $http.get<Record<string, string>>('dist/manifest.json');
+                        return response.data;
+                    } catch {
+                        console.warn('[ROUTES] Failed to load manifest for overview state, using fallback names');
+                        return {
+                            'overview.js': 'overview.js',
+                            'overview.css': 'overview.css'
+                        };
+                    }
                 }],
                 loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
@@ -178,16 +183,17 @@ class RouterConfig {
         this.$stateProvider.state("megaMap", {
             url: "/megaMap",
             resolve: {
-                manifest: ['$http', ($http: angular.IHttpService) => {
-                    return $http.get<Record<string, string>>('dist/manifest.json')
-                        .then(response => response.data)
-                        .catch(() => {
-                            console.warn('[ROUTES] Failed to load manifest for megaMap state, using fallback names');
-                            return {
-                                'megaMap.js': 'megaMap.js',
-                                'megaMap.css': 'megaMap.css'
-                            };
-                        });
+                manifest: ['$http', async ($http: angular.IHttpService) => {
+                    try {
+                        const response = await $http.get<Record<string, string>>('dist/manifest.json');
+                        return response.data;
+                    } catch {
+                        console.warn('[ROUTES] Failed to load manifest for megaMap state, using fallback names');
+                        return {
+                            'megaMap.js': 'megaMap.js',
+                            'megaMap.css': 'megaMap.css'
+                        };
+                    }
                 }],
                 loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
@@ -206,16 +212,17 @@ class RouterConfig {
         this.$stateProvider.state("taskDashboard", {
             url: "/taskDashboard",
             resolve: {
-                manifest: ['$http', ($http: angular.IHttpService) => {
-                    return $http.get<Record<string, string>>('dist/manifest.json')
-                        .then(response => response.data)
-                        .catch(() => {
-                            console.warn('[ROUTES] Failed to load manifest for taskDashboard state, using fallback names');
-                            return {
-                                'taskDashboard.js': 'taskDashboard.js',
-                                'taskDashboard.css': 'taskDashboard.css'
-                            };
-                        });
+                manifest: ['$http', async ($http: angular.IHttpService) => {
+                    try {
+                        const response = await $http.get<Record<string, string>>('dist/manifest.json');
+                        return response.data;
+                    } catch {
+                        console.warn('[ROUTES] Failed to load manifest for taskDashboard state, using fallback names');
+                        return {
+                            'taskDashboard.js': 'taskDashboard.js',
+                            'taskDashboard.css': 'taskDashboard.css'
+                        };
+                    }
                 }],
                 loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;

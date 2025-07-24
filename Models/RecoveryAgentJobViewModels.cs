@@ -7,7 +7,8 @@ public class RecoveryAgentJobViewModel
     public int JobId { get; set; }
     public string JobNumber { get; set; }
     public Suggestion AssignedAgent { get; set; }
-    public IEnumerable<Suggestion> Airports { get; set; }
+    public AddressViewModel PickUpAddress { get; set; }
+    public AddressViewModel DeliveryAddress { get; set; }
     public string PackageType { get; set; }
     public string Priority { get; set; }
     public string LastKnownLocation { get; set; }
