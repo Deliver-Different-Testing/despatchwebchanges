@@ -1,12 +1,12 @@
 ﻿<md-dialog class="recovery-dialog" aria-label="Recovery Agent Management">
+    <md-toolbar>
+        <div class="md-toolbar-tools">
+            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">group</md-icon>
+            <h2>Job #{{ctrl.job.jobNumber}} - Lost Package Recovery</h2>
+        </div>
+    </md-toolbar>
+    
     <md-dialog-content>
-        <md-toolbar>
-            <div class="md-toolbar-tools">
-                <md-icon class="popup-icon" md-font-set="material-symbols-outlined">group</md-icon>
-                <h2>Job #{{ctrl.job.jobNumber}} - Lost Package Recovery</h2>
-            </div>
-        </md-toolbar>
-
         <div class="job-header">
             <div class="route-info" ng-if="ctrl.job.airports.length > 0">
                 <div class="route-path">
