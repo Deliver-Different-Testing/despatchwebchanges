@@ -30,7 +30,7 @@ public class FlightStatsService(
     private readonly string _webhookUrl = Environment.GetEnvironmentVariable("FlightWebhook");
 
     public async Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
-        string departureAirportCode, string events = null)
+        string departureAirportCode)
     {
         ArgumentException.ThrowIfNullOrEmpty(completeFlightNumber);
         ArgumentException.ThrowIfNullOrEmpty(departureAirportCode);
@@ -61,8 +61,7 @@ public class FlightStatsService(
         query["name"] = uniqueWebhookId.ToString();
         query["type"] = "JSON";
         query["deliverTo"] = _webhookUrl;
-        query["events"] = events ?? "dep,arr,div,can,depDelay30,arrDelay30"; // Default events if not specified
-        query["_jobToken"] = requestToken;
+        query["_token"] = requestToken;
 
         var uriBuilder = new UriBuilder(url)
         {
@@ -164,9 +163,9 @@ public class FlightStatsService(
         var (arrivalAirportCode, departureAirportCode) = await repository.GetAirportCodesByJobIdAsync(jobId);
         if (departureAirportId.HasValue)
             departureAirportCode = await repository.GetSingleAirportCodeByIdAsync(departureAirportId.Value);
-        if(arrivalAirportId.HasValue) 
+        if (arrivalAirportId.HasValue)
             arrivalAirportCode = await repository.GetSingleAirportCodeByIdAsync(arrivalAirportId.Value);
-        
+
 
         var activeAirlines = await repository.GetActiveAirlineOptionsAsync();
         var activeAirlineCodes = activeAirlines.Select(x => x.Text).ToList();
