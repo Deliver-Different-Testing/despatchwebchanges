@@ -64,3 +64,12 @@ export interface StatusChangeEvent {
     previousStatusId: number;
     newStatusId: number;
 }
+
+export interface AssignFlightToJobRequest {
+    jobId: number;
+   fromAirportId?: number;
+   toAirportId?: number;
+   flightNumber: string;
+   departureDate: Date;
+    flightSegments: FlightSegmentViewModel[];
+}

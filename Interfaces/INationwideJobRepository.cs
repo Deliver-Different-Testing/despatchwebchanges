@@ -16,8 +16,9 @@ public interface INationwideJobRepository
     Task<List<DispatchJobViewModel>> NationwideJobListAsync(JobQueryParams queryParams, bool isInternal,
         bool isUsTenant, string clientIds, NationwideWidget windowPane, List<int> selectedViewIds);
 
-    Task AddJobNationwideAsync(int jobId, AddFlightToJobDto flight, List<string> webhookIds);
-
+    Task AddJobNationwideAsync(int jobId, AddFlightToJobDto flights, List<string> webhookIds, int? fromAirportId,
+        int? toAirportId);
+    
     Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId);
 
     Task<List<AgentViewModel>> GetAgentsAsync(int jobId);
@@ -46,9 +47,9 @@ public interface INationwideJobRepository
         int? fromZoneCongestionId = null, int? toZoneCongestionId = null);
 
     Task<string> GetAgentNameAsync(int agentId);
-    Task<RecoveryAgentJobViewModel> GetInfoForRecoveryAgentDialog(int jobId);
+    Task<RecoveryAgentJobViewModel> GetInfoForRecoveryAgentDialogAsync(int jobId);
     Task<List<Suggestion>> GetAgentOptionsByAirportAsync(int airportId);
-    Task<List<Suggestion>> GetAllActiveAirports();
-    Task UpdateRecoveryAgent(UpdateAgentRecoveryRequest request);
-    Task RemoveRecoveryAgent(int recoveryId);
+    Task<List<Suggestion>> GetAllActiveAirportsAsync();
+    Task UpdateRecoveryAgentAsync(UpdateAgentRecoveryRequest request);
+    Task RemoveRecoveryAgentAsync(int recoveryId);
 }

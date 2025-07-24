@@ -24,7 +24,8 @@ public class NationwideJobRepository(
 {
     private readonly ITenantInfoService _infoService = infoService;
 
-    public async Task AddJobNationwideAsync(int jobId, AddFlightToJobDto flights, List<string> webhookIds)
+    public async Task AddJobNationwideAsync(int jobId, AddFlightToJobDto flights,
+        List<string> webhookIds, int? fromAirportId, int? toAirportId )
     {
         try
         {
@@ -42,7 +43,7 @@ public class NationwideJobRepository(
 
             var job = await Context.TucJobs
                 .Include(j => j.Parent)
-                .ThenInclude(tucJob => tucJob.InverseParent)
+                .ThenInclude(j => j.InverseParent)
                 .Where(j => j.UcjbId == jobId)
                 .FirstOrDefaultAsync();
 
@@ -86,12 +87,18 @@ public class NationwideJobRepository(
             job.UcjbTime = primaryFlight.DepartureTime;
 
             // Set Pickup Job Deliver By
-            if (job.FromAirportId != null)
+            if (job.FromAirportId != null || fromAirportId != null)
             {
-                var airportProcessingTime = await GetAirportProcessingTimeAsync(job.FromAirportId.Value);
+                var airportId = fromAirportId ?? job.FromAirportId;
+                ArgumentNullException.ThrowIfNull(airportId);
+                
+                var airportProcessingTime = await GetAirportProcessingTimeAsync(airportId.Value);
                 var pickUpJob = job.Parent.InverseParent.First(j => j.UcjbNumber.EndsWith('1'));
                 pickUpJob.DeliverByTime = primaryFlight.DepartureTime.AddMinutes(-airportProcessingTime);
                 pickUpJob.DeliverByTimeZoneId = job.PickupTimeZoneId;
+                
+                // Update delivery address with airport
+                await UpdateJobAddressWithAirportInfoAsync(pickUpJob, airportId.Value, true);
             }
 
             // Second part
@@ -100,9 +107,12 @@ public class NationwideJobRepository(
             job.DeliverByTimeZoneId = await GetTimeZoneIdByNameAsync(flightPart.ArrivalAirportTimeZone);
 
             // Set delivery job pick-up time
-            if (job.ToAirportId != null)
+            if (job.ToAirportId != null || toAirportId != null)
             {
-                var airportProcessingTime = await GetAirportProcessingTimeAsync(job.ToAirportId.Value);
+                var airportId = toAirportId ?? job.ToAirportId;
+                ArgumentNullException.ThrowIfNull(airportId);
+                
+                var airportProcessingTime = await GetAirportProcessingTimeAsync(airportId.Value);
                 var lastFlight = flights.FlightSegments.Last();
                 var deliveryJob = job.Parent.InverseParent.First(j => j.UcjbNumber.EndsWith('3'));
                 deliveryJob.UcjbTime = lastFlight.ArrivalTime.AddMinutes(airportProcessingTime);
@@ -111,6 +121,9 @@ public class NationwideJobRepository(
                 var timeZoneForDeliveryJob = await GetTimeZoneIdByNameAsync(lastFlight.ArrivalAirportTimeZone);
                 deliveryJob.PickupTimeZoneId = timeZoneForDeliveryJob;
                 deliveryJob.DeliverByTimeZoneId = timeZoneForDeliveryJob;
+                
+                // Update Pickup Address With Airport
+                await UpdateJobAddressWithAirportInfoAsync(deliveryJob, airportId.Value, false);
             }
 
             var currentTime = _infoService.GetCurrentTenantTime();
@@ -204,7 +217,7 @@ public class NationwideJobRepository(
 
     public async Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true)
     {
-        const double maxDistanceMiles = 250;
+        const double maxDistanceMiles = 500;
 
         // Get job coordinates and nearby airports in a single query
         var jobAndAirports = await (
@@ -957,7 +970,7 @@ public class NationwideJobRepository(
         return agentName;
     }
 
-    public async Task<RecoveryAgentJobViewModel> GetInfoForRecoveryAgentDialog(int jobId)
+    public async Task<RecoveryAgentJobViewModel> GetInfoForRecoveryAgentDialogAsync(int jobId)
     {
         var recoveryAgentData = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
@@ -971,20 +984,27 @@ public class NationwideJobRepository(
                     Text = j.Agent.UcagName
                 },
                 Airports = j.TucJobNationwides
-                    .SelectMany(x => new[]
-                    {
-                        new { AirportName = x.ArrivalAirportName },
-                        new { AirportName = x.DepartureAirportName }
-                    })
-                    .Where(x => !string.IsNullOrEmpty(x.AirportName))
+                    .Where(x => !string.IsNullOrEmpty(x.ArrivalAirportName))
                     .Join(Context.TblAirports,
-                        x => x.AirportName,
+                        x => x.ArrivalAirportName,
                         airport => airport.Name,
                         (x, airport) => new Suggestion
                         {
                             Id = airport.AirportId,
                             Text = airport.Name
                         })
+                    .Union(
+                        j.TucJobNationwides
+                            .Where(x => !string.IsNullOrEmpty(x.DepartureAirportName))
+                            .Join(Context.TblAirports,
+                                x => x.DepartureAirportName,
+                                airport => airport.Name,
+                                (x, airport) => new Suggestion
+                                {
+                                    Id = airport.AirportId,
+                                    Text = airport.Name
+                                })
+                    )
                     .Distinct(),
                 PackageType = j.AcceptedJobType.UcjtName,
                 Priority = "High",
@@ -1052,7 +1072,7 @@ public class NationwideJobRepository(
         return agents;
     }
 
-    public async Task<List<Suggestion>> GetAllActiveAirports()
+    public async Task<List<Suggestion>> GetAllActiveAirportsAsync()
     {
         var agents = await Context.TblAirports
             .Where(a => a.Active)
@@ -1067,7 +1087,7 @@ public class NationwideJobRepository(
         return agents;
     }
 
-    public async Task UpdateRecoveryAgent(UpdateAgentRecoveryRequest request)
+    public async Task UpdateRecoveryAgentAsync(UpdateAgentRecoveryRequest request)
     {
         var recoveryAgent = await Context.JobRecoveryAgents.FindAsync(request.RecoveryId);
         ArgumentNullException.ThrowIfNull(recoveryAgent);
@@ -1112,7 +1132,7 @@ public class NationwideJobRepository(
         await Context.SaveChangesAsync();
     }
 
-    public async Task RemoveRecoveryAgent(int recoveryId)
+    public async Task RemoveRecoveryAgentAsync(int recoveryId)
     {
         // Get the recovery agent to remove
         var recoveryAgent = await Context.JobRecoveryAgents.FindAsync(recoveryId);
@@ -1128,5 +1148,37 @@ public class NationwideJobRepository(
         Context.JobRecoveryAgents.Remove(recoveryAgent);
 
         await Context.SaveChangesAsync();
+    }
+
+    private async Task UpdateJobAddressWithAirportInfoAsync(TucJob job, int airportId, bool isDeliveryAddress)
+    {
+        var airport = await Context.TblAirports.FirstAsync(a => a.AirportId == airportId);
+
+        if (isDeliveryAddress)
+        {
+            job.DeliveryAddressLine1 = airport.AddressLine1;
+            job.DeliveryAddressLine2 = airport.AddressLine2;
+            job.DeliveryAddressLine3 = airport.AddressLine3;
+            job.DeliveryAddressLine4 = airport.AddressLine4;
+            job.DeliveryAddressLine5 = airport.AddressLine5;
+            job.DeliveryAddressLine6 = airport.AddressLine6;
+            job.DeliveryAddressLine7 = airport.AddressLine7;
+            job.DeliveryAddressLine8 = airport.AddressLine8;
+            job.DeliveryLatitude = airport.Latitude;
+            job.DeliveryLongitude = airport.Longitude;
+        }
+        else
+        {
+            job.PickupAddressLine1 = airport.AddressLine1;
+            job.PickupAddressLine2 = airport.AddressLine2;
+            job.PickupAddressLine3 = airport.AddressLine3;
+            job.PickupAddressLine4 = airport.AddressLine4;
+            job.PickupAddressLine5 = airport.AddressLine5;
+            job.PickupAddressLine6 = airport.AddressLine6;
+            job.PickupAddressLine7 = airport.AddressLine7;
+            job.PickupAddressLine8 = airport.AddressLine8;
+            job.PickUpLatitude = airport.Latitude;
+            job.PickUpLongitude = airport.Longitude;
+        }
     }
 }

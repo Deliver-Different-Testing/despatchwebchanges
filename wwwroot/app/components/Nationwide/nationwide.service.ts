@@ -1,5 +1,5 @@
 import {IAgent, IAgentInfoDialog, IDispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
-import {IFlightViewModel} from "./nationwide.interfaces";
+import {AssignFlightToJobRequest, IFlightViewModel} from "./nationwide.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import dayjs from "dayjs";
 import {
@@ -140,15 +140,9 @@ class NationwideService implements angular.IServiceProvider {
         }
     }
 
-    async assignFlightToJob(jobId: number, flightNumber: string, departureDate: Date, flightData: IFlightViewModel) {
+    async assignFlightToJob(requestData: AssignFlightToJobRequest) {
         try {
-            const response = await this.$http.post("nationwideJob/AssignFlightToJob", {
-                jobId,
-                flightNumber,
-                departureDate,
-                flightSegments: flightData.flightSegments || []
-            });
-
+            const response = await this.$http.post("nationwideJob/AssignFlightToJob", requestData);
             return response.data;
         } catch (error) {
             console.error("Error assigning flight to job:", error);

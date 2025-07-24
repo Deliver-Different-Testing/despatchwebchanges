@@ -7,7 +7,7 @@ import {AppConfig} from "../../interfaces/app-config.interface";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
 import {IAgent, IDispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
-import {IFlightViewModel, StatusChangeEvent} from "./nationwide.interfaces";
+import {AssignFlightToJobRequest, IFlightViewModel, StatusChangeEvent} from "./nationwide.interfaces";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
@@ -1308,13 +1308,17 @@ class NationwideControl extends BaseController {
                 this.STATUS_TO_LIST_MAP[previousInternalStatusId].forEach((type: JobDataType) => listsToRefresh.add(type));
             }
 
+            const requestData: AssignFlightToJobRequest = {
+                jobId: job.id,
+                fromAirportId: this.selectedOutboundAirport?.id,
+                toAirportId: this.selectedInboundAirport?.id,
+                flightNumber: flight.flightNumber,
+                departureDate: flight.departureTime,
+                flightSegments: flight.flightSegments
+            };
+            
             // Pass the full flight data including segments to the service
-            await this.nationwideService.assignFlightToJob(
-                job.id,
-                flight.flightNumber,
-                flight.departureTime,
-                flight  // Pass the entire flight object with all segments
-            );
+            await this.nationwideService.assignFlightToJob(requestData);
 
             if (result.awb) {
                 await this.DispatchData.updateJobDetail(job.id, JobProperty.ConNote, result.awb ?? '', false);
