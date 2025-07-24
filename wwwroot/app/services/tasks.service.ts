@@ -178,14 +178,7 @@ class TasksService implements angular.IServiceProvider {
             return {staffList: [], eventTypesList: []};
         }
     }
-
-    clearCache(): void {
-        this.staffListCache = undefined;
-        this.eventTypesListCache = undefined;
-        this.staffListPromise = undefined;
-        this.eventTypesPromise = undefined;
-    }
-
+    
     buildFilterRequest(
         filterType: string,
         currentJobId?: number,

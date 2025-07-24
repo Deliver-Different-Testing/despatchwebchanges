@@ -8,12 +8,11 @@
     
     <md-dialog-content>
         <div class="job-header">
-            <div class="route-info" ng-if="ctrl.job.airports.length > 0">
+            <div class="route-info" ng-if="ctrl.job.pickUpAddress && ctrl.job.deliveryAddress">
                 <div class="route-path">
-                        <span ng-repeat="airport in ctrl.job.airports">
-                            {{airport.text}}
-                            <span class="route-arrow" ng-if="!$last">→</span>
-                        </span>
+                    <span>{{ctrl.job.pickUpAddress.fullAddress}}</span>
+                    <span class="route-arrow">→</span>
+                    <span>{{ctrl.job.deliveryAddress.fullAddress}}</span>
                 </div>
             </div>
 
