@@ -267,12 +267,14 @@ class RecoveryAgentManagementController extends BaseController {
                     .ok('Yes, Cancel')
                     .cancel('Continue Editing');
 
+                // Wait for user confirmation
                 await this.$mdDialog.show(confirm);
+
                 this.$mdDialog.cancel();
             } catch (error) {
-                if(!error) return;
-
-                console.error('Error in cancel', error);
+                if (error) {
+                    console.error('Error in cancel', error);
+                }
             }
         } else {
             this.$mdDialog.cancel();

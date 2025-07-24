@@ -2,7 +2,7 @@
     <md-icon class="no-data__icon" md-font-set="material-symbols-outlined">{{ctrl.icon}}</md-icon>
     <h3 class="no-data__title">{{ctrl.title}}</h3>
     <p class="no-data__message">{{ctrl.message}}</p>
-    <md-button class="md-primary" ng-if="ctrl.shouldShowAction()" ng-click="ctrl.handleAction()">
+    <md-button class="md-raised md-primary" ng-if="ctrl.shouldShowAction()" ng-click="ctrl.handleAction()">
         {{ctrl.actionText}}
     </md-button>
 </div>
