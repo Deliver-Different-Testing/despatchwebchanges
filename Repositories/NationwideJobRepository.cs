@@ -11,6 +11,7 @@ using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
+using DespatchWeb.Models.RequestModels;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -969,11 +970,22 @@ public class NationwideJobRepository(
                     Id = j.Agent.UcagId,
                     Text = j.Agent.UcagName
                 },
-                Airports = j.TucJobNationwides.Select(x => new Suggestion
-                {
-                    Id = x.UcnwLegNumber,
-                    Text = x.ArrivalAirportName
-                }),
+                Airports = j.TucJobNationwides
+                    .SelectMany(x => new[]
+                    {
+                        new { AirportName = x.ArrivalAirportName },
+                        new { AirportName = x.DepartureAirportName }
+                    })
+                    .Where(x => !string.IsNullOrEmpty(x.AirportName))
+                    .Join(Context.TblAirports,
+                        x => x.AirportName,
+                        airport => airport.Name,
+                        (x, airport) => new Suggestion
+                        {
+                            Id = airport.AirportId,
+                            Text = airport.Name
+                        })
+                    .Distinct(),
                 PackageType = j.AcceptedJobType.UcjtName,
                 Priority = "High",
                 LastKnownLocation = "Unknown",
@@ -1036,10 +1048,10 @@ public class NationwideJobRepository(
             })
             .AsNoTracking()
             .ToListAsync();
-        
+
         return agents;
     }
-    
+
     public async Task<List<Suggestion>> GetAllActiveAirports()
     {
         var agents = await Context.TblAirports
@@ -1051,7 +1063,70 @@ public class NationwideJobRepository(
             })
             .AsNoTracking()
             .ToListAsync();
-        
+
         return agents;
+    }
+
+    public async Task UpdateRecoveryAgent(UpdateAgentRecoveryRequest request)
+    {
+        var recoveryAgent = await Context.JobRecoveryAgents.FindAsync(request.RecoveryId);
+        ArgumentNullException.ThrowIfNull(recoveryAgent);
+
+        if (request.IsPrimaryRecoveryAgent)
+        {
+            // Get the job ID through the recovery job relationship
+            var recoveryJob = await Context.TucJobs
+                .FirstOrDefaultAsync(j => j.JobRecoveryAgents
+                    .Any(ra => ra.RecoveryId == request.RecoveryId));
+
+            if (recoveryJob != null)
+            {
+                // Find the parent job (main job) to get all related recovery jobs
+                var parentJobId = recoveryJob.ParentId ?? recoveryJob.UcjbId;
+
+                // Remove primary status from all other recovery agents in related recovery jobs
+                var otherPrimaryAgents = await Context.JobRecoveryAgents
+                    .Where(ra => ra.Job.ParentId == parentJobId &&
+                                 ra.RecoveryId != request.RecoveryId &&
+                                 ra.IsPrimary)
+                    .ToListAsync();
+
+                foreach (var agent in otherPrimaryAgents) agent.IsPrimary = false;
+
+                // Also check recovery jobs where the parent job is the main job
+                var childJobPrimaryAgents = await Context.JobRecoveryAgents
+                    .Where(ra => ra.Job.UcjbId != parentJobId &&
+                                 ra.Job.ParentId == parentJobId &&
+                                 ra.RecoveryId != request.RecoveryId &&
+                                 ra.IsPrimary)
+                    .ToListAsync();
+
+                foreach (var agent in childJobPrimaryAgents) agent.IsPrimary = false;
+            }
+        }
+
+        // Update the recovery agent
+        recoveryAgent.IsPrimary = request.IsPrimaryRecoveryAgent;
+        recoveryAgent.UpdatedOn = _infoService.GetCurrentTenantTime();
+
+        await Context.SaveChangesAsync();
+    }
+
+    public async Task RemoveRecoveryAgent(int recoveryId)
+    {
+        // Get the recovery agent to remove
+        var recoveryAgent = await Context.JobRecoveryAgents.FindAsync(recoveryId);
+        ArgumentNullException.ThrowIfNull(recoveryAgent);
+
+        // Check if this is the only recovery agent on the job
+        var recoveryJob = await Context.TucJobs
+            .Include(j => j.JobRecoveryAgents)
+            .FirstOrDefaultAsync(j => j.JobRecoveryAgents.Any(ra => ra.RecoveryId == recoveryId));
+        ArgumentNullException.ThrowIfNull(recoveryJob);
+
+        // Remove the recovery agent
+        Context.JobRecoveryAgents.Remove(recoveryAgent);
+
+        await Context.SaveChangesAsync();
     }
 }

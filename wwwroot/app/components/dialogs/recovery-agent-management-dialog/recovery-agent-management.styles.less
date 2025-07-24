@@ -1,18 +1,11 @@
 ﻿.recovery-dialog {
-  max-width: 1200px;
-  max-height: 90vh;
+  min-width: 500px;
+  max-width: 800px;
 
   .job-header {
     background: white;
     padding: 20px;
     margin-bottom: 20px;
-
-    .job-title {
-      font-size: 24px;
-      font-weight: 600;
-      color: #2c3e50;
-      margin-bottom: 10px;
-    }
 
     .job-details {
       display: grid;
@@ -88,12 +81,32 @@
       margin-bottom: 15px;
       position: relative;
 
-      &.primary {
-        border-left: 4px solid #4CAF50;
+      &.main-agent {
+        border-left: 4px solid #9C27B0;
+        background: linear-gradient(135deg, #f3e5f5 0%, #fce4ec 100%);
+
+        .agent-type-badge {
+          background: #9C27B0;
+          color: white;
+        }
       }
 
-      &.additional {
+      &.primary-recovery {
+        border-left: 4px solid #4CAF50;
+
+        .agent-type-badge {
+          background: #4CAF50;
+          color: white;
+        }
+      }
+
+      &.additional-recovery {
         border-left: 4px solid #2196F3;
+
+        .agent-type-badge {
+          background: #2196F3;
+          color: white;
+        }
       }
 
       .agent-header {
@@ -111,6 +124,16 @@
           font-weight: 600;
           color: #2c3e50;
           margin-bottom: 4px;
+        }
+
+        .agent-type-badge {
+          display: inline-block;
+          padding: 4px 8px;
+          border-radius: 12px;
+          font-size: 11px;
+          font-weight: 600;
+          text-transform: uppercase;
+          margin-bottom: 8px;
         }
 
         .agent-company {
@@ -189,10 +212,12 @@
         position: absolute;
         top: 15px;
         right: 15px;
+        display: flex;
+        gap: 5px;
       }
     }
 
-    .assign-form {
+    .assign-form, .edit-form {
       background: #f8f9fa;
       border: 1px solid #dee2e6;
       border-radius: 8px;
@@ -213,6 +238,40 @@
 
         .form-group {
           flex: 1;
+        }
+      }
+
+      .primary-agent-section {
+        background: #fff3e0;
+        border: 1px solid #ffcc02;
+        border-radius: 6px;
+        padding: 15px;
+        margin-bottom: 20px;
+
+        .primary-checkbox {
+          display: flex;
+          align-items: center;
+          margin-bottom: 10px;
+
+          md-checkbox {
+            margin-right: 10px;
+          }
+
+          .checkbox-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #2c3e50;
+          }
+        }
+
+        .primary-warning {
+          font-size: 13px;
+          color: #e65100;
+          line-height: 1.4;
+
+          .warning-icon {
+            margin-right: 5px;
+          }
         }
       }
 
@@ -243,6 +302,33 @@
       }
     }
 
+    .primary-warning-notice {
+      background: #fffbf0;
+      border: 1px solid #ffd54f;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 20px;
+
+      .warning-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #f57c00;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+
+        .warning-icon {
+          margin-right: 5px;
+        }
+      }
+
+      .warning-text {
+        font-size: 13px;
+        color: #e65100;
+        line-height: 1.4;
+      }
+    }
+
     .no-agents {
       text-align: center;
       padding: 40px 20px;
@@ -261,14 +347,6 @@
     }
   }
 
-  .dialog-actions {
-    padding: 16px 24px;
-    border-top: 1px solid #e0e0e0;
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-  }
-
   // Material Design overrides
   &.md-dialog-container {
     padding: 0;
@@ -284,40 +362,6 @@
     .md-select-value {
       border-bottom: 1px solid #ccc;
       padding-bottom: 5px;
-    }
-  }
-
-  .md-button {
-    &.md-raised {
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-
-      &.md-primary {
-        background-color: #4CAF50;
-        color: white;
-
-        &:not([disabled]):hover {
-          background-color: #45a049;
-        }
-      }
-
-      &.md-warn {
-        background-color: #f44336;
-        color: white;
-
-        &:not([disabled]):hover {
-          background-color: #d32f2f;
-        }
-      }
-    }
-
-    &.md-icon-button {
-      &.md-warn {
-        color: #f44336;
-
-        &:hover {
-          background-color: rgba(244, 67, 54, 0.1);
-        }
-      }
     }
   }
 
@@ -353,28 +397,17 @@
         gap: 15px;
       }
 
-      .assign-form {
+      .assign-form, .edit-form {
         .form-row {
           flex-direction: column;
           gap: 0;
         }
       }
     }
-
-    .dialog-actions {
-      padding: 12px 16px;
-      flex-direction: column-reverse;
-      gap: 8px;
-
-      .md-button {
-        width: 100%;
-        margin: 0;
-      }
-    }
   }
 
   // Animation states
-  .assign-form {
+  .assign-form, .edit-form {
     transition: all 0.3s ease-in-out;
 
     &.ng-enter {

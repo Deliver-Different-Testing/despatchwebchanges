@@ -5,8 +5,9 @@ import NationwideService from "../../Nationwide/nationwide.service";
 import ToastrService from "../../../services/toastr.service";
 import {
     AddAgentRecoveryRequest,
-    RecoveryAgentJobViewModel,
-    RecoveryJobViewModel
+    RecoveryAgentJobViewModel, RecoveryAgentViewModel,
+    RecoveryJobViewModel,
+    UpdateAgentRecoveryRequest
 } from "./recovery-agent-management-dialog.interfaces";
 
 class RecoveryAgentManagementController extends BaseController {
@@ -19,6 +20,10 @@ class RecoveryAgentManagementController extends BaseController {
     selectedAirport?: Suggestion;
     selectedAgent?: IAgent;
     showAssignForm: boolean = false;
+    showEditForm: boolean = false;
+    isPrimaryRecoveryAgent: boolean = false;
+    editIsPrimaryRecoveryAgent: boolean = false;
+    editingAgent?: RecoveryAgentViewModel;
     selectedRecoveryJob?: RecoveryJobViewModel;
 
     agentOptions?: Suggestion[];
@@ -46,13 +51,14 @@ class RecoveryAgentManagementController extends BaseController {
             this.agentOptions = [];
             return;
         }
-        
+
         this.agentOptions = await this.nationwideService.getAgentOptionsByAirport(airport.id);
     }
 
     showAssignAgentForm(recoveryJob?: RecoveryJobViewModel): void {
         this.selectedRecoveryJob = recoveryJob || undefined;
         this.showAssignForm = true;
+        this.isPrimaryRecoveryAgent = false;
     }
 
     hideAssignAgentForm(): void {
@@ -60,7 +66,40 @@ class RecoveryAgentManagementController extends BaseController {
         this.selectedAirport = undefined;
         this.selectedAgent = undefined;
         this.selectedRecoveryJob = undefined;
+        this.isPrimaryRecoveryAgent = false;
         this.agentOptions = [];
+    }
+
+    showEditAgentForm(agent: RecoveryAgentViewModel): void {
+        this.editingAgent = agent;
+        this.editIsPrimaryRecoveryAgent = agent.primaryRecoveryAgent || false;
+        this.showEditForm = true;
+    }
+
+    hideEditAgentForm(): void {
+        this.showEditForm = false;
+        this.editingAgent = undefined;
+        this.editIsPrimaryRecoveryAgent = false;
+    }
+
+    onPrimaryCheckboxChange(): void {
+        // This method can be used to show/hide warnings or perform validations
+        // when the primary checkbox state changes
+    }
+
+    onEditPrimaryCheckboxChange(): void {
+        // This method can be used to show/hide warnings or perform validations
+        // when the edit primary checkbox state changes
+    }
+
+    hasPrimaryRecoveryAgent(): boolean {
+        if (!this.job || !this.job.recoveryJobs) return false;
+
+        return this.job.recoveryJobs.some(recoveryJob =>
+                recoveryJob.recoveryAgents && recoveryJob.recoveryAgents.some(agent =>
+                    agent.primaryRecoveryAgent
+                )
+        );
     }
 
     async assignAgent(): Promise<void> {
@@ -74,7 +113,7 @@ class RecoveryAgentManagementController extends BaseController {
                 jobId: this.job.jobId,
                 agentId: this.selectedAgent.agentId,
                 airportId: this.selectedAirport.id,
-                isPrimaryRecoveryAgent: false
+                isPrimaryRecoveryAgent: this.isPrimaryRecoveryAgent
             };
 
             await this.nationwideService.addAgentRecoveryJob(addAgentRequest);
@@ -83,33 +122,89 @@ class RecoveryAgentManagementController extends BaseController {
             this.job = await this.nationwideService.getAgentRecoveryJobs(this.job.jobId);
 
             this.hideAssignAgentForm();
-            this.toastrService.showSuccessToast(`${this.selectedAgent.agentName} has been assigned to search at ${this.selectedAirport.text}`);
+
+            const agentTypeText = this.isPrimaryRecoveryAgent ? 'primary recovery agent' : 'recovery agent';
+            this.toastrService.showSuccessToast(`${this.selectedAgent.agentName} has been assigned as ${agentTypeText} to search at ${this.selectedAirport.text}`);
         } catch (error) {
             console.error('Error assigning agent:', error);
             this.toastrService.showErrorToast('Failed to assign agent. Please try again.');
         }
     }
 
-    // New method to handle agent removal
-   /* async removeAgent(agent: any): Promise<void> {
-        if (!confirm(`Are you sure you want to remove ${agent.agentName} from this assignment?`)) {
+    async updateAgent(): Promise<void> {
+        if (!this.editingAgent) {
+            this.toastrService.showWarningToast('No agent selected for update');
             return;
         }
 
         try {
-            // Assuming you have a service method to remove agents
-            // You'll need to implement this in your NationwideService
+            const updateAgentRequest: UpdateAgentRecoveryRequest = {
+                recoveryId: this.editingAgent.recoveryId,
+                isPrimaryRecoveryAgent: this.editIsPrimaryRecoveryAgent
+            };
+
+            await this.nationwideService.updateAgentRecoveryJob(updateAgentRequest);
+
+            // Refresh the job data to get the updated assignments
+            this.job = await this.nationwideService.getAgentRecoveryJobs(this.job.jobId);
+
+            this.hideEditAgentForm();
+
+            const statusText = this.editIsPrimaryRecoveryAgent ? 'set as primary recovery agent' : 'updated';
+            this.toastrService.showSuccessToast(`${this.editingAgent.agentName} has been ${statusText}`);
+        } catch (error) {
+            console.error('Error updating agent:', error);
+            this.toastrService.showErrorToast('Failed to update agent. Please try again.');
+        }
+    }
+
+    async removeAgent(agent: RecoveryAgentViewModel): Promise<void> {
+        try {
+            const confirm = this.$mdDialog.confirm()
+                .title('Remove Recovery Agent')
+                .textContent(`Are you sure you want to remove ${agent.agentName} from this recovery assignment?`)
+                .ok('Yes, Remove')
+                .cancel('Cancel');
+
+            await this.$mdDialog.show(confirm);
+
+            // Proceed with removal
             await this.nationwideService.removeAgentRecoveryJob(agent.recoveryId);
 
             // Refresh the job data
             this.job = await this.nationwideService.getAgentRecoveryJobs(this.job.jobId);
 
-            this.toastrService.showSuccessToast(`${agent.agentName} has been removed from the assignment`);
+            this.toastrService.showSuccessToast(`${agent.agentName} has been removed from the recovery assignment`);
         } catch (error) {
+            if (error === undefined) {
+                // User cancelled the confirmation dialog
+                return;
+            }
             console.error('Error removing agent:', error);
             this.toastrService.showErrorToast('Failed to remove agent. Please try again.');
         }
-    }*/
+    }
+
+    getAgentCardClass(agent: RecoveryAgentViewModel): string {
+        if (agent.primaryRecoveryAgent) {
+            return 'primary-recovery';
+        }
+        return 'additional-recovery';
+    }
+
+    getAgentTypeBadge(agent: RecoveryAgentViewModel): string {
+        if (agent.primaryRecoveryAgent) {
+            return 'Primary Recovery Agent';
+        }
+        return 'Recovery Agent';
+    }
+
+    getAgentCompanyInfo(agent: RecoveryAgentViewModel): string {
+        if (agent.primaryRecoveryAgent) {
+            return 'Lead Recovery Specialist';
+        }
+        return 'Recovery Specialist';
+    }
 
     getRankingArray(rating: number): number[] {
         if (!rating) return [];
@@ -145,14 +240,43 @@ class RecoveryAgentManagementController extends BaseController {
         return this.job && this.job.recoveryJobs && this.job.recoveryJobs.length > 0;
     }
 
-    // Helper method to get total number of agents
-    getTotalAgentsCount(): number {
+    // Helper method to get total number of recovery agents
+    getTotalRecoveryAgentsCount(): number {
         if (!this.job || !this.job.recoveryJobs) return 0;
         return this.job.recoveryJobs.reduce((total, job) => total + (job.recoveryAgents?.length || 0), 0);
     }
 
-    cancel(): void {
-        this.$mdDialog.cancel();
+    // Helper method to get the total number of all agents (main + recovery)
+    getTotalAgentsCount(): number {
+        const mainAgentCount = this.job.assignedAgent ? 1 : 0;
+        const recoveryAgentCount = this.getTotalRecoveryAgentsCount();
+        return mainAgentCount + recoveryAgentCount;
+    }
+
+    async cancel(): Promise<void> {
+        // Check if there are any unsaved changes or active forms
+        const hasUnsavedChanges =
+            (this.showAssignForm && (this.selectedAirport || this.selectedAgent || this.isPrimaryRecoveryAgent)) ||
+            (this.showEditForm && this.editingAgent);
+
+        if (hasUnsavedChanges) {
+            try {
+                const confirm = this.$mdDialog.confirm()
+                    .title('Unsaved Changes')
+                    .textContent('You have unsaved changes. Are you sure you want to cancel?')
+                    .ok('Yes, Cancel')
+                    .cancel('Continue Editing');
+
+                await this.$mdDialog.show(confirm);
+                this.$mdDialog.cancel();
+            } catch (error) {
+                if(!error) return;
+
+                console.error('Error in cancel', error);
+            }
+        } else {
+            this.$mdDialog.cancel();
+        }
     }
 
     close(): void {

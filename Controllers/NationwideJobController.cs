@@ -419,4 +419,38 @@ public class NationwideJobController(
             return StatusCode(500, e.Message);
         }
     }
+
+    [HttpPost]
+    public async Task<IActionResult> UpdateAgentRecoveryJob([FromBody] UpdateAgentRecoveryRequest request)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            await repository.UpdateRecoveryAgent(request);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An error occured updating recovery agent");
+            return StatusCode(500, e.Message);
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> RemoveAgentRecoveryJob([FromBody] UpdateAgentRecoveryRequest request)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(request.RecoveryId);
+            
+            await repository.RemoveRecoveryAgent(request.RecoveryId);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An error occured removing recovery agent");
+            return StatusCode(500, e.Message);
+        }
+    }
 }
