@@ -4,7 +4,7 @@ import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interfa
 import dayjs from "dayjs";
 import {
     AddAgentRecoveryRequest,
-    RecoveryAgentJobViewModel
+    RecoveryAgentJobViewModel, RemoveAgentRecoveryRequest, UpdateAgentRecoveryRequest
 } from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.interfaces";
 
 class NationwideService implements angular.IServiceProvider {
@@ -234,7 +234,7 @@ class NationwideService implements angular.IServiceProvider {
     async getAgentOptionsByAirport(airportId: number): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>("nationwideJob/GetAgentOptionsByAirport", {
             params: {
-                agentId: airportId,
+                airportId,
             }
         });
         
@@ -244,6 +244,18 @@ class NationwideService implements angular.IServiceProvider {
     async getAllActiveAirports(): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>("nationwideJob/GetAllActiveAirports");
         return response.data;
+    }
+
+    async updateAgentRecoveryJob(request: UpdateAgentRecoveryRequest): Promise<void> {
+             await this.$http.post('nationwideJob/UpdateAgentRecoveryJob', request);
+    }
+
+    async removeAgentRecoveryJob(recoveryId: number): Promise<void> {
+        const data: RemoveAgentRecoveryRequest = {
+            recoveryId
+        };
+        
+        await this.$http.post(`nationwideJob/RemoveAgentRecoveryJob`, data);
     }
 }
 

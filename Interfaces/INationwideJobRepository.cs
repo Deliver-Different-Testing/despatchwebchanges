@@ -5,6 +5,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
+using DespatchWeb.Models.RequestModels;
 
 namespace DespatchWeb.Interfaces;
 
@@ -48,4 +49,6 @@ public interface INationwideJobRepository
     Task<RecoveryAgentJobViewModel> GetInfoForRecoveryAgentDialog(int jobId);
     Task<List<Suggestion>> GetAgentOptionsByAirportAsync(int airportId);
     Task<List<Suggestion>> GetAllActiveAirports();
+    Task UpdateRecoveryAgent(UpdateAgentRecoveryRequest request);
+    Task RemoveRecoveryAgent(int recoveryId);
 }

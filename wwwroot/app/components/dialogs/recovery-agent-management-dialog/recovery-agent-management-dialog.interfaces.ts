@@ -32,3 +32,12 @@ export interface AddAgentRecoveryRequest {
     airportId: number;
     isPrimaryRecoveryAgent: boolean;
 }
+
+export interface UpdateAgentRecoveryRequest {
+    recoveryId: number;
+    isPrimaryRecoveryAgent: boolean;
+}
+
+export interface RemoveAgentRecoveryRequest {
+    recoveryId: number;
+}
