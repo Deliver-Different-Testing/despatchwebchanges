@@ -145,18 +145,17 @@ public class NationwideJobController(
     {
         try
         {
-            if (request is null)
-                return BadRequest("No flight data was provided. Unable to assign to job.");
-
+            ArgumentNullException.ThrowIfNull(request);
+           
             // Get flight details
             var flight = await GetFlightDetails(request);
-            if (flight == null) return BadRequest("Flight details could not be retrieved.");
+            ArgumentNullException.ThrowIfNull(flight);
 
             // Create webhooks for flight segments
             var webhookIds = await CreateWebhooks(flight);
 
             // Save job assignment
-            await repository.AddJobNationwideAsync(request.JobId, flight, webhookIds);
+            await repository.AddJobNationwideAsync(request.JobId, flight, webhookIds, request.FromAirportId, request.ToAirportId);
 
             return Ok();
         }
@@ -382,7 +381,7 @@ public class NationwideJobController(
     {
         try
         {
-            var agentRecoveryInfo = await repository.GetInfoForRecoveryAgentDialog(jobId);
+            var agentRecoveryInfo = await repository.GetInfoForRecoveryAgentDialogAsync(jobId);
             return Json(agentRecoveryInfo);
         }
         catch (Exception e)
@@ -410,7 +409,7 @@ public class NationwideJobController(
     {
         try
         {
-            var airports = await repository.GetAllActiveAirports();
+            var airports = await repository.GetAllActiveAirportsAsync();
             return Json(airports);
         }
         catch (Exception e)
@@ -426,7 +425,7 @@ public class NationwideJobController(
         try
         {
             ArgumentNullException.ThrowIfNull(request);
-            await repository.UpdateRecoveryAgent(request);
+            await repository.UpdateRecoveryAgentAsync(request);
             return Ok();
         }
         catch (Exception e)
@@ -444,7 +443,7 @@ public class NationwideJobController(
             ArgumentNullException.ThrowIfNull(request);
             ArgumentNullException.ThrowIfNull(request.RecoveryId);
             
-            await repository.RemoveRecoveryAgent(request.RecoveryId);
+            await repository.RemoveRecoveryAgentAsync(request.RecoveryId);
             return Ok();
         }
         catch (Exception e)
