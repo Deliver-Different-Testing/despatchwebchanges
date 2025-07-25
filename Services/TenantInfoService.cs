@@ -32,7 +32,7 @@ public class TenantInfoService(IHttpContextAccessor contextAccessor) : ITenantIn
     public string FormatDateForTenant(DateTime? dateTime)
     {
         if (!dateTime.HasValue)
-            return "";
+            return string.Empty;
 
         var countryCode = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CountryCode")?.Value;
 
@@ -47,7 +47,7 @@ public class TenantInfoService(IHttpContextAccessor contextAccessor) : ITenantIn
 
         var culture = new CultureInfo(cultureCode);
 
-        return dateTime.Value.ToString("g", culture); // "g" is short date/time pattern
+        return dateTime.Value.ToString("g", culture); // "g" is a short date /time pattern
     }
 
     public int GetStaffId()

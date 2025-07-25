@@ -11,14 +11,12 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.FlightStats;
-using Microsoft.AspNetCore.Http;
 using Serilog;
 
 namespace DespatchWeb.Services;
 
 public class FlightStatsService(
     HttpClient httpClient,
-    IHttpContextAccessor contextAccessor,
     INationwideJobRepository repository
 ) : IFlightStatsService
 {
@@ -36,18 +34,7 @@ public class FlightStatsService(
         ArgumentException.ThrowIfNullOrEmpty(departureAirportCode);
 
         var uniqueWebhookId = Guid.NewGuid();
-        var connectionString =
-            contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "Connection")?.Value;
-        var tenantId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
-        var timeZone = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
-        var userName = contextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Name)?.Value;
-
-        ArgumentException.ThrowIfNullOrEmpty(connectionString);
-        ArgumentException.ThrowIfNullOrEmpty(tenantId);
-
-        var token = AuthenticationExtensions.CreateApiToken(userName, int.Parse(tenantId), connectionString, timeZone);
-        var requestToken = new JwtSecurityTokenHandler().WriteToken(token);
-
+        
         var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
         var (year, month, day, _, _) = SplitDate(departureTime);
 
@@ -61,7 +48,6 @@ public class FlightStatsService(
         query["name"] = uniqueWebhookId.ToString();
         query["type"] = "JSON";
         query["deliverTo"] = _webhookUrl;
-        query["_token"] = requestToken;
 
         var uriBuilder = new UriBuilder(url)
         {
@@ -210,10 +196,7 @@ public class FlightStatsService(
             query["includeAirlines"] = combinedAirlines;
         }
 
-        if (!string.IsNullOrEmpty(codeType))
-        {
-            query["codeType"] = codeType;
-        }
+        if (!string.IsNullOrEmpty(codeType)) query["codeType"] = codeType;
 
         if (extendedOptions != null && extendedOptions.Count != 0)
         {
