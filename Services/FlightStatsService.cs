@@ -22,7 +22,7 @@ public class FlightStatsService(
 {
     private const string ConnectionsBaseUrl = "https://api.flightstats.com/flex/connections/rest/v3/";
     private const string AlertUrl = "https://api.flightstats.com/flex/alerts/rest/v1";
-    private const string FlightAlertTypes = "can,div,dep,arr,depDelay15,arrDelay15,preDep60,preArr30";
+    private const string FlightAlertTypes = "can,div,depDelay15,arrDelay15,tailNumber,all";
 
     private readonly string _appId = Environment.GetEnvironmentVariable("FlightStatusApiAppId");
     private readonly string _appKey = Environment.GetEnvironmentVariable("FlightStatusApiAppKey");
