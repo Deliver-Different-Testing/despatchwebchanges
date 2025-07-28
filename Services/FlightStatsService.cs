@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net.Http;
-using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web;
@@ -17,7 +15,8 @@ namespace DespatchWeb.Services;
 
 public class FlightStatsService(
     HttpClient httpClient,
-    INationwideJobRepository repository
+    INationwideJobRepository repository,
+    ITenantInfoService infoService
 ) : IFlightStatsService
 {
     private const string ConnectionsBaseUrl = "https://api.flightstats.com/flex/connections/rest/v3/";
@@ -80,7 +79,7 @@ public class FlightStatsService(
                 PropertyNameCaseInsensitive = true
             });
 
-            if (createAlertResponse?.Error.ErrorId != null)
+            if (createAlertResponse?.Error?.ErrorId != null)
             {
                 Log.Error("{ErrorMessage}", createAlertResponse.Error.ErrorMessage);
                 throw new Exception($"Failed to create flight alert. ErrorId: {createAlertResponse.Error.ErrorId}. Response: {createAlertResponse.Error.ErrorMessage}");
@@ -160,17 +159,13 @@ public class FlightStatsService(
         if (arrivalAirportId.HasValue)
             arrivalAirportCode = await repository.GetSingleAirportCodeByIdAsync(arrivalAirportId.Value);
 
-
         var activeAirlines = await repository.GetActiveAirlineOptionsAsync();
         var activeAirlineCodes = activeAirlines.Select(x => x.Text).ToList();
 
         ArgumentException.ThrowIfNullOrEmpty(departureAirportCode);
         ArgumentException.ThrowIfNullOrEmpty(arrivalAirportCode);
 
-        var flightsFrom = departureDateTime ?? DateTime.UtcNow;
-        flightsFrom = flightsFrom.AddMinutes(flightBuffer);
-        ArgumentNullException.ThrowIfNull(flightsFrom);
-
+        var flightsFrom = CalculateFlightSearchStartTime(departureDateTime, flightBuffer);
         var (year, month, day, hour, minute) = SplitDate(flightsFrom);
 
         var relativeUrl =
@@ -331,6 +326,17 @@ public class FlightStatsService(
             });
 
         return flightOptions.OrderBy(flight => flight.DepartureTime).ToList();
+    }
+
+    private DateTime CalculateFlightSearchStartTime(DateTime? departureDateTime, int flightBuffer)
+    {
+        var currentTenantTime = infoService.GetCurrentTenantTime();
+        var effectiveStartTime = (departureDateTime < currentTenantTime ? currentTenantTime : departureDateTime) ??
+                                 currentTenantTime;
+        var flightsFrom = effectiveStartTime.AddMinutes(flightBuffer);
+
+        ArgumentNullException.ThrowIfNull(flightsFrom);
+        return flightsFrom;
     }
 
     public async Task<AddFlightToJobDto> GetFlightDetailsByFlightNumberAsync(

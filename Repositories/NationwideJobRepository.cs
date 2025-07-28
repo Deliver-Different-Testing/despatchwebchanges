@@ -214,7 +214,6 @@ public class NationwideJobRepository(
     {
         const double maxDistanceMiles = 500;
 
-        // Get job coordinates and nearby airports in a single query
         var jobAndAirports = await (
                 from job in Context.TucJobs
                 where job.UcjbId == jobId &&
