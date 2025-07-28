@@ -1242,20 +1242,7 @@ public class JobController(
         await jobRepository.FinishSplitJobProcess(jobId, despatcherName);
         return Ok();
     }
-
-    [HttpPost]
-    public async Task<IActionResult> SendSms(
-        int courierId,
-        int dispId,
-        string despatcherName,
-        string message
-    )
-    {
-        await jobRepository.MessageCourier(courierId, dispId, despatcherName,
-            message);
-        return Ok();
-    }
-
+    
     [HttpPost]
     public async Task<IActionResult> UpdateSplitJobAddress(
         int jobId,

@@ -581,6 +581,38 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
+        public virtual async Task<List<DES_stpJob_SplitJob_ReRateResult>> DES_stpJob_SplitJob_ReRateAsync(int? parentJobID, bool? preBookJob, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "ParentJobID",
+                    Value = parentJobID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "PreBookJob",
+                    Value = preBookJob ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Bit,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.SqlQueryAsync<DES_stpJob_SplitJob_ReRateResult>("EXEC @returnValue = [dbo].[DES_stpJob_SplitJob_ReRate] @ParentJobID = @ParentJobID, @PreBookJob = @PreBookJob", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
         public virtual async Task<List<DES_stpJob_SplitJobRestoreResult>> DES_stpJob_SplitJobRestoreAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
@@ -602,6 +634,42 @@ namespace DespatchWeb.EntityClasses
             };
             var _ = await _context.SqlQueryAsync<DES_stpJob_SplitJobRestoreResult>("EXEC @returnValue = [dbo].[DES_stpJob_SplitJobRestore] @JobID = @JobID", sqlParameters, cancellationToken);
 
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<List<DES_stpJob_UnSplitResult>> DES_stpJob_UnSplitAsync(int? jobID, OutputParameter<string> message, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterMessage = new SqlParameter
+            {
+                ParameterName = "Message",
+                Size = 8000,
+                Direction = System.Data.ParameterDirection.InputOutput,
+                Value = message?._value ?? Convert.DBNull,
+                SqlDbType = System.Data.SqlDbType.NVarChar,
+            };
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "JobID",
+                    Value = jobID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterMessage,
+                parameterreturnValue,
+            };
+            var _ = await _context.SqlQueryAsync<DES_stpJob_UnSplitResult>("EXEC @returnValue = [dbo].[DES_stpJob_UnSplit] @JobID = @JobID, @Message = @Message OUTPUT", sqlParameters, cancellationToken);
+
+            message?.SetValue(parameterMessage.Value);
             returnValue?.SetValue(parameterreturnValue.Value);
 
             return _;

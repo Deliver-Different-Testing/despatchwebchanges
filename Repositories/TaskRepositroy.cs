@@ -403,7 +403,7 @@ public class TaskRepository(
             UcevDueTime = dueTime ?? currentDate
         };
 
-        await Context.TucEvents.AddAsync(newEvent);
+        await Context.AddAsync(newEvent);
         await Context.SaveChangesAsync();
     }
 

@@ -1209,17 +1209,6 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         foreach (var jobId in jobIds) await Context.Procedures.uspRestoreJobAsync(jobId);
     }
 
-    public async Task MessageCourier(int courierId, int dispId, string despatcher, string message)
-    {
-        await Context
-            .LoadStoredProc("DES_stpManualMessage_Insert")
-            .WithSqlParam("@SendToID", courierId)
-            .WithSqlParam("@StaffID", dispId)
-            .WithSqlParam("@WindowsUser", despatcher)
-            .WithSqlParam("@Message", message)
-            .ExecuteStoredNonQueryAsync();
-    }
-
     public async Task VoidJob(int jobId)
     {
         // Void Job
@@ -1236,22 +1225,11 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
     public async Task<string> UnSplitJob(int jobId)
     {
-        DbParameter messageOutput = null;
-        await Context
-            .LoadStoredProc("DES_stpJob_UnSplit")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam(
-                "@Message",
-                dbParam =>
-                {
-                    dbParam.Direction = ParameterDirection.Output;
-                    dbParam.DbType = DbType.String;
-                    dbParam.Size = 4000;
-                    messageOutput = dbParam;
-                }
-            )
-            .ExecuteStoredNonQueryAsync();
-        return (string)messageOutput.Value;
+        var message = new OutputParameter<string>();
+        var returnValue = new OutputParameter<int>();
+
+        await Context.Procedures.DES_stpJob_UnSplitAsync(jobId, message, returnValue);
+        return message.Value;
     }
 
     public async Task UpdateSplitJobAddress(
@@ -1271,14 +1249,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         );
     }
 
-    public async Task ReRateSplitJob(int jobId)
-    {
-        await Context
-            .LoadStoredProc("DES_stpJob_SplitJob_ReRate")
-            .WithSqlParam("@ParentJobID", jobId)
-            .WithSqlParam("@PreBookJob", false)
-            .ExecuteStoredNonQueryAsync();
-    }
+    public async Task ReRateSplitJob(int jobId) => await Context.Procedures.DES_stpJob_SplitJob_ReRateAsync(jobId, false);
 
     public async Task FinishSplitJobProcess(int jobId, string despatcher)
     {

@@ -213,6 +213,16 @@ class StickyNoteController extends BaseController {
 
         return category?.text || 'Unknown Category';
     }
+    
+    getNoNotesMessage(): string {
+      if(this.notes && this.notes.length > 0 && this.isFilterActive()) {
+          return `No ${this.getCategoryName()} notes found`;
+      } else if(this.notes && this.notes.length === 0) {
+        return `No notes available for this job`;
+      } else {
+        return `No notes found. Click "Add Note" to add a new note`;
+      }
+    }
 }
 
 const StickyNoteComponent: angular.IComponentOptions = {

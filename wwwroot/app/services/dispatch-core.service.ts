@@ -564,27 +564,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     async updatePODDetail(requestData: UpdatePodDetailsRequest) {
         await this.$http.post("job/UpdatePODDetails", requestData);
     }
-
-    async sendSMS(
-        courierId: number,
-        staffId: number,
-        despatcherName: string,
-        message: string
-    ) {
-        const response = await this.$http.post(
-            `job/SendSMS`,
-            null, {
-                params: {
-                    courierId,
-                    dispId: staffId,
-                    despatcherName,
-                    message,
-                }
-            }
-        );
-        return response.data;
-    }
-
+    
     async reRateSplitJob(jobId: number) {
         await this.$http.post(`job/ReRateSplitJob`, null, {
             params: {

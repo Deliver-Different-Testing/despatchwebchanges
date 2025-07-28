@@ -95,16 +95,15 @@
             </div>
 
             <!-- Message when no notes -->
-            <div ng-if="!ctrl.loading && ctrl.getDisplayNotes().length === 0"
-                 class="empty-state">
-                <md-icon md-font-set="material-symbols-outlined">sticky_note_2</md-icon>
-                <p ng-if="ctrl.notes && ctrl.notes.length === 0">No notes available for this job.</p>
-                <p ng-if="ctrl.notes && ctrl.notes.length > 0 && ctrl.isFilterActive()">
-                    No notes found in the "{{ctrl.getCategoryName()}}" category.
-                    <br>
-                    <a href="#" ng-click="ctrl.filterByCategory('all'); $event.preventDefault()">Show all notes</a>
-                </p>
-            </div>
+            <no-data
+                    ng-if="!ctrl.loading && ctrl.getDisplayNotes().length === 0"
+                    title="No Notes"
+                    message="{{ctrl.getNoNotesMessage()}}"
+                    icon="sticky_note_2"
+                    show-action="true"
+                    action-text="Show all notes"
+                    on-action="ctrl.filterByCategory('all')">
+            </no-data>
         </div>
     </div>
 </div>
