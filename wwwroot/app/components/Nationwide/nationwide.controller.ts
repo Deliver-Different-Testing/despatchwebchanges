@@ -390,44 +390,37 @@ class NationwideControl extends BaseController {
                 "title": "New Jobs",
                 "icon": "new_releases",
                 "templateUrl": "app/components/Nationwide/partials/jobList.html",
-                "showSearch": 1,
                 "showRefresh": 1
             }, [NationwideBoxes.PodJobs]: {
                 "title": "Awaiting POD",
                 "icon": "pending_actions",
                 "templateUrl": "app/components/Nationwide/partials/jobListPOD.html",
-                "showSearch": 1,
                 "showRefresh": 1
             }, [NationwideBoxes.Tasks]: {
                 "title": "Tasks",
                 "icon": "support",
                 "templateUrl": "app/components/Nationwide/partials/tasksList.html",
-                "showSearch": 0,
                 "showRefresh": 1
             }, [NationwideBoxes.RepriceJobs]: {
                 "title": "Reprice",
                 "icon": "price_change",
                 "templateUrl": "app/components/Nationwide/partials/jobListReprice.html",
-                "showSearch": 1,
                 "showRefresh": 1
             }, [NationwideBoxes.JobDetail]: {
                 "title": "Detail",
                 "icon": "assignment",
                 "templateUrl": "app/components/Nationwide/partials/jobDetail.html",
-                "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
             }, [NationwideBoxes.Map]: {
                 "title": "Map",
                 "icon": "pin_drop",
                 "templateUrl": "app/components/Nationwide/partials/map.html",
-                "showSearch": 0,
                 "showRefresh": 1
             }, [NationwideBoxes.FlightAgents]: {
                 "title": "Available",
                 "icon": "docs_add_on",
                 "templateUrl": "app/components/Nationwide/partials/flightAgentDataTableBox.html",
-                "showSearch": 0,
                 "showRefresh": 1
             }
         };
@@ -1267,6 +1260,7 @@ class NationwideControl extends BaseController {
             this.applyScope();
         }
     }
+    
     async loadNextDayFlights(): Promise<void> {
         if (!this.currentJob) {
             this.toastrService.showWarningToast("Please select a job to view flight options");
@@ -1754,6 +1748,7 @@ class NationwideControl extends BaseController {
             
             // Reload flights with the new airport selection
             await this.loadFlights();
+            this.applyScope();
         } catch (error) {
             console.error('Error loading flights after airport change:', error);
         }

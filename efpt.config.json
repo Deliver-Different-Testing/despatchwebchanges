@@ -423,11 +423,19 @@
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[DES_stpJob_SplitJob_ReRate]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DES_stpJob_SplitJob]",
          "ObjectType": 1
       },
       {
          "Name": "[dbo].[DES_stpJob_SplitJobRestore]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DES_stpJob_UnSplit]",
          "ObjectType": 1
       },
       {

@@ -116,18 +116,12 @@
                             </table>
 
                             <!-- Empty State -->
-                            <div class="empty-state" ng-if="ctrl.priceBreakdown.length === 0">
-                                <div class="empty-state-content">
-                                    <md-icon md-font-set="material-symbols-outlined" class="empty-icon">receipt_long
-                                    </md-icon>
-                                    <h3>No price items yet</h3>
-                                    <p>Start by adding your first price breakdown item</p>
-                                    <md-button class="md-raised" ng-click="ctrl.addNewItem()">
-                                        <md-icon md-font-set="material-symbols-outlined">add</md-icon>
-                                        Add First Item
-                                    </md-button>
-                                </div>
-                            </div>
+                            <no-data ng-if="ctrl.priceBreakdown.length === 0"
+                                     title="No price items yet"
+                                     message="Start by adding your first price breakdown item"
+                                     icon="receipt_long"
+                                     show-action="false">
+                            </no-data>
                         </div>
                     </div>
 
@@ -137,9 +131,9 @@
                             <div class="form-header">
                                 <h3>
                                     <md-icon md-font-set="material-symbols-outlined">
-                                        {{::ctrl.isNew ? 'add_circle' : 'edit'}}
+                                        {{ctrl.isNew ? 'add_circle' : 'edit'}}
                                     </md-icon>
-                                    {{::ctrl.isNew ? 'Add New Price Item' : 'Edit Price Item'}}
+                                    {{ctrl.isNew ? 'Add New Price Item' : 'Edit Price Item'}}
                                 </h3>
                             </div>
 
@@ -201,7 +195,7 @@
                                                           md-diameter="20" class="md-accent"></md-progress-circular>
                                     <md-icon ng-if="!ctrl.isSaving" md-font-set="material-symbols-outlined">save
                                     </md-icon>
-                                    <span>{{::ctrl.isNew ? 'Add Item' : 'Save Changes'}}</span>
+                                    <span>{{ctrl.isNew ? 'Add Item' : 'Save Changes'}}</span>
                                 </md-button>
                             </div>
                         </div>

@@ -124,7 +124,7 @@
                     <!-- Option to clear selection -->
                     <md-menu-item ng-if="ctrl.selectedInboundAirport">
                         <md-button
-                                ng-click="ctrl.selectedInboundAirport = undefined; ctrl.onInboundAirportSelectionChanged();">
+                                ng-click="ctrl.selectedInboundAirport = null; ctrl.onInboundAirportSelectionChanged();">
                             <md-icon md-font-set="material-symbols-outlined">clear</md-icon>
                             Clear selection
                         </md-button>

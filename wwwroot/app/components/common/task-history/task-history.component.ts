@@ -77,11 +77,9 @@ class TaskHistoryController extends BaseController {
             this.config.densityMode = this.densityMode;
         }
     }
-    
+
     getWidgetClass(): string {
-        const baseClass = 'journey-widget';
-        const densityClass = this.densityMode !== DensityMode.Normal ? `${this.densityMode}-mode` : '';
-        return `${baseClass} ${densityClass}`.trim();
+        return this.densityMode !== DensityMode.Normal ? `${this.densityMode}-mode` : '';
     }
 
     getDensityModeLabel(): string {

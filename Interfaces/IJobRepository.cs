@@ -84,7 +84,6 @@ public interface IJobRepository
 
     Task RestoreSplitJobs(List<int> jobIds);
     Task RestoreJobs(List<int> jobIds);
-    Task MessageCourier(int courierId, int dispId, string despatcher, string message);
     Task VoidJob(int jobId);
     Task SplitJob(int jobId, string user);
     Task<string> UnSplitJob(int jobId);

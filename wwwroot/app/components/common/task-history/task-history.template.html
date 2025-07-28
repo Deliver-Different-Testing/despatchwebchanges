@@ -19,7 +19,7 @@
         </div>
     </div>
 
-    <div class="{{ctrl.getWidgetClass()}}" ng-if="ctrl.jobId">
+    <div class="journey-widget" ng-class="ctrl.getWidgetClass()" ng-if="ctrl.jobId">
         <!-- Progress indicator -->
         <md-progress-linear md-mode="indeterminate"
                             ng-show="ctrl.historyLoading"
@@ -132,7 +132,7 @@
     </div>
 
     <!-- No Job Selected State -->
-    <div class="{{ctrl.getWidgetClass()}}" ng-if="!ctrl.jobId">
+    <div class="journey-widget" ng-if="!ctrl.jobId">
         <md-toolbar class="md-accent" ng-if="ctrl.showFullToolbar">
             <div class="md-toolbar-tools">
                 <md-icon md-font-set="material-symbols-outlined">rocket_launch</md-icon>
