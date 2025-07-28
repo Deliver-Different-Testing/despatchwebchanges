@@ -86,44 +86,39 @@ public class NationwideJobRepository(
             job.UcjbDate = primaryFlight.DepartureTime;
             job.UcjbTime = primaryFlight.DepartureTime;
 
+            var departureAirportId = fromAirportId ?? job.FromAirportId;
+            ArgumentNullException.ThrowIfNull(departureAirportId);
+            var arrivalAirportId = toAirportId ?? job.ToAirportId;
+            ArgumentNullException.ThrowIfNull(arrivalAirportId);
+
             // Set Pickup Job Deliver By
             if (job.FromAirportId != null || fromAirportId != null)
             {
-                var airportId = fromAirportId ?? job.FromAirportId;
-                ArgumentNullException.ThrowIfNull(airportId);
-                
-                var airportProcessingTime = await GetAirportProcessingTimeAsync(airportId.Value);
+                var airportProcessingTime = await GetAirportProcessingTimeAsync(departureAirportId.Value);
                 var pickUpJob = job.Parent.InverseParent.First(j => j.UcjbNumber.EndsWith('1'));
                 pickUpJob.DeliverByTime = primaryFlight.DepartureTime.AddMinutes(-airportProcessingTime);
                 pickUpJob.DeliverByTimeZoneId = job.PickupTimeZoneId;
                 
                 // Update delivery address with airport
-                await UpdateJobAddressWithAirportInfoAsync(pickUpJob, airportId.Value, true);
+                await UpdateJobAddressWithAirportInfoAsync(pickUpJob, departureAirportId.Value, true);
             }
 
             // Second part
             var flightPart = flights.FlightSegments.Count > 1 ? flights.FlightSegments[1] : primaryFlight;
             job.DeliverByTime = flightPart.ArrivalTime;
-            job.DeliverByTimeZoneId = await GetTimeZoneIdByNameAsync(flightPart.ArrivalAirportTimeZone);
+            await UpdateJobAddressWithAirportInfoAsync(job, departureAirportId.Value, false);
+            await UpdateJobAddressWithAirportInfoAsync(job, arrivalAirportId.Value, true);
 
             // Set delivery job pick-up time
             if (job.ToAirportId != null || toAirportId != null)
             {
-                var airportId = toAirportId ?? job.ToAirportId;
-                ArgumentNullException.ThrowIfNull(airportId);
-                
-                var airportProcessingTime = await GetAirportProcessingTimeAsync(airportId.Value);
+                var airportProcessingTime = await GetAirportProcessingTimeAsync(arrivalAirportId.Value);
                 var lastFlight = flights.FlightSegments.Last();
                 var deliveryJob = job.Parent.InverseParent.First(j => j.UcjbNumber.EndsWith('3'));
                 deliveryJob.UcjbTime = lastFlight.ArrivalTime.AddMinutes(airportProcessingTime);
-
-                // Set TimeZone
-                var timeZoneForDeliveryJob = await GetTimeZoneIdByNameAsync(lastFlight.ArrivalAirportTimeZone);
-                deliveryJob.PickupTimeZoneId = timeZoneForDeliveryJob;
-                deliveryJob.DeliverByTimeZoneId = timeZoneForDeliveryJob;
                 
                 // Update Pickup Address With Airport
-                await UpdateJobAddressWithAirportInfoAsync(deliveryJob, airportId.Value, false);
+                await UpdateJobAddressWithAirportInfoAsync(deliveryJob, arrivalAirportId.Value, false);
             }
 
             var currentTime = _infoService.GetCurrentTenantTime();
@@ -1147,7 +1142,9 @@ public class NationwideJobRepository(
 
     private async Task UpdateJobAddressWithAirportInfoAsync(TucJob job, int airportId, bool isDeliveryAddress)
     {
-        var airport = await Context.TblAirports.FirstAsync(a => a.AirportId == airportId);
+        var airport = await Context.TblAirports
+            .Include(a => a.TimeZoneNavigation)
+            .FirstOrDefaultAsync(a => a.AirportId == airportId);
 
         if (isDeliveryAddress)
         {
@@ -1161,6 +1158,7 @@ public class NationwideJobRepository(
             job.DeliveryAddressLine8 = airport.AddressLine8;
             job.DeliveryLatitude = airport.Latitude;
             job.DeliveryLongitude = airport.Longitude;
+            job.DeliverByTimeZoneId = airport.TimeZoneNavigation?.Id;
         }
         else
         {
@@ -1174,6 +1172,7 @@ public class NationwideJobRepository(
             job.PickupAddressLine8 = airport.AddressLine8;
             job.PickUpLatitude = airport.Latitude;
             job.PickUpLongitude = airport.Longitude;
+            job.PickupTimeZoneId = airport.TimeZoneNavigation?.Id;
         }
     }
 }

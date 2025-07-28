@@ -1335,20 +1335,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         }
     }
 
-    public async Task<List<T>> GetAllAsync<T>()
-        where T : class
-    {
-        try
-        {
-            return await Context.Set<T>().ToListAsync();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error retrieving all {Name} records", typeof(T).Name);
-            throw;
-        }
-    }
-
     public async Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(
         List<int> selectedViewIds)
     {

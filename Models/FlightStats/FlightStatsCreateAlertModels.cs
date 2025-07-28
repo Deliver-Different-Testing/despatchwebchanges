@@ -7,6 +7,8 @@ namespace DespatchWeb.Models.FlightStats;
 public class CreateAlertResponse
 {
     [JsonPropertyName("request")] public Request Request { get; set; }
+    
+    [JsonPropertyName("error")] public ApiError Error { get; set; }
 
     [JsonPropertyName("rule")] public Rule Rule { get; set; }
 
@@ -14,6 +16,19 @@ public class CreateAlertResponse
 
     [JsonPropertyName("appendix")] public Appendix Appendix { get; set; }
 }
+
+public class ApiError
+{
+    [JsonPropertyName("httpStatusCode")]
+    public int HttpStatusCode { get; set; }
+    
+    [JsonPropertyName("errorId")]
+    public string ErrorId { get; set; }
+    
+    [JsonPropertyName("errorMessage")]
+    public string ErrorMessage { get; set; }
+}
+
 public class RetrieveAlertResponse
 {
     [JsonPropertyName("request")] public Request Request { get; set; }

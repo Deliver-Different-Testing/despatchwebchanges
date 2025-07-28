@@ -148,6 +148,8 @@ builder.Services.AddScoped<IFlightRateService, FlightRateService>();
 builder.Services.AddScoped<IAddStopJobService, AddStopJobService>();
 builder.Services.AddScoped<IMessageHelperService, MessageHelperService>();
 builder.Services.AddScoped<IAddAgentRecoveryJobService, AddAgentRecoveryJobService>();
+builder.Services.AddScoped<IAddressLookupService, AddressLookupService>();
+
 
 // Register DespatchContext with a dummy connection string
 builder.Services.AddDbContextFactory<DespatchContext>(options =>
@@ -254,7 +256,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Home}/{action=Index}/{addressId?}");
 
 
 app.Run();

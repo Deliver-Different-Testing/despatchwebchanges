@@ -22,6 +22,7 @@ public class FlightStatsService(
 {
     private const string ConnectionsBaseUrl = "https://api.flightstats.com/flex/connections/rest/v3/";
     private const string AlertUrl = "https://api.flightstats.com/flex/alerts/rest/v1";
+    private const string FlightAlertTypes = "can,div,dep,arr,depDelay15,arrDelay15,preDep60,preArr30";
 
     private readonly string _appId = Environment.GetEnvironmentVariable("FlightStatusApiAppId");
     private readonly string _appKey = Environment.GetEnvironmentVariable("FlightStatusApiAppKey");
@@ -48,6 +49,7 @@ public class FlightStatsService(
         query["name"] = uniqueWebhookId.ToString();
         query["type"] = "JSON";
         query["deliverTo"] = _webhookUrl;
+        query["events"] = FlightAlertTypes;
 
         var uriBuilder = new UriBuilder(url)
         {
@@ -77,6 +79,12 @@ public class FlightStatsService(
             {
                 PropertyNameCaseInsensitive = true
             });
+
+            if (createAlertResponse?.Error.ErrorId != null)
+            {
+                Log.Error("{ErrorMessage}", createAlertResponse.Error.ErrorMessage);
+                throw new Exception($"Failed to create flight alert. ErrorId: {createAlertResponse.Error.ErrorId}. Response: {createAlertResponse.Error.ErrorMessage}");
+            }
 
             if (createAlertResponse?.Rule?.Id == null)
             {
@@ -126,7 +134,7 @@ public class FlightStatsService(
 
         Log.Debug("FlightService StatusCode: {ResponseStatusCode}", response.StatusCode);
         if (!response.IsSuccessStatusCode)
-            throw new Exception($"Failed to disconnect alert aler: {response.ReasonPhrase}");
+            throw new Exception($"Failed to disconnect alert alert: {response.ReasonPhrase}");
     }
 
     public async Task<List<FlightViewModel>> GetFlightsAsync(

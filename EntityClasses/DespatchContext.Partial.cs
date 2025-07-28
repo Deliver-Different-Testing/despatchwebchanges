@@ -95,5 +95,14 @@ public partial class DespatchContext
                 .HasForeignKey(n => n.UpdatedBy)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+        
+        modelBuilder.Entity<TblAirport>(entity =>
+        {
+            entity.HasOne(d => d.TimeZoneNavigation)
+                .WithMany()
+                .HasForeignKey(d => d.Timezone)
+                .HasPrincipalKey(tz => tz.Code)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 }

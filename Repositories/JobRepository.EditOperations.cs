@@ -23,10 +23,7 @@ public partial class JobRepository
         }
         else
         {
-            var job = await Context.TucJobs
-                .Where(j => j.UcjbId == data.JobId)
-                .Include(j => j.DeliverByTimeZone)
-                .FirstOrDefaultAsync();
+            var job = await Context.TucJobs.FindAsync(data.JobId);
             ArgumentNullException.ThrowIfNull(job);
 
             job.DeliverByTime = DateTime.Parse(data.DateTime);
@@ -48,10 +45,7 @@ public partial class JobRepository
         }
         else
         {
-            var job = await Context.TucJobs
-                .Where(j => j.UcjbId == data.JobId)
-                .Include(j => j.PickupTimeZone)
-                .FirstOrDefaultAsync();
+            var job = await Context.TucJobs.FindAsync(data.JobId);
             ArgumentNullException.ThrowIfNull(job);
 
             job.UcjbTime = DateTime.Parse(data.DateTime);
