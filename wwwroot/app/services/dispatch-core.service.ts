@@ -451,7 +451,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         const response = await this.$http.get<Suggestion[]>(
             `job/ContactList`, {
                 params: {
-                    clientId,
+                    clientId
                 },
             }
         );

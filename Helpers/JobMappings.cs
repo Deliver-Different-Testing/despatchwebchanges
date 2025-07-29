@@ -174,6 +174,7 @@ public static class JobMappings
         ScheduleName = j.ScheduleName,
         FollowupTime = j.FollowupTime,
         Void = j.UcjbVoid,
+        LoggedInContactName = j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname,
 
         PickupTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.PickupTime : null,
         DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime : null,
@@ -582,6 +583,7 @@ public static class JobMappings
             ScheduleName = j.ScheduleName,
             FollowupTime = j.FollowupTime,
             Void = j.UcjbVoid,
+            LoggedInContactName = j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname,
 
             PickupTime = null,
             DeliveryTime = null,
@@ -773,6 +775,7 @@ public static class JobMappings
             : DateTime.MinValue,
         CreatedDate = j.UcbkDate,
         ScheduleName = j.ScheduleName,
+        LoggedInContactName = j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname,
 
         PickupTime = null,
         DeliveryTime = null,

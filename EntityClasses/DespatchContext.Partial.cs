@@ -12,6 +12,12 @@ public partial class DespatchContext
             entity.HasOne(d => d.Parent).WithMany(p => p.InverseParent)
                 .HasForeignKey(d => d.ParentId)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            entity.HasOne(d => d.LoggedInContact)
+                .WithMany()
+                .HasForeignKey(d => d.LoggedInContactId)
+                .HasPrincipalKey(cc => cc.UcctId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Tuc Job Archive 
@@ -53,13 +59,11 @@ public partial class DespatchContext
                 .HasForeignKey(d => d.DeliverToLeaveId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Self-referencing relationship
             entity.HasOne(d => d.Parent)
                 .WithMany(p => p.InverseParent)
                 .HasForeignKey(d => d.ParentId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Nationwide relationship (adjust based on your actual relationship)
             entity.HasOne(d => d.Nationwide)
                 .WithOne()
                 .HasForeignKey<TucJobNationwide>(d => d.UcnwJobId)
@@ -75,6 +79,12 @@ public partial class DespatchContext
                 .WithOne()
                 .HasForeignKey(n => n.JobBookingId)
                 .HasPrincipalKey(j => j.UcjbId)
+                .OnDelete(DeleteBehavior.Restrict);
+            
+            entity.HasOne(d => d.LoggedInContact)
+                .WithMany()
+                .HasForeignKey(d => d.LoggedInContactId)
+                .HasPrincipalKey(cc => cc.UcctId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
         

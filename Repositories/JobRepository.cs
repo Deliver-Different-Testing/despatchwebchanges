@@ -1283,9 +1283,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             .ToListAsync();
     }
 
-    public async Task<List<Suggestion>> ContactsAsync(int clientId)
+    public async Task<List<Suggestion>> GetContactsByClientIdAsync(int clientId)
     {
-        return await Context
+        var contacts = await Context
             .UtlQryContactLookups.Join(
                 Context.TblClientContacts,
                 s => s.ContactId,
@@ -1293,16 +1293,19 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 (s, cc) => new { s, cc }
             )
             .Where(x => x.cc.ClientId == clientId && x.s.Active)
-            .Select(x => new Suggestion { Id = x.s.ContactId, Text = x.s.Name })
+            .Select(x => new Suggestion { Id = x.s.ContactId, Text = x.s.UcctFirstname + " " + x.s.UcctSurname })
             .Distinct()
             .AsNoTracking()
             .ToListAsync();
+
+        return contacts;
     }
 
     public async Task<List<Lookup>> LeaveParcelLocationsAsync()
     {
         return await Context
-            .TblJobLeaveNotHomes.OrderBy(l => l.Sequence)
+            .TblJobLeaveNotHomes
+            .OrderBy(l => l.Sequence)
             .Select(x => new Lookup { ID = x.LeaveNotHomeId, Text = x.Name })
             .ToListAsync();
     }

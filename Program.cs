@@ -142,7 +142,6 @@ builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 builder.Services.AddScoped<IFlightStatsService, FlightStatsService>();
 builder.Services.AddScoped<IClientAccessValidatorService, ClientAccessValidatorService>();
 builder.Services.AddScoped<IRateJobService, RateJobService>();
-builder.Services.AddScoped<ICountryService, CountryService>();
 builder.Services.AddScoped<ITenantInfoService, TenantInfoService>();
 builder.Services.AddScoped<IFlightRateService, FlightRateService>();
 builder.Services.AddScoped<IAddStopJobService, AddStopJobService>();
@@ -151,7 +150,7 @@ builder.Services.AddScoped<IAddAgentRecoveryJobService, AddAgentRecoveryJobServi
 builder.Services.AddScoped<IAddressLookupService, AddressLookupService>();
 
 
-// Register DespatchContext with a dummy connection string
+// Register DespatchContext with a fake connection string
 builder.Services.AddDbContextFactory<DespatchContext>(options =>
     options.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=dummy;Trusted_Connection=True;"), ServiceLifetime.Transient);
 
