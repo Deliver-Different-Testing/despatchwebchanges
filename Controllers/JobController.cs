@@ -33,7 +33,6 @@ public class JobController(
     IAmazonS3 s3Client,
     HttpClient httpClient,
     IRateJobService rateJobService,
-    ICountryService countryService,
     IRecurringJobRepository recurringJobRepository,
     ITenantInfoService infoService,
     IAddStopJobService addStopJobService
@@ -49,7 +48,7 @@ public class JobController(
     {
         try
         {
-            var isUsTenant = countryService.IsUsTenant();
+            var isUsTenant = infoService.IsUsTenant();
             if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
             var result = await jobRepository.JobListAsync(
@@ -124,7 +123,7 @@ public class JobController(
     {
         try
         {
-            var isUsTenant = countryService.IsUsTenant();
+            var isUsTenant = infoService.IsUsTenant();
 
             if (!isInternal)
                 await clientAccessValidator.ValidateClientAccess(cid, clientIds);
@@ -1384,7 +1383,7 @@ public class JobController(
 
     public async Task<IActionResult> ContactList(int clientId)
     {
-        var data = await jobRepository.ContactsAsync(clientId);
+        var data = await jobRepository.GetContactsByClientIdAsync(clientId);
         return Json(data);
     }
 

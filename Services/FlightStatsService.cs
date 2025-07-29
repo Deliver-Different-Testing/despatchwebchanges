@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web;
@@ -9,12 +11,14 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.FlightStats;
+using Microsoft.AspNetCore.Http;
 using Serilog;
 
 namespace DespatchWeb.Services;
 
 public class FlightStatsService(
     HttpClient httpClient,
+    IHttpContextAccessor contextAccessor,
     INationwideJobRepository repository,
     ITenantInfoService infoService
 ) : IFlightStatsService
@@ -34,6 +38,18 @@ public class FlightStatsService(
         ArgumentException.ThrowIfNullOrEmpty(departureAirportCode);
 
         var uniqueWebhookId = Guid.NewGuid();
+        var connectionString =
+            contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "Connection")?.Value;
+        var tenantId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
+        var timeZone = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
+        var userName = contextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Name)?.Value;
+
+        ArgumentException.ThrowIfNullOrEmpty(connectionString);
+        ArgumentException.ThrowIfNullOrEmpty(tenantId);
+
+        var token = AuthenticationExtensions.CreateApiToken(userName, int.Parse(tenantId), connectionString, timeZone);
+
+        var requestToken = new JwtSecurityTokenHandler().WriteToken(token);
         
         var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
         var (year, month, day, _, _) = SplitDate(departureTime);
@@ -49,6 +65,7 @@ public class FlightStatsService(
         query["type"] = "JSON";
         query["deliverTo"] = _webhookUrl;
         query["events"] = _flightWebhookAlertTypes;
+        query["_token"] = requestToken;
 
         var uriBuilder = new UriBuilder(url)
         {

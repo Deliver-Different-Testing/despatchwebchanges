@@ -14,6 +14,7 @@ public static class AuthenticationExtensions
 {
     public static JwtSecurityToken CreateApiToken(string name, int tenantId, string connection, string timeZone)
     {
+
         var symmetricSecurityKey =
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSecretKey") ?? string.Empty));
 
@@ -39,8 +40,9 @@ public static class AuthenticationExtensions
             signingCredentials: new SigningCredentials(symmetricSecurityKey, SecurityAlgorithms.HmacSha256)
         );
     }
-    
-    private static string EncryptClaims(string claims, string key)
+
+
+    internal static string EncryptClaims(string claims, string key)
     {
         using var aesAlg = Aes.Create();
         var keyBytes = Convert.FromBase64String(key);
@@ -54,8 +56,12 @@ public static class AuthenticationExtensions
         // Write the IV to the beginning of the stream
         msEncrypt.Write(iv, 0, iv.Length);
         using (var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
-        using (var swEncrypt = new StreamWriter(csEncrypt)) swEncrypt.Write(claims);
-        
+        using (var swEncrypt = new StreamWriter(csEncrypt))
+        {
+            swEncrypt.Write(claims);
+        }
         return Convert.ToBase64String(msEncrypt.ToArray());
     }
+
+
 }

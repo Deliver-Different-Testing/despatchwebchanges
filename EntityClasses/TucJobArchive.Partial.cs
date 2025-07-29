@@ -13,12 +13,12 @@ public partial class TucJobArchive
     public virtual TucJobType SpeedNavigation { get; set; }
     public virtual TblJobLeaveNotHome DeliverToLeave { get; set; }
         
-    // Self-referencing navigation properties for parent/child relationships
     public virtual TucJobArchive Parent { get; set; }
     public virtual ICollection<TucJobArchive> InverseParent { get; set; } = new List<TucJobArchive>();
         
-    // Navigation to Nationwide (assuming one-to-one or one-to-many)
     public virtual TucJobNationwide Nationwide { get; set; }
     public virtual ICollection<PricingBreakdownArchive> PricingBreakdowns { get; set; } = new List<PricingBreakdownArchive>();
     public virtual ICollection<TucNoteArchive> NoteArchives { get; set; } = new List<TucNoteArchive>();
+    
+    public virtual TucClientContact LoggedInContact { get; set; }
 }

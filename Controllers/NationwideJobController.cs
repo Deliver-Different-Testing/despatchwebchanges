@@ -16,7 +16,7 @@ public class NationwideJobController(
     INationwideJobRepository repository,
     IFlightStatsService flightService,
     IClientAccessValidatorService clientAccessValidator,
-    ICountryService countryService,
+    ITenantInfoService infoService,
     IFlightRateService flightRateService,
     IAddAgentRecoveryJobService recoveryJobService)
     : Controller
@@ -26,7 +26,7 @@ public class NationwideJobController(
         try
         {
             if (!data.IsInternal) await clientAccessValidator.ValidateClientAccess(data.Cid, data.ClientIds);
-            var isUsTenant = countryService.IsUsTenant();
+            var isUsTenant = infoService.IsUsTenant();
 
             var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, data.ClientIds,
                 NationwideWidget.JobList, data.DespatchViewIds);
@@ -45,7 +45,7 @@ public class NationwideJobController(
         try
         {
             if (!data.IsInternal) await clientAccessValidator.ValidateClientAccess(data.Cid, data.ClientIds);
-            var isUsTenant = countryService.IsUsTenant();
+            var isUsTenant = infoService.IsUsTenant();
 
             var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, data.ClientIds,
                 NationwideWidget.Pod, data.DespatchViewIds);
@@ -64,7 +64,7 @@ public class NationwideJobController(
         try
         {
             if (!data.IsInternal) await clientAccessValidator.ValidateClientAccess(data.Cid, data.ClientIds);
-            var isUsTenant = countryService.IsUsTenant();
+            var isUsTenant = infoService.IsUsTenant();
 
             var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, data.ClientIds,
                 NationwideWidget.Reprice, data.DespatchViewIds);

@@ -100,7 +100,7 @@ public interface IJobRepository
     Task FinishSplitJobProcess(int jobId, string despatcher);
     Task<List<SuburbLookup>> SuburbsAsync();
     Task<List<Suggestion>> SpeedsAsync();
-    Task<List<Suggestion>> ContactsAsync(int clientId);
+    Task<List<Suggestion>> GetContactsByClientIdAsync(int clientId);
     Task<List<Lookup>> LeaveParcelLocationsAsync();
     Task<List<UndeliverableLocation>> UndeliverableLocationsAsync();
     Task<List<InternalStatus>> GetInternalStatusListAsync();

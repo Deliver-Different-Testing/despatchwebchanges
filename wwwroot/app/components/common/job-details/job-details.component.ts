@@ -1134,7 +1134,7 @@ class JobDetailController extends BaseController {
     }
 
     async contactClick($event: MouseEvent, job: IJob) {
-        if (job.clientId === undefined) return;
+        if (!job.clientId) return;
 
         const pickContacts = await this.DispatchData.getContactList(job.clientId);
         await this.showSelectDialog(
