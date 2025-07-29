@@ -25,7 +25,7 @@ public class NationwideJobRepository(
     private readonly ITenantInfoService _infoService = infoService;
 
     public async Task AddJobNationwideAsync(int jobId, AddFlightToJobDto flights,
-        List<string> webhookIds, int? fromAirportId, int? toAirportId )
+        List<string> webhookIds, int? fromAirportId, int? toAirportId)
     {
         try
         {
@@ -98,16 +98,19 @@ public class NationwideJobRepository(
                 var pickUpJob = job.Parent.InverseParent.First(j => j.UcjbNumber.EndsWith('1'));
                 pickUpJob.DeliverByTime = primaryFlight.DepartureTime.AddMinutes(-airportProcessingTime);
                 pickUpJob.DeliverByTimeZoneId = job.PickupTimeZoneId;
-                
+
                 // Update delivery address with airport
-                await UpdateJobAddressWithAirportInfoAsync(pickUpJob, departureAirportId.Value, primaryFlight.DepartureAirportTimeZone ,true);
+                await UpdateJobAddressWithAirportInfoAsync(pickUpJob, departureAirportId.Value,
+                    primaryFlight.DepartureAirportTimeZone, true);
             }
 
             // Second part
             var flightPart = flights.FlightSegments.Count > 1 ? flights.FlightSegments[1] : primaryFlight;
             job.DeliverByTime = flightPart.ArrivalTime;
-            await UpdateJobAddressWithAirportInfoAsync(job, departureAirportId.Value, flightPart.DepartureAirportTimeZone, false);
-            await UpdateJobAddressWithAirportInfoAsync(job, arrivalAirportId.Value, flightPart.ArrivalAirportTimeZone , true);
+            await UpdateJobAddressWithAirportInfoAsync(job, departureAirportId.Value,
+                flightPart.DepartureAirportTimeZone, false);
+            await UpdateJobAddressWithAirportInfoAsync(job, arrivalAirportId.Value, flightPart.ArrivalAirportTimeZone,
+                true);
 
             // Set delivery job pick-up time
             if (job.ToAirportId != null || toAirportId != null)
@@ -116,9 +119,10 @@ public class NationwideJobRepository(
                 var lastFlight = flights.FlightSegments.Last();
                 var deliveryJob = job.Parent.InverseParent.First(j => j.UcjbNumber.EndsWith('3'));
                 deliveryJob.UcjbTime = lastFlight.ArrivalTime.AddMinutes(airportProcessingTime);
-                
+
                 // Update Pickup Address With Airport
-                await UpdateJobAddressWithAirportInfoAsync(deliveryJob, arrivalAirportId.Value, lastFlight.ArrivalAirportTimeZone, false);
+                await UpdateJobAddressWithAirportInfoAsync(deliveryJob, arrivalAirportId.Value,
+                    lastFlight.ArrivalAirportTimeZone, false);
             }
 
             var currentTime = _infoService.GetCurrentTenantTime();
@@ -718,6 +722,7 @@ public class NationwideJobRepository(
     {
         var job = await Context.TucJobs
             .Include(j => j.TucJobNationwides)
+            .ThenInclude(flight => flight.JobDeliveryJourneys)
             .Include(j => j.TucJobReadTracker)
             .FirstOrDefaultAsync(j => j.UcjbId == jobId);
         ArgumentNullException.ThrowIfNull(job);
@@ -743,10 +748,18 @@ public class NationwideJobRepository(
         job.AgentId = null;
         job.UcjbFlightDetails = string.Empty;
 
-        // Remove flight record
         if (job.TucJobNationwides != null && job.TucJobNationwides.Count != 0)
         {
             var flightDetails = job.TucJobNationwides.ToList();
+
+            // Delete delivery journeys linked to these flights
+            var deliveryJourneys = flightDetails
+                .SelectMany(flight => flight.JobDeliveryJourneys ?? new List<JobDeliveryJourney>())
+                .ToList();
+
+            if (deliveryJourneys.Count != 0) Context.JobDeliveryJourneys.RemoveRange(deliveryJourneys);
+
+            // Now delete the flight records
             Context.TucJobNationwides.RemoveRange(flightDetails);
         }
 
@@ -762,7 +775,7 @@ public class NationwideJobRepository(
             CreatedDate = _infoService.GetCurrentTenantTime()
         };
 
-        await Context.AddAsync(note);
+        await Context.TucNotes.AddAsync(note);
         await Context.SaveChangesAsync();
     }
 
@@ -985,7 +998,7 @@ public class NationwideJobRepository(
                     j.PickupAddressLine5,
                     j.PickupAddressLine6,
                     j.PickupAddressLine7,
-                    j.PickupAddressLine8),    
+                    j.PickupAddressLine8),
                 DeliveryAddress = new AddressViewModel(
                     j.DeliveryAddressLine1,
                     j.DeliveryAddressLine2,
@@ -1139,15 +1152,16 @@ public class NationwideJobRepository(
         await Context.SaveChangesAsync();
     }
 
-    private async Task UpdateJobAddressWithAirportInfoAsync(TucJob job, int airportId, string airportTimezone, bool isDeliveryAddress)
+    private async Task UpdateJobAddressWithAirportInfoAsync(TucJob job, int airportId, string airportTimezone,
+        bool isDeliveryAddress)
     {
         var airport = await Context.TblAirports.FindAsync(airportId);
         ArgumentNullException.ThrowIfNull(airport);
 
-        int? timeZoneId = null; 
-        if(!string.IsNullOrEmpty(airportTimezone))
+        int? timeZoneId = null;
+        if (!string.IsNullOrEmpty(airportTimezone))
             timeZoneId = await GetTimeZoneIdByNameAsync(airportTimezone);
-    
+
         if (isDeliveryAddress)
         {
             job.DeliveryAddressLine1 = airport.AddressLine1;
@@ -1174,7 +1188,7 @@ public class NationwideJobRepository(
             job.PickupAddressLine8 = airport.AddressLine8;
             job.PickUpLatitude = airport.Latitude;
             job.PickUpLongitude = airport.Longitude;
-            job.PickupTimeZoneId = timeZoneId ?? job.PickupTimeZoneId;       
+            job.PickupTimeZoneId = timeZoneId ?? job.PickupTimeZoneId;
         }
     }
 }
