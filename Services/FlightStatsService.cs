@@ -21,11 +21,11 @@ public class FlightStatsService(
 {
     private const string ConnectionsBaseUrl = "https://api.flightstats.com/flex/connections/rest/v3/";
     private const string AlertUrl = "https://api.flightstats.com/flex/alerts/rest/v1";
-    private const string FlightAlertTypes = "can,div,depDelay15,arrDelay15,tailNumber,all";
 
     private readonly string _appId = Environment.GetEnvironmentVariable("FlightStatusApiAppId");
     private readonly string _appKey = Environment.GetEnvironmentVariable("FlightStatusApiAppKey");
     private readonly string _webhookUrl = Environment.GetEnvironmentVariable("FlightWebhook");
+    private readonly string _flightWebhookAlertTypes = Environment.GetEnvironmentVariable("FlightWebhookEvents");
 
     public async Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
         string departureAirportCode)
@@ -48,7 +48,7 @@ public class FlightStatsService(
         query["name"] = uniqueWebhookId.ToString();
         query["type"] = "JSON";
         query["deliverTo"] = _webhookUrl;
-        query["events"] = FlightAlertTypes;
+        query["events"] = _flightWebhookAlertTypes;
 
         var uriBuilder = new UriBuilder(url)
         {
