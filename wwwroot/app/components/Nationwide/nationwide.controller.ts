@@ -1348,7 +1348,7 @@ class NationwideControl extends BaseController {
         try {
             // Check flight is assigned first
             const isAllowedToAssignAgent = await this.nationwideService.relatedJobHasFlightAssigned(job.id);
-            if(isAllowedToAssignAgent) {
+            if(!isAllowedToAssignAgent) {
                 await this.$mdDialog.show(
                     this.$mdDialog.alert()
                         .parent(this.$document.parent())

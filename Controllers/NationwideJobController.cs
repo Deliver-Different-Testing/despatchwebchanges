@@ -459,7 +459,7 @@ public class NationwideJobController(
         {
             ArgumentNullException.ThrowIfNull(agentJobId);
             
-           var isAllowed = await repository.RelatedJobHasFlightAssigned(agentJobId);
+           var isAllowed = await repository.CanAssignAgentToJob(agentJobId);
            return Json(isAllowed);
         }
         catch (Exception e)
