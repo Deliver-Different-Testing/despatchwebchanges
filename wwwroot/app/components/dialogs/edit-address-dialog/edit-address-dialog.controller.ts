@@ -4,10 +4,11 @@ import ToastrService from "../../../services/toastr.service";
 import {AppConfig} from "../../../interfaces/app-config.interface";
 import IStateInfo from "../../../interfaces/state-info.interface";
 import ConfigService from "../../../services/config.service";
-import {HereMapsLocationResult, Position,} from "../../../interfaces/heremaps-autocomplete.interfaces";
+import {HereMapsLocationResult,} from "../../../interfaces/heremaps-autocomplete.interfaces";
 import {HereMapsLookupResponse,} from "../../../interfaces/hereMapsLookUp.interfaces";
 import {getStateByAbbreviation, getStateByName, getStates} from "../../../functions/usStates";
 import AddressLookupService from "../../../services/address-lookup.service";
+import {HereMapConfig, HereMapCredentials} from "../../../interfaces/hereMapCredentials.interfaces";
 
 class EditAddressDialogController extends BaseController {
     static $inject = [
@@ -16,7 +17,6 @@ class EditAddressDialogController extends BaseController {
         "$interval",
         "$mdDialog",
         "toastrService",
-        "NgMap",
         "APP_CONFIG",
         "configService",
         "addressLookupService",
@@ -29,11 +29,12 @@ class EditAddressDialogController extends BaseController {
     isLoading: boolean = false;
     isAddressLoading: boolean = false;
 
+    hereMapConfig?: HereMapConfig;
+    hereMapCredentials?: HereMapCredentials;
+    mapInstance: any;
+    platform: any;
+
     addressSearchText: string;
-    googleMapsUrl?: string;
-    mapDisplay?: boolean;
-    map?: google.maps.Map;
-    marker?: google.maps.Marker;
     usStateList: IStateInfo[];
     addressSearchResults: HereMapsLocationResult[] = [];
     selectedAddressId?: string;
@@ -44,13 +45,12 @@ class EditAddressDialogController extends BaseController {
     private readonly useUsFormat: boolean;
 
     constructor(
-        private $scope: angular.IScope,
+        $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
         private $mdDialog: angular.material.IDialogService,
         private toastrService: ToastrService,
-        private NgMap: angular.map.INgMap,
-        appConfig: AppConfig,
+        private appConfig: AppConfig,
         private configService: ConfigService,
         private addressLookupService: AddressLookupService,
         public addressDetails: EditAddressDialogViewModel,
@@ -59,9 +59,9 @@ class EditAddressDialogController extends BaseController {
         public showContactInfo: boolean,
     ) {
         super();
-        this.initServices($timeout, $interval, this.$scope);
+        this.initServices($timeout, $interval, $scope);
 
-        this.useUsFormat = appConfig.US_Customer;
+        this.useUsFormat = this.appConfig.US_Customer;
         this.addressSearchText = this.addressDetails.fullAddress || "";
 
         if (this.showContactInfo) {
@@ -82,42 +82,97 @@ class EditAddressDialogController extends BaseController {
             }
         }
 
+        // Set up a map
+        this.initializeHereMap();
+    }
+    
+    $onInit() {
         this.registerTimeout(() => {
-            this.mapDisplay = true;
+            if(this.addressDetails.latitude && this.addressDetails.longitude) {
+                this.updateMapPosition(this.addressDetails.latitude, this.addressDetails.longitude);
+            }
+        }, 300);
+    }
+
+    private initializeHereMap(): void {
+        this.configService.getHereMapsKey()
+            .then((hereApiKey) => {
+                this.hereMapCredentials = {
+                    apiKey: hereApiKey
+                };
+
+                // Set up map configuration for a single address
+                this.hereMapConfig = {
+                    center: {
+                        lat: this.addressDetails.latitude || this.appConfig.US_Coordinates_Center.lat,
+                        lng: this.addressDetails.longitude ||  this.appConfig.US_Coordinates_Center.lng
+                    },
+                    zoom: 10,
+                    job: {
+                        id: 'edit-address',
+                        pickup: {
+                            lat: this.addressDetails.latitude || 0,
+                            lng: this.addressDetails.longitude || 0
+                        }
+                        // No delivery for a single address
+                    },
+                    preserveView: false,
+                    timestamp: Date.now()
+                };
+            })
+            .catch((error) => {
+                console.error('Error initializing HERE Maps:', error);
+                this.toastrService.showErrorToast('Error loading map. Please try again.');
+            });
+    }
+
+    onMapReady(map: any, platform: any): void {
+        console.log('HERE Map ready:', map);
+        this.mapInstance = map;
+        this.platform = platform;
+
+        // Force resize after a short delay to ensure proper sizing
+        this.registerTimeout(() => {
+            if (this.mapInstance && this.mapInstance.getViewPort) {
+                this.mapInstance.getViewPort().resize();
+            }
         }, 500);
 
-        this.configService
-            .getGoogleMapsKey()
-            .then((apiKey: string) => {
-                this.googleMapsUrl = `https://maps.google.com/maps/api/js?key=${apiKey}&libraries=places`;
+        // Add click listener for map clicks
+        map.addEventListener('tap', async (event: any) => {
+            const coord = map.screenToGeo(
+                event.currentPointer.viewportX,
+                event.currentPointer.viewportY
+            );
 
-                return this.registerTimeout(() => {
-                    return this.NgMap.getMap({id: "dispatchMap"});
-                }, 1000);
-            })
-            .then((map) => {
-                console.log("Loading Map!");
-                this.map = map;
-                const mapMarkers = map.get("markers") || [];
-                console.log("Map markers:", mapMarkers);
+            await this.onMapClick(coord.lat, coord.lng);
+        });
+    }
 
-                if (!mapMarkers.length) {
-                    console.log("No markers found. Creating a new one.");
-                    this.marker = new google.maps.Marker({
-                        position: new google.maps.LatLng(
-                            this.addressDetails.latitude ?? 0,
-                            this.addressDetails.longitude ?? 0
-                        ),
-                        map: this.map,
-                        visible: true,
-                    });
-                } else {
-                    this.marker = mapMarkers[0];
-                }
+    private async onMapClick(lat: number, lng: number): Promise<void> {
+        console.log('Map clicked at:', lat, lng);
 
-                this.registerTimeout(() => this.$scope.$apply());
-                console.log("Marker initialized:", this.marker);
-            });
+        // Update address coordinates
+        this.addressDetails.latitude = lat;
+        this.addressDetails.longitude = lng;
+
+        this.updateMapPosition(lat, lng);
+        await this.fetchNearestAddress(lat, lng);
+    }
+
+
+    private updateMapPosition(lat: number, lng: number): void {
+        // Update the map config to reflect the new position
+        this.hereMapConfig = {
+            ...this.hereMapConfig,
+            job: {
+                id: 'edit-address',
+                pickup: {lat, lng}
+            },
+            timestamp: Date.now() // Force update
+        };
+
+        this.applyScope();
     }
 
     async autocompleteAddressSearch(
@@ -127,7 +182,7 @@ class EditAddressDialogController extends BaseController {
             const results = await this.addressLookupService.autocompleteAddressSearch(text);
             this.addressSearchResults = results;
 
-           await this.$scope.$applyAsync()
+            this.applyScope();
             return results;
         } catch (error: any) {
             this.toastrService.showErrorToast(
@@ -150,52 +205,45 @@ class EditAddressDialogController extends BaseController {
             }
 
             this.isAddressLoading = true;
-
             this.selectedAddressId = selectedItem.id;
 
             const detailedLocation = await this.addressLookupService.getLocationDetailsById(
                 selectedItem.id
             );
 
+            let coordinates;
             if (detailedLocation) {
                 this.handleAddressFieldsFromLookup(detailedLocation);
-                this.updateMapMarker({
+                coordinates = {
                     lat: detailedLocation.position.lat,
-                    lng: detailedLocation.position.lng,
-                });
+                    lng: detailedLocation.position.lng
+                };
             } else {
-                this.updateMapMarker(selectedItem.position);
+                coordinates = {
+                    lat: selectedItem.position.lat,
+                    lng: selectedItem.position.lng
+                };
             }
 
+            // Update address details coordinates
+            this.addressDetails.latitude = coordinates.lat;
+            this.addressDetails.longitude = coordinates.lng;
             this.addressDetails.fullAddress = selectedItem.address.label;
+
+            // Update map to show new location
+            this.updateMapPosition(coordinates.lat, coordinates.lng);
 
             this.isAddressLoading = false;
 
         } catch (error: any) {
             console.error("Error processing selected address:", error);
-
             this.isAddressLoading = false;
-
             this.toastrService.showErrorToast(
                 "An error occurred while processing the selected address. Please try again."
             );
         } finally {
-            await this.$scope.$applyAsync()
+            this.applyScope();
         }
-    }
-
-    updateMapMarker(position: Position): void {
-        const latLng = new google.maps.LatLng(position.lat, position.lng);
-
-        console.log("Setting map center to:", latLng.toString());
-        this.map?.setCenter(latLng);
-
-        console.log("Marker before setPosition:", this.marker);
-        this.marker?.setPosition(latLng);
-        console.log("Marker after setPosition:", this.marker);
-
-        this.marker?.setVisible(true);
-        this.registerTimeout(() => this.$scope.$apply());
     }
 
     async submit(addressDetails: EditAddressDialogViewModel): Promise<void> {
@@ -257,7 +305,7 @@ class EditAddressDialogController extends BaseController {
             );
             throw error; // Re-throw to maintain an error chain
         } finally {
-            await this.$scope.$applyAsync();
+            this.applyScope();
         }
     }
 
@@ -276,29 +324,6 @@ class EditAddressDialogController extends BaseController {
             .join(", ");
     }
 
-    moveMarker(event: google.maps.MapMouseEvent): void {
-        if (event.latLng) {
-            this.addressDetails.latitude = event.latLng.lat();
-            this.addressDetails.longitude = event.latLng.lng();
-        }
-    }
-
-    markerDragend(event: google.maps.MapMouseEvent) {
-        const location = event.latLng;
-        if (!location) return;
-
-        try {
-            const lat = location.lat();
-            const lng = location.lng();
-
-            return this.fetchNearestAddress(lat, lng);
-        } catch (error) {
-            this.toastrService.showErrorToast(
-                "An error occurred while retrieving address information. Please try again or contact support"
-            );
-        }
-    }
-
     async fetchNearestAddress(lat: number, lng: number): Promise<void> {
         try {
             this.isAddressLoading = true;
@@ -309,39 +334,29 @@ class EditAddressDialogController extends BaseController {
                 const location = responseItems[0];
                 this.selectedAddressId = location.id;
                 this.addressDetails.fullAddress = location.address.label;
+
+                // Update the search text to show the new address
+                this.addressSearchText = location.address.label;
+
+                // Update address fields from lookup
+                if (location.id) {
+                    const detailedLocation = await this.addressLookupService.getLocationDetailsById(location.id);
+                    if (detailedLocation) {
+                        this.handleAddressFieldsFromLookup(detailedLocation);
+                    }
+                }
             }
 
             this.isAddressLoading = false;
 
         } catch (error) {
             console.error("Error fetching reverse geocode:", error);
-
             this.isAddressLoading = false;
-
             this.toastrService.showErrorToast(
                 "An error occurred while retrieving address information. Please try again."
             );
         } finally {
-            await this.$scope.$applyAsync();
-        }
-    }
-
-    placeChanged(place: google.maps.places.PlaceResult): void {
-        try {
-            if (!place.geometry?.location) {
-                this.toastrService.showErrorToast(
-                    "An error occurred while retrieving address information. Please try again or contact support"
-                );
-                return;
-            }
-
-            this.addressDetails.latitude = place.geometry.location.lat();
-            this.addressDetails.longitude = place.geometry.location.lng();
-            this.map?.setCenter(place.geometry.location);
-        } catch (error) {
-            this.toastrService.showErrorToast(
-                "An error occurred while retrieving address information. Please try again or contact support"
-            );
+            this.applyScope();
         }
     }
 

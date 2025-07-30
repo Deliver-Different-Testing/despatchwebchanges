@@ -94,8 +94,15 @@ angular.module('hereMapTracking.components', [])
                     const hasNewTimestamp = newConfig.job && oldConfig.job && newConfig.job.timestamp !== oldJob.timestamp;
 
                     // Also check for changes in coordinates (might have been updated)
-                    const hasCoordinateChanges = newConfig.job && oldConfig.job && (newConfig.job.pickup.lat !== oldJob.pickup.lat || newConfig.job.pickup.lng !== oldJob.pickup.lng || newConfig.job.delivery.lat !== oldJob.delivery.lat || newConfig.job.delivery.lng !== oldJob.delivery.lng);
-
+                    const hasCoordinateChanges = newConfig.job && oldConfig.job && (
+                        (newConfig.job.pickup && oldConfig.job.pickup &&
+                            (newConfig.job.pickup.lat !== oldConfig.job.pickup.lat ||
+                                newConfig.job.pickup.lng !== oldConfig.job.pickup.lng)) ||
+                        (newConfig.job.delivery && oldConfig.job.delivery &&
+                            (newConfig.job.delivery.lat !== oldConfig.job.delivery.lat ||
+                                newConfig.job.delivery.lng !== oldConfig.job.delivery.lng))
+                    );
+                    
                     if (isNewJob || hasNewTimestamp || hasCoordinateChanges || hasCourierLocationChanges) {
                         console.log('Map update triggered:', isNewJob ? 'New job' : hasNewTimestamp ? 'New timestamp' : hasCoordinateChanges ? 'Coordinate changes' : 'Courier location changes');
 
@@ -188,6 +195,12 @@ angular.module('hereMapTracking.components', [])
                     return;
                 }
 
+                // Validate job has required pickup coordinates
+                if (!job.pickup || typeof job.pickup.lat !== 'number' || typeof job.pickup.lng !== 'number') {
+                    console.warn('Job missing valid pickup coordinates', job);
+                    return;
+                }
+
                 try {
                     // Remove all markers and route lines
                     $scope.clearMap();
@@ -195,9 +208,19 @@ angular.module('hereMapTracking.components', [])
                     // Check if we should preserve the current view
                     const preserveView = $scope.config && $scope.config.preserveView;
 
-                    // Add all markers
-                    fromMarker = HereMapService.getHereFromMarker(job.pickup.lat, job.pickup.lng, fromMarker, mapInstance.map);
-                    toMarker = HereMapService.getHereToMarker(job.delivery.lat, job.delivery.lng, toMarker, mapInstance.map);
+                    // Handle single address case
+                    const isSingleAddress = !job.delivery ||
+                        typeof job.delivery.lat !== 'number' ||
+                        typeof job.delivery.lng !== 'number';
+
+                    // Add markers based on available data
+                    if (job.pickup && job.pickup.lat && job.pickup.lng) {
+                        fromMarker = HereMapService.getHereFromMarker(job.pickup.lat, job.pickup.lng, fromMarker, mapInstance.map);
+                    }
+
+                    if (!isSingleAddress && job.delivery && job.delivery.lat && job.delivery.lng) {
+                        toMarker = HereMapService.getHereToMarker(job.delivery.lat, job.delivery.lng, toMarker, mapInstance.map);
+                    }
 
                     if (courierLocation && courierLocation.lat && courierLocation.lng) {
                         courierMarker = HereMapService.getHereCourierMarker(
@@ -206,7 +229,7 @@ angular.module('hereMapTracking.components', [])
                             courierMarker,
                             mapInstance.map,
                             job.childJobs && job.childJobs.some(x => x && x.flight === true),
-                            job.pickup.lng - job.delivery.lng
+                            isSingleAddress ? 0 : (job.pickup.lng - job.delivery.lng)
                         );
                     }
 
@@ -216,27 +239,38 @@ angular.module('hereMapTracking.components', [])
                         scopedJob = $scope.getScopedJob($scope.config.selectedJobIndex);
                     }
 
-                    // Add all route lines (and extra markers if needed), also centers map
-                    if (job.childJobs && job.childJobs.length > 0) {
-                        for (let i in job.childJobs) {
-                            if (i !== '0') {
-                                extraMarkers = HereMapService.addExtraMarker(job.childJobs[i].pickup.lat,
-                                    job.childJobs[i].pickup.lng, extraMarkers, mapInstance.map);
+                    // Handle routing for single address vs multiple addresses
+                    if (isSingleAddress) {
+                        // For single address, just center the map on the pickup location
+                        if (job.pickup && job.pickup.lat && job.pickup.lng) {
+                            if (!preserveView) {
+                                mapInstance.map.setCenter({ lat: job.pickup.lat, lng: job.pickup.lng });
+                                mapInstance.map.setZoom(15); // Reasonable zoom level for single address
                             }
-                            extraRouteLines = HereMapService.addExtraRouteLine(job.childJobs[i].pickup.lat,
-                                job.childJobs[i].pickup.lng,
-                                job.childJobs[i].delivery.lat,
-                                job.childJobs[i].delivery.lng,
-                                i,
-                                job.childJobs[i].flight, extraRouteLines, job, mapInstance.map, platform,
-                                scopedJob ? job.childJobs[i].id === scopedJob.id : null,
-                                preserveView);
                         }
                     } else {
-                        routeLine = HereMapService.drawRouteLine(job.pickup.lat,
-                            job.pickup.lng,
-                            job.delivery.lat,
-                            job.delivery.lng, routeLine, job, mapInstance.map, platform, job.flight, preserveView);
+                        // Original routing logic for pickup/delivery pairs
+                        if (job.childJobs && job.childJobs.length > 0) {
+                            for (let i in job.childJobs) {
+                                if (i !== '0') {
+                                    extraMarkers = HereMapService.addExtraMarker(job.childJobs[i].pickup.lat,
+                                        job.childJobs[i].pickup.lng, extraMarkers, mapInstance.map);
+                                }
+                                extraRouteLines = HereMapService.addExtraRouteLine(job.childJobs[i].pickup.lat,
+                                    job.childJobs[i].pickup.lng,
+                                    job.childJobs[i].delivery.lat,
+                                    job.childJobs[i].delivery.lng,
+                                    i,
+                                    job.childJobs[i].flight, extraRouteLines, job, mapInstance.map, platform,
+                                    scopedJob ? job.childJobs[i].id === scopedJob.id : null,
+                                    preserveView);
+                            }
+                        } else {
+                            routeLine = HereMapService.drawRouteLine(job.pickup.lat,
+                                job.pickup.lng,
+                                job.delivery.lat,
+                                job.delivery.lng, routeLine, job, mapInstance.map, platform, job.flight, preserveView);
+                        }
                     }
 
                     // Only auto-zoom if preserveView is not set or is false
@@ -249,6 +283,8 @@ angular.module('hereMapTracking.components', [])
                     console.error('Error in showJobOnMap:', error);
                 }
             };
+            
+            
             
             $scope.autoZoomMapToShowAllPoints = () => {
                 if (!mapInstance || !mapInstance.map || !$scope.config || !$scope.config.job) {

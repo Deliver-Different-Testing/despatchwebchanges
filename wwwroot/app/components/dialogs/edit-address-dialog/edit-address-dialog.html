@@ -266,42 +266,16 @@
                 </md-card>
 
                 <label>Map</label>
-                <div
-                        style="
-            width: 100%;
-            height: 300px;
-            position: relative;
-            border: 1px solid #ccc;">
-                    <div
-                            map-lazy-load="https://maps.google.com/maps/api/js"
-                            map-lazy-load-params="{{ctrl.googleMapsUrl}}"
-                            ng-if="ctrl.googleMapsUrl">
-                        <ng-map
-                                center="{{ctrl.addressDetails.latitude}}, {{ctrl.addressDetails.longitude}}"
-                                id="dispatchMap"
-                                map-type-id="roadmap"
-                                on-rightclick="ctrl.moveMarker($event)"
-                                zoom="15"
-                                styles="[
-                              {
-                                'featureType': 'all',
-                                'elementType': 'labels',
-                                'stylers': [{'visibility': 'off'}]
-                              },
-                              {
-                                'featureType': 'road',
-                                'elementType': 'labels',
-                                'stylers': [{'visibility': 'on'}]
-                              }
-                            ]"
-                                style="height: 100%; width: 100%">
-                            <marker
-                                    draggable="true"
-                                    on-dragend="ctrl.markerDragend($event)"
-                                    position="{{ctrl.addressDetails.latitude}}, {{ctrl.addressDetails.longitude}}"
-                            ></marker>
-                        </ng-map>
-                    </div>
+                <div style="width: 100%; height: 300px; position: relative; border: 1px solid #ccc; overflow: hidden;">
+                    <!-- HERE Maps Component -->
+                    <here-map-tracking
+                            map-id="editAddressMap"
+                            credentials="ctrl.hereMapCredentials"
+                            config="ctrl.hereMapConfig"
+                            on-map-ready="ctrl.onMapReady(map, platform)"
+                            ng-if="ctrl.hereMapCredentials && ctrl.hereMapConfig"
+                            style="width: 100%; height: 100%; display: block;">
+                    </here-map-tracking>
                 </div>
             </div>
         </md-dialog-content>
@@ -324,3 +298,31 @@
         </md-dialog-actions>
     </form>
 </md-dialog>
+
+<style>
+    .here-map {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+    }
+
+    #editAddressMap {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        box-sizing: border-box;
+    }
+
+    /* Ensure dialog doesn't overflow */
+    md-dialog {
+        max-width: 90vw !important;
+        max-height: 90vh !important;
+    }
+
+    md-dialog-content {
+        overflow-y: auto;
+        max-height: calc(90vh - 120px); /* Account for header and footer */
+    }
+</style>

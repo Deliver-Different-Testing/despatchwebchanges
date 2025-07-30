@@ -277,8 +277,10 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
 
             ArgumentNullException.ThrowIfNull(job);
 
+            var staffId = infoService.GetStaffId();
+            var currentTenantTime = infoService.GetCurrentTenantTime();
+            
             var updateNote = string.Empty;
-
             // Update the correct field prop
             switch (property)
             {
@@ -310,7 +312,7 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
                 case JobProperty.Weight:
                     var weight = short.Parse(value);
 
-                    // Update parent job if it exists
+                    // Update a parent job if it exists
                     if (job.ParentId != null)
                     {
                         job.BookingParent.UcbkWeight = weight;
@@ -431,7 +433,19 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
                     updateNote = $"Holiday Delivery Option set to: {holidayEnum.ToDisplayString()}";
                     break;
                 case JobProperty.Active:
-                    job.UcbkActive = bool.Parse(value);
+                    var isActive = bool.Parse(value);
+                    
+                    switch (isActive)
+                    {
+                        case true:
+                        SetRecurringJobStatus(job, true);
+                            break;
+                        case false:
+                        SetRecurringJobStatus(job, false, staffId, currentTenantTime);
+                            break;
+                    };
+                    
+                    updateNote = $"Changed Active to {(isActive ? "Yes" : "No")}";
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(property), property, null);
@@ -443,6 +457,14 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
                 await SaveNoteAsync(jobId, updateNote, false, true);
         }
 
+    private static void SetRecurringJobStatus(TucJobBooking jobBooked, bool isActive, int? staffId = null,
+        DateTime? currentTenantTime = null)
+    {
+        jobBooked.UcbkActive = isActive;
+        jobBooked.UcbkInActiveBy = isActive ? null : staffId;
+        jobBooked.UcbkInActiveDate = isActive ? null : currentTenantTime;
+    }
+    
         public async Task<List<TucNoteViewModel>> GetRecurringNotesByJobIdAsync(int jobId)
         {
             var effectivePrebookId = await GetJobBookingRelationshipInfoAsync(jobId);

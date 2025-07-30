@@ -52,4 +52,5 @@ public interface INationwideJobRepository
     Task<List<Suggestion>> GetAllActiveAirportsAsync();
     Task UpdateRecoveryAgentAsync(UpdateAgentRecoveryRequest request);
     Task RemoveRecoveryAgentAsync(int recoveryId);
+    Task<bool> RelatedJobHasFlightAssigned(int agentJobId);
 }
