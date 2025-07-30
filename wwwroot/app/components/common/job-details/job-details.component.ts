@@ -1141,9 +1141,9 @@ class JobDetailController extends BaseController {
             $event,
             job,
             pickContacts,
-            JobProperty.ContactID,
-            "Contact",
-            job.contactName
+            JobProperty.FromContactName,
+            "From Contact Name",
+            job.fromContactName
         );
     }
 
@@ -1827,63 +1827,7 @@ class JobDetailController extends BaseController {
             this.handleError(error);
         }
     }
-
-    formatTimeWindow(
-        isPickup: boolean,
-        baseTime?: Date,
-        windowMins?: number
-    ): string {
-        if (!baseTime) {
-            return "N/A";
-        }
-
-        // Get the formatted timezone using the filter
-        let timezone: string;
-        if (isPickup) {
-            timezone = this.job?.pickUpTimeZone?.text ?? TimeZone;
-        } else {
-            timezone = this.job?.deliveryTimeZone?.text ?? TimeZone;
-        }
-
-        const timezoneShort =
-            this.$filter<(timezone: string) => string>("timezoneShort")(timezone);
-        const timezoneDisplay = timezoneShort ? ` (${timezoneShort})` : "";
-
-        const baseTimeFormatted = dayjs(baseTime).format("MM/DD HH:mm");
-
-        if (!windowMins || windowMins <= 0) {
-            return baseTimeFormatted + timezoneDisplay;
-        }
-
-        const endTime = dayjs(baseTime).add(windowMins, "minutes");
-
-        if (dayjs(baseTime).format("MM/DD") === endTime.format("MM/DD")) {
-            return `${baseTimeFormatted} - ${endTime.format(
-                "HH:mm"
-            )}${timezoneDisplay}`;
-        } else {
-            return `${baseTimeFormatted} - ${endTime.format(
-                "MM/DD HH:mm"
-            )}${timezoneDisplay}`;
-        }
-    }
-
-    getPickupTimeWindow(): string {
-        return this.formatTimeWindow(
-            true,
-            this.job?.puTime,
-            this.job?.pickUpWindowMins
-        );
-    }
-
-    getDeliveryTimeWindow(): string {
-        return this.formatTimeWindow(
-            false,
-            this.job?.deliverByTime,
-            this.job?.deliverByWindowMins
-        );
-    }
-
+    
     async openPodUploadDialog($event: MouseEvent, job: IDispatchJob) {
         await this.jobFileUploadDialogService.openJobFileUploadDialog(
             $event,
