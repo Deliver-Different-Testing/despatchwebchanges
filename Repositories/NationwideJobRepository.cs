@@ -1192,14 +1192,13 @@ public class NationwideJobRepository(
         }
     }
 
-    public async Task<bool> RelatedJobHasFlightAssigned(int agentJobId)
+    public async Task<bool> CanAssignAgentToJob(int agentJobId)
     {
-        var isAllowedAssignAgent = await Context.TucJobs
-            .Where(j => j.UcjbId == agentJobId &&
-                        j.Parent.InverseParent.Any(rj => rj.TucJobNationwides.Count != 0))
-            .AsNoTracking()
-            .AnyAsync();
-        
-        return isAllowedAssignAgent;
+        var canAssign = await Context.TucJobs
+            .Where(j => j.UcjbId == agentJobId)
+            .SelectMany(j => j.Parent.InverseParent)
+            .AnyAsync(siblingJob => siblingJob.TucJobNationwides.Any());
+    
+        return canAssign;
     }
 }
