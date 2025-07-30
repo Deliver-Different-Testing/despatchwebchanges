@@ -3,16 +3,41 @@
         <div class="md-toolbar-tools">
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">group</md-icon>
             <h2>Job #{{ctrl.job.jobNumber}} - Lost Package Recovery</h2>
+            <div flex></div>
         </div>
     </md-toolbar>
     
     <md-dialog-content>
         <div class="job-header">
             <div class="route-info" ng-if="ctrl.job.pickUpAddress && ctrl.job.deliveryAddress">
-                <div class="route-path">
-                    <span>{{ctrl.job.pickUpAddress.fullAddress}}</span>
-                    <span class="route-arrow">→</span>
-                    <span>{{ctrl.job.deliveryAddress.fullAddress}}</span>
+                <div class="route-container">
+                    <div class="route-location pickup">
+                        <div class="location-icon">
+                            <md-icon md-font-set="material-symbols-outlined">radio_button_checked</md-icon>
+                        </div>
+                        <div class="location-details">
+                            <div class="location-label">Pickup</div>
+                            <div class="location-address">{{ctrl.job.pickUpAddress.fullAddress}}</div>
+                        </div>
+                    </div>
+
+                    <div class="route-connector">
+                        <div class="connector-line"></div>
+                        <div class="connector-icon">
+                            <md-icon md-font-set="material-symbols-outlined">more_vert</md-icon>
+                        </div>
+                        <div class="connector-line"></div>
+                    </div>
+
+                    <div class="route-location delivery">
+                        <div class="location-icon">
+                            <md-icon md-font-set="material-symbols-outlined">place</md-icon>
+                        </div>
+                        <div class="location-details">
+                            <div class="location-label">Delivery</div>
+                            <div class="location-address">{{ctrl.job.deliveryAddress.fullAddress}}</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -49,7 +74,7 @@
             </div>
 
             <!-- Assignment Form -->
-            <div class="assign-form" ng-show="ctrl.showAssignForm">
+            <div class="assign-form" ng-if="ctrl.showAssignForm">
                 <div class="form-title">Assign Recovery Agent</div>
                 <div class="danger-notice">
                     <div class="danger-title">ℹ️ Recovery Agent Assignment</div>
@@ -62,7 +87,7 @@
                             <label>Select Airport Location</label>
                             <md-select
                                     ng-model="ctrl.selectedAirport"
-                                    ng-change="ctrl.getAgentOptionsForAirport(ctrl.selectedAirport)"
+                                    ng-change="ctrl.getAgentOptionsF\orAirport(ctrl.selectedAirport)"
                                     placeholder="Choose an airport...">
                                 <md-option ng-repeat="airport in ctrl.airportOptions" ng-value="airport">
                                     {{airport.text}}
@@ -76,7 +101,7 @@
                             <md-select ng-model="ctrl.selectedAgent" ng-disabled="!ctrl.selectedAirport"
                                        placeholder="Choose an agent...">
                                 <md-option ng-repeat="agent in ctrl.agentOptions" ng-value="agent">
-                                    {{agent.agentName}} - Rating: {{agent.rating}}/5
+                                    {{agent.text}}
                                 </md-option>
                             </md-select>
                         </md-input-container>
@@ -85,11 +110,14 @@
 
                 <div class="primary-agent-section">
                     <div class="primary-checkbox">
-                        <md-checkbox ng-model="ctrl.isPrimaryRecoveryAgent" ng-change="ctrl.onPrimaryCheckboxChange()">
+                        <md-checkbox
+                                ng-model="ctrl.isPrimaryRecoveryAgent" 
+                                ng-change="ctrl.onPrimaryCheckboxChange()">
                         </md-checkbox>
+                        
                         <span class="checkbox-label">Set as Primary Recovery Agent</span>
                     </div>
-                    <div class="primary-warning" ng-show="ctrl.isPrimaryRecoveryAgent && ctrl.hasPrimaryRecoveryAgent()">
+                    <div class="primary-warning" ng-if="ctrl.isPrimaryRecoveryAgent && ctrl.hasPrimaryRecoveryAgent()">
                         <md-icon md-font-set="material-symbols-outlined" class="warning-icon">warning</md-icon>
                         Setting this agent as primary will remove the current primary recovery agent status from other agents.
                     </div>
@@ -105,7 +133,7 @@
             </div>
 
             <!-- Edit Form -->
-            <div class="edit-form" ng-show="ctrl.showEditForm">
+            <div class="edit-form" ng-if="ctrl.showEditForm">
                 <div class="form-title">Edit Recovery Agent</div>
 
                 <div class="primary-agent-section">
@@ -114,7 +142,7 @@
                         </md-checkbox>
                         <span class="checkbox-label">Set as Primary Recovery Agent</span>
                     </div>
-                    <div class="primary-warning" ng-show="ctrl.editIsPrimaryRecoveryAgent && ctrl.hasPrimaryRecoveryAgent() && !ctrl.editingAgent.primaryRecoveryAgent">
+                    <div class="primary-warning" ng-if="ctrl.editIsPrimaryRecoveryAgent && ctrl.hasPrimaryRecoveryAgent() && !ctrl.editingAgent.primaryRecoveryAgent">
                         <md-icon md-font-set="material-symbols-outlined" class="warning-icon">warning</md-icon>
                         Setting this agent as primary will remove the current primary recovery agent status from other agents.
                     </div>
@@ -191,7 +219,7 @@
 
     <md-dialog-actions layout="row">
         <span flex></span>
-        <md-button ng-click="ctrl.cancel()">Cancel</md-button>
-        <md-button class="md-raised md-primary" ng-click="ctrl.close()">Done</md-button>
+        <md-button ng-if="!ctrl.showAssignForm" ng-click="ctrl.cancel()">Cancel</md-button>
+        <md-button ng-if="!ctrl.showAssignForm" class="md-raised md-primary" ng-click="ctrl.close()">Done</md-button>
     </md-dialog-actions>
 </md-dialog>

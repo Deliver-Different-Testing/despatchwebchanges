@@ -14,6 +14,8 @@ class RecoveryAgentManagementController extends BaseController {
     static $inject = [
         '$mdDialog',
         'NWData',
+        'toastrService',
+        '$window',
         'job',
     ];
 
@@ -33,6 +35,7 @@ class RecoveryAgentManagementController extends BaseController {
         private $mdDialog: angular.material.IDialogService,
         private nationwideService: NationwideService,
         private toastrService: ToastrService,
+        private $window: angular.IWindowService,
         public job: RecoveryAgentJobViewModel,
     ) {
         super();
@@ -254,28 +257,17 @@ class RecoveryAgentManagementController extends BaseController {
     }
 
     async cancel(): Promise<void> {
-        // Check if there are any unsaved changes or active forms
         const hasUnsavedChanges =
             (this.showAssignForm && (this.selectedAirport || this.selectedAgent || this.isPrimaryRecoveryAgent)) ||
             (this.showEditForm && this.editingAgent);
 
         if (hasUnsavedChanges) {
-            try {
-                const confirm = this.$mdDialog.confirm()
-                    .title('Unsaved Changes')
-                    .textContent('You have unsaved changes. Are you sure you want to cancel?')
-                    .ok('Yes, Cancel')
-                    .cancel('Continue Editing');
+            const userConfirmed = this.$window.confirm('You have unsaved changes. Are you sure you want to cancel?');
 
-                // Wait for user confirmation
-                await this.$mdDialog.show(confirm);
-
+            if (userConfirmed) {
                 this.$mdDialog.cancel();
-            } catch (error) {
-                if (error) {
-                    console.error('Error in cancel', error);
-                }
             }
+            // If a user clicks "Cancel" on the confirmation dialog, do nothing
         } else {
             this.$mdDialog.cancel();
         }
