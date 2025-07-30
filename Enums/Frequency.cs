@@ -35,8 +35,8 @@ public static class FrequencyExtensions
         };
     }
 
-    // Get array of selected Frequency values
-    public static Frequency[] GetSelectedFrequencies(this Frequency frequency)
+    // Get an array of selected Frequency values
+    private static Frequency[] GetSelectedFrequencies(this Frequency frequency)
     {
         return Enum.GetValues(typeof(Frequency))
             .Cast<Frequency>()
@@ -46,40 +46,7 @@ public static class FrequencyExtensions
     }
 
     // Check if a specific frequency is included
-    public static bool IncludesFrequency(this Frequency frequency, Frequency freqToCheck) =>
-        (frequency & freqToCheck) == freqToCheck;
-
-    // Add one or more frequencies
-    public static Frequency AddFrequency(this Frequency frequency, Frequency freqToAdd) => frequency | freqToAdd;
-
-    // Remove one or more frequencies
-    public static Frequency RemoveFrequency(this Frequency frequency, Frequency freqToRemove) =>
-        frequency & ~freqToRemove;
-
-    // Convert from integer (for database operations)
-    public static Frequency FromInt(int value) => (Frequency)value;
-
-    // Convert to integer (for database operations)
-    public static int ToInt(this Frequency frequency) => (int)frequency;
-
-    // Parse from string (useful for migration from string field)
-    public static Frequency ParseFromString(string frequencyString)
-    {
-        if (string.IsNullOrWhiteSpace(frequencyString))
-            return Frequency.None;
-
-        return frequencyString.ToLower() switch
-        {
-            "weekly" => Frequency.Weekly,
-            "fortnightly" => Frequency.Fortnightly,
-            "first of the month" => Frequency.FirstOfMonth,
-            "second of the month" => Frequency.SecondOfMonth,
-            "third of the month" => Frequency.ThirdOfMonth,
-            "first workday of the month" => Frequency.FirstWorkdayOfMonth,
-            "last workday of the month" => Frequency.LastWorkdayOfMonth,
-            _ => Frequency.None
-        };
-    }
+    
 
     // Check if a specific date matches this frequency
     public static bool MatchesDate(this Frequency frequency, DateTime date, DateTime? referenceDate = null)

@@ -1053,9 +1053,9 @@ public static class JobMappings
             time?.Second ?? 0
         );
     }
-    
+
     private static string FormatFullName(TucStaff staff) =>
-        $"{staff.UcstFirstName} {staff.UcstLastName}".Trim();
+        staff.UcstFirstName + " " + staff.UcstLastName;
 
     private static string GetJobTypeDescription(double? jobTypeId)
     {

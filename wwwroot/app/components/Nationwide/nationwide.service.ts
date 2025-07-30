@@ -251,6 +251,16 @@ class NationwideService implements angular.IServiceProvider {
         
         await this.$http.post(`nationwideJob/RemoveAgentRecoveryJob`, data);
     }
+
+    async relatedJobHasFlightAssigned(agentJobId: number): Promise<boolean> {
+        const response = await this.$http.get<boolean>("nationwideJob/RelatedJobHasFlightAssigned", {
+            params: {
+                agentJobId
+            }
+        });
+        
+        return response.data;
+    }
 }
 
 export default NationwideService;

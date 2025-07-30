@@ -20,7 +20,7 @@ export interface ChildJob {
 export interface Job {
     id: number | string;
     pickup: JobLocation;
-    delivery: JobLocation;
+    delivery?: JobLocation;
     childJobs?: ChildJob[];
     flight?: boolean;
     timestamp?: number; // For forcing updates

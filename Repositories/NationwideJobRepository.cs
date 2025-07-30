@@ -1191,4 +1191,15 @@ public class NationwideJobRepository(
             job.PickupTimeZoneId = timeZoneId ?? job.PickupTimeZoneId;
         }
     }
+
+    public async Task<bool> RelatedJobHasFlightAssigned(int agentJobId)
+    {
+        var isAllowedAssignAgent = await Context.TucJobs
+            .Where(j => j.UcjbId == agentJobId &&
+                        j.Parent.InverseParent.Any(rj => rj.TucJobNationwides.Count != 0))
+            .AsNoTracking()
+            .AnyAsync();
+        
+        return isAllowedAssignAgent;
+    }
 }

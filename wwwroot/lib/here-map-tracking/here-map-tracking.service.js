@@ -504,10 +504,12 @@ angular.module("hereMapTracking.services")
             service.getAllVisiblePoints = (job, courierLocation, extraMarkers = []) => {
                 const points = [];
 
-                // Add main pickup and delivery points
+                // Add the main pickup point (always present)
                 if (job && job.pickup && job.pickup.lat && job.pickup.lng) {
                     points.push({ lat: job.pickup.lat, lng: job.pickup.lng });
                 }
+
+                // Add a delivery point only if it exists (handle single address case)
                 if (job && job.delivery && job.delivery.lat && job.delivery.lng) {
                     points.push({ lat: job.delivery.lat, lng: job.delivery.lng });
                 }
@@ -541,6 +543,6 @@ angular.module("hereMapTracking.services")
 
                 return points;
             };
-
+            
             return service;
         }]);

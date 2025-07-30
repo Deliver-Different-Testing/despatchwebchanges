@@ -452,4 +452,20 @@ public class NationwideJobController(
             return StatusCode(500, e.Message);
         }
     }
+
+    public async Task<IActionResult> RelatedJobHasFlightAssigned(int agentJobId)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(agentJobId);
+            
+           var isAllowed = await repository.RelatedJobHasFlightAssigned(agentJobId);
+           return Json(isAllowed);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An error occured checking if agent is allowed to be assigned to job {JobId}", agentJobId);
+            return StatusCode(500, e.Message);
+        }
+    }
 }
