@@ -295,137 +295,166 @@
             <!-- Left Column -->
             <div class="left-column" flex="60">
                 <!-- From/To Section -->
-                <div
-                        class="address-section md-whiteframe-1dp"
-                        layout="row"
-                        layout-xs="column">
+
+                <div class="address-section"
+                     layout="row"
+                     layout-xs="column"
+                     ng-class="{'locked': ctrl.job.locked}">
+
                     <!-- Pickup Location -->
-                    <div class="address-block pickup-block" flex="50" flex-xs="100">
+                    <div class="address-block pickup-block"
+                         flex="50"
+                         flex-xs="100">
+
                         <md-toolbar class="md-primary">
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">{{ctrl.jobAddressIcon}}</span>
-                                <span class="md-headline-title" flex style="margin-left: 8px"
-                                >Pickup Location</span>
+                                <span class="md-headline-title" flex style="margin-left: 8px">
+                                    Pickup Location
+                                </span>
                             </div>
                         </md-toolbar>
 
-                        <md-card-content class="address-content">
-                            <div ng-click="!ctrl.job.locked && ctrl.updateAddress($event, ctrl.job, 'fromAddress')">
-                                <h3 class="location-name md-title">
-                                    {{ctrl.job.pickupAddress.addressLine1}}
-                                </h3>
+                        <div class="address-content">
+                            <div class="address-display"
+                                 tabindex="0"
+                                 role="button"
+                                 aria-label="Edit pickup address"
+                                 ng-click="!ctrl.job.locked && ctrl.updateAddress($event, ctrl.job, 'fromAddress')">
+                                <div class="primary-address">
+                                    {{ctrl.job.pickupAddress.addressLine1 || 'No address specified'}}
+                                    <span class="material-symbols-outlined edit-indicator">edit</span>
+                                </div>
+                                <div class="secondary-address">
+          <span class="address-line" ng-if="ctrl.job.pickupAddress.addressLine2">
+            {{ctrl.job.pickupAddress.addressLine2}}
+          </span>
+                                    <span class="address-line" ng-if="ctrl.job.pickupAddress.addressLine3">
+            {{ctrl.job.pickupAddress.addressLine3}}
+          </span>
+                                    <span class="address-line" ng-if="ctrl.job.pickupAddress.addressLine4">
+            {{ctrl.job.pickupAddress.addressLine4}}, {{ctrl.job.pickupAddress.addressLine5}}
+          </span>
+                                </div>
+                                <span class="address-badge" ng-if="ctrl.job.pickupAddress.addressLine1">Origin</span>
+                            </div>
 
-                                <div class="address-lines">
-                                    <p class="md-body-1">
-                                        {{ctrl.job.pickupAddress.addressLine2}},
-                                        {{ctrl.job.pickupAddress.addressLine3}}
+                            <div class="contact-cards">
+                                <div class="contact-card"
+                                     tabindex="0"
+                                     role="button"
+                                     aria-label="Edit pickup contact"
+                                     ng-click="!ctrl.job.locked && ctrl.editJobContact($event, ctrl.job, 'from')">
+                                    <div class="contact-header">
+                                        <div class="contact-icon">
+                                            <span class="material-symbols-outlined">person</span>
+                                        </div>
+                                        <h3 class="contact-label">Contact Person</h3>
+                                    </div>
+                                    <p class="contact-value" ng-class="{'empty': !ctrl.job.fromContactName}">
+                                        {{ctrl.job.fromContactName || 'Not specified'}}
                                     </p>
-                                    <p class="md-body-1">
-                                        {{ctrl.job.pickupAddress.addressLine4}},
-                                        {{ctrl.job.pickupAddress.addressLine5}},
-                                        {{ctrl.job.pickupAddress.addressLine6}}
+                                </div>
+
+                                <div class="contact-card"
+                                     tabindex="0"
+                                     role="button"
+                                     aria-label="Edit pickup phone"
+                                     ng-click="!ctrl.job.locked && ctrl.editJobContactPhone($event, ctrl.job, 'from')">
+                                    <div class="contact-header">
+                                        <div class="contact-icon">
+                                            <span class="material-symbols-outlined">call</span>
+                                        </div>
+                                        <h3 class="contact-label">Phone Number</h3>
+                                    </div>
+                                    <p class="contact-value" ng-class="{'empty': !ctrl.job.fromContactNumber}">
+                                        {{ctrl.job.fromContactNumber || 'Not specified'}}
                                     </p>
                                 </div>
                             </div>
-
-                            <md-list class="md-dense" flex>
-                                <md-list-item
-                                        class="md-2-line md-long-text"
-                                        ng-click="!ctrl.job.locked && ctrl.editJobContact($event, ctrl.job, 'from')">
-                                    <md-icon
-                                            class="md-avatar"
-                                            aria-label="contact icon"
-                                            md-font-set="material-symbols-outlined">
-                                        contacts
-                                    </md-icon>
-                                    <div class="md-list-item-text">
-                                        <h3>Contact</h3>
-                                        <p>{{ctrl.job.fromContactName || 'N/A'}}</p>
-                                    </div>
-                                </md-list-item>
-
-                                <md-list-item
-                                        class="md-2-line md-long-text"
-                                        ng-click="!ctrl.job.locked && ctrl.editJobContactPhone($event, ctrl.job, 'from')">
-                                    <md-icon
-                                            class="md-avatar"
-                                            aria-label="phone icon"
-                                            md-font-set="material-symbols-outlined">
-                                        phone
-                                    </md-icon>
-                                    <div class="md-list-item-text">
-                                        <h3>Phone</h3>
-                                        <p>{{ctrl.job.fromContactNumber || 'N/A'}}</p>
-                                    </div>
-                                </md-list-item>
-                            </md-list>
-                        </md-card-content>
+                        </div>
                     </div>
 
-                    <md-divider hide-xs vertical></md-divider>
+                    <!-- Route Connection -->
+                    <div class="route-divider" hide-xs>
+                        <div class="route-icon">
+                            <span class="material-symbols-outlined">arrow_forward</span>
+                        </div>
+                    </div>
 
                     <!-- Delivery Location -->
-                    <div class="address-block delivery-block" flex="50" flex-xs="100">
+                    <div class="address-block delivery-block"
+                         flex="50"
+                         flex-xs="100">
+
                         <md-toolbar class="md-primary">
                             <div class="md-toolbar-tools">
                                 <span class="material-symbols-outlined">{{ctrl.jobAddressIcon}}</span>
-                                <span class="md-headline-title" flex style="margin-left: 8px">Delivery Location</span>
+                                <span class="md-headline-title" flex style="margin-left: 8px">
+                                    Delivery Location
+                                </span>
                             </div>
                         </md-toolbar>
 
-                        <md-card-content class="address-content">
-                            <div
-                                    md-ink-ripple
-                                    ng-click="!ctrl.job.locked && ctrl.updateAddress($event, ctrl.job, 'toAddress')">
-                                <h3 class="location-name md-title">
-                                    {{ctrl.job.deliveryAddress.addressLine1}}
-                                </h3>
+                        <div class="address-content">
+                            <div class="address-display"
+                                 tabindex="0"
+                                 role="button"
+                                 aria-label="Edit delivery address"
+                                 ng-click="!ctrl.job.locked && ctrl.updateAddress($event, ctrl.job, 'toAddress')">
+                                <div class="primary-address">
+                                    {{ctrl.job.deliveryAddress.addressLine1 || 'No address specified'}}
+                                    <span class="material-symbols-outlined edit-indicator">edit</span>
+                                </div>
+                                <div class="secondary-address">
+          <span class="address-line" ng-if="ctrl.job.deliveryAddress.addressLine2">
+            {{ctrl.job.deliveryAddress.addressLine2}}
+          </span>
+                                    <span class="address-line" ng-if="ctrl.job.deliveryAddress.addressLine3">
+            {{ctrl.job.deliveryAddress.addressLine3}}
+          </span>
+                                    <span class="address-line" ng-if="ctrl.job.deliveryAddress.addressLine4">
+            {{ctrl.job.deliveryAddress.addressLine4}}, {{ctrl.job.deliveryAddress.addressLine5}}
+          </span>
+                                </div>
+                                <span class="address-badge"
+                                      ng-if="ctrl.job.deliveryAddress.addressLine1">Destination</span>
+                            </div>
 
-                                <div class="address-lines">
-                                    <p class="md-body-1">
-                                        {{ctrl.job.deliveryAddress.addressLine2}},
-                                        {{ctrl.job.deliveryAddress.addressLine3}}
+                            <div class="contact-cards">
+                                <div class="contact-card"
+                                     tabindex="0"
+                                     role="button"
+                                     aria-label="Edit delivery contact"
+                                     ng-click="!ctrl.job.locked && ctrl.editJobContact($event, ctrl.job, 'to')">
+                                    <div class="contact-header">
+                                        <div class="contact-icon">
+                                            <span class="material-symbols-outlined">person</span>
+                                        </div>
+                                        <h3 class="contact-label">Contact Person</h3>
+                                    </div>
+                                    <p class="contact-value" ng-class="{'empty': !ctrl.job.deliverToContact}">
+                                        {{ctrl.job.deliverToContact || 'Not specified'}}
                                     </p>
-                                    <p class="md-body-1">
-                                        {{ctrl.job.deliveryAddress.addressLine4}},
-                                        {{ctrl.job.deliveryAddress.addressLine5}},
-                                        {{ctrl.job.deliveryAddress.addressLine6}}
+                                </div>
+
+                                <div class="contact-card"
+                                     tabindex="0"
+                                     role="button"
+                                     aria-label="Edit delivery phone"
+                                     ng-click="!ctrl.job.locked && ctrl.editJobContactPhone($event, ctrl.job, 'to')">
+                                    <div class="contact-header">
+                                        <div class="contact-icon">
+                                            <span class="material-symbols-outlined">call</span>
+                                        </div>
+                                        <h3 class="contact-label">Phone Number</h3>
+                                    </div>
+                                    <p class="contact-value" ng-class="{'empty': !ctrl.job.toContactPhone}">
+                                        {{ctrl.job.toContactPhone || 'Not specified'}}
                                     </p>
                                 </div>
                             </div>
-
-                            <md-list class="md-dense" flex>
-                                <md-list-item
-                                        class="md-2-line md-long-text"
-                                        ng-click="!ctrl.job.locked && ctrl.editJobContact($event, ctrl.job, 'to')">
-                                    <md-icon
-                                            class="md-avatar"
-                                            aria-label="contact icon"
-                                            md-font-set="material-symbols-outlined">
-                                        contacts
-                                    </md-icon>
-                                    <div class="md-list-item-text">
-                                        <h3>Contact</h3>
-                                        <p>{{ctrl.job.deliverToContact || 'N/A'}}</p>
-                                    </div>
-                                </md-list-item>
-
-                                <md-list-item
-                                        class="md-2-line md-long-text"
-                                        ng-click="!ctrl.job.locked && ctrl.editJobContactPhone($event, ctrl.job, 'to')">
-                                    <md-icon
-                                            class="md-avatar"
-                                            aria-label="phone icon"
-                                            md-font-set="material-symbols-outlined">
-                                        phone
-                                    </md-icon>
-                                    <div class="md-list-item-text">
-                                        <h3>Phone</h3>
-                                        <p>{{ctrl.job.toContactPhone || 'N/A'}}</p>
-                                    </div>
-                                </md-list-item>
-                            </md-list>
-                        </md-card-content>
+                        </div>
                     </div>
                 </div>
 
@@ -433,7 +462,7 @@
                 <div
                         class="total-miles-section md-whiteframe-z1"
                         style="
-            margin-top: -16px;
+            margin-top: 10px;
             margin-bottom: 16px;
             background-color: #f5f5f5;
             border-radius: 0 0 2px 2px;
