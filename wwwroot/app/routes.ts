@@ -114,12 +114,18 @@ class RouterConfig {
                         return response.data;
                     } catch {
                         console.warn('[ROUTES] Failed to load manifest for jobSearch state, using fallback names');
-                        return {'jobSearch.js': 'jobSearch.js'};
+                        return {
+                            'jobSearch.js': 'jobSearch.js',
+                            'jobSearch.css': 'jobSearch.css'
+                        };
                     }
                 }],
                 loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
-                    return $ocLazyLoad.load(getAssetPath('jobSearch.js'));
+                    return $ocLazyLoad.load([
+                        getAssetPath('jobSearch.js'),
+                        getAssetPath('jobSearch.css')
+                    ]);
                 }]
             },
             component: "jobSearchComponent",
