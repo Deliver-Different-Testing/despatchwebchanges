@@ -89,7 +89,7 @@ public class FlightRateService(INationwideJobRepository repository, ITenantInfoS
                 else
                     cargoSurchargeAmount = (afr.CargoSurchargeAboveRate ?? 0) * dto.TotalWeight;
             }
-            Log.Debug("CargoSurchargeAmount: {CargoSurchargeAmount}", cargoSurchargeAmount);;
+            Log.Debug("CargoSurchargeAmount: {CargoSurchargeAmount}", cargoSurchargeAmount);
 
             // Weight break calculations
             decimal weightBreakRate = 0;

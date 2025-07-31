@@ -49,7 +49,7 @@ public interface INationwideJobRepository
     Task<string> GetAgentNameAsync(int agentId);
     Task<RecoveryAgentJobViewModel> GetInfoForRecoveryAgentDialogAsync(int jobId);
     Task<List<Suggestion>> GetAgentOptionsByAirportAsync(int airportId);
-    Task<List<Suggestion>> GetAllActiveAirportsAsync();
+    Task<List<Suggestion>> GetAllActiveAirportsWithAgentsAsync();
     Task UpdateRecoveryAgentAsync(UpdateAgentRecoveryRequest request);
     Task RemoveRecoveryAgentAsync(int recoveryId);
     Task<bool> CanAssignAgentToJob(int agentJobId);

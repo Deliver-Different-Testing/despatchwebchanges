@@ -44,8 +44,8 @@ class RecoveryAgentManagementController extends BaseController {
     }
 
     private initAirports() {
-        this.nationwideService.getAllActiveAirports().then(airport => {
-            this.airportOptions = airport;
+        this.nationwideService.getAllActiveAirports().then(airports => {
+            this.airportOptions = airports;
         });
     }
 
