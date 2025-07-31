@@ -24,7 +24,7 @@
                     <div class="route-connector">
                         <div class="connector-line"></div>
                         <div class="connector-icon">
-                            <md-icon md-font-set="material-symbols-outlined">more_vert</md-icon>
+                            <md-icon md-font-set="material-symbols-outlined">arrow_downward</md-icon>
                         </div>
                         <div class="connector-line"></div>
                     </div>
@@ -87,7 +87,7 @@
                             <label>Select Airport Location</label>
                             <md-select
                                     ng-model="ctrl.selectedAirport"
-                                    ng-change="ctrl.getAgentOptionsF\orAirport(ctrl.selectedAirport)"
+                                    ng-change="ctrl.getAgentOptionsForAirport(ctrl.selectedAirport)"
                                     placeholder="Choose an airport...">
                                 <md-option ng-repeat="airport in ctrl.airportOptions" ng-value="airport">
                                     {{airport.text}}
