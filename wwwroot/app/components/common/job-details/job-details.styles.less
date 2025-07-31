@@ -1,7 +1,25 @@
 @import "../../../../css/variables.less";
 @import "../../../../css/status.less";
 
-// Color variables
+// Material Design 3 Color Tokens
+@surface: #FFFBFE;
+@surface-container-lowest: #FFFFFF;
+@surface-container-low: #F7F2FA;
+@surface-container: #F3EDF7;
+@surface-container-high: #ECE6F0;
+@on-surface: #1D1B20;
+@on-surface-variant: #49454F;
+@primary: #6750A4;
+@primary-container: #EADDFF;
+@on-primary: #FFFFFF;
+@on-primary-container: #21005D;
+@secondary: #625B71;
+@secondary-container: #E8DEF8;
+@on-secondary-container: #1D192B;
+@outline: #79747E;
+@outline-variant: #CAC4D0;
+
+// Legacy color variables (for backward compatibility)
 @text-dark: rgba(0, 0, 0, 0.87);
 @text-medium: rgba(0, 0, 0, 0.54);
 @text-light: rgba(0, 0, 0, 0.38);
@@ -46,6 +64,516 @@
   .md-list-item-inner {
     justify-content: space-between;
     width: 100%;
+  }
+}
+
+// Material Design 3 Route Card Layout
+.address-section {
+  display: flex;
+  gap: 16px; // Reduced from 24px
+  margin: 16px 0; // Reduced from 24px
+
+  // Remove old Material Design shadows
+  &.md-whiteframe-1dp {
+    box-shadow: none;
+  }
+
+  .address-block {
+    flex: 1;
+    background: @surface-container-lowest;
+    border-radius: 12px; // Reduced from 16px
+    border: 1px solid @outline-variant;
+    overflow: hidden;
+    transition: all 300ms cubic-bezier(0.2, 0, 0, 1);
+    position: relative;
+
+    // Enhanced hover state
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow:
+              0 1px 3px rgba(0, 0, 0, 0.12),
+              0 4px 8px rgba(0, 0, 0, 0.08),
+              0 1px 12px rgba(0, 0, 0, 0.04);
+      border-color: @outline;
+    }
+
+    // Modern header design
+    .route-header {
+      background: linear-gradient(135deg, @primary 0%, lighten(@primary, 10%) 100%);
+      padding: 12px 16px 8px; // Reduced from 20px 24px 16px
+      position: relative;
+      overflow: hidden;
+
+      // Subtle background pattern
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        background-size: 20px 20px;
+      }
+
+      .header-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 12px; // Reduced from 16px
+
+        .location-icon {
+          background: rgba(255, 255, 255, 0.2);
+          padding: 8px; // Reduced from 12px
+          border-radius: 8px; // Reduced from 12px
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          .material-symbols-outlined {
+            font-size: 20px; // Reduced from 24px
+            color: @on-primary;
+            font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+          }
+        }
+
+        .location-type {
+          color: @on-primary;
+          font-weight: 500;
+          font-size: 18px;
+          line-height: 24px;
+            letter-spacing: 0;
+          margin: 0;
+        }
+      }
+    }
+
+    // Content area styling
+    .address-content {
+      padding: 16px; 
+
+      // Main address display
+      .address-display {
+        margin-bottom: 16px; 
+        padding: 12px; 
+        border-radius: 8px;
+        cursor: pointer;
+        border: 1px solid @outline-variant;
+        background: @surface-container-low;
+        transition: all 200ms cubic-bezier(0.2, 0, 0, 1);
+
+        &:hover {
+          background: @surface-container;
+          border-color: @primary;
+          transform: translateY(-1px);
+        }
+
+        &:focus {
+          outline: 2px solid @primary;
+          outline-offset: 2px;
+        }
+
+        .primary-address {
+          color: @on-surface;
+          font-size: 16px; // Reduced from 18px
+          line-height: 20px; // Reduced from 24px
+          margin: 0 0 6px 0; // Reduced from 8px
+          font-weight: 500;
+          letter-spacing: 0.15px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          .edit-indicator {
+            opacity: 0;
+            transition: opacity 200ms ease;
+            color: @primary;
+            font-size: 14px; // Reduced from 16px
+          }
+        }
+
+        &:hover .edit-indicator {
+          opacity: 1;
+        }
+
+        .secondary-address {
+          color: @on-surface-variant;
+          font-size: 13px; // Reduced from 14px
+          line-height: 18px; // Reduced from 20px
+          letter-spacing: 0.25px;
+          margin: 0;
+
+          .address-line {
+            display: block;
+            margin: 2px 0;
+
+            &:empty {
+              display: none;
+            }
+          }
+        }
+
+        .address-badge {
+          display: inline-block;
+          background: @secondary-container;
+          color: @on-secondary-container;
+          padding: 3px 6px; // Reduced from 4px 8px
+          border-radius: 4px; // Reduced from 6px
+          font-size: 11px; // Reduced from 12px
+          margin-top: 6px; // Reduced from 8px
+          font-weight: 500;
+        }
+      }
+
+      // Legacy address styling (fallback)
+      .location-name {
+        color: @on-surface;
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 24px;
+        letter-spacing: 0.15px;
+        margin: 0 0 12px 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .address-lines {
+        margin-bottom: 16px;
+
+        p {
+          color: @on-surface-variant;
+          font-size: 14px;
+          line-height: 20px;
+          letter-spacing: 0.25px;
+          margin: 4px 0;
+
+          &:empty {
+            display: none;
+          }
+        }
+      }
+
+      // Contact information cards
+      .contact-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        .contact-card {
+          background: @surface-container-low;
+          padding: 12px; 
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 200ms cubic-bezier(0.2, 0, 0, 1);
+          border: 1px solid transparent;
+
+          &:hover {
+            background: @primary-container;
+            border-color: @primary;
+            transform: translateX(4px);
+          }
+
+          &:focus {
+            outline: 2px solid @primary;
+            outline-offset: 2px;
+          }
+
+          .contact-header {
+            display: flex;
+            align-items: center;
+            gap: 8px; 
+            margin-bottom: 2px; 
+
+            .contact-icon {
+              background: @surface-container-high;
+              padding: 6px;
+              border-radius: 6px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+
+              .material-symbols-outlined {
+                font-size: 16px;
+                color: @on-surface-variant;
+                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+              }
+            }
+
+            .contact-label {
+              color: @on-surface-variant;
+              font-size: 11px;
+              font-weight: 500;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin: 0;
+            }
+          }
+
+          .contact-value {
+            color: @on-surface;
+            font-weight: 400;
+            letter-spacing: 0.15px;
+            margin: 0;
+            font-size: 14px; 
+            line-height: 20px;
+            padding-left: 30px;
+            
+            &.empty {
+              color: @on-surface-variant;
+              font-style: italic;
+            }
+          }
+        }
+      }
+
+      // Legacy contact list styling (fallback)
+      md-list {
+        padding: 0;
+
+        md-list-item {
+          border-radius: 8px;
+          margin: 4px 0;
+          min-height: 56px;
+          padding: 8px 12px;
+          cursor: pointer;
+          transition: background-color 200ms cubic-bezier(0.2, 0, 0, 1);
+
+          &:hover {
+            background-color: rgba(103, 80, 164, 0.08);
+          }
+
+          &:active {
+            background-color: rgba(103, 80, 164, 0.12);
+          }
+
+          md-icon {
+            color: @on-surface-variant;
+            font-size: 24px;
+            margin-right: 16px;
+
+            &.md-avatar {
+              border-radius: 50%;
+              background: @surface-container-high;
+              padding: 8px;
+              width: 40px;
+              height: 40px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+          }
+
+          .md-list-item-text {
+            h3 {
+              color: @on-surface;
+              font-size: 14px;
+              font-weight: 500;
+              line-height: 20px;
+              letter-spacing: 0.1px;
+              margin: 0 0 2px 0;
+            }
+
+            p {
+              color: @on-surface-variant;
+              font-size: 14px;
+              line-height: 20px;
+              letter-spacing: 0.25px;
+              margin: 0;
+            }
+          }
+        }
+      }
+    }
+
+    // Pickup specific styling
+    &.pickup-block {
+      .route-header {
+        background: linear-gradient(135deg, #1976D2 0%, #42A5F5 100%);
+      }
+
+      .address-badge {
+        background: rgba(25, 118, 210, 0.12);
+        color: #1976D2;
+      }
+    }
+
+    // Delivery specific styling  
+    &.delivery-block {
+      .route-header {
+        background: linear-gradient(135deg, #388E3C 0%, #66BB6A 100%);
+      }
+
+      .address-badge {
+        background: rgba(56, 142, 60, 0.12);
+        color: #388E3C;
+      }
+    }
+
+    // Locked state
+    &.locked {
+      opacity: 0.7;
+      pointer-events: none;
+
+      .address-display, .contact-card {
+        cursor: not-allowed;
+
+        &:hover {
+          transform: none;
+          background: @surface-container-low;
+          border-color: @outline-variant;
+        }
+      }
+    }
+  }
+
+  // Route connection line
+  .route-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 0;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      width: 2px;
+      height: 100%;
+      background: linear-gradient(180deg, #1976D2 0%, #388E3C 100%);
+      border-radius: 1px;
+    }
+
+    .route-icon {
+      background: @surface-container-lowest;
+      border: 2px solid @outline-variant;
+      border-radius: 50%;
+      padding: 6px;
+      z-index: 1;
+
+      .material-symbols-outlined {
+        font-size: 16px;
+        color: @on-surface-variant;
+        font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      }
+    }
+  }
+
+  // Enhanced divider styling (legacy)
+  md-divider {
+    &[vertical] {
+      background-color: @outline-variant;
+      width: 1px;
+      margin: 0 8px;
+    }
+  }
+
+  // Mobile responsive design
+  @media (max-width: @mobile-breakpoint) {
+    flex-direction: column;
+    gap: 12px;
+    margin: 12px 0;
+    
+    .address-block {
+      .route-header {
+        padding: 10px 14px 6px;
+
+        .header-content {
+          gap: 8px;
+
+          .location-icon {
+            padding: 6px;
+
+            .material-symbols-outlined {
+              font-size: 16px;
+            }
+          }
+
+          .location-type {
+            font-size: 16px;
+            line-height: 20px;
+          }
+        }
+      }
+
+      .address-content {
+        padding: 12px;
+
+        .address-display {
+          padding: 8px;
+          margin-bottom: 12px;
+          
+          .primary-address {
+            font-size: 14px;
+            line-height: 18px;
+          }
+
+          .secondary-address {
+            font-size: 12px;
+            line-height: 16px;
+          }
+
+          .address-badge {
+            font-size: 10px;
+            padding: 2px 4px;
+          }
+        }
+
+        .contact-cards {
+          gap: 6px;
+
+          .contact-card {
+            padding: 8px;
+
+            .contact-header {
+              gap: 6px;
+
+              .contact-icon {
+                padding: 4px;
+
+                .material-symbols-outlined {
+                  font-size: 14px;
+                }
+              }
+
+              .contact-label {
+                font-size: 10px;
+              }
+            }
+
+            .contact-value {
+              font-size: 12px;
+              padding-left: 24px;
+            }
+          }
+        }
+
+        // Legacy mobile styles
+        md-list md-list-item {
+          min-height: 48px;
+          padding: 6px 8px;
+
+          md-icon.md-avatar {
+            width: 32px;
+            height: 32px;
+            padding: 6px;
+            margin-right: 12px;
+          }
+        }
+      }
+    }
+
+    .route-divider {
+      padding: 12px 0;
+      transform: rotate(90deg);
+
+      &::before {
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(90deg, #1976D2 0%, #388E3C 100%);
+      }
+    }
   }
 }
 
@@ -260,7 +788,7 @@
           background: transparent;
           width: 100%;
           height: 48px;
-          min-width: max-content; 
+          min-width: max-content;
 
           .md-tab {
             padding: 12px 16px;
@@ -337,14 +865,14 @@
         min-width: max-content;
 
         .md-tab {
-          flex: 0 0 auto; 
-          white-space: nowrap; 
+          flex: 0 0 auto;
+          white-space: nowrap;
           min-width: 120px;
           padding: 12px 16px;
         }
 
         md-pagination-wrapper, md-tabs-canvas {
-          overflow-x: auto; 
+          overflow-x: auto;
           overflow-y: hidden;
         }
 
@@ -460,77 +988,6 @@
     // Left Column
     .left-column {
       padding-right: 8px;
-
-      .address-section {
-        margin: @spacing-unit*2 0;
-
-        .address-block {
-          background: white;
-          border-radius: @card-radius;
-          .section-transition();
-
-          // Header Styles
-          .address-header {
-            .flex-center();
-            height: @spacing-unit*6;
-            background: transparent;
-
-            .location-icon {
-              margin-right: @spacing-unit*2;
-            }
-
-            span {
-              color: @text-secondary;
-              font-size: 14px;
-              font-weight: 500;
-            }
-          }
-
-          // Content Styles
-          .address-content {
-            .location-name {
-              color: @text-primary;
-              font-size: 16px;
-              font-weight: 500;
-              margin: 0 0 @spacing-unit*2 0;
-            }
-
-            .address-lines p {
-              margin: @spacing-unit 0;
-              color: @text-primary;
-              line-height: 1.5;
-
-              &:empty {
-                display: none;
-              }
-            }
-
-            .contact-info {
-              border-top: 1px solid @divider-color;
-              padding-top: @spacing-unit*2;
-
-              md-list-item {
-                min-height: @spacing-unit*4 !important;
-
-                .md-list-item-inner {
-                  justify-content: flex-start;
-                }
-
-                md-icon {
-                  margin-right: @spacing-unit*2;
-                  color: @text-secondary;
-                }
-
-                p {
-                  color: @text-primary;
-                  margin: 0;
-                  font-size: 14px;
-                }
-              }
-            }
-          }
-        }
-      }
 
       @media (max-width: @mobile-breakpoint) {
         .address-section .address-block {
@@ -887,116 +1344,116 @@
 
 // Flight segments styles
 .flight-segments-container {
-    // Segment header styles
-    .segment-header {
-        margin-top: 8px;
-        color: rgba(0, 0, 0, 0.54);
+  // Segment header styles
+  .segment-header {
+    margin-top: 8px;
+    color: rgba(0, 0, 0, 0.54);
+    font-weight: 500;
+  }
+  // Individual segment item
+  .segment-item {
+    margin-bottom: 16px;
+
+    .segment-content {
+      padding: 8px 0;
+    }
+    // Segment number text
+    .segment-number {
+      font-weight: 500;
+      font-size: 14px;
+      margin-bottom: 4px;
+      color: rgba(0, 0, 0, 0.87);
+    }
+    // Segment info container
+    .segment-info {
+      // Departure section
+      .segment-departure {
+        .time {
+          font-size: 14px;
+          color: rgba(0, 0, 0, 0.87);
+        }
+
+        .airport-code {
+          font-size: 14px;
+          color: rgba(0, 0, 0, 0.87);
+        }
+
+        .terminal {
+          font-size: 12px;
+          color: rgba(0, 0, 0, 0.54);
+        }
+      }
+      // Flight line (middle section)
+      .flight-line {
+        text-align: center;
+        position: relative;
+
+        .elapsed-time {
+          font-size: 12px;
+          margin-bottom: 4px;
+          color: rgba(0, 0, 0, 0.54);
+        }
+
+        .line {
+          height: 2px;
+          background-color: #1976d2;
+          position: relative;
+          margin: 0 16px;
+
+          .line-arrow {
+            position: absolute;
+            right: -12px;
+            top: -8px;
+            font-size: 18px;
+            color: #1976d2;
+          }
+        }
+
+        .aircraft-info {
+          font-size: 12px;
+          color: rgba(0, 0, 0, 0.54);
+          margin-top: 4px;
+        }
+      }
+      // Arrival section
+      .segment-arrival {
+        text-align: right;
+
+        .time {
+          font-size: 14px;
+          color: rgba(0, 0, 0, 0.87);
+        }
+
+        .airport-code {
+          font-size: 14px;
+          color: rgba(0, 0, 0, 0.87);
+        }
+
+        .terminal {
+          font-size: 12px;
+          color: rgba(0, 0, 0, 0.54);
+        }
+      }
+    }
+    // Layover info styling
+    .layover-info {
+      background-color: #FFF8E1;
+      padding: 8px;
+      margin: 8px 0;
+      text-align: center;
+      border-radius: 4px;
+
+      .layover-icon {
+        color: #FFA000;
+        vertical-align: middle;
+      }
+
+      .layover-text {
+        color: #FFA000;
         font-weight: 500;
+        font-size:14px;
+        vertical-align:middle;
+      }
     }
-    // Individual segment item
-    .segment-item {
-        margin-bottom: 16px;
-
-        .segment-content {
-            padding: 8px 0;
-        }
-        // Segment number text
-        .segment-number {
-            font-weight: 500;
-            font-size: 14px;
-            margin-bottom: 4px;
-            color: rgba(0, 0, 0, 0.87);
-        }
-        // Segment info container
-        .segment-info {
-            // Departure section
-            .segment-departure {
-                .time {
-                    font-size: 14px;
-                    color: rgba(0, 0, 0, 0.87);
-                }
-
-                .airport-code {
-                    font-size: 14px;
-                    color: rgba(0, 0, 0, 0.87);
-                }
-
-                .terminal {
-                    font-size: 12px;
-                    color: rgba(0, 0, 0, 0.54);
-                }
-            }
-            // Flight line (middle section)
-            .flight-line {
-                text-align: center;
-                position: relative;
-
-                .elapsed-time {
-                    font-size: 12px;
-                    margin-bottom: 4px;
-                    color: rgba(0, 0, 0, 0.54);
-                }
-
-                .line {
-                    height: 2px;
-                    background-color: #1976d2;
-                    position: relative;
-                    margin: 0 16px;
-
-                    .line-arrow {
-                        position: absolute;
-                        right: -12px;
-                        top: -8px;
-                        font-size: 18px;
-                        color: #1976d2;
-                    }
-                }
-
-                .aircraft-info {
-                    font-size: 12px;
-                    color: rgba(0, 0, 0, 0.54);
-                    margin-top: 4px;
-                }
-            }
-            // Arrival section
-            .segment-arrival {
-                text-align: right;
-
-                .time {
-                    font-size: 14px;
-                    color: rgba(0, 0, 0, 0.87);
-                }
-
-                .airport-code {
-                    font-size: 14px;
-                    color: rgba(0, 0, 0, 0.87);
-                }
-
-                .terminal {
-                    font-size: 12px;
-                    color: rgba(0, 0, 0, 0.54);
-                }
-            }
-        }
-        // Layover info styling
-        .layover-info {
-            background-color: #FFF8E1;
-            padding: 8px;
-            margin: 8px 0;
-            text-align: center;
-            border-radius: 4px;
-
-            .layover-icon {
-                color: #FFA000;
-                vertical-align: middle;
-            }
-
-            .layover-text {
-                color: #FFA000;
-                font-weight: 500;
-                font-size:14px;
-                vertical-align:middle;
-            }
-        }
-    }
+  }
 }
