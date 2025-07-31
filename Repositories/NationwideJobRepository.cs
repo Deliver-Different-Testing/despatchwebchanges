@@ -1068,16 +1068,17 @@ public class NationwideJobRepository(
                 Id = agentVehicle.Agent.UcagId,
                 Text = agentVehicle.Agent.UcagName
             })
+            .Distinct()
             .AsNoTracking()
             .ToListAsync();
 
         return agents;
     }
 
-    public async Task<List<Suggestion>> GetAllActiveAirportsAsync()
+    public async Task<List<Suggestion>> GetAllActiveAirportsWithAgentsAsync()
     {
         var agents = await Context.TblAirports
-            .Where(a => a.Active)
+            .Where(a => a.Active && a.AgentVehicles.Any())
             .Select(a => new Suggestion
             {
                 Id = a.AirportId,

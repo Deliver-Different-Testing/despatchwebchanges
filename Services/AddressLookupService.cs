@@ -64,7 +64,6 @@ public class AddressLookupService(
         catch (Exception ex)
         {
             Log.Error(ex, "Error searching for address: {Address}", text);
-            ;
             throw;
         }
     }

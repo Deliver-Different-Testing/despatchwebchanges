@@ -409,7 +409,7 @@ public class NationwideJobController(
     {
         try
         {
-            var airports = await repository.GetAllActiveAirportsAsync();
+            var airports = await repository.GetAllActiveAirportsWithAgentsAsync();
             return Json(airports);
         }
         catch (Exception e)

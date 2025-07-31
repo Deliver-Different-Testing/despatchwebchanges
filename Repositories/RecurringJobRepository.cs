@@ -443,8 +443,8 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
                         case false:
                         SetRecurringJobStatus(job, false, staffId, currentTenantTime);
                             break;
-                    };
-                    
+                    }
+
                     updateNote = $"Changed Active to {(isActive ? "Yes" : "No")}";
                     break;
                 default:
