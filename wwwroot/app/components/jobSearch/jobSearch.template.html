@@ -1,4 +1,4 @@
-<div>
+<md-content class="md-dense">
     <div>
         <md-toolbar class="md-hue-2 md-whiteframe-2dp">
             <div class="md-toolbar-tools">
@@ -51,7 +51,7 @@
         <material-sidenav></material-sidenav>
     </div>
 
-    <div class="">
+    <div class="md-padding">
         <div class="columns">
             <div class="column" id="co-{{column.id}}" ng-repeat="(colKey,column) in ctrl.layout.columns"
                  r-directions="['right']" r-flex="true" resizable style="flex-basis: {{column.width}}">
@@ -65,7 +65,7 @@
                                 <!--Icon-->
                                 <span class="material-symbols-outlined">{{ctrl.boxes[box.name].icon}}</span>
 
-                                <span class="md-headline-title" style="margin-left: 8px;"
+                                <span class="md-card-title"
                                       flex>{{ctrl.boxes[box.name].title}}
                                     <span ng-if="box.name == 'scanList'">{{ctrl.currentSelection}}</span>
                                     <span ng-if="box.name == 'jobDetail'">{{ctrl.currentSelection}}</span>
@@ -231,4 +231,4 @@
     </div>
 
     <div id='draggingItems'></div>
-</div>
+</md-content>

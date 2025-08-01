@@ -1,13 +1,19 @@
 <div class="dateService md-padding">
     <div class="container-fluid space">
         <label id="dateRange" class="label-padding">Quick Search: </label>
-        <md-radio-group ng-change="ctrl.onSearchRangeChange(ctrl.dateSearchRange)" ng-model="ctrl.dateSearchRange"
-                        aria-labelledby="dateRange" layout="row" layout-align="center center">
-            <md-radio-button value="1">Fortnight</md-radio-button>
-            <md-radio-button value="2">Today</md-radio-button>
-            <md-radio-button value="3">Month</md-radio-button>
-            <md-radio-button value="4">Custom</md-radio-button>
-        </md-radio-group>
+        <div layout="row" layout-align="center center" layout-wrap>
+            <md-radio-group
+                    class="md-primary"
+                    ng-change="ctrl.onSearchRangeChange(ctrl.dateSearchRange)"
+                    ng-model="ctrl.dateSearchRange"
+                    aria-labelledby="dateRange">
+                <md-radio-button value="1">Fortnight</md-radio-button>
+                <md-radio-button value="2">Today</md-radio-button>
+                <md-radio-button value="3">Month</md-radio-button>
+                <md-radio-button value="4">Custom</md-radio-button>
+            </md-radio-group>
+        </div>
+
 
         <md-divider style="margin: 10px;"></md-divider>
 
@@ -120,7 +126,9 @@
                 </md-icon>
                 Upload
             </md-button>
-            <input onchange="angular.element(this).scope().ctrl.onUploadJobList()" style="visibility: hidden;" type="file" name="jobListUpload" id="jobListUpload" file-model="myFile" class="inputfile" accept=".xlsx,.xls,.csv" data-multiple-caption="{count} files selected" />
+            <input onchange="angular.element(this).scope().ctrl.onUploadJobList()" style="visibility: hidden;"
+                   type="file" name="jobListUpload" id="jobListUpload" file-model="myFile" class="inputfile"
+                   accept=".xlsx,.xls,.csv" data-multiple-caption="{count} files selected"/>
         </section>
     </div>
 </div>
@@ -133,7 +141,7 @@
     .space {
         margin-bottom: 20px;
     }
-    
+
     .dateService {
         overflow-x: auto;
         overflow-y: visible;
