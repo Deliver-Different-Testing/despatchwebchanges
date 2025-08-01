@@ -20,7 +20,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         private $mdDialog: angular.material.IDialogService,
         private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
-   ) {
+    ) {
         console.log("DispatchExecutorService initialized");
     }
 
@@ -105,14 +105,20 @@ class DispatchExecutorService implements angular.IServiceProvider {
     async dispatchJobByJobId(courierId: number, jobId: number): Promise<void> {
         console.log("Dispatching job by ID:", {courierId, jobId});
         try {
-            const job = await this.DispatchData.getJobDetail(jobId);
+            const job = await this.DispatchData.getDispatchJobDetail(jobId);
             console.log("Job details fetched:", job);
 
             const foundCourier = await this.DispatchData.getCourierById(courierId);
             console.log("Found courier:", foundCourier);
 
             if (!foundCourier) {
-                this.toastrService.showWarningToast(`Courier with ID ${courierId} not found. Unable to restore job`);
+                await this.$mdDialog.show(
+                    this.$mdDialog.alert()
+                        .title("Unable to Restore")
+                        .textContent(`Courier with ID ${courierId} not found. Unable to restore job`)
+                        .ok("Understood")
+                );
+                
                 return;
             }
 
@@ -357,16 +363,31 @@ class DispatchExecutorService implements angular.IServiceProvider {
         throw error;
     }
 
-    private async validateJobForRestore(job: IDispatchJob): Promise<{ isValid: boolean; courier?: ActiveCourierViewModel }> {
+    private async validateJobForRestore(job: IDispatchJob): Promise<{
+        isValid: boolean;
+        courier?: ActiveCourierViewModel
+    }> {
         const courierId = job?.assignedCourier?.id;
         if (!courierId) {
-            this.toastrService.showWarningToast("Job has no assigned courier to restore from. Unable to restore")
+            await this.$mdDialog.show(
+                this.$mdDialog.alert()
+                    .title("Unable to Restore")
+                    .textContent("Job has no assigned courier to restore from. Unable to restore")
+                    .ok("Understood")
+            );
+
             return {isValid: false};
         }
 
         const courier = await this.DispatchData.getCourierById(courierId);
         if (!courier) {
-            this.toastrService.showWarningToast(`The assigned courier could not found. Unable to restore`)
+            await this.$mdDialog.show(
+                this.$mdDialog.alert()
+                    .title("Unable to Restore")
+                    .textContent("The assigned courier could not found. Unable to restore")
+                    .ok("Understood")
+            );
+            
             return {isValid: false};
         }
 

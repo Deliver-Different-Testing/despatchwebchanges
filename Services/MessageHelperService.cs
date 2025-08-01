@@ -67,26 +67,10 @@ public class MessageHelperService : IMessageHelperService
 
         return new MessageParticipant { Id = 0, Type = OtherMessagePartyType.Staff, Name = "Unknown", Initials = "??" };
     }
-    
-    public MessageDirection GetMessageDirection(TucManualMessage message, int currentStaffId)
-    {
-        var isFromCurrent = message.UcmmSendFromStaffId == currentStaffId;
-        var isToCurrent = message.UcmmSendToStaffId == currentStaffId;
 
-        return new MessageDirection
-        {
-            IsFromCurrentUser = isFromCurrent,
-            IsToCurrentUser = isToCurrent,
-            From = GetSender(message),
-            To = GetRecipient(message)
-        };
-    }
-    
     public bool IsIncomingMessage(TucManualMessage message, int staffId) => message.UcmmSendToStaffId == staffId;
-    
-    public bool IsOutgoingMessage(TucManualMessage message, int staffId) => message.UcmmSendFromStaffId == staffId;
 
-    public string GetParticipantName(TucCourier courier = null, TucStaff staff = null)
+    private static string GetParticipantName(TucCourier courier = null, TucStaff staff = null)
     {
         if (courier != null)
         {
@@ -105,7 +89,7 @@ public class MessageHelperService : IMessageHelperService
         return "Unknown";
     }
 
-    public string GetParticipantInitials(TucCourier courier = null, TucStaff staff = null)
+    private static string GetParticipantInitials(TucCourier courier = null, TucStaff staff = null)
     {
         if (courier != null)
         {
@@ -133,59 +117,5 @@ public class MessageHelperService : IMessageHelperService
                courier.CourierLogInOut.LogOutTime < currentDate
             ? "online"
             : "offline";
-    }
-
-    private MessageParticipant GetSender(TucManualMessage message)
-    {
-        if (message.UcmmSendFromCourierId.HasValue)
-        {
-            return new MessageParticipant
-            {
-                Id = message.UcmmSendFromCourierId.Value,
-                Type = OtherMessagePartyType.Courier,
-                Name = GetParticipantName(courier: message.UcmmSendFromCourier),
-                Initials = GetParticipantInitials(courier: message.UcmmSendFromCourier)
-            };
-        }
-
-        if (message.UcmmSendFromStaffId.HasValue)
-        {
-            return new MessageParticipant
-            {
-                Id = message.UcmmSendFromStaffId.Value,
-                Type = OtherMessagePartyType.Staff,
-                Name = GetParticipantName(staff: message.UcmmSendFromStaff),
-                Initials = GetParticipantInitials(staff: message.UcmmSendFromStaff)
-            };
-        }
-
-        return new MessageParticipant { Id = 0, Type = OtherMessagePartyType.Staff, Name = "Unknown", Initials = "??" };
-    }
-
-    private MessageParticipant GetRecipient(TucManualMessage message)
-    {
-        if (message.UcmmSendToCourierId.HasValue)
-        {
-            return new MessageParticipant
-            {
-                Id = message.UcmmSendToCourierId.Value,
-                Type = OtherMessagePartyType.Courier,
-                Name = GetParticipantName(courier: message.UcmmSendToCourier),
-                Initials = GetParticipantInitials(courier: message.UcmmSendToCourier)
-            };
-        }
-
-        if (message.UcmmSendToStaffId.HasValue)
-        {
-            return new MessageParticipant
-            {
-                Id = message.UcmmSendToStaffId.Value,
-                Type = OtherMessagePartyType.Staff,
-                Name = GetParticipantName(staff: message.UcmmSendToStaff),
-                Initials = GetParticipantInitials(staff: message.UcmmSendToStaff)
-            };
-        }
-
-        return new MessageParticipant { Id = 0, Type = OtherMessagePartyType.Staff, Name = "Unknown", Initials = "??" };
     }
 }

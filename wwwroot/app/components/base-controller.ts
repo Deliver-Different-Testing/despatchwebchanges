@@ -6,8 +6,7 @@ class BaseController implements angular.IController {
 
     private watchers: Array<() => void> = [];
     private dataCache: Map<string, { data: any; timestamp: number; ttl: number }> = new Map();
-    private performanceMetrics: { [key: string]: number } = {};
-
+    
     protected $timeoutService?: angular.ITimeoutService;
     protected $intervalService?: angular.IIntervalService;
     protected $scopeService?: angular.IScope;
@@ -44,26 +43,7 @@ class BaseController implements angular.IController {
             this.$scopeService.$evalAsync();
         }
     }
-    protected measurePerformance<T>(
-        key: string,
-        operation: () => T | Promise<T>
-    ): T | Promise<T> {
-        const startTime = performance.now();
-
-        const result = operation();
-
-        if (result instanceof Promise) {
-            return result.finally(() => {
-                this.performanceMetrics[key] = performance.now() - startTime;
-                console.log(`[Performance] ${key}: ${this.performanceMetrics[key].toFixed(2)}ms`);
-            });
-        } else {
-            this.performanceMetrics[key] = performance.now() - startTime;
-            console.log(`[Performance] ${key}: ${this.performanceMetrics[key].toFixed(2)}ms`);
-            return result;
-        }
-    }
-
+    
     protected watchEvent<T>(
         eventName: string,
         listener: (event: angular.IAngularEvent, ...args: T[]) => void,

@@ -42,7 +42,9 @@ public class JobDownloadModel
     public string AgentAirlineName { get; set; }
     public string AWB { get; set; }
     public string StatusName { get; set; }
-    //public bool? IsRecurring { get; set; }
     public int? InvoiceNumber { get; set; }
     public DateTime? InvoiceDate { get; set; }
+    public bool IsArchived { get; set; }
+    public string LoggedInContact { get; set; }
+    public decimal? RawBaseAmount { get; set; } 
 }
