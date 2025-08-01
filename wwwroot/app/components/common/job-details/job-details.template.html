@@ -7,14 +7,14 @@
 <div class="job-detail-page" ng-if="ctrl.job">
     <md-card
             class="warning-section md-whiteframe-1dp"
-            ng-if="ctrl.job.isArchived || ctrl.job.preBook">
+            ng-if="::ctrl.job.isArchived || ctrl.job.preBook">
         <md-card-content>
             <div layout="row" layout-align="start center">
                 <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
                 <span class="warning-text"
-                      ng-if="ctrl.job.isArchived">Job archived. Some fields can't be edited</span>
+                      ng-if="::ctrl.job.isArchived">Job archived. Some fields can't be edited</span>
                 <span class="warning-text"
-                      ng-if="ctrl.job.preBook">Recurring job. Some fields may require confirmation</span>
+                      ng-if="::ctrl.job.preBook">Recurring job. Some fields may require confirmation</span>
             </div>
         </md-card-content>
     </md-card>
@@ -308,7 +308,7 @@
 
                         <md-toolbar class="md-primary">
                             <div class="md-toolbar-tools">
-                                <span class="material-symbols-outlined">{{ctrl.jobAddressIcon}}</span>
+                                <span class="material-symbols-outlined">{{::ctrl.jobAddressIcon}}</span>
                                 <span class="md-headline-title" flex style="margin-left: 8px">
                                     Pickup Location
                                 </span>
@@ -322,19 +322,16 @@
                                  aria-label="Edit pickup address"
                                  ng-click="!ctrl.job.locked && ctrl.updateAddress($event, ctrl.job, 'fromAddress')">
                                 <div class="primary-address">
-                                    {{ctrl.job.pickupAddress.addressLine1 || 'No address specified'}}
+                                    {{ctrl.job.pickupAddress.addressLine1 || 'No Business or Receipt Provided'}}
                                     <span class="material-symbols-outlined edit-indicator">edit</span>
                                 </div>
                                 <div class="secondary-address">
-          <span class="address-line" ng-if="ctrl.job.pickupAddress.addressLine2">
-            {{ctrl.job.pickupAddress.addressLine2}}
-          </span>
-                                    <span class="address-line" ng-if="ctrl.job.pickupAddress.addressLine3">
-            {{ctrl.job.pickupAddress.addressLine3}}
-          </span>
-                                    <span class="address-line" ng-if="ctrl.job.pickupAddress.addressLine4">
-            {{ctrl.job.pickupAddress.addressLine4}}, {{ctrl.job.pickupAddress.addressLine5}}
-          </span>
+                                     <span class="address-line">
+                                    {{ ctrl.job.pickupAddress.addressLine2 ? ctrl.job.pickupAddress.addressLine2 : ''}}  {{ctrl.job.pickupAddress.addressLine3}} {{ctrl.job.pickupAddress.addressLine4}}
+                                      </span>
+                                    <span class="address-line">
+                                     {{ctrl.job.pickupAddress.addressLine5}}, {{ctrl.job.pickupAddress.addressLine6}}, {{ctrl.job.pickupAddress.addressLine7}}
+                                  </span>
                                 </div>
                                 <span class="address-badge" ng-if="ctrl.job.pickupAddress.addressLine1">Origin</span>
                             </div>
@@ -352,7 +349,7 @@
                                         <h3 class="contact-label">Contact Person</h3>
                                     </div>
                                     <p class="contact-value" ng-class="{'empty': !ctrl.job.fromContactName}">
-                                        {{ctrl.job.fromContactName || 'Not specified'}}
+                                        {{ctrl.job.fromContactName || 'NA'}}
                                     </p>
                                 </div>
 
@@ -368,7 +365,7 @@
                                         <h3 class="contact-label">Phone Number</h3>
                                     </div>
                                     <p class="contact-value" ng-class="{'empty': !ctrl.job.fromContactNumber}">
-                                        {{ctrl.job.fromContactNumber || 'Not specified'}}
+                                        {{ctrl.job.fromContactNumber || 'NA'}}
                                     </p>
                                 </div>
                             </div>
@@ -389,7 +386,7 @@
 
                         <md-toolbar class="md-primary">
                             <div class="md-toolbar-tools">
-                                <span class="material-symbols-outlined">{{ctrl.jobAddressIcon}}</span>
+                                <span class="material-symbols-outlined">{{::ctrl.jobAddressIcon}}</span>
                                 <span class="md-headline-title" flex style="margin-left: 8px">
                                     Delivery Location
                                 </span>
@@ -406,17 +403,16 @@
                                     {{ctrl.job.deliveryAddress.addressLine1 || 'No address specified'}}
                                     <span class="material-symbols-outlined edit-indicator">edit</span>
                                 </div>
+
                                 <div class="secondary-address">
-          <span class="address-line" ng-if="ctrl.job.deliveryAddress.addressLine2">
-            {{ctrl.job.deliveryAddress.addressLine2}}
-          </span>
-                                    <span class="address-line" ng-if="ctrl.job.deliveryAddress.addressLine3">
-            {{ctrl.job.deliveryAddress.addressLine3}}
-          </span>
-                                    <span class="address-line" ng-if="ctrl.job.deliveryAddress.addressLine4">
-            {{ctrl.job.deliveryAddress.addressLine4}}, {{ctrl.job.deliveryAddress.addressLine5}}
-          </span>
+                                     <span class="address-line">
+                                    {{ ctrl.job.deliveryAddress.addressLine2 ? ctrl.job.deliveryAddress.addressLine2 : ''}}  {{ctrl.job.deliveryAddress.addressLine3}} {{ctrl.job.deliveryAddress.addressLine4}}
+                                      </span>
+                                    <span class="address-line">
+                                     {{ctrl.job.deliveryAddress.addressLine5}}, {{ctrl.job.deliveryAddress.addressLine6}}, {{ctrl.job.deliveryAddress.addressLine7}}
+                                  </span>
                                 </div>
+                                
                                 <span class="address-badge"
                                       ng-if="ctrl.job.deliveryAddress.addressLine1">Destination</span>
                             </div>

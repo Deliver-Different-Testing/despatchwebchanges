@@ -779,6 +779,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             from agent in agentJoin.DefaultIfEmpty()
             join inv in Context.TucInvoiceNos on j.InvoiceNo equals inv.UcinId into invoiceJoin
             from invoice in invoiceJoin.DefaultIfEmpty()
+            join lic in Context.TucClientContacts on j.LoggedInContactId equals lic.UcctId into licJoin
+            from lic in licJoin.DefaultIfEmpty()
             where ids.Contains(j.JobId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value))
             orderby j.Number
             select new JobDownloadModel
@@ -793,7 +795,6 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 PickedUpDate = j.PickUpTime,
                 DeliveredDate = j.CompletedTime,
                 Amount = j.Amount,
-                //ExtraCharges =  ??,
                 Fuel = j.FuelSurchargeAmount,
                 Ppd = j.Ppdexclusiveamount,
                 AgentAirlineName = nationwide != null ? nationwide.UcnwAirlineName : agent.UcagName,
@@ -825,7 +826,10 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 ClientReferenceB = j.ClientReferenceB,
                 ClientReferenceC = j.ClientReferenceC,
                 InvoiceNumber = j.InvoiceNo,
-                InvoiceDate = invoice.Created
+                InvoiceDate = invoice.Created,
+                IsArchived = j.Archived ?? false,
+                LoggedInContact = lic.UcctFirstname + " " + lic.UcctSurname,
+                RawBaseAmount = j.RawBaseAmount
             };
 
         var result = await query.ToListAsync();

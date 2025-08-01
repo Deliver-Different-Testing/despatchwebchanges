@@ -256,7 +256,7 @@ class TasksService implements angular.IServiceProvider {
         filterRequest: TaskTableFiltersRequest,
         callback: (tasks: ExtendedTask[], error?: any) => void,
         appPage: AppPages = AppPages.Dispatch,
-        jobId?: number // Add jobId parameter
+        jobId?: number 
     ): void {
         const loadingKey = `${appPage}-${jobId || 'all'}`;
 
