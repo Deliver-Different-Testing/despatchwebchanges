@@ -6,7 +6,6 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 24px;
   min-height: 200px;
   background-color: transparent;
 
@@ -19,14 +18,15 @@
   }
 
   &__title {
-    font-size: 16px;
-    font-weight: 500;
+    font-size: @font-lg;
+    font-weight: @weight-semibold;
     color: rgba(0, 0, 0, 0.87);
     margin: 0 0 8px;
   }
 
   &__message {
-    font-size: 14px;
+    font-size: @font-sm; 
+    font-weight: @weight-normal;
     color: rgba(0, 0, 0, 0.6);
     margin: 0 0 16px;
     max-width: 240px;

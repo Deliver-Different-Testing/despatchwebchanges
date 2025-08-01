@@ -4,7 +4,7 @@
 @import "badge";
 
 html, body {
-  font-family: 'Roboto', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
   overflow: hidden;
 }
 
@@ -62,14 +62,30 @@ html, body {
   border-radius: 4px;
 }
 
+.md-title {
+  font-size: @font-xl;
+  font-weight: @weight-medium;
+}
+
+.greeting-message {
+  font-size: @font-xl;
+  font-weight: @weight-medium;
+  color: white;
+}
+
 .md-headline-title {
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 21px;
-  letter-spacing: 0.1125px;
+  font-size: @font-lg;
+  font-weight: @weight-semibold;
   max-height: 48px;
   overflow: auto;
 }
+
+.md-card-title {
+  .md-headline-title;
+  color: white;
+  margin-left: 8px;
+}
+
 
 .box-handle {
   /* Leave empty*/
@@ -78,7 +94,7 @@ html, body {
 .vertical-divider {
   width: 1px;
   height: 32px;
-  background-color: black;
+  background-color: white;
   margin: 0 15px;
   align-self: center;
 }
@@ -266,8 +282,7 @@ html, body {
     flex: 0;
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 45px);
-    border: 7px solid #fff;
+    height: calc(100vh - 70px);
     min-width: 50px;
     padding-bottom: 20px;
 
@@ -287,6 +302,8 @@ html, body {
       background: #f1f1f1;
       border-radius: 10px;
       min-width: 50px;
+      margin-left: 10px;
+      margin-right: 10px;
 
       .box {
         display: flex;
@@ -294,17 +311,12 @@ html, body {
         min-height: 64px;
         margin-bottom: 15px;
         background-color: #CCC;
-        border-radius: 6px;
-        box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
-        transition: box-shadow 0.25s;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         position: relative;
 
         md-toolbar {
-          border-radius: 6px 6px 0 0;
-        }
-
-        &:hover {
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+          border-radius: 8px 8px 0 0;
         }
 
         &:nth-last-child(2) {

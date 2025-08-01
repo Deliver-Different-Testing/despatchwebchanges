@@ -95,15 +95,18 @@
             </div>
 
             <!-- Message when no notes -->
-            <no-data
-                    ng-if="!ctrl.loading && ctrl.getDisplayNotes().length === 0"
-                    title="No Notes"
-                    message="{{ctrl.getNoNotesMessage()}}"
-                    icon="sticky_note_2"
-                    show-action="true"
-                    action-text="Show all notes"
-                    on-action="ctrl.filterByCategory('all')">
-            </no-data>
+
+            <div class="no-notes-center" ng-if="!ctrl.loading && ctrl.getDisplayNotes().length === 0">
+                <no-data
+                        title="No Notes"
+                        message="{{ctrl.getNoNotesMessage()}}"
+                        icon="sticky_note_2"
+                        show-action="true"
+                        action-text="Show all notes"
+                        on-action="ctrl.filterByCategory('all')">
+                </no-data>
+            </div>
+
         </div>
     </div>
 </div>

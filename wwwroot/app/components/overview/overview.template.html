@@ -95,6 +95,7 @@
                             <div class="regions-container" layout="row" layout-wrap ng-if="ctrl.regions.length">
                                 <div flex="50" ng-repeat="region in ctrl.regions">
                                     <md-checkbox
+                                            class="md-primary"
                                             aria-label="Select {{region.text}}"
                                             ng-change="ctrl.toggleRegion(region)"
                                             ng-model="region.selected">
@@ -138,6 +139,7 @@
                             <div class="regions-container" layout="row" layout-wrap ng-if="ctrl.speeds.length">
                                 <div flex="50" ng-repeat="speed in ctrl.speeds">
                                     <md-checkbox
+                                            class="md-primary"
                                             ng-change="ctrl.toggleSpeed(speed)"
                                             ng-model="speed.selected">
                                         {{speed.text}}

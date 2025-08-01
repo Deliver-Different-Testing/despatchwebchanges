@@ -1,5 +1,5 @@
 <md-list-item class="task-item"
-              ng-class="{clickable: ctrl.config.onTaskClick, compact: ctrl.config.compactView}"
+              ng-class="{clickable: ctrl.config.onTaskClick, compact: ctrl.config.compactView, completed: ctrl.task.closed}"
               ng-click="ctrl.config.onTaskClick && ctrl.handleTaskClick($event)">
 
     <!-- Priority indicator -->
@@ -16,7 +16,7 @@
 
     <div class="md-list-item-text task-content" flex>
         <!-- Task title -->
-        <h2 class="task-title" ng-class="{'completed-text': ctrl.task.closed}">
+        <h3 class="task-title" ng-class="{'completed-text': ctrl.task.closed}">
             {{ctrl.task.title}}
             <!-- Status chips -->
             <span ng-if="ctrl.config.showStatusIndicators !== false && ctrl.task.closed"
@@ -25,7 +25,7 @@
                   class="status-chip overdue">Overdue</span>
             <span ng-if="ctrl.config.showStatusIndicators !== false && !ctrl.task.closed && !ctrl.isTaskOverdue(ctrl.task)"
                   class="status-chip todo">To do</span>
-        </h2>
+        </h3>
 
         <!-- Task description -->
         <p class="task-description"
@@ -37,20 +37,18 @@
         <!-- Task metadata -->
         <div class="task-meta">
             <!-- Assignee -->
-            <md-button
+            <button
                     ng-if="ctrl.config.showAssignee !== false"
-                       class="assignee-button"
-                       ng-class="{'overdue-button': ctrl.isTaskOverdue(ctrl.task)}"
-                       ng-click="$event.stopPropagation(); ctrl.reassignTask($event, ctrl.task)">
-                <md-icon md-font-set="material-symbols-outlined" style="margin-right: 6px;">person</md-icon>
+                    class="assignee-button"
+                    ng-click="$event.stopPropagation(); ctrl.reassignTask($event, ctrl.task)">
+                <md-icon md-font-set="material-symbols-outlined" style="margin-right: 6px; font-size: 16px; color: rgba(0,0,0,0.54);">person</md-icon>
                 <span>{{ctrl.task.assignee.text || 'Unassigned'}}</span>
-            </md-button>
+            </button>
 
             <!-- Job ID -->
             <div
                     ng-if="ctrl.config.showJobId !== false"
-                    class="job-id-chip"
-                    ng-class="{'overdue-button': ctrl.isTaskOverdue(ctrl.task)}">
+                    class="job-id-chip">
                 Job #{{ctrl.task.jobNumber}}
             </div>
 
