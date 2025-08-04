@@ -1,3 +1,4 @@
+import "./edit-address-dialog.styles.less";
 import {EditAddressDialogViewModel, ShipmentDetails,} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import ToastrService from "../../../services/toastr.service";

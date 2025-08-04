@@ -1,0 +1,296 @@
+﻿// Professional Address Dialog Styles
+.address-edit-dialog {
+  width: 90vw;
+  max-width: 800px;
+  max-height: 90vh;
+  border-radius: 12px;
+  box-shadow: 0 24px 38px 3px rgba(0, 0, 0, 0.14),
+  0 9px 46px 8px rgba(0, 0, 0, 0.12),
+  0 11px 15px -7px rgba(0, 0, 0, 0.2);
+  
+  // Dialog Content
+  .dialog-content {
+    padding: 0;
+    overflow-y: auto;
+    max-height: calc(90vh - 140px);
+
+    .content-wrapper {
+      padding: 32px;
+    }
+  }
+
+  // Section Styles
+  .section {
+    margin-bottom: 16px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 500;
+      color: #333;
+      margin: 0 0 24px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      &::before {
+        content: '';
+        width: 4px;
+        height: 18px;
+        background: #1976d2;
+        border-radius: 2px;
+      }
+    }
+  }
+
+  // Address Search Section
+  .address-search-section {
+    .search-container {
+      position: relative;
+    }
+
+    .address-autocomplete {
+      .md-input-container {
+        margin-bottom: 0;
+      }
+    }
+
+    .autocomplete-item {
+      display: block;
+      padding: 4px 0;
+      line-height: 1.4;
+    }
+
+    .no-results {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #666;
+      padding: 16px;
+      font-style: italic;
+
+      md-icon {
+        font-size: 20px;
+        opacity: 0.6;
+      }
+    }
+
+    .loading-container {
+      margin-top: 16px;
+      text-align: center;
+
+      .loading-text {
+        display: block;
+        color: #666;
+        font-size: 14px;
+        margin-top: 8px;
+      }
+    }
+  }
+
+  // Form Styles
+  .form-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+
+    &.coordinates-row {
+      background: #f8f9fa;
+      padding: 16px;
+      border-radius: 8px;
+      border-left: 4px solid #1976d2;
+    }
+
+    .form-field {
+      margin-bottom: 16px;
+
+      label {
+        font-weight: 500;
+        color: #555;
+      }
+
+      input, textarea, md-select {
+        border-radius: 4px;
+      }
+
+      &.notes-field textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+    }
+  }
+
+  // Shipment Details Card
+  .shipment-details-card {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+    overflow: hidden;
+
+    .card-header {
+      background: #f5f5f5;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 16px 24px;
+
+      .card-title-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .card-icon {
+        font-size: 24px;
+        color: #1976d2;
+      }
+
+      .card-title {
+        font-size: 16px;
+        font-weight: 500;
+        color: #333;
+      }
+
+      .expand-button {
+        margin: 0;
+        color: #666;
+
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.04);
+        }
+      }
+    }
+
+    .card-content {
+      padding: 24px;
+      background: white;
+    }
+  }
+
+  // Map Section
+  .map-section {
+    .map-container {
+      width: 100%;
+      height: 300px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+      here-map-tracking {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      #editAddressMap {
+        width: 100% !important;
+        height: 100% !important;
+        border-radius: 12px;
+      }
+    }
+  }
+
+  // Dialog Actions
+  .dialog-actions {
+    padding: 24px 32px;
+    background: #fafafa;
+    border-top: 1px solid #e0e0e0;
+    border-radius: 0 0 12px 12px;
+
+    .actions-content {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 16px;
+      width: 100%;
+
+      .loading-text {
+        color: #666;
+        font-size: 14px;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+    }
+  }
+
+  // Responsive Design
+  @media (max-width: 768px) {
+    width: 95vw;
+    max-height: 95vh;
+
+    .dialog-content .content-wrapper {
+      padding: 24px 16px;
+    }
+
+    .section .section-title {
+      font-size: 16px;
+    }
+
+    .form-row {
+      flex-direction: column;
+      gap: 0;
+
+      .form-field {
+        flex: 1 1 100% !important;
+      }
+    }
+
+    .dialog-actions {
+      padding: 16px;
+
+      .actions-content .button-group {
+        flex-direction: column;
+        width: 100%;
+
+        .cancel-button,
+        .save-button {
+          width: 100%;
+        }
+      }
+    }
+
+    .map-section .map-container {
+      height: 250px;
+    }
+  }
+}
+
+// Input Focus States
+.address-edit-dialog {
+  md-input-container.md-input-focused {
+    label {
+      color: #1976d2;
+    }
+
+    .md-input {
+      border-color: #1976d2;
+    }
+  }
+
+  md-autocomplete.md-input-focused {
+    label {
+      color: #1976d2;
+    }
+  }
+}
+
+// Animation for card expansion
+.shipment-details-card .card-content {
+  transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+// Loading states
+.form-field input[disabled],
+.form-field textarea[disabled],
+.form-field md-select[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
