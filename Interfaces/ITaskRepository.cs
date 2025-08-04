@@ -30,4 +30,6 @@ public interface ITaskRepository
         DateTime? etaTime = null,
         bool close = false
     );
+
+    Task<int> GetTaskTypeIdByNameAsync(string name);
 }

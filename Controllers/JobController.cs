@@ -1511,16 +1511,16 @@ public class JobController(
                 await rateJobService.RateJobUsAsync(jobDetails);
             else
                 await rateJobService.RateJobAsync(jobDetails);
-
+            
+            // Add event
+            var changePriceId = await taskRepository.GetTaskTypeIdByNameAsync("Change Price");
             var staffId = infoService.GetStaffId();
-
-            // Add price change event
             await taskRepository.AddEventAsync(
                 jobId,
                 staffId,
                 "System",
                 "Price recalculated during job update",
-                (int)EventType.ChangePrice
+                changePriceId
             );
 
             return Ok();

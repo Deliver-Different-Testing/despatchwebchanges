@@ -425,4 +425,10 @@ public class TaskRepository(
         EventType = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetGroup : string.Empty,
         JobNumber = e.UcevJob.UcjbNumber
     };
+    
+    public async Task<int> GetTaskTypeIdByNameAsync(string name)
+    {
+        var taskType = await Context.TucEventTypeGroups.FirstOrDefaultAsync(x => x.Name == name);
+        return taskType?.Id ?? 0;
+    }
 }
