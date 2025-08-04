@@ -1,4 +1,4 @@
-<md-dialog aria-label="{{ ::ctrl.title }}" style="width: 50%">
+<md-dialog aria-label="{{ ::ctrl.title }}" class="address-edit-dialog">
     <form ng-cloak>
         <md-toolbar>
             <div class="md-toolbar-tools">
@@ -17,312 +17,280 @@
                 </md-button>
             </div>
         </md-toolbar>
-
-        <md-dialog-content ng-cloak>
-            <div class="md-dialog-content">
-                <div layout-gt-xs="row">
-                    <md-autocomplete
-                            class="md-block"
-                            flex-gt-xs
-                            md-floating-label="{{ ::ctrl.useUsFormat ? 'Street Address' : 'Address' }}"
-                            md-item-text="item.address.label"
-                            md-items="item in ctrl.autocompleteAddressSearch(ctrl.addressSearchText)"
-                            md-min-length="3"
-                            md-search-text="ctrl.addressSearchText"
-                            md-selected-item-change="ctrl.addressSearchItemSelected(item)"
-                            ng-init="ctrl.addressSearchText = ctrl.addressDetails.fullAddress"
-                            ng-disabled="ctrl.isAddressLoading">
-                        <md-item-template>
-      <span
-              md-highlight-flags="^i"
-              md-highlight-text="ctrl.addressSearchText">
-          {{item.address.label}}</span>
-                        </md-item-template>
-                        <md-not-found>
-                            No addresses matching "{{ctrl.addressSearchText}}" were found.
-                        </md-not-found>
-                    </md-autocomplete>
-                </div>
-
-                <div layout="row" layout-align="center center" ng-if="ctrl.isAddressLoading" style="padding: 16px;'">
-                    <md-progress-linear
-                            class="md-primary"
-                            md-mode="indeterminate"></md-progress-linear>
-                </div>
-
-                <div layout-gt-sm="row">
-                    <!-- US Format Fields -->
-                    <md-input-container
-                            class="md-block"
-                            flex-gt-sm
-                            ng-if="ctrl.useUsFormat">
-                        <label for="street">Street</label>
-                        <input
-                                id="street"
-                                ng-model="ctrl.addressDetails.addressLine4"
-                                ng-disabled="ctrl.isAddressLoading"
-                        />
-                    </md-input-container>
-
-                    <md-input-container
-                            class="md-block"
-                            flex-gt-sm
-                            ng-if="ctrl.useUsFormat">
-                        <label>State</label>
-                        <md-select
-                                id="usState"
-                                ng-model="ctrl.addressDetails.stateAbbreviation"
+        
+        <md-dialog-content class="dialog-content" ng-cloak>
+            <div class="content-wrapper">
+                <!-- Address Search Section -->
+                <div class="section address-search-section">
+                    <h3 class="section-title">Address Lookup</h3>
+                    <div class="search-container">
+                        <md-autocomplete
+                                class="md-block address-autocomplete"
+                                md-floating-label="{{ ::ctrl.useUsFormat ? 'Street Address' : 'Address' }}"
+                                md-item-text="item.address.label"
+                                md-items="item in ctrl.autocompleteAddressSearch(ctrl.addressSearchText)"
+                                md-min-length="3"
+                                md-search-text="ctrl.addressSearchText"
+                                md-selected-item-change="ctrl.addressSearchItemSelected(item)"
+                                ng-init="ctrl.addressSearchText = ctrl.addressDetails.fullAddress"
                                 ng-disabled="ctrl.isAddressLoading">
-                            <md-option
-                                    ng-repeat="state in ctrl.usStateList"
-                                    ng-value="state.abbreviation">
-                                {{state.name}}
-                            </md-option>
-                        </md-select>
-                    </md-input-container>
+                            <md-item-template>
+                                <span class="autocomplete-item"
+                                      md-highlight-flags="^i"
+                                      md-highlight-text="ctrl.addressSearchText">
+                                    {{item.address.label}}
+                                </span>
+                            </md-item-template>
+                            <md-not-found>
+                                <div class="no-results">
+                                    <md-icon md-font-set="material-symbols-outlined">search_off</md-icon>
+                                    <span>No addresses matching "{{ctrl.addressSearchText}}" were found.</span>
+                                </div>
+                            </md-not-found>
+                        </md-autocomplete>
+                    </div>
 
-                    <md-input-container
-                            class="md-block"
-                            flex-gt-sm
-                            ng-if="ctrl.useUsFormat">
-                        <label for="city">City</label>
-                        <input
-                                id="city"
-                                ng-model="ctrl.addressDetails.addressLine5"
-                                ng-disabled="ctrl.isAddressLoading"
-                        />
-                    </md-input-container>
+                    <div class="loading-container" ng-if="ctrl.isAddressLoading">
+                        <md-progress-linear class="md-primary" md-mode="indeterminate"></md-progress-linear>
+                        <span class="loading-text">Searching addresses...</span>
+                    </div>
+                </div>
 
-                    <md-input-container
-                            class="md-block"
-                            flex-gt-sm
-                            ng-if="ctrl.useUsFormat">
-                        <label for="zipCode">ZIP Code</label>
-                        <input
-                                id="zipCode"
-                                ng-model="ctrl.addressDetails.addressLine7"
-                                ng-disabled="ctrl.isAddressLoading"
-                                pattern="[0-9]{5}"/>
-                    </md-input-container>
+                <!-- Address Details Section -->
+                <div class="section address-details-section">
+                    <h3 class="section-title">Address Details</h3>
+
+                    <!-- US Format Fields -->
+                    <div class="form-row" ng-if="ctrl.useUsFormat">
+                        <md-input-container class="md-block form-field" flex="50">
+                            <label for="street">Street</label>
+                            <input id="street"
+                                   ng-model="ctrl.addressDetails.addressLine4"
+                                   ng-disabled="ctrl.isAddressLoading"/>
+                        </md-input-container>
+
+                        <md-input-container class="md-block form-field" flex="25">
+                            <label>State</label>
+                            <md-select id="usState"
+                                       ng-model="ctrl.addressDetails.stateAbbreviation"
+                                       ng-disabled="ctrl.isAddressLoading">
+                                <md-option ng-repeat="state in ctrl.usStateList"
+                                           ng-value="state.abbreviation">
+                                    {{state.name}}
+                                </md-option>
+                            </md-select>
+                        </md-input-container>
+
+                        <md-input-container class="md-block form-field" flex="25">
+                            <label for="zipCode">ZIP Code</label>
+                            <input id="zipCode"
+                                   ng-model="ctrl.addressDetails.addressLine7"
+                                   ng-disabled="ctrl.isAddressLoading"
+                                   pattern="[0-9]{5}"/>
+                        </md-input-container>
+                    </div>
+
+                    <div class="form-row" ng-if="ctrl.useUsFormat">
+                        <md-input-container class="md-block form-field" flex="100">
+                            <label for="city">City</label>
+                            <input id="city"
+                                   ng-model="ctrl.addressDetails.addressLine5"
+                                   ng-disabled="ctrl.isAddressLoading"/>
+                        </md-input-container>
+                    </div>
 
                     <!-- Non-US Format Fields -->
-                    <md-input-container
-                            class="md-block"
-                            flex-gt-sm
-                            ng-if="!ctrl.useUsFormat">
-                        <label for="suburb">Suburb</label>
-                        <input id="suburb" ng-model="ctrl.addressDetails.addressLine5"/>
-                    </md-input-container>
-
-                    <md-autocomplete
-                            class="md-block"
-                            flex-gt-sm
-                            md-floating-label="Our Suburb"
-                            md-item-text="item.text"
-                            md-items="item in ctrl.ourSuburbSearch(ctrl.ourSuburbSearchText)"
-                            md-search-text="ctrl.ourSuburbSearchText"
-                            md-selected-item="ctrl.ourSuburbSelectedItem"
-                            ng-disabled="ctrl.isAddressLoading"
-                            ng-if="!ctrl.useUsFormat">
-                        <md-item-template>
-              <span
-                      md-highlight-flags="^i"
-                      md-highlight-text="ctrl.ourSuburbSearchText">{{item.text}}</span>
-                        </md-item-template>
-                        <md-not-found>
-                            No matches found for "{{ctrl.ourSuburbSearchText}}" in Suburb.
-                        </md-not-found>
-                    </md-autocomplete>
-                </div>
-
-                <div layout-gt-sm="row">
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="lat">Latitude</label>
-                        <input
-                                id="lat"
-                                ng-model="ctrl.addressDetails.latitude"
-                                type="number"
-                                ng-disabled="ctrl.isAddressLoading"/>
-                    </md-input-container>
-
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="long">Longitude</label>
-                        <input
-                                id="long"
-                                ng-model="ctrl.addressDetails.longitude"
-                                type="number"
-                                ng-disabled="ctrl.isAddressLoading"
-                        />
-                    </md-input-container>
-                </div>
-
-                <div layout-gt-sm="row" ng-if="ctrl.useUsFormat">
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="addressLine1">Company/Building/Complex</label>
-                        <input
-                                id="addressLine1"
-                                ng-model="ctrl.addressDetails.addressLine1"
-                                ng-disabled="ctrl.isAddressLoading"
-                        />
-                    </md-input-container>
-
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="addressLine2">Unit/Suite</label>
-                        <input
-                                id="addressLine2"
-                                ng-model="ctrl.addressDetails.addressLine2"
-                                ng-disabled="ctrl.isAddressLoading"
-                        />
-                    </md-input-container>
-
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="addressLine3">House Number</label>
-                        <input
-                                id="addressLine3"
-                                ng-model="ctrl.addressDetails.addressLine3"
-                                type="text"
-                                ng-disabled="ctrl.isAddressLoading"
-                        />
-                    </md-input-container>
-                </div>
-
-                <md-input-container class="md-block">
-                    <label for="extras">Address Extras</label>
-                    <input
-                            id="extras"
-                            ng-model="ctrl.addressDetails.addressLine8"
-                            ng-disabled="ctrl.isAddressLoading"
-                    />
-                </md-input-container>
-
-                <md-card
-                        ng-if="ctrl.showContactInfo"
-                        class="contact-info-card"
-                        style="margin-bottom: 15px">
-                    <md-toolbar>
-                        <div class="md-toolbar-tools">
-                            <md-icon
-                                    class="popup-icon"
-                                    md-font-set="material-symbols-outlined">
-                                description
-                            </md-icon>
-                            <h2>Shipment Details</h2>
-                            <span flex></span>
-                            <md-button
-                                    class="md-icon-button"
-                                    ng-click="ctrl.toggleContactCard()"
-                            >
-                                <md-icon md-font-set="material-symbols-outlined">
-                                    {{ ctrl.isContactCardExpanded ? 'expand_less' : 'expand_more'}}
-                                </md-icon>
-                            </md-button>
-                        </div>
-                    </md-toolbar>
-
-                    <md-card-content ng-if="ctrl.isContactCardExpanded">
-                        <div layout-gt-sm="row">
-                            <md-input-container class="md-block" flex-gt-sm>
-                                <label for="contactName">Contact Name</label>
-                                <input
-                                        id="contactName"
-                                        ng-model="ctrl.shipmentDetails.contactName"
-                                        type="text"
-                                />
-                            </md-input-container>
-
-                            <md-input-container class="md-block" flex-gt-sm>
-                                <label for="contactPhone">Contact Phone</label>
-                                <input
-                                        id="contactPhone"
-                                        ng-model="ctrl.shipmentDetails.contactMobile"
-                                        type="number"
-                                />
-                            </md-input-container>
-                        </div>
-
-                        <div layout-gt-sm="row">
-                            <md-input-container class="md-block" flex-gt-sm>
-                                <label for="weight">Weight</label>
-                                <input id="weight" ng-model="ctrl.shipmentDetails.weight" type="number"/>
-                            </md-input-container>
-
-                            <md-input-container class="md-block" flex-gt-sm>
-                                <label for="quantity">Quantity</label>
-                                <input id="quantity" ng-model="ctrl.shipmentDetails.quantity" type="number"/>
-                            </md-input-container>
-                        </div>
-
-                        <md-input-container class="md-block">
-                            <label for="jobNotes">Notes</label>
-                            <textarea
-                                    id="jobNotes"
-                                    md-maxlength="150"
-                                    md-select-on-focus
-                                    ng-model="ctrl.shipmentDetails.jobNotes"
-                                    rows="3"
-                            ></textarea>
+                    <div class="form-row" ng-if="!ctrl.useUsFormat">
+                        <md-input-container class="md-block form-field" flex="50">
+                            <label for="suburb">Suburb</label>
+                            <input id="suburb" ng-model="ctrl.addressDetails.addressLine5"/>
                         </md-input-container>
+
+                        <md-autocomplete class="md-block form-field"
+                                         flex="50"
+                                         md-floating-label="Our Suburb"
+                                         md-item-text="item.text"
+                                         md-items="item in ctrl.ourSuburbSearch(ctrl.ourSuburbSearchText)"
+                                         md-search-text="ctrl.ourSuburbSearchText"
+                                         md-selected-item="ctrl.ourSuburbSelectedItem"
+                                         ng-disabled="ctrl.isAddressLoading">
+                            <md-item-template>
+                                <span md-highlight-flags="^i"
+                                      md-highlight-text="ctrl.ourSuburbSearchText">
+                                    {{item.text}}
+                                </span>
+                            </md-item-template>
+                            <md-not-found>
+                                No matches found for "{{ctrl.ourSuburbSearchText}}" in Suburb.
+                            </md-not-found>
+                        </md-autocomplete>
+                    </div>
+
+                    <!-- Coordinates -->
+                    <div class="form-row">
+                        <md-input-container class="md-block form-field" flex="50">
+                            <label for="lat">Latitude</label>
+                            <input id="lat"
+                                   ng-model="ctrl.addressDetails.latitude"
+                                   type="number"
+                                   step="any"
+                                   ng-disabled="ctrl.isAddressLoading"/>
+                        </md-input-container>
+
+                        <md-input-container class="md-block form-field" flex="50">
+                            <label for="long">Longitude</label>
+                            <input id="long"
+                                   ng-model="ctrl.addressDetails.longitude"
+                                   type="number"
+                                   step="any"
+                                   ng-disabled="ctrl.isAddressLoading"/>
+                        </md-input-container>
+                    </div>
+
+                    <!-- Additional US Fields -->
+                    <div class="form-row" ng-if="ctrl.useUsFormat">
+                        <md-input-container class="md-block form-field" flex="40">
+                            <label for="addressLine1">Company/Building/Complex</label>
+                            <input id="addressLine1"
+                                   ng-model="ctrl.addressDetails.addressLine1"
+                                   ng-disabled="ctrl.isAddressLoading"/>
+                        </md-input-container>
+
+                        <md-input-container class="md-block form-field" flex="30">
+                            <label for="addressLine2">Unit/Suite</label>
+                            <input id="addressLine2"
+                                   ng-model="ctrl.addressDetails.addressLine2"
+                                   ng-disabled="ctrl.isAddressLoading"/>
+                        </md-input-container>
+
+                        <md-input-container class="md-block form-field" flex="30">
+                            <label for="addressLine3">House Number</label>
+                            <input id="addressLine3"
+                                   ng-model="ctrl.addressDetails.addressLine3"
+                                   type="text"
+                                   ng-disabled="ctrl.isAddressLoading"/>
+                        </md-input-container>
+                    </div>
+
+                    <!-- Address Extras -->
+                    <div class="form-row">
+                        <md-input-container class="md-block form-field" flex="100">
+                            <label for="extras">Address Extras</label>
+                            <input id="extras"
+                                   ng-model="ctrl.addressDetails.addressLine8"
+                                   ng-disabled="ctrl.isAddressLoading"/>
+                        </md-input-container>
+                    </div>
+                </div>
+
+                <!-- Shipment Details Card -->
+                <md-card class="shipment-details-card" ng-if="ctrl.showContactInfo">
+                    <md-card-header class="card-header">
+                        <md-card-header-text>
+                            <div class="card-title-row">
+                                <md-icon class="card-icon" md-font-set="material-symbols-outlined">
+                                    local_shipping
+                                </md-icon>
+                                <span class="card-title">Shipment Details</span>
+                            </div>
+                        </md-card-header-text>
+                        <md-button class="md-icon-button expand-button"
+                                   ng-click="ctrl.toggleContactCard()">
+                            <md-icon md-font-set="material-symbols-outlined">
+                                {{ ctrl.isContactCardExpanded ? 'expand_less' : 'expand_more'}}
+                            </md-icon>
+                        </md-button>
+                    </md-card-header>
+
+                    <md-card-content class="card-content" ng-if="ctrl.isContactCardExpanded">
+                        <div class="form-row">
+                            <md-input-container class="md-block form-field" flex="50">
+                                <label for="contactName">Contact Name</label>
+                                <input id="contactName"
+                                       ng-model="ctrl.shipmentDetails.contactName"
+                                       type="text"/>
+                            </md-input-container>
+
+                            <md-input-container class="md-block form-field" flex="50">
+                                <label for="contactPhone">Contact Phone</label>
+                                <input id="contactPhone"
+                                       ng-model="ctrl.shipmentDetails.contactMobile"
+                                       type="tel"/>
+                            </md-input-container>
+                        </div>
+
+                        <div class="form-row">
+                            <md-input-container class="md-block form-field" flex="50">
+                                <label for="weight">Weight (kg)</label>
+                                <input id="weight"
+                                       ng-model="ctrl.shipmentDetails.weight"
+                                       type="number"
+                                       min="0"
+                                       step="0.1"/>
+                            </md-input-container>
+
+                            <md-input-container class="md-block form-field" flex="50">
+                                <label for="quantity">Quantity</label>
+                                <input id="quantity"
+                                       ng-model="ctrl.shipmentDetails.quantity"
+                                       type="number"
+                                       min="1"/>
+                            </md-input-container>
+                        </div>
+
+                        <div class="form-row">
+                            <md-input-container class="md-block form-field notes-field" flex="100">
+                                <label for="jobNotes">Notes</label>
+                                <textarea id="jobNotes"
+                                          md-maxlength="150"
+                                          md-select-on-focus
+                                          ng-model="ctrl.shipmentDetails.jobNotes"
+                                          rows="3"
+                                          placeholder="Additional notes or special instructions...">
+                                </textarea>
+                            </md-input-container>
+                        </div>
                     </md-card-content>
                 </md-card>
 
-                <label>Map</label>
-                <div style="width: 100%; height: 300px; position: relative; border: 1px solid #ccc; overflow: hidden;">
-                    <!-- HERE Maps Component -->
-                    <here-map-tracking
-                            map-id="editAddressMap"
-                            credentials="ctrl.hereMapCredentials"
-                            config="ctrl.hereMapConfig"
-                            on-map-ready="ctrl.onMapReady(map, platform)"
-                            ng-if="ctrl.hereMapCredentials && ctrl.hereMapConfig"
-                            style="width: 100%; height: 100%; display: block;">
-                    </here-map-tracking>
+                <!-- Map Section -->
+                <div class="section map-section">
+                    <h3 class="section-title">Location Preview</h3>
+                    <div class="map-container">
+                        <here-map-tracking
+                                map-id="editAddressMap"
+                                credentials="ctrl.hereMapCredentials"
+                                config="ctrl.hereMapConfig"
+                                on-map-ready="ctrl.onMapReady(map, platform)"
+                                ng-if="ctrl.hereMapCredentials && ctrl.hereMapConfig">
+                        </here-map-tracking>
+                    </div>
                 </div>
             </div>
         </md-dialog-content>
 
-        <md-dialog-actions layout="row">
-            <span flex></span>
-            <md-progress-circular
-                    class="md-primary"
-                    md-diameter="40"
-                    md-mode="indeterminate"
-                    ng-if="ctrl.isLoading">
-            </md-progress-circular>
+        <md-dialog-actions class="dialog-actions">
+            <div class="actions-content">
+                <md-progress-circular class="md-accent"
+                                      md-diameter="24"
+                                      md-mode="indeterminate"
+                                      ng-if="ctrl.isLoading">
+                </md-progress-circular>
+                <span class="loading-text" ng-if="ctrl.isLoading">Saving...</span>
 
-            <md-button
-                    class="md-raised md-primary"
-                    ng-click="ctrl.submit(ctrl.addressDetails)"
-                    ng-if="!ctrl.isLoading">
-                {{ ::ctrl.submitLabel || 'SAVE' }}
-            </md-button>
+                <div class="button-group" ng-if="!ctrl.isLoading">
+                    <md-button
+                            ng-click="ctrl.cancel()">
+                        Cancel
+                    </md-button>
+                    <md-button
+                            class="md-raised md-primary"
+                            ng-click="ctrl.submit(ctrl.addressDetails)">
+                        <md-icon md-font-set="material-symbols-outlined">save</md-icon>
+                        {{ ::ctrl.submitLabel || 'Save Address' }}
+                    </md-button>
+                </div>
+            </div>
         </md-dialog-actions>
     </form>
 </md-dialog>
-
-<style>
-    .here-map {
-        width: 100% !important;
-        height: 100% !important;
-        max-width: 100% !important;
-        max-height: 100% !important;
-    }
-
-    #editAddressMap {
-        width: 100% !important;
-        height: 100% !important;
-        max-width: 100% !important;
-        max-height: 100% !important;
-        box-sizing: border-box;
-    }
-
-    /* Ensure dialog doesn't overflow */
-    md-dialog {
-        max-width: 90vw !important;
-        max-height: 90vh !important;
-    }
-
-    md-dialog-content {
-        overflow-y: auto;
-        max-height: calc(90vh - 120px); /* Account for header and footer */
-    }
-</style>

@@ -1,8 +1,8 @@
-<md-dialog aria-label="Events Table" class="event-dialog">
+<md-dialog aria-label="Task Groups Table" class="event-dialog">
     <form ng-cloak>
         <md-toolbar>
             <div class="md-toolbar-tools">
-                <h2>Task Groups Table</h2>
+                <h2>Task Groups Management</h2>
                 <span flex></span>
                 <md-button class="md-icon-button" ng-click="ctrl.cancel()">
                     <md-icon md-font-set="material-symbols-outlined">close</md-icon>
@@ -11,29 +11,43 @@
         </md-toolbar>
 
         <md-dialog-content>
-            <div class="md-padding">
+            <div ng-if="ctrl.events && ctrl.events.length > 0" class="content-wrapper">
+                <div class="table-header">
+                    <div>
+                        <h3 class="table-title">Active Task Groups</h3>
+                        <p class="table-subtitle">Manage task assignments and schedules</p>
+                    </div>
+                </div>
+
                 <md-table-container>
                     <table md-table>
                         <thead md-head>
                         <tr md-row>
-                            <th md-column>Task Type</th>
-                            <th md-column>Group</th>
-                            <th md-column>Sequence</th>
-                            <th md-column>Due ({{::ctrl.browserTimeZone | timezoneShort}})</th>
-                            <th md-column>Assign To</th>
-                            <th md-column>Active</th>
+                            <th md-column class="task-type-col">Task Type</th>
+                            <th md-column class="group-col">Group</th>
+                            <th md-column class="sequence-col">Sequence</th>
+                            <th md-column class="due-date-col">
+                                Due Date
+                                <div class="timezone-display">({{::ctrl.browserTimeZone | timezoneShort}})</div>
+                            </th>
+                            <th md-column class="assign-col">Assign To</th>
+                            <th md-column class="active-col">Active</th>
                         </tr>
                         </thead>
                         <tbody md-body>
                         <tr md-row ng-repeat="item in ctrl.events">
-                            <td md-cell>{{::item.eventType.text}}</td>
-                            <td md-cell md-truncate>{{::item.group}}</td>
-                            <td md-cell>{{::item.sequence}}</td>
+                            <td md-cell class="task-type-cell">{{::item.eventType.text}}</td>
                             <td md-cell>
-                                <md-input-container>
+                                <span class="group-badge">{{::item.group}}</span>
+                            </td>
+                            <td md-cell>
+                                <span class="sequence-badge">{{::item.sequence}}</span>
+                            </td>
+                            <td md-cell>
+                                <md-input-container class="date-input">
                                     <input mdc-datetime-picker
                                            date="true" time="true" type="text"
-                                           id="datetimeedit"
+                                           id="datetimeedit-{{$index}}"
                                            show-todays-date=""
                                            minutes="true"
                                            short-time="false"
@@ -44,7 +58,7 @@
                                            ng-model="item.dueTime"
                                            name="datetimeedit"
                                            required
-                                           class=" dtp-no-msclear dtp-input md-input">
+                                           class="dtp-no-msclear dtp-input md-input">
                                 </md-input-container>
                             </td>
                             <td md-cell>
@@ -67,29 +81,38 @@
                                 </md-autocomplete>
                             </td>
                             <td md-cell>
-                                <md-checkbox ng-model="item.active" aria-label="Active"></md-checkbox>
+                                <md-checkbox
+                                        class="md-primary"
+                                        ng-model="item.active"
+                                        aria-label="Active">
+                                </md-checkbox>
                             </td>
                         </tr>
                         </tbody>
                     </table>
                 </md-table-container>
-
-                <div ng-if="!ctrl.events || ctrl.events.length === 0" class="md-padding" layout="column" layout-align="center center">
-                    <md-icon md-font-set="material-symbols-outlined" style="font-size: 30px; color: #9E9E9E;">event_busy</md-icon>
-                    <h4 style="padding-top: 5px;">No task job types found</h4>
-                    <p>Please add task types in the Admin Manager</p>
-                    <md-button class="md-primary md-raised" ng-click="ctrl.goToAdminManager()" ng-disable="true">
-                        <md-icon md-font-set="material-symbols-outlined">admin_panel_settings</md-icon>
-                        Open Admin Manager
-                    </md-button>
-                </div>
             </div>
+
+            <no-data
+                    ng-if="!ctrl.events || ctrl.events.length === 0"
+                    title="No Task Groups Found"
+                    message="Get started by adding task types in the Admin Manager to create your first task group."
+                    icon="event_busy"
+                    show-action="true"
+                    action-text="Open Admin Manager"
+                    on-action="ctrl.goToAdminManager()">
+            </no-data>
         </md-dialog-content>
 
         <md-dialog-actions layout="row">
             <span flex></span>
-            <md-button class="md-primary md-raised" ng-click="ctrl.save(ctrl.jobId, ctrl.events)" ng-disabled="!ctrl.events || ctrl.events.length === 0">
-                Save
+            <md-button ng-click="ctrl.cancel()">Cancel</md-button>
+            <md-button
+                    class="md-primary md-raised"
+                    ng-click="ctrl.save(ctrl.jobId, ctrl.events)"
+                    ng-disabled="!ctrl.events || ctrl.events.length === 0">
+                <md-icon md-font-set="material-symbols-outlined">save</md-icon>
+                Save Changes
             </md-button>
         </md-dialog-actions>
     </form>
