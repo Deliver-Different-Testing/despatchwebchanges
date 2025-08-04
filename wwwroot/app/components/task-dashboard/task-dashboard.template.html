@@ -75,7 +75,7 @@
     <material-sidenav></material-sidenav>
 </div>
 
-<div class="dfrnt-task-dashboard md-padding">
+<div class="md-padding dfrnt-task-dashboard">
     <md-card class="dashboard-header-card">
         <md-card-content>
             <div layout="row" layout-align="space-between center">
@@ -99,7 +99,7 @@
                                ng-class="{'active': ctrl.statusFilter === 'all'}"
                                ng-click="ctrl.setStatusFilter('all')"
                                aria-label="All tasks">
-                        <md-icon class="md-accent" md-font-set="material-symbols-outlined"
+                        <md-icon class="md-primary" md-font-set="material-symbols-outlined"
                                  style="margin-right: 4px;">task_alt
                         </md-icon>
                         Active: {{ctrl.getStatusCounts().active}}
@@ -108,7 +108,7 @@
                                ng-class="{'active': ctrl.statusFilter === 'overdue'}"
                                ng-click="ctrl.setStatusFilter('overdue')"
                                aria-label="Overdue tasks">
-                        <md-icon class="md-accent" md-font-set="material-symbols-outlined"
+                        <md-icon class="md-primary" md-font-set="material-symbols-outlined"
                                  style="margin-right: 4px;">warning
                         </md-icon>
                         Overdue: {{ctrl.getStatusCounts().overdue}}
@@ -117,7 +117,7 @@
                                ng-class="{'active': ctrl.statusFilter === 'todo'}"
                                ng-click="ctrl.setStatusFilter('todo')"
                                aria-label="Todo tasks">
-                        <md-icon class="md-accent" md-font-set="material-symbols-outlined"
+                        <md-icon class="md-primary" md-font-set="material-symbols-outlined"
                                  style="margin-right: 4px;">pending_actions
                         </md-icon>
                         Todo: {{ctrl.getStatusCounts().todo}}
@@ -126,7 +126,7 @@
                                ng-class="{'active': ctrl.statusFilter === 'done'}"
                                ng-click="ctrl.setStatusFilter('done')"
                                aria-label="Done tasks">
-                        <md-icon class="md-accent" md-font-set="material-symbols-outlined"
+                        <md-icon class="md-primary" md-font-set="material-symbols-outlined"
                                  style="margin-right: 4px;">check_circle
                         </md-icon>
                         Done: {{ctrl.getStatusCounts().done}}

@@ -2,18 +2,18 @@
     <md-toolbar class="calendar-toolbar">
         <div class="md-toolbar-tools">
             <div class="view-mode-toggle">
-                <md-button class="md-icon-button md-accent"
+                <md-button class="md-icon-button md-primary"
                            ng-class="{'active': ctrl.viewMode === 'month'}"
                            ng-click="ctrl.setViewMode('month')" aria-label="Month view">
                     <md-icon md-font-set="material-symbols-outlined">calendar_view_month</md-icon>
                     <md-tooltip md-direction="bottom">Month View</md-tooltip>
                 </md-button>
-                <md-button class="md-icon-button md-accent" ng-class="{'active': ctrl.viewMode === 'week'}"
+                <md-button class="md-icon-button md-primary" ng-class="{'active': ctrl.viewMode === 'week'}"
                            ng-click="ctrl.setViewMode('week')" aria-label="Week view">
                     <md-icon md-font-set="material-symbols-outlined">view_week</md-icon>
                     <md-tooltip md-direction="bottom">Week View</md-tooltip>
                 </md-button>
-                <md-button class="md-icon-button md-accent" ng-class="{'active': ctrl.viewMode === 'day'}"
+                <md-button class="md-icon-button md-primary" ng-class="{'active': ctrl.viewMode === 'day'}"
                            ng-click="ctrl.setViewMode('day')" aria-label="Day view">
                     <md-icon md-font-set="material-symbols-outlined">view_day</md-icon>
                     <md-tooltip md-direction="bottom">Day View</md-tooltip>
@@ -23,13 +23,13 @@
             <md-divider class="vertical-divider"></md-divider>
 
             <div class="navigation-controls" layout="row" layout-align="center center">
-                <md-button class="md-icon-button md-accent" ng-click="ctrl.previousPeriod()" aria-label="Previous">
+                <md-button class="md-icon-button md-primary" ng-click="ctrl.previousPeriod()" aria-label="Previous">
                     <md-icon md-font-set="material-symbols-outlined">chevron_left</md-icon>
                 </md-button>
 
                 <h2 class="period-title">{{ctrl.formatPeriodTitle()}}</h2>
 
-                <md-button class="md-icon-button md-accent" ng-click="ctrl.nextPeriod()" aria-label="Next">
+                <md-button class="md-icon-button md-primary" ng-click="ctrl.nextPeriod()" aria-label="Next">
                     <md-icon md-font-set="material-symbols-outlined">chevron_right</md-icon>
                 </md-button>
             </div>
