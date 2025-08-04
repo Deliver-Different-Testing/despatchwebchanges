@@ -35,7 +35,7 @@
                               md-ink-ripple>
                     <div class="nav-item-content">
                         <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
-                        <p ng-if="::ctrl.isUsCustomer">Domestic Shipping</p>
+                        <p ng-if="::ctrl.isUsCustomer">Domestic</p>
                         <p ng-if="::!ctrl.isUsCustomer">Nationwide</p>
                     </div>
                 </md-list-item>
@@ -101,7 +101,6 @@
         <div class="nav-footer">
             <div class="copyright-text">
                 <p>&copy; {{::ctrl.currentYear}} Deliver Different</p>
-                <p class="version-text">Version {{::ctrl.appVersion}}</p>
                 <div class="nz-made" ng-if="::ctrl.isUsCustomer">
                     <md-icon md-font-set="material-symbols-outlined">favorite</md-icon>
                     <span>Made with aroha in Aotearoa</span>

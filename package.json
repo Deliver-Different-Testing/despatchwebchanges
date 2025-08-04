@@ -1,6 +1,6 @@
 {
   "name": "despatchweb",
-  "version": "3.2.133",
+  "version": "3.2.140",
   "main": "index.ts",
   "dependencies": {
     "@uirouter/angularjs": "^1.1.1",

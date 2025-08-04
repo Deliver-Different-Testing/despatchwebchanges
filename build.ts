@@ -3,7 +3,6 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import {lessLoader} from "esbuild-plugin-less";
-import {esbuildPluginVersionInjector} from "esbuild-plugin-version-injector";
 
 class Bundler {
     private readonly isDev: boolean;
@@ -140,7 +139,6 @@ class Bundler {
                 }),
                 this.htmlMinifierPlugin,
                 this.errorReportingPlugin,
-                esbuildPluginVersionInjector(),
             ],
             define: {
                 "process.env.NODE_ENV": this.isDev ? '"development"' : '"production"',
@@ -285,31 +283,7 @@ class Bundler {
         // Keep the process running for watching
         await new Promise(() => {});
     }
-
-    private incrementVersion(): void {
-        if (process.env.CI && fs.existsSync(path.join(this.distPath, "manifest.json"))) {
-            console.log("[VERSION] Skipping version increment - already built in CI");
-            return;
-        }
-
-        try {
-            const packageJsonPath = path.join(this.rootDir, "package.json");
-            const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-
-            const currentVersion = packageJson.version;
-            const versionParts = currentVersion.split('.');
-            const patch = parseInt(versionParts[2]) + 1;
-            const newVersion = `${versionParts[0]}.${versionParts[1]}.${patch}`;
-
-            packageJson.version = newVersion;
-            fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
-
-            console.log(`[VERSION] Updated version from ${currentVersion} to ${newVersion}`);
-        } catch (error) {
-            console.error("[ERROR] Failed to increment version:", error);
-        }
-    }
-
+    
     private async buildProd(): Promise<void> {
         console.log("[PROD] Building production bundles...");
         const startTime = Date.now();
@@ -320,9 +294,7 @@ class Bundler {
             console.log("[PROD] Build already completed, skipping...");
             return;
         }
-
-        this.incrementVersion();
-
+        
         // Build all entry points
         console.log("[PROD] Building all bundles...");
         await esbuild.build({
