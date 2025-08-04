@@ -1529,10 +1529,10 @@ public class JobController(
         {
             Log.Error(
                 e,
-                "An error occured updating field {JobProperty} with value {Value} for job {JobId}", field, value, jobId
+                "An error occured updating field {JobProperty} with value {Value} for job {JobId}. Error: {Message}", field, value, jobId, e.Message
             );
 
-            return StatusCode(StatusCodes.Status500InternalServerError);
+            return StatusCode(500, e.Message);
         }
     }
 
