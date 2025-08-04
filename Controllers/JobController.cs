@@ -1532,7 +1532,7 @@ public class JobController(
                 "An error occured updating field {JobProperty} with value {Value} for job {JobId}. Error: {Message}", field, value, jobId, e.Message
             );
 
-            return StatusCode(500, e.Message);
+            return StatusCode(500, e.Message + e.InnerException?.Message);
         }
     }
 
