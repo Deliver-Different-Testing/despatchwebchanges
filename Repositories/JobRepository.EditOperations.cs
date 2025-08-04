@@ -128,7 +128,6 @@ public partial class JobRepository
                         foreach (var childJob in job.InverseParent)
                             childJob.UcjbWeight = weight;
                 }
-
                 break;
             case JobProperty.ClientID:
                 job.UcjbClientId = int.Parse(value);

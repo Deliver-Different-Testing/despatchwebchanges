@@ -15,7 +15,7 @@ export interface TabItem {
 }
 
 export interface CallData {
-    field: string | JobProperty;
+    field: JobProperty;
     value: string | Date | number | boolean;
     jobID: number;
 }
