@@ -971,7 +971,7 @@ public class NationwideJobRepository(
         return agentName;
     }
 
-    public async Task<RecoveryAgentJobViewModel> GetInfoForRecoveryAgentDialogAsync(int jobId)
+    public async Task<RecoveryAgentJobViewModel> GetRecoveryAgentDialogDataAsync(int jobId)
     {
         var recoveryAgentData = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
@@ -1002,11 +1002,11 @@ public class NationwideJobRepository(
                     j.DeliveryAddressLine6,
                     j.DeliveryAddressLine7,
                     j.DeliveryAddressLine8),
-                PackageType = j.AcceptedJobType.UcjtName,
+                PackageType = j.AcceptedJobType != null ? j.AcceptedJobType.UcjtName : "Unknown",
                 Priority = "High",
                 LastKnownLocation = "Unknown",
-                Customer = j.UcjbClient.UcclName,
-                RecoveryJobs = j.ParentId.HasValue
+                Customer = j.UcjbClient != null ? j.UcjbClient.UcclName : "Unknown",
+                RecoveryJobs = j.Parent != null
                     ? j.Parent.InverseParent
                         .Where(rj => EF.Functions.Like(rj.UcjbNumber, "R_"))
                         .Select(rj => new RecoveryJobViewModel

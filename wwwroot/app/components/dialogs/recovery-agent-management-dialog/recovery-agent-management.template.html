@@ -21,7 +21,9 @@
                 </div>
             </div>
 
-            <div class="route-display" ng-if="ctrl.job.pickUpAddress && ctrl.job.deliveryAddress">
+            <div
+                    class="route-display"
+                    ng-if="ctrl.job.pickUpAddress && ctrl.job.deliveryAddress">
                 <div class="route-point pickup">
                     <div class="route-icon">
                         <md-icon md-font-set="material-symbols-outlined">radio_button_checked</md-icon>
@@ -118,7 +120,9 @@
                     <md-icon md-font-set="material-symbols-outlined">info</md-icon>
                     <div class="banner-content">
                         <div class="banner-title">Recovery Agent Assignment</div>
-                        <div class="banner-text">This will assign a recovery agent to search for the package at the selected location.</div>
+                        <div class="banner-text">This will assign a recovery agent to search for the package at the
+                            selected location.
+                        </div>
                     </div>
                 </div>
 
@@ -134,7 +138,7 @@
                                     <md-option
                                             ng-repeat="airport in ctrl.airportOptions track by airport.id"
                                             ng-value="airport">
-                                    {{airport.text}}
+                                        {{airport.text}}
                                     </md-option>
                                 </md-select>
                             </md-input-container>
@@ -144,7 +148,9 @@
                                 <label>Available Agent</label>
                                 <md-select ng-model="ctrl.selectedAgent" ng-disabled="!ctrl.selectedAirport"
                                            placeholder="Select available agent">
-                                    <md-option ng-repeat="agent in ctrl.agentOptions" ng-value="agent">
+                                    <md-option
+                                            ng-repeat="agent in ctrl.agentOptions track by agent.id"
+                                            ng-value="agent">
                                         {{agent.text}}
                                     </md-option>
                                 </md-select>
@@ -160,12 +166,14 @@
                             </md-checkbox>
                             <div class="checkbox-content">
                                 <div class="checkbox-label">Set as Primary Recovery Agent</div>
-                                <div class="checkbox-description">Primary agents take lead responsibility for recovery operations</div>
+                                <div class="checkbox-description">Primary agents take lead responsibility for recovery
+                                    operations
+                                </div>
                             </div>
                         </div>
                         <div
-                                class="warning-banner" 
-                             ng-if="ctrl.isPrimaryRecoveryAgent && ctrl.hasPrimaryRecoveryAgent()">
+                                class="warning-banner"
+                                ng-if="ctrl.isPrimaryRecoveryAgent && ctrl.hasPrimaryRecoveryAgent()">
                             <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
                             <span>Setting this agent as primary will remove the current primary status from other agents.</span>
                         </div>
@@ -193,16 +201,19 @@
                 <div class="form-content">
                     <div class="primary-section">
                         <div class="checkbox-wrapper">
-                            <md-checkbox 
+                            <md-checkbox
                                     class="md-primary"
                                     ng-model="ctrl.editIsPrimaryRecoveryAgent">
                             </md-checkbox>
                             <div class="checkbox-content">
                                 <div class="checkbox-label">Set as Primary Recovery Agent</div>
-                                <div class="checkbox-description">Primary agents take lead responsibility for recovery operations</div>
+                                <div class="checkbox-description">Primary agents take lead responsibility for recovery
+                                    operations
+                                </div>
                             </div>
                         </div>
-                        <div class="warning-banner" ng-if="ctrl.editIsPrimaryRecoveryAgent && ctrl.hasPrimaryRecoveryAgent() && !ctrl.editingAgent.primaryRecoveryAgent">
+                        <div class="warning-banner"
+                             ng-if="ctrl.editIsPrimaryRecoveryAgent && ctrl.hasPrimaryRecoveryAgent() && !ctrl.editingAgent.primaryRecoveryAgent">
                             <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
                             <span>Setting this agent as primary will remove the current primary status from other agents.</span>
                         </div>
@@ -289,16 +300,19 @@
                 </div>
 
                 <!-- Empty State -->
-                <div class="empty-state" ng-if="ctrl.job.recoveryJobs.length === 0 && !ctrl.showAssignForm && !ctrl.showEditForm">
+                <div
+                        class="empty-state"
+                        ng-if="ctrl.job.recoveryJobs.length === 0 && !ctrl.showAssignForm && !ctrl.showEditForm">
                     <div class="empty-icon">
                         <md-icon md-font-set="material-symbols-outlined">group_off</md-icon>
                     </div>
                     <div class="empty-content">
                         <h3>No Recovery Agents Assigned</h3>
-                        <p>Get started by assigning recovery agents to specific locations where the package might be found.</p>
+                        <p>Get started by assigning recovery agents to specific locations where the package might be
+                            found.</p>
                         <md-button class="md-raised md-primary" ng-click="ctrl.showAssignAgentForm()">
                             <md-icon md-font-set="material-symbols-outlined">person_add</md-icon>
-                            Assign First Agent
+                            Assign First Recovery Agent
                         </md-button>
                     </div>
                 </div>
@@ -308,16 +322,16 @@
 
     <md-dialog-actions class="dialog-footer">
         <div class="footer-content">
-            <md-button 
-                    class="md-button-outlined" 
-                    ng-if="!ctrl.showAssignForm && !ctrl.showEditForm" 
-                       ng-click="ctrl.cancel()">
+            <md-button
+                    class="md-button-outlined"
+                    ng-if="!ctrl.showAssignForm && !ctrl.showEditForm"
+                    ng-click="ctrl.cancel()">
                 Cancel
             </md-button>
-            <md-button 
+            <md-button
                     class="md-raised md-primary"
-                       ng-if="!ctrl.showAssignForm && !ctrl.showEditForm" 
-                       ng-click="ctrl.close()">
+                    ng-if="!ctrl.showAssignForm && !ctrl.showEditForm"
+                    ng-click="ctrl.close()">
                 <md-icon md-font-set="material-symbols-outlined">done</md-icon>
                 Complete
             </md-button>

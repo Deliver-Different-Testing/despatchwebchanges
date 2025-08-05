@@ -380,7 +380,7 @@ public class NationwideJobController(
     {
         try
         {
-            var agentRecoveryInfo = await repository.GetInfoForRecoveryAgentDialogAsync(jobId);
+            var agentRecoveryInfo = await repository.GetRecoveryAgentDialogDataAsync(jobId);
             return Json(agentRecoveryInfo);
         }
         catch (Exception e)
