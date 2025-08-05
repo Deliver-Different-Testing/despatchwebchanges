@@ -101,6 +101,10 @@ class RecoveryAgentManagementController extends BaseController {
             return;
         }
 
+        // Store for the success message
+        const agentText = this.selectedAgent.text;
+        const airportText = this.selectedAirport.text;
+
         try {
             const addAgentRequest: AddAgentRecoveryRequest = {
                 jobId: this.job.jobId,
@@ -117,7 +121,7 @@ class RecoveryAgentManagementController extends BaseController {
             this.hideAssignAgentForm();
 
             const agentTypeText = this.isPrimaryRecoveryAgent ? 'primary recovery agent' : 'recovery agent';
-            this.toastrService.showSuccessToast(`${this.selectedAgent.text} has been assigned as ${agentTypeText} to search at ${this.selectedAirport.text}`);
+            this.toastrService.showSuccessToast(`${agentText} has been assigned as ${agentTypeText} to search at ${airportText}`);
         } catch (error) {
             console.error('Error assigning agent:', error);
             this.toastrService.showErrorToast('Failed to assign agent. Please try again.');
