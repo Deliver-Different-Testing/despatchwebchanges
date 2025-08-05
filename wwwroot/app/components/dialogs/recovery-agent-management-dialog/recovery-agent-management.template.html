@@ -131,8 +131,10 @@
                                         ng-model="ctrl.selectedAirport"
                                         ng-change="ctrl.getAgentOptionsForAirport(ctrl.selectedAirport)"
                                         placeholder="Select airport location">
-                                    <md-option ng-repeat="airport in ctrl.airportOptions" ng-value="airport">
-                                        {{airport.text}}
+                                    <md-option
+                                            ng-repeat="airport in ctrl.airportOptions track by airport.id"
+                                            ng-value="airport">
+                                    {{airport.text}}
                                     </md-option>
                                 </md-select>
                             </md-input-container>
@@ -161,7 +163,9 @@
                                 <div class="checkbox-description">Primary agents take lead responsibility for recovery operations</div>
                             </div>
                         </div>
-                        <div class="warning-banner" ng-if="ctrl.isPrimaryRecoveryAgent && ctrl.hasPrimaryRecoveryAgent()">
+                        <div
+                                class="warning-banner" 
+                             ng-if="ctrl.isPrimaryRecoveryAgent && ctrl.hasPrimaryRecoveryAgent()">
                             <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
                             <span>Setting this agent as primary will remove the current primary status from other agents.</span>
                         </div>
@@ -243,9 +247,9 @@
                 </div>
 
                 <!-- Recovery Agents -->
-                <div ng-repeat="recoveryJob in ctrl.job.recoveryJobs">
+                <div ng-repeat="recoveryJob in ctrl.job.recoveryJobs track by recoveryJob.jobId">
                     <div class="agent-card recovery-agent"
-                         ng-repeat="agent in recoveryJob.recoveryAgents"
+                         ng-repeat="agent in recoveryJob.recoveryAgents track by agent.recoveryId"
                          ng-class="ctrl.getAgentCardClass(agent)">
                         <div class="agent-header">
                             <div class="agent-avatar" ng-class="{primary: agent.primaryRecoveryAgent}">

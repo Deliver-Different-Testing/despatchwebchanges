@@ -39,6 +39,7 @@
 
   // Overview Card
   .overview-card {
+    margin-top: 16px;
     background: @text-light;
     margin: @spacing * 1.7;
     border-radius: 12px;
@@ -51,7 +52,6 @@
       border-bottom: 1px solid #e2e8f0;
 
       .card-title {
-        display: flex;
         align-items: center;
         font-size: @font-xl;
         font-weight: @weight-semibold;
@@ -60,7 +60,6 @@
         md-icon {
           margin-right: 12px;
           color: @primary-blue;
-          font-size: 20px !important;
         }
       }
     }
@@ -287,7 +286,6 @@
         border-bottom: 1px solid #e2e8f0;
 
         .form-title {
-          display: flex;
           align-items: center;
           font-size: @font-lg;
           font-weight: @weight-semibold;
@@ -296,7 +294,6 @@
           md-icon {
             margin-right: 12px;
             color: @primary-blue;
-            font-size: @font-xl !important;
           }
         }
       }
@@ -317,7 +314,6 @@
 
         md-icon {
           color: @status-new-text;
-          font-size: @font-xl !important;
           flex-shrink: 0;
           margin-top: 2px;
         }
@@ -408,7 +404,6 @@
 
           md-icon {
             color: @primary-warning;
-            font-size: @font-lg !important;
             flex-shrink: 0;
           }
         }
@@ -551,7 +546,6 @@
                 color: @text-muted;
 
                 md-icon {
-                  font-size: @font-base !important;
                   color: @standard-grey;
                 }
               }
@@ -653,7 +647,6 @@
         margin-bottom: 24px;
 
         md-icon {
-          font-size: @font-stat !important;
           color: @standard-grey;
         }
       }
@@ -705,35 +698,6 @@
       justify-content: flex-end;
       gap: 12px;
       padding: 20px 24px;
-
-      .md-button-outlined {
-        border: 1px solid #d1d5db;
-        color: @text-dark;
-        border-radius: 6px;
-        font-weight: @weight-medium;
-
-        &:hover {
-          background: #f9fafb;
-          border-color: @standard-grey;
-        }
-      }
-
-      .md-raised.md-primary {
-        background: linear-gradient(135deg, @primary-blue 0%, darken(@primary-blue, 10%) 100%);
-        color: @text-light;
-        border-radius: 6px;
-        font-weight: @weight-medium;
-        box-shadow: 0 1px 3px fade(@primary-blue, 30%);
-
-        &:hover {
-          box-shadow: 0 2px 6px fade(@primary-blue, 40%);
-          transform: translateY(-1px);
-        }
-
-        md-icon {
-          margin-right: 4px;
-        }
-      }
     }
   }
 
@@ -759,10 +723,6 @@
         width: 40px;
         height: 40px;
         margin-right: 12px;
-
-        md-icon {
-          font-size: 20px !important;
-        }
       }
 
       .header-content .dialog-title {
