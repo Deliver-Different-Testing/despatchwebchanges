@@ -267,6 +267,8 @@ public partial class TucCourier
 
     public int? RegionId { get; set; }
 
+    public decimal? BonusPercentage { get; set; }
+
     public virtual TucCourierFleet CourierFleet { get; set; }
 
     public virtual TblCourierGp CourierGps { get; set; }

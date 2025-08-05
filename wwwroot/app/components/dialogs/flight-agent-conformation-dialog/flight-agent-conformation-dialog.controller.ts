@@ -4,10 +4,12 @@ import {IFlightViewModel} from "../../Nationwide/nationwide.interfaces";
 import {Suggestion} from "../../../interfaces/job.interface";
 import getDangerousGoodsClassName from "../../../functions/getDangerousGoodsClassName";
 import {FlightAgentConfirmationDialogResult} from "../../../interfaces/dialog-result.interfaces";
+import NationwideService from "../../Nationwide/nationwide.service";
 
 class FlightAgentConformationDialogController extends BaseController {
     static $inject = [
         '$mdDialog',
+        'NWData',
         'jobNumber',
         'flight',
         'agent',
@@ -22,9 +24,11 @@ class FlightAgentConformationDialogController extends BaseController {
     dgClassName?: string;
     showIncludeStopJobs: boolean;
     assignToStopJobs: boolean = false;
+    enabledAlerts?: Suggestion[];
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
+        private nationwideService: NationwideService,
         public jobNumber: string,
         public flight?: IFlightViewModel,
         public agent?: Suggestion,
@@ -36,6 +40,10 @@ class FlightAgentConformationDialogController extends BaseController {
 
         this.dialogTitle = flight ? 'Assign Flight' : 'Assign Agent';
         this.showIncludeStopJobs = (stopJobCount !== undefined && stopJobCount > 0);
+        
+        if(flight) {
+            this.getEnabledAlertEvents();
+        }
 
         if(dgClass !== undefined){
             this.dgClassName = getDangerousGoodsClassName(dgClass);
@@ -45,6 +53,12 @@ class FlightAgentConformationDialogController extends BaseController {
             this.awb = existingAwb;
             this.isAwbDisabled = true;
         }
+    }
+    
+    getEnabledAlertEvents() {
+        this.nationwideService.getEnabledWebhookEvents().then(alert => {
+            this.enabledAlerts = alert;
+        });
     }
 
     confirm(): void {

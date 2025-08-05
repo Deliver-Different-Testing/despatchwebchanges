@@ -27,6 +27,8 @@ public partial class TucNote
 
     public int? UpdatedBy { get; set; }
 
+    public DateTime? ProcessedNotificationDate { get; set; }
+
     public virtual TucStaff CreatedByNavigation { get; set; }
 
     public virtual TucJob Job { get; set; }

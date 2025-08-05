@@ -47,6 +47,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<FlightCarrierZone> FlightCarrierZones { get; set; }
 
+    public virtual DbSet<FlightWebhookEventType> FlightWebhookEventTypes { get; set; }
+
     public virtual DbSet<FlightZoneCombo> FlightZoneCombos { get; set; }
 
     public virtual DbSet<GlobalAddressMapping> GlobalAddressMappings { get; set; }
@@ -942,6 +944,34 @@ public partial class DespatchContext : DbContext
                 .HasConstraintName("FK__FlightCar__Carri__196181D5");
         });
 
+        modelBuilder.Entity<FlightWebhookEventType>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__FlightWe__3214EC079BC35BAC");
+
+            entity.HasIndex(e => e.EventCode, "UQ__FlightWe__640F67164EC148F8").IsUnique();
+
+            entity.Property(e => e.Category)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasDefaultValue("Basic");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.EventCode)
+                .IsRequired()
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.EventName)
+                .IsRequired()
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.MaxInstances).HasDefaultValue(1);
+            entity.Property(e => e.ParameterType)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasDefaultValue("None");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("(getdate())");
+        });
+
         modelBuilder.Entity<FlightZoneCombo>(entity =>
         {
             entity.HasKey(e => e.FlightZoneComboId).HasName("PK__FlightZo__0A61E3FE2BAEA15C");
@@ -1446,10 +1476,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.TrackingMobile).HasMaxLength(500);
             entity.Property(e => e.Weight).HasColumnType("decimal(6, 2)");
             entity.Property(e => e.Width).HasColumnType("numeric(18, 0)");
-
-            entity.HasOne(d => d.Job).WithMany(p => p.TblBulkJobs)
-                .HasForeignKey(d => d.JobId)
-                .HasConstraintName("FK_tblBulkJob_tucJob");
 
             entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TblBulkJobs)
                 .HasForeignKey(d => d.PickupTimeZoneId)
@@ -4003,6 +4029,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.BankRoutingNumber).HasMaxLength(9);
             entity.Property(e => e.BaseVehicle).HasDefaultValue(false);
             entity.Property(e => e.Blurb).HasMaxLength(1000);
+            entity.Property(e => e.BonusPercentage).HasColumnType("numeric(5, 4)");
             entity.Property(e => e.CarSavingsAmount).HasColumnType("money");
             entity.Property(e => e.CarSavingsEnd).HasColumnType("datetime");
             entity.Property(e => e.CarSavingsStart).HasColumnType("datetime");
@@ -4991,7 +5018,6 @@ public partial class DespatchContext : DbContext
                 {
                     tb.HasTrigger("AutomaticSpeedUpdate_Archive");
                     tb.HasTrigger("trg_TucJobArchive_Notes_Update");
-                    tb.HasTrigger("trg_tucJobArchive_Update");
                     tb.HasTrigger("tucJobArchive_Update_AddPickupAmountToNationwideAmount");
                     tb.HasTrigger("tucJobArchive_Update_AutomaticSpeedUpdate");
                     tb.HasTrigger("tucJobArchive_Update_BlockChanges");
@@ -5732,7 +5758,7 @@ public partial class DespatchContext : DbContext
         {
             entity.HasKey(e => new { e.BookingId, e.ItemId }).HasName("PK_tucBookingItems");
 
-            entity.ToTable("tucJobBookingItems");
+            entity.ToTable("tucJobBookingItems", tb => tb.HasTrigger("trg_UpdateJobBookingTotals"));
 
             entity.Property(e => e.BookingId).HasColumnName("BookingID");
             entity.Property(e => e.ItemId).HasColumnName("ItemID");
@@ -5768,7 +5794,7 @@ public partial class DespatchContext : DbContext
         {
             entity.HasKey(e => new { e.JobId, e.ItemId });
 
-            entity.ToTable("tucJobItems");
+            entity.ToTable("tucJobItems", tb => tb.HasTrigger("trg_UpdateLiveJobTotals"));
 
             entity.HasIndex(e => e.JobId, "IX_TucJobItems_Job");
 
@@ -6112,6 +6138,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.NoteTypeId, "IX_Note_NoteTypeID");
 
+            entity.HasIndex(e => new { e.ProcessedNotificationDate, e.CreatedDate }, "IX_tucNote_ProcessedNotificationDate");
+
             entity.Property(e => e.NoteId).HasColumnName("NoteID");
             entity.Property(e => e.CreatedDate)
                 .HasDefaultValueSql("(getdate())")
@@ -6120,6 +6148,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.JobId).HasColumnName("JobID");
             entity.Property(e => e.NoteText).IsRequired();
             entity.Property(e => e.NoteTypeId).HasColumnName("NoteTypeID");
+            entity.Property(e => e.ProcessedNotificationDate).HasColumnType("datetime");
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.TucNoteCreatedByNavigations)

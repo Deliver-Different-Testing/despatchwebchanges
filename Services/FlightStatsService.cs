@@ -29,7 +29,6 @@ public class FlightStatsService(
     private readonly string _appId = Environment.GetEnvironmentVariable("FlightStatusApiAppId");
     private readonly string _appKey = Environment.GetEnvironmentVariable("FlightStatusApiAppKey");
     private readonly string _webhookUrl = Environment.GetEnvironmentVariable("FlightWebhook");
-    private readonly string _flightWebhookAlertTypes = Environment.GetEnvironmentVariable("FlightWebhookEvents");
 
     public async Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
         string departureAirportCode)
@@ -54,6 +53,9 @@ public class FlightStatsService(
         var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
         var (year, month, day, _, _) = SplitDate(departureTime);
 
+        // Webhook Events
+        var flightWebhookAlertTypes = await repository.GetWebhookEventsAsStringAsync();
+        
         // Build the URL directly
         var url =
             $"{AlertUrl}/json/create/{carrierCode}/{flightNumber}/from/{departureAirportCode}/departing/{year}/{month}/{day}";
@@ -64,7 +66,7 @@ public class FlightStatsService(
         query["name"] = uniqueWebhookId.ToString();
         query["type"] = "JSON";
         query["deliverTo"] = _webhookUrl;
-        query["events"] = _flightWebhookAlertTypes;
+        query["events"] = flightWebhookAlertTypes;
         query["_token"] = requestToken;
 
         var uriBuilder = new UriBuilder(url)

@@ -1530,33 +1530,28 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             await Context.SaveChangesAsync(cancellationToken);
             return archivedNote.NoteId;
         }
+
+        var activeNote = await Context.TucNotes.FindAsync([viewModel.NoteId], cancellationToken);
+        ArgumentNullException.ThrowIfNull(activeNote);
+
+        UpdateNoteProperties(activeNote, viewModel);
+        activeNote.UpdatedDate = currentTime;
+        activeNote.UpdatedBy = staffId;
+
+        if (isPrebook)
+        {
+            var effectiveJobBookingId = await GetEffectiveJobBookingId(viewModel.JobBookingId.Value);
+            activeNote.JobBookingId = effectiveJobBookingId;
+        }
         else
         {
-            var activeNote = await Context.TucNotes.FindAsync([viewModel.NoteId], cancellationToken);
-            if (activeNote == null)
-            {
-                throw new ArgumentException($"Note with ID {viewModel.NoteId} not found");
-            }
-
-            UpdateNoteProperties(activeNote, viewModel);
-            activeNote.UpdatedDate = currentTime;
-            activeNote.UpdatedBy = staffId;
-
-            if (isPrebook)
-            {
-                var effectiveJobBookingId = await GetEffectiveJobBookingId(viewModel.JobBookingId.Value);
-                activeNote.JobBookingId = effectiveJobBookingId;
-            }
-            else
-            {
-                var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
-                activeNote.JobId = effectiveJobId;
-            }
-
-            Context.TucNotes.Update(activeNote);
-            await Context.SaveChangesAsync(cancellationToken);
-            return activeNote.NoteId;
+            var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
+            activeNote.JobId = effectiveJobId;
         }
+
+        Context.TucNotes.Update(activeNote);
+        await Context.SaveChangesAsync(cancellationToken);
+        return activeNote.NoteId;
     }
 
     private static void UpdateNoteProperties<T>(T note, TucNoteViewModel viewModel)
