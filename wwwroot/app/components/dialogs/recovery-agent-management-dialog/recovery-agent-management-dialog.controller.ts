@@ -1,5 +1,5 @@
 ﻿import "./recovery-agent-management.styles.less";
-import {IAgent, Suggestion} from "../../../interfaces/job.interface";
+import {Suggestion} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import NationwideService from "../../Nationwide/nationwide.service";
 import ToastrService from "../../../services/toastr.service";
@@ -20,7 +20,7 @@ class RecoveryAgentManagementController extends BaseController {
     ];
 
     selectedAirport?: Suggestion;
-    selectedAgent?: IAgent;
+    selectedAgent?:  Suggestion;
     showAssignForm: boolean = false;
     showEditForm: boolean = false;
     isPrimaryRecoveryAgent: boolean = false;
@@ -85,16 +85,6 @@ class RecoveryAgentManagementController extends BaseController {
         this.editIsPrimaryRecoveryAgent = false;
     }
 
-    onPrimaryCheckboxChange(): void {
-        // This method can be used to show/hide warnings or perform validations
-        // when the primary checkbox state changes
-    }
-
-    onEditPrimaryCheckboxChange(): void {
-        // This method can be used to show/hide warnings or perform validations
-        // when the edit primary checkbox state changes
-    }
-
     hasPrimaryRecoveryAgent(): boolean {
         if (!this.job || !this.job.recoveryJobs) return false;
 
@@ -114,7 +104,7 @@ class RecoveryAgentManagementController extends BaseController {
         try {
             const addAgentRequest: AddAgentRecoveryRequest = {
                 jobId: this.job.jobId,
-                agentId: this.selectedAgent.agentId,
+                agentId: this.selectedAgent.id,
                 airportId: this.selectedAirport.id,
                 isPrimaryRecoveryAgent: this.isPrimaryRecoveryAgent
             };
@@ -127,7 +117,7 @@ class RecoveryAgentManagementController extends BaseController {
             this.hideAssignAgentForm();
 
             const agentTypeText = this.isPrimaryRecoveryAgent ? 'primary recovery agent' : 'recovery agent';
-            this.toastrService.showSuccessToast(`${this.selectedAgent.agentName} has been assigned as ${agentTypeText} to search at ${this.selectedAirport.text}`);
+            this.toastrService.showSuccessToast(`${this.selectedAgent.text} has been assigned as ${agentTypeText} to search at ${this.selectedAirport.text}`);
         } catch (error) {
             console.error('Error assigning agent:', error);
             this.toastrService.showErrorToast('Failed to assign agent. Please try again.');
@@ -179,10 +169,8 @@ class RecoveryAgentManagementController extends BaseController {
 
             this.toastrService.showSuccessToast(`${agent.agentName} has been removed from the recovery assignment`);
         } catch (error) {
-            if (error === undefined) {
-                // User cancelled the confirmation dialog
-                return;
-            }
+            if (!error === undefined) return;
+            
             console.error('Error removing agent:', error);
             this.toastrService.showErrorToast('Failed to remove agent. Please try again.');
         }
