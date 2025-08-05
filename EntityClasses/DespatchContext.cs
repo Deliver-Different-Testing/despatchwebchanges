@@ -954,7 +954,13 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(20)
                 .IsUnicode(false)
                 .HasDefaultValue("Basic");
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.Created)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasDefaultValue("System");
             entity.Property(e => e.EventCode)
                 .IsRequired()
                 .HasMaxLength(50)
@@ -964,12 +970,18 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(100)
                 .IsUnicode(false);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.LastModified)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasDefaultValue("System");
             entity.Property(e => e.MaxInstances).HasDefaultValue(1);
             entity.Property(e => e.ParameterType)
                 .HasMaxLength(20)
                 .IsUnicode(false)
                 .HasDefaultValue("None");
-            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("(getdate())");
         });
 
         modelBuilder.Entity<FlightZoneCombo>(entity =>

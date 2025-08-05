@@ -33,7 +33,11 @@ public partial class FlightWebhookEventType
 
     public bool IsEnabled { get; set; }
 
-    public DateTime? CreatedAt { get; set; }
+    public DateTime Created { get; set; }
 
-    public DateTime? UpdatedAt { get; set; }
+    public string CreatedBy { get; set; }
+
+    public DateTime LastModified { get; set; }
+
+    public string LastModifiedBy { get; set; }
 }
