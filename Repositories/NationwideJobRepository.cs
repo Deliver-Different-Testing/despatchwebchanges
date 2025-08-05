@@ -1008,7 +1008,7 @@ public class NationwideJobRepository(
                 Customer = j.UcjbClient != null ? j.UcjbClient.UcclName : "Unknown",
                 RecoveryJobs = j.Parent != null
                     ? j.Parent.InverseParent
-                        .Where(rj => EF.Functions.Like(rj.UcjbNumber, "R_"))
+                        .Where(rj => EF.Functions.Like(rj.UcjbNumber, "%R_"))
                         .Select(rj => new RecoveryJobViewModel
                         {
                             JobId = rj.UcjbId,
@@ -1027,7 +1027,7 @@ public class NationwideJobRepository(
                             })
                         })
                     : j.InverseParent
-                        .Where(rj => EF.Functions.Like(rj.UcjbNumber, "R_"))
+                        .Where(rj => EF.Functions.Like(rj.UcjbNumber, "%R_"))
                         .Select(rj => new RecoveryJobViewModel
                         {
                             JobId = rj.UcjbId,

@@ -58,6 +58,7 @@ import MessagingService from "./services/messaging.service";
 import MessagingDialogService from "./components/dialogs/messaging-dialog/messaging-dialog.service";
 import MessagingDialogController from "./components/dialogs/messaging-dialog/messaging-dialog.controller";
 import ResolutionWarningService from "./services/resolution-warning.service";
+import CustomUrlService from "./services/custom-url-service";
 
 const app = (window as any).uDispatchApp;
 
@@ -204,6 +205,7 @@ app.service("truckCourierStatusDialogService", TruckCourierStatusDialogService);
 app.service("messagingService", MessagingService);
 app.service("messagingDialogService", MessagingDialogService);
 app.service('resolutionWarningService', ResolutionWarningService);
+app.service('customUrlService', CustomUrlService);
 
 app.run(['resolutionWarningService', (resolutionWarningService: ResolutionWarningService) => {
     resolutionWarningService.checkAndShowResolutionWarning();

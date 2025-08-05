@@ -4,6 +4,7 @@ import ToastrService from "../../../services/toastr.service";
 import {EventGroupViewModel} from "../../../interfaces/event-group-view-model.interface";
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
+import NavigationService from "../../../services/navigation.service";
 
 export class EventGroupDialogController extends BaseController {
     searchText?: string;
@@ -15,6 +16,7 @@ export class EventGroupDialogController extends BaseController {
         '$mdDialog',
         '$http',
         'toastrService',
+        'navigationService',
         '$timeout',
         '$interval',
         'jobId',
@@ -26,6 +28,7 @@ export class EventGroupDialogController extends BaseController {
         private $mdDialog: angular.material.IDialogService,
         private $http: angular.IHttpService,
         private toastrService: ToastrService,
+        private navigationService: NavigationService,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
         public jobId: number,
@@ -101,6 +104,10 @@ export class EventGroupDialogController extends BaseController {
             this.events[index].assignTo.id = user.id;
             console.log('User assigned to event at index', index, ':', user.text);
         }
+    }
+    
+    async goToAdminManager() {
+        await this.navigationService.openAdminManagerUrl();
     }
 
     cancel(): void {
