@@ -164,7 +164,7 @@ public class NationwideJobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Unexpected error in AssignFlightToJob");
-            return StatusCode(500, ex.Message);
+           return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -241,7 +241,7 @@ public class NationwideJobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error retrieving agents for JobId: {JobId}", jobId);
-            return StatusCode(500, ex.Message);
+           return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -253,18 +253,15 @@ public class NationwideJobController(
             if (jobRequestModel?.AgentId == null || jobRequestModel.JobId == null)
                 return BadRequest("Oops, no agent data was provided. Unable to assign to job.");
 
-            var addToDb =
-                await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value, jobRequestModel.JobId.Value,
-                    jobRequestModel.IncludeStopJobs ?? false);
-            if (!addToDb)
-                return BadRequest("An error occurred while assigning the agent to the job.");
+            await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value, jobRequestModel.JobId.Value,
+                jobRequestModel.IncludeStopJobs ?? false);
 
             return Ok();
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Unexpected error in AssignAgentToJob");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 

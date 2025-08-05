@@ -4,127 +4,173 @@
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">group</md-icon>
             <h2>Job #{{ctrl.job.jobNumber}} - Lost Package Recovery</h2>
             <div flex></div>
+            <md-button class="md-icon-button" ng-click="ctrl.cancel()" aria-label="Close">
+                <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+                <md-tooltip md-direction="bottom">Cancel</md-tooltip>
+            </md-button>
         </div>
     </md-toolbar>
-    
-    <md-dialog-content>
-        <div class="job-header">
-            <div class="route-info" ng-if="ctrl.job.pickUpAddress && ctrl.job.deliveryAddress">
-                <div class="route-container">
-                    <div class="route-location pickup">
-                        <div class="location-icon">
-                            <md-icon md-font-set="material-symbols-outlined">radio_button_checked</md-icon>
-                        </div>
-                        <div class="location-details">
-                            <div class="location-label">Pickup</div>
-                            <div class="location-address">{{ctrl.job.pickUpAddress.fullAddress}}</div>
-                        </div>
-                    </div>
 
-                    <div class="route-connector">
-                        <div class="connector-line"></div>
-                        <div class="connector-icon">
-                            <md-icon md-font-set="material-symbols-outlined">arrow_downward</md-icon>
-                        </div>
-                        <div class="connector-line"></div>
-                    </div>
+    <md-dialog-content class="dialog-body">
+        <!-- Job Overview Card -->
+        <div class="overview-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <md-icon md-font-set="material-symbols-outlined">package</md-icon>
+                    Package Information
+                </div>
+            </div>
 
-                    <div class="route-location delivery">
-                        <div class="location-icon">
-                            <md-icon md-font-set="material-symbols-outlined">place</md-icon>
-                        </div>
-                        <div class="location-details">
-                            <div class="location-label">Delivery</div>
-                            <div class="location-address">{{ctrl.job.deliveryAddress.fullAddress}}</div>
-                        </div>
+            <div class="route-display" ng-if="ctrl.job.pickUpAddress && ctrl.job.deliveryAddress">
+                <div class="route-point pickup">
+                    <div class="route-icon">
+                        <md-icon md-font-set="material-symbols-outlined">radio_button_checked</md-icon>
+                    </div>
+                    <div class="route-content">
+                        <div class="route-label">Pickup Location</div>
+                        <div class="route-address">{{ctrl.job.pickUpAddress.fullAddress}}</div>
+                    </div>
+                </div>
+
+                <div class="route-connector">
+                    <div class="connector-line"></div>
+                    <div class="connector-dot"></div>
+                    <div class="connector-line"></div>
+                </div>
+
+                <div class="route-point delivery">
+                    <div class="route-icon">
+                        <md-icon md-font-set="material-symbols-outlined">location_on</md-icon>
+                    </div>
+                    <div class="route-content">
+                        <div class="route-label">Delivery Location</div>
+                        <div class="route-address">{{ctrl.job.deliveryAddress.fullAddress}}</div>
                     </div>
                 </div>
             </div>
 
-            <div class="job-details">
-                <div class="detail-item">
-                    <div class="detail-label">Package Type</div>
-                    <div class="detail-value">{{ctrl.job.packageType}}</div>
+            <div class="details-grid">
+                <div class="detail-card">
+                    <div class="detail-icon">
+                        <md-icon md-font-set="material-symbols-outlined">inventory_2</md-icon>
+                    </div>
+                    <div class="detail-content">
+                        <div class="detail-label">Package Type</div>
+                        <div class="detail-value">{{ctrl.job.packageType}}</div>
+                    </div>
                 </div>
-                <div class="detail-item">
-                    <div class="detail-label">Priority</div>
-                    <div class="detail-value">{{ctrl.job.priority}}</div>
+                <div class="detail-card">
+                    <div class="detail-icon priority">
+                        <md-icon md-font-set="material-symbols-outlined">priority_high</md-icon>
+                    </div>
+                    <div class="detail-content">
+                        <div class="detail-label">Priority</div>
+                        <div class="detail-value priority-value">{{ctrl.job.priority}}</div>
+                    </div>
                 </div>
-                <div class="detail-item">
-                    <div class="detail-label">Last Known Location</div>
-                    <div class="detail-value">{{ctrl.job.lastKnownLocation}}</div>
+                <div class="detail-card">
+                    <div class="detail-icon location">
+                        <md-icon md-font-set="material-symbols-outlined">location_searching</md-icon>
+                    </div>
+                    <div class="detail-content">
+                        <div class="detail-label">Last Known Location</div>
+                        <div class="detail-value">{{ctrl.job.lastKnownLocation}}</div>
+                    </div>
                 </div>
-                <div class="detail-item">
-                    <div class="detail-label">Customer</div>
-                    <div class="detail-value">{{ctrl.job.customer}}</div>
+                <div class="detail-card">
+                    <div class="detail-icon customer">
+                        <md-icon md-font-set="material-symbols-outlined">person</md-icon>
+                    </div>
+                    <div class="detail-content">
+                        <div class="detail-label">Customer</div>
+                        <div class="detail-value">{{ctrl.job.customer}}</div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="assigned-agents-section">
+        <!-- Agents Management Section -->
+        <div class="agents-section">
             <div class="section-header">
-                <div class="section-title">Assigned Agents</div>
+                <div class="section-title">
+                    <md-icon md-font-set="material-symbols-outlined">group</md-icon>
+                    Recovery Agents
+                </div>
                 <md-button
-                        class="md-raised md-primary"
+                        class="md-raised md-primary add-agent-btn"
                         ng-click="ctrl.showAssignAgentForm()"
                         ng-hide="ctrl.showAssignForm || ctrl.showEditForm">
-                    <md-icon md-font-set="material-symbols-outlined">add</md-icon>
-                    Assign Recovery Agent
+                    <md-icon md-font-set="material-symbols-outlined">person_add</md-icon>
+                    Assign Agent
                 </md-button>
             </div>
 
             <!-- Assignment Form -->
-            <div class="assign-form" ng-if="ctrl.showAssignForm">
-                <div class="form-title">Assign Recovery Agent</div>
-                <div class="danger-notice">
-                    <div class="danger-title">ℹ️ Recovery Agent Assignment</div>
-                    <div class="danger-text">This will assign a recovery agent to search for the package at the selected location.</div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <md-input-container class="md-block">
-                            <label>Select Airport Location</label>
-                            <md-select
-                                    ng-model="ctrl.selectedAirport"
-                                    ng-change="ctrl.getAgentOptionsForAirport(ctrl.selectedAirport)"
-                                    placeholder="Choose an airport...">
-                                <md-option ng-repeat="airport in ctrl.airportOptions" ng-value="airport">
-                                    {{airport.text}}
-                                </md-option>
-                            </md-select>
-                        </md-input-container>
-                    </div>
-                    <div class="form-group">
-                        <md-input-container class="md-block">
-                            <label>Select Available Agent</label>
-                            <md-select ng-model="ctrl.selectedAgent" ng-disabled="!ctrl.selectedAirport"
-                                       placeholder="Choose an agent...">
-                                <md-option ng-repeat="agent in ctrl.agentOptions" ng-value="agent">
-                                    {{agent.text}}
-                                </md-option>
-                            </md-select>
-                        </md-input-container>
+            <div class="form-card assign-form" ng-if="ctrl.showAssignForm">
+                <div class="form-header">
+                    <div class="form-title">
+                        <md-icon md-font-set="material-symbols-outlined">person_add</md-icon>
+                        Assign Recovery Agent
                     </div>
                 </div>
 
-                <div class="primary-agent-section">
-                    <div class="primary-checkbox">
-                        <md-checkbox
-                                ng-model="ctrl.isPrimaryRecoveryAgent" 
-                                ng-change="ctrl.onPrimaryCheckboxChange()">
-                        </md-checkbox>
-                        
-                        <span class="checkbox-label">Set as Primary Recovery Agent</span>
+                <div class="info-banner">
+                    <md-icon md-font-set="material-symbols-outlined">info</md-icon>
+                    <div class="banner-content">
+                        <div class="banner-title">Recovery Agent Assignment</div>
+                        <div class="banner-text">This will assign a recovery agent to search for the package at the selected location.</div>
                     </div>
-                    <div class="primary-warning" ng-if="ctrl.isPrimaryRecoveryAgent && ctrl.hasPrimaryRecoveryAgent()">
-                        <md-icon md-font-set="material-symbols-outlined" class="warning-icon">warning</md-icon>
-                        Setting this agent as primary will remove the current primary recovery agent status from other agents.
+                </div>
+
+                <div class="form-content">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <md-input-container class="md-block modern-input">
+                                <label>Airport Location</label>
+                                <md-select
+                                        ng-model="ctrl.selectedAirport"
+                                        ng-change="ctrl.getAgentOptionsForAirport(ctrl.selectedAirport)"
+                                        placeholder="Select airport location">
+                                    <md-option ng-repeat="airport in ctrl.airportOptions" ng-value="airport">
+                                        {{airport.text}}
+                                    </md-option>
+                                </md-select>
+                            </md-input-container>
+                        </div>
+                        <div class="form-group">
+                            <md-input-container class="md-block modern-input">
+                                <label>Available Agent</label>
+                                <md-select ng-model="ctrl.selectedAgent" ng-disabled="!ctrl.selectedAirport"
+                                           placeholder="Select available agent">
+                                    <md-option ng-repeat="agent in ctrl.agentOptions" ng-value="agent">
+                                        {{agent.text}}
+                                    </md-option>
+                                </md-select>
+                            </md-input-container>
+                        </div>
+                    </div>
+
+                    <div class="primary-section">
+                        <div class="checkbox-wrapper">
+                            <md-checkbox
+                                    class="md-primary"
+                                    ng-model="ctrl.isPrimaryRecoveryAgent"
+                                    ng-change="ctrl.onPrimaryCheckboxChange()">
+                            </md-checkbox>
+                            <div class="checkbox-content">
+                                <div class="checkbox-label">Set as Primary Recovery Agent</div>
+                                <div class="checkbox-description">Primary agents take lead responsibility for recovery operations</div>
+                            </div>
+                        </div>
+                        <div class="warning-banner" ng-if="ctrl.isPrimaryRecoveryAgent && ctrl.hasPrimaryRecoveryAgent()">
+                            <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
+                            <span>Setting this agent as primary will remove the current primary status from other agents.</span>
+                        </div>
                     </div>
                 </div>
 
                 <div class="form-actions">
-                    <md-button ng-click="ctrl.hideAssignAgentForm()">Cancel</md-button>
+                    <md-button class="md-button-outlined" ng-click="ctrl.hideAssignAgentForm()">Cancel</md-button>
                     <md-button class="md-raised md-primary" ng-click="ctrl.assignAgent()">
                         <md-icon md-font-set="material-symbols-outlined">check</md-icon>
                         Assign Agent
@@ -133,25 +179,38 @@
             </div>
 
             <!-- Edit Form -->
-            <div class="edit-form" ng-if="ctrl.showEditForm">
-                <div class="form-title">Edit Recovery Agent</div>
-
-                <div class="primary-agent-section">
-                    <div class="primary-checkbox">
-                        <md-checkbox ng-model="ctrl.editIsPrimaryRecoveryAgent" ng-change="ctrl.onEditPrimaryCheckboxChange()">
-                        </md-checkbox>
-                        <span class="checkbox-label">Set as Primary Recovery Agent</span>
+            <div class="form-card edit-form" ng-if="ctrl.showEditForm">
+                <div class="form-header">
+                    <div class="form-title">
+                        <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
+                        Edit Recovery Agent
                     </div>
-                    <div class="primary-warning" ng-if="ctrl.editIsPrimaryRecoveryAgent && ctrl.hasPrimaryRecoveryAgent() && !ctrl.editingAgent.primaryRecoveryAgent">
-                        <md-icon md-font-set="material-symbols-outlined" class="warning-icon">warning</md-icon>
-                        Setting this agent as primary will remove the current primary recovery agent status from other agents.
+                </div>
+
+                <div class="form-content">
+                    <div class="primary-section">
+                        <div class="checkbox-wrapper">
+                            <md-checkbox 
+                                    class="md-primary"
+                                    ng-model="ctrl.editIsPrimaryRecoveryAgent" 
+                                    ng-change="ctrl.onEditPrimaryCheckboxChange()">
+                            </md-checkbox>
+                            <div class="checkbox-content">
+                                <div class="checkbox-label">Set as Primary Recovery Agent</div>
+                                <div class="checkbox-description">Primary agents take lead responsibility for recovery operations</div>
+                            </div>
+                        </div>
+                        <div class="warning-banner" ng-if="ctrl.editIsPrimaryRecoveryAgent && ctrl.hasPrimaryRecoveryAgent() && !ctrl.editingAgent.primaryRecoveryAgent">
+                            <md-icon md-font-set="material-symbols-outlined">warning</md-icon>
+                            <span>Setting this agent as primary will remove the current primary status from other agents.</span>
+                        </div>
                     </div>
                 </div>
 
                 <div class="form-actions">
-                    <md-button ng-click="ctrl.hideEditAgentForm()">Cancel</md-button>
+                    <md-button class="md-button-outlined" ng-click="ctrl.hideEditAgentForm()">Cancel</md-button>
                     <md-button class="md-raised md-warn" ng-click="ctrl.removeAgent(ctrl.editingAgent)">
-                        <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
+                        <md-icon md-font-set="material-symbols-outlined">person_remove</md-icon>
                         Remove Agent
                     </md-button>
                     <md-button class="md-raised md-primary" ng-click="ctrl.updateAgent()">
@@ -161,65 +220,105 @@
                 </div>
             </div>
 
-            <!-- Main Agent (job.assignedAgent) -->
-            <div class="agent-card main-agent" ng-if="ctrl.job.assignedAgent">
-                <div class="agent-actions">
-                    <!-- Main agent typically shouldn't be editable in recovery context -->
-                </div>
-                <div class="agent-info">
-                    <div class="agent-name">{{ctrl.job.assignedAgent.text}}</div>
-                    <div class="agent-type-badge">Main Agent</div>
-                    <div class="agent-company">Primary Job Assignment</div>
-                    <div class="agent-location">
-                        <md-icon md-font-set="material-symbols-outlined" class="location-icon">place</md-icon>
-                        Overall Job Responsibility
-                    </div>
-                    <span class="agent-status status-assigned">{{ctrl.getStatusLabel('assigned')}}</span>
-                </div>
-            </div>
-
-            <!-- Recovery Agents from recoveryJobs -->
-            <div ng-repeat="recoveryJob in ctrl.job.recoveryJobs">
-                <div class="agent-card"
-                     ng-repeat="agent in recoveryJob.recoveryAgents"
-                     ng-class="ctrl.getAgentCardClass(agent)">
-                    <div class="agent-actions">
-                        <md-button class="md-icon-button" ng-click="ctrl.showEditAgentForm(agent)"
-                                   aria-label="Edit Agent">
-                            <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
-                        </md-button>
-                        <md-button class="md-icon-button md-warn" ng-click="ctrl.removeAgent(agent)"
-                                   aria-label="Remove Agent">
-                            <md-icon md-font-set="material-symbols-outlined">close</md-icon>
-                        </md-button>
-                    </div>
-                    <div class="agent-info">
-                        <div class="agent-name">{{agent.agentName}}</div>
-                        <div class="agent-type-badge">{{ctrl.getAgentTypeBadge(agent)}}</div>
-                        <div class="agent-company">{{ctrl.getAgentCompanyInfo(agent)}}</div>
-                        <div class="agent-location">
-                            <md-icon md-font-set="material-symbols-outlined" class="location-icon">place</md-icon>
-                            {{agent.airport}}
+            <!-- Agent Cards -->
+            <div class="agents-list">
+                <!-- Main Agent -->
+                <div class="agent-card main-agent" ng-if="ctrl.job.assignedAgent">
+                    <div class="agent-header">
+                        <div class="agent-avatar main">
+                            <md-icon md-font-set="material-symbols-outlined">shield_person</md-icon>
                         </div>
-                        <span class="agent-status" ng-class="ctrl.getStatusClass(agent.assignStatus)">
-                            {{ctrl.getStatusLabel(agent.assignStatus)}}
-                        </span>
+                        <div class="agent-info">
+                            <div class="agent-name">{{ctrl.job.assignedAgent.text}}</div>
+                            <div class="agent-role">Primary Job Agent</div>
+                            <div class="agent-meta">
+                                <span class="meta-item">
+                                    <md-icon md-font-set="material-symbols-outlined">business</md-icon>
+                                    Overall Job Responsibility
+                                </span>
+                            </div>
+                        </div>
+                        <div class="agent-status">
+                            <span class="status-badge main">{{ctrl.getStatusLabel('assigned')}}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- No Recovery Agents Message -->
-            <div class="no-agents" ng-if="ctrl.job.recoveryJobs.length === 0 && !ctrl.showAssignForm && !ctrl.showEditForm">
-                <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px; color: #ccc;">group</md-icon>
-                <p>No recovery agents are assigned yet.</p>
-                <p>Click "Assign Recovery Agent" to add agents at specific locations.</p>
+                <!-- Recovery Agents -->
+                <div ng-repeat="recoveryJob in ctrl.job.recoveryJobs">
+                    <div class="agent-card recovery-agent"
+                         ng-repeat="agent in recoveryJob.recoveryAgents"
+                         ng-class="ctrl.getAgentCardClass(agent)">
+                        <div class="agent-header">
+                            <div class="agent-avatar" ng-class="{primary: agent.primaryRecoveryAgent}">
+                                <md-icon md-font-set="material-symbols-outlined">person</md-icon>
+                            </div>
+                            <div class="agent-info">
+                                <div class="agent-name">{{agent.agentName}}</div>
+                                <div class="agent-role">{{ctrl.getAgentTypeBadge(agent)}}</div>
+                                <div class="agent-meta">
+                                    <span class="meta-item">
+                                        <md-icon md-font-set="material-symbols-outlined">location_on</md-icon>
+                                        {{agent.airport}}
+                                    </span>
+                                    <span class="meta-item">
+                                        <md-icon md-font-set="material-symbols-outlined">business</md-icon>
+                                        {{ctrl.getAgentCompanyInfo(agent)}}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="agent-actions">
+                                <md-button class="md-icon-button action-btn" ng-click="ctrl.showEditAgentForm(agent)"
+                                           md-tooltip="Edit Agent">
+                                    <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
+                                </md-button>
+                                <md-button class="md-icon-button action-btn remove" ng-click="ctrl.removeAgent(agent)"
+                                           md-tooltip="Remove Agent">
+                                    <md-icon md-font-set="material-symbols-outlined">person_remove</md-icon>
+                                </md-button>
+                            </div>
+                        </div>
+                        <div class="agent-status">
+                            <span class="status-badge" ng-class="ctrl.getStatusClass(agent.assignStatus)">
+                                {{ctrl.getStatusLabel(agent.assignStatus)}}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" ng-if="ctrl.job.recoveryJobs.length === 0 && !ctrl.showAssignForm && !ctrl.showEditForm">
+                    <div class="empty-icon">
+                        <md-icon md-font-set="material-symbols-outlined">group_off</md-icon>
+                    </div>
+                    <div class="empty-content">
+                        <h3>No Recovery Agents Assigned</h3>
+                        <p>Get started by assigning recovery agents to specific locations where the package might be found.</p>
+                        <md-button class="md-raised md-primary" ng-click="ctrl.showAssignAgentForm()">
+                            <md-icon md-font-set="material-symbols-outlined">person_add</md-icon>
+                            Assign First Agent
+                        </md-button>
+                    </div>
+                </div>
             </div>
         </div>
     </md-dialog-content>
 
-    <md-dialog-actions layout="row">
-        <span flex></span>
-        <md-button ng-if="!ctrl.showAssignForm" ng-click="ctrl.cancel()">Cancel</md-button>
-        <md-button ng-if="!ctrl.showAssignForm" class="md-raised md-primary" ng-click="ctrl.close()">Done</md-button>
+    <md-dialog-actions class="dialog-footer">
+        <div class="footer-content">
+            <md-button 
+                    class="md-button-outlined" 
+                    ng-if="!ctrl.showAssignForm && !ctrl.showEditForm" 
+                       ng-click="ctrl.cancel()">
+                Cancel
+            </md-button>
+            <md-button 
+                    class="md-raised md-primary"
+                       ng-if="!ctrl.showAssignForm && !ctrl.showEditForm" 
+                       ng-click="ctrl.close()">
+                <md-icon md-font-set="material-symbols-outlined">done</md-icon>
+                Complete
+            </md-button>
+        </div>
     </md-dialog-actions>
 </md-dialog>
