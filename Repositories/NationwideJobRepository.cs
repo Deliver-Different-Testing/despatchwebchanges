@@ -1193,7 +1193,7 @@ public class NationwideJobRepository(
         }
     }
 
-    public async Task<bool> CanAssignAgentToJob(int agentJobId)
+    public async Task<bool> CanAssignAgentToJobAsync(int agentJobId)
     {
         var canAssign = await Context.TucJobs
             .Where(j => j.UcjbId == agentJobId)
@@ -1201,5 +1201,40 @@ public class NationwideJobRepository(
             .AnyAsync(siblingJob => siblingJob.TucJobNationwides.Any());
     
         return canAssign;
+    }
+
+    public async Task<string> GetWebhookEventsAsStringAsync()
+    {
+        var webhookEvents = await Context.FlightWebhookEventTypes
+            .Where(e => e.IsActive && e.IsEnabled)
+            .Select(e => new WebhookEventDto
+            {
+                EventCode = e.EventCode,
+                AdditionalParameter = e.RequiresParameter ? e.ParameterValue : null
+            })
+            .AsNoTracking()
+            .ToListAsync();
+    
+        var eventStrings = webhookEvents.Select(e => e.AdditionalParameter != null 
+            ? $"{e.EventCode}{e.AdditionalParameter}" 
+            : e.EventCode);
+    
+        return string.Join(",", eventStrings);
+    }
+
+    public async Task<List<Suggestion>> GetWebhookEventsAsListAsync()
+    {
+        var webhookEvents = await Context.FlightWebhookEventTypes
+            .Where(e => e.IsActive && e.IsEnabled)
+            .OrderBy(e => e.EventName)
+            .Select(e => new Suggestion
+            {
+                Id = e.Id,
+                Text = e.EventName
+            })
+            .AsNoTracking()
+            .ToListAsync();
+        
+        return webhookEvents;
     }
 }

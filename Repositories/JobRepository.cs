@@ -1383,23 +1383,21 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 .AsNoTracking()
                 .ToListAsync();
         }
-        else
-        {
-            effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
-            return await Context.PricingBreakdowns
-                .Where(p => p.JobId == effectiveJobId)
-                .Select(p => new ChargeViewModel
-                {
-                    ChargeId = p.PricingBreakdownId,
-                    Amount = p.ChargeAmount,
-                    Name = p.ChargeName,
-                    JobId = p.JobId,
-                    PrebookJobId = p.PrebookJobId,
-                    CostAmount = p.CostAmount
-                })
-                .AsNoTracking()
-                .ToListAsync();
-        }
+
+        effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
+        return await Context.PricingBreakdowns
+            .Where(p => p.JobId == effectiveJobId)
+            .Select(p => new ChargeViewModel
+            {
+                ChargeId = p.PricingBreakdownId,
+                Amount = p.ChargeAmount,
+                Name = p.ChargeName,
+                JobId = p.JobId,
+                PrebookJobId = p.PrebookJobId,
+                CostAmount = p.CostAmount
+            })
+            .AsNoTracking()
+            .ToListAsync();
     }
 
     public async Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel)

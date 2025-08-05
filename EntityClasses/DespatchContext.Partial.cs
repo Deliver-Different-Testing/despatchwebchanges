@@ -9,7 +9,8 @@ public partial class DespatchContext
         // Tuc Job
         modelBuilder.Entity<TucJob>(entity =>
         {
-            entity.HasOne(d => d.Parent).WithMany(p => p.InverseParent)
+            entity.HasOne(d => d.Parent)
+                .WithMany(p => p.InverseParent)
                 .HasForeignKey(d => d.ParentId)
                 .OnDelete(DeleteBehavior.Restrict);
             
@@ -17,6 +18,12 @@ public partial class DespatchContext
                 .WithMany()
                 .HasForeignKey(d => d.LoggedInContactId)
                 .HasPrincipalKey(cc => cc.UcctId)
+                .OnDelete(DeleteBehavior.Restrict);
+            
+            entity.HasOne<TblBulkJob>()
+                .WithMany()
+                .HasForeignKey(d => d.BulkParentId)
+                .HasPrincipalKey(b => b.BulkJobId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

@@ -67,6 +67,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[FlightWebhookEventTypes]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[FlightZoneCombos]",
          "ObjectType": 0
       },

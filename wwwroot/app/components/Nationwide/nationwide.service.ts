@@ -261,6 +261,11 @@ class NationwideService implements angular.IServiceProvider {
         
         return response.data;
     }
+
+    async getEnabledWebhookEvents(): Promise<Suggestion[]> {
+        const response = await this.$http.get<Suggestion[]>("nationwideJob/GetEnabledWebhookEvents");
+        return response.data;
+    } 
 }
 
 export default NationwideService;

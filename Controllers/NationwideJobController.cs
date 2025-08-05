@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
@@ -36,7 +37,7 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting the new Nationwide job list");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -55,7 +56,7 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting the pod Nationwide job list");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -74,7 +75,7 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting the reprice Nationwide job list");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -136,7 +137,7 @@ public class NationwideJobController(
             stopwatch.Stop();
             Log.Error(e, "An error occurred getting scheduled flight options for job {JobId} after {ElapsedMs}ms",
                 jobId, stopwatch.ElapsedMilliseconds);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -146,7 +147,7 @@ public class NationwideJobController(
         try
         {
             ArgumentNullException.ThrowIfNull(request);
-           
+
             // Get flight details
             var flight = await GetFlightDetails(request);
             ArgumentNullException.ThrowIfNull(flight);
@@ -155,7 +156,8 @@ public class NationwideJobController(
             var webhookIds = await CreateWebhooks(flight);
 
             // Save job assignment
-            await repository.AddJobNationwideAsync(request.JobId, flight, webhookIds, request.FromAirportId, request.ToAirportId);
+            await repository.AddJobNationwideAsync(request.JobId, flight, webhookIds, request.FromAirportId,
+                request.ToAirportId);
 
             return Ok();
         }
@@ -276,7 +278,7 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting the active airlines");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -295,7 +297,7 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting the active airlines");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -309,7 +311,7 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting the active airports");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -330,7 +332,7 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured restoring the nationwide job");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -344,7 +346,7 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting all agents");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -358,7 +360,7 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting all agents");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -373,7 +375,7 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting all agents");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -387,7 +389,7 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting the recovery info");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -401,10 +403,10 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting the airports specific to agent");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
-    } 
-    
+    }
+
     public async Task<IActionResult> GetAllActiveAirports()
     {
         try
@@ -415,7 +417,7 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting active airports");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -431,7 +433,7 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured updating recovery agent");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -442,14 +444,14 @@ public class NationwideJobController(
         {
             ArgumentNullException.ThrowIfNull(request);
             ArgumentNullException.ThrowIfNull(request.RecoveryId);
-            
+
             await repository.RemoveRecoveryAgentAsync(request.RecoveryId);
             return Ok();
         }
         catch (Exception e)
         {
             Log.Error(e, "An error occured removing recovery agent");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -458,14 +460,28 @@ public class NationwideJobController(
         try
         {
             ArgumentNullException.ThrowIfNull(agentJobId);
-            
-           var isAllowed = await repository.CanAssignAgentToJob(agentJobId);
-           return Json(isAllowed);
+
+            var isAllowed = await repository.CanAssignAgentToJobAsync(agentJobId);
+            return Json(isAllowed);
         }
         catch (Exception e)
         {
             Log.Error(e, "An error occured checking if agent is allowed to be assigned to job {JobId}", agentJobId);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    public async Task<IActionResult> GetEnabledWebhookEvents()
+    {
+        try
+        {
+            var webhookEvents = await repository.GetWebhookEventsAsListAsync();
+            return Json(webhookEvents);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An error occured getting the active webhook alerts");
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 }

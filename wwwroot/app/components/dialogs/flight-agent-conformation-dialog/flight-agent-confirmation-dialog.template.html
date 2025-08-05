@@ -1,4 +1,4 @@
-<md-dialog aria-label="Assignment Dialog" class="md-whiteframe-5dp flight-agent-confirmation-dialog">
+<md-dialog aria-label="Assignment Dialog" class="md-whiteframe-24dp flight-agent-confirmation-dialog">
     <form ng-cloak>
         <md-toolbar>
             <div class="md-toolbar-tools">
@@ -15,56 +15,144 @@
             </div>
         </md-toolbar>
 
-        <md-dialog-content>
-            <div class="md-dialog-content" layout="column" layout-padding>
-                <div class="assignment-info md-subhead" ng-if="ctrl.flight">
-                    <md-icon md-font-set="material-symbols-outlined" class="md-accent">flight</md-icon>
-                    <span>You are assigning Job <strong>{{::ctrl.jobNumber}}</strong> to Flight <strong>{{::ctrl.flight.flightNumber}}</strong></span>
+        <md-dialog-content class="dialog-content">
+            <div class="content-section" ng-if="ctrl.flight">
+                <div class="assignment-header">
+                    <div class="assignment-icon-wrapper flight-icon">
+                        <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
+                    </div>
+                    <div class="assignment-text">
+                        <div class="assignment-title">Flight Assignment</div>
+                        <div class="assignment-description">
+                            Assigning to Flight <span class="highlight-text">{{::ctrl.flight.flightNumber}}</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="flight-details" ng-if="ctrl.flight" layout="row" layout-align="start center">
-                    <div class="airport-code">{{::ctrl.flight.departureAirport}}</div>
-                    <md-icon md-font-set="material-symbols-outlined">arrow_forward</md-icon>
-                    <div class="airport-code">{{::ctrl.flight.departureAirport}}</div>
+                <div class="flight-route">
+                    <div class="airport-info">
+                        <div class="airport-code">{{::ctrl.flight.departureAirport}}</div>
+                        <div class="airport-label">Departure</div>
+                    </div>
+                    <div class="route-arrow">
+                        <md-icon md-font-set="material-symbols-outlined">arrow_forward</md-icon>
+                    </div>
+                    <div class="airport-info">
+                        <div class="airport-code">{{::ctrl.flight.arrivalAirport || ctrl.flight.departureAirport}}</div>
+                        <div class="airport-label">Arrival</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-section" ng-if="ctrl.agent">
+                <div class="assignment-header">
+                    <div class="assignment-icon-wrapper agent-icon">
+                        <md-icon md-font-set="material-symbols-outlined">person</md-icon>
+                    </div>
+                    <div class="assignment-text">
+                        <div class="assignment-title">Agent Assignment</div>
+                        <div class="assignment-description">
+                            Assigning to Agent <span class="highlight-text">{{::ctrl.agent.text}}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-section webhook-alerts-section" ng-if="ctrl.flight">
+                <div class="assignment-header">
+                    <div class="assignment-icon-wrapper webhook-icon">
+                        <md-icon md-font-set="material-symbols-outlined">
+                            notifications
+                            <md-tooltip md-direction="bottom">Flight alerts can be customized in Admin Manager
+                            </md-tooltip>
+                        </md-icon>
+                    </div>
+                    <div class="assignment-text">
+                        <div class="assignment-title">Flight Alerts</div>
+                        <div class="assignment-description">
+                            Active notification events for this flight
+                        </div>
+                    </div>
                 </div>
 
-                <div class="assignment-info md-subhead" ng-if="ctrl.agent">
-                    <md-icon md-font-set="material-symbols-outlined" class="md-accent">person</md-icon>
-                    <span>You are assigning Job <strong>{{::ctrl.jobNumber}}</strong> to Agent <strong>{{::ctrl.agent.text}}</strong></span>
+                <div class="webhook-content" ng-if="ctrl.enabledAlerts && ctrl.enabledAlerts.length > 0">
+                    <div class="alert-chips-container">
+                        <div class="alert-chips-scroll">
+                        <span
+                                class="alert-chip"
+                                ng-repeat="alert in ctrl.enabledAlerts track by alert.id">
+                            <md-icon
+                                    md-font-set="material-symbols-outlined"
+                                    class="chip-icon">check_circle</md-icon>
+                            {{alert.text}}
+                        </span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="assignment-info md-subhead" ng-if="ctrl.dgClassName">
-                    <md-icon md-font-set="material-symbols-outlined" class="md-accent">dangerous</md-icon>
-                    <span>Dangerous Goods Class: <strong>{{::ctrl.dgClassName}}</strong></span>
+                <div class="webhook-content no-alerts" ng-if="!ctrl.enabledAlerts || ctrl.enabledAlerts.length === 0">
+                    <div class="no-alerts-message">
+                        <md-icon md-font-set="material-symbols-outlined" class="warning-icon">warning</md-icon>
+                        <span>No webhook alerts are currently configured</span>
+                    </div>
                 </div>
 
-                <p class="md-body-1" layout="row" layout-align="center center">Please confirm this is correct.</p>
+                <div class="webhook-loading" ng-if="ctrl.loadingAlerts">
+                    <md-progress-circular md-mode="indeterminate" md-diameter="20"></md-progress-circular>
+                    <span>Loading webhook configuration...</span>
+                </div>
+            </div>
 
-                <md-input-container class="md-block" style="margin-top: 20px;">
-                    <label for="awb">Air Waybill (AWB)</label>
-                    <input id="awb" class="bold-input" ng-model="ctrl.awb" ng-disabled="::ctrl.isAwbDisabled" type="text">
-                    <div class="md-errors-spacer"></div>
+            <div class="content-section danger-goods-section" ng-if="ctrl.dgClassName">
+                <div class="assignment-header">
+                    <div class="assignment-icon-wrapper danger-icon">
+                        <md-icon md-font-set="material-symbols-outlined">dangerous</md-icon>
+                    </div>
+                    <div class="assignment-text">
+                        <div class="assignment-title">Dangerous Goods</div>
+                        <div class="assignment-description">
+                            Class: <span class="highlight-text danger-class">{{::ctrl.dgClassName}}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <md-input-container class="md-block awb-input">
+                    <label for="awb">Air Waybill Number (AWB)</label>
+                    <input id="awb"
+                           ng-model="ctrl.awb"
+                           ng-disabled="::ctrl.isAwbDisabled"
+                           type="text"
+                           placeholder="Enter AWB number">
                 </md-input-container>
 
-                <div ng-if="::ctrl.showIncludeStopJobs" style="margin-top: 10px;" layout="row" layout-align="start center">
-                    <md-checkbox
-                            ng-model="ctrl.assignToStopJobs"
-                            class="md-primary"
-                            aria-label="assign agent to stop jobs">
-                        Assign agent to all stop jobs in this job?
+                <div class="checkbox-section" ng-if="::ctrl.showIncludeStopJobs">
+                    <md-checkbox ng-model="ctrl.assignToStopJobs"
+                                 class="md-primary stop-jobs-checkbox"
+                                 aria-label="assign agent to stop jobs">
+                        <span class="checkbox-label">Assign agent to all stop jobs in this job</span>
                     </md-checkbox>
                 </div>
             </div>
+
+            <div class="confirmation-message">
+                <md-icon md-font-set="material-symbols-outlined" class="info-icon">info</md-icon>
+                <span>Please review the details above and confirm to proceed.</span>
+            </div>
         </md-dialog-content>
 
-        <md-divider></md-divider>
-
-        <md-dialog-actions layout="row" layout-align="end center" layout-padding>
-            <md-button ng-click="ctrl.cancel()" class="md-button">
+        <md-dialog-actions class="dialog-actions">
+            <md-button
+                    ng-click="ctrl.cancel()"
+                    class="md-button cancel-btn">
                 Cancel
             </md-button>
-            <md-button ng-click="ctrl.confirm()" class="md-raised md-primary">
-                Confirm
+            <md-button
+                    ng-click="ctrl.confirm()"
+                    class="md-raised md-primary">
+                <md-icon md-font-set="material-symbols-outlined">check</md-icon>
+                Confirm Assignment
             </md-button>
         </md-dialog-actions>
     </form>
