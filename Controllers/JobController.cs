@@ -71,7 +71,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error processing job list request");
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -108,7 +108,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error processing job coordinates request");
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -143,7 +143,7 @@ public class JobController(
         catch (Exception e)
         {
             Log.Error(e, $"an error occured getting jobs by clear list");
-            return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -192,7 +192,7 @@ public class JobController(
         {
             Log.Error(ex, "Error getting price breakdown for job {JobId}",
                 jobId);
-            return StatusCode(500, "An error occurred while retrieving the pricing breakdown");
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -225,7 +225,7 @@ public class JobController(
         {
             Log.Error(ex, "Error adding price breakdown for job {JobId}",
                 breakdown.JobId ?? breakdown.PrebookJobId);
-            return StatusCode(500, "An error occurred while adding the pricing breakdown");
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -259,7 +259,7 @@ public class JobController(
         {
             Log.Error(ex, "Error updating price breakdown for job {JobId}",
                 breakdown.JobId ?? breakdown.PrebookJobId);
-            return StatusCode(500, "An error occurred while updating the pricing breakdown");
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -285,7 +285,7 @@ public class JobController(
         {
             Log.Error(ex, "Error deleting price breakdown for charge {chargeId}",
                 chargeId);
-            return StatusCode(500, "An error occurred while adding the deleting breakdown");
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -310,9 +310,8 @@ public class JobController(
         }
         catch (Exception e)
         {
-            var message = $"An error occured getting current jobs courier {courierId}";
-            Log.Error(e, message);
-            return StatusCode(StatusCodes.Status500InternalServerError, message);
+            Log.Error(e, "An error occured getting current jobs courier {CourierId}", courierId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -400,7 +399,7 @@ public class JobController(
         {
             Log.Error(e, "Unknown error encountered when uploading {Type} for job {JobId}. Message: {Message}",
                 isPod ? "POD photo" : "signature", jobId, e.Message);
-            return StatusCode(500, "An error occurred while uploading the file");
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -449,7 +448,7 @@ public class JobController(
         {
             Log.Error(e, "Unknown error encountered when deleting file for job {JobId}. Message: {Message}",
                 jobId, e.Message);
-            return StatusCode(500, "An error occurred while deleting the file");
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -557,7 +556,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "An unexpected error occured");
-            return StatusCode(500, "An error occurred while processing your request.");
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -585,7 +584,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "An unexpected error occured");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -616,8 +615,8 @@ public class JobController(
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            return StatusCode(500, e.Message);
+            Log.Error(e, "An error occured getting JobBooking: {JobBookingId}", jobBookingId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -630,8 +629,8 @@ public class JobController(
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            return StatusCode(500, e.Message);
+            Log.Error(e, "An error occured getting POD for: {JobNumber}", data.Job);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -1004,7 +1003,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error allocating jobs");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -1116,7 +1115,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error reallocating jobs");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -1171,10 +1170,7 @@ public class JobController(
                 jobIds.ToString(),
                 ex.Message
             );
-            return StatusCode(
-                500,
-                new { message = "An unexpected error occurred restoring the jobs" }
-            );
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -1194,10 +1190,7 @@ public class JobController(
                 jobIds.ToString(),
                 ex.Message
             );
-            return StatusCode(
-                500,
-                new { message = "An unexpected error occurred restoring the jobs" }
-            );
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -1225,8 +1218,7 @@ public class JobController(
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            throw;
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -1282,8 +1274,8 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error adding restore eventS");
-            return StatusCode(500, ex.Message);
+            Log.Error(ex, "Error adding restore events for job {JobId}", jobId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -1319,8 +1311,8 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error updating pickup address for job");
-            return StatusCode(500, ex.Message);
+            Log.Error(ex, "Error updating pickup address for job {JobId}", data.JobId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -1454,7 +1446,7 @@ public class JobController(
                 e,
                 "An error occured updating field {Field} with value {Value} for job {JobId}", field, value, jobId
             );
-            return StatusCode(StatusCodes.Status500InternalServerError);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -1469,7 +1461,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error updating deliver by time");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -1484,7 +1476,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error updating deliver by time");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -1611,8 +1603,8 @@ public class JobController(
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            throw;
+            Log.Error(e, "Error creating job");
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -1799,7 +1791,7 @@ public class JobController(
         catch (Exception e)
         {
             Log.Error(e, "Error {GetAttachedFilesName}: {EMessage}", nameof(GetAttachedFiles), e.Message);
-            return StatusCode(500, new { message = "Error retrieving files", error = e.Message });
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
 
         return Ok(s3Files);
@@ -1871,8 +1863,8 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            // Log the exception
-            return StatusCode(500, ex.Message);
+            Log.Error(ex, "Error uploading file for Job {JobId}", request.JobId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -1904,7 +1896,8 @@ public class JobController(
         {
             return ex.StatusCode == HttpStatusCode.NotFound
                 ? NotFound($"File {key} not found in bucket")
-                : StatusCode(500, $"Error downloading file: {ex.Message}");
+                : StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+                
         }
     }
 
@@ -1936,6 +1929,7 @@ public class JobController(
                 "{DeleteFileName} An unexpected error occurred while deleting object {Key} from bucket {BucketName}",
                 nameof(DeleteFile), key, bucketName
             );
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
 
         return Ok();
@@ -1977,10 +1971,7 @@ public class JobController(
                 jobId,
                 ex.Message
             );
-            return StatusCode(
-                500,
-                new { message = "An unexpected error occurred while updating the note" }
-            );
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -2001,7 +1992,7 @@ public class JobController(
                 request.JobId,
                 ex.Message
             );
-            return StatusCode(500, new { message = ex.Message });
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -2021,8 +2012,8 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error updating job read status");
-            return StatusCode(500, new { message = ex.Message });
+            Log.Error(ex, "Error updating job read status for Job {JobId}", jobId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -2056,7 +2047,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error updating delivery address for job {JobId}", request.JobId);
-            return StatusCode(500, new { message = ex.Message });
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -2084,7 +2075,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error updating delivery address for job {JobId}", request.JobId);
-            return StatusCode(500, new { message = ex.Message });
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -2118,7 +2109,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error updating pickup address for job {JobId}", request.JobId);
-            return StatusCode(500, new { message = ex.Message });
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -2146,7 +2137,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error updating pickup address for job {JobId}", request.JobId);
-            return StatusCode(500, new { message = ex.Message });
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -2180,7 +2171,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error updating pickup address for job {JobId}", request.JobId);
-            return StatusCode(500, new { message = ex.Message });
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -2209,7 +2200,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error updating pickup address for job {JobId}", request.JobId);
-            return StatusCode(500, new { message = ex.Message });
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -2243,7 +2234,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error updating delivery address for job {JobId}", request.JobId);
-            return StatusCode(500, new { message = ex.Message });
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -2272,7 +2263,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error updating pickup address for job {JobId}", request.JobId);
-            return StatusCode(500, new { message = ex.Message });
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -2286,7 +2277,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error updating job read status");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -2301,7 +2292,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error updating job read status");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -2315,8 +2306,8 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error updating job read status");
-            return StatusCode(500, ex.Message);
+            Log.Error(ex, "Error updating job read status for Job {JobId}", data.JobId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -2329,9 +2320,8 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error retrieving the delivery journey");
-            return StatusCode(500, ex.Message);
+            Log.Error(ex, "Error retrieving the delivery journey for Job {JobId}", jobId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
-        
     }
 }

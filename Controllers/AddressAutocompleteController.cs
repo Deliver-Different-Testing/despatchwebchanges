@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
@@ -18,7 +19,7 @@ public class AddressAutocompleteController(IAddressLookupService addressLookup) 
         catch (Exception e)
         {
             Log.Error(e, "Error getting autocomplete results: {Error}", e.Message);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -32,7 +33,7 @@ public class AddressAutocompleteController(IAddressLookupService addressLookup) 
         catch (Exception e)
         {
             Log.Error(e, "Error getting location details: {Error}", e.Message);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -46,7 +47,7 @@ public class AddressAutocompleteController(IAddressLookupService addressLookup) 
         catch (Exception e)
         {
             Log.Error(e, "Error getting nearest address: {Error}", e.Message);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Mvc;
@@ -27,7 +28,7 @@ public class CourierController(
         catch (Exception e)
         {
             Log.Error(e, "An error occurred getting clear lists");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -42,7 +43,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting clear list envelopes");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -56,7 +57,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting active couriers");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -70,7 +71,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting available courier locations");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -84,7 +85,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting potential couriers");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -98,7 +99,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error searching active couriers");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -112,7 +113,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting all active couriers");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -126,7 +127,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting courier location");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -140,7 +141,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting courier route");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -154,7 +155,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting truck courier status");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -175,7 +176,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error adding followup event");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -189,7 +190,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error getting vehicle sizes");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -203,7 +204,7 @@ public class CourierController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error find courier");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 }

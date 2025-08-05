@@ -240,7 +240,7 @@ class JobDetailController extends BaseController {
                 this.jobGroups = [];
             }
 
-            this.triggerDigestCycle();
+            this.applyScope();
 
             if (this.job.completedTime && !this.isRecurringJob) {
                 this.loadPodPhotos();
@@ -1787,23 +1787,6 @@ class JobDetailController extends BaseController {
         }
     }
 
-    private triggerDigestCycle() {
-        console.log("[_triggerDigestCycle] Forcing UI update");
-        try {
-            if (!this.$rootScope.$$phase) {
-                this.$rootScope.$applyAsync();
-            } else {
-                this.registerTimeout(() => {
-                    if (!this.$rootScope.$$phase) {
-                        this.$rootScope.$applyAsync();
-                    }
-                }, 0);
-            }
-        } catch (e) {
-            console.error("[_triggerDigestCycle] Error triggering digest cycle:", e);
-        }
-    }
-
     async updateHolidayDeliveryOption(job: IJob) {
         if (!job.holidayDeliveryOption) return;
 
@@ -1827,7 +1810,7 @@ class JobDetailController extends BaseController {
             this.handleError(error);
         }
     }
-    
+
     async openPodUploadDialog($event: MouseEvent, job: IDispatchJob) {
         await this.jobFileUploadDialogService.openJobFileUploadDialog(
             $event,
@@ -1856,7 +1839,7 @@ class JobDetailController extends BaseController {
         this.selectedSubJobIndex = subJobIndex;
 
         await this.loadSubJobDetails(subJobIndex);
-        this.triggerDigestCycle();
+        this.applyScope();
     }
 
     private async loadSubJobDetails(subJobIndex: number) {
@@ -1916,17 +1899,21 @@ class JobDetailController extends BaseController {
             this.toastrService.showErrorToast("Failed to load subjob details");
         } finally {
             this.isLoading = false;
-            this.triggerDigestCycle();
+            this.applyScope();
         }
     }
-    
+
     async updateActive(job: IJob) {
         try {
+            const newValue = !job.active;
+
+            if (this.job) this.job.active = newValue;
+
             await this.DispatchData.updateJobDetail(
                 job.id,
                 JobProperty.Active,
-                job.active ?? false,
-                true,
+                newValue,
+                true
             );
         } catch (error) {
             console.error("Error updating active:", error);
