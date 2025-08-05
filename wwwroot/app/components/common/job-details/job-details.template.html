@@ -1075,6 +1075,7 @@
                                         <h3>Active</h3>
                                         <p>
                                             <md-switch
+                                                    class="md-primary"
                                                     aria-label="Active"
                                                     ng-model="ctrl.job.active"
                                                     ng-click="ctrl.updateActive(ctrl.job)"
@@ -1382,7 +1383,7 @@
                     <div layout="row" layout-align="start center" layout-wrap>
                         <div flex="50" ng-if="!ctrl.isUsCustomer">
                             <md-checkbox
-                                    class="compact-checkbox"
+                                    class="md-primary compact-checkbox"
                                     ng-click="ctrl.toggleProperty(ctrl.job, 'van', ctrl.job.van)"
                                     ng-model="ctrl.job.van"
                             >Van
@@ -1390,34 +1391,34 @@
                         </div>
                         <div flex="50" ng-if="!ctrl.isUsCustomer">
                             <md-checkbox
-                                    class="compact-checkbox"
+                                    class="md-primary compact-checkbox"
                                     ng-click="ctrl.toggleProperty(ctrl.job, 'truck', ctrl.job.truck)"
-                                    ng-model="ctrl.job.truck"
-                            >Truck
+                                    ng-model="ctrl.job.truck">
+                                Truck
                             </md-checkbox>
                         </div>
                         <div flex="50">
                             <md-checkbox
-                                    class="compact-checkbox"
+                                    class="md-primary compact-checkbox"
                                     ng-click="ctrl.toggleProperty(ctrl.job, 'reprice', ctrl.job.reprice)"
-                                    ng-model="ctrl.job.reprice"
-                            >Reprice
+                                    ng-model="ctrl.job.reprice">
+                                Reprice
                             </md-checkbox>
                         </div>
                         <div flex="50">
                             <md-checkbox
-                                    class="compact-checkbox"
+                                    class="md-primary compact-checkbox"
                                     ng-click="ctrl.toggleProperty(ctrl.job, 'void', ctrl.job.void)"
-                                    ng-model="ctrl.job.void"
-                            >Void
+                                    ng-model="ctrl.job.void">
+                                Void
                             </md-checkbox>
                         </div>
                         <div flex="50">
                             <md-checkbox
-                                    class="compact-checkbox"
+                                    class="md-primary compact-checkbox"
                                     ng-click="ctrl.markJobAsDone($event, ctrl.job, ctrl.job.done)"
-                                    ng-model="ctrl.job.done"
-                            >Done
+                                    ng-model="ctrl.job.done">
+                                Done
                             </md-checkbox>
                         </div>
                     </div>
@@ -1439,7 +1440,7 @@
 
                 <div class="read-details" ng-if="ctrl.job.readTrackerInfo.hasBeenRead">
                     <span>Read by: <strong>{{ctrl.job.readTrackerInfo.readBy || 'Unknown'}}</strong></span>
-                    <span class="read-date">on {{ctrl.job.readTrackerInfo.readDate | momentFormat:'MM/DD/YYYY'}} ({{ctrl.timeZone | timezoneShort}})</span>
+                    <span class="read-date">on {{ctrl.job.readTrackerInfo.readDate | momentFormat:'MM/DD/YYYY'}} ({{::ctrl.timeZone | timezoneShort}})</span>
                 </div>
 
                 <div
@@ -1577,8 +1578,7 @@
                     ng-repeat="photo in ctrl.formattedPodPhotos track by $index">
                 <img
                         alt="Photo {{$index + 1}}"
-                        ng-src="{{'data:image/png;base64,' + photo.url}}"
-                />
+                        ng-src="{{'data:image/png;base64,' + photo.url}}"/>
                 <md-grid-tile-footer>
                     <h3>
                         {{photo.timestamp | date:'shortTime'}}

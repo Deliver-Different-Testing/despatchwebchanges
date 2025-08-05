@@ -1,7 +1,7 @@
 import {IJobNote, INoteType} from "../interfaces/job.interface";
 import dayjs from "dayjs";
 
-class NoteService {
+class NoteService implements angular.IServiceProvider {
     static $inject = [
         '$http'
     ];

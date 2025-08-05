@@ -24,35 +24,6 @@ class RecurringJobsController extends BaseController {
         'APP_CONFIG',
     ];
 
-    readonly options = {
-        detail: {
-            size: [
-                {id: 1, label: "Bike"},
-                {id: 2, label: "Car"},
-                {id: 3, label: "Van"},
-                {id: 4, label: "Truck"},
-                {id: 5, label: "Scooter"}
-            ],
-            tracking: [
-                {id: 1, label: "Email"},
-                {id: 2, label: "Mobile"},
-                {id: 3, label: "Email & Mobile"}
-            ],
-            DGClass: [
-                {id: 0, label: "0"},
-                {id: 1, label: "1"},
-                {id: 2, label: "2"},
-                {id: 3, label: "3"},
-                {id: 4, label: "4"},
-                {id: 5, label: "5"},
-                {id: 6, label: "6"},
-                {id: 7, label: "7"},
-                {id: 8, label: "8"},
-                {id: 9, label: "9"}
-            ]
-        }
-    };
-
     readonly boxes = {
         jobList: {
             title: "Recurring Jobs List",
@@ -98,7 +69,6 @@ class RecurringJobsController extends BaseController {
     currentLayoutName?: string;
     timeZone: string = TimeZone;
     activeFilter: boolean = true;
-    isDataLoading: boolean = false;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -453,7 +423,6 @@ class RecurringJobsController extends BaseController {
                         .ok("OK")
                 );
             }
-            // If error is falsy, it means the user clicked 'No', so we do nothing
         }
     }
 
@@ -497,7 +466,6 @@ class RecurringJobsController extends BaseController {
                         .ok("OK")
                 );
             }
-            // If error is falsy, it means the user clicked 'No', so we do nothing
         }
     }
 
