@@ -322,7 +322,7 @@
                                  aria-label="Edit pickup address"
                                  ng-click="!ctrl.job.locked && ctrl.updateAddress($event, ctrl.job, 'fromAddress')">
                                 <div class="primary-address">
-                                    {{ctrl.job.pickupAddress.addressLine1 || 'No Business or Receipt Provided'}}
+                                    {{ctrl.job.pickupAddress.addressLine1 || ''}}
                                     <span class="material-symbols-outlined edit-indicator">edit</span>
                                 </div>
                                 <div class="secondary-address">
@@ -400,7 +400,7 @@
                                  aria-label="Edit delivery address"
                                  ng-click="!ctrl.job.locked && ctrl.updateAddress($event, ctrl.job, 'toAddress')">
                                 <div class="primary-address">
-                                    {{ctrl.job.deliveryAddress.addressLine1 || 'No address specified'}}
+                                    {{ctrl.job.deliveryAddress.addressLine1 || ''}}
                                     <span class="material-symbols-outlined edit-indicator">edit</span>
                                 </div>
 

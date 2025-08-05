@@ -46,7 +46,7 @@ public interface INationwideJobRepository
         int? fromZoneCongestionId = null, int? toZoneCongestionId = null);
 
     Task<string> GetAgentNameAsync(int agentId);
-    Task<RecoveryAgentJobViewModel> GetInfoForRecoveryAgentDialogAsync(int jobId);
+    Task<RecoveryAgentJobViewModel> GetRecoveryAgentDialogDataAsync(int jobId);
     Task<List<Suggestion>> GetAgentOptionsByAirportAsync(int airportId);
     Task<List<Suggestion>> GetAllActiveAirportsWithAgentsAsync();
     Task UpdateRecoveryAgentAsync(UpdateAgentRecoveryRequest request);

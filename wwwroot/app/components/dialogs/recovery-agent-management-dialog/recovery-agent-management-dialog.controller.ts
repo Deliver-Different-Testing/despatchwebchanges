@@ -40,6 +40,7 @@ class RecoveryAgentManagementController extends BaseController {
     ) {
         super();
         console.log('RecoveryAgentManagementController: Controller instantiated');
+        console.log('RecoveryAgentManagementController: Job data:', job);
         this.initAirports();
     }
 
