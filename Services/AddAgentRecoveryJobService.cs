@@ -138,7 +138,7 @@ public class AddAgentRecoveryJobService(
             await repository.AddEntityAsync(note);
 
             // Add Recovery Agent Record
-            var recoveryAgentRecord = CreateJobRecoveryAgent(job.UcjbId, request.AgentId, request.AirportId, staffId,
+            var recoveryAgentRecord = CreateJobRecoveryAgent(newStopJob.UcjbId, request.AgentId, request.AirportId, staffId,
                 request.IsPrimaryRecoveryAgent);
             await repository.AddEntityAsync(recoveryAgentRecord);
 
