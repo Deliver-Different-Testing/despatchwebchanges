@@ -1001,11 +1001,11 @@ public class NationwideJobRepository(
             {
                 JobId = j.UcjbId,
                 JobNumber = j.UcjbNumber,
-                AssignedAgent = new Suggestion
+                AssignedAgent = j.Agent != null ? new Suggestion
                 {
                     Id = j.Agent.UcagId,
                     Text = j.Agent.UcagName
-                },
+                } : null,
                 PickUpAddress = new AddressViewModel(
                     j.PickupAddressLine1,
                     j.PickupAddressLine2,
@@ -1034,35 +1034,38 @@ public class NationwideJobRepository(
                         .Select(rj => new RecoveryJobViewModel
                         {
                             JobId = rj.UcjbId,
-                            AssignedAgent = new Suggestion
+                            AssignedAgent = rj.Agent != null ?
+                                new Suggestion
                             {
                                 Id = rj.Agent.UcagId,
                                 Text = rj.Agent.UcagName
-                            },
-                            RecoveryAgents = rj.JobRecoveryAgents.Select(ra => new RecoveryAgentViewModel
+                            } : null,
+                            RecoveryAgents = rj.JobRecoveryAgents.Count != 0 ?
+                                rj.JobRecoveryAgents.Select(ra => new RecoveryAgentViewModel
                             {
                                 RecoveryId = ra.RecoveryId,
-                                AgentName = ra.Agent.UcagName,
-                                Airport = ra.Airport.Name,
+                                AgentName = ra.Agent != null ? ra.Agent.UcagName : null,
+                                Airport = ra.Airport != null ? ra.Airport.Name : null,
                                 PrimaryRecoveryAgent = ra.IsPrimary,
                                 AssignStatus = ra.IsActive ? "Currently Assigned" : "Not Assigned"
-                            })
+                            })  : null
                         })
                     : j.InverseParent
                         .Where(rj => EF.Functions.Like(rj.UcjbNumber, "%R_"))
                         .Select(rj => new RecoveryJobViewModel
                         {
                             JobId = rj.UcjbId,
-                            AssignedAgent = new Suggestion
-                            {
-                                Id = rj.Agent.UcagId,
-                                Text = rj.Agent.UcagName
-                            },
+                            AssignedAgent = rj.Agent != null ?
+                                new Suggestion
+                                {
+                                    Id = rj.Agent.UcagId,
+                                    Text = rj.Agent.UcagName
+                                } : null,
                             RecoveryAgents = rj.JobRecoveryAgents.Select(ra => new RecoveryAgentViewModel
                             {
                                 RecoveryId = ra.RecoveryId,
-                                AgentName = ra.Agent.UcagName,
-                                Airport = ra.Airport.Name,
+                                AgentName = ra.Agent != null ? ra.Agent.UcagName : null,
+                                Airport = ra.Airport != null ? ra.Airport.Name : null,
                                 PrimaryRecoveryAgent = ra.IsPrimary,
                                 AssignStatus = ra.IsActive ? "Currently Assigned" : "Not Assigned"
                             })
