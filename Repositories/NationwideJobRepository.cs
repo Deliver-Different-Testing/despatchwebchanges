@@ -37,7 +37,7 @@ public class NationwideJobRepository(
                 throw new ArgumentException("Flight list cannot be empty", nameof(flights));
 
             // Get the primary flight (first leg)
-            var primaryFlight = flights.FlightSegments.First();
+            var primaryFlight = flights.FlightSegments.OrderBy(f => f.SegmentOrder).First();
             ArgumentException.ThrowIfNullOrWhiteSpace(primaryFlight.CarrierFsCode);
             ArgumentException.ThrowIfNullOrWhiteSpace(primaryFlight.FlightNumber);
 
@@ -105,11 +105,10 @@ public class NationwideJobRepository(
             }
 
             // Second part
-            var flightPart = flights.FlightSegments.Count > 1 ? flights.FlightSegments[1] : primaryFlight;
-            job.DeliverByTime = flightPart.ArrivalTime;
+            job.DeliverByTime = primaryFlight.ArrivalTime;
             await UpdateJobAddressWithAirportInfoAsync(job, departureAirportId.Value,
-                flightPart.DepartureAirportTimeZone, false);
-            await UpdateJobAddressWithAirportInfoAsync(job, arrivalAirportId.Value, flightPart.ArrivalAirportTimeZone,
+                primaryFlight.DepartureAirportTimeZone, false);
+            await UpdateJobAddressWithAirportInfoAsync(job, arrivalAirportId.Value, primaryFlight.ArrivalAirportTimeZone,
                 true);
 
             // Set delivery job pick-up time
@@ -609,15 +608,38 @@ public class NationwideJobRepository(
     public async Task<List<Suggestion>> GetActiveAirlineOptionsAsync()
     {
         var airlines = await Context.FlightCarriers
-            .Where(fc => fc.IsActive == true)
+            .Where(fc => fc.IsActive)
             .Select(x => new Suggestion
             {
                 Id = x.FlightCarrierId,
                 Text = x.CarrierCode
             })
+            .AsNoTracking()
             .ToListAsync();
 
         return airlines;
+    }
+
+    public async Task<List<string>> GetActiveAirlineCodesAsync()
+    {
+        var airlineCodes = await Context.FlightCarriers
+            .Where(fc => fc.IsActive)
+            .Select(x => x.CarrierCode)
+            .AsNoTracking()
+            .ToListAsync();
+
+        return airlineCodes;
+    }
+
+    public async Task<string> GetAirlineCodeById(int airlineId)
+    {
+        var airlineCode = await Context.FlightCarriers
+            .Where(fc => fc.FlightCarrierId == airlineId)
+            .Select(x => x.CarrierCode)
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        return airlineCode;
     }
 
     public async Task SendAgentRequestMessageAsync(int agentId, int jobId)
