@@ -7,7 +7,7 @@ class NavigationService implements angular.IServiceProvider {
         "$window",
         "$state",
         "toastrService",
-        "urlService"
+        "customUrlService"
     ];
 
     constructor(

@@ -25,6 +25,8 @@ public interface INationwideJobRepository
 
     Task AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false);
     Task<List<Suggestion>> GetActiveAirlineOptionsAsync();
+    Task<List<string>> GetActiveAirlineCodesAsync();
+    Task<string> GetAirlineCodeById(int airlineId);
     Task SendAgentRequestMessageAsync(int agentId, int jobId);
     Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true);
     Task<string> GetSingleAirportCodeByIdAsync(int airportId);

@@ -49,13 +49,13 @@ public class FlightStatsService(
         var token = AuthenticationExtensions.CreateApiToken(userName, int.Parse(tenantId), connectionString, timeZone);
 
         var requestToken = new JwtSecurityTokenHandler().WriteToken(token);
-        
+
         var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
         var (year, month, day, _, _) = SplitDate(departureTime);
 
         // Webhook Events
         var flightWebhookAlertTypes = await repository.GetWebhookEventsAsStringAsync();
-        
+
         // Build the URL directly
         var url =
             $"{AlertUrl}/json/create/{carrierCode}/{flightNumber}/from/{departureAirportCode}/departing/{year}/{month}/{day}";
@@ -101,7 +101,8 @@ public class FlightStatsService(
             if (createAlertResponse?.Error?.ErrorId != null)
             {
                 Log.Error("{ErrorMessage}", createAlertResponse.Error.ErrorMessage);
-                throw new Exception($"Failed to create flight alert. ErrorId: {createAlertResponse.Error.ErrorId}. Response: {createAlertResponse.Error.ErrorMessage}");
+                throw new Exception(
+                    $"Failed to create flight alert. ErrorId: {createAlertResponse.Error.ErrorId}. Response: {createAlertResponse.Error.ErrorMessage}");
             }
 
             if (createAlertResponse?.Rule?.Id == null)
@@ -178,8 +179,7 @@ public class FlightStatsService(
         if (arrivalAirportId.HasValue)
             arrivalAirportCode = await repository.GetSingleAirportCodeByIdAsync(arrivalAirportId.Value);
 
-        var activeAirlines = await repository.GetActiveAirlineOptionsAsync();
-        var activeAirlineCodes = activeAirlines.Select(x => x.Text).ToList();
+        var activeAirlineCodes = await repository.GetActiveAirlineCodesAsync();
 
         ArgumentException.ThrowIfNullOrEmpty(departureAirportCode);
         ArgumentException.ThrowIfNullOrEmpty(arrivalAirportCode);
@@ -203,18 +203,16 @@ public class FlightStatsService(
         // Filter by specific airline if airlineId is provided
         if (airlineId is > 0)
         {
-            var selectedAirline = activeAirlines.FirstOrDefault(a => a.Id == airlineId.Value);
-            if (selectedAirline != null)
-            {
-                var selectedAirlineCode = selectedAirline.Text;
-                Log.Debug("Filtering by specific airline: {Carrier}", selectedAirlineCode);
-                query["includeAirlines"] = selectedAirlineCode;
-            }
+            var selectedAirline = await repository.GetAirlineCodeById(airlineId.Value);
+            ArgumentNullException.ThrowIfNull(selectedAirline);
+
+            Log.Debug("Filtering FlightWebhooks by specific airline: {Carrier}", selectedAirline);
+            query["includeAirlines"] = selectedAirline;
         }
-        else if (activeAirlines.Count != 0)
+        else if (activeAirlineCodes.Count != 0)
         {
             var combinedAirlines = string.Join(",", activeAirlineCodes);
-            Log.Debug("Adding carrier filters: {Carriers}", combinedAirlines);
+            Log.Debug("Filtering FlightWebhooks by carrier filters: {Carriers}", combinedAirlines);
             query["includeAirlines"] = combinedAirlines;
         }
 
@@ -251,9 +249,10 @@ public class FlightStatsService(
         if (connections is null) return [];
 
         var flightOptions = connections
-            .Where(conn => conn.ScheduledFlight.Count != 0 &&
-                           conn.ScheduledFlight.All(segment =>
-                               segment.Stops < 1)) // Exclude connections with segments having more than 1 stop
+            .Where(conn =>
+                conn.ScheduledFlight.Count != 0 &&
+                conn.ScheduledFlight.All(segment =>
+                    segment.Stops < 1)) // Exclude connections with segments having more than 1 stop
             .Select(conn =>
             {
                 var firstFlight = conn.ScheduledFlight.First();
@@ -273,7 +272,7 @@ public class FlightStatsService(
                             ?.FirstOrDefault(e => e.Iata == segment.FlightEquipmentIataCode);
 
                         var airline = flightStatusResponse.Appendix?.Airlines
-                            ?.FirstOrDefault(a => a.Fs == segment.CarrierFsCode);
+                            ?.FirstOrDefault(a => a.Fs == segment.CarrierFsCode && activeAirlineCodes.Contains(segment.CarrierFsCode));
 
                         return new FlightSegmentViewModel
                         {
