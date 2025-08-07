@@ -34,7 +34,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     {
         try
         {
-            var query = await BuildBaseQuery(selectedViewIds);
+            var query = await BuildBaseQuery(selectedViewIds, isUsTenant);
             if (query == null) return [];
 
             query = ApplyGeographicFilters(query, clearListEnvelope);
@@ -92,13 +92,13 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         }
     }
 
-    private async Task<IQueryable<TucJob>> BuildBaseQuery(List<int> selectedViews)
+    private async Task<IQueryable<TucJob>> BuildBaseQuery(List<int> selectedViews, bool isUsTenant)
     {
-        var jobIds = await GetFilteredJobIds(selectedViews);
+        var jobIds = await GetFilteredJobIds(selectedViews, isUsTenant);
         return jobIds.Count == 0 ? null : Context.TucJobs.Where(j => jobIds.Contains(j.UcjbId));
     }
 
-    private async Task<List<int>> GetFilteredJobIds(List<int> selectedViewIds)
+    private async Task<List<int>> GetFilteredJobIds(List<int> selectedViewIds, bool isUsTenant)
     {
         if (selectedViewIds == null || selectedViewIds.Count == 0)
         {
@@ -119,8 +119,9 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
         var combinedFilters = string.Join(" OR ", viewFilters.Select(filter => $"({filter})"));
         return await Context
-            .DeswebQryDespatchJobViewFilters.FromSqlRaw(
-                $"select * from DESWEB_qry_Despatch_Job_View_Filters WHERE {combinedFilters}"
+            .DeswebQryDespatchJobViewFilters.FromSqlRaw((isUsTenant ?
+                $"select * from DESWEB_qry_Despatch_Job_View_Filters WHERE {combinedFilters}" :
+                $"select * from DESWEB_qryDespatch WHERE {combinedFilters}")
             )
             .Select(x => x.UcjbId)
             .ToListAsync();
@@ -1340,7 +1341,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     {
         try
         {
-            var query = await BuildBaseQuery(selectedViewIds);
+            var isUsCustomer = infoService.IsUsTenant();
+            var query = await BuildBaseQuery(selectedViewIds, isUsCustomer);
             if (query == null) return [];
 
             query = query.Where(j => j.UcjbStatus != 9);
