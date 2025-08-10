@@ -219,10 +219,12 @@
                     <span ng-if="ctrl.currentJob.assignedFlight">{{ctrl.currentJob.assignedFlight.flightNumber}}</span>
                   </span>
 
-                  <span ng-if="::box.name == 'flightAgentDataTable'">{{::ctrl.isDeliveryJobType ? 'Agents' : 'Flights'}}</span>
+                  <span ng-if="::box.name == 'flightAgentDataTable'">
+                                     <!--{{::ctrl.isDeliveryJobType ? 'Agents' : 'Flights'}}-->
+                        Flights/Agents</span>
                 </span>
 
-                                <div flex></div>
+                                <!--<div flex></div>-->
 
                                 <md-button
                                         class="md-icon-button"
