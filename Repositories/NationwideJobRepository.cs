@@ -118,6 +118,11 @@ public class NationwideJobRepository(
                 var lastFlight = flights.FlightSegments.Last();
                 var deliveryJob = job.Parent.InverseParent.First(j => j.UcjbNumber.EndsWith('3'));
                 deliveryJob.UcjbTime = lastFlight.ArrivalTime.AddMinutes(airportProcessingTime);
+                
+                // Set delivery job's DeliverByTime to flight landing time + 3 hours
+                deliveryJob.DeliverByTime = lastFlight.ArrivalTime.AddHours(3);
+                // Set delivery job's DeliverByTimeZoneId from the flight job (DF2)
+                deliveryJob.DeliverByTimeZoneId = await GetTimeZoneIdByNameAsync(lastFlight.ArrivalAirportTimeZone);
 
                 // Update Pickup Address With Airport
                 await UpdateJobAddressWithAirportInfoAsync(deliveryJob, arrivalAirportId.Value,
