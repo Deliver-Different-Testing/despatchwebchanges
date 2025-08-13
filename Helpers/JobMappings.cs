@@ -19,7 +19,7 @@ public static class JobMappings
             Id = j.UcjbId,
             JobNo = j.UcjbNumber,
             HasBeenRead = j.TucJobReadTracker != null && j.TucJobReadTracker.HasBeenRead,
-            IsParentOrSingle = !j.ParentId.HasValue,
+            IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.UcjbId,
             ParentId = j.ParentId,
 
             InternalStatusId = j.InternalStatus,
