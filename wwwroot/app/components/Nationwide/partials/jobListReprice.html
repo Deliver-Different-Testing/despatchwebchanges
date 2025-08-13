@@ -14,12 +14,3 @@
         job-list-type="ctrl.nationwideRepriceJobList"
         query-params="ctrl.jobRepriceFilters">
 </jobs-list>
-
-<!-- No Data Message -->
-<no-data
-        ng-if="!ctrl.repriceListLoading && (!ctrl.jobListReprice || ctrl.jobListReprice.length === 0)"
-        title="No Repricing Jobs Found"
-        message="There are currently no jobs that need repricing."
-        icon="price_change"
-        show-action="false">
-</no-data>

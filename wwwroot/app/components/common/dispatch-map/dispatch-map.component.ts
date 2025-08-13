@@ -631,7 +631,7 @@ class DispatchMapController extends BaseController {
                 clearInterval(fadeInterval);
             }
             marker.setOpacity(opacity);
-        }, 40); // 40ms intervals for smooth fade
+        }, 40); // 40 ms intervals for smooth fade
     }
 
     private setupMarkerListeners(marker: google.maps.Marker, job: any, normalIcon: google.maps.Symbol, hoverIcon: google.maps.Symbol, locationType: string) {

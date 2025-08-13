@@ -13,7 +13,6 @@ class MaterialSidenavComponentController extends BaseController {
         "APP_CONFIG"
     ];
 
-    readonly appVersion: string = '[VI]{{inject}}[/VI]';
     readonly isUsCustomer: boolean;
     readonly userName?: string;
     readonly companyName: string = "DFRNT";
@@ -154,7 +153,6 @@ class MaterialSidenavComponentController extends BaseController {
             .then(() => {
                 this.navState.isOpen = targetState;
 
-                // Use BaseController timeout for animation completion
                 this.registerTimeout(() => {
                     this.navState.isAnimating = false;
                     this.applyScope();

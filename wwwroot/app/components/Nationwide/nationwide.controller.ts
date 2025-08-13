@@ -178,7 +178,7 @@ class NationwideControl extends BaseController {
 
     refreshIntervalOptions?: Suggestion[];
     selectedRefreshInterval?: Suggestion;
-    private refreshIntervalPromise?: angular.IPromise<any>; 
+    private refreshIntervalPromise?: angular.IPromise<any>;
     private isAutoRefreshEnabled: boolean = false;
 
     // supportFilters
@@ -190,6 +190,10 @@ class NationwideControl extends BaseController {
     filteredTasks: ExtendedTask[] = [];
     tasksFilter: string = 'all';
     tasks: ExtendedTask[] = [];
+
+    // Flight Search
+    flightSearchText: string = '';
+    filteredFlightOptions?: IFlightViewModel[] = [];
 
     constructor(
         $scope: angular.IScope,
@@ -489,7 +493,7 @@ class NationwideControl extends BaseController {
                 this.saveCurrentLayout();
             }
         };
-        
+
         this.initRefreshIntervalOptions();
         this.loadSavedRefreshInterval();
         this.initializeTaskService();
@@ -519,7 +523,7 @@ class NationwideControl extends BaseController {
             await this.getUnreadMessageCount();
         }, 10000);
     }
-    
+
     $onDestroy() {
         super.$onDestroy();
         this.stopAutoRefresh();
@@ -532,10 +536,12 @@ class NationwideControl extends BaseController {
                 if (savedIntervalString) {
                     const refreshId = parseInt(savedIntervalString, 10) ?? 0;
                     this.selectedRefreshInterval = this.refreshIntervalOptions?.find(x => x.id == refreshId);
-                    if(!this.selectedRefreshInterval) return;
-                    
+
                     if (this.selectedRefreshInterval && this.selectedRefreshInterval.id > 0) {
                         this.startAutoRefresh();
+                    } else {
+                        // Default to disabled
+                        this.selectedRefreshInterval = this.refreshIntervalOptions?.find(x => x.id == 0);
                     }
                 }
             } catch (error) {
@@ -543,7 +549,7 @@ class NationwideControl extends BaseController {
             }
         }
     }
-    
+
     private initializeTaskService() {
         try {
             this.tasksService.loadLists().then(({staffList, eventTypesList}) => {
@@ -1067,14 +1073,14 @@ class NationwideControl extends BaseController {
                 const defaultOutboundAirport = this.outboundAirportOptions.find(airport => airport.id === job.fromAirportId);
                 console.log('Default Outbound Airport:', defaultOutboundAirport);
                 if (defaultOutboundAirport) this.selectedOutboundAirport = defaultOutboundAirport;
-            }    
-            
+            }
+
             if (this.inboundAirportOptions && this.inboundAirportOptions.length > 0) {
                 const defaultInboundAirport = this.inboundAirportOptions.find(airport => airport.id === job.toAirportId);
                 console.log('Default Inbound Airport:', defaultInboundAirport);
                 if (defaultInboundAirport) this.selectedInboundAirport = defaultInboundAirport;
             }
-            
+
             // Reset search parameters
             this.lastDepartureTime = undefined;
             await this.loadFlights();
@@ -1277,6 +1283,7 @@ class NationwideControl extends BaseController {
             this.flightMessage = result.message || (result.flights.length === 0 ?
                 "No flights available for the selected criteria" : undefined);
             this.lastDepartureTime = result.lastDepartureTime;
+            this.filteredFlightOptions = this.flightOptions;
 
             console.log(`Loaded ${this.flightOptions?.length} flights`);
         } catch (error) {
@@ -1289,7 +1296,7 @@ class NationwideControl extends BaseController {
             this.applyScope();
         }
     }
-    
+
     async loadNextDayFlights(): Promise<void> {
         if (!this.currentJob) {
             this.toastrService.showWarningToast("Please select a job to view flight options");
@@ -1339,7 +1346,7 @@ class NationwideControl extends BaseController {
                 departureDate: flight.departureTime,
                 flightSegments: flight.flightSegments
             };
-            
+
             // Pass the full flight data including segments to the service
             await this.nationwideService.assignFlightToJob(requestData);
 
@@ -1377,7 +1384,7 @@ class NationwideControl extends BaseController {
         try {
             // Check flight is assigned first
             const isAllowedToAssignAgent = await this.nationwideService.relatedJobHasFlightAssigned(job.id);
-            if(!isAllowedToAssignAgent) {
+            if (!isAllowedToAssignAgent) {
                 await this.$mdDialog.show(
                     this.$mdDialog.alert()
                         .parent(this.$document.parent())
@@ -1390,8 +1397,8 @@ class NationwideControl extends BaseController {
                 );
                 return;
             }
-            
-            
+
+
             const result = await this.flightAgentConfirmationDialogService.agentConfirmationDialog($event, job, agent)
             if (!result.shouldAssign) return;
 
@@ -1776,14 +1783,14 @@ class NationwideControl extends BaseController {
 
             console.log('Airport selection changed to:',
                 this.selectedOutboundAirport ? this.selectedOutboundAirport.text : 'All airports');
-            
+
             // Reload flights with the new airport selection
             await this.loadFlights();
         } catch (error) {
             console.error('Error loading flights after airport change:', error);
         }
-    } 
-    
+    }
+
     async onInboundAirportSelectionChanged(): Promise<void> {
         try {
             // Reset search when changing airport filter
@@ -1791,7 +1798,7 @@ class NationwideControl extends BaseController {
 
             console.log('Airport selection changed to:',
                 this.selectedInboundAirport ? this.selectedInboundAirport.text : 'All airports');
-            
+
             // Reload flights with the new airport selection
             await this.loadFlights();
             this.applyScope();
@@ -2082,14 +2089,14 @@ class NationwideControl extends BaseController {
     getJobContextMenuOptions() {
         return (data: any) => this.getContextMenuOptions(data.job);
     }
-    
+
     async openRecoveryAgentDialog($event: MouseEvent, job: IDispatchJob) {
         await this.recoveryAgentManagementService.openRecoveryAgentManagementDialog($event, job.id);
     }
 
     initRefreshIntervalOptions(): void {
         const options: Suggestion[] = [
-            { id: 0, text: "Disabled" } // Add a disabled option
+            {id: 0, text: "Disabled"} // Add a disabled option
         ];
 
         const maxSeconds = 15 * 60; // 15 minutes in seconds
@@ -2103,7 +2110,7 @@ class NationwideControl extends BaseController {
 
         this.refreshIntervalOptions = options;
     }
-    
+
     private formatDuration(seconds: number) {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = seconds % 60;
@@ -2193,6 +2200,28 @@ class NationwideControl extends BaseController {
         return this.isAutoRefreshEnabled &&
             !!this.selectedRefreshInterval &&
             this.selectedRefreshInterval.id > 0;
+    }
+
+    filterFlights(): void {
+        if (!this.flightOptions) {
+            this.filteredFlightOptions = [];
+            return;
+        }
+
+        if (!this.flightSearchText || this.flightSearchText.trim() === '') {
+            this.filteredFlightOptions = this.flightOptions;
+            return;
+        }
+
+        const searchTerm = this.flightSearchText.toLowerCase().trim();
+
+        this.filteredFlightOptions = this.flightOptions.filter(flight =>
+            flight.flightNumber?.toLowerCase().includes(searchTerm) ||
+            flight.airline?.toLowerCase().includes(searchTerm) ||
+            flight.departureAirport?.toLowerCase().includes(searchTerm) ||
+            flight.arrivalAirport?.toLowerCase().includes(searchTerm) ||
+            flight.aircraft?.toLowerCase().includes(searchTerm)
+        );
     }
 }
 
