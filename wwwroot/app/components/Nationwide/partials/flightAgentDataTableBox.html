@@ -155,6 +155,18 @@
             </md-menu>
         </div>
 
+        <div class="search-container md-padding">
+            <md-input-container class="md-block" flex>
+                <label for="flightSearchText">Search flights</label>
+                <input
+                        id="flightSearchText"
+                        ng-model="ctrl.flightSearchText"
+                        ng-change="ctrl.filterFlights()"
+                        placeholder="Search by flight number, airline, airport, or aircraft...">
+                <md-icon md-font-set="material-symbols-outlined" class="search-icon">search</md-icon>
+            </md-input-container>
+        </div>
+
         <md-divider></md-divider>
 
         <md-table-container class="table-scroll" ng-if="ctrl.flightOptions && ctrl.flightOptions.length > 0">
@@ -175,7 +187,7 @@
 
                 <tbody md-body>
                 <tr md-row
-                    ng-repeat-start="flight in ctrl.flightOptions | filter: box.searchBox | orderBy: ctrl.flightTableQuery.order"
+                    ng-repeat-start="flight in ctrl.filteredFlightOptions | orderBy: ctrl.flightTableQuery.order"
                     ng-class="{'has-segments': flight.isMultiSegment}">
                     <td md-cell>
                         <span class="airline-code {{flight.airline | lowercase}}">{{flight.airline}}</span>

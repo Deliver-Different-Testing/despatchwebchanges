@@ -14,12 +14,3 @@
         job-list-type="ctrl.nationwideJobList"
         query-params="ctrl.jobFilters">
 </jobs-list>
-
-<!-- No Data Message -->
-<no-data
-        ng-if="!ctrl.jobListLoading && (!ctrl.jobList || ctrl.jobList.length === 0)"
-        title="No New Jobs Found"
-        message="There are currently no new jobs to display."
-        icon="new_releases"
-        show-action="false">
-</no-data>

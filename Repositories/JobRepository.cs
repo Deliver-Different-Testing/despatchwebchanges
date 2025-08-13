@@ -2536,10 +2536,14 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     
     private async Task CloseAllTasks(int jobId)
     {
+        var jobIds = await Context.TucJobs.Where(j => j.UcjbId == jobId)
+            .SelectMany(x => x.Parent != null 
+                ? x.Parent.InverseParent.Select(j => j.UcjbId)
+                : x.InverseParent.Select(j => j.UcjbId))
+            .ToListAsync();
+    
         await Context.TucEvents
-            .Where(t => t.UcevJobId == jobId)
+            .Where(t => jobIds.Contains(t.UcevJobId.Value) && !t.UcevClosed)
             .ExecuteUpdateAsync(t => t.SetProperty(e => e.UcevClosed, true));
-
-        await SaveChangesAsync();
     }
 }

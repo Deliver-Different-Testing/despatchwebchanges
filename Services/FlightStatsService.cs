@@ -194,7 +194,7 @@ public class FlightStatsService(
         query["appId"] = _appId;
         query["appKey"] = _appKey;
         query["payloadType"] = "cargo";
-        query["maxResults"] = "30";
+        query["maxResults"] = "80";
         query["includeCodeshares"] = "false";
         query["maxConnections"] = "1"; //default is 2
         query["numHours"] = "24"; //How many hours flights after the dateTime to search default are 6

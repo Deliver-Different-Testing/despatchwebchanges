@@ -119,9 +119,9 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
         var combinedFilters = string.Join(" OR ", viewFilters.Select(filter => $"({filter})"));
         return await Context
-            .DeswebQryDespatchJobViewFilters.FromSqlRaw((isUsTenant ?
+            .DeswebQryDespatchJobViewFilters.FromSqlRaw(isUsTenant ?
                 $"select * from DESWEB_qry_Despatch_Job_View_Filters WHERE {combinedFilters}" :
-                $"select * from DESWEB_qryDespatch WHERE {combinedFilters}")
+                $"select * from DESWEB_qryDespatch WHERE {combinedFilters}"
             )
             .Select(x => x.UcjbId)
             .ToListAsync();

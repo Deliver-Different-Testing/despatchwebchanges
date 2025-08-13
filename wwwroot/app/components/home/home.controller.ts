@@ -79,14 +79,15 @@ class HomeController extends BaseController {
 
     readonly currentWorkListName: JobListType = JobListType.CurrentWorkList;
     readonly dispatchListName: JobListType = JobListType.DispatchJobList;
-    
+
     private readonly DOM_SELECTORS = {
         areaGroup: "#area-group .btn",
         driverLocations: "#driverLocations .listActive"
     } as const;
 
     private readonly currentAppPage: AppPages = AppPages.Dispatch;
-    
+    private readonly refreshDurationIntervalKey: string = "refreshInterval-Home";
+
     isLoadingData: boolean = false;
     showDriverLocationsNoData: boolean = false;
     showDriverLocationsData: boolean = false;
@@ -168,7 +169,12 @@ class HomeController extends BaseController {
     supportsFilter: string = StatusFilter.All;
     filteredSupports: ExtendedTask[] = [];
     private supportsLoadingInBackground: boolean = false;
-    
+
+    refreshIntervalOptions?: Suggestion[];
+    selectedRefreshInterval?: Suggestion;
+    private refreshIntervalPromise?: angular.IPromise<any>;
+    private isAutoRefreshEnabled: boolean = false;
+
     constructor(
         private $document: angular.IDocumentService,
         private $mdDialog: angular.material.IDialogService,
@@ -389,7 +395,8 @@ class HomeController extends BaseController {
             id: "3", label: "Trucks",
         },];
 
-        // Load supports list
+        this.initRefreshIntervalOptions();
+        this.loadSavedRefreshInterval();
         this.initializeTaskService();
     }
 
@@ -445,9 +452,14 @@ class HomeController extends BaseController {
         this.filteredSupports = this.supports;
     }
 
+    $onDestroy() {
+        super.$onDestroy();
+        this.stopAutoRefresh();
+    }
+
     private initializeTaskService() {
         try {
-            this.tasksService.loadLists().then(({ staffList, eventTypesList }) => {
+            this.tasksService.loadLists().then(({staffList, eventTypesList}) => {
                 this.staffList = staffList;
                 this.eventTypesList = eventTypesList;
                 this.applyScope();
@@ -461,7 +473,28 @@ class HomeController extends BaseController {
             console.error('Error initializing task service:', error);
         }
     }
-    
+
+    private loadSavedRefreshInterval(): void {
+        if (Modernizr.localstorage) {
+            try {
+                const savedIntervalString = localStorage.getItem(`${this.refreshDurationIntervalKey}-${ContactID}`);
+                if (savedIntervalString) {
+                    const refreshId = parseInt(savedIntervalString, 10) ?? 0;
+                    this.selectedRefreshInterval = this.refreshIntervalOptions?.find(x => x.id == refreshId);
+
+                    if (this.selectedRefreshInterval && this.selectedRefreshInterval.id > 0) {
+                        this.startAutoRefresh();
+                    } else {
+                        // Default to disabled
+                        this.selectedRefreshInterval = this.refreshIntervalOptions?.find(x => x.id == 0);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading saved refresh interval:', error);
+            }
+        }
+    }
+
     private updateBoxMetrics() {
         if (!this.layout || !this.layout.columns) return;
 
@@ -494,7 +527,7 @@ class HomeController extends BaseController {
             if (this.layout) {
                 this.layouts[index].layout = angular.copy(this.layout);
             }
-            
+
             if (Modernizr.localstorage) {
                 localStorage.setItem(`layouts-${ContactID}`, JSON.stringify(this.layouts));
             }
@@ -940,6 +973,7 @@ class HomeController extends BaseController {
             job.assignedCourier = undefined;
         }
     }
+
     handleDispatchFieldClick(event: MouseEvent, job: IDispatchJob) {
         // Prevent the job row click event
         event.stopPropagation();
@@ -964,7 +998,7 @@ class HomeController extends BaseController {
             }
         });
     }
-    
+
     selectForDispatch(job: IDispatchJob) {
         const jobId = job.id;
 
@@ -1052,7 +1086,7 @@ class HomeController extends BaseController {
         await this.DispatchData.reSendJobs([secondJobId, firstJobId]);
         await this.DispatchData.reAssignJobs([firstJobId]);
     }
-    
+
     async otherEventForm($event: MouseEvent, job: IDispatchJob) {
         await this.addEventDialogService.openAddEventDialog($event, job);
     }
@@ -1580,7 +1614,7 @@ class HomeController extends BaseController {
             console.log(' Fetching job details for jobId:', task.jobId);
 
             const jobLists = [
-                { list: this.jobList, name: 'jobList' }
+                {list: this.jobList, name: 'jobList'}
             ];
 
             let attachedJob = this.tasksService.findTaskJobInLists(task.jobId, jobLists);
@@ -1604,7 +1638,7 @@ class HomeController extends BaseController {
             console.error(' Error loading job information', error);
         }
     }
-    
+
     async selectJob(job: IDispatchJob) {
         console.log("Selected job run...");
         console.log(job);
@@ -1615,7 +1649,7 @@ class HomeController extends BaseController {
         if (this.currentJobId && this.currentJobId !== job.id) {
             this.tasksService.cancelJobTaskLoading(this.currentAppPage, this.currentJobId);
         }
-        
+
         await this.markJobReadStatus(job.id, true);
 
         // Load tasks in the background without blocking job selection
@@ -2227,7 +2261,7 @@ class HomeController extends BaseController {
             return normalizedJobStatus === normalizedStatusType;
         }).length;
     }
-    
+
     async filterByStatus(statusGroup: string) {
         console.log('filterByStatus called with:', statusGroup);
         this.queryParams.order = statusGroup;
@@ -2414,7 +2448,7 @@ class HomeController extends BaseController {
 
         await this.DispatchData.updateJobReadStatus(jobId, isRead);
     }
-    
+
     async openHubUrl() {
         await this.navigationService.openHubUrl();
     }
@@ -2537,7 +2571,7 @@ class HomeController extends BaseController {
             this.dispatchState.selectedJobs.clear();
 
             // Update the job's assigned courier display
-            job.assignedCourier = { id: courierId, text: '' };
+            job.assignedCourier = {id: courierId, text: ''};
 
             return true;
         } catch (error: any) {
@@ -2546,9 +2580,113 @@ class HomeController extends BaseController {
             throw error;
         }
     }
-    
+
     getJobContextMenuOptions() {
         return (data: any) => this.getContextMenuOptions(data.job);
+    }
+
+    initRefreshIntervalOptions(): void {
+        const options: Suggestion[] = [
+            {id: 0, text: "Disabled"}
+        ];
+
+        const maxSeconds = 15 * 60; // 15 minutes in seconds
+
+        for (let seconds = 30; seconds <= maxSeconds; seconds += 30) {
+            options.push({
+                id: seconds,
+                text: this.formatDuration(seconds)
+            });
+        }
+
+        this.refreshIntervalOptions = options;
+    }
+
+    private formatDuration(seconds: number) {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+
+        if (minutes === 0) {
+            return `${seconds} seconds`;
+        } else if (remainingSeconds === 0) {
+            return minutes === 1 ? `${minutes} min` : `${minutes} mins`;
+        } else {
+            const minText = minutes === 1 ? 'min' : 'mins';
+            return `${minutes} ${minText} ${remainingSeconds} seconds`;
+        }
+    }
+
+    onRefreshIntervalChange(selectedInterval: Suggestion): void {
+        console.log('Refresh interval changed to:', selectedInterval, 'seconds');
+
+        this.selectedRefreshInterval = selectedInterval;
+
+        if (Modernizr.localstorage && this.selectedRefreshInterval) {
+            localStorage.setItem(`${this.refreshDurationIntervalKey}-${ContactID}`, this.selectedRefreshInterval?.id.toString());
+        }
+
+        this.stopAutoRefresh();
+
+        if (this.selectedRefreshInterval && this.selectedRefreshInterval.id > 0) {
+            this.startAutoRefresh();
+        }
+
+        this.applyScope();
+    }
+
+    private startAutoRefresh(): void {
+        if (!this.selectedRefreshInterval || this.selectedRefreshInterval.id <= 0) {
+            return;
+        }
+
+        this.stopAutoRefresh();
+
+        console.log(`Starting auto refresh every ${this.selectedRefreshInterval.id} seconds (${this.selectedRefreshInterval.text})`);
+
+        this.isAutoRefreshEnabled = true;
+
+        // Use the inherited registerInterval method from BaseController
+        this.refreshIntervalPromise = this.registerInterval(async () => {
+            if (this.isAutoRefreshEnabled) {
+                console.log('Auto refreshing job lists...');
+                try {
+                    await this.getData();
+
+                    // Also refresh tasks if a job is selected
+                    if (this.currentJobId) {
+                        await this.loadSupports();
+                    }
+
+                    console.log('Auto refresh completed successfully');
+                } catch (error) {
+                    console.error('Error during auto refresh:', error);
+                }
+            }
+        }, this.selectedRefreshInterval.id * 1000);
+
+        this.applyScope();
+    }
+
+    // Stop auto refresh
+    private stopAutoRefresh(): void {
+        if (this.refreshIntervalPromise) {
+            console.log('Stopping auto refresh');
+            this.isAutoRefreshEnabled = false;
+            this.refreshIntervalPromise = undefined;
+        }
+    }
+
+    getCurrentRefreshIntervalText(): string {
+        if (!this.selectedRefreshInterval || this.selectedRefreshInterval.id === 0) {
+            return 'Auto refresh disabled';
+        }
+        return `Auto refresh: ${this.selectedRefreshInterval.text}`;
+    }
+
+    isAutoRefreshActive(): boolean {
+        return this.isAutoRefreshEnabled &&
+            !!this.selectedRefreshInterval &&
+            this.selectedRefreshInterval.id > 0;
     }
 }
 

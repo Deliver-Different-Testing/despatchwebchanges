@@ -29,50 +29,61 @@
                         <md-icon md-font-set="material-symbols-outlined">calendar_today</md-icon>
                         <md-tooltip md-direction="bottom">Date</md-tooltip>
                     </md-button>
+                    
                     <md-menu-content style="width: 300px; overflow: hidden;">
-                        <div class="md-padding" md-prevent-menu-close>
-                            <label id="dateRange" class="label-padding">Date Filter:
-                                ({{::ctrl.browserTimeZone | timezoneShort}})</label>
-                            <md-radio-group
-                                    class="md-primary"
-                                    ng-change="ctrl.onSearchRangeChange(ctrl.dateSearchRange)"
-                                    ng-model="ctrl.dateSearchRange"
-                                    aria-labelledby="dateRange"
-                                    layout="row"
-                                    layout-align="center center">
-                                <md-radio-button value="1">24 Hours</md-radio-button>
-                                <md-radio-button value="2">Custom</md-radio-button>
-                            </md-radio-group>
-
-                            <md-divider style="margin: 10px;"></md-divider>
-
-                            <div layout="column" layout-align="center end" ng-if="ctrl.dateSearchRange == 2">
-                                <div>
-                                    <label id="from-datepicker-header">From: </label>
-                                    <md-datepicker md-date-locale="{ firstDayOfWeek: 1 }"
-                                                   input-aria-describedby="from-datepicker-description"
-                                                   input-aria-labelledby="from-datepicker-header "
-                                                   md-placeholder="Enter date"
-                                                   ng-model-options="{ debounce: 500 }"
-                                                   ng-change="ctrl.getData()"
-                                                   ng-model="ctrl.startDate"></md-datepicker>
-                                    <p id="from-datepicker-description" style="display: none">
-                                        Start date search
-                                    </p>
+                        <div md-prevent-menu-close>
+                            <md-toolbar class="md-hue-1" style="margin-top: -10px;">
+                                <div class="md-toolbar-tools">
+                                    <md-icon class="popup-icon" md-font-set="material-symbols-outlined">date_range
+                                    </md-icon>
+                                    <h2>Date Filter: ({{::ctrl.browserTimeZone | timezoneShort}})</h2>
+                                    <span flex></span>
                                 </div>
+                            </md-toolbar>
 
-                                <div>
-                                    <label id="to-datepicker-header">To: </label>
-                                    <md-datepicker md-date-locale="{ firstDayOfWeek: 1 }"
-                                                   input-aria-describedby="to-datepicker-description"
-                                                   input-aria-labelledby="to-datepicker-header "
-                                                   md-placeholder="Enter date"
-                                                   ng-model-options="{ debounce: 500 }"
-                                                   ng-change="ctrl.getData()"
-                                                   ng-model="ctrl.endDate"></md-datepicker>
-                                    <p id="to-datepicker-description" style="display: none">
-                                        End date search
-                                    </p>
+                            <div class="md-padding">
+
+                                <md-radio-group
+                                        class="md-primary"
+                                        ng-change="ctrl.onSearchRangeChange(ctrl.dateSearchRange)"
+                                        ng-model="ctrl.dateSearchRange"
+                                        aria-labelledby="dateRange"
+                                        layout="row"
+                                        layout-align="center center">
+                                    <md-radio-button value="1">24 Hours</md-radio-button>
+                                    <md-radio-button value="2">Custom</md-radio-button>
+                                </md-radio-group>
+
+                                <md-divider style="margin: 10px;"></md-divider>
+
+                                <div layout="column" layout-align="center end" ng-if="ctrl.dateSearchRange == 2">
+                                    <div>
+                                        <label id="from-datepicker-header">From: </label>
+                                        <md-datepicker md-date-locale="{ firstDayOfWeek: 1 }"
+                                                       input-aria-describedby="from-datepicker-description"
+                                                       input-aria-labelledby="from-datepicker-header "
+                                                       md-placeholder="Enter date"
+                                                       ng-model-options="{ debounce: 500 }"
+                                                       ng-change="ctrl.getData()"
+                                                       ng-model="ctrl.startDate"></md-datepicker>
+                                        <p id="from-datepicker-description" style="display: none">
+                                            Start date search
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <label id="to-datepicker-header">To: </label>
+                                        <md-datepicker md-date-locale="{ firstDayOfWeek: 1 }"
+                                                       input-aria-describedby="to-datepicker-description"
+                                                       input-aria-labelledby="to-datepicker-header "
+                                                       md-placeholder="Enter date"
+                                                       ng-model-options="{ debounce: 500 }"
+                                                       ng-change="ctrl.getData()"
+                                                       ng-model="ctrl.endDate"></md-datepicker>
+                                        <p id="to-datepicker-description" style="display: none">
+                                            End date search
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -129,6 +140,80 @@
                                       ng-style="lo.name == ctrl.currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
                             </md-button>
                         </md-menu-item>
+                    </md-menu-content>
+                </md-menu>
+
+                <md-menu>
+                    <md-button
+                            aria-label="Open settings menu"
+                            class="md-icon-button settings-trigger"
+                            ng-click="$mdMenu.open($event)">
+                        <md-icon md-font-set="material-symbols-outlined">settings</md-icon>
+                        <md-tooltip md-direction="bottom">Settings</md-tooltip>
+                    </md-button>
+
+                    <md-menu-content class="settings-menu-content">
+                        <div class="settings-container" md-prevent-menu-close>
+                            <!-- Header -->
+                            <md-toolbar class="md-hue-1" style="margin-top: -10px;">
+                                <div class="md-toolbar-tools">
+                                    <md-icon class="popup-icon" md-font-set="material-symbols-outlined">tune</md-icon>
+                                    <h2>Settings</h2>
+                                    <span flex></span>
+                                </div>
+                            </md-toolbar>
+
+                            <!-- Settings Section -->
+                            <div class="settings-section">
+                                <label class="settings-label" id="refreshInterval">
+                                    <md-icon md-font-set="material-symbols-outlined" class="popup-icon">
+                                        timer
+                                        <md-tooltip md-direction="bottom">Set how often the dashboard lists
+                                            automatically refresh with new data
+                                        </md-tooltip>
+                                    </md-icon>
+                                    Refresh Interval
+                                </label>
+
+                                <md-select
+                                        ng-model="ctrl.selectedRefreshInterval"
+                                        ng-change="ctrl.onRefreshIntervalChange(ctrl.selectedRefreshInterval)"
+                                        aria-labelledby="refreshInterval"
+                                        placeholder="Select interval"
+                                        class="settings-select"
+                                        md-container-class="settings-select-container">
+                                    <md-option
+                                            ng-repeat="option in ctrl.refreshIntervalOptions track by option.id"
+                                            ng-value="option">
+                                        {{option.text}}
+                                    </md-option>
+                                </md-select>
+
+                                <!-- Status Indicator -->
+                                <div class="status-indicator" ng-if="ctrl.selectedRefreshInterval">
+                                    <div class="status-content">
+                                        <div class="status-icon-wrapper">
+                                            <md-icon
+                                                    md-font-set="material-symbols-outlined"
+                                                    ng-if="ctrl.isAutoRefreshActive()"
+                                                    class="status-icon status-active">
+                                                refresh
+                                            </md-icon>
+                                            <md-icon
+                                                    md-font-set="material-symbols-outlined"
+                                                    ng-if="!ctrl.isAutoRefreshActive()"
+                                                    class="status-icon status-inactive">
+                                                pause
+                                            </md-icon>
+                                        </div>
+                                        <div class="status-text">
+                                            <span class="status-label">Current Status:</span>
+                                            <span class="status-value">{{ctrl.getCurrentRefreshIntervalText()}}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </md-menu-content>
                 </md-menu>
 
