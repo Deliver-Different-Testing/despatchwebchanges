@@ -24,6 +24,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     : BaseJobRepository(contextFactory, infoService), IJobRepository
 {
     private readonly ITenantInfoService _infoService = infoService;
+    private const string Space = " ";
 
     public async Task<List<Suggestion>> RelatedJobs(int parentId, int clientId)
     {
@@ -74,7 +75,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 BookedDate = j.BookDate,
                 Date = j.BookDate.ToString("dd/MM/yyyy"),
                 Booked = DateTime.Parse(
-                    j.BookDate.ToString("yyyy-MM-dd") + " " + j.BookDate.ToString("HH:mm:ss")
+                    j.BookDate.ToString("yyyy-MM-dd") + Space + j.BookDate.ToString("HH:mm:ss")
                 ),
                 Void = j.Void,
                 JobNo = j.JobNumber,
@@ -110,7 +111,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 DeliveryLongitude = decimal.Parse(j.DeliveryLongitude),
                 CourierData = new CourierData
                 {
-                    Courier = co.Code + " " + co.FirstName + " " + co.Surname,
+                    Courier = co.Code + Space + co.FirstName + Space + co.Surname,
                     CourierId = co.CourierId
                 },
 
@@ -165,23 +166,23 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     wild == string.Empty
                     || EF.Functions.Like(
                         x.FromAddress
-                        + " "
+                        + Space
                         + x.Contact
-                        + " "
+                        + Space
                         + x.FromSuburb
-                        + " "
+                        + Space
                         + x.ToAddress
-                        + " "
+                        + Space
                         + x.DeliverToContact
-                        + " "
+                        + Space
                         + x.ToSuburb
-                        + " "
+                        + Space
                         + (x.ClientRefa ?? string.Empty)
-                        + " "
+                        + Space
                         + (x.ClientRefb ?? string.Empty)
-                        + " "
+                        + Space
                         + (x.OurRef ?? string.Empty)
-                        + " "
+                        + Space
                         + x.JobNumber.ToLower(),
                         wildParam
                     )
@@ -264,7 +265,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 Booked = v.BookedDate.HasValue && v.Time.HasValue
                     ? DateTime.Parse(
                         v.BookedDate.Value.ToString("yyyy-MM-dd")
-                        + " "
+                        + Space
                         + v.Time.Value.ToString("HH:mm:ss")
                     )
                     : DateTime.MinValue
@@ -274,7 +275,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         Console.WriteLine(stopwatch.ElapsedMilliseconds);
         return Tuple.Create(total, jobList);
     }
-
+    
     public async Task<Tuple<int, List<JobViewModel>>> PodSearch(PodSearchRequest data)
     {
         var clientSet = data.ClientId.HasValue;
@@ -304,26 +305,38 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 && (data.Job == string.Empty || EF.Functions.Like(j.Number.ToLower(), jobParam))
                 && (
                     data.Wild == string.Empty
-                    || EF.Functions.Like(nationwide.UcnwFlightNo, wildParam)
+                    || Context.TucJobNationwides
+                        .Where(nw => nw.UcnwJobId == j.JobId)
+                        .Any(nw => EF.Functions.Like(
+                            nw.UcnwFlightNo
+                            + Space 
+                            + nw.AircraftName 
+                            + Space 
+                            + nw.CarrierFsCode
+                            + Space 
+                            + nw.DepartureAirportName
+                            + Space 
+                            + nw.ArrivalAirportName, 
+                            wildParam))
                     || EF.Functions.Like(
                         j.FromAddress
-                        + " "
+                        + Space
                         + j.PickupFromContact
-                        + " "
+                        + Space
                         + fs.UcsuName
-                        + " "
+                        + Space
                         + j.ToAddress
-                        + " "
+                        + Space
                         + j.DeliverToContact
-                        + " "
+                        + Space
                         + ts.UcsuName
-                        + " "
+                        + Space
                         + (j.ClientReferenceA ?? string.Empty)
-                        + " "
+                        + Space
                         + (j.ClientReferenceB ?? string.Empty)
-                        + " "
+                        + Space
                         + (j.OurRef ?? string.Empty)
-                        + " "
+                        + Space
                         + j.Number.ToLower(),
                         wildParam
                     )
@@ -379,7 +392,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 DeliveryLongitude = j.DeliveryLongitude,
                 BookedDate = j.Date,
                 Booked = DateTime.Parse(
-                    j.Date.Value.ToString("yyyy-MM-dd") + " " + j.Time.Value.ToString("HH:mm:ss")
+                    j.Date.Value.ToString("yyyy-MM-dd") + Space + j.Time.Value.ToString("HH:mm:ss")
                 ),
                 IsArchived = j.Archived ?? false,
                 Locked = j.Locked.HasValue ? j.Locked != 0 : null
@@ -727,23 +740,23 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     || EF.Functions.Like(nationwide.UcnwConNote, wildParam)
                     || EF.Functions.Like(
                         x.FromAddress
-                        + " "
+                        + Space
                         + x.PickupFromContact
-                        + " "
+                        + Space
                         + yo.UcsuName
-                        + " "
+                        + Space
                         + x.ToAddress
-                        + " "
+                        + Space
                         + x.DeliverToContact
-                        + " "
+                        + Space
                         + zo.UcsuName
-                        + " "
+                        + Space
                         + (x.ClientReferenceA ?? string.Empty)
-                        + " "
+                        + Space
                         + (x.ClientReferenceB ?? string.Empty)
-                        + " "
+                        + Space
                         + (x.OurRef ?? string.Empty)
-                        + " "
+                        + Space
                         + x.Number.ToLower(),
                         wildParam
                     )
@@ -828,7 +841,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 InvoiceNumber = j.InvoiceNo,
                 InvoiceDate = invoice.Created,
                 IsArchived = j.Archived ?? false,
-                LoggedInContact = lic.UcctFirstname + " " + lic.UcctSurname,
+                LoggedInContact = lic.UcctFirstname + Space + lic.UcctSurname,
                 RawBaseAmount = j.RawBaseAmount
             };
 
@@ -1297,7 +1310,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 (s, cc) => new { s, cc }
             )
             .Where(x => x.cc.ClientId == clientId && x.s.Active)
-            .Select(x => new Suggestion { Id = x.s.ContactId, Text = x.s.UcctFirstname + " " + x.s.UcctSurname })
+            .Select(x => new Suggestion { Id = x.s.ContactId, Text = x.s.UcctFirstname + Space + x.s.UcctSurname })
             .Distinct()
             .AsNoTracking()
             .ToListAsync();

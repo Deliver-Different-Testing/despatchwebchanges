@@ -17,6 +17,7 @@ import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog
 import JobSearchBoxes from "./enums/jobSearchBoxes";
 import {IDeliveryHistoryConfig} from "../common/task-history/task-history.interfaces";
 import DensityMode from "../../enums/densityMode";
+import ISearchCriteria from "./interfaces/ISearchCriteria";
 
 class JobSearchController extends BaseController {
     static $inject = [
@@ -57,7 +58,7 @@ class JobSearchController extends BaseController {
     scanList: BulkScanDetail[];
     jobRecordSearchText: string;
     sort: any;
-    pickDateService: any;
+    searchCriteria: ISearchCriteria;
     clientSelectedItem: any;
     courierSelectedItem: any;
     clientSearchText: any;
@@ -165,17 +166,15 @@ class JobSearchController extends BaseController {
         let sevenDaysAfter = new Date();
         sevenDaysAfter.setDate(now.getDate() + 7);
 
-        this.pickDateService = {
-            "client": '',
-            "courier": "",
-            "date": now,
-            "from_date": sevenDaysBefore,
-            "to_date": sevenDaysAfter,
-            "followupClient": "All",
-            "includeClosed": true
+        this.searchCriteria = {
+            date: now,
+            from_date: sevenDaysBefore,
+            to_date: sevenDaysAfter,
+            followupClient: "All",
+            includeClosed: true
         };
-        this.clientSelectedItem = this.pickDateService.client;
-        this.courierSelectedItem = this.pickDateService.client;
+        this.clientSelectedItem = this.searchCriteria.client;
+        this.courierSelectedItem = this.searchCriteria.client;
         this.clientSearchText = '';
         this.courierSearchText = '';
 
@@ -335,13 +334,13 @@ class JobSearchController extends BaseController {
                 this._saveCurrentLayout()
             }
         };
-        
+
 
         this.deliveryHistoryConfig = {
             showSummaryStats: true,
             densityMode: DensityMode.Dense
         }
-        
+
         // Default to a fortnight
         this.onSearchRangeChange(this.dateSearchRange);
     }
@@ -404,12 +403,18 @@ class JobSearchController extends BaseController {
                     {
                         id: "col2",
                         width: "25%",
-                        boxes: [{name: JobSearchBoxes.JobList, height: "50%"}, {name: JobSearchBoxes.BulkJobList, height: "50%"}],
+                        boxes: [{name: JobSearchBoxes.JobList, height: "50%"}, {
+                            name: JobSearchBoxes.BulkJobList,
+                            height: "50%"
+                        }],
                     },
                     {
                         id: "col3",
                         width: "35%",
-                        boxes: [{name: JobSearchBoxes.JobDetail, height: "40%"}, {name: JobSearchBoxes.ScanList, height: "30%"}, {
+                        boxes: [{name: JobSearchBoxes.JobDetail, height: "40%"}, {
+                            name: JobSearchBoxes.ScanList,
+                            height: "30%"
+                        }, {
                             name: JobSearchBoxes.Map,
                             height: "30%"
                         }],
@@ -561,7 +566,7 @@ class JobSearchController extends BaseController {
             }
         }
     }
-    
+
     greetUser() {
         return greetUser(FirstName);
     }
@@ -750,7 +755,8 @@ class JobSearchController extends BaseController {
 
         try {
             const sr = this.pickRegions.find(obj => obj.id === region.id);
-            this.pickDateService.regions = [sr];
+            if (!sr) return;
+            this.searchCriteria.regions = [sr];
 
             await Promise.all([this.refreshData(), this.refreshBulkData()]);
         } catch (error) {
@@ -940,16 +946,16 @@ class JobSearchController extends BaseController {
     async refreshData() {
         try {
             this.isJobListLoading = true;
-            
+
             this.jobListLoading = this.uCSData.getPodJobs(
-                this.pickDateService.courier,
-                this.pickDateService.client,
-                (this.pickDateService.wild || ""),
-                (this.pickDateService.job || ""),
-                this.pickDateService.from_date,
-                this.pickDateService.to_date,
+                this.searchCriteria.from_date,
+                this.searchCriteria.to_date,
                 this.jobQuery.page,
-                this.jobQuery.limit
+                this.jobQuery.limit,
+                this.searchCriteria.courier,
+                this.searchCriteria.client,
+                this.searchCriteria.wild,
+                this.searchCriteria.job,
             );
 
             const data = await this.jobListLoading;
@@ -965,9 +971,17 @@ class JobSearchController extends BaseController {
     async refreshBulkData() {
         try {
             this.isBulkJobListLoading = true;
-            
-            this.bulkJobPromise = this.uCSData.searchBulkJobs(this.pickDateService.courier, this.pickDateService.client, (this.pickDateService.job || ""), (this.pickDateService.wild || ""),
-                this.pickDateService.from_date, this.pickDateService.to_date, this.bulkJobQuery.page, this.bulkJobQuery.limit);
+
+            this.bulkJobPromise = this.uCSData.searchBulkJobs(
+                this.searchCriteria.from_date,
+                this.searchCriteria.to_date,
+                this.bulkJobQuery.page,
+                this.bulkJobQuery.limit,
+                this.searchCriteria.courier,
+                this.searchCriteria.client,
+                (this.searchCriteria.job || ""),
+                (this.searchCriteria.wild || ""),
+            );
 
             const data = await this.bulkJobPromise;
             this.bulkJobList = data.item2;
@@ -982,12 +996,12 @@ class JobSearchController extends BaseController {
     async downloadJobList() {
         try {
             const response: any = await this.uCSData.podJobsDownload(
-                this.pickDateService.courier,
-                this.pickDateService.client,
-                (this.pickDateService.wild || ""),
-                (this.pickDateService.job || ""),
-                this.pickDateService.from_date,
-                this.pickDateService.to_date
+                this.searchCriteria.from_date,
+                this.searchCriteria.to_date,
+                this.searchCriteria.courier,
+                this.searchCriteria.client,
+                this.searchCriteria.wild,
+                this.searchCriteria.job
             );
 
             if (response.status === 200) {
@@ -1158,11 +1172,11 @@ class JobSearchController extends BaseController {
 
     async selectedClientChange(item: Suggestion) {
         if (!item) {
-            this.pickDateService.client = null;
+            this.searchCriteria.client = undefined;
             return;
         }
 
-        this.pickDateService.client = item.id;
+        this.searchCriteria.client = item.id;
         await this.refreshAllData();
     }
 
@@ -1172,11 +1186,11 @@ class JobSearchController extends BaseController {
 
     async selectedCourierChange(item: Suggestion) {
         if (!item) {
-            this.pickDateService.courier = null;
+            this.searchCriteria.courier = undefined;
             return;
         }
 
-        this.pickDateService.courier = item.id;
+        this.searchCriteria.courier = item.id;
         await this.refreshAllData();
     }
 
@@ -1208,16 +1222,16 @@ class JobSearchController extends BaseController {
 
             switch (dateRangeOption) {
                 case 1:
-                    this.pickDateService.from_date = oneWeekAgo;
-                    this.pickDateService.to_date = oneWeekAhead;
+                    this.searchCriteria.from_date = oneWeekAgo;
+                    this.searchCriteria.to_date = oneWeekAhead;
                     break;
                 case 2:
-                    this.pickDateService.from_date = now;
-                    this.pickDateService.to_date = now;
+                    this.searchCriteria.from_date = now;
+                    this.searchCriteria.to_date = now;
                     break;
                 case 3:
-                    this.pickDateService.from_date = firstDayOfMonth;
-                    this.pickDateService.to_date = lastDayOfMonth;
+                    this.searchCriteria.from_date = firstDayOfMonth;
+                    this.searchCriteria.to_date = lastDayOfMonth;
                     break;
                 case 4:
                     // This option is empty as ng-if is used on the page to show custom date range options
@@ -1241,7 +1255,7 @@ class JobSearchController extends BaseController {
     async openHubUrl() {
         await this.navigationService.openHubUrl();
     }
-    
+
     async openMessagingDialog($event: MouseEvent) {
         await this.messagingDialogService.openMessagingDialog($event);
     }

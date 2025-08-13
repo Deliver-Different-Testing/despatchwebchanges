@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Security.AccessControl;
 using System.Threading.Tasks;
 using Amazon;
 using Amazon.Runtime;
@@ -40,24 +41,23 @@ if (builder.Environment.IsDevelopment())
 {
     var keyDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "DeliverDifferent", "DataProtection-Keys");
-
-
-    // Ensure directory exists with proper permissions
+    
+    // Ensure the directory exists with proper permissions
     if (!Directory.Exists(keyDirectory))
     {
         var dirInfo = Directory.CreateDirectory(keyDirectory);
 
         if (OperatingSystem.IsWindows())
         {
-            // Get current user's identity
+            // Get the current user's identity
             var currentUser = System.Security.Principal.WindowsIdentity.GetCurrent();
-            var fileSystemRights = System.Security.AccessControl.FileSystemRights.FullControl;
-            var inheritanceFlags = System.Security.AccessControl.InheritanceFlags.ContainerInherit |
-                                   System.Security.AccessControl.InheritanceFlags.ObjectInherit;
-            var propagationFlags = System.Security.AccessControl.PropagationFlags.None;
-            var accessControlType = System.Security.AccessControl.AccessControlType.Allow;
+            const FileSystemRights fileSystemRights = FileSystemRights.FullControl;
+            const InheritanceFlags inheritanceFlags = InheritanceFlags.ContainerInherit |
+                                                      InheritanceFlags.ObjectInherit;
+            const PropagationFlags propagationFlags = PropagationFlags.None;
+            const AccessControlType accessControlType = AccessControlType.Allow;
 
-            var accessRule = new System.Security.AccessControl.FileSystemAccessRule(
+            var accessRule = new FileSystemAccessRule(
                 currentUser.Name,
                 fileSystemRights,
                 inheritanceFlags,
@@ -75,7 +75,7 @@ if (builder.Environment.IsDevelopment())
         .SetApplicationName("DeliverDifferent")
         .ProtectKeysWithDpapi();
 
-    Log.Information($"DataProtection configured to use directory: {keyDirectory}");
+    Log.Information("DataProtection configured to use directory: {KeyDirectory}", keyDirectory);
 
 }
 else
@@ -85,7 +85,7 @@ else
 
 
 builder.Services.AddSingleton<IConnectionStringManager, ConnectionStringManager>();
-builder.Services.AddSingleton<IAmazonS3>(serviceProvider =>
+builder.Services.AddSingleton<IAmazonS3>(_ =>
 {
     var awsOptions = builder.Configuration.GetAWSOptions();
 
@@ -148,7 +148,7 @@ builder.Services.AddScoped<IAddStopJobService, AddStopJobService>();
 builder.Services.AddScoped<IMessageHelperService, MessageHelperService>();
 builder.Services.AddScoped<IAddAgentRecoveryJobService, AddAgentRecoveryJobService>();
 builder.Services.AddScoped<IAddressLookupService, AddressLookupService>();
-
+builder.Services.AddScoped<IPodExportService, PodExportService>();
 
 // Register DespatchContext with a fake connection string
 builder.Services.AddDbContextFactory<DespatchContext>(options =>
@@ -266,12 +266,11 @@ return;
 static AWSCredentials LoadSsoCredentials(string profile)
 {
     var chain = new CredentialProfileStoreChain();
-    if (!chain.TryGetAWSCredentials(profile, out var credentials))
-    {
-        // If the SSO credentials are not found, use FallbackCredentialsFactory to get credentials
-        credentials = FallbackCredentialsFactory.GetCredentials();
-        if (credentials == null)
-            throw new Exception($"Failed to find the {profile} profile or any fallback credentials");
-    }
+    if (chain.TryGetAWSCredentials(profile, out var credentials)) return credentials;
+    
+    // If the SSO credentials are not found, use FallbackCredentialsFactory to get credentials
+    credentials = FallbackCredentialsFactory.GetCredentials();
+    if (credentials == null)
+        throw new Exception($"Failed to find the {profile} profile or any fallback credentials");
     return credentials;
 }

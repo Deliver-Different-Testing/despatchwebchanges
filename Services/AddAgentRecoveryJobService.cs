@@ -157,13 +157,13 @@ public class AddAgentRecoveryJobService(
 
     private async Task<string> GenerateNewStopJobNumberAsync(string baseJobNumber)
     {
-        var letter = 'a';
+        var number = 1;
 
-        while (letter <= 'z')
+        while (number <= 999) // Reasonable upper limit, adjust as needed
         {
-            var newJobNumber = $"{baseJobNumber}R{letter}";
+            var newJobNumber = $"{baseJobNumber}R{number}";
             if (!await repository.JobNumberExistsAsync(newJobNumber)) return newJobNumber;
-            letter++;
+            number++;
         }
 
         throw new InvalidOperationException("Unable to generate unique job number - all suffixes exhausted");

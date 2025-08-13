@@ -25,7 +25,7 @@
                         input-aria-describedby="from-datepicker-description"
                         input-aria-labelledby="from-datepicker-header "
                         md-placeholder="Enter date"
-                        ng-model="ctrl.pickDateService.from_date"></md-datepicker>
+                        ng-model="ctrl.searchCriteria.from_date"></md-datepicker>
                 <p id="from-datepicker-description" style="display: none">
                     Start date search
                 </p>
@@ -38,7 +38,7 @@
                         input-aria-describedby="to-datepicker-description"
                         input-aria-labelledby="to-datepicker-header "
                         md-placeholder="Enter date"
-                        ng-model="ctrl.pickDateService.to_date"></md-datepicker>
+                        ng-model="ctrl.searchCriteria.to_date"></md-datepicker>
                 <p id="to-datepicker-description" style="display: none">
                     End date search
                 </p>
@@ -93,7 +93,7 @@
                    id="Job"
                    name="Job"
                    ng-keyup="$event.keyCode === 13 && ctrl.refreshAllData(true)"
-                   ng-model="ctrl.pickDateService.job"
+                   ng-model="ctrl.searchCriteria.job"
                    type="text"/>
         </div>
 
@@ -103,7 +103,7 @@
                    id="Wild"
                    name="Wild"
                    ng-keyup="$event.keyCode === 13 && ctrl.refreshAllData(true)"
-                   ng-model="ctrl.pickDateService.wild"
+                   ng-model="ctrl.searchCriteria.wild"
                    type="text"/>
         </div>
 
