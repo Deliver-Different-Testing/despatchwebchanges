@@ -447,7 +447,6 @@
     <TypeScriptCompile Include="wwwroot\app\services\notes.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\resolution-warning.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\tasks.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\services\url-service.ts" />
     <TypeScriptCompile Include="wwwroot\types\html.d.ts" />
   </ItemGroup>
   <ItemGroup>

@@ -1824,7 +1824,7 @@ class HomeController extends BaseController {
                 job.courierSearchLoading = false;
             }
 
-            // Initialize assignedCourier if job has existing courier data
+            // Initialize an assignedCourier if a job has existing courier data
             if (!job.assignedCourier && job.courier) {
                 job.assignedCourier = {
                     id: job.courierData?.courierId || 0,
@@ -1872,7 +1872,7 @@ class HomeController extends BaseController {
 
             // Apply date filters based on dateSearchRange
             if (this.dateSearchRange == 1) {
-                // 24 Hours mode - use startDate and endDate for 24-hour range
+                // 24-hour mode - use startDate and endDate for 24-hour range
                 params.startDate = dayjs(new Date(0)).toDate(); // Unix epoch start date
                 params.endDate = dayjs().add(24, 'hours').toDate(); // 24 hours from now
             } else if (this.dateSearchRange == 2) {
