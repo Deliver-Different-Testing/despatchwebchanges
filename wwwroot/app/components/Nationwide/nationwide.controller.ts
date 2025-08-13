@@ -17,7 +17,6 @@ import AddEventDialogService from "../dialogs/add-event-dialog/add-event-dialog.
 import AdditionalServicesDialogService from "../dialogs/additional-services-dialog/additional-services-dialog.service";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {ExtendedTask, TaskTableFiltersRequest, TaskViewModel} from "../task-dashboard/task-dashboard.interfaces";
-import {JobStatus} from "../../enums/job-status.enum";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
 import {JobProperty} from "../../enums/job-property.enum";
 import FlightDetailsDialogService from "../dialogs/flight-details-dialog/flight-details-dialog.service";
@@ -35,7 +34,6 @@ import FlightAgentConfirmationDialogService
     from "../dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.service";
 import AgentInfoDialogService from "../dialogs/agent-info-dialog/agent-info-dialog.service";
 import dayjs from "dayjs";
-import getJobTableRowClass from "../../functions/getJobTableRowClass";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import MessagingService from "../../services/messaging.service";
 import {ContactID} from "../../contants";
@@ -177,6 +175,11 @@ class NationwideControl extends BaseController {
     endDate: Date = dayjs().add(24, 'hours').toDate();
 
     unReadMessageCount: number = 0;
+
+    refreshIntervalOptions?: Suggestion[];
+    selectedRefreshInterval?: Suggestion;
+    private refreshIntervalPromise?: angular.IPromise<any>; 
+    private isAutoRefreshEnabled: boolean = false;
 
     // supportFilters
     staffList?: Suggestion[];
@@ -486,7 +489,9 @@ class NationwideControl extends BaseController {
                 this.saveCurrentLayout();
             }
         };
-
+        
+        this.initRefreshIntervalOptions();
+        this.loadSavedRefreshInterval();
         this.initializeTaskService();
     }
 
@@ -514,7 +519,31 @@ class NationwideControl extends BaseController {
             await this.getUnreadMessageCount();
         }, 10000);
     }
+    
+    $onDestroy() {
+        super.$onDestroy();
+        this.stopAutoRefresh();
+    }
 
+    private loadSavedRefreshInterval(): void {
+        if (Modernizr.localstorage) {
+            try {
+                const savedIntervalString = localStorage.getItem(`refreshInterval-NW-${ContactID}`);
+                if (savedIntervalString) {
+                    const refreshId = parseInt(savedIntervalString, 10) ?? 0;
+                    this.selectedRefreshInterval = this.refreshIntervalOptions?.find(x => x.id == refreshId);
+                    if(!this.selectedRefreshInterval) return;
+                    
+                    if (this.selectedRefreshInterval && this.selectedRefreshInterval.id > 0) {
+                        this.startAutoRefresh();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading saved refresh interval:', error);
+            }
+        }
+    }
+    
     private initializeTaskService() {
         try {
             this.tasksService.loadLists().then(({staffList, eventTypesList}) => {
@@ -948,7 +977,7 @@ class NationwideControl extends BaseController {
 
             console.log(`Selecting job ${job.jobNo}`);
 
-            // Cancel any existing task loading for previous job
+            // Cancel any existing task loading for a previous job
             if (this.currentJobId && this.currentJobId !== job.id) {
                 this.tasksService.cancelJobTaskLoading(this.nationwidePageId, this.currentJobId);
             }
@@ -2056,6 +2085,114 @@ class NationwideControl extends BaseController {
     
     async openRecoveryAgentDialog($event: MouseEvent, job: IDispatchJob) {
         await this.recoveryAgentManagementService.openRecoveryAgentManagementDialog($event, job.id);
+    }
+
+    initRefreshIntervalOptions(): void {
+        const options: Suggestion[] = [
+            { id: 0, text: "Disabled" } // Add a disabled option
+        ];
+
+        const maxSeconds = 15 * 60; // 15 minutes in seconds
+
+        for (let seconds = 30; seconds <= maxSeconds; seconds += 30) {
+            options.push({
+                id: seconds,
+                text: this.formatDuration(seconds)
+            });
+        }
+
+        this.refreshIntervalOptions = options;
+    }
+    
+    private formatDuration(seconds: number) {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+
+        if (minutes === 0) {
+            return `${seconds} seconds`;
+        } else if (remainingSeconds === 0) {
+            return minutes === 1 ? `${minutes} min` : `${minutes} mins`;
+        } else {
+            const minText = minutes === 1 ? 'min' : 'mins';
+            return `${minutes} ${minText} ${remainingSeconds} seconds`;
+        }
+    }
+
+    onRefreshIntervalChange(selectedInterval: Suggestion): void {
+        console.log('Refresh interval changed to:', selectedInterval, 'seconds');
+
+        // Find the suggestion object that matches the selected interval
+        this.selectedRefreshInterval = selectedInterval;
+
+        if (Modernizr.localstorage && this.selectedRefreshInterval) {
+            localStorage.setItem(`refreshInterval-NW-${ContactID}`, this.selectedRefreshInterval?.id.toString());
+        }
+
+        // Stop existing auto refresh
+        this.stopAutoRefresh();
+
+        // Start a new auto refresh if an interval is selected and not disabled
+        if (this.selectedRefreshInterval && this.selectedRefreshInterval.id > 0) {
+            this.startAutoRefresh();
+        }
+
+        this.applyScope();
+    }
+
+    private startAutoRefresh(): void {
+        if (!this.selectedRefreshInterval || this.selectedRefreshInterval.id <= 0) {
+            return;
+        }
+
+        this.stopAutoRefresh(); // Ensure no duplicate intervals
+
+        console.log(`Starting auto refresh every ${this.selectedRefreshInterval.id} seconds (${this.selectedRefreshInterval.text})`);
+
+        this.isAutoRefreshEnabled = true;
+
+        // Use the inherited registerInterval method from BaseController
+        this.refreshIntervalPromise = this.registerInterval(async () => {
+            if (this.isAutoRefreshEnabled) {
+                console.log('Auto refreshing job lists...');
+                try {
+                    await this.refreshJobLists(this.currentJobId);
+
+                    // Also refresh tasks if a job is selected
+                    if (this.currentJobId) {
+                        await this.loadTasks();
+                    }
+
+                    console.log('Auto refresh completed successfully');
+                } catch (error) {
+                    console.error('Error during auto refresh:', error);
+                    // Don't show toast for auto-refresh errors to avoid spam
+                }
+            }
+        }, this.selectedRefreshInterval.id * 1000); // Convert seconds to milliseconds
+
+        this.applyScope();
+    }
+
+    // Stop auto refresh
+    private stopAutoRefresh(): void {
+        if (this.refreshIntervalPromise) {
+            console.log('Stopping auto refresh');
+            this.isAutoRefreshEnabled = false;
+            this.refreshIntervalPromise = undefined;
+        }
+    }
+
+    getCurrentRefreshIntervalText(): string {
+        if (!this.selectedRefreshInterval || this.selectedRefreshInterval.id === 0) {
+            return 'Auto refresh disabled';
+        }
+        return `Auto refresh: ${this.selectedRefreshInterval.text}`;
+    }
+
+    isAutoRefreshActive(): boolean {
+        return this.isAutoRefreshEnabled &&
+            !!this.selectedRefreshInterval &&
+            this.selectedRefreshInterval.id > 0;
     }
 }
 

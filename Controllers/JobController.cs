@@ -35,7 +35,8 @@ public class JobController(
     IRateJobService rateJobService,
     IRecurringJobRepository recurringJobRepository,
     ITenantInfoService infoService,
-    IAddStopJobService addStopJobService
+    IAddStopJobService addStopJobService,
+    IPodExportService podExportService
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -634,82 +635,17 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> PodSearchDownload(
-        int? courierId,
-        int? clientId,
-        string wild,
-        string job,
-        DateTime fromDate,
-        DateTime toDate
-    )
+    public async Task<IActionResult> PodSearchDownload(PodSearchDownloadRequest requestData)
     {
-        var currentDate = infoService.GetCurrentTenantTime();
-
-        var data = await jobRepository.PodSearchDownloadAsync(
-            courierId,
-            wild ?? string.Empty,
-            job ?? string.Empty,
-            fromDate.ResetTimeToStartOfDay(),
-            toDate.ResetTimeToEndOfDay(),
-            clientId
-        );
-
-        using var stream = new MemoryStream();
-        await using (var writer = new StreamWriter(stream, Encoding.UTF8))
-        {
-            await writer.WriteLineAsync(
-                "Id,JobNumber,CustomerName,BookDate,PickedUpDate,DeliveredDate,Amount,Fuel,Ppd,Agent/Airline Name,AWB#,CourierPayment,CourierFuel,CourierBonus,Quantity,Weight,Size,StatusName,PickupAddressLine1,PickupAddressLine2,PickupAddressLine3,PickupAddressLine4,PickupAddressLine5,PickupAddressLine6,PickupAddressLine7,PickupAddressLine8,DeliveryAddressLine1,DeliveryAddressLine2,DeliveryAddressLine3,DeliveryAddressLine4,DeliveryAddressLine5,DeliveryAddressLine6,DeliveryAddressLine7,DeliveryAddressLine8,ClientReferenceA,ClientReferenceB,ClientReferenceC,InvoiceNumber,InvoiceDate,IsArchived,LoggedInContact,RawBaseAmount"
-            );
-            foreach (var x in data)
-            {
-                await writer.WriteLineAsync(
-                    $"{x.Id},{FormatField(x.JobNumber)},{x.CustomerName},{x.BookDate:yyyy-MM-dd HH:mm:ss},{x.PickedUpDate},{x.DeliveredDate},{x.Amount},{x.Fuel},{x.Ppd},{x.AgentAirlineName},{x.AWB},{x.CourierPayment},{x.CourierFuel},{x.CourierBonus},{x.Quantity},{x.Weight},{x.Size},{x.StatusName},{FormatField(x.PickupAddressLine1)},{FormatField(x.PickupAddressLine2)},{FormatField(x.PickupAddressLine3)},{FormatField(x.PickupAddressLine4)},{FormatField(x.PickupAddressLine5)},{FormatField(x.PickupAddressLine6)},{FormatField(x.PickupAddressLine7)},{FormatField(x.PickupAddressLine8)},{FormatField(x.DeliveryAddressLine1)},{FormatField(x.DeliveryAddressLine2)},{FormatField(x.DeliveryAddressLine3)},{FormatField(x.DeliveryAddressLine4)},{FormatField(x.DeliveryAddressLine5)},{FormatField(x.DeliveryAddressLine6)},{FormatField(x.DeliveryAddressLine7)},{FormatField(x.DeliveryAddressLine8)},{FormatField(x.ClientReferenceA)},{FormatField(x.ClientReferenceB)},{FormatField(x.ClientReferenceC)},{x.InvoiceNumber}, {x.InvoiceDate},{x.IsArchived},{FormatField(x.LoggedInContact)},{x.RawBaseAmount},{x.RawBaseAmount})"
-                );
-            }
-        }
-
-        var bytes = stream.ToArray();
-        var filename = $"Jobs {currentDate:yyyyMMddHHmmssfff}.csv";
-        var folder = currentDate.ToString("yyyyMM");
-        var timestamp = currentDate.ToString("yyyyMMddHHmmss");
-        var key = $"Jobs/{folder}/Jobs-{timestamp}";
-
-        using var ms = new MemoryStream(bytes);
         try
         {
-            var putRequest = new PutObjectRequest
-            {
-                BucketName = Environment.GetEnvironmentVariable("S3Bucket"),
-                Key = key,
-                ContentType = "text/csv",
-                InputStream = ms
-            };
-            await s3Client.PutObjectAsync(putRequest);
+            var result = await podExportService.GenerateJobsReportAsync(requestData);
+            return File(result.FileBytes, "text/csv", result.FileName);
         }
-        catch (AmazonS3Exception e)
+        catch (Exception ex)
         {
-            Log.Error(
-                e,
-                $"{nameof(PodSearchDownload)} Error encountered when writing jobs download object to S3: "
-            );
-        }
-        catch (Exception e)
-        {
-            Log.Error(
-                e,
-                $"{nameof(PodSearchDownload)} Error encountered when writing jobs download object to S3: "
-            );
-        }
-
-        return File(bytes, "text/csv", filename);
-
-        string FormatField(object x)
-        {
-            var formatted = x?.ToString()?.Replace("\"", "\"\"").Replace("\n", "\\n") ?? string.Empty;
-
-            return formatted.Contains('"') || formatted.Contains(',')
-                ? $"\"{formatted}\""
-                : formatted;
+            Log.Error(ex, "Error generating jobs report download");
+            return StatusCode(500, "An error occurred while generating the report");
         }
     }
 
@@ -1426,7 +1362,7 @@ public class JobController(
         {
             await recurringJobRepository.UpdateTucJobRecurring(jobId, field, value);
 
-            // Recalcate job
+            // Recalculate job
             var shouldRecalculateRate = ShouldRecalculateRate(field);
             if (!shouldRecalculateRate) return Ok();
 

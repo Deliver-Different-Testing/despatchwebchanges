@@ -18,14 +18,14 @@ class JobSearchService implements angular.IServiceProvider {
     }
     
     async getPodJobs(
-        courierId: number,
-        clientId: number,
-        wild: string,
-        job: string,
         fromDate: Date,
         toDate: Date,
         pageIndex: number,
-        pageSize: number
+        pageSize: number,
+        courierId?: number,
+        clientId?: number,
+        wild?: string,
+        job?: string,
     ): Promise<PodSearchResponse> {
         const response = await this.$http.get<PodSearchResponse>(
             `/Job/PODSearch`, {
@@ -46,12 +46,12 @@ class JobSearchService implements angular.IServiceProvider {
     }
 
     async podJobsDownload(
-        courierId: number,
-        clientId: number,
-        wild: string,
-        job: string,
         fromDate: Date,
-        toDate: Date
+        toDate: Date,
+        courierId?: number,
+        clientId?: number,
+        wild?: string,
+        job?: string
     ) {
         return this.$http.get(
             `/Job/PODSearchDownload`,
@@ -79,14 +79,14 @@ class JobSearchService implements angular.IServiceProvider {
     }
 
     async searchBulkJobs(
-        courierId: number,
-        clientId: number,
-        job: string,
-        wild: string,
         fromDate: Date,
         toDate: Date,
         pageIndex: number,
-        pageSize: number
+        pageSize: number,
+        courierId?: number,
+        clientId?: number,
+        job?: string,
+        wild?: string,
     ) {
         const response = await this.$http.get(
             `/Job/BulkSearch`,
