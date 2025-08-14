@@ -1,5 +1,5 @@
 <md-dialog aria-label="{{ ctrl.title }}" id="{{ ctrl.id }}">
-    <md-toolbar>
+    <md-toolbar class="md-hue-1">
         <div class="md-toolbar-tools">
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">checklist</md-icon>
             <h2>Edit {{ ctrl.title }}</h2>
@@ -18,8 +18,10 @@
             <form ng-submit="ctrl.submit(ctrl.selectedOption)">
 
                 <!-- Select field -->
-                <md-select aria-label="Select an option" ng-model="ctrl.selectedOption"
-                           placeholder="{{ ctrl.options.placeholder }}">
+                <md-select
+                        aria-label="Select an option"
+                        ng-model="ctrl.selectedOption"
+                        placeholder="{{ ctrl.options.placeholder }}">
                     <md-option ng-repeat="item in ctrl.options.items" ng-value="item">
                         {{ item.text }}
                     </md-option>

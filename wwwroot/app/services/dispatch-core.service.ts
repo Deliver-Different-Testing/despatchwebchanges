@@ -67,17 +67,22 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getEventTypes(): Promise<Suggestion[]> {
+    async getTimeZoneOptions(): Promise<TimeZoneSuggestion[]> {
+        const response = await this.$http.get<TimeZoneSuggestion[]>("job/GetTimeZoneOptions");
+        return response.data;
+    }
+    
+ async getEventTypes(): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>("job/EventTypeList");
         return response.data;
     }
 
-    async getEventGroups() {
+    async getEventGroups(): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>("task/GetEventGroups");
         return response.data;
     }
 
-    async getEventTypeGroups(eventGroupId: number) {
+    async getEventTypeGroups(eventGroupId: number): Promise<EventGroupViewModel[]> {
         const response = await this.$http.get<EventGroupViewModel[]>(
             "task/GetEventTypeGroups", {
                 params: {
@@ -88,12 +93,12 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getActiveStaff() {
+    async getActiveStaff(): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>("task/GetStaff");
         return response.data;
     }
     
-    async isJobParent(jobId: number) {
+    async isJobParent(jobId: number): Promise<boolean> {
         const response = await this.$http.get<boolean>(
             "job/IsJobParent", {
                 params: {
@@ -104,7 +109,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async addRestoreEvent(jobId: number) {
+    async addRestoreEvent(jobId: number): Promise<void> {
         await this.$http.post("job/AddRestoreEvent", null, {
             params: {
                 jobId,
@@ -144,7 +149,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         courierId: number,
         dispatcherId: number,
         jobIds: number[]
-    ) {
+    ): Promise<void> {
         await this.$http.post("job/ReAllocate", null, {
             params: {
                 courierId,
@@ -154,7 +159,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         });
     }
 
-    async setFirstJob(jobId: number, courierId: number) {
+    async setFirstJob(jobId: number, courierId: number): Promise<void> {
         await this.$http.post("job/SetFirstJob", null, {
             params: {
                 jobId,
@@ -163,7 +168,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         });
     }
 
-    async truckCourierStatus(courierId: number) {
+    async truckCourierStatus(courierId: number): Promise<TruckCourierStatusViewModel> {
         const response = await this.$http.get<TruckCourierStatusViewModel>(
             `courier/TruckCourierStatus`, {
                 params: {
@@ -174,8 +179,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async validateSwapPOD(jobNumber: string): Promise<number> {
-        const response = await this.$http.post<number>(
+    async validateSwapPOD(jobNumber: string): Promise<void> {
+        await this.$http.post<number>(
             `Job/ValidateSwapPOD`,
             null, {
                 params: {
@@ -183,11 +188,10 @@ class DispatchCoreService implements angular.IServiceProvider {
                 },
             }
         );
-        return response.data;
     }
 
-    async swapPOD(jobNumber1: string, jobNumber2: string) {
-        const response = await this.$http.post(
+    async swapPOD(jobNumber1: string, jobNumber2: string): Promise<void> {
+       await this.$http.post(
             `Job/SwapPOD`,
             null, {
                 params: {
@@ -196,7 +200,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 },
             }
         );
-        return response.data;
+        
     }
 
     async voidJob(jobId: number) {
@@ -684,38 +688,11 @@ class DispatchCoreService implements angular.IServiceProvider {
         );
     }
 
-    async updateJobTime(
-        jobId: number,
-        field: JobProperty,
-        dateTime: string | Date | number | boolean,
-        isRecurring: boolean,
-        selectedTimeZoneId: number
-    ) {
-        const requestData: UpdateJobTimeRequest = {
-            jobId,
-            dateTime,
-            isRecurring,
-            timeZoneId: selectedTimeZoneId,
-        };
-
-        let functionUrl;
-        if (field === JobProperty.DeliverBy) {
-            functionUrl = "job/UpdateDeliverByTime";
-        } else if (field === JobProperty.Time) {
-            functionUrl = "job/UpdatePickUpTime";
-        } else {
-            return;
-        }
-
-        await this.$http.post(functionUrl, requestData);
-    }
-
     async updateJobDetail(
         jobId: number,
         field: JobProperty | string,
         value: string | Date | number | boolean,
-        isRecurring: boolean,
-        selectedTimeZoneId?: number // For DateTime Conversions
+        isRecurring: boolean
     ) {
         console.log("Starting updateJobDetail:", {
             jobId,
@@ -723,16 +700,6 @@ class DispatchCoreService implements angular.IServiceProvider {
             initialValue: value,
             preBook: isRecurring,
         });
-
-        if (field === JobProperty.DeliverBy || field === JobProperty.Time) {
-            return await this.updateJobTime(
-                jobId,
-                field,
-                value,
-                isRecurring,
-                selectedTimeZoneId ?? 0
-            );
-        }
 
         if (value instanceof Date) {
             value = dayjs(value).format();

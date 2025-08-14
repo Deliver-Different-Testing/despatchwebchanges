@@ -1079,15 +1079,40 @@ public class JobController(
     [HttpPost]
     public async Task<IActionResult> Void(int jobId)
     {
-        await jobRepository.VoidJob(jobId);
-        return Ok();
+        try
+        {
+            await jobRepository.VoidJob(jobId);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(
+                ex,
+                "Error voiding Job with ID {JobId}. Error: {ErrorMessage}",
+                jobId,
+                ex.Message
+            );
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));        }
     }
 
     [HttpPost]
-    public async Task<IActionResult> ReSendAll(int courierId)
+    public async Task<IActionResult> ReSendAll(int courierId) 
     {
-        await jobRepository.ReSendAllJobs(courierId);
-        return Ok();
+        try
+        {
+            await jobRepository.ReSendAllJobs(courierId);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(
+                ex,
+                "Error resending jobs to CourierId {CourierId}. Error: {ErrorMessage}",
+                courierId,
+                ex.Message
+            );
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
     }
 
     [HttpPost]
@@ -1385,37 +1410,7 @@ public class JobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
-
-    [HttpPost]
-    public async Task<IActionResult> UpdateDeliverByTime([FromBody] UpdateJobTimeRequest requestData)
-    {
-        try
-        {
-            await jobRepository.UpdateDeliverByTime(requestData);
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error updating deliver by time");
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> UpdatePickUpTime([FromBody] UpdateJobTimeRequest requestData)
-    {
-        try
-        {
-            await jobRepository.UpdatePickUpTime(requestData);
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error updating deliver by time");
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
+    
     [HttpPost]
     public async Task<IActionResult> UpdateJob(
         int jobId,
@@ -2259,5 +2254,5 @@ public class JobController(
             Log.Error(ex, "Error retrieving the delivery journey for Job {JobId}", jobId);
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
-    }
+    }    
 }

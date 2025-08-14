@@ -39,7 +39,7 @@ import AddEventDialogService from "./components/dialogs/add-event-dialog/add-eve
 import {
     bytesFilter,
     momentFormatFilter,
-    replaceFilter, timezoneShortFilter
+    replaceFilter, timezoneLongFilter, timezoneShortFilter
 } from "./filters";
 import StickyNoteComponent from "./components/common/sticky-notes/sticky-notes.component";
 import EditParcelDimensionsDialogService
@@ -160,6 +160,7 @@ app.filter("bytes", () => bytesFilter);
 app.filter("replace", () => replaceFilter);
 app.filter('momentFormat', () => momentFormatFilter);
 app.filter('timezoneShort', () => timezoneShortFilter);
+app.filter('timezoneLongFilter', () => timezoneLongFilter);
 
 // Components
 app.component("jobDetailWidget", JobDetailComponent);

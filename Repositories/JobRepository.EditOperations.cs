@@ -4,57 +4,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
-using DespatchWeb.Models.RequestModels;
 using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories;
 
 public partial class JobRepository
 {
-    public async Task UpdateDeliverByTime(UpdateJobTimeRequest data)
-    {
-        if (data.IsRecurring)
-        {
-            var jobBooking = await Context.TucJobBookings.FindAsync(data.JobId);
-            ArgumentNullException.ThrowIfNull(jobBooking);
-
-            jobBooking.DeliverByTime = DateTime.Parse(data.DateTime);
-            jobBooking.DeliverByTimeZoneId = data.TimeZoneId;
-        }
-        else
-        {
-            var job = await Context.TucJobs.FindAsync(data.JobId);
-            ArgumentNullException.ThrowIfNull(job);
-
-            job.DeliverByTime = DateTime.Parse(data.DateTime);
-            job.DeliverByTimeZoneId = data.TimeZoneId;
-        }
-
-        await Context.SaveChangesAsync();
-    }
-
-    public async Task UpdatePickUpTime(UpdateJobTimeRequest data)
-    {
-        if (data.IsRecurring)
-        {
-            var jobBooking = await Context.TucJobBookings.FindAsync(data.JobId);
-            ArgumentNullException.ThrowIfNull(jobBooking);
-
-            jobBooking.UcbkTime = DateTime.Parse(data.DateTime);
-            jobBooking.PickupTimeZoneId = data.TimeZoneId;
-        }
-        else
-        {
-            var job = await Context.TucJobs.FindAsync(data.JobId);
-            ArgumentNullException.ThrowIfNull(job);
-
-            job.UcjbTime = DateTime.Parse(data.DateTime);
-            job.PickupTimeZoneId = data.TimeZoneId;
-        }
-
-        await Context.SaveChangesAsync();
-    }
-
     private async Task UpdateTucJob(int jobId, JobProperty property, string value)
     {
         var job = await Context
