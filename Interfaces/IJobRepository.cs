@@ -213,8 +213,6 @@ public interface IJobRepository
     Task<JobRatingDetailsDto> GetJobDetailsForRating(int jobId);
     Task UpdateJobRateAsync(int jobId, decimal rate, string noteText);
     Task<List<TimeZoneSuggestion>> GetTimeZoneOptions();
-    Task UpdateDeliverByTime(UpdateJobTimeRequest data);
-    Task UpdatePickUpTime(UpdateJobTimeRequest data);
     Task<JobRatingDetailsDto> GetJobBookingDetailsForRating(int jobId);
 
     Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId);

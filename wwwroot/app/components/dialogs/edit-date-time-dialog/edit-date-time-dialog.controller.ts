@@ -5,6 +5,7 @@ import {Suggestion, TimeZoneSuggestion} from "../../../interfaces/job.interface"
 import BaseController from "../../base-controller";
 import {JobProperty} from "../../../enums/job-property.enum";
 import {findWindows} from "windows-iana";
+import {TimeZone} from "../../../contants";
 import dayjs from "dayjs";
 
 export class EditDateTimeDialogController extends BaseController {
@@ -24,7 +25,9 @@ export class EditDateTimeDialogController extends BaseController {
 
     isLoading?: boolean;
     browserTimeZone?: string;
-    selectedTimeZone?: TimeZoneSuggestion;
+    selectedTimeZone?: string;
+    selectedDate?: Date;
+    selectedTime?: Date;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -34,8 +37,7 @@ export class EditDateTimeDialogController extends BaseController {
         public readonly title: string,
         public readonly fieldName: JobProperty,
         public dateTime?: Date,
-        public showTimeZoneSelector: boolean = false,
-        private defaultTimeZone?: Suggestion,
+        defaultTimeZone?: Suggestion,
         public showDate: boolean = true,
         public showTime: boolean = true,
     ) {
@@ -44,55 +46,103 @@ export class EditDateTimeDialogController extends BaseController {
 
         console.log('EditDateTimeDialogController: Controller instantiated');
 
-        // Ensure we have a valid date to start with
-        this.registerTimeout(() => {
-            if (!this.dateTime || !dayjs(this.dateTime).isValid()) {
-                this.dateTime = dayjs().toDate();
-            }
-        })
-
         const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         this.browserTimeZone = findWindows(browserTimeZone)[0];
+        this.selectedTimeZone = defaultTimeZone?.text ?? TimeZone;
 
-        if (this.showTimeZoneSelector && this.defaultTimeZone) {
-            this.selectedTimeZone = {
-                id: this.defaultTimeZone?.id,
-                text: findWindows(this.defaultTimeZone?.text)[0],
-                timeZoneIana: this.defaultTimeZone?.text
+        this.initializeDateTimeInputs();
+
+        this.registerTimeout(() => {
+            if (!this.dateTime) {
+                this.dateTime = new Date();
+                this.initializeDateTimeInputs();
             }
-            console.log('Selected timezone:', this.selectedTimeZone);
-        }
+        });
 
         this.isLoading = false;
     }
 
+    private initializeDateTimeInputs(): void {
+        if (this.dateTime) {
+            // Convert existing dateTime to dayjs object
+            const dateTimeValue = dayjs(this.dateTime);
+            this.selectedDate = dateTimeValue.toDate();
+            this.selectedTime = dateTimeValue.toDate();
+        } else {
+            // Use the current time
+            const now = dayjs();
+            this.selectedDate = now.toDate();
+            this.selectedTime = now.toDate();
+        }
+    }
+
+    updateDateTime(): void {
+        try {
+            if (this.showDate && this.showTime) {
+                // Both date and time required
+                if (this.selectedDate && this.selectedTime) {
+                    const dateValue = dayjs(this.selectedDate);
+                    const timeValue = dayjs(this.selectedTime);
+
+                    // Combine date and time
+                    this.dateTime = dateValue
+                        .hour(timeValue.hour())
+                        .minute(timeValue.minute())
+                        .second(0)
+                        .millisecond(0)
+                        .toDate();
+                }
+            } else if (this.showDate && !this.showTime) {
+                // Date only - set to midnight (00:00:00)
+                if (this.selectedDate) {
+                    this.dateTime = dayjs(this.selectedDate)
+                        .startOf('day')
+                        .toDate();
+                }
+            } else if (this.showTime && !this.showDate) {
+                // Time only - use minimum date (1900-01-01) with the selected time
+                if (this.selectedTime) {
+                    const timeValue = dayjs(this.selectedTime);
+                    this.dateTime = dayjs('1900-01-01')
+                        .hour(timeValue.hour())
+                        .minute(timeValue.minute())
+                        .second(0)
+                        .millisecond(0)
+                        .toDate();
+                }
+            }
+            console.log('DateTime updated:', this.dateTime?.toISOString?.());
+        } catch (error) {
+            console.error('Error updating dateTime:', error);
+            this.dateTime = undefined;
+        }
+    }
+
     isValid(): boolean {
-        if (!this.dateTime || !dayjs(this.dateTime).isValid()) {
-            return false;
+        // Check if required inputs are provided based on what should be shown
+        if (this.showDate && this.showTime) {
+            return !!(this.selectedDate && this.selectedTime && this.dateTime);
+        } else if (this.showDate && !this.showTime) {
+            return !!(this.selectedDate && this.dateTime);
+        } else if (this.showTime && !this.showDate) {
+            return !!(this.selectedTime && this.dateTime);
         }
 
-        // At least one of date or time must be shown
-        if (!this.showDate && !this.showTime) {
-            return false;
-        }
-
-        // If a timezone selector is shown, a timezone must be selected
-        return !(this.showTimeZoneSelector && !this.selectedTimeZone);
+        return !!(this.dateTime);
     }
 
     async submit(): Promise<void> {
-        if(this.dateTime === undefined) {
-            this.toastrService.showWarningToast('Invalid date/time');
+        if (!this.isValid()) {
+            this.toastrService.showWarningToast('Please provide valid date/time information');
             return;
         }
 
         try {
             this.isLoading = true;
-            // Create result object
+
             const result: IDialogDateTimeResult = {
                 fieldName: this.fieldName,
-                value: this.getFormattedDate(this.dateTime),
-                selectedTimeZoneId: this.selectedTimeZone?.id
+                value: this.dateTime
             };
 
             console.log('Submitting result:', result);
@@ -104,16 +154,7 @@ export class EditDateTimeDialogController extends BaseController {
             this.isLoading = false;
         }
     }
-
-    getFormattedDate(dateTime: Date): string {
-        if (dateTime === undefined) {
-            this.toastrService.showErrorToast('Invalid date/time');
-            return '';
-        }
-
-        return dayjs(dateTime).format('YYYY-MM-DD HH:mm');
-    }
-
+    
     cancel(): void {
         this.$mdDialog.cancel();
     }

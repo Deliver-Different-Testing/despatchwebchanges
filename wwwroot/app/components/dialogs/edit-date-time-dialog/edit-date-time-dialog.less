@@ -1,12 +1,149 @@
 @import "../../../../css/variables.less";
 
-// Minimal custom styles - let Angular Material handle everything else
 .date-time-dialog {
-  // Only essential custom styling for datetime picker integration
-  .dtp-input {
-    // Required for datetime picker functionality
-    &:focus {
-      outline: none;
+  min-width: 480px;
+  max-width: 600px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12),
+  0 2px 8px rgba(0, 0, 0, 0.08);
+
+  .dialog-content {
+    padding: 0;
+
+    .content-wrapper {
+      padding: 24px 20px 20px;
+      background: #fafafa;
+
+      .input-section {
+        margin-bottom: 24px;
+
+        .input-group {
+          display: flex;
+          gap: 16px;
+          align-items: flex-start;
+
+          .date-input,
+          .time-input {
+            flex: 1;
+          }
+        }
+
+        md-input-container {
+          background: white;
+          border-radius: 8px;
+          padding: 8px 16px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+          border: 1px solid #e0e0e0;
+          transition: all 0.2s ease;
+
+          &.md-input-focused {
+            border-color: #1976d2;
+            box-shadow: 0 2px 8px rgba(25, 118, 210, 0.15);
+            transform: translateY(-1px);
+          }
+
+          label {
+            font-weight: 500;
+            color: #424242;
+            font-size: 14px;
+          }
+
+          input {
+            font-size: 16px;
+            color: #212121;
+            border: none;
+            background: transparent;
+
+            &:focus {
+              outline: none;
+            }
+
+            // Custom styling for date/time inputs
+            &[type="date"],
+            &[type="time"] {
+              padding: 8px 0;
+              cursor: pointer;
+
+              &::-webkit-calendar-picker-indicator {
+                color: #1976d2;
+                cursor: pointer;
+                filter: brightness(0) saturate(100%) invert(27%) sepia(96%) saturate(1028%) hue-rotate(201deg) brightness(95%) contrast(87%);
+              }
+            }
+          }
+        }
+      }
+
+      .timezone-info {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e8eaf6;
+
+        .timezone-item {
+          display: flex;
+          align-items: center;
+          margin-bottom: 16px;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          .timezone-icon {
+            margin: 10px !important;
+            flex-shrink: 0;
+          }
+
+          .timezone-details {
+            display: flex;
+            flex-direction: column;
+
+            .timezone-label {
+              font-size: 14px;
+              color: #666;
+              font-weight: 500;
+              margin-bottom: 2px;
+            }
+
+            .timezone-value {
+              font-size: 15px;
+              color: #212121;
+              font-weight: 400;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 600px) {
+  .date-time-dialog {
+    min-width: 90vw;
+    max-width: 95vw;
+    margin: 20px;
+
+    .dialog-content .content-wrapper {
+      padding: 20px 16px;
+
+      .input-section .input-group {
+        flex-direction: column;
+        gap: 12px;
+      }
+    }
+
+    .dialog-actions {
+      padding: 16px;
+      flex-direction: column-reverse;
+      gap: 8px;
+
+      .cancel-button,
+      .save-button {
+        width: 100%;
+        margin: 0;
+      }
     }
   }
 }

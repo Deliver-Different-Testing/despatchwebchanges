@@ -554,8 +554,7 @@ class JobDetailController extends BaseController {
                     job.id,
                     result.fieldName,
                     result.value,
-                    job.preBook,
-                    result.selectedTimeZoneId
+                    job.preBook
                 );
             }
 
