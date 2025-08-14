@@ -2536,12 +2536,29 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     
     private async Task CloseAllTasks(int jobId)
     {
-        var jobIds = await Context.TucJobs.Where(j => j.UcjbId == jobId)
-            .SelectMany(x => x.Parent != null 
-                ? x.Parent.InverseParent.Select(j => j.UcjbId)
-                : x.InverseParent.Select(j => j.UcjbId))
-            .ToListAsync();
-    
+        var hasParent = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => j.Parent != null)
+            .FirstOrDefaultAsync();
+
+        List<int> jobIds;
+        if (hasParent)
+        {
+            jobIds = await Context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .SelectMany(x => x.Parent.InverseParent)
+                .Select(j => j.UcjbId)
+                .ToListAsync();
+        }
+        else
+        {
+            jobIds = await Context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .SelectMany(x => x.InverseParent)
+                .Select(j => j.UcjbId)
+                .ToListAsync();
+        }
+
         await Context.TucEvents
             .Where(t => jobIds.Contains(t.UcevJobId.Value) && !t.UcevClosed)
             .ExecuteUpdateAsync(t => t.SetProperty(e => e.UcevClosed, true));
