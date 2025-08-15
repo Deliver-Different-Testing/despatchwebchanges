@@ -20,9 +20,11 @@ export class EditDateTimeDialogService implements angular.IServiceProvider {
         return this;
     }
 
-    private _getBaseDialogConfig($event: MouseEvent, title: string, fieldName: JobProperty | string, dateTime?: Date, defaultTimeZone?: Suggestion) {
-        const showTimeZone = defaultTimeZone !== undefined;
-
+    private _getBaseDialogConfig($event: MouseEvent,
+                                 title: string,
+                                 fieldName: JobProperty | string,
+                                 dateTime?: Date,
+                                 defaultTimeZone?: Suggestion) {
         return {
             controller: EditDateTimeDialogController,
             controllerAs: "ctrl",
