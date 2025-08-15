@@ -416,7 +416,6 @@
     <TypeScriptCompile Include="wwwroot\app\functions\getDangerousGoodsClassName.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\getJobTableRowClass.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\greetUser.ts" />
-    <TypeScriptCompile Include="wwwroot\app\functions\isFlightJob.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\sortRelatedJobs.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\usStates.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\app-config.interface.ts" />

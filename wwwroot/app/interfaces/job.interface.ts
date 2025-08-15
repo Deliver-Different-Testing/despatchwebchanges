@@ -408,6 +408,8 @@ export interface IDispatchJob {
     hasBeenRead: boolean;
     isParentOrSingle?: boolean;
     parentId: number;
+    isFlightJob: boolean;
+    isAgentJob: boolean;
 
     // Status and timing information
     speedId?: number;

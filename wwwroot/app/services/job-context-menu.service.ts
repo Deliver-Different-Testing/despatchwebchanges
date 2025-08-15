@@ -10,9 +10,6 @@ import InternalJobStatus from "../enums/job-internal-status.enum";
 import JobInternalStatusEnum from "../enums/job-internal-status.enum";
 import {JobProperty} from "../enums/job-property.enum";
 import JobAddStopService from "./job-add-stop.service";
-import {isNotFlightJob} from "../functions/isNotFlightJob";
-import {isFlightJob} from "../functions/isFlightJob";
-import JobSuffix from "../enums/job-suffix.enum";
 import {AppPages} from "../enums/app-pages.enum";
 import {IPrebookListModel} from "../components/recurringJobs/recurringJobs.interface";
 import DispatchExecutorService from "./dispatch-executor.service";
@@ -89,7 +86,7 @@ class JobContextMenuService implements angular.IServiceProvider {
 
         if (appPage === AppPages.Domestic) {
             // Flight
-            if (job.assignedFlight && isFlightJob(job)) {
+            if (job.assignedFlight && job.isFlightJob) {
                 menuOptions.push({
                     text: "Unassign Flight",
                     icon: "remove_from_queue",
@@ -110,11 +107,9 @@ class JobContextMenuService implements angular.IServiceProvider {
         }
 
         // Add Stop
-        if (isNotFlightJob(job)) {
-            const lastChar = job.jobNo.toString().slice(-1);
-
+        if (job.isAgentJob) {
             menuOptions.push({
-                text: lastChar === JobSuffix.Pickup ? "Add Pickup Stop" : "Add Delivery Stop",
+                text: job.toAirportId && !job.fromAirportId ? "Add Pickup Stop" : "Add Delivery Stop",
                 icon: "pin_drop",
                 click: () => this.addStopToJob(job, callbacks.onRefresh),
                 hasBottomDivider: true,

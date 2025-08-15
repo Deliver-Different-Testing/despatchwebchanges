@@ -30,6 +30,8 @@ public static class JobMappings
             Time = j.UcjbTime,
             Booked = CombineDateAndTime(j.UcjbDate, j.UcjbTime),
             Remain = CalculateRemainTime(j, j.UcjbSpeedNavigation),
+            IsFlightJob = j.UcjbSpeed != null && j.UcjbSpeedNavigation.Grouping.GroupingName == "Flight",
+            IsAgentJob = j.UcjbSpeed != null && j.UcjbSpeedNavigation.Grouping.GroupingName == "Agent",
 
             Courier = j.UcjbCourierId != null ? j.UcjbCourier.Code : null,
             CourierData =

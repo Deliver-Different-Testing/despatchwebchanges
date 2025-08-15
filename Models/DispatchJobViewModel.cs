@@ -8,6 +8,9 @@ public class DispatchJobViewModel
     // Core identifiers
     public int Id { get; set; }
     public string JobNo { get; set; }
+    
+    public bool IsFlightJob { get; set; }
+    public bool IsAgentJob { get; set; }
 
     public bool HasBeenRead { get; set; }
     public bool IsParentOrSingle { get; set; }

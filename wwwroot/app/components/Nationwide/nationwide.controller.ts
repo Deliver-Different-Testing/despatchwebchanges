@@ -27,8 +27,6 @@ import AutoCompleteDialogService from "../dialogs/auto-complete-dialog/auto-comp
 import InternalJobStatus from "../../enums/job-internal-status.enum";
 import NationwideBoxes from "./enums/NationwideBoxes";
 import JobAddStopService from "../../services/job-add-stop.service";
-import {isNotFlightJob} from "../../functions/isNotFlightJob";
-import {isFlightJob} from "../../functions/isFlightJob";
 import greetUser from '../../functions/greetUser';
 import FlightAgentConfirmationDialogService
     from "../dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.service";
@@ -1063,7 +1061,7 @@ class NationwideControl extends BaseController {
         await this.loadTasks();
 
         // Show flight table
-        if (isFlightJob(job)) {
+        if (job.isFlightJob) {
             console.log('[NationwideController] Getting nearby airports');
             this.outboundAirportOptions = await this.nationwideService.getNearbyAirports(job.id, true);
             this.inboundAirportOptions = await this.nationwideService.getNearbyAirports(job.id, false);
@@ -1179,24 +1177,14 @@ class NationwideControl extends BaseController {
     }
 
     isDeliveryJob(job: IDispatchJob): boolean {
-        return isNotFlightJob(job);
+        return job.isAgentJob;
     }
 
-    getFlightIcon(jobNumber: string) {
-        if (!jobNumber) return '';
-
-        const lastChar = jobNumber.toString().slice(-1);
-
-        switch (lastChar) {
-            case '1':
-                return 'flight_takeoff';
-            case '2':
-                return 'local_airport';
-            case '3':
-                return 'flight_land';
-            default:
-                return '';
-        }
+    getFlightIcon(job: IDispatchJob): string {
+        if(job.isFlightJob) return 'flight';
+        if((job.toAirportId && !job.fromAirportId) && job.isAgentJob)  return 'flight_takeoff';
+        if((job.fromAirportId && !job.toAirportId) && job.isAgentJob) return 'flight_land';
+        return '';
     }
 
     private async processAgents(job: IDispatchJob) {

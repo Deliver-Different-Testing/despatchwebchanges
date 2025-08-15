@@ -28,7 +28,6 @@ import InterCourierChargeDialogService
     from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
 import {Coordinates} from "../overview/overview.interfaces";
 import JobContextMenuService from "../../services/job-context-menu.service";
-import {LateEventType} from "../../enums/late-event-type.enum";
 import {ContactID, FirstName} from "../../contants";
 import {DispatchState, ResendJobsRequest} from "./home.interfaces";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
@@ -38,7 +37,6 @@ import greetUser from "../../functions/greetUser";
 import dayjs from "dayjs";
 import TruckCourierStatusDialogService
     from "../dialogs/truck-courier-status-dialog/truck-courier-status-dialog.service";
-import {isNotFlightJob} from "../../functions/isNotFlightJob";
 import JobAddStopService from "../../services/job-add-stop.service";
 import getJobTableRowClass from "../../functions/getJobTableRowClass";
 import DispatchBoxes from "./enums/DispatchBoxes";
@@ -2483,7 +2481,7 @@ class HomeController extends BaseController {
     }
 
     isDeliveryJob(job: IDispatchJob): boolean {
-        return isNotFlightJob(job);
+        return job.isAgentJob;
     }
 
     async addStopToJob($event: MouseEvent, job: IDispatchJob): Promise<void> {
