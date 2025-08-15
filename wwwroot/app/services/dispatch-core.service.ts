@@ -179,8 +179,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async validateSwapPOD(jobNumber: string): Promise<void> {
-        await this.$http.post<number>(
+    async validateSwapPOD(jobNumber: string): Promise<number> {
+       const response = await this.$http.post<number>(
             `Job/ValidateSwapPOD`,
             null, {
                 params: {
@@ -188,6 +188,8 @@ class DispatchCoreService implements angular.IServiceProvider {
                 },
             }
         );
+       
+       return response.data;
     }
 
     async swapPOD(jobNumber1: string, jobNumber2: string): Promise<void> {
