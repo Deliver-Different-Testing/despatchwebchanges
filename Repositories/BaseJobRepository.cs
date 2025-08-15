@@ -330,7 +330,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 ? query.OrderBy(j => j.UcjbLateDel)
                 : query.OrderByDescending(j => j.UcjbLateDel),
 
-            "time" => ApplyTimeOrdering(query, isAscending, isNationwide),
+            "time" => ApplyTimeOrdering(query, isAscending),
 
             "courier" => ApplyCourierOrdering(query, isAscending, isNationwide),
 
@@ -339,7 +339,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 : query.OrderByDescending(j => j.UcjbPodname),
 
             // Default to time
-            _ => ApplyTimeOrdering(query, isAscending, isNationwide)
+            _ => ApplyTimeOrdering(query, isAscending)
         };
     }
 
@@ -484,11 +484,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
     private static IQueryable<TucJob> ApplyTimeOrdering(
         IQueryable<TucJob> query,
-        bool isAscending,
-        bool isNationwide)
+        bool isAscending)
     {
-        if (isNationwide)
-        {
             return isAscending
                 ? query
                     .OrderBy(j => j.UcjbDate)
@@ -496,11 +493,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 : query
                     .OrderByDescending(j => j.UcjbDate)
                     .ThenByDescending(j => j.UcjbTime);
-        }
-
-        return isAscending
-            ? query.OrderBy(j => j.UcjbTime)
-            : query.OrderByDescending(j => j.UcjbTime);
+        
     }
 
     private static IQueryable<TucJob> ApplyCourierOrdering(
