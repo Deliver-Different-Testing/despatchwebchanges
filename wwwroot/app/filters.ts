@@ -25,6 +25,7 @@ export function replaceFilter(input: string, search: string, replacement: string
     if (!input) return input;
     return input.replace(new RegExp(search, "g"), replacement);
 }
+
 /**
  * Formats a date using day.js
  */
@@ -156,8 +157,57 @@ export function timezoneLongFilter(timezone: string): string {
         if (timezoneStartIndex > 0 && timezoneStartIndex < parts.length) {
             return parts.slice(timezoneStartIndex).join(' ');
         }
-        
-        return parts.slice(-2).join(' ') || timezone;
+
+        const timezoneParts = [];
+        let foundTimezoneName = false;
+
+        for (let i = 0; i < parts.length; i++) {
+            const part = parts[i].toLowerCase();
+
+            // Skip obvious date/time parts
+            if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(parts[i]) || // date
+                /^\d{1,2}:\d{2}/.test(parts[i]) || // time
+                part === 'at' ||
+                part.includes('am') ||
+                part.includes('pm')) {
+                continue;
+            }
+
+            // Common timezone keywords
+            if (part.includes('standard') ||
+                part.includes('daylight') ||
+                part.includes('summer') ||
+                part.includes('time') ||
+                part.includes('mountain') ||
+                part.includes('pacific') ||
+                part.includes('eastern') ||
+                part.includes('central') ||
+                part.includes('atlantic') ||
+                part.includes('alaska') ||
+                part.includes('hawaii')) {
+                foundTimezoneName = true;
+            }
+
+            if (foundTimezoneName) {
+                timezoneParts.push(parts[i]);
+            }
+        }
+
+        if (timezoneParts.length > 0) {
+            return timezoneParts.join(' ');
+        }
+
+        // Last resort: take all parts that aren't obviously date/time
+        const filteredParts = parts.filter(part => {
+            const lower = part.toLowerCase();
+            return !(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(part) ||
+                /^\d{1,2}:\d{2}/.test(part) ||
+                lower === 'at' ||
+                lower.includes('am') ||
+                lower.includes('pm'));
+        });
+
+        return filteredParts.join(' ') || timezone;
 
     } catch (error) {
         console.error('Error formatting timezone:', error, 'for timezone:', timezone);
