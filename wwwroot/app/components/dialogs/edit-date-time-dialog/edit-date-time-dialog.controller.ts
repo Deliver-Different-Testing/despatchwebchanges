@@ -17,7 +17,6 @@ export class EditDateTimeDialogController extends BaseController {
         "title",
         "fieldName",
         "dateTime",
-        "showTimeZone",
         "defaultTimeZone",
         "showDate",
         "showTime",
