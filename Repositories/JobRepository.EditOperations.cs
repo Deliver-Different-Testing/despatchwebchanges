@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace DespatchWeb.Repositories;
 
@@ -12,8 +14,8 @@ public partial class JobRepository
 {
     private async Task UpdateTucJob(int jobId, JobProperty property, string value)
     {
-        var job = await Context
-            .TucJobs.Where(j => j.UcjbId == jobId)
+        var job = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
             .Include(j => j.TucJobNationwides)
             .Include(j => j.UcjbClient)
             .Include(j => j.Contact)
@@ -259,9 +261,28 @@ public partial class JobRepository
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
         }
+        
+        var entries = Context.ChangeTracker.Entries()
+            .Where(e => e.State == EntityState.Modified)
+            .ToList();
 
-        await Context.SaveChangesAsync();
+        var logMessages = new List<string> { $"Entities to be updated: {entries.Count}" };
 
+        foreach (var entry in entries)
+        {
+            logMessages.Add($"Entity: {entry.Entity.GetType().Name}");
+            logMessages.AddRange(
+                entry.Properties
+                    .Where(p => p.IsModified)
+                    .Select(p => $"  {p.Metadata.Name}: {p.OriginalValue} -> {p.CurrentValue}")
+            );
+        }
+
+        Log.Debug("{ChangeTrackerInfo}", string.Join(", ", logMessages));
+        
+        var changeCount = await Context.SaveChangesAsync();
+        Log.Debug("Changes saved: {ChangeCount}", changeCount);
+        
         // Add additional notes for undeliverable location
         if (property == JobProperty.UndeliverableLocationID && job.UndeliverableLocation?.Message != null)
             await JobUpdateAddNote(jobId, true, job.UndeliverableLocation.Message);
