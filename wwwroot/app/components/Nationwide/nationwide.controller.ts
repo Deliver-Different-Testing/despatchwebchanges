@@ -75,8 +75,10 @@ class NationwideControl extends BaseController {
     readonly nationwideJobList: JobListType = JobListType.NationwideJobList;
     readonly nationwidePodJobList: JobListType = JobListType.NationwidePodJobList;
     readonly nationwideRepriceJobList: JobListType = JobListType.NationwideRepriceJobList;
-
     readonly nationwidePageId: number = AppPages.Domestic;
+
+    private readonly refreshDurationIntervalKey: string = `refreshInterval-${AppPages.Domestic}`;
+    
     readonly isUsCustomer: boolean = false;
     private tasksLoadingInBackground: boolean = false;
     greeting: string;
@@ -530,16 +532,13 @@ class NationwideControl extends BaseController {
     private loadSavedRefreshInterval(): void {
         if (Modernizr.localstorage) {
             try {
-                const savedIntervalString = localStorage.getItem(`refreshInterval-NW-${ContactID}`);
+                const savedIntervalString = localStorage.getItem(`${this.refreshDurationIntervalKey}-${ContactID}`);
                 if (savedIntervalString) {
                     const refreshId = parseInt(savedIntervalString, 10) ?? 0;
                     this.selectedRefreshInterval = this.refreshIntervalOptions?.find(x => x.id == refreshId);
 
                     if (this.selectedRefreshInterval && this.selectedRefreshInterval.id > 0) {
                         this.startAutoRefresh();
-                    } else {
-                        // Default to disabled
-                        this.selectedRefreshInterval = this.refreshIntervalOptions?.find(x => x.id == 0);
                     }
                 }
             } catch (error) {
@@ -1181,9 +1180,9 @@ class NationwideControl extends BaseController {
     }
 
     getFlightIcon(job: IDispatchJob): string {
-        if(job.isFlightJob) return 'flight';
-        if((job.toAirportId && !job.fromAirportId) && job.isAgentJob)  return 'flight_takeoff';
-        if((job.fromAirportId && !job.toAirportId) && job.isAgentJob) return 'flight_land';
+        if (job.isFlightJob) return 'flight';
+        if ((job.toAirportId && !job.fromAirportId) && job.isAgentJob) return 'flight_takeoff';
+        if ((job.fromAirportId && !job.toAirportId) && job.isAgentJob) return 'flight_land';
         return '';
     }
 
@@ -2083,8 +2082,11 @@ class NationwideControl extends BaseController {
     }
 
     initRefreshIntervalOptions(): void {
+        const disabledOption: Suggestion = {id: 0, text: "Disabled"};
+        this.selectedRefreshInterval = disabledOption;
+
         const options: Suggestion[] = [
-            {id: 0, text: "Disabled"} // Add a disabled option
+            disabledOption
         ];
 
         const maxSeconds = 15 * 60; // 15 minutes in seconds
@@ -2116,17 +2118,14 @@ class NationwideControl extends BaseController {
     onRefreshIntervalChange(selectedInterval: Suggestion): void {
         console.log('Refresh interval changed to:', selectedInterval, 'seconds');
 
-        // Find the suggestion object that matches the selected interval
         this.selectedRefreshInterval = selectedInterval;
 
         if (Modernizr.localstorage && this.selectedRefreshInterval) {
-            localStorage.setItem(`refreshInterval-NW-${ContactID}`, this.selectedRefreshInterval?.id.toString());
+            localStorage.setItem(`${this.refreshDurationIntervalKey}-${ContactID}`, this.selectedRefreshInterval?.id.toString());
         }
 
-        // Stop existing auto refresh
         this.stopAutoRefresh();
 
-        // Start a new auto refresh if an interval is selected and not disabled
         if (this.selectedRefreshInterval && this.selectedRefreshInterval.id > 0) {
             this.startAutoRefresh();
         }

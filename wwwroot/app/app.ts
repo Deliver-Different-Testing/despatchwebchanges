@@ -57,8 +57,8 @@ import TruckCourierStatusDialogService
 import MessagingService from "./services/messaging.service";
 import MessagingDialogService from "./components/dialogs/messaging-dialog/messaging-dialog.service";
 import MessagingDialogController from "./components/dialogs/messaging-dialog/messaging-dialog.controller";
-import ResolutionWarningService from "./services/resolution-warning.service";
 import CustomUrlService from "./services/custom-url-service";
+import ResolutionWarningService from "./components/dialogs/resolution-warning-dialog/resolution-warning.service";
 
 const app = (window as any).uDispatchApp;
 

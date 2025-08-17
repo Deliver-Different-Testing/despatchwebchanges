@@ -329,6 +329,8 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dialog.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\resolution-warning-dialog\resolution-warning-dialog.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\resolution-warning-dialog\resolution-warning.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\enums\DispatchBoxes.ts" />
@@ -445,7 +447,6 @@
     <TypeScriptCompile Include="wwwroot\app\services\job-context-menu.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\messaging.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\notes.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\services\resolution-warning.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\tasks.service.ts" />
     <TypeScriptCompile Include="wwwroot\types\html.d.ts" />
   </ItemGroup>

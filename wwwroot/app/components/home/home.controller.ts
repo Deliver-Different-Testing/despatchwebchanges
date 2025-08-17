@@ -9,7 +9,6 @@ import {
     ClearListViewModel,
     CourierData,
     IDispatchJob,
-    ILateCallRequest,
     JobQueryParams,
     Suggestion,
 } from "../../interfaces/job.interface";
@@ -84,7 +83,7 @@ class HomeController extends BaseController {
     } as const;
 
     private readonly currentAppPage: AppPages = AppPages.Dispatch;
-    private readonly refreshDurationIntervalKey: string = "refreshInterval-Home";
+    private readonly refreshDurationIntervalKey: string = `refreshInterval-${AppPages.Dispatch}`;
 
     isLoadingData: boolean = false;
     showDriverLocationsNoData: boolean = false;
@@ -482,9 +481,6 @@ class HomeController extends BaseController {
 
                     if (this.selectedRefreshInterval && this.selectedRefreshInterval.id > 0) {
                         this.startAutoRefresh();
-                    } else {
-                        // Default to disabled
-                        this.selectedRefreshInterval = this.refreshIntervalOptions?.find(x => x.id == 0);
                     }
                 }
             } catch (error) {
@@ -2584,8 +2580,11 @@ class HomeController extends BaseController {
     }
 
     initRefreshIntervalOptions(): void {
+        const disabledOption: Suggestion = {id: 0, text: "Disabled"};
+        this.selectedRefreshInterval = disabledOption;
+
         const options: Suggestion[] = [
-            {id: 0, text: "Disabled"}
+            disabledOption
         ];
 
         const maxSeconds = 15 * 60; // 15 minutes in seconds
