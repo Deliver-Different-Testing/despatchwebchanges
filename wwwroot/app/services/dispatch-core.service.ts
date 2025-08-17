@@ -27,7 +27,7 @@ import {ClearListEnvelopeViewModel, DfrntPageViewModel,} from "../interfaces/dfr
 import {TaskTableFiltersRequest, TaskViewModel,} from "../components/task-dashboard/task-dashboard.interfaces";
 import {JobProperty} from "../enums/job-property.enum";
 import ConfigService from "./config.service";
-import {UpdateJobTimeRequest, UpdatePodDetailsRequest} from "../interfaces/requests.interfaces";
+import {UpdatePodDetailsRequest} from "../interfaces/requests.interfaces";
 import dayjs from "dayjs";
 import {JobEventData} from "../components/dialogs/add-event-dialog/add-event-dialog.interfaces";
 import {DeliveryJourneyViewModel} from "../components/common/task-history/task-history.interfaces";
@@ -702,9 +702,9 @@ class DispatchCoreService implements angular.IServiceProvider {
             initialValue: value,
             preBook: isRecurring,
         });
-
+        
         if (value instanceof Date) {
-            value = dayjs(value).format();
+            value = dayjs(value).format('YYYY-MM-DD HH:mm:ss');
         }
 
         const url: string = isRecurring
