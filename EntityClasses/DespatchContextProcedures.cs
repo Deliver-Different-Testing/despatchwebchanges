@@ -675,32 +675,6 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<List<DES_stpJob_VoidResult>> DES_stpJob_VoidAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
-        {
-            var parameterreturnValue = new SqlParameter
-            {
-                ParameterName = "returnValue",
-                Direction = System.Data.ParameterDirection.Output,
-                SqlDbType = System.Data.SqlDbType.Int,
-            };
-
-            var sqlParameters = new []
-            {
-                new SqlParameter
-                {
-                    ParameterName = "JobID",
-                    Value = jobID ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Int,
-                },
-                parameterreturnValue,
-            };
-            var _ = await _context.SqlQueryAsync<DES_stpJob_VoidResult>("EXEC @returnValue = [dbo].[DES_stpJob_Void] @JobID = @JobID", sqlParameters, cancellationToken);
-
-            returnValue?.SetValue(parameterreturnValue.Value);
-
-            return _;
-        }
-
         public virtual async Task<List<DES_stpJobBooking_InsertJobAndChildrenResult>> DES_stpJobBooking_InsertJobAndChildrenAsync(int? jobBookingID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
@@ -1628,6 +1602,32 @@ namespace DespatchWeb.EntityClasses
                 parameterreturnValue,
             };
             var _ = await _context.SqlQueryAsync<uspRestoreJobResult>("EXEC @returnValue = [dbo].[uspRestoreJob] @intJobID = @intJobID", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<int> UTL_stpCourier_ResetClearListAreaOrderAsync(int? courierID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "CourierID",
+                    Value = courierID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[UTL_stpCourier_ResetClearListAreaOrder] @CourierID = @CourierID", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 

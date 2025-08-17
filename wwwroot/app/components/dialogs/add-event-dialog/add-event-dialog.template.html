@@ -13,7 +13,7 @@
         </div>
     </md-toolbar>
 
-    <form name="ctrl.eventForm" ng-submit="ctrl.submit(ctrl.event)" novalidate>
+    <form name="ctrl.eventForm" ng-submit="ctrl.submit($event, ctrl.event)" novalidate>
         <md-dialog-content ng-cloak>
             <div class="md-dialog-content">
                 <!-- Job/Client Information -->

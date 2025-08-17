@@ -1,0 +1,185 @@
+﻿@import "../../../../css/variables.less";
+
+// Local variables
+@border-radius: @dialog-border-radius;
+@shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+// Main dialog container
+.void-job-dialog {
+  min-width: 480px;
+  max-width: 600px;
+  border-radius: @border-radius;
+  box-shadow: @shadow;
+
+  // Toolbar styling
+  .void-job-toolbar {
+    background-color: @primary-warning;
+    color: @text-light;
+
+    .md-toolbar-tools {
+      display: flex;
+      align-items: center;
+
+      .void-job-icon {
+        margin-right: 12px;
+        font-size: 24px;
+      }
+
+      h2 {
+        margin: 0;
+        font-weight: @weight-medium;
+        font-size: @font-xl;
+      }
+    }
+  }
+
+  // Content area
+  .void-job-content {
+    padding: 24px;
+
+    .void-job-warning {
+      background-color: #fff3e0;
+      border-left: 4px solid @primary-warning;
+      padding: 16px;
+      margin-bottom: 24px;
+      border-radius: 0 @border-radius @border-radius 0;
+
+      .void-job-warning-text {
+        margin: 0;
+        color: @text-dark;
+        font-size: @font-base;
+        line-height: @line-normal;
+
+        strong {
+          color: @primary-warning;
+          font-weight: @weight-semibold;
+        }
+      }
+    }
+
+    .void-job-form {
+      .void-job-reason {
+        margin-bottom: 24px;
+
+        label {
+          font-weight: @weight-medium;
+          color: @text-dark;
+        }
+
+        textarea {
+          resize: vertical;
+          min-height: 60px;
+          font-family: inherit;
+          border: 1px solid #e0e0e0;
+          border-radius: @border-radius;
+          padding: 12px;
+
+          &:focus {
+            border-color: @primary-blue;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(62, 175, 194, 0.2);
+          }
+        }
+
+        .hint {
+          font-size: @font-xs;
+          color: @text-muted;
+          margin-top: 4px;
+        }
+      }
+
+      .void-job-scope {
+        border: 1px solid #e0e0e0;
+        border-radius: @border-radius;
+        padding: 16px;
+        background-color: lightgrey;
+
+        .void-job-toggle {
+          margin: 0;
+
+          .void-job-toggle-label {
+            margin-left: 16px;
+            font-weight: @weight-medium;
+            font-size: @font-base;
+          }
+        }
+
+        .void-job-scope-hint {
+          margin-top: 8px;
+          font-size: @font-xs;
+          color: @text-muted;
+          font-style: italic;
+        }
+      }
+    }
+  }
+
+  // Actions area
+  .void-job-actions {
+    padding: 16px 24px;
+    background-color: #fafafa;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+
+    .void-job-cancel {
+      color: @text-muted;
+
+      &:hover {
+        background-color: @hover-color;
+      }
+    }
+
+    .void-job-confirm {
+      background-color: @error-red;
+      color: @text-light;
+      min-width: 120px;
+
+      &:hover:not([disabled]) {
+        background-color: darken(@error-red, 10%);
+      }
+
+      &[disabled] {
+        background-color: @standard-grey;
+        color: lighten(@text-muted, 20%);
+        cursor: not-allowed;
+      }
+
+      md-icon {
+        margin-right: 8px;
+      }
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 600px) {
+  .void-job-dialog {
+    min-width: 320px;
+    margin: 16px;
+
+    .void-job-content {
+      padding: 16px;
+    }
+
+    .void-job-actions {
+      padding: 12px 16px;
+      flex-direction: column-reverse;
+
+      .md-button {
+        width: 100%;
+        margin: 4px 0;
+      }
+    }
+  }
+}
+
+// Focus states and accessibility
+.void-job-dialog {
+  .md-button:focus,
+  .md-switch:focus {
+    outline: 2px solid @primary-blue;
+    outline-offset: 2px;
+  }
+}

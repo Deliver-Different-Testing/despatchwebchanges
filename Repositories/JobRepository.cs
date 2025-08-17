@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -14,7 +12,6 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
-using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -275,7 +272,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         Console.WriteLine(stopwatch.ElapsedMilliseconds);
         return Tuple.Create(total, jobList);
     }
-    
+
     public async Task<Tuple<int, List<JobViewModel>>> PodSearch(PodSearchRequest data)
     {
         var clientSet = data.ClientId.HasValue;
@@ -309,14 +306,14 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                         .Where(nw => nw.UcnwJobId == j.JobId)
                         .Any(nw => EF.Functions.Like(
                             nw.UcnwFlightNo
-                            + Space 
-                            + nw.AircraftName 
-                            + Space 
+                            + Space
+                            + nw.AircraftName
+                            + Space
                             + nw.CarrierFsCode
-                            + Space 
+                            + Space
                             + nw.DepartureAirportName
-                            + Space 
-                            + nw.ArrivalAirportName, 
+                            + Space
+                            + nw.ArrivalAirportName,
                             wildParam))
                     || EF.Functions.Like(
                         j.FromAddress
@@ -898,7 +895,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         foreach (var jobId in jobIds) await Context.Procedures.DES_stpJob_AutoDespatchChildJobsAsync(jobId);
     }
 
-    public async Task SwapPod(string job1, string job2) => 
+    public async Task SwapPod(string job1, string job2) =>
         await Context.Procedures.DESWEB_qdfSwapPODAsync(job1, job2);
 
     public async Task ReDispatchSelectedJobs(int courierId, int dispId, List<int> jobIds)
@@ -1070,7 +1067,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         }
     }
 
-    public async Task ReSendAllJobs(int courierId) => await Context.Procedures.uspReDespatchJobByCourierIDAsync(courierId);
+    public async Task ReSendAllJobs(int courierId) =>
+        await Context.Procedures.uspReDespatchJobByCourierIDAsync(courierId);
 
     public async Task<int> MaxAutoLatePickupAlert()
     {
@@ -1079,12 +1077,12 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         return maxAutoLatePickupAlert.Value ?? 0;
     }
 
-  public async Task<int> MaxAutoLateDeliveryAlert()
-{
-    var maxAutoLateDeliveryAlert = new OutputParameter<int?>();
-    await Context.Procedures.GEN_qdfSetting_GetMaxAutoLateDeliveryAlertAsync(maxAutoLateDeliveryAlert);
-    return maxAutoLateDeliveryAlert.Value ?? 0;
-}
+    public async Task<int> MaxAutoLateDeliveryAlert()
+    {
+        var maxAutoLateDeliveryAlert = new OutputParameter<int?>();
+        await Context.Procedures.GEN_qdfSetting_GetMaxAutoLateDeliveryAlertAsync(maxAutoLateDeliveryAlert);
+        return maxAutoLateDeliveryAlert.Value ?? 0;
+    }
 
     public async Task<decimal> PpdExclusiveAmount(int clientId, decimal amount) =>
         await CalculateAmountAsync(clientId, amount);
@@ -1226,19 +1224,88 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         foreach (var jobId in jobIds) await Context.Procedures.uspRestoreJobAsync(jobId);
     }
 
-    public async Task VoidJob(int jobId)
+public async Task VoidJob(int jobId,string voidReason, bool voidSingleJobOnly = false)
+{
+    try
     {
-        // Void Job
-        await Context.Procedures.DES_stpJob_VoidAsync(jobId);
+        List<JobVoidDto> jobsToVoid;
         
-        // Close Associated Tasks
-        await CloseAllTasks(jobId);
-    }
+        if (voidSingleJobOnly)
+        {
+            // Only void the specific job
+            jobsToVoid = await Context.TblJobs
+                .Where(j => j.JobId == jobId)               
+                .Select(j => new JobVoidDto { UcjbId = j.JobId, UcjbVoid = j.Void })
+                .ToListAsync();
+        }
+        else
+        {
+            // Void job and all related jobs (original behavior)
+            jobsToVoid = await Context.TblJobs
+                .Where(j => j.RootParentId == jobId || j.JobId == jobId)
+                .Select(j => new JobVoidDto { UcjbId = j.JobId, UcjbVoid = j.Void })
+                .ToListAsync();
+        }
 
-    public async Task SplitJob(int jobId, string user)
-    {
-        await Context.Procedures.DES_stpJob_SplitJobAsync(jobId, false, user);
+        if (jobsToVoid.Count == 0) return;
+        var jobIds = jobsToVoid.Select(j => j.UcjbId).ToList();
+
+        // Add Notes
+        await AddVoidNoteToJobsAsync(jobIds, voidReason);
+        
+        var courierMapping = await Context.TblJobs
+            .Where(jt => jobIds.Contains(jt.JobId))
+            .Where(jt => jt.CourierId.HasValue)
+            .Select(jt => new { jt.JobId, jt.CourierId })
+            .Distinct()
+            .ToDictionaryAsync(jt => jt.JobId, jt => jt.CourierId ?? 0);
+
+        await Context.TucJobs
+            .Where(j => jobIds.Contains(j.UcjbId))
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(j => j.UcjbStatus, (int)JobStatus.Completed)
+                .SetProperty(j => j.UcjbVoid, true));
+
+        // Reset courier clear list for all affected couriers
+        var uniqueCourierIds = courierMapping.Values.Distinct();
+        var resetTasks = uniqueCourierIds
+            .Select(courierId => Context.Procedures.UTL_stpCourier_ResetClearListAreaOrderAsync(courierId));
+
+        await Task.WhenAll(resetTasks);
+
+        // Close tasks based on the voiding scope
+        await CloseTasksByJobIdAsync(jobId, voidSingleJobOnly);
+        
+        await Context.SaveChangesAsync();
     }
+    
+    catch (Exception e)
+    {
+        Log.Error(e, "Error voiding job {JobId} (SingleOnly: {VoidSingleJobOnly})", jobId, voidSingleJobOnly);
+        throw;
+    }
+}
+
+private async Task AddVoidNoteToJobsAsync(List<int> jobIds, string voidReason)
+{
+    // Add Note
+    var staffId = _infoService.GetStaffId();
+    var currentDate = _infoService.GetCurrentTenantTime();
+    foreach (var newNote in jobIds.Select(jobId => new TucNote
+             {
+                 CreatedBy = staffId,
+                 CreatedDate = currentDate,
+                 JobId = jobId,
+                 NoteText = voidReason,
+                 NoteTypeId = (int)NoteType.InternalNote,
+                 IsImportant = true
+             })) await Context.AddAsync(newNote);
+        
+    await Context.SaveChangesAsync();
+}
+
+    public async Task SplitJob(int jobId, string user) =>
+        await Context.Procedures.DES_stpJob_SplitJobAsync(jobId, false, user);
 
     public async Task<string> UnSplitJob(int jobId)
     {
@@ -1266,7 +1333,8 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         );
     }
 
-    public async Task ReRateSplitJob(int jobId) => await Context.Procedures.DES_stpJob_SplitJob_ReRateAsync(jobId, false);
+    public async Task ReRateSplitJob(int jobId) =>
+        await Context.Procedures.DES_stpJob_SplitJob_ReRateAsync(jobId, false);
 
     public async Task FinishSplitJobProcess(int jobId, string despatcher)
     {
@@ -1378,7 +1446,6 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     public async Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId, bool isPrebook)
     {
         int effectivePrebookId;
-        int effectiveJobId;
         if (isPrebook)
         {
             effectivePrebookId = await GetJobBookingRelationshipInfoAsync(jobId);
@@ -1397,7 +1464,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 .ToListAsync();
         }
 
-        effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
+        var effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
         return await Context.PricingBreakdowns
             .Where(p => p.JobId == effectiveJobId)
             .Select(p => new ChargeViewModel
@@ -1566,9 +1633,11 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         );
     }
 
-    public async Task SendPrebookJobAsync(int jobId) => await Context.Procedures.DES_stpJobBooking_InsertJobAndChildrenAsync(jobId);
+    public async Task SendPrebookJobAsync(int jobId) =>
+        await Context.Procedures.DES_stpJobBooking_InsertJobAndChildrenAsync(jobId);
 
-    public async Task VoidPrebookJobAsync(int jobId, string despatcher, int staffId) => await Context.Procedures.DESWEB_stpVoidPrebookJobAsync(jobId, despatcher, staffId);
+    public async Task VoidPrebookJobAsync(int jobId, string despatcher, int staffId) =>
+        await Context.Procedures.DESWEB_stpVoidPrebookJobAsync(jobId, despatcher, staffId);
 
     public async Task<TruckItemsSummary> TruckJobItemsAsync(int jobId, int truckWeightLimit)
     {
@@ -2286,7 +2355,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     public async Task<List<DeliveryJourneyViewModel>> GetDeliveryJourneyForJobAsync(int jobId)
     {
         var isLiveJob = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
-        
+
         var events = await GetEventsForDeliveryJourneyAsync(jobId);
         var messages = await GetMessagesForDeliveryJourneyAsync(jobId);
         var notes = await GetNotesForDeliveryJourneyAsync(jobId, isLiveJob);
@@ -2320,12 +2389,16 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 "Task",
                 e.UcevClosed ? "Completed" : "In Progress",
                 $"Created by {e.UcevDespatcher}",
-                e.UcevStaffIdinNavigation != null ? $"Assigned to {e.UcevStaffIdinNavigation.UcstFirstName} {e.UcevStaffIdinNavigation.UcstLastName}" : null,
-                e.UcevStaffIdoutNavigation != null ? $"Completed by {e.UcevStaffIdoutNavigation.UcstFirstName} {e.UcevStaffIdoutNavigation.UcstLastName}" : null
+                e.UcevStaffIdinNavigation != null
+                    ? $"Assigned to {e.UcevStaffIdinNavigation.UcstFirstName} {e.UcevStaffIdinNavigation.UcstLastName}"
+                    : null,
+                e.UcevStaffIdoutNavigation != null
+                    ? $"Completed by {e.UcevStaffIdoutNavigation.UcstFirstName} {e.UcevStaffIdoutNavigation.UcstLastName}"
+                    : null
             ],
             Date = e.UcevDate ?? DateTime.MinValue
         }).ToList();
-        
+
         return events;
     }
 
@@ -2396,7 +2469,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
 
         return notes;
     }
-    
+
     private async Task<List<DeliveryJourneyViewModel>> GetMessagesForDeliveryJourneyAsync(int jobId)
     {
         var messagesTempList = await Context.TucManualMessages
@@ -2420,25 +2493,45 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     ? new[]
                     {
                         "Direct Message",
-                        m.UcmmSendToCourier != null ? $"{m.UcmmSendToCourier.UccrName}, {m.UcmmSendToCourier.UccrSurname}" : null,
-                        m.UcmmSendToStaff != null ? $"{m.UcmmSendToStaff.UcstFirstName}, {m.UcmmSendToStaff.UcstLastName}" : null,
-                        m.UcmmSendFromCourier != null ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}" : null,
-                        m.UcmmSendFromStaff != null ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}" : null,
+                        m.UcmmSendToCourier != null
+                            ? $"{m.UcmmSendToCourier.UccrName}, {m.UcmmSendToCourier.UccrSurname}"
+                            : null,
+                        m.UcmmSendToStaff != null
+                            ? $"{m.UcmmSendToStaff.UcstFirstName}, {m.UcmmSendToStaff.UcstLastName}"
+                            : null,
+                        m.UcmmSendFromCourier != null
+                            ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}"
+                            : null,
+                        m.UcmmSendFromStaff != null
+                            ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}"
+                            : null,
                         m.TimeRead.HasValue ? $"Read at {m.TimeRead?.ToString("g")}" : null
                     }
                     : Array.Empty<string>())
                 .Concat(!string.IsNullOrEmpty(m.SendToEmailAddress)
-                    ? new[] { "Email", 
-                        $"Sent to {m.SendToEmailAddress}" ,
-                        m.UcmmSendFromCourier != null ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}" : null,
-                        m.UcmmSendFromStaff != null ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}" : null
+                    ? new[]
+                    {
+                        "Email",
+                        $"Sent to {m.SendToEmailAddress}",
+                        m.UcmmSendFromCourier != null
+                            ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}"
+                            : null,
+                        m.UcmmSendFromStaff != null
+                            ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}"
+                            : null
                     }
                     : Array.Empty<string>())
                 .Concat(!string.IsNullOrEmpty(m.SendToMobile)
-                    ? new[] { "SMS",
-                        $"Sent to {m.SendToMobile}" ,
-                        m.UcmmSendFromCourier != null ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}" : null,
-                        m.UcmmSendFromStaff != null ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}" : null
+                    ? new[]
+                    {
+                        "SMS",
+                        $"Sent to {m.SendToMobile}",
+                        m.UcmmSendFromCourier != null
+                            ? $"{m.UcmmSendFromCourier.UccrName}, {m.UcmmSendFromCourier.UccrSurname}"
+                            : null,
+                        m.UcmmSendFromStaff != null
+                            ? $"{m.UcmmSendFromStaff.UcstFirstName}, {m.UcmmSendFromStaff.UcstLastName}"
+                            : null
                     }
                     : Array.Empty<string>())
                 .ToList(),
@@ -2491,7 +2584,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     s.FieldName != null ? $"Field {s.FieldName} updated" : null,
                     s.FieldName != null && s.OldValue != null ? $"Old value: {s.OldValue}" : null,
                     s.FieldName != null && s.NewValue != null ? $"New value: {s.NewValue}" : null,
-                    s.NewJobStatus != null && s.OldJobStatus != null ? $"Status changed from {s.OldJobStatus.UcjsName} to {s.NewJobStatus?.UcjsName}" : null
+                    s.NewJobStatus != null && s.OldJobStatus != null
+                        ? $"Status changed from {s.OldJobStatus.UcjsName} to {s.NewJobStatus?.UcjsName}"
+                        : null
                 ]
             }).ToList();
         }
@@ -2509,8 +2604,9 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 JobId = jobId,
                 Date = s.UpdatedAt,
                 Title = "Status Changed",
-                Description = s.OldJobStatusId != null && s.NewJobStatusId != null 
-                    ? $"Status changed from status ID {s.OldJobStatusId} to {s.NewJobStatusId}" : null,
+                Description = s.OldJobStatusId != null && s.NewJobStatusId != null
+                    ? $"Status changed from status ID {s.OldJobStatusId} to {s.NewJobStatusId}"
+                    : null,
                 Icon = "update",
                 Tags =
                 [
@@ -2526,37 +2622,49 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                     s.FieldName != null && s.OldValue != null ? $"Old value: {s.OldValue}" : null,
                     s.FieldName != null && s.NewValue != null ? $"New value: {s.NewValue}" : null,
                     s.Comments != null ? $"Comments: {s.Comments}" : null,
-                    s.OldJobStatusId != null && s.NewJobStatusId != null ? $"Status changed from status ID {s.OldJobStatusId} to {s.NewJobStatusId}" : null
+                    s.OldJobStatusId != null && s.NewJobStatusId != null
+                        ? $"Status changed from status ID {s.OldJobStatusId} to {s.NewJobStatusId}"
+                        : null
                 ]
             }).ToList();
         }
 
         return statusUpdates;
     }
-    
-    private async Task CloseAllTasks(int jobId)
-    {
-        var hasParent = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Select(j => j.Parent != null)
-            .FirstOrDefaultAsync();
 
+    private async Task CloseTasksByJobIdAsync(int jobId, bool closeSingleJobTasksOnly = false)
+    {
         List<int> jobIds;
-        if (hasParent)
+    
+        if (closeSingleJobTasksOnly)
         {
-            jobIds = await Context.TucJobs
-                .Where(j => j.UcjbId == jobId)
-                .SelectMany(x => x.Parent.InverseParent)
-                .Select(j => j.UcjbId)
-                .ToListAsync();
+            // Only close tasks for the specific job
+            jobIds = [jobId];
         }
         else
         {
-            jobIds = await Context.TucJobs
+            // Close tasks for all related jobs (original behavior)
+            var hasParent = await Context.TucJobs
                 .Where(j => j.UcjbId == jobId)
-                .SelectMany(x => x.InverseParent)
-                .Select(j => j.UcjbId)
-                .ToListAsync();
+                .Select(j => j.Parent != null)
+                .FirstOrDefaultAsync();
+
+            if (hasParent)
+            {
+                jobIds = await Context.TucJobs
+                    .Where(j => j.UcjbId == jobId)
+                    .SelectMany(x => x.Parent.InverseParent)
+                    .Select(j => j.UcjbId)
+                    .ToListAsync();
+            }
+            else
+            {
+                jobIds = await Context.TucJobs
+                    .Where(j => j.UcjbId == jobId)
+                    .SelectMany(x => x.InverseParent)
+                    .Select(j => j.UcjbId)
+                    .ToListAsync();
+            }
         }
 
         await Context.TucEvents

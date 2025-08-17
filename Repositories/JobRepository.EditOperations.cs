@@ -191,9 +191,6 @@ public partial class JobRepository
             case JobProperty.Direct:
                 job.Direct = bool.Parse(value);
                 break;
-            case JobProperty.Void:
-                await VoidJob(jobId);
-                break;
             case JobProperty.TrackingMobile:
                 job.TrackingMobile = value[..Math.Min(value.Length, 100)];
                 break;
@@ -475,9 +472,6 @@ public partial class JobRepository
             case JobProperty.Direct:
                 archive.Direct = bool.Parse(value);
                 break;
-            case JobProperty.Void:
-                await VoidJob(jobId);
-                break;
             case JobProperty.TrackingMobile:
                 archive.TrackingMobile = value[..Math.Min(value.Length, 100)];
                 break;
@@ -565,7 +559,7 @@ public partial class JobRepository
             IsImportant = false
         };
 
-        await Context.TucNotes.AddAsync(newNote);
+        await Context.AddAsync(newNote);
     }
 
     private async Task UpdateJobInternalStatusAsync(TucJob job, string value)

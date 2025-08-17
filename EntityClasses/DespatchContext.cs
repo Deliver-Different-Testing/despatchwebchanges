@@ -691,7 +691,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ParentId).HasColumnName("ParentID");
             entity.Property(e => e.PickupAddressLine5).HasMaxLength(255);
             entity.Property(e => e.PickupAddressLine6).HasMaxLength(255);
-            entity.Property(e => e.UcjbClientId).HasColumnName("ucjbClientID");
+            entity.Property(e => e.UcclId).HasColumnName("ucclId");
             entity.Property(e => e.UcjbId).HasColumnName("ucjbID");
             entity.Property(e => e.UcjbNumber)
                 .HasMaxLength(50)

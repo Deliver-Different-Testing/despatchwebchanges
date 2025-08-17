@@ -19,7 +19,7 @@ public partial class DeswebQryDespatchJobViewFilter
 
     public int? VehicleSizeId { get; set; }
 
-    public int? UcjbClientId { get; set; }
+    public int? UcclId { get; set; }
 
     public int? UcjtId { get; set; }
 
