@@ -7,6 +7,7 @@ import {JobNoteType} from "../../../enums/job-note-type.enum";
 import {EventType} from "../../../enums/event-type";
 import {JobEventData} from "./add-event-dialog.interfaces";
 import dayjs from "dayjs";
+import VoidJobConfirmationDialogService from "../void-job-confirmation-dialog/void-job-confirmation-dialog.service";
 
 class AddEventDialogController extends BaseController {
     static $inject = [
@@ -14,6 +15,7 @@ class AddEventDialogController extends BaseController {
         "DispatchData",
         "toastrService",
         "noteService",
+        "voidJobConfirmationDialogService",
         "job",
         "dispatcherName",
         "contactId",
@@ -31,6 +33,7 @@ class AddEventDialogController extends BaseController {
         private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
         private noteService: NoteService,
+        private voidJobConfirmationDialogService: VoidJobConfirmationDialogService,
         private job: IJob,
         private dispatcherName: string,
         private contactId: number
@@ -67,7 +70,7 @@ class AddEventDialogController extends BaseController {
         });
     }
 
-    async submit(event: DfrntEvent): Promise<void> {
+    async submit($event: MouseEvent, event: DfrntEvent): Promise<void> {
         try {
             if (this.eventForm && !this.eventForm.$valid) {
                 this.toastrService.showWarningToast(
@@ -131,7 +134,8 @@ class AddEventDialogController extends BaseController {
             await this.DispatchData.addEvent(eventData);
 
             if (eventId === EventType.CancelJob) {
-                await this.DispatchData.voidJob(this.job.id);
+                const jobDetail = await this.DispatchData.getDispatchJobDetail(this.job.id);
+                await this.voidJobConfirmationDialogService.showVoidConfirmationDialog($event, jobDetail);
             }
 
             this.$mdDialog.hide();

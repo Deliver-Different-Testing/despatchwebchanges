@@ -1,0 +1,72 @@
+﻿<md-dialog aria-label="Void Job Confirmation" class="void-job-dialog">
+    <md-toolbar class="md-hue-1">
+        <div class="md-toolbar-tools">
+            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">today</md-icon>
+            <h2>Void {{ ::ctrl.job.jobNo }}</h2>
+            <span flex></span>
+            <md-button class="md-icon-button" ng-click="ctrl.cancel()" aria-label="Close dialog">
+                <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+                <md-tooltip md-direction="bottom">Close</md-tooltip>
+            </md-button>
+        </div>
+    </md-toolbar>
+
+    <md-dialog-content class="void-job-content">
+        <div class="void-job-warning">
+            <p class="void-job-warning-text">
+                You are about to void job <strong>#{{::ctrl.job.jobNo}}</strong>.
+                This action cannot be undone.
+            </p>
+        </div>
+
+        <div class="void-job-form">
+            <md-input-container class="md-block void-job-reason">
+                <label for="voidReason">Reason for voiding (required)</label>
+                <textarea
+                        id="voidReason"
+                        ng-model="ctrl.voidReasonText"
+                        md-maxlength="500"
+                        rows="3"
+                        md-select-on-focus
+                        required>
+                </textarea>
+                <div class="hint">Please provide a reason for voiding this job</div>
+            </md-input-container>
+
+            <div class="void-job-scope">
+                <md-switch
+                        ng-model="ctrl.voidSingleJobOnly"
+                        aria-label="Void scope toggle"
+                        class="md-primary void-job-toggle">
+                    <span class="void-job-toggle-label">
+                        {{ctrl.voidSingleJobOnly ? 'Void this job only' : 'Void all related jobs'}}
+                    </span>
+                </md-switch>
+
+                <div class="void-job-scope-hint">
+                    <span ng-if="ctrl.voidSingleJobOnly">
+                        Only this specific job will be voided
+                    </span>
+                    <span ng-if="!ctrl.voidSingleJobOnly">
+                        This job and all related jobs will be voided
+                    </span>
+                </div>
+            </div>
+        </div>
+    </md-dialog-content>
+
+    <md-dialog-actions class="void-job-actions">
+        <md-button
+                ng-click="ctrl.cancel()"
+                class="md-button void-job-cancel">
+            Cancel
+        </md-button>
+        <md-button
+                ng-click="ctrl.confirm()"
+                ng-disabled="!ctrl.voidReasonText || ctrl.voidReasonText.trim().length === 0"
+                class="md-raised md-warn void-job-confirm">
+            <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
+            Void Job
+        </md-button>
+    </md-dialog-actions>
+</md-dialog>

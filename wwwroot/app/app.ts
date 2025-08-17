@@ -59,6 +59,10 @@ import MessagingDialogService from "./components/dialogs/messaging-dialog/messag
 import MessagingDialogController from "./components/dialogs/messaging-dialog/messaging-dialog.controller";
 import CustomUrlService from "./services/custom-url-service";
 import ResolutionWarningService from "./components/dialogs/resolution-warning-dialog/resolution-warning.service";
+import VoidJobConfirmationDialogController
+    from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.controller";
+import VoidJobConfirmationDialogService
+    from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
 
 const app = (window as any).uDispatchApp;
 
@@ -183,6 +187,7 @@ app.controller("jobFileUploadController", JobFileUploadController);
 app.controller("jobNoteEditorDialogController", NoteManagementDialogController);
 app.controller("TruckCourierStatusDialogController", TruckCourierStatusDialogController);
 app.controller("messagingDialogController", MessagingDialogController);
+app.controller("voidJobConfirmationDialogController", VoidJobConfirmationDialogController);
 
 // Services
 app.service("configService", ConfigService);
@@ -207,6 +212,7 @@ app.service("messagingService", MessagingService);
 app.service("messagingDialogService", MessagingDialogService);
 app.service('resolutionWarningService', ResolutionWarningService);
 app.service('customUrlService', CustomUrlService);
+app.service('voidJobConfirmationDialogService', VoidJobConfirmationDialogService);
 
 app.run(['resolutionWarningService', (resolutionWarningService: ResolutionWarningService) => {
     resolutionWarningService.checkAndShowResolutionWarning();

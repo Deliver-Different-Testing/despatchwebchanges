@@ -24,7 +24,6 @@ namespace DespatchWeb.EntityClasses
         Task<List<DES_stpJob_SplitJob_ReRateResult>> DES_stpJob_SplitJob_ReRateAsync(int? parentJobID, bool? preBookJob, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_stpJob_SplitJobRestoreResult>> DES_stpJob_SplitJobRestoreAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_stpJob_UnSplitResult>> DES_stpJob_UnSplitAsync(int? jobID, OutputParameter<string> message, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<List<DES_stpJob_VoidResult>> DES_stpJob_VoidAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_stpJobBooking_InsertJobAndChildrenResult>> DES_stpJobBooking_InsertJobAndChildrenAsync(int? jobBookingID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DESWEB_qdfSwapPODResult>> DESWEB_qdfSwapPODAsync(string ucjbNumber1, string ucjbNumber2, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DESWEB_qryClientsActiveResult>> DESWEB_qryClientsActiveAsync(string searchTerm, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
@@ -46,6 +45,7 @@ namespace DespatchWeb.EntityClasses
         Task<List<uspReDespatchJobResult>> uspReDespatchJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> uspReDespatchJobByCourierIDAsync(int? courierID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<uspRestoreJobResult>> uspRestoreJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<int> UTL_stpCourier_ResetClearListAreaOrderAsync(int? courierID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> UTL_stpPPD_ExclusiveAmountAsync(int? clientID, decimal? amount, OutputParameter<decimal?> pPD, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
     }
 }

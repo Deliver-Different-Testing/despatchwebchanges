@@ -84,7 +84,7 @@ public interface IJobRepository
 
     Task RestoreSplitJobs(List<int> jobIds);
     Task RestoreJobs(List<int> jobIds);
-    Task VoidJob(int jobId);
+    Task VoidJob(int jobId, string voidReason, bool voidSingleJobOnly = false);
     Task SplitJob(int jobId, string user);
     Task<string> UnSplitJob(int jobId);
 

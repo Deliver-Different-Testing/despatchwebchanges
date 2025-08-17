@@ -15,6 +15,8 @@ import {IPrebookListModel} from "../components/recurringJobs/recurringJobs.inter
 import DispatchExecutorService from "./dispatch-executor.service";
 import {LateEventType} from "../enums/late-event-type.enum";
 import {ContactID, FirstName} from "../contants";
+import VoidJobConfirmationDialogService
+    from "../components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
 
 class JobContextMenuService implements angular.IServiceProvider {
     static $inject = [
@@ -27,6 +29,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         "addEventDialogService",
         "jobAddStopService",
         "dispatchJobService",
+        "voidJobConfirmationDialogService",
     ];
 
     private eventGroupsCache: Suggestion[] = [];
@@ -41,6 +44,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         private addEventDialogService: AddEventDialogService,
         private jobAddStopService: JobAddStopService,
         private dispatchJobService: DispatchExecutorService,
+        private voidJobConfirmationDialogService: VoidJobConfirmationDialogService,
     ) {
         console.log("JobContextMenuService initialized");
         this.preloadEventGroups();
@@ -166,7 +170,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         menuOptions.push({
             text: "Void Job",
             icon: "cancel",
-            click: () => this.voidJobAction(job, callbacks.onRefresh),
+            click: (_$itemScope: any, $event: MouseEvent) => this.voidJobAction($event, job, callbacks.onRefresh),
             hasBottomDivider: true,
         });
 
@@ -199,35 +203,11 @@ class JobContextMenuService implements angular.IServiceProvider {
         return menuOptions;
     }
 
-    async voidJobAction(job: IDispatchJob, onRefresh: () => void) {
+    async voidJobAction($event: MouseEvent, job: IDispatchJob, onRefresh: () => void) {
         if (!job) return;
 
         try {
-            const note = await this.$mdDialog.show(
-                this.$mdDialog
-                    .prompt()
-                    .title("Void Job")
-                    .textContent("Add Note")
-                    .placeholder("Note")
-                    .ariaLabel("Void job")
-                    .required(true)
-                    .ok("Void")
-                    .cancel("Cancel")
-            );
-
-            const jobNote: IJobNote = {
-                jobId: job.id,
-                jobNumber: job.jobNo,
-                isImportant: false,
-                noteTypeId: JobNoteType.InternalNote,
-                noteText: note,
-                createdBy: ContactID,
-                createdDate: new Date(),
-            };
-
-            await this.noteService.createNote(jobNote);
-            await this.DispatchData.voidJob(job.id);
-
+            await this.voidJobConfirmationDialogService.showVoidConfirmationDialog($event, job);
             this.toastrService.showSuccessToast("Job voided successfully");
 
             if (onRefresh) {

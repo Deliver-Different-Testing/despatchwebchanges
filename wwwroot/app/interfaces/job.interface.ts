@@ -534,3 +534,9 @@ export interface JobGroup {
     job: Suggestion;
     subJobs: Suggestion[];
 }
+
+export interface VoidJobRequest {
+    jobId: number;
+    voidSingleJobOnly: boolean;
+    voidReason?: string;
+}

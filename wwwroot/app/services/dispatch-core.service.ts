@@ -14,7 +14,7 @@ import {
     PriceBreakdown,
     SuburbLookup,
     Suggestion,
-    TimeZoneSuggestion,
+    VoidJobRequest,
 } from "../interfaces/job.interface";
 import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
@@ -66,13 +66,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         );
         return response.data;
     }
-
-    async getTimeZoneOptions(): Promise<TimeZoneSuggestion[]> {
-        const response = await this.$http.get<TimeZoneSuggestion[]>("job/GetTimeZoneOptions");
-        return response.data;
-    }
     
- async getEventTypes(): Promise<Suggestion[]> {
+    async getEventTypes(): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>("job/EventTypeList");
         return response.data;
     }
@@ -205,12 +200,14 @@ class DispatchCoreService implements angular.IServiceProvider {
         
     }
 
-    async voidJob(jobId: number) {
-        await this.$http.post(`job/Void`, null, {
-            params: {
-                jobId,
-            },
-        });
+    async voidJob(jobId: number, voidSingleJobOnly: boolean, voidReason?: string) {
+       const data: VoidJobRequest = {
+           jobId,
+           voidSingleJobOnly,
+           voidReason
+       }
+       
+        await this.$http.post(`job/Void`, data);
     }
 
     async restoreJobs(jobIds: number[]) {
@@ -384,12 +381,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         );
         return response.data;
     }
-
-    async getActiveClients() {
-        const response = await this.$http.get("home/ActiveClients");
-        return response.data;
-    }
-
+    
     async getClientContacts(contactId: number) {
         const response = await this.$http.get(
             `home/ClientContacts`, {
@@ -899,22 +891,7 @@ class DispatchCoreService implements angular.IServiceProvider {
 
         return response.data;
     }
-
-    async retrieveAddresses(lat: number, long: number) {
-        const hereMapsConfig = await this.configService.getHereMapsConfig();
-
-        const response = await this.$http.get("https://reverse.geocoder.api.here.com/6.2/reversegeocode.json", {
-            params: {
-                app_id: hereMapsConfig.appId,
-                app_code: hereMapsConfig.appCode,
-                mode: "retrieveAddresses",
-                prox: lat.toString() + "," + long.toString() + "," + "250"
-            }
-        });
-
-        return response.data;
-    }
-
+    
     async autocompleteSearch(
         searchTerm: string,
         url: string

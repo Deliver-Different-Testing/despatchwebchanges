@@ -1077,26 +1077,30 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> Void(int jobId)
+    public async Task<IActionResult> Void([FromBody] VoidJobRequest requestData)
     {
         try
         {
-            await jobRepository.VoidJob(jobId);
+            await jobRepository.VoidJob(requestData.JobId,
+                requestData.VoidReason,
+                requestData.VoidSingleJobOnly);
             return Ok();
         }
         catch (Exception ex)
         {
             Log.Error(
                 ex,
-                "Error voiding Job with ID {JobId}. Error: {ErrorMessage}",
-                jobId,
+                "Error voiding {SingleJobString} Job(s) with ID {JobId}. Error: {ErrorMessage}",
+                requestData.JobId,
+                requestData.VoidSingleJobOnly ? "Single" : "All",
                 ex.Message
             );
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));        }
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
     }
 
     [HttpPost]
-    public async Task<IActionResult> ReSendAll(int courierId) 
+    public async Task<IActionResult> ReSendAll(int courierId)
     {
         try
         {
@@ -1194,7 +1198,7 @@ public class JobController(
         await jobRepository.FinishSplitJobProcess(jobId, despatcherName);
         return Ok();
     }
-    
+
     [HttpPost]
     public async Task<IActionResult> UpdateSplitJobAddress(
         int jobId,
@@ -1410,7 +1414,7 @@ public class JobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
-    
+
     [HttpPost]
     public async Task<IActionResult> UpdateJob(
         int jobId,
@@ -1434,7 +1438,7 @@ public class JobController(
                 await rateJobService.RateJobUsAsync(jobDetails);
             else
                 await rateJobService.RateJobAsync(jobDetails);
-            
+
             // Add event
             var changePriceId = await taskRepository.GetTaskTypeIdByNameAsync("Change Price");
             var staffId = infoService.GetStaffId();
@@ -1452,7 +1456,8 @@ public class JobController(
         {
             Log.Error(
                 e,
-                "An error occured updating field {JobProperty} with value {Value} for job {JobId}. Error: {Message}", field, value, jobId, e.Message
+                "An error occured updating field {JobProperty} with value {Value} for job {JobId}. Error: {Message}",
+                field, value, jobId, e.Message
             );
 
             return StatusCode(500, e.Message + e.InnerException?.Message);
@@ -1828,7 +1833,6 @@ public class JobController(
             return ex.StatusCode == HttpStatusCode.NotFound
                 ? NotFound($"File {key} not found in bucket")
                 : StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-                
         }
     }
 
@@ -2254,5 +2258,5 @@ public class JobController(
             Log.Error(ex, "Error retrieving the delivery journey for Job {JobId}", jobId);
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
-    }    
+    }
 }

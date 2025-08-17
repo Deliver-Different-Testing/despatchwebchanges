@@ -333,6 +333,8 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\resolution-warning-dialog\resolution-warning.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\void-job-confirmation-dialog\void-job-confirmation-dialog.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\void-job-confirmation-dialog\void-job-confirmation-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\enums\DispatchBoxes.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\home.module.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\jobSearchBoxes.ts" />
