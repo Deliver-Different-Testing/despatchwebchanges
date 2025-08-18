@@ -2631,18 +2631,19 @@ class HomeController extends BaseController {
         this.applyScope();
     }
 
+
     private startAutoRefresh(): void {
         if (!this.selectedRefreshInterval || this.selectedRefreshInterval.id <= 0) {
             return;
         }
 
+        // Always stop any existing refresh first
         this.stopAutoRefresh();
 
         console.log(`Starting auto refresh every ${this.selectedRefreshInterval.id} seconds (${this.selectedRefreshInterval.text})`);
 
         this.isAutoRefreshEnabled = true;
 
-        // Use the inherited registerInterval method from BaseController
         this.refreshIntervalPromise = this.registerInterval(async () => {
             if (this.isAutoRefreshEnabled) {
                 console.log('Auto refreshing job lists...');
@@ -2664,11 +2665,18 @@ class HomeController extends BaseController {
         this.applyScope();
     }
 
-    // Stop auto refresh
     private stopAutoRefresh(): void {
+        console.log('Stopping auto refresh');
+        this.isAutoRefreshEnabled = false;
+
         if (this.refreshIntervalPromise) {
-            console.log('Stopping auto refresh');
-            this.isAutoRefreshEnabled = false;
+            const cancelled = this.cancelInterval(this.refreshIntervalPromise);
+            if (cancelled) {
+                console.log('Successfully cancelled refresh interval');
+            } else {
+                console.warn('Failed to cancel refresh interval');
+            }
+
             this.refreshIntervalPromise = undefined;
         }
     }

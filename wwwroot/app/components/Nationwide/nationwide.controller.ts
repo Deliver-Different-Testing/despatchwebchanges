@@ -2138,43 +2138,50 @@ class NationwideControl extends BaseController {
             return;
         }
 
-        this.stopAutoRefresh(); // Ensure no duplicate intervals
+        // Always stop any existing refresh first
+        this.stopAutoRefresh();
 
         console.log(`Starting auto refresh every ${this.selectedRefreshInterval.id} seconds (${this.selectedRefreshInterval.text})`);
 
         this.isAutoRefreshEnabled = true;
 
-        // Use the inherited registerInterval method from BaseController
         this.refreshIntervalPromise = this.registerInterval(async () => {
             if (this.isAutoRefreshEnabled) {
                 console.log('Auto refreshing job lists...');
                 try {
-                    await this.refreshJobLists(this.currentJobId);
+                    await this.getData();
 
                     // Also refresh tasks if a job is selected
                     if (this.currentJobId) {
-                        await this.loadTasks();
+                        await this.loadSupports();
                     }
 
                     console.log('Auto refresh completed successfully');
                 } catch (error) {
                     console.error('Error during auto refresh:', error);
-                    // Don't show toast for auto-refresh errors to avoid spam
                 }
             }
-        }, this.selectedRefreshInterval.id * 1000); // Convert seconds to milliseconds
+        }, this.selectedRefreshInterval.id * 1000);
 
         this.applyScope();
     }
 
-    // Stop auto refresh
     private stopAutoRefresh(): void {
+        console.log('Stopping auto refresh');
+        this.isAutoRefreshEnabled = false;
+
         if (this.refreshIntervalPromise) {
-            console.log('Stopping auto refresh');
-            this.isAutoRefreshEnabled = false;
+            const cancelled = this.cancelInterval(this.refreshIntervalPromise);
+            if (cancelled) {
+                console.log('Successfully cancelled refresh interval');
+            } else {
+                console.warn('Failed to cancel refresh interval');
+            }
+
             this.refreshIntervalPromise = undefined;
         }
     }
+
 
     getCurrentRefreshIntervalText(): string {
         if (!this.selectedRefreshInterval || this.selectedRefreshInterval.id === 0) {
