@@ -1224,85 +1224,86 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         foreach (var jobId in jobIds) await Context.Procedures.uspRestoreJobAsync(jobId);
     }
 
-public async Task VoidJob(int jobId,string voidReason, bool voidSingleJobOnly = false)
-{
-    try
+    public async Task VoidJob(int jobId, string voidReason, bool voidSingleJobOnly = false)
     {
-        List<JobVoidDto> jobsToVoid;
-        
-        if (voidSingleJobOnly)
+        try
         {
-            // Only void the specific job
-            jobsToVoid = await Context.TblJobs
-                .Where(j => j.JobId == jobId)               
-                .Select(j => new JobVoidDto { UcjbId = j.JobId, UcjbVoid = j.Void })
+            List<int> jobsToVoid;
+
+            if (voidSingleJobOnly)
+                jobsToVoid = [jobId];
+            else
+                jobsToVoid = await GetAllRelatedJobIdsIncludingParentAsync(jobId);
+
+            // Add Notes
+            foreach (var id in jobsToVoid) await SaveNoteAsync(id, voidReason);
+
+            var courierMapping = await Context.TblJobs
+                .Where(jt => jobsToVoid.Contains(jt.JobId))
+                .Where(jt => jt.CourierId.HasValue)
+                .Select(jt => new { jt.JobId, jt.CourierId })
+                .Distinct()
+                .ToDictionaryAsync(jt => jt.JobId, jt => jt.CourierId ?? 0);
+
+            await Context.TucJobs
+                .Where(j => jobsToVoid.Contains(j.UcjbId))
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.UcjbStatus, (int)JobStatus.Completed)
+                    .SetProperty(j => j.UcjbVoid, true));
+
+            // Reset courier clear list for all affected couriers
+            var resetTasks = courierMapping.Values
+                .Select(courierId => Context.Procedures.UTL_stpCourier_ResetClearListAreaOrderAsync(courierId));
+
+            await Task.WhenAll(resetTasks);
+
+            // Close tasks based on the voiding scope
+            await CloseTasksByJobIdAsync(jobId, voidSingleJobOnly);
+
+            await Context.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error voiding job {JobId} (SingleOnly: {VoidSingleJobOnly})", jobId, voidSingleJobOnly);
+            throw;
+        }
+    }
+
+    private async Task<List<int>> GetAllRelatedJobIdsIncludingParentAsync(int jobId)
+    {
+        List<int> relatedJobIds;
+
+        // Close tasks for all related jobs (original behavior)
+        var parentId = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => j.ParentId)
+            .FirstOrDefaultAsync();
+
+        if (parentId.HasValue)
+        {
+            relatedJobIds = await Context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .SelectMany(x => x.Parent.InverseParent)
+                .Select(j => j.UcjbId)
                 .ToListAsync();
+
+            // Add parentId
+            relatedJobIds.Add(parentId.Value);
         }
         else
         {
-            // Void job and all related jobs (original behavior)
-            jobsToVoid = await Context.TblJobs
-                .Where(j => j.RootParentId == jobId || j.JobId == jobId)
-                .Select(j => new JobVoidDto { UcjbId = j.JobId, UcjbVoid = j.Void })
+            relatedJobIds = await Context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .SelectMany(x => x.InverseParent)
+                .Select(j => j.UcjbId)
                 .ToListAsync();
+
+            // Add this jobId
+            relatedJobIds.Add(jobId);
         }
 
-        if (jobsToVoid.Count == 0) return;
-        var jobIds = jobsToVoid.Select(j => j.UcjbId).ToList();
-
-        // Add Notes
-        await AddVoidNoteToJobsAsync(jobIds, voidReason);
-        
-        var courierMapping = await Context.TblJobs
-            .Where(jt => jobIds.Contains(jt.JobId))
-            .Where(jt => jt.CourierId.HasValue)
-            .Select(jt => new { jt.JobId, jt.CourierId })
-            .Distinct()
-            .ToDictionaryAsync(jt => jt.JobId, jt => jt.CourierId ?? 0);
-
-        await Context.TucJobs
-            .Where(j => jobIds.Contains(j.UcjbId))
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(j => j.UcjbStatus, (int)JobStatus.Completed)
-                .SetProperty(j => j.UcjbVoid, true));
-
-        // Reset courier clear list for all affected couriers
-        var uniqueCourierIds = courierMapping.Values.Distinct();
-        var resetTasks = uniqueCourierIds
-            .Select(courierId => Context.Procedures.UTL_stpCourier_ResetClearListAreaOrderAsync(courierId));
-
-        await Task.WhenAll(resetTasks);
-
-        // Close tasks based on the voiding scope
-        await CloseTasksByJobIdAsync(jobId, voidSingleJobOnly);
-        
-        await Context.SaveChangesAsync();
+        return relatedJobIds;
     }
-    
-    catch (Exception e)
-    {
-        Log.Error(e, "Error voiding job {JobId} (SingleOnly: {VoidSingleJobOnly})", jobId, voidSingleJobOnly);
-        throw;
-    }
-}
-
-private async Task AddVoidNoteToJobsAsync(List<int> jobIds, string voidReason)
-{
-    // Add Note
-    var staffId = _infoService.GetStaffId();
-    var currentDate = _infoService.GetCurrentTenantTime();
-    foreach (var newNote in jobIds.Select(jobId => new TucNote
-             {
-                 CreatedBy = staffId,
-                 CreatedDate = currentDate,
-                 JobId = jobId,
-                 NoteText = voidReason,
-                 NoteTypeId = (int)NoteType.InternalNote,
-                 IsImportant = true
-             })) await Context.AddAsync(newNote);
-        
-    await Context.SaveChangesAsync();
-}
 
     public async Task SplitJob(int jobId, string user) =>
         await Context.Procedures.DES_stpJob_SplitJobAsync(jobId, false, user);
@@ -2635,37 +2636,11 @@ private async Task AddVoidNoteToJobsAsync(List<int> jobIds, string voidReason)
     private async Task CloseTasksByJobIdAsync(int jobId, bool closeSingleJobTasksOnly = false)
     {
         List<int> jobIds;
-    
-        if (closeSingleJobTasksOnly)
-        {
-            // Only close tasks for the specific job
-            jobIds = [jobId];
-        }
-        else
-        {
-            // Close tasks for all related jobs (original behavior)
-            var hasParent = await Context.TucJobs
-                .Where(j => j.UcjbId == jobId)
-                .Select(j => j.Parent != null)
-                .FirstOrDefaultAsync();
 
-            if (hasParent)
-            {
-                jobIds = await Context.TucJobs
-                    .Where(j => j.UcjbId == jobId)
-                    .SelectMany(x => x.Parent.InverseParent)
-                    .Select(j => j.UcjbId)
-                    .ToListAsync();
-            }
-            else
-            {
-                jobIds = await Context.TucJobs
-                    .Where(j => j.UcjbId == jobId)
-                    .SelectMany(x => x.InverseParent)
-                    .Select(j => j.UcjbId)
-                    .ToListAsync();
-            }
-        }
+        if (closeSingleJobTasksOnly)
+            jobIds = [jobId];
+        else
+            jobIds = await GetAllRelatedJobIdsIncludingParentAsync(jobId);
 
         await Context.TucEvents
             .Where(t => jobIds.Contains(t.UcevJobId.Value) && !t.UcevClosed)

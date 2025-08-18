@@ -63,6 +63,11 @@ public partial class JobRepository
             case JobProperty.Items:
                 job.UcjbQty = short.Parse(value);
                 break;
+            case JobProperty.Void: 
+                var voidJob = bool.Parse(value);
+                if(voidJob) throw new ApplicationException("Voiding a job is not allowed here");
+                job.UcjbVoid = false;
+                break;
             case JobProperty.SpeedID:
             case JobProperty.AcceptedJobTypeID when !job.UcjbJobDone:
                 job.UcjbSpeed = short.Parse(value);
@@ -324,6 +329,11 @@ public partial class JobRepository
                 break;
             case JobProperty.Items:
                 archive.UcjbQty = short.Parse(value);
+                break;
+            case JobProperty.Void: 
+                var voidJob = bool.Parse(value);
+                if(voidJob) throw new ApplicationException("Voiding a job is not allowed here");
+                archive.UcjbVoid = false;
                 break;
             case JobProperty.SpeedID:
             case JobProperty.AcceptedJobTypeID when !archive.UcjbJobDone:
