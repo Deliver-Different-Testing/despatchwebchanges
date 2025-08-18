@@ -203,7 +203,6 @@
                             </md-icon>
                             <div class="md-list-item-text">
                                 <h3>PU Time</h3>
-                                <p>{{ctrl.job.puTime}}</p>
                                 <p>
                                     {{ctrl.job.puTime ? (ctrl.job.puTime | momentFormat:'MM/DD HH:mm') + ' (' + ((ctrl.job.pickUpTimeZone ?
                                                 ctrl.job.pickUpTimeZone.text : ctrl.timeZone) | timezoneShort)

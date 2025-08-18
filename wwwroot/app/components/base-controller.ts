@@ -158,7 +158,28 @@ class BaseController implements angular.IController {
         this.intervals.push(intervalPromise);
         return intervalPromise;
     }
+    
+    protected cancelInterval(intervalPromise: angular.IPromise<any>): boolean {
+        if (!intervalPromise || !this.$intervalService) {
+            return false;
+        }
 
+        try {
+            this.$intervalService.cancel(intervalPromise);
+
+            // Remove from the interval array
+            const index = this.intervals.indexOf(intervalPromise);
+            if (index > -1) {
+                this.intervals.splice(index, 1);
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Error cancelling interval:', error);
+            return false;
+        }
+    }
+    
     $onDestroy(): void {
         // Cancel debounced timeouts
         if (this.$timeoutService) {
