@@ -11,7 +11,7 @@ class VoidJobConfirmationDialogController extends BaseController {
         "toastrService",
         "job"
     ];
-    
+
     voidReasonText?: string;
     voidSingleJobOnly: boolean = true;
 
@@ -24,15 +24,25 @@ class VoidJobConfirmationDialogController extends BaseController {
         super();
         console.log('VoidJobConfirmationDialogController: Controller instantiated');
     }
-    
+
     async confirm() {
-        if(this.voidReasonText === undefined || this.voidReasonText.trim() === '') {
-            this.toastrService.showWarningToast('Please enter a reason for voiding this job.');
+        try {
+            if (this.voidReasonText === undefined || this.voidReasonText.trim() === '') {
+                this.toastrService.showWarningToast('Please enter a reason for voiding this job.');
+            }
+            await this.DispatchData.voidJob(this.job.id, this.voidSingleJobOnly, this.voidReasonText);
+
+            this.voidSingleJobOnly
+                ? this.toastrService.showSuccessToast(`Job ${this.job.jobNo} has been voided successfully. Related jobs will not be voided.`)
+                : this.toastrService.showSuccessToast(`Job ${this.job.jobNo} and related jobs have been voided successfully.`);
+
+            this.$mdDialog.hide();
+        } catch (error: any) {
+            this.toastrService.showErrorToast(error.message);
         }
-        await this.DispatchData.voidJob(this.job.id, this.voidSingleJobOnly, this.voidReasonText);
-        this.$mdDialog.confirm();
+
     }
-    
+
     cancel(): void {
         this.$mdDialog.cancel();
     }
