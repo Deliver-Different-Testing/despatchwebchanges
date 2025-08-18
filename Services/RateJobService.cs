@@ -107,7 +107,8 @@ public class RateJobService(
                 Quantity = jobDetails.Quantity,
                 Cubic = jobDetails.Cubic,
                 IsPrebook = jobDetails.IsPrebook ?? false,
-                CalculateDimsOncePerJob = jobDetails.CalculateDimsOncePerJob
+                CalculateDimsOncePerJob = jobDetails.CalculateDimsOncePerJob,
+                PreviousRate = jobDetails.PreviousRate
             });
         }
         catch (Exception ex)
@@ -207,10 +208,7 @@ public class RateJobService(
             response.EnsureSuccessStatusCode();
 
             var result = await response.Content.ReadFromJsonAsync<HereMapRouteResponseV8>();
-            if (result == null)
-                throw new ApplicationException("Failed to deserialize HERE Maps API response");
-
-            return result;
+            return result ?? throw new ApplicationException("Failed to deserialize HERE Maps API response");
         }
         catch (HttpRequestException ex)
         {

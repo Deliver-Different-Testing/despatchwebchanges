@@ -1080,6 +1080,12 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             dimensionsType: dto.CalculateDimsOncePerJob ? 1 : 0
         );
 
+        if (dto.PreviousRate == rate.Value)
+        {
+            Log.Information("Price is unchanged. Not updating job {Job}", dto.JobId);
+            return;
+        }
+
         Log.Information("Pricing breakdown is: {DescriptionValue}", description.Value);
 
         if (dto.IsPrebook)
@@ -1104,7 +1110,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         }
 
         var printableRate = rate.Value ?? 0;
-        await SaveNoteAsync(dto.JobId, $"Repriced to {printableRate}", true);
+        await SaveNoteAsync(dto.JobId, $"Repriced from {dto.PreviousRate} to {printableRate}", true);
     }
 
     public async Task<TucJobType> GetJobTypeById(int speedId)
@@ -1113,10 +1119,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             .TucJobTypes.AsNoTracking()
             .FirstOrDefaultAsync(x => x.UcjtId == speedId);
 
-        if (jobType == null)
-            throw new KeyNotFoundException($"Job type with ID {speedId} not found");
-
-        return jobType;
+        return jobType ?? throw new KeyNotFoundException($"Job type with ID {speedId} not found");
     }
 
     public async Task<TucJobTypeGrouping> GetJobTypeGrouping(int groupingId)
@@ -1125,10 +1128,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             .TucJobTypeGroupings.AsNoTracking()
             .FirstOrDefaultAsync(x => x.GroupingId == groupingId);
 
-        if (grouping == null)
-            throw new KeyNotFoundException($"Job type grouping with ID {groupingId} not found");
-
-        return grouping;
+        return grouping ?? throw new KeyNotFoundException($"Job type grouping with ID {groupingId} not found");
     }
 
     public async Task<List<AddressWithAgent>> GetClosestAirports(
@@ -1836,6 +1836,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     RefB = job.UcbkClientRefb,
                     Quantity = job.Quantity.HasValue ? (int)job.Quantity : 0,
                     BookedDate = job.UcbkDate ?? DateTime.MinValue,
+                    PreviousRate = job.PricingBreakdowns.Sum(p => p.Charged),
 
                     // Coordinates
                     PickupLat = job.PickUpLatitude ?? 0,

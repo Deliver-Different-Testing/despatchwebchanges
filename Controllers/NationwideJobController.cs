@@ -26,7 +26,7 @@ public class NationwideJobController(
     {
         try
         {
-            if (!data.IsInternal) await clientAccessValidator.ValidateClientAccess(data.Cid, data.ClientIds);
+            if (!data.IsInternal) await clientAccessValidator.ValidateClientAccessAsync(data.Cid, data.ClientIds);
             var isUsTenant = infoService.IsUsTenant();
 
             var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, data.ClientIds,
@@ -45,7 +45,7 @@ public class NationwideJobController(
     {
         try
         {
-            if (!data.IsInternal) await clientAccessValidator.ValidateClientAccess(data.Cid, data.ClientIds);
+            if (!data.IsInternal) await clientAccessValidator.ValidateClientAccessAsync(data.Cid, data.ClientIds);
             var isUsTenant = infoService.IsUsTenant();
 
             var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, data.ClientIds,
@@ -64,7 +64,7 @@ public class NationwideJobController(
     {
         try
         {
-            if (!data.IsInternal) await clientAccessValidator.ValidateClientAccess(data.Cid, data.ClientIds);
+            if (!data.IsInternal) await clientAccessValidator.ValidateClientAccessAsync(data.Cid, data.ClientIds);
             var isUsTenant = infoService.IsUsTenant();
 
             var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, data.ClientIds,

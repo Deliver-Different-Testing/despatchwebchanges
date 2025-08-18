@@ -58,7 +58,7 @@ public class TaskController(ITaskRepository taskRepository) : Controller
     {
         try
         {
-            await taskRepository.UpdateEventTime(eventId, time);
+            await taskRepository.UpdateEventTimeAsync(eventId, time);
             return Ok();
         }
         catch (Exception ex)
@@ -135,7 +135,7 @@ public class TaskController(ITaskRepository taskRepository) : Controller
     {
         try
         {
-            await taskRepository.ReassignEventToUser(eventId, staffId);
+            await taskRepository.ReassignEventToUserAsync(eventId, staffId);
             return Ok();
         }
         catch (Exception ex)
