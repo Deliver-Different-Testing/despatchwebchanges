@@ -32,6 +32,8 @@ import sortRelatedJobs from "../../../functions/sortRelatedJobs";
 import {UpdatePodDetailsRequest} from "../../../interfaces/requests.interfaces";
 import dayjs from "dayjs";
 import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
+import VoidJobConfirmationDialogService
+    from "../../dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
 
 class JobDetailController extends BaseController {
     static $inject = [
@@ -48,9 +50,9 @@ class JobDetailController extends BaseController {
         "$rootScope",
         "$timeout",
         "$interval",
-        "$filter",
         "autoCompleteDialogService",
         "jobFileUploadDialogService",
+        "voidJobConfirmationDialogService",
     ];
 
     readonly isRecurringJob: boolean = false;
@@ -88,9 +90,9 @@ class JobDetailController extends BaseController {
         private $rootScope: angular.IRootScopeService,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
-        private $filter: angular.IFilterService,
         private autoCompleteDialogService: AutoCompleteDialogService,
-        private jobFileUploadDialogService: JobFileUploadDialogService
+        private jobFileUploadDialogService: JobFileUploadDialogService,
+        private voidJobConfirmationDialogService: VoidJobConfirmationDialogService
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
@@ -1916,6 +1918,26 @@ class JobDetailController extends BaseController {
             );
         } catch (error) {
             console.error("Error updating active:", error);
+            this.handleError(error);
+        }
+    }
+    
+    async updateVoid($event: MouseEvent, job: IJob) {
+        try {
+            const newVoidValue = !job.void;
+            
+            if(newVoidValue) {
+                await this.voidJobConfirmationDialogService.showVoidConfirmationDialog($event, job);
+            } else {
+                await this.DispatchData.updateJobDetail(
+                    job.id,
+                    JobProperty.Void,
+                    newVoidValue,
+                    job.preBook
+                );
+            }
+        } catch (error) {
+            console.error("Error updating void:", error);
             this.handleError(error);
         }
     }

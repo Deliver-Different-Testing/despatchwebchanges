@@ -1,4 +1,4 @@
-﻿import {IDispatchJob} from "../../../interfaces/job.interface";
+﻿import {IDispatchJob, IJob} from "../../../interfaces/job.interface";
 import VoidJobConfirmationDialogController from "./void-job-confirmation-dialog.controller";
 
 class VoidJobConfirmationDialogService implements angular.IServiceProvider {
@@ -18,7 +18,7 @@ class VoidJobConfirmationDialogService implements angular.IServiceProvider {
         return this;
     }
 
-    async showVoidConfirmationDialog($event: MouseEvent, job: IDispatchJob) {
+    async showVoidConfirmationDialog($event: MouseEvent, job: IDispatchJob | IJob) {
         await this.$mdDialog.show({
             template: require("./void-job-confirmation-dialog.template.html"),
             controller: VoidJobConfirmationDialogController,

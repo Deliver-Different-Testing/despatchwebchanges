@@ -338,7 +338,7 @@ class JobSearchController extends BaseController {
 
         this.deliveryHistoryConfig = {
             showSummaryStats: true,
-            densityMode: DensityMode.Dense
+            densityMode: DensityMode.Normal
         }
 
         // Default to a fortnight
