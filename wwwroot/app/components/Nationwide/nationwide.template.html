@@ -125,6 +125,7 @@
                                 ng-if="ctrl.views && ctrl.views.length > 0"
                                 ng-repeat="view in ctrl.views">
                             <md-checkbox
+                                    class="md-primary"
                                     aria-label="{{view.name}}"
                                     ng-change="ctrl.toggleView(view)"
                                     ng-model="view.selected">

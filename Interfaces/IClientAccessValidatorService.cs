@@ -4,5 +4,5 @@ namespace DespatchWeb.Interfaces;
 
 public interface IClientAccessValidatorService
 {
-    Task ValidateClientAccess(int contactId, string clientIds);
+    Task ValidateClientAccessAsync(int contactId, string clientIds);
 }

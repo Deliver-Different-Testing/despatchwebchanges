@@ -7,7 +7,7 @@ namespace DespatchWeb.Services;
 
 public class ClientAccessValidatorService(IClientRepository clientRepo) : IClientAccessValidatorService
 {
-    public async Task ValidateClientAccess(int contactId, string clientIds)
+    public async Task ValidateClientAccessAsync(int contactId, string clientIds)
     {
         if (string.IsNullOrEmpty(clientIds)) return;
 

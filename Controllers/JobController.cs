@@ -50,7 +50,7 @@ public class JobController(
         try
         {
             var isUsTenant = infoService.IsUsTenant();
-            if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
+            if (!isInternal) await clientAccessValidator.ValidateClientAccessAsync(cid, clientIds);
 
             var result = await jobRepository.JobListAsync(
                 queryParams,
@@ -91,7 +91,7 @@ public class JobController(
                 despatchViewIds
             );
 
-            if (!isInternal) await clientAccessValidator.ValidateClientAccess(0, clientIds);
+            if (!isInternal) await clientAccessValidator.ValidateClientAccessAsync(0, clientIds);
             var result = await jobRepository.GetJobCoordinatesAsync(despatchViewIds);
 
             Log.Information(
@@ -127,7 +127,7 @@ public class JobController(
             var isUsTenant = infoService.IsUsTenant();
 
             if (!isInternal)
-                await clientAccessValidator.ValidateClientAccess(cid, clientIds);
+                await clientAccessValidator.ValidateClientAccessAsync(cid, clientIds);
 
             // Get jobs
             var result = await jobRepository.JobListAsync(
@@ -1438,17 +1438,6 @@ public class JobController(
                 await rateJobService.RateJobUsAsync(jobDetails);
             else
                 await rateJobService.RateJobAsync(jobDetails);
-
-            // Add event
-            var changePriceId = await taskRepository.GetTaskTypeIdByNameAsync("Change Price");
-            var staffId = infoService.GetStaffId();
-            await taskRepository.AddEventAsync(
-                jobId,
-                staffId,
-                "System",
-                "Price recalculated during job update",
-                changePriceId
-            );
 
             return Ok();
         }

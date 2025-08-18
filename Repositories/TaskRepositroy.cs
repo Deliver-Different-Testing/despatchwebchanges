@@ -88,7 +88,7 @@ public class TaskRepository(
         await Context.SaveChangesAsync();
     }
 
-    public async Task UpdateEventTime(int eventId, string time)
+    public async Task UpdateEventTimeAsync(int eventId, string time)
     {
         var dfrntEvent = await Context.TucEvents.FindAsync(eventId);
         ArgumentNullException.ThrowIfNull(dfrntEvent);
@@ -97,7 +97,7 @@ public class TaskRepository(
         await Context.SaveChangesAsync();
     }
 
-    public async Task ReassignEventToUser(int eventId, int staffId)
+    public async Task ReassignEventToUserAsync(int eventId, int staffId)
     {
         var dfrntEvent = await Context.TucEvents.FindAsync(eventId);
         ArgumentNullException.ThrowIfNull(dfrntEvent);
@@ -425,10 +425,4 @@ public class TaskRepository(
         EventType = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetGroup : string.Empty,
         JobNumber = e.UcevJob.UcjbNumber
     };
-    
-    public async Task<int> GetTaskTypeIdByNameAsync(string name)
-    {
-        var taskType = await Context.TucEventTypeGroups.FirstOrDefaultAsync(x => x.Name == name);
-        return taskType?.Id ?? 0;
-    }
 }

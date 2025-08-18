@@ -52,4 +52,5 @@ public class JobRatingDetailsDto
     public bool? IsPrebook { get; set; }
     
     public bool CalculateDimsOncePerJob { get; set; }
+    public decimal? PreviousRate { get; set; }
 }

@@ -11,8 +11,8 @@ public interface ITaskRepository
     Task<List<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters);
     Task SetEventAsClosedAsync(int eventId, bool closed);
     Task UpdateEventDateAsync(int eventId, string date);
-    Task UpdateEventTime(int eventId, string time);
-    Task ReassignEventToUser(int eventId, int staffId);
+    Task UpdateEventTimeAsync(int eventId, string time);
+    Task ReassignEventToUserAsync(int eventId, int staffId);
     Task<List<Suggestion>> GetEventGroupsAsync();
     Task<List<EventGroupViewModel>> GetEventTypeGroupsAsync(int eventGroupId);
 
@@ -29,7 +29,5 @@ public interface ITaskRepository
         int? lateTime = null,
         DateTime? etaTime = null,
         bool close = false
-    );
-
-    Task<int> GetTaskTypeIdByNameAsync(string name);
+    ); 
 }
