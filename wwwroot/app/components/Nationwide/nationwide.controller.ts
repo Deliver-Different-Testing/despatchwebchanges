@@ -1600,47 +1600,6 @@ class NationwideControl extends BaseController {
     }
 
     // Tasks
-    private buildFilterRequest(filterType: string): TaskTableFiltersRequest {
-        let filters: TaskTableFiltersRequest = {};
-        filters.jobId = this.currentJobId;
-        filters.showCompleted = false;
-
-        if (this.staffFilter && this.staffFilter !== StatusFilter.All) {
-            filters.staffId = parseInt(this.staffFilter, 10);
-        }
-
-        if (this.eventTypeFilter && this.eventTypeFilter !== StatusFilter.All) {
-            filters.eventTypeId = parseInt(this.eventTypeFilter, 10);
-        }
-
-        switch (filterType) {
-            case 'mine':
-                filters.staffId = ContactID;
-                filters.orderBy = 'assignedTo';
-                filters.orderDirection = 'desc';
-                break;
-            case 'unassigned':
-                filters.staffId = -1;
-                filters.orderBy = 'assignedTo';
-                filters.orderDirection = 'desc';
-                break;
-            case 'newest':
-                filters.orderBy = 'created';
-                filters.orderDirection = 'desc';
-                break;
-            case 'oldest':
-                filters.orderBy = 'created';
-                filters.orderDirection = 'asc';
-                break;
-            default:
-                filters.orderBy = 'created';
-                filters.orderDirection = 'desc';
-                break;
-        }
-
-        return filters;
-    }
-
     getTasksStatusCount(statusType: string): number {
         return this.tasksService.getTasksStatusCount(this.tasks, statusType);
     }
@@ -2153,7 +2112,7 @@ class NationwideControl extends BaseController {
 
                     // Also refresh tasks if a job is selected
                     if (this.currentJobId) {
-                        await this.loadSupports();
+                        await this.loadTasks();
                     }
 
                     console.log('Auto refresh completed successfully');
