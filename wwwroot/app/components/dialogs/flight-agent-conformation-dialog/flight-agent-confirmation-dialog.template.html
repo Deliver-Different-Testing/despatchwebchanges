@@ -42,7 +42,7 @@
                                 <md-icon md-font-set="material-symbols-outlined">arrow_forward</md-icon>
                             </div>
                             <div class="airport-info">
-                                <div class="airport-code">{{::ctrl.flight.arrivalAirport || ctrl.flight.departureAirport}}</div>
+                                <div class="airport-code">{{::ctrl.flight.arrivalAirport || ctrl.flight.departureAirport}} </div>
                                 <div class="airport-label">Arrival</div>
                             </div>
                         </div>
@@ -63,7 +63,7 @@
                         </div>
                     </div>
 
-                    <!-- Deliver By Time Section (shown in top row if no agent) -->
+                    <!-- Deliver By Time Section (shown in the top row if no agent) -->
                     <div class="content-section deliver-by-time-section"
                          ng-class="{'disabled': !ctrl.currentDeliverByTime}"
                          ng-if="ctrl.flight && !ctrl.agent">
@@ -91,7 +91,7 @@
                         <div class="time-display-container" ng-if="ctrl.currentDeliverByTime">
                             <div class="current-time-display">
                                 <span class="time-label">Current Deliver By:</span>
-                                <span class="time-value">{{ctrl.currentDeliverByTime | momentFormat:'MMM D, YYYY HH:mm'}}</span>
+                                <span class="time-value">{{ctrl.currentDeliverByTime | momentFormat:'MMM D, YYYY HH:mm'}} ({{::ctrl.flight.arrivalTimeZone | timezoneShort}})</span>
                             </div>
 
                             <div class="override-toggle-container">
@@ -106,7 +106,7 @@
 
                                 <div class="override-time-preview" ng-if="ctrl.overrideDeliverByTime && ctrl.flight.arrivalTime ">
                                     <span class="preview-label">New Deliver By:</span>
-                                    <span class="preview-time">{{ctrl.flightArrivalTimeWithProcessing | momentFormat:'MMM D, YYYY HH:mm'}}</span>
+                                    <span class="preview-time">{{ctrl.flightArrivalTimeWithProcessing | momentFormat:'MMM D, YYYY HH:mm'}} ({{::ctrl.flight.arrivalTimeZone | timezoneShort}})</span>
                                 </div>
                             </div>
                         </div>
@@ -143,7 +143,7 @@
                         <div class="time-display-container" ng-if="ctrl.currentDeliverByTime">
                             <div class="current-time-display">
                                 <span class="time-label">Current Deliver By:</span>
-                                <span class="time-value">{{ctrl.currentDeliverByTime | momentFormat:'MMM D, YYYY HH:mm'}}</span>
+                                <span class="time-value">{{ctrl.currentDeliverByTime | momentFormat:'MMM D, YYYY HH:mm'}} ({{::ctrl.flight.arrivalTimeZone | timezoneShort}})</span>
                             </div>
 
                             <div class="override-toggle-container">
@@ -156,9 +156,9 @@
                                     Use the flight's estimated arrival time plus airport processing time instead of the current delivered by time.
                                 </div>
 
-                                <div class="override-time-preview" ng-if="ctrl.overrideDeliverByTime && ctrl.flightArrivalTimeWithProcessing ">
+                                <div class="override-time-preview" ng-if="ctrl.overrideDeliverByTime && ctrl.flightArrivalTimeWithProcessing">
                                     <span class="preview-label">New Deliver By:</span>
-                                    <span class="preview-time">{{ctrl.flightArrivalTimeWithProcessing | momentFormat:'MMM D, YYYY HH:mm'}}</span>
+                                    <span class="preview-time">{{ctrl.flightArrivalTimeWithProcessing | momentFormat:'MMM D, YYYY HH:mm'}} ({{::ctrl.flight.arrivalTimeZone | timezoneShort}})</span>
                                 </div>
                             </div>
                         </div>
