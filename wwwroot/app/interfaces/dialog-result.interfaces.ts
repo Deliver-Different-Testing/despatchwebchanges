@@ -18,4 +18,5 @@ export interface FlightAgentConfirmationDialogResult {
     shouldAssign?: boolean;
     awb?: string;
     shouldAssignToStopJobs?: boolean;
+    overrideDeliverByTime?: boolean;
 }

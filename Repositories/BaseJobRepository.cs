@@ -1872,4 +1872,14 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
         return result ?? 0m;
     }
+    
+    public async Task<DateTime?> GetDeliverByTimeByJobIdAsync(int jobId)
+    {
+      var deliverByTime = await Context.TucJobs
+          .Where(j => j.UcjbId == jobId)
+          .Select(j => j.DeliverByTime)
+          .FirstOrDefaultAsync();
+
+      return deliverByTime;
+    }
 }

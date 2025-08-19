@@ -20,19 +20,19 @@
 
     <!-- Segment tabs for multi-segment flights -->
     <div class="segment-tabs" ng-if="ctrl.flight.isMultiSegment">
-        <div class="tab-list">
-            <button
-                    class="tab-button"
+        <div class="tab-container">
+            <button class="tab-button"
                     ng-class="{'active': ctrl.selectedTabIndex === 0}"
                     ng-click="ctrl.selectSegment(0)">
-                Overview
+                <md-icon md-font-set="material-symbols-outlined">overview</md-icon>
+                <span>Overview</span>
             </button>
-            <button
-                    class="tab-button"
+            <button class="tab-button"
                     ng-class="{'active': ctrl.selectedTabIndex === $index + 1}"
                     ng-repeat="segment in ctrl.flight.flightSegments track by $index"
                     ng-click="ctrl.selectSegment($index + 1)">
-                Segment {{$index + 1}}
+                <md-icon md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
+                <span>Segment {{$index + 1}}</span>
             </button>
         </div>
     </div>
@@ -40,184 +40,242 @@
     <!-- Content -->
     <div class="dialog-content">
         <!-- Loading state -->
-        <div class="loading-state" ng-if="ctrl.isLoading">
-            <md-progress-circular md-mode="indeterminate"></md-progress-circular>
-            <span class="loading-text">Loading flight details...</span>
+        <div class="state-container loading-state" ng-if="ctrl.isLoading">
+            <md-progress-circular md-mode="indeterminate" md-diameter="48"></md-progress-circular>
+            <h3>Loading flight details...</h3>
+            <p>Please wait while we fetch the latest information</p>
         </div>
 
         <!-- Error state -->
-        <div class="error-state" ng-if="!ctrl.isLoading && ctrl.error">
-            <md-icon md-font-set="material-symbols-outlined">error</md-icon>
-            <p class="error-text">{{ctrl.error}}</p>
+        <div class="state-container error-state" ng-if="!ctrl.isLoading && ctrl.error">
+            <md-icon md-font-set="material-symbols-outlined" class="error-icon">error</md-icon>
+            <h3>Unable to load flight details</h3>
+            <p class="error-message">{{ctrl.error}}</p>
+            <md-button class="md-raised md-primary" ng-click="ctrl.retry()">Try Again</md-button>
         </div>
 
         <!-- Flight data -->
-        <div ng-if="!ctrl.isLoading && !ctrl.error && ctrl.flight">
-            <!-- Flight header -->
-            <div class="flight-header content-section">
-                <div class="airline-section">
-                    <div class="airline-logo">
-                        {{ctrl.currentSegment.carrierFsCode || ctrl.flight.airline.substring(0, 2)}}
-                    </div>
-                    <div class="airline-info">
-                        <h2 class="airline-name">{{ctrl.currentSegment.airlineName || ctrl.flight.airline}}</h2>
-                        <div class="flight-number">
-                            {{ctrl.currentSegment.carrierFsCode || ctrl.flight.flightNumber.substring(0, 2)}}
-                            {{ctrl.currentSegment.flightNumber || ctrl.flight.flightNumber.substring(2)}}
+        <div class="flight-content" ng-if="!ctrl.isLoading && !ctrl.error && ctrl.flight">
+            <!-- Flight summary card -->
+            <div class="flight-summary-card">
+                <div class="summary-header">
+                    <div class="airline-section">
+                        <div class="airline-logo">
+                            <span>{{ctrl.currentSegment.carrierFsCode || ctrl.flight.airline.substring(0, 2)}}</span>
                         </div>
-                        <div class="aircraft-info" ng-if="ctrl.currentSegment.aircraftName || ctrl.flight.aircraft">
-                            <md-icon md-font-set="material-symbols-outlined">airlines</md-icon>
-                            <span>{{ctrl.currentSegment.aircraftName || ctrl.flight.aircraft}}</span>
+                        <div class="airline-details">
+                            <h2 class="airline-name">{{ctrl.currentSegment.airlineName || ctrl.flight.airline}}</h2>
+                            <div class="flight-number">
+                                {{ctrl.currentSegment.carrierFsCode || ctrl.flight.flightNumber.substring(0, 2)}}
+                                {{ctrl.currentSegment.flightNumber || ctrl.flight.flightNumber.substring(2)}}
+                            </div>
                         </div>
                     </div>
-                    <div class="flight-status">
-                        <div class="status-chip nonstop" ng-if="!ctrl.flight.isMultiSegment">
-                            <md-icon md-font-set="material-symbols-outlined">check_circle</md-icon>
-                            <span>Non-stop</span>
-                        </div>
-                        <div class="status-chip connection"
-                             ng-if="ctrl.flight.isMultiSegment && ctrl.isDisplayingOverview">
-                            <md-icon md-font-set="material-symbols-outlined">flight_land</md-icon>
-                            <span>{{ctrl.flight.stops}} stop{{ctrl.flight.stops > 1 ? 's' : ''}}</span>
+
+                    <div class="flight-status-section">
+                        <div class="status-badge" ng-class="ctrl.getStatusClass()">
+                            <md-icon md-font-set="material-symbols-outlined">{{ctrl.getStatusIcon()}}</md-icon>
+                            <span>{{ctrl.getStatusText()}}</span>
                         </div>
                         <div class="flight-date">
-                            {{ctrl.currentSegment.departureTime || ctrl.flight.departureTime | date:'MMM d, yyyy'}}
+                            {{ctrl.currentSegment.departureTime || ctrl.flight.departureTime | date:'EEE, MMM d, yyyy'}}
                         </div>
                     </div>
                 </div>
 
-                <div class="route-summary">
-                    <div class="airport-code">
-                        {{ctrl.currentSegment.departureAirportFsCode || ctrl.flight.departureAirport}}
+                <div class="route-overview">
+                    <div class="route-endpoint departure">
+                        <div class="airport-code">{{ctrl.currentSegment.departureAirportFsCode || ctrl.flight.departureAirport}}</div>
+                        <div class="time">{{ctrl.currentSegment.departureTime || ctrl.flight.departureTime | date:'HH:mm'}}</div>
                     </div>
-                    <md-icon md-font-set="material-symbols-outlined" class="route-icon">flight</md-icon>
-                    <div class="airport-code">
-                        {{ctrl.currentSegment.arrivalAirportFsCode || ctrl.flight.arrivalAirport}}
+
+                    <div class="route-visualization">
+                        <div class="route-line">
+                            <div class="route-progress"></div>
+                            <md-icon md-font-set="material-symbols-outlined" class="dialog-icon plane-icon">flight</md-icon>
+                        </div>
+                        <div class="duration-info">
+                            <md-icon md-font-set="material-symbols-outlined" class="dialog-icon">schedule</md-icon>
+                            <span>{{ctrl.getSegmentDuration()}}</span>
+                        </div>
                     </div>
-                    <div class="duration-badge">
-                        <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
-                        <span>{{ctrl.getSegmentDuration()}}</span>
+
+                    <div class="route-endpoint arrival">
+                        <div class="airport-code">
+                            <span ng-if="ctrl.isDisplayingOverview && ctrl.flight.isMultiSegment">
+                                {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalAirportFsCode || ctrl.flight.arrivalAirport}}
+                            </span>
+                            <span ng-if="!ctrl.isDisplayingOverview || !ctrl.flight.isMultiSegment">
+                                {{ctrl.currentSegment.arrivalAirportFsCode || ctrl.flight.arrivalAirport}}
+                            </span>
+                        </div>
+                        <div class="time">
+                            <span ng-if="ctrl.isDisplayingOverview && ctrl.flight.isMultiSegment">
+                                {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalTime || ctrl.flight.arrivalTime | date:'HH:mm'}}
+                            </span>
+                            <span ng-if="!ctrl.isDisplayingOverview || !ctrl.flight.isMultiSegment">
+                                {{ctrl.currentSegment.arrivalTime || ctrl.flight.arrivalTime | date:'HH:mm'}}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Flight route details -->
-            <div class="flight-route content-section">
-                <div class="route-container">
-                    <div class="route-point departure">
-                        <div class="point-label">Departure</div>
-                        <div class="airport-name">
-                            {{ctrl.currentSegment.departureAirportName || ctrl.flight.departureAirport}}
-                            ({{ctrl.currentSegment.departureAirportFsCode || ctrl.flight.departureAirport}})
+            <!-- Flight details card -->
+            <div class="flight-details-card">
+                <h3 class="card-title">
+                    <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">info</md-icon>
+                    Flight Information
+                </h3>
+
+                <div class="details-grid">
+                    <div class="detail-section departure-section">
+                        <div class="section-header">
+                            <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
+                            <h4>Departure</h4>
                         </div>
-                        <div class="airport-location" ng-if="ctrl.currentSegment.departureAirportCity">
-                            {{ctrl.currentSegment.departureAirportCity}}, {{ctrl.currentSegment.departureAirportCountry}}
-                        </div>
-                        <div class="flight-time">
-                            {{ctrl.currentSegment.departureTime || ctrl.flight.departureTime | date: 'MM/dd/yyyy HH:mm'}}
-                        </div>
-                        <div class="terminal-info" ng-if="ctrl.currentSegment.departureTerminal">
-                            <md-icon md-font-set="material-symbols-outlined">door_front</md-icon>
-                            <span>Terminal {{ctrl.currentSegment.departureTerminal}}</span>
+                        <div class="detail-content">
+                            <div class="airport-info">
+                                <div class="airport-name">{{ctrl.currentSegment.departureAirportName || ctrl.flight.departureAirport}}</div>
+                                <div class="airport-code-small">{{ctrl.currentSegment.departureAirportFsCode || ctrl.flight.departureAirport}}</div>
+                                <div class="airport-location" ng-if="ctrl.currentSegment.departureAirportCity">
+                                    {{ctrl.currentSegment.departureAirportCity}}, {{ctrl.currentSegment.departureAirportCountry}}
+                                </div>
+                            </div>
+                            <div class="time-info">
+                                <div class="departure-time">{{ctrl.currentSegment.departureTime || ctrl.flight.departureTime | date:'HH:mm'}}</div>
+                                <div class="departure-date">{{ctrl.currentSegment.departureTime || ctrl.flight.departureTime | date:'MMM d, yyyy'}}</div>
+                            </div>
+                            <div class="terminal-info" ng-if="ctrl.currentSegment.departureTerminal">
+                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">door_front</md-icon>
+                                <span>Terminal {{ctrl.currentSegment.departureTerminal}}</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="route-divider">
-                        <div class="duration-display">
-                            <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
-                            <span>{{ctrl.getSegmentDuration()}}</span>
+                    <div class="detail-section arrival-section">
+                        <div class="section-header">
+                            <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">flight_land</md-icon>
+                            <h4>Arrival</h4>
                         </div>
-                        <div class="flight-line">
-                            <md-icon md-font-set="material-symbols-outlined" class="plane-icon">flight</md-icon>
+                        <div class="detail-content">
+                            <div class="airport-info">
+                                <div class="airport-name">
+                                    <span ng-if="ctrl.isDisplayingOverview && ctrl.flight.isMultiSegment">
+                                        {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalAirportName || ctrl.flight.arrivalAirport}}
+                                    </span>
+                                    <span ng-if="!ctrl.isDisplayingOverview || !ctrl.flight.isMultiSegment">
+                                        {{ctrl.currentSegment.arrivalAirportName || ctrl.flight.arrivalAirport}}
+                                    </span>
+                                </div>
+                                <div class="airport-code-small">
+                                    <span ng-if="ctrl.isDisplayingOverview && ctrl.flight.isMultiSegment">
+                                        {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalAirportFsCode || ctrl.flight.arrivalAirport}}
+                                    </span>
+                                    <span ng-if="!ctrl.isDisplayingOverview || !ctrl.flight.isMultiSegment">
+                                        {{ctrl.currentSegment.arrivalAirportFsCode || ctrl.flight.arrivalAirport}}
+                                    </span>
+                                </div>
+                                <div class="airport-location">
+                                    <span ng-if="ctrl.isDisplayingOverview && ctrl.flight.isMultiSegment && ctrl.flight.flightSegments[ctrl.flight.flightSegments.length-1].arrivalAirportCity">
+                                        {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalAirportCity}}, {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalAirportCountry}}
+                                    </span>
+                                    <span ng-if="(!ctrl.isDisplayingOverview || !ctrl.flight.isMultiSegment) && ctrl.currentSegment.arrivalAirportCity">
+                                        {{ctrl.currentSegment.arrivalAirportCity}}, {{ctrl.currentSegment.arrivalAirportCountry}}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="time-info">
+                                <div class="arrival-time">
+                                    <span ng-if="ctrl.isDisplayingOverview && ctrl.flight.isMultiSegment">
+                                        {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalTime || ctrl.flight.arrivalTime | date:'HH:mm'}}
+                                    </span>
+                                    <span ng-if="!ctrl.isDisplayingOverview || !ctrl.flight.isMultiSegment">
+                                        {{ctrl.currentSegment.arrivalTime || ctrl.flight.arrivalTime | date:'HH:mm'}}
+                                    </span>
+                                </div>
+                                <div class="arrival-date">
+                                    <span ng-if="ctrl.isDisplayingOverview && ctrl.flight.isMultiSegment">
+                                        {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalTime || ctrl.flight.arrivalTime | date:'MMM d, yyyy'}}
+                                    </span>
+                                    <span ng-if="!ctrl.isDisplayingOverview || !ctrl.flight.isMultiSegment">
+                                        {{ctrl.currentSegment.arrivalTime || ctrl.flight.arrivalTime | date:'MMM d, yyyy'}}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="terminal-info">
+                                <span ng-if="ctrl.isDisplayingOverview && ctrl.flight.isMultiSegment && ctrl.flight.flightSegments[ctrl.flight.flightSegments.length-1].arrivalTerminal">
+                                    <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">door_front</md-icon>
+                                    <span>Terminal {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalTerminal}}</span>
+                                </span>
+                                <span ng-if="(!ctrl.isDisplayingOverview || !ctrl.flight.isMultiSegment) && ctrl.currentSegment.arrivalTerminal">
+                                    <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">door_front</md-icon>
+                                    <span>Terminal {{ctrl.currentSegment.arrivalTerminal}}</span>
+                                </span>
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="route-point arrival">
-                        <div class="point-label">Arrival</div>
-                        <div class="airport-name">
-              <span ng-if="ctrl.isDisplayingOverview && ctrl.flight.isMultiSegment">
-                {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalAirportName || ctrl.flight.arrivalAirport}}
-                ({{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalAirportFsCode || ctrl.flight.arrivalAirport}})
-              </span>
-                            <span ng-if="!ctrl.isDisplayingOverview || !ctrl.flight.isMultiSegment">
-                {{ctrl.currentSegment.arrivalAirportName || ctrl.flight.arrivalAirport}}
-                ({{ctrl.currentSegment.arrivalAirportFsCode || ctrl.flight.arrivalAirport}})
-              </span>
-                        </div>
-                        <div class="airport-location">
-              <span ng-if="ctrl.isDisplayingOverview && ctrl.flight.isMultiSegment && ctrl.flight.flightSegments[ctrl.flight.flightSegments.length-1].arrivalAirportCity">
-                {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalAirportCity}}, {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalAirportCountry}}
-              </span>
-                            <span ng-if="(!ctrl.isDisplayingOverview || !ctrl.flight.isMultiSegment) && ctrl.currentSegment.arrivalAirportCity">
-                {{ctrl.currentSegment.arrivalAirportCity}}, {{ctrl.currentSegment.arrivalAirportCountry}}
-              </span>
-                        </div>
-                        <div class="flight-time">
-              <span ng-if="ctrl.isDisplayingOverview && ctrl.flight.isMultiSegment">
-                {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalTime || ctrl.flight.arrivalTime | date: 'MM/dd/yyyy HH:mm'}}
-              </span>
-                            <span ng-if="!ctrl.isDisplayingOverview || !ctrl.flight.isMultiSegment">
-                {{ctrl.currentSegment.arrivalTime || ctrl.flight.arrivalTime | date: 'MM/dd/yyyy HH:mm'}}
-              </span>
-                        </div>
-                        <div class="terminal-info">
-              <span ng-if="ctrl.isDisplayingOverview && ctrl.flight.isMultiSegment && ctrl.flight.flightSegments[ctrl.flight.flightSegments.length-1].arrivalTerminal">
-                <md-icon md-font-set="material-symbols-outlined">door_front</md-icon>
-                <span>Terminal {{ctrl.flight.flightSegments[ctrl.flight.flightSegments.length - 1].arrivalTerminal}}</span>
-              </span>
-                            <span ng-if="(!ctrl.isDisplayingOverview || !ctrl.flight.isMultiSegment) && ctrl.currentSegment.arrivalTerminal">
-                <md-icon md-font-set="material-symbols-outlined">door_front</md-icon>
-                <span>Terminal {{ctrl.currentSegment.arrivalTerminal}}</span>
-              </span>
-                        </div>
+                <!-- Aircraft information -->
+                <div class="aircraft-section" ng-if="ctrl.currentSegment.aircraftName || ctrl.flight.aircraft">
+                    <div class="section-header">
+                        <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">airlines</md-icon>
+                        <h4>Aircraft</h4>
+                    </div>
+                    <div class="aircraft-info">
+                        <span>{{ctrl.currentSegment.aircraftName || ctrl.flight.aircraft}}</span>
                     </div>
                 </div>
             </div>
 
             <!-- Multi-segment timeline -->
-            <div class="segments-timeline content-section"
-                 ng-if="ctrl.flight.isMultiSegment && ctrl.isDisplayingOverview">
-                <div class="timeline-header">Flight Segments</div>
-                <div class="segment-item" ng-repeat="segment in ctrl.flight.flightSegments">
-                    <div class="segment-header">
-                        <span class="segment-number">Segment {{segment.segmentOrder + 1}} of {{ctrl.flight.flightSegments.length}}</span>
-                        <span class="segment-flight">{{segment.carrierFsCode}}{{segment.flightNumber}}</span>
-                    </div>
+            <div class="segments-timeline-card" ng-if="ctrl.flight.isMultiSegment && ctrl.isDisplayingOverview">
+                <h3 class="card-title">
+                    <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">route</md-icon>
+                    Flight Itinerary
+                </h3>
 
-                    <div class="segment-route">
-                        <div class="route-point">
-                            <div class="time">{{segment.departureTime | date: 'MM/dd/yyyy HH:mm'}}</div>
-                            <div class="airport">{{segment.departureAirportFsCode}}</div>
-                            <div class="terminal" ng-if="segment.departureTerminal">Terminal
-                                {{segment.departureTerminal}}
+                <div class="timeline-container">
+                    <div class="segment-item" ng-repeat="segment in ctrl.flight.flightSegments" ng-class="{'has-connection': !$last}">
+                        <div class="segment-content">
+                            <div class="segment-header">
+                                <div class="segment-number">Segment {{segment.segmentOrder + 1}}</div>
+                                <div class="flight-info">{{segment.carrierFsCode}}{{segment.flightNumber}}</div>
                             </div>
-                            <div class="airport-name" ng-if="segment.departureAirportName">
-                                {{segment.departureAirportName}}
+
+                            <div class="segment-route">
+                                <div class="route-point">
+                                    <div class="time-large">{{segment.departureTime | date:'HH:mm'}}</div>
+                                    <div class="airport-code-large">{{segment.departureAirportFsCode}}</div>
+                                    <div class="airport-name-small" ng-if="segment.departureAirportName">{{segment.departureAirportName}}</div>
+                                    <div class="terminal-small" ng-if="segment.departureTerminal">Terminal {{segment.departureTerminal}}</div>
+                                </div>
+
+                                <div class="route-connection">
+                                    <div class="duration-badge">{{segment.elapsedTime | minutesToTime}}</div>
+                                    <div class="connection-line">
+                                        <div class="line-segment"></div>
+                                        <md-icon md-font-set="material-symbols-outlined" class="dialog-icon plane-small">flight</md-icon>
+                                    </div>
+                                    <div class="aircraft-badge" ng-if="segment.aircraftName || segment.flightEquipmentIataCode">
+                                        {{segment.aircraftName || segment.flightEquipmentIataCode}}
+                                    </div>
+                                </div>
+
+                                <div class="route-point">
+                                    <div class="time-large">{{segment.arrivalTime | date:'HH:mm'}}</div>
+                                    <div class="airport-code-large">{{segment.arrivalAirportFsCode}}</div>
+                                    <div class="airport-name-small" ng-if="segment.arrivalAirportName">{{segment.arrivalAirportName}}</div>
+                                    <div class="terminal-small" ng-if="segment.arrivalTerminal">Terminal {{segment.arrivalTerminal}}</div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="route-line">
-                            <div class="duration">{{segment.elapsedTime | minutesToTime}}</div>
-                            <div class="line"></div>
-                            <div class="equipment" ng-if="segment.aircraftName || segment.flightEquipmentIataCode">
-                                {{segment.aircraftName || segment.flightEquipmentIataCode}}
-                            </div>
+                        <div class="connection-info" ng-if="!$last">
+                            <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">schedule</md-icon>
+                            <span>{{ctrl.getConnectionTime(segment, ctrl.flight.flightSegments[$index + 1])}} connection time in {{segment.arrivalAirportFsCode}}</span>
                         </div>
-
-                        <div class="route-point">
-                            <div class="time">{{segment.arrivalTime | date: 'MM/dd/yyyy HH:mm'}}</div>
-                            <div class="airport">{{segment.arrivalAirportFsCode}}</div>
-                            <div class="terminal" ng-if="segment.arrivalTerminal">Terminal {{segment.arrivalTerminal}}
-                            </div>
-                            <div class="airport-name" ng-if="segment.arrivalAirportName">
-                                {{segment.arrivalAirportName}}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="layover-info" ng-if="!$last">
-                        <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
-                        <span class="layover-time">{{ctrl.getConnectionTime(segment, ctrl.flight.flightSegments[$index + 1])}} layover</span>
                     </div>
                 </div>
             </div>

@@ -67,9 +67,10 @@ export interface StatusChangeEvent {
 
 export interface AssignFlightToJobRequest {
     jobId: number;
-   fromAirportId?: number;
-   toAirportId?: number;
-   flightNumber: string;
-   departureDate: Date;
+    fromAirportId?: number;
+    toAirportId?: number;
+    flightNumber: string;
+    departureDate: Date;
     flightSegments: FlightSegmentViewModel[];
+    overrideDeliverByTime: boolean;
 }

@@ -157,7 +157,7 @@ public class NationwideJobController(
 
             // Save job assignment
             await repository.AddJobNationwideAsync(request.JobId, flight, webhookIds, request.FromAirportId,
-                request.ToAirportId);
+                request.ToAirportId, request.OverrideDeliverByTime);
 
             return Ok();
         }
@@ -478,6 +478,20 @@ public class NationwideJobController(
         catch (Exception e)
         {
             Log.Error(e, "An error occured getting the active webhook alerts");
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }  
+    
+    public async Task<IActionResult> GetDeliveryByTimeForJob(int jobId)
+    {
+        try
+        {
+            var deliverByTime = await repository.GetDeliverByTimeByJobIdAsync(jobId);
+            return Json(deliverByTime);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An error occured getting the DeliverByTime for job {JobId}", jobId);
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
