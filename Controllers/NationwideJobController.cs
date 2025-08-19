@@ -495,4 +495,20 @@ public class NationwideJobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
+    
+      public async Task<IActionResult> CalculateArrivalTimeForAirport(int airportId, DateTime arrivalTime)
+    {
+        try
+        {
+            var deliverByTime = await repository.AddProcessingTimeToFlightArrival(airportId, arrivalTime);
+            return Json(deliverByTime);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An error occured calculating processing time for airport {AirportId}", airportId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+    
+    
 }

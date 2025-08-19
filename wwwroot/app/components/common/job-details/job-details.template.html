@@ -47,7 +47,6 @@
                 </md-tabs>
             </div>
 
-            <!-- Rest of the header bar content remains the same -->
             <md-menu ng-if="ctrl.showStageDropdown">
                 <md-button aria-label="internal stage" ng-click="$mdMenu.open($event)">
                     <md-tooltip md-direction="bottom">Modify Status</md-tooltip>
@@ -97,7 +96,7 @@
                     md-stretch-tabs="always"
                     md-no-pagination="true"
                     md-selected="ctrl.selectedSubJobIndex">
-                <!-- Subjob tabs -->
+                <!-- Subj ob tabs -->
                 <md-tab
                         ng-disabled="ctrl.processingTabChange"
                         ng-repeat="subJob in ctrl.selectedRelatedJob.subJobs track by subJob.id">

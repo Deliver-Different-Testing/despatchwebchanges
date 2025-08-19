@@ -85,7 +85,7 @@
                         <div class="time-display-container" ng-if="ctrl.currentDeliverByTime">
                             <div class="current-time-display">
                                 <span class="time-label">Current Deliver By:</span>
-                                <span class="time-value">{{ctrl.currentDeliverByTime | date:'MMM d, y h:mm a'}}</span>
+                                <span class="time-value">{{ctrl.currentDeliverByTime | momentFormat:'MMM D, YYYY HH:mm'}}</span>
                             </div>
 
                             <div class="override-toggle-container">
@@ -100,7 +100,7 @@
 
                                 <div class="override-time-preview" ng-if="ctrl.overrideDeliverByTime && ctrl.flight.arrivalTime ">
                                     <span class="preview-label">New Deliver By:</span>
-                                    <span class="preview-time">{{ctrl.flight.arrivalTime | date:'MMM d, y h:mm a'}}</span>
+                                    <span class="preview-time">{{ctrl.flight.arrivalTime | momentFormat:'MMM D, YYYY HH:mm'}}</span>
                                 </div>
                             </div>
                         </div>
@@ -131,7 +131,7 @@
                         <div class="time-display-container" ng-if="ctrl.currentDeliverByTime">
                             <div class="current-time-display">
                                 <span class="time-label">Current Deliver By:</span>
-                                <span class="time-value">{{ctrl.currentDeliverByTime | date:'MMM d, y h:mm a'}}</span>
+                                <span class="time-value">{{ctrl.currentDeliverByTime | momentFormat:'MMM D, YYYY HH:mm'}}</span>
                             </div>
 
                             <div class="override-toggle-container">
@@ -146,7 +146,7 @@
 
                                 <div class="override-time-preview" ng-if="ctrl.overrideDeliverByTime && ctrl.flight.arrivalTime ">
                                     <span class="preview-label">New Deliver By:</span>
-                                    <span class="preview-time">{{ctrl.flight.arrivalTime | date:'MMM d, y h:mm a'}}</span>
+                                    <span class="preview-time">{{ctrl.flight.arrivalTime | momentFormat:'MMM D, YYYY HH:mm'}}</span>
                                 </div>
                             </div>
                         </div>

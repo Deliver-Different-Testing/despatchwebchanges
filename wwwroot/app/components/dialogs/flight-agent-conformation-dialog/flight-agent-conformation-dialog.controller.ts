@@ -14,6 +14,7 @@ class FlightAgentConformationDialogController extends BaseController {
         'jobNumber',
         'flight',
         'agent',
+        'toAirportId',
         'existingAwb',
         'dgClass',
         'stopJobCount',
@@ -37,6 +38,7 @@ class FlightAgentConformationDialogController extends BaseController {
         public jobNumber: string,
         public flight?: IFlightViewModel,
         public agent?: Suggestion,
+        private toAirportId?: number,
         existingAwb?: string,
         dgClass?: number,
         stopJobCount?: number,
@@ -49,9 +51,10 @@ class FlightAgentConformationDialogController extends BaseController {
         if (flight) {
             this.getEnabledAlertEvents();
             this.getDeliverByTime();
-            
+
             // Override if null
-            if(!this.currentDeliverByTime) {
+            if (!this.currentDeliverByTime) {
+                this.calculateFlightArrivalTimeForAirport();
                 this.overrideDeliverByTime = true;
             }
         }
@@ -89,7 +92,15 @@ class FlightAgentConformationDialogController extends BaseController {
             this.currentDeliverByTime = undefined;
         });
     }
-    
+
+    calculateFlightArrivalTimeForAirport() {
+        if (!this.flight?.arrivalTime || !this.toAirportId) return;
+
+        this.nationwideService.calculateArrivalTimeForAirport(this.toAirportId, this.flight?.arrivalTime).then(arrivalTime => {
+            this.currentDeliverByTime = arrivalTime;
+        });
+    }
+
     confirm(): void {
         const response: FlightAgentConfirmationDialogResult = {
             awb: this.awb,

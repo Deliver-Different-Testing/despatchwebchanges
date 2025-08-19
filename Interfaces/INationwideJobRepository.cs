@@ -57,4 +57,5 @@ public interface INationwideJobRepository
     Task<string> GetWebhookEventsAsStringAsync();
     Task<List<Suggestion>> GetWebhookEventsAsListAsync();
     Task<DateTime?> GetDeliverByTimeByJobIdAsync(int jobId);
+    Task<DateTime> AddProcessingTimeToFlightArrival(int airportId, DateTime flightArrivalTime);
 }
