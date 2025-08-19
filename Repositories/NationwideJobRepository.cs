@@ -25,7 +25,7 @@ public class NationwideJobRepository(
     private readonly ITenantInfoService _infoService = infoService;
 
     public async Task AddJobNationwideAsync(int jobId, AddFlightToJobDto flights,
-        List<string> webhookIds, int? fromAirportId, int? toAirportId)
+        List<string> webhookIds, int? fromAirportId, int? toAirportId, bool overrideDeliverByTime = false)
     {
         try
         {
@@ -112,7 +112,7 @@ public class NationwideJobRepository(
             }
 
             // Second part
-            job.DeliverByTime = primaryFlight.ArrivalTime;
+            if(overrideDeliverByTime) job.DeliverByTime = primaryFlight.ArrivalTime;
             await UpdateJobAddressWithAirportInfoAsync(job, departureAirportId.Value,
                 primaryFlight.DepartureAirportTimeZone, false);
             await UpdateJobAddressWithAirportInfoAsync(job, arrivalAirportId.Value,

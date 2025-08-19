@@ -16,8 +16,8 @@ public interface INationwideJobRepository
     Task<List<DispatchJobViewModel>> NationwideJobListAsync(JobQueryParams queryParams, bool isInternal,
         bool isUsTenant, string clientIds, NationwideWidget windowPane, List<int> selectedViewIds);
 
-    Task AddJobNationwideAsync(int jobId, AddFlightToJobDto flights, List<string> webhookIds, int? fromAirportId,
-        int? toAirportId);
+    Task AddJobNationwideAsync(int jobId, AddFlightToJobDto flights,
+        List<string> webhookIds, int? fromAirportId, int? toAirportId, bool overrideDeliverByTime = false);
     
     Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId);
 
@@ -56,4 +56,5 @@ public interface INationwideJobRepository
     Task<bool> CanAssignAgentToJobAsync(int agentJobId);
     Task<string> GetWebhookEventsAsStringAsync();
     Task<List<Suggestion>> GetWebhookEventsAsListAsync();
+    Task<DateTime?> GetDeliverByTimeByJobIdAsync(int jobId);
 }

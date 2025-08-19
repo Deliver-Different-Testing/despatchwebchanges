@@ -1331,7 +1331,8 @@ class NationwideControl extends BaseController {
                 toAirportId: this.selectedInboundAirport?.id,
                 flightNumber: flight.flightNumber,
                 departureDate: flight.departureTime,
-                flightSegments: flight.flightSegments
+                flightSegments: flight.flightSegments,
+                overrideDeliverByTime: result.overrideDeliverByTime ?? false
             };
 
             // Pass the full flight data including segments to the service

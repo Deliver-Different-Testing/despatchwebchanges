@@ -25,7 +25,9 @@ class FlightAgentConformationDialogController extends BaseController {
     showIncludeStopJobs: boolean;
     assignToStopJobs: boolean = false;
     enabledAlerts?: Suggestion[];
-
+    currentDeliverByTime?: Date;
+    overrideDeliverByTime?: boolean = false;
+    
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private nationwideService: NationwideService,
@@ -40,12 +42,18 @@ class FlightAgentConformationDialogController extends BaseController {
 
         this.dialogTitle = flight ? 'Assign Flight' : 'Assign Agent';
         this.showIncludeStopJobs = (stopJobCount !== undefined && stopJobCount > 0);
-        
-        if(flight) {
+
+        if (flight) {
             this.getEnabledAlertEvents();
+            this.getDeliverByTime();
+            
+            // Override if null
+            if(!this.currentDeliverByTime) {
+                this.overrideDeliverByTime = true;
+            }
         }
 
-        if(dgClass !== undefined){
+        if (dgClass !== undefined) {
             this.dgClassName = getDangerousGoodsClassName(dgClass);
         }
 
@@ -54,17 +62,24 @@ class FlightAgentConformationDialogController extends BaseController {
             this.isAwbDisabled = true;
         }
     }
-    
+
     getEnabledAlertEvents() {
         this.nationwideService.getEnabledWebhookEvents().then(alert => {
             this.enabledAlerts = alert;
         });
     }
 
+    getDeliverByTime() {
+        this.nationwideService.getDeliveryByTimeForJob().then(deliverByTime => {
+            this.currentDeliverByTime = deliverByTime;
+        })
+    }
+    
     confirm(): void {
         const response: FlightAgentConfirmationDialogResult = {
             awb: this.awb,
-            shouldAssignToStopJobs: this.assignToStopJobs
+            shouldAssignToStopJobs: this.assignToStopJobs,
+            overrideDeliverByTime: this.overrideDeliverByTime
         };
 
         this.$mdDialog.hide(response);

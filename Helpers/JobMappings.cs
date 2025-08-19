@@ -45,7 +45,7 @@ public static class JobMappings
                         Courier = j.UcjbCourier.Code,
                         CourierId = j.UcjbCourierId,
                         CourierMobile = j.UcjbCourier.UccrMobile,
-                        CourierName = $"{j.UcjbCourier.UccrName} {j.UcjbCourier.UccrSurname}"
+                        CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
                     }
                     : null,
             AssignedCourier =
@@ -53,7 +53,7 @@ public static class JobMappings
                     ? new Suggestion
                     {
                         Id = j.UcjbCourier.UccrId,
-                        Text = $"{j.UcjbCourier.UccrName} {j.UcjbCourier.UccrSurname}"
+                        Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
                     }
                     : null,
 

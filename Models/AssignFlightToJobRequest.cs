@@ -11,4 +11,5 @@ public class AssignFlightToJobRequest
     public string FlightNumber { get; set; }
     public DateTime DepartureDate { get; set; }
     public List<FlightSegmentViewModel> FlightSegments { get; set; } = [];
+    public bool OverrideDeliverByTime { get; set; }
 }
