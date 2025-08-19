@@ -178,6 +178,10 @@ public class FlightStatsService(
             departureAirportCode = await repository.GetSingleAirportCodeByIdAsync(departureAirportId.Value);
         if (arrivalAirportId.HasValue)
             arrivalAirportCode = await repository.GetSingleAirportCodeByIdAsync(arrivalAirportId.Value);
+        
+        // Timezones
+        var fromAirportTimeZone = await repository.GetAirportTimeZoneByCodeAsync(departureAirportCode);
+        var toAirportTimeZone = await repository.GetAirportTimeZoneByCodeAsync(arrivalAirportCode);
 
         var activeAirlineCodes = await repository.GetActiveAirlineCodesAsync();
 
@@ -294,12 +298,12 @@ public class FlightStatsService(
                             DepartureAirportName = depAirport?.Name,
                             DepartureAirportCity = depAirport?.City,
                             DepartureAirportCountry = depAirport?.CountryName,
-                            DepartureAirportTimeZone = depAirport?.TimeZoneRegionName,
+                            DepartureAirportTimeZone = fromAirportTimeZone,
 
                             ArrivalAirportName = arrAirport?.Name,
                             ArrivalAirportCity = arrAirport?.City,
                             ArrivalAirportCountry = arrAirport?.CountryName,
-                            ArrivalAirportTimeZone = arrAirport?.TimeZoneRegionName,
+                            ArrivalAirportTimeZone = toAirportTimeZone,
 
                             AircraftName = equipment?.Name,
                             AircraftType = equipment?.Jet == true ? "Jet" :
@@ -331,6 +335,8 @@ public class FlightStatsService(
                     IsCodeShare = firstFlight.IsCodeShare,
                     Amount = 0, // Will fill this in on the next step
                     CodeShareAirline = firstFlight.IsCodeShare ? firstFlight.CarrierFsCode : null,
+                    ArrivalTimeZone = toAirportTimeZone,
+                    DepartureTimeZone = fromAirportTimeZone,
 
                     // Add new properties for multi-segment support
                     IsMultiSegment = conn.ScheduledFlight.Count > 1,

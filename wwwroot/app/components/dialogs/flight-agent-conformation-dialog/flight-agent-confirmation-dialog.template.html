@@ -143,7 +143,7 @@
                         <div class="time-display-container" ng-if="ctrl.currentDeliverByTime">
                             <div class="current-time-display">
                                 <span class="time-label">Current Deliver By:</span>
-                                <span class="time-value">{{ctrl.currentDeliverByTime | momentFormat:'MMM D, YYYY HH:mm'}} ({{::ctrl.flight.arrivalTimeZone | timezoneShort}})</span>
+                                <span class="time-value">{{ctrl.currentDeliverByTime | momentFormat:'MMM D, YYYY HH:mm'}} ({{::ctrl.flight.departureAirportTimeZone | timezoneShort}})</span>
                             </div>
 
                             <div class="override-toggle-container">
@@ -158,7 +158,7 @@
 
                                 <div class="override-time-preview" ng-if="ctrl.overrideDeliverByTime && ctrl.generatedDeliverByTime">
                                     <span class="preview-label">New Deliver By:</span>
-                                    <span class="preview-time">{{ctrl.generatedDeliverByTime | momentFormat:'MMM D, YYYY HH:mm'}} ({{::ctrl.flight.arrivalTimeZone | timezoneShort}})</span>
+                                    <span class="preview-time">{{ctrl.generatedDeliverByTime | momentFormat:'MMM D, YYYY HH:mm'}} ({{::ctrl.flight.arrivalAirportTimeZone | timezoneShort}})</span>
                                 </div>
                             </div>
                         </div>

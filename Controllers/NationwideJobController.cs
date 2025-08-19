@@ -500,7 +500,7 @@ public class NationwideJobController(
     {
         try
         {
-            var deliverByTime = await repository.AddProcessingTimeToFlightArrival(airportId, arrivalTime);
+            var deliverByTime = await repository.AddProcessingTimeToFlightArrivalAsync(airportId, arrivalTime);
             return Json(deliverByTime);
         }
         catch (Exception e)
