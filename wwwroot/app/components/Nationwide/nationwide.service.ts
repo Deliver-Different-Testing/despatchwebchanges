@@ -267,10 +267,11 @@ class NationwideService implements angular.IServiceProvider {
         return response.data;
     }   
     
-    async calculateArrivalTimeForAirport(airportId: number, arrivalTime: Date): Promise<Date> {
-        const response = await this.$http.get<Date>("nationwideJob/CalculateArrivalTimeForAirport", {
+    async calculateCargoReadyTime(airportId: number, flightNumber: string, arrivalTime: Date): Promise< IFlightCargoProcessing> {
+        const response = await this.$http.get<IFlightCargoProcessing>("nationwideJob/CalculateCargoReadyTime", {
             params: {
                 airportId,
+                flightNumber,
                 arrivalTime
             }
         });

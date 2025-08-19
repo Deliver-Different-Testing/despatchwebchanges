@@ -50,4 +50,7 @@ public class RateJobUsDto
     
     public bool CalculateDimsOncePerJob { get; set; }
     public decimal? PreviousRate { get; set; }
+
+    public bool IsFromAddressAirport { get; set; }
+    public bool IsToAddressAirport { get; set; }
 }

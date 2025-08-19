@@ -71,6 +71,8 @@ public partial class TblAirport
 
     public virtual ICollection<AgentVehicle> AgentVehicles { get; set; } = new List<AgentVehicle>();
 
+    public virtual ICollection<CargoFacility> CargoFacilities { get; set; } = new List<CargoFacility>();
+
     public virtual ICollection<JobRecoveryAgent> JobRecoveryAgents { get; set; } = new List<JobRecoveryAgent>();
 
     public virtual ICollection<TucJobArchive> TucJobArchiveFromAirports { get; set; } = new List<TucJobArchive>();

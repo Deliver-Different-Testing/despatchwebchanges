@@ -18,7 +18,9 @@ using CourierLocation = DespatchWeb.Models.Response.CourierLocation;
 
 namespace DespatchWeb.Repositories;
 
-public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory, ITenantInfoService infoService)
+public class BaseJobRepository(
+    IDbContextFactory<DespatchContext> contextFactory,
+    ITenantInfoService infoService)
     : BaseRepository(contextFactory)
 {
     protected async Task<List<DispatchJobViewModel>> DespatchQry(
@@ -494,7 +496,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             : query
                 .OrderByDescending(j => j.UcjbDate)
                 .ThenByDescending(j => j.UcjbTime);
-
     }
 
     private static IQueryable<TucJob> ApplyCourierOrdering(
@@ -1017,10 +1018,12 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             fromAirportId: dto.FromAirportId,
             toAgentId: dto.ToAgentId,
             toAirportId: dto.ToAirportId,
+            isFromAddressAirport: await DoesAddressMatchAirportAsync(dto.JobId, true),
+            isToAddressAirport: await DoesAddressMatchAirportAsync(dto.JobId, false),
+            dimensionsType: dto.CalculateDimsOncePerJob ? 1 : 0,
             description: description,
             rate: rate,
-            returnValue: returnValue,
-            dimensionsType: dto.CalculateDimsOncePerJob ? 1 : 0
+            returnValue: returnValue
         );
 
         if (dto.PreviousRate == rate.Value)
@@ -1054,6 +1057,18 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
         var printableRate = rate.Value ?? 0;
         await SaveNoteAsync(dto.JobId, $"Repriced from {dto.PreviousRate} to {printableRate}", true);
+    }
+
+    private async Task<bool> DoesAddressMatchAirportAsync(int jobId, bool isPickupAddress)
+    {
+        var hasMatchingAirport = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Where(j => Context.TblAirports
+                .Any(a => a.AddressLine2 == (isPickupAddress ? j.PickupAddressLine2 : j.DeliveryAddressLine2)))
+            .AsNoTracking()
+            .AnyAsync();
+
+        return hasMatchingAirport;
     }
 
     public async Task<TucJobType> GetJobTypeById(int speedId)
@@ -1655,7 +1670,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             .FirstOrDefaultAsync();
 
         return jobInfo.EffectiveJobId;
-
     }
 
     protected static string GetTrackingName(int trackingMethodId)
@@ -1878,7 +1892,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     {
         var deliverByTime = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
-            .Where(j => j.Parent != null) 
+            .Where(j => j.Parent != null)
             .SelectMany(j => j.Parent.InverseParent)
             .OrderByDescending(tucJob => tucJob.UcjbId)
             .Select(tucJob => tucJob.DeliverByTime)

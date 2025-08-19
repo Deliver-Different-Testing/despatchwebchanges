@@ -11,5 +11,7 @@ public partial class TucJobTypeGrouping
 
     public string GroupingName { get; set; }
 
+    public bool RatingEnabled { get; set; }
+
     public virtual ICollection<TucJobType> TucJobTypes { get; set; } = new List<TucJobType>();
 }

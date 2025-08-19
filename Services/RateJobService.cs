@@ -80,7 +80,7 @@ public class RateJobService(
                     DeliveryLong = jobDetails.DeliveryLong
                 }
             );
-
+            
             // Calculate final rate
             await jobRepository.RateJobUsAsync(new RateJobUsDto
             {
