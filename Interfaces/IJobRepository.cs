@@ -201,7 +201,10 @@ public interface IJobRepository
     Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds);
 
     Task<int> SaveNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default);
-    Task<int> SaveNoteAsync(int jobId, string noteText, bool isImportant = false, bool isRecurringJob = false);
+
+    Task SaveNoteAsync(int jobId, string noteText, bool isImportant = false,
+        bool isRecurringJob = false, NoteType noteType = NoteType.InternalNote);
+    
     Task<TucNoteViewModel> GetNoteByIdAsync(int noteId);
     Task DeleteNoteAsync(int noteId, CancellationToken cancellationToken = default);
     Task<List<NoteTypeViewModel>> GetNoteTypesAsync();

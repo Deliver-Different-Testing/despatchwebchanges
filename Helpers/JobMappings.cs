@@ -30,8 +30,12 @@ public static class JobMappings
             Time = j.UcjbTime,
             Booked = CombineDateAndTime(j.UcjbDate, j.UcjbTime),
             Remain = CalculateRemainTime(j, j.UcjbSpeedNavigation),
-            IsFlightJob = j.UcjbSpeed != null && j.UcjbSpeedNavigation.Grouping.GroupingName == "Flight",
-            IsAgentJob = j.UcjbSpeed != null && j.UcjbSpeedNavigation.Grouping.GroupingName == "Agent",
+            IsFlightJob = j.UcjbSpeedNavigation != null
+                          && j.UcjbSpeedNavigation.Grouping != null
+                          && j.UcjbSpeedNavigation.Grouping.GroupingId == (int)SpeedGrouping.Flight,
+            IsAgentJob = j.UcjbSpeedNavigation != null
+                         && j.UcjbSpeedNavigation.Grouping != null
+                         && j.UcjbSpeedNavigation.Grouping.GroupingId == (int)SpeedGrouping.Agent,
 
             Courier = j.UcjbCourierId != null ? j.UcjbCourier.Code : null,
             CourierData =
@@ -87,11 +91,11 @@ public static class JobMappings
             DeliveryLongitude = j.DeliveryLongitude,
             PickupContact = j.PickupFromContact,
             DeliveryContact = j.DeliverToContact,
-            
+
 
             Direct = j.Direct,
             Speed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : null,
-            Notify = j.NotifiedJobType != null ?  j.NotifiedJobType.UcjtName : null,
+            Notify = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName : null,
             Vehicle =
                 j.UcjbSizeNavigation != null
                     ? new Suggestion
@@ -104,7 +108,7 @@ public static class JobMappings
             Client = j.UcjbClientCode,
             ClientId = j.UcjbClientId,
             ClientName = j.UcjbClient != null ? j.UcjbClient.UcclName : string.Empty,
-            
+
             JobType = (int)(j.UcjbType ?? 0),
             PickupTime = null,
             DeliveryTime = null,
@@ -119,13 +123,15 @@ public static class JobMappings
             PickupFrom = j.UcjbPickUpFrom,
             RootParentId = j.RootParentId,
 
-            RelatedJobs = j.Parent != null && j.Parent.InverseParent.Any() ? j
-                .Parent.InverseParent.Select(p => new Suggestion
-                {
-                    Id = p.UcjbId,
-                    Text = p.UcjbNumber
-                })
-                .ToList() : null,
+            RelatedJobs = j.Parent != null && j.Parent.InverseParent.Any()
+                ? j
+                    .Parent.InverseParent.Select(p => new Suggestion
+                    {
+                        Id = p.UcjbId,
+                        Text = p.UcjbNumber
+                    })
+                    .ToList()
+                : null,
 
             ToAirportId = j.ToAirportId,
             FromAirportId = j.FromAirportId,
@@ -520,9 +526,11 @@ public static class JobMappings
             .ToList(),
 
         // Related jobs
-        RelatedJobs = j.Parent != null && j.Parent.InverseParent.Any() ? j
-            .Parent.InverseParent.Select(p => new Suggestion { Id = p.UcjbId, Text = p.UcjbNumber })
-            .ToList() : null,
+        RelatedJobs = j.Parent != null && j.Parent.InverseParent.Any()
+            ? j
+                .Parent.InverseParent.Select(p => new Suggestion { Id = p.UcjbId, Text = p.UcjbNumber })
+                .ToList()
+            : null,
 
         IsArchived = false,
         PreBook = false,
@@ -577,7 +585,7 @@ public static class JobMappings
             Time = j.UcjbTime,
             RootParentId = j.RootParentId,
             Date = FormatDate(j.UcjbDate),
-            Booked = j.UcjbDate.HasValue 
+            Booked = j.UcjbDate.HasValue
                 ? CombineDateAndTime(j.UcjbDate.Value, j.UcjbTime)
                 : DateTime.MinValue,
             DispatchTime = j.UcjbDispTime,
@@ -764,13 +772,14 @@ public static class JobMappings
         JobNo = j.UcbkJobNumber,
         Time = j.UcbkTime,
         RootParentId = j.RootParentId,
-        RelatedJobs = j.BookingParent != null && j.BookingParent.InverseBookingParent.Any() ?
-            j.BookingParent.InverseBookingParent.Select(p => new Suggestion
-            {
-                Id = p.UcbkId,
-                Text = p.UcbkJobNumber
-            })
-            .ToList() : null,
+        RelatedJobs = j.BookingParent != null && j.BookingParent.InverseBookingParent.Any()
+            ? j.BookingParent.InverseBookingParent.Select(p => new Suggestion
+                {
+                    Id = p.UcbkId,
+                    Text = p.UcbkJobNumber
+                })
+                .ToList()
+            : null,
         Date = FormatDate(j.UcbkDate),
         Booked = j.UcbkDate.HasValue
             ? CombineDateAndTime(j.UcbkDate.Value, j.UcbkTime)
@@ -988,7 +997,7 @@ public static class JobMappings
             return null;
 
         var now = DateTime.Now;
-    
+
         var jobDateTime = new DateTime(
             job.UcjbDate.Year,
             job.UcjbDate.Month,
@@ -1001,7 +1010,7 @@ public static class JobMappings
         if (job.UcjbSpeed == 36)
         {
             if (job.DeliverByTime == null) return null;
-        
+
             var deliverBy = job.DeliverByTime.Value;
             var economyDeliveryDateTime = new DateTime(
                 job.UcjbDate.Year,
@@ -1033,11 +1042,11 @@ public static class JobMappings
 
         var minutesToAdd = jobType.Minutes ?? 0;
         if (jobType.Minutes == null) return null;
-    
+
         var standardDeliveryDateTime = jobDateTime.AddMinutes(minutesToAdd);
         return (int)(standardDeliveryDateTime - now).TotalMinutes;
     }
-    
+
     private static string FormatDate(DateTime? date)
     {
         var dateToUse = date ?? DateTime.MinValue;
