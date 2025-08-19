@@ -63,7 +63,7 @@
                         </div>
                     </div>
 
-                    <!-- Deliver By Time Section (shown in the top row if no agent) -->
+                    <!-- Delivery Jobs Deliver By Time Section (shown in the top row if no agent) -->
                     <div class="content-section deliver-by-time-section"
                          ng-class="{'disabled': !ctrl.currentDeliverByTime}"
                          ng-if="ctrl.flight && !ctrl.agent">
@@ -72,12 +72,12 @@
                                 <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
                             </div>
                             <div class="assignment-text">
-                                <div class="assignment-title">Deliver By Time</div>
+                                <div class="assignment-title">Delivery Jobs Deliver By Time</div>
                                 <div class="assignment-description" ng-if="ctrl.currentDeliverByTime">
-                                    Current delivery deadline for this job
+                                    Current deliver by time for delivery jobs
                                 </div>
                                 <div class="assignment-description" ng-if="!ctrl.currentDeliverByTime">
-                                    No deliver by time set - will use flight arrival time by default
+                                    No deliver by time set—will use flight arrival time plus 3 hours by default
                                 </div>
                             </div>
                         </div>
@@ -85,7 +85,7 @@
                         <!-- Delivery Time Warning -->
                         <div class="delivery-time-warning" ng-if="ctrl.isDeliveryByTimeBad">
                             <md-icon md-font-set="material-symbols-outlined" class="warning-icon">warning</md-icon>
-                            <span>Delivery deadline is before flight arrival plus airport processing time and cannot be achieved</span>
+                            <span>Delivery deadline is before flight arrival plus 3 hours and cannot be achieved</span>
                         </div>
 
                         <div class="time-display-container" ng-if="ctrl.currentDeliverByTime">
@@ -97,16 +97,16 @@
                             <div class="override-toggle-container">
                                 <md-checkbox ng-model="ctrl.overrideDeliverByTime"
                                              class="md-primary toggle-checkbox"
-                                             aria-label="Override deliver by time with flight arrival">
-                                    <span class="checkbox-label">Override with flight arrival time + processing</span>
+                                             aria-label="Override deliver by time with flight arrival plus 3 hours">
+                                    <span class="checkbox-label">Override with flight arrival time + 3 hours</span>
                                 </md-checkbox>
                                 <div class="toggle-description">
-                                    Use the flight's estimated arrival time plus standard processing time instead of the current delivered by time.
+                                    Update delivery jobs deliver by time to the flight's estimated arrival time plus 3 hours.
                                 </div>
 
                                 <div class="override-time-preview" ng-if="ctrl.overrideDeliverByTime && ctrl.flight.arrivalTime ">
                                     <span class="preview-label">New Deliver By:</span>
-                                    <span class="preview-time">{{ctrl.flightArrivalTimeWithProcessing | momentFormat:'MMM D, YYYY HH:mm'}} ({{::ctrl.flight.arrivalTimeZone | timezoneShort}})</span>
+                                    <span class="preview-time">{{ctrl.generatedDeliverByTime | momentFormat:'MMM D, YYYY HH:mm'}} ({{::ctrl.flight.arrivalTimeZone | timezoneShort}})</span>
                                 </div>
                             </div>
                         </div>
@@ -115,7 +115,7 @@
 
                 <!-- Bottom Row -->
                 <div class="content-row bottom-row">
-                    <!-- Deliver By Time Section (shown in bottom row if agent exists) -->
+                    <!-- Delivery Jobs Deliver By Time Section (shown in bottom row if agent exists) -->
                     <div class="content-section deliver-by-time-section"
                          ng-class="{'disabled': !ctrl.currentDeliverByTime}"
                          ng-if="ctrl.flight && ctrl.agent">
@@ -124,12 +124,12 @@
                                 <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
                             </div>
                             <div class="assignment-text">
-                                <div class="assignment-title">Deliver By Time</div>
+                                <div class="assignment-title">Delivery Jobs Deliver By Time</div>
                                 <div class="assignment-description" ng-if="ctrl.currentDeliverByTime">
-                                    Current delivery deadline for this job
+                                    Current deliver by time for delivery jobs
                                 </div>
                                 <div class="assignment-description" ng-if="!ctrl.currentDeliverByTime">
-                                    No deliver by time set - will use flight arrival time by default
+                                    No deliver by time set—will use flight arrival time plus 3 hours by default
                                 </div>
                             </div>
                         </div>
@@ -149,16 +149,16 @@
                             <div class="override-toggle-container">
                                 <md-checkbox ng-model="ctrl.overrideDeliverByTime"
                                              class="md-primary toggle-checkbox"
-                                             aria-label="Override deliver by time with flight arrival">
-                                    <span class="checkbox-label">Override with flight arrival time + processing</span>
+                                             aria-label="Override deliver by time with flight arrival plus 3 hours">
+                                    <span class="checkbox-label">Override with flight arrival time + 3 hours</span>
                                 </md-checkbox>
                                 <div class="toggle-description">
-                                    Use the flight's estimated arrival time plus airport processing time instead of the current delivered by time.
+                                    Update delivery jobs deliver by time to the flight's estimated arrival time plus 3 hours.
                                 </div>
 
-                                <div class="override-time-preview" ng-if="ctrl.overrideDeliverByTime && ctrl.flightArrivalTimeWithProcessing">
+                                <div class="override-time-preview" ng-if="ctrl.overrideDeliverByTime && ctrl.generatedDeliverByTime">
                                     <span class="preview-label">New Deliver By:</span>
-                                    <span class="preview-time">{{ctrl.flightArrivalTimeWithProcessing | momentFormat:'MMM D, YYYY HH:mm'}} ({{::ctrl.flight.arrivalTimeZone | timezoneShort}})</span>
+                                    <span class="preview-time">{{ctrl.generatedDeliverByTime | momentFormat:'MMM D, YYYY HH:mm'}} ({{::ctrl.flight.arrivalTimeZone | timezoneShort}})</span>
                                 </div>
                             </div>
                         </div>

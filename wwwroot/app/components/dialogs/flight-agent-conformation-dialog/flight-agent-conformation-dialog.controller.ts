@@ -5,6 +5,7 @@ import {Suggestion} from "../../../interfaces/job.interface";
 import getDangerousGoodsClassName from "../../../functions/getDangerousGoodsClassName";
 import {FlightAgentConfirmationDialogResult} from "../../../interfaces/dialog-result.interfaces";
 import NationwideService from "../../Nationwide/nationwide.service";
+import dayjs from "dayjs";
 
 class FlightAgentConformationDialogController extends BaseController {
     static $inject = [
@@ -32,6 +33,7 @@ class FlightAgentConformationDialogController extends BaseController {
     loadingAlerts: boolean = false;
     flightArrivalTimeWithProcessing?: Date;
     isDeliveryByTimeBad: boolean = false;
+    generatedDeliverByTime?: Date;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -64,6 +66,8 @@ class FlightAgentConformationDialogController extends BaseController {
         console.log('FlightAgentConformationDialogController: Controller initialized');
 
         if (this.flight) {
+            this.generateNewDeliverByTimeFromFlight();
+
             this.getEnabledAlertEvents()
                 .then(() => this.getDeliverByTime())
                 .then(() => this.calculateFlightArrivalTimeForAirport())
@@ -71,7 +75,8 @@ class FlightAgentConformationDialogController extends BaseController {
                     console.error('Error during initialization:', error);
                 });
 
-            if (!this.currentDeliverByTime) this.overrideDeliverByTime = true;
+            if (this.currentDeliverByTime) this.checkDeliverTimeAcceptable();
+            else this.overrideDeliverByTime = true;
         }
     }
 
@@ -91,7 +96,6 @@ class FlightAgentConformationDialogController extends BaseController {
     async getDeliverByTime(): Promise<void> {
         try {
             this.currentDeliverByTime = await this.nationwideService.getDeliveryByTimeForJob(this.jobId);
-            if (this.currentDeliverByTime) this.checkDeliverTimeAcceptable();
         } catch (error) {
             console.error('Failed to load delivery by time:', error);
             this.currentDeliverByTime = undefined;
@@ -110,6 +114,10 @@ class FlightAgentConformationDialogController extends BaseController {
         } finally {
             this.applyScope();
         }
+    }
+    
+    generateNewDeliverByTimeFromFlight(): void {
+        this.generatedDeliverByTime = dayjs(this.currentDeliverByTime).add(3, 'hour').toDate();
     }
 
     checkDeliverTimeAcceptable(): void {
