@@ -9,4 +9,5 @@ export interface IFlightAgentConfirmationDialogLocals {
     existingAwb?: string;
     dgClass?: number;
     stopJobCount?: number;
+    toAirportId?: number;
 }

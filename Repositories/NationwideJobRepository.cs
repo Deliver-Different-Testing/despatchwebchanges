@@ -1278,4 +1278,10 @@ public class NationwideJobRepository(
 
         return webhookEvents;
     }
+
+    public async Task<DateTime> AddProcessingTimeToFlightArrival(int airportId, DateTime flightArrivalTime)
+    {
+        var processingTime = await GetAirportProcessingTimeAsync(airportId);
+        return flightArrivalTime.AddMinutes(processingTime);
+    }
 }
