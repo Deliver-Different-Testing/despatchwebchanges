@@ -1881,7 +1881,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             .Where(j => j.Parent != null) 
             .SelectMany(j => j.Parent.InverseParent)
             .OrderByDescending(tucJob => tucJob.UcjbId)
-            .Select(tucJob => tucJob.UcjbComplTime)
+            .Select(tucJob => tucJob.DeliverByTime)
             .FirstOrDefaultAsync();
 
         return deliverByTime;
