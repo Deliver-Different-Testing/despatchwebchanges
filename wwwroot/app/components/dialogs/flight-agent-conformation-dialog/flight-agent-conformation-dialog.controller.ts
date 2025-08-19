@@ -64,17 +64,12 @@ class FlightAgentConformationDialogController extends BaseController {
         if (this.flight) {
             this.getEnabledAlertEvents()
                 .then(() => this.getDeliverByTime())
-                .then(() => {
-                    if (!this.currentDeliverByTime) {
-                        return this.calculateFlightArrivalTimeForAirport()
-                            .then(() => {
-                                this.overrideDeliverByTime = true;
-                            });
-                    }
-                })
+                .then(() => this.calculateFlightArrivalTimeForAirport())
                 .catch(error => {
                     console.error('Error during initialization:', error);
                 });
+
+            if (!this.currentDeliverByTime) this.overrideDeliverByTime = true;
         }
     }
 
