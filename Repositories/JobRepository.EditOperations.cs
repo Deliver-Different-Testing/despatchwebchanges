@@ -12,7 +12,7 @@ namespace DespatchWeb.Repositories;
 
 public partial class JobRepository
 {
-    private async Task UpdateTucJob(int jobId, JobProperty property, string value)
+    private async Task UpdateTucJobAsync(int jobId, JobProperty property, string value)
     {
         var job = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
@@ -287,10 +287,10 @@ public partial class JobRepository
         
         // Add additional notes for undeliverable location
         if (property == JobProperty.UndeliverableLocationID && job.UndeliverableLocation?.Message != null)
-            await JobUpdateAddNote(jobId, true, job.UndeliverableLocation.Message);
+            await JobUpdateAddNoteAsync(jobId, true, job.UndeliverableLocation.Message);
     }
 
-    private async Task UpdateTucJobArchive(int jobId, JobProperty property, string value)
+    private async Task UpdateTucJobArchiveAsync(int jobId, JobProperty property, string value)
     {
         var archive = await Context.TucJobArchives
             .Include(j => j.UcjbClient)
@@ -548,12 +548,12 @@ public partial class JobRepository
 
         // Add additional notes for undeliverable location
         if (property == JobProperty.UndeliverableLocationID && archive.UndeliverableLocation?.Message != null)
-            await JobUpdateAddNote(jobId, false, archive.UndeliverableLocation.Message);
+            await JobUpdateAddNoteAsync(jobId, false, archive.UndeliverableLocation.Message);
 
         await Context.SaveChangesAsync();
     }
 
-    private async Task JobUpdateAddNote(int jobId, bool isLiveJob, string updateNote)
+    private async Task JobUpdateAddNoteAsync(int jobId, bool isLiveJob, string updateNote)
     {
         var staffId = _infoService.GetStaffId();
         var currentDate = _infoService.GetCurrentTenantTime();

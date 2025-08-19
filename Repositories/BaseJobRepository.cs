@@ -650,64 +650,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         }
     }
 
-    public async Task UpdateJobConnoteAsync(int jobId, string conNote)
-    {
-        try
-        {
-            Log.Information(
-                "Starting connote update for job {JobId} with value {Connote}",
-                jobId,
-                conNote
-            );
-
-            // Get both the job and its possible children in one query
-            var jobFamily = await Context
-                .TucJobs.Where(j => j.UcjbId == jobId || j.ParentId == jobId)
-                .ToListAsync();
-
-            var mainJob = jobFamily.FirstOrDefault(j => j.UcjbId == jobId);
-
-            if (mainJob == null)
-            {
-                Log.Warning("Job {JobId} not found", jobId);
-                throw new KeyNotFoundException($"Job with ID {jobId} not found");
-            }
-
-            // If this is a child job, get the whole family using parent's ID
-            if (mainJob.ParentId.HasValue)
-            {
-                Log.Information(
-                    "Job {JobId} is a child job. Using parent job {ParentId}",
-                    jobId,
-                    mainJob.ParentId
-                );
-
-                jobFamily = await Context
-                    .TucJobs.Where(j =>
-                        j.UcjbId == mainJob.ParentId || j.ParentId == mainJob.ParentId
-                    )
-                    .ToListAsync();
-            }
-
-            // Update all jobs in the family
-            foreach (var job in jobFamily) job.Connote = conNote;
-
-            Log.Information(
-                "Updating connote for job family. Parent: {ParentId}, Total Jobs: {TotalJobs}",
-                mainJob.ParentId ?? jobId,
-                jobFamily.Count
-            );
-
-            await Context.SaveChangesAsync();
-            Log.Information("Successfully completed connote update for job family {JobId}", jobId);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error updating connote for job {JobId}", jobId);
-            throw;
-        }
-    }
-
     public async Task<OverviewStatsViewModel> GetOverviewStatsAsync()
     {
         var baseQuery = Context.TucJobs.Where(j => j.InverseParent.Count != 0);
@@ -1403,8 +1345,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             : await UpdateNoteAsync(viewModel, staffId, currentTime, cancellationToken);
     }
 
-    public async Task<int> SaveNoteAsync(int jobId, string noteText, bool isImportant = false,
-        bool isRecurringJob = false)
+    public async Task SaveNoteAsync(int jobId, string noteText, bool isImportant = false,
+        bool isRecurringJob = false, NoteType noteType = NoteType.InternalNote)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(noteText, nameof(noteText));
 
@@ -1414,10 +1356,10 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             JobBookingId = isRecurringJob ? jobId : null,
             NoteText = noteText,
             IsImportant = isImportant,
-            NoteTypeId = (int)NoteType.InternalNote
+            NoteTypeId = (int)noteType
         };
 
-        return await SaveNoteAsync(viewModel);
+        await SaveNoteAsync(viewModel);
     }
 
     public async Task DeleteNoteAsync(int noteId, CancellationToken cancellationToken = default)
@@ -1450,7 +1392,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             .FirstOrDefaultAsync();
     }
 
-    private async Task<int> GetEffectiveJobBookingId(int jobBookingId)
+    private async Task<int> GetEffectiveJobBookingIdAsync(int jobBookingId)
     {
         return await Context.TucJobBookings
             .Where(j => j.UcbkId == jobBookingId)
@@ -1486,11 +1428,12 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
         if (isPrebook)
         {
-            var effectiveJobBookingId = await GetEffectiveJobBookingId(viewModel.JobBookingId.Value);
+            var effectiveJobBookingId = await GetEffectiveJobBookingIdAsync(viewModel.JobBookingId.Value);
             activeNote.JobBookingId = effectiveJobBookingId;
         }
         else
         {
+            ArgumentNullException.ThrowIfNull(viewModel.JobId);
             var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
             activeNote.JobId = effectiveJobId;
         }
@@ -1535,11 +1478,12 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
         if (isPrebook)
         {
-            var effectiveJobBookingId = await GetEffectiveJobBookingId(viewModel.JobBookingId.Value);
+            var effectiveJobBookingId = await GetEffectiveJobBookingIdAsync(viewModel.JobBookingId.Value);
             activeNote.JobBookingId = effectiveJobBookingId;
         }
         else
         {
+            ArgumentNullException.ThrowIfNull(viewModel.JobId);
             var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
             activeNote.JobId = effectiveJobId;
         }

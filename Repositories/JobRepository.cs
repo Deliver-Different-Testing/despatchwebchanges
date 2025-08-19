@@ -1882,12 +1882,12 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             var isActiveJob = Context.TucJobs.Any(j => j.UcjbId == jobId);
             if (isActiveJob)
             {
-                await UpdateTucJob(jobId, field, value);
+                await UpdateTucJobAsync(jobId, field, value);
                 return;
             }
 
             // Job will be archived
-            await UpdateTucJobArchive(jobId, field, value);
+            await UpdateTucJobArchiveAsync(jobId, field, value);
         }
         catch (Exception e)
         {
