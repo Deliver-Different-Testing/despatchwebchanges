@@ -112,7 +112,7 @@ public class NationwideJobRepository(
             }
 
             // Second part
-            if(overrideDeliverByTime) job.DeliverByTime = primaryFlight.ArrivalTime;
+             job.DeliverByTime = primaryFlight.ArrivalTime;
             await UpdateJobAddressWithAirportInfoAsync(job, departureAirportId.Value,
                 primaryFlight.DepartureAirportTimeZone, false);
             await UpdateJobAddressWithAirportInfoAsync(job, arrivalAirportId.Value,
@@ -134,8 +134,8 @@ public class NationwideJobRepository(
                     deliveryJob.UcjbTime = lastFlight.ArrivalTime.AddMinutes(airportProcessingTime);
 
                     // Set delivery job's DeliverByTime to flight landing time + 3 hours
-                    deliveryJob.DeliverByTime = lastFlight.ArrivalTime.AddHours(3);
-                    deliveryJob.DeliverByTimeZoneId = await GetTimeZoneIdByNameAsync(lastFlight.ArrivalAirportTimeZone);
+                    if(overrideDeliverByTime) deliveryJob.DeliverByTime = lastFlight.ArrivalTime.AddHours(3);
+                    if(overrideDeliverByTime) deliveryJob.DeliverByTimeZoneId = await GetTimeZoneIdByNameAsync(lastFlight.ArrivalAirportTimeZone);
 
                     // Update Pickup Address With Airport
                     await UpdateJobAddressWithAirportInfoAsync(deliveryJob, arrivalAirportId.Value,

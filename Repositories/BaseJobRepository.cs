@@ -53,7 +53,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
                     if (queryParams.EndDate.HasValue)
                         query = query.Where(j => j.UcjbDate <= queryParams.EndDate.Value.Date);
-                    
+
                     // Sorting
                     query = ApplyDashboardSpecificOrdering(
                         query,
@@ -119,9 +119,10 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
         var combinedFilters = string.Join(" OR ", viewFilters.Select(filter => $"({filter})"));
         return await Context
-            .DeswebQryDespatchJobViewFilters.FromSqlRaw(isUsTenant ?
-                $"select * from DESWEB_qry_Despatch_Job_View_Filters WHERE {combinedFilters}" :
-                $"select * from DESWEB_qryDespatch WHERE {combinedFilters}"
+            .DeswebQryDespatchJobViewFilters.FromSqlRaw(
+                isUsTenant
+                    ? $"select * from DESWEB_qry_Despatch_Job_View_Filters WHERE {combinedFilters}"
+                    : $"select * from DESWEB_qryDespatch WHERE {combinedFilters}"
             )
             .Select(x => x.UcjbId)
             .ToListAsync();
@@ -486,14 +487,14 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         IQueryable<TucJob> query,
         bool isAscending)
     {
-            return isAscending
-                ? query
-                    .OrderBy(j => j.UcjbDate)
-                    .ThenBy(j => j.UcjbTime)
-                : query
-                    .OrderByDescending(j => j.UcjbDate)
-                    .ThenByDescending(j => j.UcjbTime);
-        
+        return isAscending
+            ? query
+                .OrderBy(j => j.UcjbDate)
+                .ThenBy(j => j.UcjbTime)
+            : query
+                .OrderByDescending(j => j.UcjbDate)
+                .ThenByDescending(j => j.UcjbTime);
+
     }
 
     private static IQueryable<TucJob> ApplyCourierOrdering(
@@ -683,7 +684,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
     public async Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(
         JobStatusGroup statusGroup,
-               OverviewJobsRequest parameters
+        OverviewJobsRequest parameters
     )
     {
         // Base query
@@ -710,7 +711,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         };
 
         // Apply region filter if provided
-        if(parameters.Regions.Count > 0)
+        if (parameters.Regions.Count > 0)
         {
             query = query.Where(j =>
                 j.TblBulkJobs.Any(b => parameters.Regions.Contains(b.Region.BulkRegionId))
@@ -1872,14 +1873,17 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
         return result ?? 0m;
     }
-    
+
     public async Task<DateTime?> GetDeliverByTimeByJobIdAsync(int jobId)
     {
-      var deliverByTime = await Context.TucJobs
-          .Where(j => j.UcjbId == jobId)
-          .Select(j => j.DeliverByTime)
-          .FirstOrDefaultAsync();
+        var deliverByTime = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Where(j => j.Parent != null) 
+            .SelectMany(j => j.Parent.InverseParent)
+            .OrderByDescending(tucJob => tucJob.UcjbId)
+            .Select(tucJob => tucJob.UcjbComplTime)
+            .FirstOrDefaultAsync();
 
-      return deliverByTime;
+        return deliverByTime;
     }
 }
