@@ -204,11 +204,11 @@
                         </div>
                     </td>
                     <td md-cell>
-                        {{flight.departureTime | date: 'MM/dd/yyyy HH:mm'}}
+                        {{flight.departureTime | date: 'MM/dd/yyyy HH:mm'}} ({{::flight.departureAirportTimeZone | timezoneShort}})
                         <div class="airport-code">{{flight.departureAirport}}</div>
                     </td>
                     <td md-cell>
-                        {{flight.arrivalTime | date: 'MM/dd/yyyy HH:mm'}}
+                        {{flight.arrivalTime | date: 'MM/dd/yyyy HH:mm'}} ({{::flight.arrivalAirportTimeZone | timezoneShort}})
                         <div class="airport-code">{{flight.arrivalAirport}}</div>
                     </td>
                     <td md-cell>

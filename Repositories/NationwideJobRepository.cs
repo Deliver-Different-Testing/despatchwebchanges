@@ -50,7 +50,7 @@ public class NationwideJobRepository(
                 .FirstOrDefaultAsync();
 
             ArgumentNullException.ThrowIfNull(job);
-
+            
             // Create the main flight record
             var jobNationwide = new TucJobNationwide
             {
@@ -1239,6 +1239,7 @@ public class NationwideJobRepository(
         var canAssign = await Context.TucJobs
             .Where(j => j.UcjbId == agentJobId)
             .SelectMany(j => j.Parent.InverseParent)
+            .AsNoTracking()
             .AnyAsync(siblingJob => siblingJob.TucJobNationwides.Any());
 
         return canAssign;
@@ -1279,9 +1280,20 @@ public class NationwideJobRepository(
         return webhookEvents;
     }
 
-    public async Task<DateTime> AddProcessingTimeToFlightArrival(int airportId, DateTime flightArrivalTime)
+    public async Task<DateTime> AddProcessingTimeToFlightArrivalAsync(int airportId, DateTime flightArrivalTime)
     {
         var processingTime = await GetAirportProcessingTimeAsync(airportId);
         return flightArrivalTime.AddMinutes(processingTime);
+    }
+    
+    public async Task<string> GetAirportTimeZoneByCodeAsync(string airportCode)
+    {
+        var airport = await Context.TblAirports
+            .Where(a => a.AirportCode == airportCode)
+            .Select(a => a.Timezone)
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        return airport;
     }
 }
