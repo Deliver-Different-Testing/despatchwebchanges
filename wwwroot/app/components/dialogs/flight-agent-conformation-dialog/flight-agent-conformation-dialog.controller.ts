@@ -50,7 +50,9 @@ class FlightAgentConformationDialogController extends BaseController {
         this.dialogTitle = flight ? 'Assign Flight' : 'Assign Agent';
         this.showIncludeStopJobs = (stopJobCount !== undefined && stopJobCount > 0);
 
-        if (dgClass) this.dgClassName = getDangerousGoodsClassName(dgClass);
+        if (dgClass !== undefined) {
+            this.dgClassName = getDangerousGoodsClassName(dgClass);
+        }
 
         if (existingAwb) {
             this.awb = existingAwb;
