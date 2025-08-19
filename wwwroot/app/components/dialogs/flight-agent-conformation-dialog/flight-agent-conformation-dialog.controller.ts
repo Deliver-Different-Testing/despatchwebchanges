@@ -30,6 +30,8 @@ class FlightAgentConformationDialogController extends BaseController {
     currentDeliverByTime?: Date;
     overrideDeliverByTime?: boolean = false;
     loadingAlerts: boolean = false;
+    flightArrivalTimeWithProcessing?: Date;
+    isDeliveryByTimeBad: boolean = false;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -48,20 +50,7 @@ class FlightAgentConformationDialogController extends BaseController {
         this.dialogTitle = flight ? 'Assign Flight' : 'Assign Agent';
         this.showIncludeStopJobs = (stopJobCount !== undefined && stopJobCount > 0);
 
-        if (flight) {
-            this.getEnabledAlertEvents();
-            this.getDeliverByTime();
-
-            // Override if null
-            if (!this.currentDeliverByTime) {
-                this.calculateFlightArrivalTimeForAirport();
-                this.overrideDeliverByTime = true;
-            }
-        }
-
-        if (dgClass !== undefined) {
-            this.dgClassName = getDangerousGoodsClassName(dgClass);
-        }
+        if (dgClass) this.dgClassName = getDangerousGoodsClassName(dgClass);
 
         if (existingAwb) {
             this.awb = existingAwb;
@@ -69,36 +58,66 @@ class FlightAgentConformationDialogController extends BaseController {
         }
     }
 
-    getEnabledAlertEvents() {
-        this.loadingAlerts = true;
-        this.nationwideService.getEnabledWebhookEvents()
-            .then(alert => {
-                this.enabledAlerts = alert;
-            })
-            .catch(error => {
-                console.error('Failed to load webhook alerts:', error);
-                this.enabledAlerts = [];
-            })
-            .finally(() => {
-                this.loadingAlerts = false;
-            });
+    $onInit() {
+        console.log('FlightAgentConformationDialogController: Controller initialized');
+
+        if (this.flight) {
+            this.getEnabledAlertEvents()
+                .then(() => this.getDeliverByTime())
+                .then(() => {
+                    if (!this.currentDeliverByTime) {
+                        return this.calculateFlightArrivalTimeForAirport()
+                            .then(() => {
+                                this.overrideDeliverByTime = true;
+                            });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error during initialization:', error);
+                });
+        }
     }
 
-    getDeliverByTime() {
-        this.nationwideService.getDeliveryByTimeForJob(this.jobId).then(deliverByTime => {
-            this.currentDeliverByTime = deliverByTime;
-        }).catch(error => {
+    async getEnabledAlertEvents(): Promise<void> {
+        this.loadingAlerts = true;
+        try {
+            this.enabledAlerts = await this.nationwideService.getEnabledWebhookEvents();
+        } catch (error) {
+            console.error('Failed to load webhook alerts:', error);
+            this.enabledAlerts = [];
+        } finally {
+            this.loadingAlerts = false;
+            this.applyScope();
+        }
+    }
+
+    async getDeliverByTime(): Promise<void> {
+        try {
+            this.currentDeliverByTime = await this.nationwideService.getDeliveryByTimeForJob(this.jobId);
+            if (this.currentDeliverByTime) this.checkDeliverTimeAcceptable();
+        } catch (error) {
             console.error('Failed to load delivery by time:', error);
             this.currentDeliverByTime = undefined;
-        });
+        } finally {
+            this.applyScope();
+        }
     }
 
-    calculateFlightArrivalTimeForAirport() {
+    async calculateFlightArrivalTimeForAirport(): Promise<void> {
         if (!this.flight?.arrivalTime || !this.toAirportId) return;
 
-        this.nationwideService.calculateArrivalTimeForAirport(this.toAirportId, this.flight?.arrivalTime).then(arrivalTime => {
-            this.currentDeliverByTime = arrivalTime;
-        });
+        try {
+            this.flightArrivalTimeWithProcessing = await this.nationwideService.calculateArrivalTimeForAirport(this.toAirportId, this.flight?.arrivalTime);
+        } catch (error) {
+            console.error('Failed to calculate flight arrival time:', error);
+        } finally {
+            this.applyScope();
+        }
+    }
+
+    checkDeliverTimeAcceptable(): void {
+        if (!this.currentDeliverByTime || !this.flightArrivalTimeWithProcessing) return;
+        this.isDeliveryByTimeBad = this.currentDeliverByTime < this.flightArrivalTimeWithProcessing;
     }
 
     confirm(): void {
