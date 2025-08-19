@@ -496,12 +496,12 @@ public class NationwideJobController(
         }
     }
     
-      public async Task<IActionResult> CalculateArrivalTimeForAirport(int airportId, DateTime arrivalTime)
+      public async Task<IActionResult> CalculateCargoReadyTime(int airportId, string flightNumber, DateTime arrivalTime)
     {
         try
         {
-            var deliverByTime = await repository.AddProcessingTimeToFlightArrivalAsync(airportId, arrivalTime);
-            return Json(deliverByTime);
+            var cargoReadyTime = await repository.CalculateCargoReadyTimeAsync(airportId, flightNumber, arrivalTime);
+            return Json(cargoReadyTime);
         }
         catch (Exception e)
         {
@@ -509,6 +509,4 @@ public class NationwideJobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
-    
-    
 }

@@ -180,8 +180,7 @@ public class FlightStatsService(
             arrivalAirportCode = await repository.GetSingleAirportCodeByIdAsync(arrivalAirportId.Value);
         
         // Timezones
-        var fromAirportTimeZone = await repository.GetAirportTimeZoneByCodeAsync(departureAirportCode);
-        var toAirportTimeZone = await repository.GetAirportTimeZoneByCodeAsync(arrivalAirportCode);
+        var (fromAirportTimeZone, toAirportTimeZone) = await repository.GetAirportTimeZonesByCodesAsync(departureAirportCode, arrivalAirportCode);
 
         var activeAirlineCodes = await repository.GetActiveAirlineCodesAsync();
 

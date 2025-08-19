@@ -2,8 +2,8 @@ import {IFlightViewModel} from "../../Nationwide/nationwide.interfaces";
 import {IDispatchJob, Suggestion} from "../../../interfaces/job.interface";
 import FlightAgentConformationDialogController from "./flight-agent-conformation-dialog.controller";
 import {FlightAgentConfirmationDialogResult} from "../../../interfaces/dialog-result.interfaces";
-import {IFlightAgentConfirmationDialogLocals,} from "./flight-agent-conformation-dialog.interfaces";
 import countSubJobs from "../../../functions/countSubJobs";
+import IFlightAgentConfirmationDialogLocals from "./interfaces/IFlightAgentConfirmationDialogLocals";
 
 class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
     static $inject = [

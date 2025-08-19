@@ -6,6 +6,7 @@ using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
+using DespatchWeb.Models.Response;
 
 namespace DespatchWeb.Interfaces;
 
@@ -57,6 +58,10 @@ public interface INationwideJobRepository
     Task<string> GetWebhookEventsAsStringAsync();
     Task<List<Suggestion>> GetWebhookEventsAsListAsync();
     Task<DateTime?> GetDeliverByTimeByJobIdAsync(int jobId);
-    Task<DateTime> AddProcessingTimeToFlightArrivalAsync(int airportId, DateTime flightArrivalTime);
-    Task<string> GetAirportTimeZoneByCodeAsync(string airportCode);
+
+    Task<FlightCargoProcessingModel> CalculateCargoReadyTimeAsync(int airportId,
+        string flightNumber, DateTime flightArrivalTime);
+
+    Task<(string fromAirportTimeZone, string toAirportTimeZone)> GetAirportTimeZonesByCodesAsync(string toAirportCode,
+        string fromAirportCode);
 }

@@ -31,7 +31,7 @@ class FlightAgentConformationDialogController extends BaseController {
     currentDeliverByTime?: Date;
     overrideDeliverByTime?: boolean = false;
     loadingAlerts: boolean = false;
-    flightArrivalTimeWithProcessing?: Date;
+    flightCargoProcessing?: IFlightCargoProcessing;
     isDeliveryByTimeBad: boolean = false;
     generatedDeliverByTime?: Date;
 
@@ -70,7 +70,7 @@ class FlightAgentConformationDialogController extends BaseController {
 
             this.getEnabledAlertEvents()
                 .then(() => this.getDeliverByTime())
-                .then(() => this.calculateFlightArrivalTimeForAirport())
+                .then(() => this.calculateCargoReadyTime())
                 .catch(error => {
                     console.error('Error during initialization:', error);
                 });
@@ -104,27 +104,49 @@ class FlightAgentConformationDialogController extends BaseController {
         }
     }
 
-    async calculateFlightArrivalTimeForAirport(): Promise<void> {
+    async calculateCargoReadyTime(): Promise<void> {
         if (!this.flight?.arrivalTime || !this.toAirportId) return;
 
         try {
-            this.flightArrivalTimeWithProcessing = await this.nationwideService.calculateArrivalTimeForAirport(this.toAirportId, this.flight?.arrivalTime);
+            this.flightCargoProcessing = await this.nationwideService.calculateCargoReadyTime(this.toAirportId,
+                this.flight?.flightNumber, this.flight?.arrivalTime);
         } catch (error) {
             console.error('Failed to calculate flight arrival time:', error);
         } finally {
             this.applyScope();
         }
     }
-    
+
     generateNewDeliverByTimeFromFlight(): void {
         this.generatedDeliverByTime = dayjs(this.currentDeliverByTime).add(3, 'hour').toDate();
     }
 
     checkDeliverTimeAcceptable(): void {
-        if (!this.currentDeliverByTime || !this.flightArrivalTimeWithProcessing) return;
-        this.isDeliveryByTimeBad = this.currentDeliverByTime < this.flightArrivalTimeWithProcessing;
-    }
+        if (!this.currentDeliverByTime || !this.flightCargoProcessing) return;
 
+        const baseDate = dayjs().startOf('day');
+
+        const deliveryTime = baseDate
+            .hour(dayjs(this.currentDeliverByTime).hour())
+            .minute(dayjs(this.currentDeliverByTime).minute());
+
+        const cargoOpeningTime = baseDate
+            .hour(dayjs(this.flightCargoProcessing.cargoOpeningTime).hour())
+            .minute(dayjs(this.flightCargoProcessing.cargoOpeningTime).minute());
+
+        const cargoClosingTime = baseDate
+            .hour(dayjs(this.flightCargoProcessing.cargoClosingTime).hour())
+            .minute(dayjs(this.flightCargoProcessing.cargoClosingTime).minute());
+
+        const arrivalTime = baseDate
+            .hour(dayjs(this.flightCargoProcessing.arrivalWithProcessingTime).hour())
+            .minute(dayjs(this.flightCargoProcessing.arrivalWithProcessingTime).minute());
+
+        this.isDeliveryByTimeBad = deliveryTime.isBefore(arrivalTime)
+            && deliveryTime.isAfter(cargoOpeningTime)
+            && deliveryTime.isBefore(cargoClosingTime);
+    }
+    
     confirm(): void {
         const response: FlightAgentConfirmationDialogResult = {
             awb: this.awb,

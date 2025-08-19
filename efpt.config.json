@@ -23,6 +23,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[CargoFacilities]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[ClearListAreaZipPolygon]",
          "ObjectType": 0
       },

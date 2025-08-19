@@ -12,6 +12,7 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
+using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -50,7 +51,7 @@ public class NationwideJobRepository(
                 .FirstOrDefaultAsync();
 
             ArgumentNullException.ThrowIfNull(job);
-            
+
             // Create the main flight record
             var jobNationwide = new TucJobNationwide
             {
@@ -97,8 +98,9 @@ public class NationwideJobRepository(
             if (job.FromAirportId != null || fromAirportId != null)
             {
                 var pickUpJob = job.Parent.InverseParent.FirstOrDefault(j =>
-                    j.UcjbNumber.EndsWith('1') && j.UcjbSpeedNavigation?.Grouping?.GroupingId == (int)SpeedGrouping.Agent);
-               
+                    j.UcjbNumber.EndsWith('1') &&
+                    j.UcjbSpeedNavigation?.Grouping?.GroupingId == (int)SpeedGrouping.Agent);
+
                 if (pickUpJob != null)
                 {
                     var airportProcessingTime = await GetAirportProcessingTimeAsync(departureAirportId.Value);
@@ -112,7 +114,7 @@ public class NationwideJobRepository(
             }
 
             // Second part
-             job.DeliverByTime = primaryFlight.ArrivalTime;
+            job.DeliverByTime = primaryFlight.ArrivalTime;
             await UpdateJobAddressWithAirportInfoAsync(job, departureAirportId.Value,
                 primaryFlight.DepartureAirportTimeZone, false);
             await UpdateJobAddressWithAirportInfoAsync(job, arrivalAirportId.Value,
@@ -123,19 +125,23 @@ public class NationwideJobRepository(
             if (job.ToAirportId != null || toAirportId != null)
             {
                 var deliveryJob = job.Parent.InverseParent.FirstOrDefault(j => j.UcjbNumber.EndsWith('2')
-                                                                      || j.UcjbNumber.EndsWith('3')
-                                                                      && j.UcjbSpeedNavigation?.Grouping?.GroupingId == (int)SpeedGrouping.Agent);
+                                                                               || j.UcjbNumber.EndsWith('3')
+                                                                               && j.UcjbSpeedNavigation?.Grouping
+                                                                                   ?.GroupingId ==
+                                                                               (int)SpeedGrouping.Agent);
 
                 if (deliveryJob != null)
                 {
                     var airportProcessingTime = await GetAirportProcessingTimeAsync(arrivalAirportId.Value);
                     var lastFlight = flights.FlightSegments.Last();
-                    
+
                     deliveryJob.UcjbTime = lastFlight.ArrivalTime.AddMinutes(airportProcessingTime);
 
                     // Set delivery job's DeliverByTime to flight landing time + 3 hours
-                    if(overrideDeliverByTime) deliveryJob.DeliverByTime = lastFlight.ArrivalTime.AddHours(3);
-                    if(overrideDeliverByTime) deliveryJob.DeliverByTimeZoneId = await GetTimeZoneIdByNameAsync(lastFlight.ArrivalAirportTimeZone);
+                    if (overrideDeliverByTime) deliveryJob.DeliverByTime = lastFlight.ArrivalTime.AddHours(3);
+                    if (overrideDeliverByTime)
+                        deliveryJob.DeliverByTimeZoneId =
+                            await GetTimeZoneIdByNameAsync(lastFlight.ArrivalAirportTimeZone);
 
                     // Update Pickup Address With Airport
                     await UpdateJobAddressWithAirportInfoAsync(deliveryJob, arrivalAirportId.Value,
@@ -189,10 +195,10 @@ public class NationwideJobRepository(
                 }
             }
 
-            await SaveNoteAsync(jobId, 
-                $"Flight {flights.FlightSegments[0]?.FlightNumber} added to job {jobId}", 
-                false, 
-                false, 
+            await SaveNoteAsync(jobId,
+                $"Flight {flights.FlightSegments[0]?.FlightNumber} added to job {jobId}",
+                false,
+                false,
                 NoteType.FlightUpdate);
 
             await Context.SaveChangesAsync();
@@ -1280,20 +1286,40 @@ public class NationwideJobRepository(
         return webhookEvents;
     }
 
-    public async Task<DateTime> AddProcessingTimeToFlightArrivalAsync(int airportId, DateTime flightArrivalTime)
+    public async Task<FlightCargoProcessingModel> CalculateCargoReadyTimeAsync(int airportId,
+        string flightNumber,
+        DateTime flightArrivalTime)
     {
-        var processingTime = await GetAirportProcessingTimeAsync(airportId);
-        return flightArrivalTime.AddMinutes(processingTime);
-    }
-    
-    public async Task<string> GetAirportTimeZoneByCodeAsync(string airportCode)
-    {
-        var airport = await Context.TblAirports
-            .Where(a => a.AirportCode == airportCode)
-            .Select(a => a.Timezone)
+        var carrierCode = flightNumber[..2];
+        var data = await Context.TblAirports
+            .Where(a => a.AirportId == airportId)
+            .Select(a => new CargoFacilityDto
+            {
+                ProcessingTime = a.ProcessingTime ?? 0,
+                CargoOpeningTime = a.CargoFacilities.FirstOrDefault(c => c.Carrier.CarrierCode == carrierCode).OpeningTime ??
+                                   DateTime.Now.ResetTimeToStartOfDay(),
+                CargoClosingTime = a.CargoFacilities.FirstOrDefault(c => c.Carrier.CarrierCode == carrierCode).ClosingTime ??
+                                   DateTime.Now.ResetTimeToEndOfDay()
+            })
             .AsNoTracking()
             .FirstOrDefaultAsync();
 
-        return airport;
+        var cargoModel = new FlightCargoProcessingModel(flightArrivalTime, data.ProcessingTime,
+            data.CargoOpeningTime, data.CargoClosingTime);
+
+        return cargoModel;
+    }
+
+    public async Task<(string fromAirportTimeZone, string toAirportTimeZone)> GetAirportTimeZonesByCodesAsync(string toAirportCode,
+        string fromAirportCode)
+    {
+        var airportTimezones = await Context.TblAirports
+            .Where(a => a.AirportCode == toAirportCode || a.AirportCode == fromAirportCode)
+            .ToDictionaryAsync(a => a.AirportCode, a => a.Timezone);
+
+        airportTimezones.TryGetValue(fromAirportCode, out var fromAirportTimeZone);
+        airportTimezones.TryGetValue(toAirportCode, out var toAirportTimeZone);
+
+        return (fromAirportTimeZone, toAirportTimeZone);
     }
 }

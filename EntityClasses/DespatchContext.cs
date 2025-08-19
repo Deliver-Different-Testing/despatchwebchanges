@@ -17,6 +17,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<AirFreightRate> AirFreightRates { get; set; }
 
+    public virtual DbSet<CargoFacility> CargoFacilities { get; set; }
+
     public virtual DbSet<ClearListAreaZipPolygon> ClearListAreaZipPolygons { get; set; }
 
     public virtual DbSet<DeliveryPhoto> DeliveryPhotos { get; set; }
@@ -285,6 +287,35 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.WeightBreakGroup).WithMany(p => p.AirFreightRates)
                 .HasForeignKey(d => d.WeightBreakGroupId)
                 .HasConstraintName("FK__AirFreigh__Weigh__2962DF74");
+        });
+
+        modelBuilder.Entity<CargoFacility>(entity =>
+        {
+            entity.HasKey(e => e.CargoFacilityId).HasName("PK__CargoFac__309D8350B0257389");
+
+            entity.Property(e => e.CargoFacilityId).HasColumnName("CargoFacilityID");
+            entity.Property(e => e.AirportId).HasColumnName("AirportID");
+            entity.Property(e => e.CarrierId).HasColumnName("CarrierID");
+            entity.Property(e => e.ClosingTime).HasColumnType("datetime");
+            entity.Property(e => e.Created).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.LastModified).HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.OpeningTime).HasColumnType("datetime");
+
+            entity.HasOne(d => d.Airport).WithMany(p => p.CargoFacilities)
+                .HasForeignKey(d => d.AirportId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__CargoFaci__Airpo__2E678BB3");
+
+            entity.HasOne(d => d.Carrier).WithMany(p => p.CargoFacilities)
+                .HasForeignKey(d => d.CarrierId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__CargoFaci__Carri__2F5BAFEC");
         });
 
         modelBuilder.Entity<ClearListAreaZipPolygon>(entity =>
