@@ -10,6 +10,7 @@ class FlightAgentConformationDialogController extends BaseController {
     static $inject = [
         '$mdDialog',
         'NWData',
+        'jobId',
         'jobNumber',
         'flight',
         'agent',
@@ -27,10 +28,12 @@ class FlightAgentConformationDialogController extends BaseController {
     enabledAlerts?: Suggestion[];
     currentDeliverByTime?: Date;
     overrideDeliverByTime?: boolean = false;
-    
+    loadingAlerts: boolean = false;
+
     constructor(
         private $mdDialog: angular.material.IDialogService,
         private nationwideService: NationwideService,
+        private jobId: number,
         public jobNumber: string,
         public flight?: IFlightViewModel,
         public agent?: Suggestion,
@@ -64,15 +67,27 @@ class FlightAgentConformationDialogController extends BaseController {
     }
 
     getEnabledAlertEvents() {
-        this.nationwideService.getEnabledWebhookEvents().then(alert => {
-            this.enabledAlerts = alert;
-        });
+        this.loadingAlerts = true;
+        this.nationwideService.getEnabledWebhookEvents()
+            .then(alert => {
+                this.enabledAlerts = alert;
+            })
+            .catch(error => {
+                console.error('Failed to load webhook alerts:', error);
+                this.enabledAlerts = [];
+            })
+            .finally(() => {
+                this.loadingAlerts = false;
+            });
     }
 
     getDeliverByTime() {
-        this.nationwideService.getDeliveryByTimeForJob().then(deliverByTime => {
+        this.nationwideService.getDeliveryByTimeForJob(this.jobId).then(deliverByTime => {
             this.currentDeliverByTime = deliverByTime;
-        })
+        }).catch(error => {
+            console.error('Failed to load delivery by time:', error);
+            this.currentDeliverByTime = undefined;
+        });
     }
     
     confirm(): void {

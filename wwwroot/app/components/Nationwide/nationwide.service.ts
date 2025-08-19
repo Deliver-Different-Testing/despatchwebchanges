@@ -267,8 +267,12 @@ class NationwideService implements angular.IServiceProvider {
         return response.data;
     }   
     
-    async getDeliveryByTimeForJob(): Promise<Date | undefined> {
-        const response = await this.$http.get<Date | undefined>("nationwideJob/GetDeliveryByTimeForJob");
+    async getDeliveryByTimeForJob(jobId: number): Promise<Date | undefined> {
+        const response = await this.$http.get<Date | undefined>("nationwideJob/GetDeliveryByTimeForJob", {
+            params: {
+                jobId
+            }
+        });
         return response.data;
     } 
 }
