@@ -1,5 +1,11 @@
 ﻿import "./job-list.styles.less";
-import {AddressViewModel, AssignedFlight, IDispatchJob, Suggestion} from "../../../interfaces/job.interface";
+import {
+    AddressViewModel,
+    AssignedFlight, IBulkStatusUpdateRequest,
+    IBulkUpdateRequest,
+    IDispatchJob,
+    Suggestion
+} from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
 import JobCategory from "./enums/jobCategory";
@@ -10,12 +16,19 @@ import DispatchCoreService from "../../../services/dispatch-core.service";
 import JobListType from "./enums/jobListType";
 import JobHighlightService from "./job-highlight.service";
 import DensityMode from "../../../enums/densityMode";
+import AutoCompleteDialogService from "../../dialogs/auto-complete-dialog/auto-complete-dialog.service";
+import {
+    FeatureInDevelopmentDialogService
+} from "../../dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
 
 class JobsListController extends BaseController {
     static $inject = [
         'DispatchData',
         'jobHighlightService',
+        'autoCompleteDialogService',
+        'featureInDevelopmentDialogService',
         '$document',
+        '$mdDialog',
         'APP_CONFIG',
         '$timeout',
         '$interval',
@@ -25,6 +38,7 @@ class JobsListController extends BaseController {
     private readonly DENSE_MODE_SAVE_KEY: string = `jobListComponentDenseViewMode_${ContactID}`;
     private readonly COLUMN_WIDTHS_SAVE_KEY: string = `jobListColumnWidths_${ContactID}`;
     private readonly SORT_STATE_SAVE_KEY: string = `jobListSortState_${ContactID}`;
+    private readonly COURIER_URL: string = "/courier/AllActiveSearch";
 
     private unsubscribeFromHighlights?: () => void;
 
@@ -85,10 +99,17 @@ class JobsListController extends BaseController {
         direction: null
     };
 
+    // Select all
+    selectedJobs: IDispatchJob[] = [];
+    selectAllState: boolean = false;
+
     constructor(
         private DispatchData: DispatchCoreService,
         private jobHighlightService: JobHighlightService,
+        private autoCompleteDialogService: AutoCompleteDialogService,
+        private featureInDevelopmentDialogService: FeatureInDevelopmentDialogService,
         private $document: angular.IDocumentService,
+        private $mdDialog: angular.material.IDialogService,
         appConfig: AppConfig,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
@@ -255,14 +276,16 @@ class JobsListController extends BaseController {
         };
     }
 
-    filterByCategory(category: JobCategory) {
+    filterByCategory(category: JobCategory): void {
         this.selectedCategory = category;
         this.applyFilters();
+        this.updateSelectAllState();
     }
 
-    searchJobs(query: string) {
+    searchJobs(query: string): void {
         this.searchQuery = query.toLowerCase();
         this.applyFilters();
+        this.updateSelectAllState();
     }
 
     setDensityMode(mode: DensityMode) {
@@ -679,7 +702,23 @@ class JobsListController extends BaseController {
         }
     }
 
-    selectJob(job: IDispatchJob) {
+    selectJob(job: IDispatchJob, event?: MouseEvent): void {
+        // If holding Ctrl/Cmd, toggle selection instead of single select
+        if (event && (event.ctrlKey || event.metaKey)) {
+            job.selected = !job.selected;
+            this.toggleJobSelection(job);
+            return;
+        }
+
+        // If holding Shift, select range
+        if (event && event.shiftKey && this.selectedJob) {
+            this.selectJobRange(this.selectedJob, job);
+            return;
+        }
+
+        // Normal single selection - clear multi-selection first
+        this.clearSelection();
+
         // Set the selected job
         this.selectedJob = job;
 
@@ -693,15 +732,7 @@ class JobsListController extends BaseController {
 
     showCourierAssignment(job: IDispatchJob) {
         if (!this.allowDispatch) return;
-
         job.showCourierSearch = true;
-
-        this.registerTimeout(() => {
-            const inputField = angular.element(`#input_${job.id}`);
-            if (inputField.length > 0) {
-                inputField[0].focus();
-            }
-        });
     }
 
     hideCourierAssignment(job: IDispatchJob) {
@@ -712,8 +743,36 @@ class JobsListController extends BaseController {
         }
     }
 
-    async handleDispatchSelection(selectedCourier: any, _model: any, _label: string, $event: MouseEvent, job: IDispatchJob) {
-        if ($event === undefined) return;
+    async handleKeyDown($event: KeyboardEvent, job: IDispatchJob): Promise<void> {
+        if ($event.key === 'Enter') {
+            $event.preventDefault();
+
+            // If there's a highlighted item in the dropdown, select it
+            const highlightedItem = angular.element('md-autocomplete .md-autocomplete-suggestion.selected');
+            if (highlightedItem.length > 0) {
+                // The md-autocomplete will handle this automatically
+                return;
+            }
+
+            // If no item is highlighted but there are search results, select the first one
+            if (job.searchText) {
+                try {
+                    const results = await this.performCourierSearch(job.searchText);
+                    if (results && results.length > 0) {
+                        await this.handleDispatchSelection(results[0], job);
+
+                        // Clear the search text and close the dropdown
+                        this.hideCourierAssignment(job);
+                    }
+                } catch (error) {
+                    console.error('Error performing courier search:', error);
+                    // Handle error appropriately - maybe show a toast or log
+                }
+            }
+        }
+    }
+
+    async handleDispatchSelection(selectedCourier: Suggestion, job: IDispatchJob) {
         if (!selectedCourier || !selectedCourier.id) return;
 
         try {
@@ -726,7 +785,7 @@ class JobsListController extends BaseController {
             if (job.searchText !== undefined) {
                 job.searchText = '';
             }
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error in dispatch:", error);
             job.assignedCourier = undefined;
         }
@@ -786,7 +845,7 @@ class JobsListController extends BaseController {
         if (!searchText || searchText.length < 2) return [];
 
         try {
-            const url = "/courier/AllActiveSearch";
+            const url = this.COURIER_URL;
             return this.DispatchData.autocompleteSearch(searchText, url);
         } catch (error: any) {
             console.error("Error in courier search:", error.message);
@@ -915,7 +974,7 @@ class JobsListController extends BaseController {
         this.applyScope();
     };
 
-    private onMouseUp = (eventObject: JQueryEventObject): void => {
+    private onMouseUp = (): void => {
         this.isResizing = false;
         this.resizingColumn = null;
 
@@ -1051,6 +1110,210 @@ class JobsListController extends BaseController {
                 headerElement.css('grid-template-columns', this.getGridTemplateColumns());
             }
         }, 100);
+    }
+
+    // Select all functions
+    getGridTemplateColumnsWithSelect(): string {
+        const selectColumnWidth = '50px';
+        const existingColumns = this.getGridTemplateColumns();
+        return `${selectColumnWidth} ${existingColumns}`;
+    }
+
+    toggleJobSelection(job: IDispatchJob): void {
+        if (job.selected) {
+            if (this.selectedJobs.indexOf(job) === -1) {
+                this.selectedJobs.push(job);
+            }
+        } else {
+            const index = this.selectedJobs.indexOf(job);
+            if (index > -1) {
+                this.selectedJobs.splice(index, 1);
+            }
+        }
+        this.updateSelectAllState();
+    }
+
+    toggleSelectAll(): void {
+        if (this.selectAllState) {
+            // Select all visible jobs
+            this.filteredJobs?.forEach(job => {
+                job.selected = true;
+                if (this.selectedJobs.indexOf(job) === -1) {
+                    this.selectedJobs.push(job);
+                }
+
+                // Also select child jobs if expanded
+                if (job._isExpanded && job._groupChildren) {
+                    job._groupChildren.forEach(childJob => {
+                        childJob.selected = true;
+                        if (this.selectedJobs.indexOf(childJob) === -1) {
+                            this.selectedJobs.push(childJob);
+                        }
+                    });
+                }
+            });
+        } else {
+            // Deselect all jobs
+            this.clearSelection();
+        }
+    }
+
+    clearSelection(): void {
+        this.selectedJobs.forEach(job => {
+            job.selected = false;
+        });
+        this.selectedJobs = [];
+        this.selectAllState = false;
+    }
+
+    updateSelectAllState(): void {
+        const visibleJobs = this.getVisibleJobs();
+        const selectedVisibleJobs = visibleJobs.filter(job => job.selected);
+
+        if (selectedVisibleJobs.length === 0) {
+            this.selectAllState = false;
+        } else if (selectedVisibleJobs.length === visibleJobs.length) {
+            this.selectAllState = true;
+        } else {
+            this.selectAllState = false;
+        }
+    }
+
+    getVisibleJobs(): IDispatchJob[] {
+        let visibleJobs: IDispatchJob[] = [];
+        this.filteredJobs?.forEach(job => {
+            visibleJobs.push(job);
+            if (job._isExpanded && job._groupChildren) {
+                visibleJobs = visibleJobs.concat(job._groupChildren);
+            }
+        });
+        return visibleJobs;
+    }
+
+    isIndeterminate(): boolean {
+        const visibleJobs = this.getVisibleJobs();
+        const selectedCount = visibleJobs.filter(job => job.selected).length;
+
+        return selectedCount > 0 && selectedCount < visibleJobs.length;
+    }
+
+    canBulkAssign(): boolean {
+        return this.selectedJobs.length > 0 && this.allowDispatch;
+    }
+
+    canBulkUpdateStatus(): boolean {
+        return this.selectedJobs.length > 0;
+    }
+
+    canBulkMarkAsRead(): boolean {
+        return this.selectedJobs.some(job => !job.hasBeenRead);
+    }
+
+    async bulkAssignCourier($event: MouseEvent): Promise<void> {
+        if (!this.canBulkAssign()) return;
+        
+        await this.featureInDevelopmentDialogService.openFeatureInDevelopmentDialog();
+        return;
+        
+       /* const selectedJobIds = this.selectedJobs.map(job => job.id);
+        
+        const selectedCourier = await this.autoCompleteDialogService.showAutocompleteDialog($event,
+            this.COURIER_URL,
+            "Search couriers...",
+            "Courier",
+            "Bulk Assign Courier",
+            null, false);
+        
+        if (this.onJobAction) {
+            await this.onJobAction({
+                action: 'bulkAssignCourier',
+                job: this.selectedJobs[0], // Pass first job as a reference
+                params: {jobIds: selectedJobIds, selectedCourier}
+            });
+        }*/
+    }
+
+    async bulkUpdateStatus(): Promise<void> {
+    /*    try {*/
+            if (!this.canBulkUpdateStatus()) return;
+            await this.featureInDevelopmentDialogService.openFeatureInDevelopmentDialog();
+            return;
+
+          /*  const selectedJobIds = this.selectedJobs.map(job => job.id);
+
+            const confirm = this.$mdDialog.confirm()
+                .title('Bulk Restore')
+                .textContent(`Are you sure you want to restore ${this.selectedJobs.length} jobs?`)
+                .ok('Restore Jobs')
+                .cancel('Cancel');
+
+            await this.$mdDialog.show(confirm);
+
+            // Update
+            const data: IBulkStatusUpdateRequest = {
+                jobIds: selectedJobIds,
+                statusId: 
+            };
+            await this.DispatchData.BulkUpdateReadStatus(data)
+            
+        } catch (error) {
+            if(!error) return;
+            console.error("Error in bulk update status:", error);
+        }*/
+    }
+
+    async bulkMarkAsRead(): Promise<void> {
+        try {
+            if (!this.canBulkMarkAsRead()) return;
+
+            const jobsToMarkAsRead = this.selectedJobs.filter(job => !job.hasBeenRead);
+            const selectedJobIds = jobsToMarkAsRead.map(job => job.id);
+
+            const confirm = this.$mdDialog.confirm()
+                .title('Bulk Read')
+                .textContent(`Are you sure you want to mark ${this.selectedJobs.length} jobs as read or unread?`)
+                .ok('Mark As Read/Unread')
+                .cancel('Cancel');
+
+            await this.$mdDialog.show(confirm);
+            
+            // Update
+            const data: IBulkUpdateRequest = {
+                jobIds: selectedJobIds
+            };
+            await this.DispatchData.BulkUpdateReadStatus(data)
+
+            // Update local state
+            jobsToMarkAsRead.forEach(job => {
+                job.hasBeenRead = true;
+            });
+
+            this.clearSelection();
+        } catch (error) {
+            if(!error) return;
+            console.error("Error in bulk mark as read:", error);
+        }
+    }
+
+    selectJobRange(startJob: IDispatchJob, endJob: IDispatchJob): void {
+        const visibleJobs = this.getVisibleJobs();
+        const startIndex = visibleJobs.indexOf(startJob);
+        const endIndex = visibleJobs.indexOf(endJob);
+
+        if (startIndex === -1 || endIndex === -1) return;
+
+        const minIndex = Math.min(startIndex, endIndex);
+        const maxIndex = Math.max(startIndex, endIndex);
+
+        for (let i = minIndex; i <= maxIndex; i++) {
+            const job = visibleJobs[i];
+            if (!job.selected) {
+                job.selected = true;
+                this.selectedJobs.push(job);
+            }
+        }
+
+        this.updateSelectAllState();
     }
 }
 

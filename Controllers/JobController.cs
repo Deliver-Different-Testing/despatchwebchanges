@@ -2247,5 +2247,35 @@ public class JobController(
             Log.Error(ex, "Error retrieving the delivery journey for Job {JobId}", jobId);
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
+    }  
+    
+    [HttpPost]
+    public async Task<IActionResult> BulkUpdateReadStatus([FromBody] BulkUpdateRequestModel data)
+    {
+        try
+        {
+            await jobRepository.BulkUpdateReadStatusAsync(data.JobIds);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error bulk marking jobs as read");
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+    
+    [HttpPost]
+    public async Task<IActionResult> BulkUpdateJobStatus([FromBody] BulkStatusUpdateRequestModel data)
+    {
+        try
+        {
+            await jobRepository.BulkUpdateJobStatus(data.JobIds, data.StatusId);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error bulk updating jobs to {Status}", data.StatusId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
     }
 }

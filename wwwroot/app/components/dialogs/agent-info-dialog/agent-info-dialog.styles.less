@@ -1,13 +1,11 @@
 @import "../../../../css/variables.less";
 
-@text-color: rgba(0, 0, 0, 0.87);
-@secondary-text: rgba(0, 0, 0, 0.54);
-@border-color: rgba(0, 0, 0, 0.12);
-
 .agent-info-dialog {
   min-width: 800px;
   max-width: 900px;
   width: 80%;
+  border-radius: @dialog-border-radius;
+  overflow: hidden;
 
   @media (max-width: 959px) {
     min-width: 90%;
@@ -17,147 +15,286 @@
     min-width: 95%;
     width: 95%;
   }
-
-  .md-toolbar-tools {
-    background-color: @primary-color;
-    color: white;
-
-    h2 {
-      font-weight: 500;
-    }
-  }
-
-  .md-dialog-content {
+  
+  // Dialog body
+  .dialog-body {
     padding: 0;
+    background-color: #f8fafc;
 
-    md-card {
-      box-shadow: none;
-      margin: 8px;
+    .content-wrapper {
+      padding: 24px;
+      gap: 24px;
 
-      md-card-content {
+      @media (max-width: 959px) {
         padding: 16px;
+        gap: 16px;
       }
     }
   }
 
-  // Agent details styling
-  .agent-details {
-    .md-title {
-      margin-top: 0;
-      color: @primary-color;
-      font-weight: 500;
-    }
+  // Card styling
+  .info-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    height: 100%;
 
-    .info-row {
+    .card-header {
       display: flex;
-      margin-bottom: 12px;
       align-items: center;
+      gap: 12px;
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid #e2e8f0;
+      background: linear-gradient(to right, #f8fafc, white);
 
-      .info-label {
-        font-weight: 500;
-        min-width: 80px;
-        color: @secondary-text;
+      md-icon {
+        color: @primary-blue;
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
       }
 
-      .info-value {
-        flex: 1;
+      .section-title {
+        margin: 0;
+        font-size: @font-lg;
+        font-weight: @weight-semibold;
+        color: @text-dark;
+      }
+    }
+  }
 
-        md-icon {
-          color: #FFC107;
+  // Agent details section
+  .agent-details-section {
+    .info-grid {
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+
+      @media (max-width: 599px) {
+        grid-template-columns: 1fr;
+        padding: 16px;
+        gap: 16px;
+      }
+
+      .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        &.full-width {
+          grid-column: 1 / -1;
         }
 
-        a {
-          color: @primary-color;
-          text-decoration: none;
+        .info-label {
+          font-size: @font-sm;
+          font-weight: @weight-medium;
+          color: @text-muted;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .info-value {
+          font-size: @font-base;
+          color: @text-dark;
+          font-weight: @weight-normal;
+          line-height: @line-normal;
+
+          &.rate-value {
+            font-weight: @weight-semibold;
+            color: @primary-green;
+            font-size: @font-lg;
+          }
+
+          &.contact-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: @primary-blue;
+            text-decoration: none;
+            transition: color 0.2s ease;
+
+            &:hover {
+              color: darken(@primary-blue, 15%);
+            }
+
+            md-icon {
+              font-size: 16px;
+              width: 16px;
+              height: 16px;
+            }
+          }
+
+          &.address-value {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+
+            md-icon {
+              color: @text-muted;
+              font-size: 16px;
+              width: 16px;
+              height: 16px;
+              margin-top: 2px;
+              flex-shrink: 0;
+            }
+          }
+        }
+
+        .rating-container {
+          display: flex;
+          align-items: center;
+          gap: 2px;
+
+          .star-icon {
+            color: #fbbf24;
+            font-size: 18px;
+            width: 18px;
+            height: 18px;
+          }
+        }
+      }
+    }
+
+    .notes-section {
+      border-top: 1px solid #e2e8f0;
+
+      .notes-content {
+        padding: 24px;
+        font-size: @font-base;
+        line-height: @line-relaxed;
+        color: @text-dark;
+        white-space: pre-line;
+        background: #f8fafc;
+
+        @media (max-width: 599px) {
+          padding: 16px;
+        }
+      }
+    }
+  }
+
+  // Airports section
+  .airports-section {
+    .airports-card {
+      .airports-list {
+        max-height: 400px;
+        overflow-y: auto;
+
+        &::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        &::-webkit-scrollbar-track {
+          background: #f1f5f9;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background: @scroll-bar-color;
+          border-radius: 3px;
 
           &:hover {
-            text-decoration: underline;
+            background: darken(@scroll-bar-color, 10%);
+          }
+        }
+
+        .airport-item {
+          padding: 20px 24px;
+          border-bottom: 1px solid #e2e8f0;
+          transition: background-color 0.2s ease;
+
+          &:hover {
+            background-color: @hover-color;
+          }
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          .airport-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+
+            .airport-code {
+              background: @primary-blue;
+              color: white;
+              padding: 4px 8px;
+              border-radius: 4px;
+              font-size: @font-sm;
+              font-weight: @weight-semibold;
+              letter-spacing: 0.5px;
+            }
+
+            .airport-name {
+              font-size: @font-base;
+              font-weight: @weight-medium;
+              color: @text-dark;
+              flex: 1;
+            }
+          }
+
+          .airport-location {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 12px;
+            font-size: @font-sm;
+            color: @text-muted;
+
+            md-icon {
+              font-size: 16px;
+              width: 16px;
+              height: 16px;
+              color: @text-muted;
+            }
+          }
+
+          .airport-details {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+
+            .airport-detail {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              font-size: @font-xs;
+              color: @text-muted;
+
+              md-icon {
+                font-size: 14px;
+                width: 14px;
+                height: 14px;
+              }
+            }
           }
         }
       }
-    }
 
-    .notes-title {
-      margin-top: 24px;
-      border-bottom: 1px solid @border-color;
-      padding-bottom: 8px;
-    }
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 24px;
+        color: @text-muted;
 
-    .notes-content {
-      white-space: pre-line;
-      line-height: 1.5;
-      color: @text-color;
-    }
-  }
-
-  // Airports styling
-  .airports-container {
-    md-card {
-      height: 100%;
-    }
-
-    .md-title {
-      margin-top: 0;
-      color: @primary-color;
-      font-weight: 500;
-      margin-bottom: 16px;
-    }
-
-    md-list {
-      padding: 0;
-      max-height: 300px;
-      overflow-y: auto;
-      border: 1px solid @border-color;
-      border-radius: 4px;
-    }
-
-    .airport-item {
-      padding: 8px 0;
-
-      h4 {
-        margin: 0 0 4px 0;
-        font-weight: 500;
-        color: @text-color;
-      }
-
-      p {
-        margin: 4px 0;
-        color: @secondary-text;
-
-        &.airport-details, &.airport-coordinates {
-          display: flex;
-
-          md-icon {
-            font-size: 18px;
-            height: 18px;
-            width: 18px;
-            min-width: 18px;
-            margin-right: 4px;
-            color: @secondary-text;
-          }
+        md-icon {
+          font-size: 48px;
+          width: 48px;
+          height: 48px;
+          margin-bottom: 16px;
+          opacity: 0.5;
         }
-      }
-    }
 
-    .no-airports {
-      color: @secondary-text;
-      font-style: italic;
-      text-align: center;
-      padding: 16px;
-    }
-  }
-
-  // Dialog actions
-  md-dialog-actions {
-    border-top: 1px solid @border-color;
-    padding: 8px 16px;
-
-    .md-button {
-      margin: 0 8px;
-
-      &.md-primary {
-        background-color: @primary-color;
-        color: white;
+        p {
+          margin: 0;
+          font-size: @font-base;
+          font-style: italic;
+        }
       }
     }
   }

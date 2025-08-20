@@ -1,4 +1,5 @@
 import {AutoCompleteDialogController} from "./auto-complete-dialog.controller";
+import {Suggestion} from "../../../interfaces/job.interface";
 
 class AutoCompleteDialogService implements angular.IServiceProvider {
     static $inject = [
@@ -17,8 +18,13 @@ class AutoCompleteDialogService implements angular.IServiceProvider {
         return this;
     }
 
-    async showAutocompleteDialog($event: MouseEvent, url: string, placeholder: string,
-                                 fieldName: string, title: string, existingItem: any, showRerateOption?: boolean) {
+    async showAutocompleteDialog($event: MouseEvent,
+                                 url: string,
+                                 placeholder: string,
+                                 fieldName: string,
+                                 title: string,
+                                 existingItem: any,
+                                 showRerateOption?: boolean) {
         const options = {
             placeholder, minimumInputLength: 3, searchUrl: url
         };

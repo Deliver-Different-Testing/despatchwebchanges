@@ -16,183 +16,107 @@
         </md-toolbar>
 
         <md-dialog-content class="dialog-content">
-            <div class="content-rows-container">
-                <!-- Top Row -->
-                <div class="content-row top-row">
-                    <!-- Flight Section -->
-                    <div class="content-section flight-section" ng-if="ctrl.flight">
-                        <div class="assignment-header">
-                            <div class="assignment-icon-wrapper flight-icon">
-                                <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
-                            </div>
-                            <div class="assignment-text">
-                                <div class="assignment-title">Flight Assignment</div>
-                                <div class="assignment-description">
-                                    Assigning to Flight <span class="highlight-text">{{::ctrl.flight.flightNumber}}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flight-route">
-                            <div class="airport-info">
-                                <div class="airport-code">{{::ctrl.flight.departureAirport}}</div>
-                                <div class="airport-label">Departure</div>
-                            </div>
-                            <div class="route-arrow">
-                                <md-icon md-font-set="material-symbols-outlined">arrow_forward</md-icon>
-                            </div>
-                            <div class="airport-info">
-                                <div class="airport-code">{{::ctrl.flight.arrivalAirport || ctrl.flight.departureAirport}} </div>
-                                <div class="airport-label">Arrival</div>
-                            </div>
-                        </div>
+            <div class="content-section" ng-if="ctrl.flight">
+                <div class="assignment-header">
+                    <div class="assignment-icon-wrapper flight-icon">
+                        <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
                     </div>
-
-                    <!-- Agent Section -->
-                    <div class="content-section agent-section" ng-if="ctrl.agent">
-                        <div class="assignment-header">
-                            <div class="assignment-icon-wrapper agent-icon">
-                                <md-icon md-font-set="material-symbols-outlined">person</md-icon>
-                            </div>
-                            <div class="assignment-text">
-                                <div class="assignment-title">Agent Assignment</div>
-                                <div class="assignment-description">
-                                    Assigning to Agent <span class="highlight-text">{{::ctrl.agent.text}}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Cargo Processing Timeline Section (shown in the top row if no agent) -->
-                    <div class="content-section cargo-processing-section" ng-if="ctrl.flight && !ctrl.agent && ctrl.flightCargoProcessing">
-                        <div class="assignment-header">
-                            <div class="assignment-icon-wrapper cargo-icon">
-                                <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
-                            </div>
-                            <div class="assignment-text">
-                                <div class="assignment-title">Cargo Processing Timeline</div>
-                                <div class="assignment-description">
-                                    Package delivery schedule based on flight arrival and cargo processing
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="cargo-timeline-container">
-                            <div class="timeline-step">
-                                <div class="timeline-icon arrival-icon">
-                                    <md-icon md-font-set="material-symbols-outlined">flight_land</md-icon>
-                                </div>
-                                <div class="timeline-content">
-                                    <div class="timeline-label">Flight Arrival</div>
-                                    <div class="timeline-time">{{ctrl.flightCargoProcessing.arrivalTime | momentFormat:'MMM D, HH:mm'}} ({{::ctrl.flight.arrivalTimeZone | timezoneShort}})</div>
-                                </div>
-                            </div>
-
-                            <div class="timeline-connector"></div>
-
-                            <div class="timeline-step">
-                                <div class="timeline-icon processing-icon">
-                                    <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
-                                </div>
-                                <div class="timeline-content">
-                                    <div class="timeline-label">Processing Complete</div>
-                                    <div class="timeline-time">{{ctrl.flightCargoProcessing.arrivalWithProcessingTime | momentFormat:'MMM D, HH:mm'}} ({{::ctrl.flight.arrivalTimeZone | timezoneShort}})</div>
-                                    <div class="timeline-detail">+{{ctrl.flightCargoProcessing.processingTimeMins}} min processing</div>
-                                </div>
-                            </div>
-
-                            <div class="timeline-connector"></div>
-
-                            <div class="timeline-step">
-                                <div class="timeline-icon ready-icon">
-                                    <md-icon md-font-set="material-symbols-outlined">check_circle</md-icon>
-                                </div>
-                                <div class="timeline-content">
-                                    <div class="timeline-label">Package Ready</div>
-                                    <div class="timeline-time highlight-time">{{ctrl.flightCargoProcessing.packageReadyTime | momentFormat:'MMM D, HH:mm'}} ({{::ctrl.flight.arrivalTimeZone | timezoneShort}})</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="cargo-hours-info">
-                            <div class="hours-row">
-                                <span class="hours-label">Cargo Opening:</span>
-                                <span class="hours-time">{{ctrl.flightCargoProcessing.cargoOpeningTime | momentFormat:'HH:mm'}}</span>
-                            </div>
-                            <div class="hours-row">
-                                <span class="hours-label">Cargo Closing:</span>
-                                <span class="hours-time">{{ctrl.flightCargoProcessing.cargoClosingTime | momentFormat:'HH:mm'}}</span>
-                            </div>
+                    <div class="assignment-text">
+                        <div class="assignment-title">Flight Assignment</div>
+                        <div class="assignment-description">
+                            Assigning to Flight <span class="highlight-text">{{::ctrl.flight.flightNumber}}</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Bottom Row -->
-                <div class="content-row bottom-row">
-                    <!-- Webhook Alerts Section -->
-                    <div class="content-section webhook-alerts-section" ng-if="ctrl.flight">
-                        <div class="assignment-header">
-                            <div class="assignment-icon-wrapper webhook-icon">
-                                <md-icon md-font-set="material-symbols-outlined">
-                                    notifications
-                                    <md-tooltip md-direction="bottom">Flight alerts can be customized in Admin Manager
-                                    </md-tooltip>
-                                </md-icon>
-                            </div>
-                            <div class="assignment-text">
-                                <div class="assignment-title">Flight Alerts</div>
-                                <div class="assignment-description">
-                                    Active notification events for this flight
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="webhook-content" ng-if="ctrl.enabledAlerts && ctrl.enabledAlerts.length > 0">
-                            <div class="alert-chips-container">
-                                <div class="alert-chips-scroll">
-                                <span
-                                        class="alert-chip"
-                                        ng-repeat="alert in ctrl.enabledAlerts track by alert.id">
-                                    <md-icon
-                                            md-font-set="material-symbols-outlined"
-                                            class="chip-icon">check_circle</md-icon>
-                                    {{alert.text}}
-                                </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="webhook-content no-alerts" ng-if="!ctrl.enabledAlerts || ctrl.enabledAlerts.length === 0">
-                            <div class="no-alerts-message">
-                                <md-icon md-font-set="material-symbols-outlined" class="warning-icon">warning</md-icon>
-                                <span>No webhook alerts are currently configured</span>
-                            </div>
-                        </div>
-
-                        <div class="webhook-loading" ng-if="ctrl.loadingAlerts">
-                            <md-progress-circular md-mode="indeterminate" md-diameter="20"></md-progress-circular>
-                            <span>Loading webhook configuration...</span>
-                        </div>
+                <div class="flight-route">
+                    <div class="airport-info">
+                        <div class="airport-code">{{::ctrl.flight.departureAirport}}</div>
+                        <div class="airport-label">Departure</div>
                     </div>
+                    <div class="route-arrow">
+                        <md-icon md-font-set="material-symbols-outlined">arrow_forward</md-icon>
+                    </div>
+                    <div class="airport-info">
+                        <div class="airport-code">{{::ctrl.flight.arrivalAirport || ctrl.flight.departureAirport}}</div>
+                        <div class="airport-label">Arrival</div>
+                    </div>
+                </div>
+            </div>
 
-                    <!-- Dangerous Goods Section -->
-                    <div class="content-section danger-goods-section" ng-if="ctrl.dgClassName">
-                        <div class="assignment-header">
-                            <div class="assignment-icon-wrapper danger-icon">
-                                <md-icon md-font-set="material-symbols-outlined">dangerous</md-icon>
-                            </div>
-                            <div class="assignment-text">
-                                <div class="assignment-title">Dangerous Goods</div>
-                                <div class="assignment-description">
-                                    Class: <span class="highlight-text danger-class">{{::ctrl.dgClassName}}</span>
-                                </div>
-                            </div>
+            <div class="content-section" ng-if="ctrl.agent">
+                <div class="assignment-header">
+                    <div class="assignment-icon-wrapper agent-icon">
+                        <md-icon md-font-set="material-symbols-outlined">person</md-icon>
+                    </div>
+                    <div class="assignment-text">
+                        <div class="assignment-title">Agent Assignment</div>
+                        <div class="assignment-description">
+                            Assigning to Agent <span class="highlight-text">{{::ctrl.agent.text}}</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Form Section - Full Width Below Rows -->
+            <div class="content-section webhook-alerts-section" ng-if="ctrl.flight">
+                <div class="assignment-header">
+                    <div class="assignment-icon-wrapper webhook-icon">
+                        <md-icon md-font-set="material-symbols-outlined">
+                            notifications
+                            <md-tooltip md-direction="bottom">Flight alerts can be customized in Admin Manager
+                            </md-tooltip>
+                        </md-icon>
+                    </div>
+                    <div class="assignment-text">
+                        <div class="assignment-title">Flight Alerts</div>
+                        <div class="assignment-description">
+                            Active notification events for this flight
+                        </div>
+                    </div>
+                </div>
+
+                <div class="webhook-content" ng-if="ctrl.enabledAlerts && ctrl.enabledAlerts.length > 0">
+                    <div class="alert-chips-container">
+                        <div class="alert-chips-scroll">
+                        <span
+                                class="alert-chip"
+                                ng-repeat="alert in ctrl.enabledAlerts track by alert.id">
+                            <md-icon
+                                    md-font-set="material-symbols-outlined"
+                                    class="chip-icon">check_circle</md-icon>
+                            {{alert.text}}
+                        </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="webhook-content no-alerts" ng-if="!ctrl.enabledAlerts || ctrl.enabledAlerts.length === 0">
+                    <div class="no-alerts-message">
+                        <md-icon md-font-set="material-symbols-outlined" class="warning-icon">warning</md-icon>
+                        <span>No webhook alerts are currently configured</span>
+                    </div>
+                </div>
+
+                <div class="webhook-loading" ng-if="ctrl.loadingAlerts">
+                    <md-progress-circular md-mode="indeterminate" md-diameter="20"></md-progress-circular>
+                    <span>Loading webhook configuration...</span>
+                </div>
+            </div>
+
+            <div class="content-section danger-goods-section" ng-if="ctrl.dgClassName">
+                <div class="assignment-header">
+                    <div class="assignment-icon-wrapper danger-icon">
+                        <md-icon md-font-set="material-symbols-outlined">dangerous</md-icon>
+                    </div>
+                    <div class="assignment-text">
+                        <div class="assignment-title">Dangerous Goods</div>
+                        <div class="assignment-description">
+                            Class: <span class="highlight-text danger-class">{{::ctrl.dgClassName}}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="form-section">
                 <md-input-container class="md-block awb-input">
                     <label for="awb">Air Waybill Number (AWB)</label>
@@ -212,7 +136,6 @@
                 </div>
             </div>
 
-            <!-- Confirmation Message - Full Width -->
             <div class="confirmation-message">
                 <md-icon md-font-set="material-symbols-outlined" class="info-icon">info</md-icon>
                 <span>Please review the details above and confirm to proceed.</span>

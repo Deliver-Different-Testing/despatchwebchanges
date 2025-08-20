@@ -7,91 +7,114 @@
             <span flex></span>
             <md-button class="md-icon-button" ng-click="ctrl.cancel()">
                 <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+                <md-tooltip md-direction="bottom">Close</md-tooltip>
             </md-button>
         </div>
     </md-toolbar>
 
-    <md-dialog-content class="md-dialog-content">
-        <div layout="row" layout-xs="column">
+    <md-dialog-content class="dialog-body">
+        <div layout="row" layout-xs="column" class="content-wrapper">
             <!-- Agent Information Column -->
-            <div flex="60" flex-xs="100" class="agent-details">
-                <md-card>
-                    <md-card-content>
-                        <h3 class="md-title">Basic Information</h3>
-                        <div class="info-row">
-                            <span class="info-label">Name:</span>
+            <div flex="60" flex-xs="100" class="agent-details-section">
+                <div class="info-card">
+                    <div class="card-header">
+                        <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">person</md-icon>
+                        <h3 class="section-title">Basic Information</h3>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label class="info-label">Name</label>
                             <span class="info-value">{{::ctrl.agent.agentName}}</span>
                         </div>
 
-                        <div class="info-row">
-                            <span class="info-label">Rate:</span>
-                            <span class="info-value">{{::ctrl.agent.agentRate | currency}}</span>
+                        <div class="info-item">
+                            <label class="info-label">Rate</label>
+                            <span class="info-value rate-value">{{::ctrl.agent.agentRate | currency}}</span>
                         </div>
 
-                        <div class="info-row">
-                            <span class="info-label">Ranking:</span>
-                            <span class="info-value">
-                <md-icon md-font-set="material-symbols-outlined"
-                         ng-repeat="i in ctrl.getRankingArray(ctrl.agent.agentRanking) track by $index">star</md-icon>
-              </span>
+                        <div class="info-item">
+                            <label class="info-label">Ranking</label>
+                            <div class="info-value rating-container">
+                                <md-icon class="dialog-icon star-icon"
+                                         md-font-set="material-symbols-outlined"
+                                         ng-repeat="i in ctrl.getRankingArray(ctrl.agent.agentRanking) track by $index">star</md-icon>
+                            </div>
                         </div>
 
-                        <div class="info-row">
-                            <span class="info-label">Phone:</span>
-                            <span class="info-value">
-                <a href="tel:{{::ctrl.agent.agentPhone}}">{{::ctrl.formatPhone(ctrl.agent.agentPhone)}}</a>
-              </span>
+                        <div class="info-item">
+                            <label class="info-label">Phone</label>
+                            <a class="info-value contact-link" href="tel:{{::ctrl.agent.agentPhone}}">
+                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">phone</md-icon>
+                                {{::ctrl.formatPhone(ctrl.agent.agentPhone)}}
+                            </a>
                         </div>
 
-                        <div class="info-row">
-                            <span class="info-label">Email:</span>
-                            <span class="info-value">
-                <a href="mailto:{{::ctrl.agent.agentEmail}}">{{::ctrl.agent.agentEmail}}</a>
-              </span>
+                        <div class="info-item">
+                            <label class="info-label">Email</label>
+                            <a class="info-value contact-link" href="mailto:{{::ctrl.agent.agentEmail}}">
+                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">email</md-icon>
+                                {{::ctrl.agent.agentEmail}}
+                            </a>
                         </div>
 
-                        <div class="info-row">
-                            <span class="info-label">Address:</span>
-                            <span class="info-value">{{::ctrl.agent.address.fullAddress}}</span>
+                        <div class="info-item full-width">
+                            <label class="info-label">Address</label>
+                            <span class="info-value address-value">
+                                <md-icon md-font-set="material-symbols-outlined">location_on</md-icon>
+                                {{::ctrl.agent.address.fullAddress}}
+                            </span>
                         </div>
+                    </div>
 
-                        <h3 class="md-title notes-title">Notes</h3>
-                        <p class="notes-content">{{::ctrl.agent.agentNotes || 'No notes available.'}}</p>
-                    </md-card-content>
-                </md-card>
+                    <div class="notes-section">
+                        <div class="card-header">
+                            <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">note</md-icon>
+                            <h3 class="section-title">Notes</h3>
+                        </div>
+                        <div class="notes-content">{{::ctrl.agent.agentNotes || 'No notes available.'}}</div>
+                    </div>
+                </div>
             </div>
 
             <!-- Airports Column -->
-            <div flex="40" flex-xs="100" class="airports-container">
-                <md-card ng-if="::ctrl.agent.airports && ctrl.agent.airports.length > 0">
-                    <md-card-content>
-                        <h3 class="md-title">Assigned Airports</h3>
+            <div flex="40" flex-xs="100" class="airports-section">
+                <div class="info-card airports-card">
+                    <div class="card-header">
+                        <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">flight</md-icon>
+                        <h3 class="section-title">Assigned Airports</h3>
+                    </div>
 
-                        <md-list>
-                            <md-list-item class="airport-item" ng-repeat="airport in ctrl.agent.airports">
-                                <div class="md-list-item-text">
-                                    <h4> {{airport.code}} - {{airport.name}}
-                                    </h4>
+                    <div class="airports-list" ng-if="::ctrl.agent.airports && ctrl.agent.airports.length > 0">
+                        <div class="airport-item" ng-repeat="airport in ctrl.agent.airports">
+                            <div class="airport-header">
+                                <span class="airport-code">{{airport.code}}</span>
+                                <span class="airport-name">{{airport.name}}</span>
+                            </div>
 
-                                    <p>{{airport.city}}, {{airport.country}}</p>
-                                    <p class="airport-details">
-                                        <md-icon md-font-set="material-symbols-outlined">access_time</md-icon>
-                                        {{airport.timezone}}
-                                    </p>
-                                    <p class="airport-coordinates">
-                                        <md-icon md-font-set="material-symbols-outlined">place</md-icon>
-                                        {{::ctrl.formatCoordinates(airport.latitude, airport.longitude)}}
-                                    </p>
+                            <div class="airport-location">
+                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">place</md-icon>
+                                {{airport.city}}, {{airport.country}}
+                            </div>
+
+                            <div class="airport-details">
+                                <div class="airport-detail">
+                                    <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">schedule</md-icon>
+                                    <span>{{airport.timezone}}</span>
                                 </div>
-                                <md-divider ng-if="!$last"></md-divider>
-                            </md-list-item>
-                        </md-list>
-
-                        <div class="no-airports" ng-if="::!ctrl.agent.airports || ctrl.agent.airports.length === 0">
-                            <p>No airports are assigned to this agent.</p>
+                                <div class="airport-detail">
+                                    <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">my_location</md-icon>
+                                    <span>{{::ctrl.formatCoordinates(airport.latitude, airport.longitude)}}</span>
+                                </div>
+                            </div>
                         </div>
-                    </md-card-content>
-                </md-card>
+                    </div>
+
+                    <div class="empty-state" ng-if="::!ctrl.agent.airports || ctrl.agent.airports.length === 0">
+                        <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">flight_off</md-icon>
+                        <p>No airports assigned</p>
+                    </div>
+                </div>
             </div>
         </div>
     </md-dialog-content>

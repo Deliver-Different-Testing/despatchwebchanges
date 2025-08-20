@@ -402,6 +402,7 @@ export interface IJobNote {
 
 export interface IDispatchJob {
     // Core identifiers
+    selected?: boolean;
     showCourierSearch: boolean;
     id: number;
     jobNo: string;
@@ -539,4 +540,12 @@ export interface VoidJobRequest {
     jobId: number;
     voidSingleJobOnly: boolean;
     voidReason?: string;
+}
+
+export interface IBulkUpdateRequest {
+    jobIds: number[];
+}
+
+export interface IBulkStatusUpdateRequest extends IBulkUpdateRequest {
+    statusId: number;
 }

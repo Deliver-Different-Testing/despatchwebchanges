@@ -29,6 +29,38 @@
         </div>
     </div>
 
+    <!-- Bulk Actions Bar -->
+    <div class="bulk-actions-bar" ng-if="ctrl.selectedJobs.length > 0">
+        <div class="bulk-actions-info">
+            <span class="selected-count">{{ctrl.selectedJobs.length}} selected</span>
+            <button class="clear-selection-btn" ng-click="ctrl.clearSelection()">
+                Clear Selection
+            </button>
+        </div>
+        <div class="bulk-actions">
+            <button 
+                    ng-if="ctrl.allowDispatch"
+                    class="bulk-action-btn"
+                    ng-click="ctrl.bulkAssignCourier()"
+                    ng-disabled="!ctrl.canBulkAssign()">
+                <md-icon md-font-set="material-symbols-outlined">assignment_ind</md-icon>
+                Assign Courier
+            </button>
+            <button class="bulk-action-btn"
+                    ng-click="ctrl.bulkUpdateStatus()"
+                    ng-disabled="!ctrl.canBulkUpdateStatus()">
+                <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
+                Restore
+            </button>
+            <button class="bulk-action-btn"
+                    ng-click="ctrl.bulkMarkAsRead()"
+                    ng-disabled="!ctrl.canBulkMarkAsRead()">
+                <md-icon md-font-set="material-symbols-outlined">mark_email_read</md-icon>
+                Mark as Read
+            </button>
+        </div>
+    </div>
+
     <!-- Controls Header -->
     <div class="controls-header">
         <div class="controls">
@@ -92,53 +124,83 @@
         <div class="jobs-scroll-container">
             <div class="jobs-content">
                 <!-- Jobs Header -->
-                <div class="jobs-header" ng-style="{'grid-template-columns': ctrl.getGridTemplateColumns()}">
-                    <div class="header-cell" ng-class="ctrl.getSortClass('priority')" ng-click="ctrl.sortBy('priority')">
+                <div class="jobs-header" ng-style="{'grid-template-columns': ctrl.getGridTemplateColumnsWithSelect()}">
+                    <div class="header-cell select-all-cell">
+                        <md-checkbox class="md-primary select-all-checkbox"
+                                     ng-model="ctrl.selectAllState"
+                                     ng-change="ctrl.toggleSelectAll()"
+                                     ng-indeterminate="ctrl.isIndeterminate()"
+                                     aria-label="Select all jobs">
+                        </md-checkbox>
+                    </div>
+                    <div class="header-cell" ng-class="ctrl.getSortClass('priority')"
+                         ng-click="ctrl.sortBy('priority')">
                         <div class="header-content">
                             <span class="header-text"></span>
-                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('priority')}}</md-icon>
+                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">
+                                {{ctrl.getSortIcon('priority')}}
+                            </md-icon>
                         </div>
-                        <button class="resize-handle" ng-mousedown="ctrl.startResize($event, 'priority'); $event.stopPropagation()"></button>
+                        <button class="resize-handle"
+                                ng-mousedown="ctrl.startResize($event, 'priority'); $event.stopPropagation()"></button>
                     </div>
                     <div class="header-cell" ng-class="ctrl.getSortClass('time')" ng-click="ctrl.sortBy('time')">
                         <div class="header-content">
                             <span class="header-text">TIME</span>
-                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('time')}}</md-icon>
+                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">
+                                {{ctrl.getSortIcon('time')}}
+                            </md-icon>
                         </div>
-                        <button class="resize-handle" ng-mousedown="ctrl.startResize($event, 'time'); $event.stopPropagation()"></button>
+                        <button class="resize-handle"
+                                ng-mousedown="ctrl.startResize($event, 'time'); $event.stopPropagation()"></button>
                     </div>
                     <div class="header-cell" ng-class="ctrl.getSortClass('jobNo')" ng-click="ctrl.sortBy('jobNo')">
                         <div class="header-content">
                             <span class="header-text">JOB NO</span>
-                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('jobNo')}}</md-icon>
+                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">
+                                {{ctrl.getSortIcon('jobNo')}}
+                            </md-icon>
                         </div>
-                        <button class="resize-handle" ng-mousedown="ctrl.startResize($event, 'jobNo'); $event.stopPropagation()"></button>
+                        <button class="resize-handle"
+                                ng-mousedown="ctrl.startResize($event, 'jobNo'); $event.stopPropagation()"></button>
                     </div>
                     <div class="header-cell" ng-class="ctrl.getSortClass('pickup')" ng-click="ctrl.sortBy('pickup')">
                         <div class="header-content">
                             <span class="header-text">PICKUP</span>
-                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('pickup')}}</md-icon>
+                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">
+                                {{ctrl.getSortIcon('pickup')}}
+                            </md-icon>
                         </div>
-                        <button class="resize-handle" ng-mousedown="ctrl.startResize($event, 'pickup'); $event.stopPropagation()"></button>
+                        <button class="resize-handle"
+                                ng-mousedown="ctrl.startResize($event, 'pickup'); $event.stopPropagation()"></button>
                     </div>
-                    <div class="header-cell" ng-class="ctrl.getSortClass('delivery')" ng-click="ctrl.sortBy('delivery')">
+                    <div class="header-cell" ng-class="ctrl.getSortClass('delivery')"
+                         ng-click="ctrl.sortBy('delivery')">
                         <div class="header-content">
                             <span class="header-text">DELIVERY</span>
-                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('delivery')}}</md-icon>
+                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">
+                                {{ctrl.getSortIcon('delivery')}}
+                            </md-icon>
                         </div>
-                        <button class="resize-handle" ng-mousedown="ctrl.startResize($event, 'delivery'); $event.stopPropagation()"></button>
+                        <button class="resize-handle"
+                                ng-mousedown="ctrl.startResize($event, 'delivery'); $event.stopPropagation()"></button>
                     </div>
                     <div class="header-cell" ng-class="ctrl.getSortClass('courier')" ng-click="ctrl.sortBy('courier')">
                         <div class="header-content">
                             <span class="header-text">COURIER</span>
-                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('courier')}}</md-icon>
+                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">
+                                {{ctrl.getSortIcon('courier')}}
+                            </md-icon>
                         </div>
-                        <button class="resize-handle" ng-mousedown="ctrl.startResize($event, 'courier'); $event.stopPropagation()"></button>
+                        <button class="resize-handle"
+                                ng-mousedown="ctrl.startResize($event, 'courier'); $event.stopPropagation()"></button>
                     </div>
                     <div class="header-cell" ng-class="ctrl.getSortClass('status')" ng-click="ctrl.sortBy('status')">
                         <div class="header-content">
                             <span class="header-text">STATUS</span>
-                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">{{ctrl.getSortIcon('status')}}</md-icon>
+                            <md-icon class="sort-icon" md-font-set="material-symbols-outlined">
+                                {{ctrl.getSortIcon('status')}}
+                            </md-icon>
                         </div>
                     </div>
                 </div>
@@ -148,17 +210,28 @@
                      class="job-row {{ctrl.getJobPriorityClass(job)}}"
                      ng-class="{
                              'selected': ctrl.selectedJob && ctrl.selectedJob.id === job.id,
+                             'multi-selected': job.selected,
                              'unread': !job.hasBeenRead,
                              'multi-part-parent': ctrl.isMultiPartJob(job) && !!job.isParentOrSingle,
                              'child-job': !job.isParentOrSingle,
                              'related-job': ctrl.isNationwideList() && ctrl.hasRelatedJobs(job),
                              'warning': ctrl.isWarning(job)
                          }"
-                     ng-style="{'grid-template-columns': ctrl.getGridTemplateColumns()}"
+                     ng-style="{'grid-template-columns': ctrl.getGridTemplateColumnsWithSelect()}"
                      context-menu="ctrl.getJobContextMenuOptions(job)"
                      context-menu-on="contextmenu"
                      context-menu-class="job-context-menu"
-                     ng-click="ctrl.selectJob(job)">
+                     ng-click="ctrl.selectJob(job, $event)">
+
+                    <!-- Select Column -->
+                    <div class="job-cell select-cell">
+                        <md-checkbox class="md-primary job-checkbox"
+                                     ng-model="job.selected"
+                                     ng-change="ctrl.toggleJobSelection(job)"
+                                     ng-click="$event.stopPropagation()"
+                                     aria-label="Select this job">
+                        </md-checkbox>
+                    </div>
 
                     <!-- Priority Column -->
                     <div class="job-cell {{ctrl.shouldShowPriorityColumn(job) ? 'priority' : ''}}">
@@ -245,22 +318,37 @@
                             Assign
                         </button>
 
-                        <!-- Show typeahead when in assignment mode -->
                         <div class="courier-search-container"
                              ng-if="!ctrl.hasAssignedCourier(job) && job.showCourierSearch">
-                            <input type="text"
-                                   ng-model="job.searchText"
-                                   uib-typeahead="item as item.text for item in ctrl.performCourierSearch($viewValue)"
-                                   typeahead-loading="job.courierSearchLoading"
-                                   typeahead-min-length="2"
-                                   typeahead-wait-ms="300"
-                                   typeahead-select-on-blur="true"
-                                   typeahead-focus-first="true"
-                                   typeahead-editable="false"
-                                   typeahead-on-select="ctrl.handleDispatchSelection($item, $model, $label, $event, job)"
-                                   class="courier-search-input"
-                                   placeholder="Search Courier..."
-                                   ng-blur="ctrl.hideCourierAssignment(job)">
+                            <md-autocomplete
+                                    ng-disabled="!job.showCourierSearch"
+                                    md-no-cache="true"
+                                    md-autofocus="true"
+                                    md-autoselect="true"
+                                    md-select-on-focus="true"
+                                    md-selected-item="job.assignedCourier"
+                                    md-search-text="job.searchText"
+                                    md-selected-item-change="ctrl.handleDispatchSelection(item, job)"
+                                    md-items="item in ctrl.performCourierSearch(job.searchText)"
+                                    md-item-text="item.text"
+                                    md-min-length="1"
+                                    placeholder="Search Courier..."
+                                    ng-blur="ctrl.hideCourierAssignment(job)">
+                                <md-item-template>
+                                    <md-icon
+                                            md-font-set="material-symbols-outlined"
+                                            style="margin-right: 5px;">
+                                        assignment_ind
+                                    </md-icon>
+                                    <span md-highlight-text="ctrl.searchText"
+                                          md-highlight-flags="^i">
+                                        {{item.text}}
+                                    </span>
+                                </md-item-template>
+                                <md-not-found>
+                                    No couriers matching "{{ctrl.searchText}}" were found.
+                                </md-not-found>
+                            </md-autocomplete>
                         </div>
                     </div>
 
@@ -279,13 +367,24 @@
                      class="job-row child-job {{ctrl.getJobPriorityClass(childJob)}}"
                      ng-class="{
                              'selected': ctrl.selectedJob && ctrl.selectedJob.id === childJob.id,
+                             'multi-selected': childJob.selected,
                              'unread': !childJob.hasBeenRead
                          }"
-                     ng-style="{'grid-template-columns': ctrl.getGridTemplateColumns()}"
+                     ng-style="{'grid-template-columns': ctrl.getGridTemplateColumnsWithSelect()}"
                      context-menu="ctrl.getJobContextMenuOptions(childJob)"
                      context-menu-on="contextmenu"
                      context-menu-class="job-context-menu"
-                     ng-click="ctrl.selectJob(childJob)">
+                     ng-click="ctrl.selectJob(childJob, $event)">
+
+                    <!-- Select Column -->
+                    <div class="job-cell select-cell">
+                        <md-checkbox class="md-primary job-checkbox"
+                                     ng-model="childJob.selected"
+                                     ng-change="ctrl.toggleJobSelection(childJob)"
+                                     ng-click="$event.stopPropagation()"
+                                     aria-label="Select this job">
+                        </md-checkbox>
+                    </div>
 
                     <!-- Priority Column -->
                     <div class="job-cell">
@@ -337,22 +436,37 @@
                             Assign
                         </button>
 
-                        <!-- Show typeahead when in assignment mode -->
                         <div class="courier-search-container"
                              ng-if="!ctrl.hasAssignedCourier(childJob) && childJob.showCourierSearch">
-                            <input type="text"
-                                   ng-model="childJob.searchText"
-                                   uib-typeahead="item as item.text for item in ctrl.performCourierSearch($viewValue)"
-                                   typeahead-loading="childJob.courierSearchLoading"
-                                   typeahead-min-length="2"
-                                   typeahead-wait-ms="300"
-                                   typeahead-select-on-blur="true"
-                                   typeahead-focus-first="true"
-                                   typeahead-editable="false"
-                                   typeahead-on-select="ctrl.handleDispatchSelection($item, $model, $label, $event, childJob)"
-                                   class="courier-search-input"
-                                   placeholder="Search Courier..."
-                                   ng-blur="ctrl.hideCourierAssignment(childJob)">
+                            <md-autocomplete
+                                    ng-disabled="!childJob.showCourierSearch"
+                                    md-no-cache="true"
+                                    md-autofocus="true"
+                                    md-autoselect="true"
+                                    md-select-on-focus="true"
+                                    md-selected-item="childJob.assignedCourier"
+                                    md-search-text="childJob.searchText"
+                                    md-selected-item-change="ctrl.handleDispatchSelection(item, childJob)"
+                                    md-items="item in ctrl.performCourierSearch(childJob.searchText)"
+                                    md-item-text="item.text"
+                                    md-min-length="1"
+                                    placeholder="Search Courier..."
+                                    ng-blur="ctrl.hideCourierAssignment(childJob)">
+                                <md-item-template>
+                                    <md-icon
+                                            md-font-set="material-symbols-outlined"
+                                            style="margin-right: 5px;">
+                                        assignment_ind
+                                    </md-icon>
+                                    <span md-highlight-text="ctrl.searchText"
+                                          md-highlight-flags="^i">
+                                        {{item.text}}
+                                    </span>
+                                </md-item-template>
+                                <md-not-found>
+                                    No couriers matching "{{childJob.searchText}}" were found.
+                                </md-not-found>
+                            </md-autocomplete>
                         </div>
                     </div>
 
