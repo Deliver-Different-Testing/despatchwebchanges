@@ -56,16 +56,14 @@ class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
         }
     }
 
-    async flightConfirmationDialog($event: MouseEvent, job: IDispatchJob, flight: IFlightViewModel, toAirportId?: number) {
+    async flightConfirmationDialog($event: MouseEvent, job: IDispatchJob, flight: IFlightViewModel) {
         return this.showConfirmationDialog($event, {
-            jobId: job.id,
             jobNumber: job.jobNo,
             flight: flight,
             agent: undefined,
-            toAirportId: toAirportId,
             existingAwb: job.conNote,
             dgClass: job.dgClass,
-            stopJobCount: undefined,
+            stopJobCount: undefined
         });
     }
 
@@ -73,13 +71,12 @@ class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
       const stopJobCount = job.relatedJobs ? countSubJobs(job.jobNo, job.relatedJobs) : 0;
 
         return this.showConfirmationDialog($event, {
-            jobId: job.id,
             jobNumber: job.jobNo,
             flight: undefined,
             agent: agent,
             existingAwb: job.conNote,
             dgClass: job.dgClass,
-            stopJobCount,
+            stopJobCount
         });
     }
 }

@@ -39,6 +39,7 @@ public class NationwideJobRepository(
 
             // Get the primary flight (first leg)
             var primaryFlight = flights.FlightSegments.OrderBy(f => f.SegmentOrder).First();
+            var lastFlight = flights.FlightSegments.OrderBy(f => f.SegmentOrder).Last();
             ArgumentException.ThrowIfNullOrWhiteSpace(primaryFlight.CarrierFsCode);
             ArgumentException.ThrowIfNullOrWhiteSpace(primaryFlight.FlightNumber);
 
@@ -86,9 +87,11 @@ public class NationwideJobRepository(
             // Update job status and properties
             job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
             job.UcjbStatus = (int)JobStatus.Dispatched;
-            job.UcjbDate = primaryFlight.DepartureTime;
-            job.UcjbTime = primaryFlight.DepartureTime;
-
+            
+            var departureDateTime = primaryFlight.DepartureTime;
+            job.UcjbDate = departureDateTime.Date;
+            job.UcjbTime = DateTime.Today.Add(departureDateTime.TimeOfDay);
+            
             var departureAirportId = fromAirportId ?? job.FromAirportId;
             ArgumentNullException.ThrowIfNull(departureAirportId);
             var arrivalAirportId = toAirportId ?? job.ToAirportId;
@@ -114,11 +117,11 @@ public class NationwideJobRepository(
             }
 
             // Second part
-            job.DeliverByTime = primaryFlight.ArrivalTime;
+            job.DeliverByTime = lastFlight.ArrivalTime;
             await UpdateJobAddressWithAirportInfoAsync(job, departureAirportId.Value,
                 primaryFlight.DepartureAirportTimeZone, false);
             await UpdateJobAddressWithAirportInfoAsync(job, arrivalAirportId.Value,
-                primaryFlight.ArrivalAirportTimeZone,
+                lastFlight.ArrivalAirportTimeZone,
                 true);
 
             // Set delivery job pick-up time
@@ -133,15 +136,10 @@ public class NationwideJobRepository(
                 if (deliveryJob != null)
                 {
                     var airportProcessingTime = await GetAirportProcessingTimeAsync(arrivalAirportId.Value);
-                    var lastFlight = flights.FlightSegments.Last();
 
-                    deliveryJob.UcjbTime = lastFlight.ArrivalTime.AddMinutes(airportProcessingTime);
-
-                    // Set delivery job's DeliverByTime to flight landing time + 3 hours
-                    if (overrideDeliverByTime) deliveryJob.DeliverByTime = lastFlight.ArrivalTime.AddHours(3);
-                    if (overrideDeliverByTime)
-                        deliveryJob.DeliverByTimeZoneId =
-                            await GetTimeZoneIdByNameAsync(lastFlight.ArrivalAirportTimeZone);
+                    var arrivalDateTime = lastFlight.ArrivalTime.AddMinutes(airportProcessingTime);
+                    deliveryJob.UcjbDate = arrivalDateTime.Date;
+                    deliveryJob.UcjbTime = DateTime.Today.Add(arrivalDateTime.TimeOfDay);
 
                     // Update Pickup Address With Airport
                     await UpdateJobAddressWithAirportInfoAsync(deliveryJob, arrivalAirportId.Value,

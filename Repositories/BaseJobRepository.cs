@@ -1900,4 +1900,53 @@ public class BaseJobRepository(
 
         return deliverByTime;
     }
+
+    public async Task BulkUpdateReadStatusAsync(List<int> jobIds)
+    {
+        if (jobIds == null || jobIds.Count == 0) return;
+
+        var currentTenantTime = infoService.GetCurrentTenantTime();
+        var staffId = infoService.GetStaffId();
+
+        // Use ExecuteUpdate for existing records - single SQL statement, no entity tracking
+        await Context.TucJobReadTrackers
+            .Where(t => jobIds.Contains(t.JobId))
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(t => t.HasBeenRead, t => !t.HasBeenRead)
+                .SetProperty(t => t.ReadTimestamp, currentTenantTime)
+                .SetProperty(t => t.ReadByStaffId, staffId));
+
+        // Get job IDs that already have trackers to exclude from insert
+        var existingJobIds = await Context.TucJobReadTrackers
+            .Where(t => jobIds.Contains(t.JobId))
+            .Select(t => t.JobId)
+            .ToListAsync();
+
+        var newJobIds = jobIds.Except(existingJobIds).ToList();
+
+        // Bulk insert new records if any
+        if (newJobIds.Count != 0)
+        {
+            var newTrackers = newJobIds.Select(jobId => new TucJobReadTracker
+            {
+                JobId = jobId,
+                HasBeenRead = true,
+                ReadTimestamp = currentTenantTime,
+                ReadByStaffId = staffId
+            });
+
+            Context.TucJobReadTrackers.AddRange(newTrackers);
+            await Context.SaveChangesAsync();
+        }
+    }
+    
+    public async Task BulkUpdateJobStatus(List<int> jobIds, int statusId)
+    {
+        if (jobIds == null || jobIds.Count == 0) return;
+
+        await Context.TucJobs
+            .Where(j => jobIds.Contains(j.UcjbId))
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(j => j.UcjbStatus, statusId));
+    }
 }

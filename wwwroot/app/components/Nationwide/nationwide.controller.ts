@@ -1839,7 +1839,7 @@ class NationwideControl extends BaseController {
     async openAgentSearchDialog($event: MouseEvent, job: IDispatchJob) {
         try {
             const url = "nationwideJob/GetAllAgentsSearch";
-            const selectedAgent = await this.autoCompleteDialogService.showAutocompleteDialog($event, url, "Search all Agents", "Agent", "Agents", null);
+            const selectedAgent = await this.autoCompleteDialogService.showAutocompleteDialog($event, url, "Search all Agents", "Agent", "Agents", undefined);
 
             await this.addSelectedAgentToJob($event, selectedAgent, job);
         } catch (error) {
