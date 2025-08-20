@@ -178,9 +178,6 @@ public class FlightStatsService(
             departureAirportCode = await repository.GetSingleAirportCodeByIdAsync(departureAirportId.Value);
         if (arrivalAirportId.HasValue)
             arrivalAirportCode = await repository.GetSingleAirportCodeByIdAsync(arrivalAirportId.Value);
-        
-        // Timezones
-        var (fromAirportTimeZone, toAirportTimeZone) = await repository.GetAirportTimeZonesByCodesAsync(departureAirportCode, arrivalAirportCode);
 
         var activeAirlineCodes = await repository.GetActiveAirlineCodesAsync();
 
@@ -297,12 +294,12 @@ public class FlightStatsService(
                             DepartureAirportName = depAirport?.Name,
                             DepartureAirportCity = depAirport?.City,
                             DepartureAirportCountry = depAirport?.CountryName,
-                            DepartureAirportTimeZone = fromAirportTimeZone,
+                            DepartureAirportTimeZone = depAirport?.TimeZoneRegionName,
 
                             ArrivalAirportName = arrAirport?.Name,
                             ArrivalAirportCity = arrAirport?.City,
                             ArrivalAirportCountry = arrAirport?.CountryName,
-                            ArrivalAirportTimeZone = toAirportTimeZone,
+                            ArrivalAirportTimeZone = arrAirport?.TimeZoneRegionName,
 
                             AircraftName = equipment?.Name,
                             AircraftType = equipment?.Jet == true ? "Jet" :
@@ -334,8 +331,6 @@ public class FlightStatsService(
                     IsCodeShare = firstFlight.IsCodeShare,
                     Amount = 0, // Will fill this in on the next step
                     CodeShareAirline = firstFlight.IsCodeShare ? firstFlight.CarrierFsCode : null,
-                    ArrivalTimeZone = toAirportTimeZone,
-                    DepartureTimeZone = fromAirportTimeZone,
 
                     // Add new properties for multi-segment support
                     IsMultiSegment = conn.ScheduledFlight.Count > 1,

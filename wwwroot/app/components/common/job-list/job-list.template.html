@@ -47,8 +47,8 @@
                 Assign Courier
             </button>
             <button class="bulk-action-btn"
-                    ng-click="ctrl.bulkUpdateStatus()"
-                    ng-disabled="!ctrl.canBulkUpdateStatus()">
+                    ng-click="ctrl.bulkRestoreJobs()"
+                    ng-disabled="!ctrl.canBulkRestoreStatus()">
                 <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
                 Restore
             </button>
@@ -125,14 +125,6 @@
             <div class="jobs-content">
                 <!-- Jobs Header -->
                 <div class="jobs-header" ng-style="{'grid-template-columns': ctrl.getGridTemplateColumnsWithSelect()}">
-                    <div class="header-cell select-all-cell">
-                        <md-checkbox class="md-primary select-all-checkbox"
-                                     ng-model="ctrl.selectAllState"
-                                     ng-change="ctrl.toggleSelectAll()"
-                                     ng-indeterminate="ctrl.isIndeterminate()"
-                                     aria-label="Select all jobs">
-                        </md-checkbox>
-                    </div>
                     <div class="header-cell" ng-class="ctrl.getSortClass('priority')"
                          ng-click="ctrl.sortBy('priority')">
                         <div class="header-content">
@@ -222,16 +214,6 @@
                      context-menu-on="contextmenu"
                      context-menu-class="job-context-menu"
                      ng-click="ctrl.selectJob(job, $event)">
-
-                    <!-- Select Column -->
-                    <div class="job-cell select-cell">
-                        <md-checkbox class="md-primary job-checkbox"
-                                     ng-model="job.selected"
-                                     ng-change="ctrl.toggleJobSelection(job)"
-                                     ng-click="$event.stopPropagation()"
-                                     aria-label="Select this job">
-                        </md-checkbox>
-                    </div>
 
                     <!-- Priority Column -->
                     <div class="job-cell {{ctrl.shouldShowPriorityColumn(job) ? 'priority' : ''}}">
@@ -375,16 +357,6 @@
                      context-menu-on="contextmenu"
                      context-menu-class="job-context-menu"
                      ng-click="ctrl.selectJob(childJob, $event)">
-
-                    <!-- Select Column -->
-                    <div class="job-cell select-cell">
-                        <md-checkbox class="md-primary job-checkbox"
-                                     ng-model="childJob.selected"
-                                     ng-change="ctrl.toggleJobSelection(childJob)"
-                                     ng-click="$event.stopPropagation()"
-                                     aria-label="Select this job">
-                        </md-checkbox>
-                    </div>
 
                     <!-- Priority Column -->
                     <div class="job-cell">

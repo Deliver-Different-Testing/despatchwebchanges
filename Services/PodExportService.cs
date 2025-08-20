@@ -56,10 +56,7 @@ public class PodExportService(
         await writer.WriteLineAsync(GetCsvHeader());
         
         // Write data rows
-        foreach (var item in data)
-        {
-            await writer.WriteLineAsync(FormatDataRow(item));
-        }
+        foreach (var item in data) await writer.WriteLineAsync(FormatDataRow(item));
         
         return stream.ToArray();
     }

@@ -157,7 +157,7 @@ public class NationwideJobController(
 
             // Save job assignment
             await repository.AddJobNationwideAsync(request.JobId, flight, webhookIds, request.FromAirportId,
-                request.ToAirportId, request.OverrideDeliverByTime);
+                request.ToAirportId);
 
             return Ok();
         }
@@ -173,8 +173,8 @@ public class NationwideJobController(
         // Use provided flight segments if available
         if (request.FlightSegments?.Count > 0)
         {
-            var firstSegment = request.FlightSegments.First();
-            var lastSegment = request.FlightSegments.Last();
+            var firstSegment = request.FlightSegments.OrderBy(f => f.SegmentOrder).First();
+            var lastSegment = request.FlightSegments.OrderBy(f => f.SegmentOrder).Last();
 
             return new AddFlightToJobDto
             {
