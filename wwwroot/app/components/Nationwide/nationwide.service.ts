@@ -33,7 +33,7 @@ class NationwideService implements angular.IServiceProvider {
         selectedAreas: DfrntPageViewModel[]
     ): Promise<IDispatchJob[]> {
         const despatchViewIds = selectedAreas.map(area => area.id);
-        
+
         const defaultParams = {
             status: 'all',
             order: 'time',
@@ -141,12 +141,8 @@ class NationwideService implements angular.IServiceProvider {
     }
 
     async assignFlightToJob(requestData: AssignFlightToJobRequest) {
-        try {
-            const response = await this.$http.post("nationwideJob/AssignFlightToJob", requestData);
-            return response.data;
-        } catch (error) {
-            console.error("Error assigning flight to job:", error);
-        }
+        const response = await this.$http.post("nationwideJob/AssignFlightToJob", requestData);
+        return response.data;
     }
 
     async getAgentOptions(jobId: number): Promise<{
@@ -185,7 +181,7 @@ class NationwideService implements angular.IServiceProvider {
                 usePickup
             }
         });
-        
+
         return response.data;
     }
 
@@ -210,45 +206,45 @@ class NationwideService implements angular.IServiceProvider {
         });
         return response.data;
     }
-    
+
     async getAgentRecoveryJobs(jobId: number): Promise<RecoveryAgentJobViewModel> {
         const response = await this.$http.get<RecoveryAgentJobViewModel>("nationwideJob/GetAgentRecoveryJobs", {
             params: {
                 jobId,
             }
         });
-        
+
         return response.data;
     }
-    
+
     async addAgentRecoveryJob(data: AddAgentRecoveryRequest): Promise<void> {
         await this.$http.post("nationwideJob/AddAgentRecoveryJob", data);
     }
-    
+
     async getAgentOptionsByAirport(airportId: number): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>("nationwideJob/GetAgentOptionsByAirport", {
             params: {
                 airportId,
             }
         });
-        
+
         return response.data;
     }
-    
+
     async getAllActiveAirports(): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>("nationwideJob/GetAllActiveAirports");
         return response.data;
     }
 
     async updateAgentRecoveryJob(request: UpdateAgentRecoveryRequest): Promise<void> {
-             await this.$http.post('nationwideJob/UpdateAgentRecoveryJob', request);
+        await this.$http.post('nationwideJob/UpdateAgentRecoveryJob', request);
     }
 
     async removeAgentRecoveryJob(recoveryId: number): Promise<void> {
         const data: RemoveAgentRecoveryRequest = {
             recoveryId
         };
-        
+
         await this.$http.post(`nationwideJob/RemoveAgentRecoveryJob`, data);
     }
 
@@ -258,16 +254,16 @@ class NationwideService implements angular.IServiceProvider {
                 agentJobId
             }
         });
-        
+
         return response.data;
     }
 
     async getEnabledWebhookEvents(): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>("nationwideJob/GetEnabledWebhookEvents");
         return response.data;
-    }   
-    
-    async calculateCargoReadyTime(airportId: number, flightNumber: string, arrivalTime: Date): Promise< IFlightCargoProcessing> {
+    }
+
+    async calculateCargoReadyTime(airportId: number, flightNumber: string, arrivalTime: Date): Promise<IFlightCargoProcessing> {
         const response = await this.$http.get<IFlightCargoProcessing>("nationwideJob/CalculateCargoReadyTime", {
             params: {
                 airportId,
@@ -276,8 +272,8 @@ class NationwideService implements angular.IServiceProvider {
             }
         });
         return response.data;
-    }   
-    
+    }
+
     async getDeliveryByTimeForJob(jobId: number): Promise<Date | undefined> {
         const response = await this.$http.get<Date | undefined>("nationwideJob/GetDeliveryByTimeForJob", {
             params: {
@@ -285,7 +281,7 @@ class NationwideService implements angular.IServiceProvider {
             }
         });
         return response.data;
-    } 
+    }
 }
 
 export default NationwideService;

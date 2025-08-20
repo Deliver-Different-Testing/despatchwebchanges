@@ -1,8 +1,7 @@
 ﻿import "./job-list.styles.less";
 import {
     AddressViewModel,
-    AssignedFlight, IBulkStatusUpdateRequest,
-    IBulkUpdateRequest,
+    AssignedFlight, IBulkUpdateRequest,
     IDispatchJob,
     Suggestion
 } from "../../../interfaces/job.interface";
@@ -1201,7 +1200,7 @@ class JobsListController extends BaseController {
         return this.selectedJobs.length > 0 && this.allowDispatch;
     }
 
-    canBulkUpdateStatus(): boolean {
+    canBulkRestoreStatus(): boolean {
         return this.selectedJobs.length > 0;
     }
 
@@ -1210,36 +1209,32 @@ class JobsListController extends BaseController {
     }
 
     async bulkAssignCourier($event: MouseEvent): Promise<void> {
-        if (!this.canBulkAssign()) return;
-        
-        await this.featureInDevelopmentDialogService.openFeatureInDevelopmentDialog();
-        return;
-        
-       /* const selectedJobIds = this.selectedJobs.map(job => job.id);
-        
-        const selectedCourier = await this.autoCompleteDialogService.showAutocompleteDialog($event,
-            this.COURIER_URL,
-            "Search couriers...",
-            "Courier",
-            "Bulk Assign Courier",
-            null, false);
-        
-        if (this.onJobAction) {
-            await this.onJobAction({
-                action: 'bulkAssignCourier',
-                job: this.selectedJobs[0], // Pass first job as a reference
-                params: {jobIds: selectedJobIds, selectedCourier}
-            });
-        }*/
+        try {
+            if (!this.canBulkAssign()) return;
+
+            const selectedCourier = await this.autoCompleteDialogService.showAutocompleteDialog($event,
+                this.COURIER_URL,
+                "Search couriers...",
+                "Courier",
+                "Bulk Assign Courier",
+                null, false);
+
+            for (const job of this.selectedJobs) {
+                if (this.onJobDispatch) {
+                    await this.onJobDispatch({job, courierId: selectedCourier.id});
+                }
+            }
+        } catch (error) {
+            if(!error) return;
+            console.error('Error in bulk assign:', error);
+        }
     }
 
-    async bulkUpdateStatus(): Promise<void> {
-    /*    try {*/
-            if (!this.canBulkUpdateStatus()) return;
-            await this.featureInDevelopmentDialogService.openFeatureInDevelopmentDialog();
-            return;
+    async bulkRestoreJobs(): Promise<void> {
+        try {
+            if (!this.canBulkRestoreStatus()) return;
 
-          /*  const selectedJobIds = this.selectedJobs.map(job => job.id);
+            const selectedJobIds = this.selectedJobs.map(job => job.id);
 
             const confirm = this.$mdDialog.confirm()
                 .title('Bulk Restore')
@@ -1250,16 +1245,12 @@ class JobsListController extends BaseController {
             await this.$mdDialog.show(confirm);
 
             // Update
-            const data: IBulkStatusUpdateRequest = {
-                jobIds: selectedJobIds,
-                statusId: 
-            };
-            await this.DispatchData.BulkUpdateReadStatus(data)
+            await this.DispatchData.restoreJobs(selectedJobIds)
             
         } catch (error) {
             if(!error) return;
-            console.error("Error in bulk update status:", error);
-        }*/
+            console.error("Error in bulk restore:", error);
+        }
     }
 
     async bulkMarkAsRead(): Promise<void> {
@@ -1270,7 +1261,7 @@ class JobsListController extends BaseController {
             const selectedJobIds = jobsToMarkAsRead.map(job => job.id);
 
             const confirm = this.$mdDialog.confirm()
-                .title('Bulk Read')
+                .title('Bulk Read/Unread')
                 .textContent(`Are you sure you want to mark ${this.selectedJobs.length} jobs as read or unread?`)
                 .ok('Mark As Read/Unread')
                 .cancel('Cancel');
@@ -1278,10 +1269,7 @@ class JobsListController extends BaseController {
             await this.$mdDialog.show(confirm);
             
             // Update
-            const data: IBulkUpdateRequest = {
-                jobIds: selectedJobIds
-            };
-            await this.DispatchData.BulkUpdateReadStatus(data)
+            await this.DispatchData.bulkUpdateReadStatus(selectedJobIds);
 
             // Update local state
             jobsToMarkAsRead.forEach(job => {

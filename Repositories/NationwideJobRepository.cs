@@ -26,7 +26,7 @@ public class NationwideJobRepository(
     private readonly ITenantInfoService _infoService = infoService;
 
     public async Task AddJobNationwideAsync(int jobId, AddFlightToJobDto flights,
-        List<string> webhookIds, int? fromAirportId, int? toAirportId, bool overrideDeliverByTime = false)
+        List<string> webhookIds, int? fromAirportId, int? toAirportId)
     {
         try
         {
@@ -226,9 +226,9 @@ public class NationwideJobRepository(
     private async Task<int> GetTimeZoneIdByNameAsync(string timeZoneName)
     {
         return await Context.TimeZones
-            .Where(tz => tz.Name == timeZoneName)
+            .Where(tz => tz.Name == timeZoneName || tz.Code == timeZoneName)
             .Select(tz => tz.Id)
-            .FirstOrDefaultAsync();
+            .FirstAsync();
     }
 
     public async Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true)

@@ -1311,7 +1311,7 @@ class NationwideControl extends BaseController {
 
     async addFlightToJob($event: MouseEvent, flight: IFlightViewModel, job: IDispatchJob): Promise<void> {
         try {
-            const result = await this.flightAgentConfirmationDialogService.flightConfirmationDialog($event, job, flight, this.selectedInboundAirport?.id)
+            const result = await this.flightAgentConfirmationDialogService.flightConfirmationDialog($event, job, flight)
             if (!result.shouldAssign) return;
 
             this.isDataLoading = true;

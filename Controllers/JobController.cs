@@ -2263,19 +2263,4 @@ public class JobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
-    
-    [HttpPost]
-    public async Task<IActionResult> BulkUpdateJobStatus([FromBody] BulkStatusUpdateRequestModel data)
-    {
-        try
-        {
-            await jobRepository.BulkUpdateJobStatus(data.JobIds, data.StatusId);
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error bulk updating jobs to {Status}", data.StatusId);
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
 }

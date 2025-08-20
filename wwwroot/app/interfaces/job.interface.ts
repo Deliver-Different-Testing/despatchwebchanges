@@ -545,7 +545,3 @@ export interface VoidJobRequest {
 export interface IBulkUpdateRequest {
     jobIds: number[];
 }
-
-export interface IBulkStatusUpdateRequest extends IBulkUpdateRequest {
-    statusId: number;
-}

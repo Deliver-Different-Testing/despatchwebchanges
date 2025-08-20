@@ -1939,14 +1939,4 @@ public class BaseJobRepository(
             await Context.SaveChangesAsync();
         }
     }
-    
-    public async Task BulkUpdateJobStatus(List<int> jobIds, int statusId)
-    {
-        if (jobIds == null || jobIds.Count == 0) return;
-
-        await Context.TucJobs
-            .Where(j => jobIds.Contains(j.UcjbId))
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(j => j.UcjbStatus, statusId));
-    }
 }
