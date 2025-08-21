@@ -15,16 +15,14 @@ import JobListType from "./enums/jobListType";
 import JobHighlightService from "./job-highlight.service";
 import DensityMode from "../../../enums/densityMode";
 import AutoCompleteDialogService from "../../dialogs/auto-complete-dialog/auto-complete-dialog.service";
-import {
-    FeatureInDevelopmentDialogService
-} from "../../dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
+import ToastrService from "../../../services/toastr.service";
 
 class JobsListController extends BaseController {
     static $inject = [
         'DispatchData',
         'jobHighlightService',
         'autoCompleteDialogService',
-        'featureInDevelopmentDialogService',
+        'toastrService',
         '$document',
         '$mdDialog',
         'APP_CONFIG',
@@ -47,6 +45,7 @@ class JobsListController extends BaseController {
     onJobDispatch?: (data: { job: IDispatchJob, courierId: number }) => Promise<void>;
     onJobAction?: (data: { action: string, job: IDispatchJob, params?: any }) => Promise<void>;
     getContextMenuOptions?: (data: { job: IDispatchJob }) => any[];
+    onRefresh?: () => Promise<void>;
     queryParams?: any;
     isUsCustomer?: boolean;
     timeZone: string = TimeZone;
@@ -105,7 +104,7 @@ class JobsListController extends BaseController {
         private DispatchData: DispatchCoreService,
         private jobHighlightService: JobHighlightService,
         private autoCompleteDialogService: AutoCompleteDialogService,
-        private featureInDevelopmentDialogService: FeatureInDevelopmentDialogService,
+        private toastrService: ToastrService,
         private $document: angular.IDocumentService,
         private $mdDialog: angular.material.IDialogService,
         appConfig: AppConfig,
@@ -1212,9 +1211,12 @@ class JobsListController extends BaseController {
                     await this.onJobDispatch({job, courierId: selectedCourier.id});
                 }
             }
+
+            this.toastrService.showSuccessToast(`${this.selectedJobs.length} jobs dispatched successfully`);
         } catch (error) {
-            if(!error) return;
+            if (!error) return;
             console.error('Error in bulk assign:', error);
+            this.toastrService.showErrorToast('Error occured while assigning courier');
         }
     }
 
@@ -1234,10 +1236,16 @@ class JobsListController extends BaseController {
 
             // Update
             await this.DispatchData.restoreJobs(selectedJobIds)
-            
+
+            if (this.onRefresh) {
+                await this.onRefresh();
+            }
+
+            this.toastrService.showSuccessToast(`${selectedJobIds.length} jobs restored successfully`);
         } catch (error) {
-            if(!error) return;
+            if (!error) return;
             console.error("Error in bulk restore:", error);
+            this.toastrService.showErrorToast('Error occured while restoring jobs');
         }
     }
 
@@ -1253,7 +1261,7 @@ class JobsListController extends BaseController {
                 .cancel('Cancel');
 
             await this.$mdDialog.show(confirm);
-            
+
             // Update
             await this.DispatchData.bulkUpdateReadStatus(selectedJobIds);
 
@@ -1262,10 +1270,15 @@ class JobsListController extends BaseController {
                 job.hasBeenRead = true;
             });
 
+            if (this.onRefresh) {
+                await this.onRefresh();
+            }
+
             this.clearSelection();
         } catch (error) {
-            if(!error) return;
+            if (!error) return;
             console.error("Error in bulk mark as read:", error);
+            this.toastrService.showErrorToast('Error occured while marking jobs as read');
         }
     }
 
@@ -1302,6 +1315,7 @@ const JobsListComponent: angular.IComponentOptions = {
         onJobDispatch: '&',
         onJobAction: '&',
         getContextMenuOptions: '&',
+        onRefresh: '&',
         dispatchState: '<',
         queryParams: '<',
         refreshInterval: '<?',
