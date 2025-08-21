@@ -1071,7 +1071,7 @@ public class BaseJobRepository(
         return hasMatchingAirport;
     }
 
-    public async Task<TucJobType> GetJobTypeById(int speedId)
+    public async Task<TucJobType> GetJobTypeByIdAsync(int speedId)
     {
         var jobType = await Context
             .TucJobTypes.AsNoTracking()
@@ -1089,7 +1089,7 @@ public class BaseJobRepository(
         return grouping ?? throw new KeyNotFoundException($"Job type grouping with ID {groupingId} not found");
     }
 
-    public async Task<List<AddressWithAgent>> GetClosestAirports(
+    public async Task<List<AddressWithAgent>> GetClosestAirportsAsync(
         decimal latitude,
         decimal longitude
     )
@@ -1327,7 +1327,7 @@ public class BaseJobRepository(
         }
     }
 
-    public async Task<List<TucNoteViewModel>> GetNotesByJobId(int jobId)
+    public async Task<List<TucNoteViewModel>> GetNotesByJobIdAsync(int jobId)
     {
         ArgumentNullException.ThrowIfNull(jobId);
 
@@ -1683,7 +1683,7 @@ public class BaseJobRepository(
         };
     }
 
-    public async Task AddNewTucNoteType(NoteTypeViewModel noteType)
+    public async Task AddNewTucNoteTypeAsync(NoteTypeViewModel noteType)
     {
         var newType = new TucNoteType
         {
@@ -1697,7 +1697,7 @@ public class BaseJobRepository(
         await Context.SaveChangesAsync();
     }
 
-    public async Task<JobRatingDetailsDto> GetJobDetailsForRating(int jobId)
+    public async Task<JobRatingDetailsDto> GetJobDetailsForRatingAsync(int jobId)
     {
         try
         {
@@ -1766,7 +1766,7 @@ public class BaseJobRepository(
         }
     }
 
-    public async Task<JobRatingDetailsDto> GetJobBookingDetailsForRating(int jobId)
+    public async Task<JobRatingDetailsDto> GetJobBookingDetailsForRatingAsync(int jobId)
     {
         try
         {

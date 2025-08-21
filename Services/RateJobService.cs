@@ -120,7 +120,7 @@ public class RateJobService(
 
      private async Task<JobRateResult> CalculateJobRateUs(JobRateRequest request)
         {
-            var speed = await jobRepository.GetJobTypeById(request.SpeedId);
+            var speed = await jobRepository.GetJobTypeByIdAsync(request.SpeedId);
             var speedGrouping = await jobRepository.GetJobTypeGrouping(speed.GroupingId);
 
             var result = new JobRateResult
@@ -141,10 +141,10 @@ public class RateJobService(
             else
             {
                 // Get closest airports
-                var closestFromAirports = await jobRepository.GetClosestAirports(
+                var closestFromAirports = await jobRepository.GetClosestAirportsAsync(
                     request.PickupLat ?? 0,
                     request.PickupLong ?? 0);
-                var closestToAirports = await jobRepository.GetClosestAirports(
+                var closestToAirports = await jobRepository.GetClosestAirportsAsync(
                     request.DeliveryLat ?? 0,
                     request.DeliveryLong ?? 0);
 

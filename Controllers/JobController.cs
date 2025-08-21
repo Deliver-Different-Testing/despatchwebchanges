@@ -306,7 +306,7 @@ public class JobController(
     {
         try
         {
-            var result = await jobRepository.CurrentJobList(courierId, done);
+            var result = await jobRepository.CurrentJobListAsync(courierId, done);
             return Json(result);
         }
         catch (Exception e)
@@ -551,7 +551,7 @@ public class JobController(
     {
         try
         {
-            var job = await recurringJobRepository.GetRecurringJobById(jobId);
+            var job = await recurringJobRepository.GetRecurringJobByIdAsync(jobId);
             return Json(job);
         }
         catch (Exception ex)
@@ -591,13 +591,13 @@ public class JobController(
 
     public async Task<IActionResult> Related(int parentId, int clientId)
     {
-        var result = await jobRepository.RelatedJobs(parentId, clientId);
+        var result = await jobRepository.RelatedJobsAsync(parentId, clientId);
         return Json(result);
     }
 
     public async Task<IActionResult> BulkDetail(int bulkJobId)
     {
-        var result = await jobRepository.BulkJobDetail(bulkJobId);
+        var result = await jobRepository.BulkJobDetailAsync(bulkJobId);
         return Json(result);
     }
 
@@ -611,7 +611,7 @@ public class JobController(
     {
         try
         {
-            var job = await recurringJobRepository.GetPrebookJobById(jobBookingId);
+            var job = await recurringJobRepository.GetPrebookJobByIdAsync(jobBookingId);
             return Json(job);
         }
         catch (Exception e)
@@ -826,7 +826,7 @@ public class JobController(
 
     public async Task<IActionResult> SwapPod(string job1, string job2)
     {
-        await jobRepository.SwapPod(job1, job2);
+        await jobRepository.SwapPodAsync(job1, job2);
         return Ok();
     }
 
@@ -910,12 +910,12 @@ public class JobController(
                 );
             }
 
-            await jobRepository.ResetLateEvent(job.Id, request.LateType);
+            await jobRepository.ResetLateEventAsync(job.Id, request.LateType);
 
             switch (request.LateType)
             {
                 case (int)LateEventType.Pickup:
-                    await jobRepository.LatePickup(
+                    await jobRepository.LatePickupAsync(
                         job.Id,
                         job.BookedSpeed,
                         job.NotifiedSpeed,
@@ -924,7 +924,7 @@ public class JobController(
                     );
                     break;
                 case (int)LateEventType.Delivery:
-                    await jobRepository.LateDelivery(
+                    await jobRepository.LateDeliveryAsync(
                         job.Id,
                         job.BookedSpeed,
                         job.NotifiedSpeed,
@@ -975,7 +975,7 @@ public class JobController(
             return new LateStatusResult
                 { ShouldCreateEvent = false, EventType = latePickupStatus, LateTime = lateTime };
 
-        var maxAutoLate = await jobRepository.MaxAutoLatePickupAlert();
+        var maxAutoLate = await jobRepository.MaxAutoLatePickupAlertAsync();
         var shouldCreateEvent = minutes < maxAutoLate
             ? lateTime > pickupTime
             : lateTime - pickupTime > alertLatePickup;
@@ -998,7 +998,7 @@ public class JobController(
             return new LateStatusResult
                 { ShouldCreateEvent = false, EventType = lateDeliveryStatus, LateTime = adjustedLateTime };
 
-        var maxAutoLateDelAlert = await jobRepository.MaxAutoLateDeliveryAlert();
+        var maxAutoLateDelAlert = await jobRepository.MaxAutoLateDeliveryAlertAsync();
         var shouldCreateEvent = minutes < maxAutoLateDelAlert || adjustedLateTime > alertLateDelivery;
 
         return new LateStatusResult
@@ -1030,7 +1030,7 @@ public class JobController(
     {
         try
         {
-            await jobRepository.DispatchSelectedJobs(courierId, dispId, jobIds);
+            await jobRepository.DispatchSelectedJobsAsync(courierId, dispId, jobIds);
             return Ok();
         }
         catch (Exception ex)
@@ -1045,7 +1045,7 @@ public class JobController(
     {
         try
         {
-            await jobRepository.ReDispatchSelectedJobs(courierId, dispId, jobIds);
+            await jobRepository.ReDispatchSelectedJobsAsync(courierId, dispId, jobIds);
             return Ok();
         }
         catch (Exception ex)
@@ -1058,21 +1058,21 @@ public class JobController(
     [HttpPost]
     public async Task<IActionResult> ReSendSelected(string jobIds)
     {
-        await jobRepository.ReSendSelectedJobs(jobIds);
+        await jobRepository.ReSendSelectedJobsAsync(jobIds);
         return Ok();
     }
 
     [HttpPost]
     public async Task<IActionResult> ReAssignSelected(string jobIds)
     {
-        await jobRepository.ReAssignSelectedJobs(jobIds);
+        await jobRepository.ReAssignSelectedJobsAsync(jobIds);
         return Ok();
     }
 
     [HttpPost]
     public async Task<IActionResult> SetFirstJob(int jobId, int courierId)
     {
-        await jobRepository.SetFirstJob(jobId, courierId);
+        await jobRepository.SetFirstJobAsync(jobId, courierId);
         return Ok();
     }
 
@@ -1081,7 +1081,7 @@ public class JobController(
     {
         try
         {
-            await jobRepository.VoidJob(requestData.JobId,
+            await jobRepository.VoidJobAsync(requestData.JobId,
                 requestData.VoidReason,
                 requestData.VoidSingleJobOnly);
             return Ok();
@@ -1104,7 +1104,7 @@ public class JobController(
     {
         try
         {
-            await jobRepository.ReSendAllJobs(courierId);
+            await jobRepository.ReSendAllJobsAsync(courierId);
             return Ok();
         }
         catch (Exception ex)
@@ -1124,7 +1124,7 @@ public class JobController(
     {
         try
         {
-            await jobRepository.RestoreSplitJobs(jobIds);
+            await jobRepository.RestoreSplitJobsAsync(jobIds);
             return Ok();
         }
         catch (Exception ex)
@@ -1144,7 +1144,7 @@ public class JobController(
     {
         try
         {
-            await jobRepository.RestoreJobs(jobIds);
+            await jobRepository.RestoreJobsAsync(jobIds);
             return Ok();
         }
         catch (Exception ex)
@@ -1162,14 +1162,14 @@ public class JobController(
     [HttpPost]
     public async Task<IActionResult> SplitJob(int jobId, string despatcherName)
     {
-        await jobRepository.SplitJob(jobId, despatcherName);
+        await jobRepository.SplitJobAsync(jobId, despatcherName);
         return Ok();
     }
 
     [HttpPost]
     public async Task<IActionResult> UnSplitJob(int jobId)
     {
-        var message = await jobRepository.UnSplitJob(jobId);
+        var message = await jobRepository.UnSplitJobAsync(jobId);
         return Json(message);
     }
 
@@ -1178,7 +1178,7 @@ public class JobController(
     {
         try
         {
-            await jobRepository.UpdatePodDetails(requestData);
+            await jobRepository.UpdatePodDetailsAsync(requestData);
             return Ok();
         }
         catch (Exception e)
@@ -1189,13 +1189,13 @@ public class JobController(
 
     public async Task<IActionResult> ReRateSplitJob(int jobId)
     {
-        await jobRepository.ReRateSplitJob(jobId);
+        await jobRepository.ReRateSplitJobAsync(jobId);
         return Ok();
     }
 
     public async Task<IActionResult> FinishSplitJobProcess(int jobId, string despatcherName)
     {
-        await jobRepository.FinishSplitJobProcess(jobId, despatcherName);
+        await jobRepository.FinishSplitJobProcessAsync(jobId, despatcherName);
         return Ok();
     }
 
@@ -1208,7 +1208,7 @@ public class JobController(
         decimal deliveryLng
     )
     {
-        await jobRepository.UpdateSplitJobAddress(
+        await jobRepository.UpdateSplitJobAddressAsync(
             jobId,
             toSuburbId,
             address,
@@ -1376,7 +1376,7 @@ public class JobController(
 
     public async Task<IActionResult> PpdExclusiveAmount(int clientId, decimal amount)
     {
-        var ppd = await jobRepository.PpdExclusiveAmount(clientId, amount);
+        var ppd = await jobRepository.PpdExclusiveAmountAsync(clientId, amount);
         return Json(ppd);
     }
 
@@ -1389,13 +1389,13 @@ public class JobController(
     {
         try
         {
-            await recurringJobRepository.UpdateTucJobRecurring(jobId, field, value);
+            await recurringJobRepository.UpdateTucJobRecurringAsync(jobId, field, value);
 
             // Recalculate job
             var shouldRecalculateRate = ShouldRecalculateRate(field);
             if (!shouldRecalculateRate) return Ok();
 
-            var jobDetails = await jobRepository.GetJobBookingDetailsForRating(jobId);
+            var jobDetails = await jobRepository.GetJobBookingDetailsForRatingAsync(jobId);
             if (jobDetails.IsManuallyRated) return Ok();
 
             var isUsTenant = infoService.IsUsTenant();
@@ -1430,7 +1430,7 @@ public class JobController(
             var shouldRecalculateRate = ShouldRecalculateRate(field);
             if (!shouldRecalculateRate) return Ok();
 
-            var jobDetails = await jobRepository.GetJobDetailsForRating(jobId);
+            var jobDetails = await jobRepository.GetJobDetailsForRatingAsync(jobId);
             if (jobDetails.IsManuallyRated) return Ok();
 
             var isUsTenant = infoService.IsUsTenant();
@@ -1950,7 +1950,7 @@ public class JobController(
             await jobRepository.UpdateDeliveryAddressNzAsync(request);
 
             // Get job details for rating
-            var jobDetails = await jobRepository.GetJobDetailsForRating(request.JobId);
+            var jobDetails = await jobRepository.GetJobDetailsForRatingAsync(request.JobId);
 
             // Update job details with new delivery address
             jobDetails.ToId = request.SuburbId;
@@ -1984,7 +1984,7 @@ public class JobController(
             await jobRepository.UpdateDeliveryAddressUsAsync(request);
 
             // Get job details for rating
-            var jobDetails = await jobRepository.GetJobDetailsForRating(request.JobId);
+            var jobDetails = await jobRepository.GetJobDetailsForRatingAsync(request.JobId);
 
             // Update job details with a new delivery address
             jobDetails.ToZip = request.Address.AddressLine7;
@@ -2012,7 +2012,7 @@ public class JobController(
             await jobRepository.UpdatePickupAddressNzAsync(request);
 
             // Get job details for rating
-            var jobDetails = await jobRepository.GetJobDetailsForRating(request.JobId);
+            var jobDetails = await jobRepository.GetJobDetailsForRatingAsync(request.JobId);
 
             // Update job details with new pickup address
             jobDetails.FromId = request.SuburbId;
@@ -2046,7 +2046,7 @@ public class JobController(
             await jobRepository.UpdatePickupAddressUsAsync(request);
 
             // Get job details for rating
-            var jobDetails = await jobRepository.GetJobDetailsForRating(request.JobId);
+            var jobDetails = await jobRepository.GetJobDetailsForRatingAsync(request.JobId);
 
             // Update job details with a new pickup address
             jobDetails.FromZip = request.Address.AddressLine7;
@@ -2073,7 +2073,7 @@ public class JobController(
             await jobRepository.UpdateBookingPickupAddressNzAsync(request);
 
             // Get job details for rating
-            var jobDetails = await jobRepository.GetJobBookingDetailsForRating(request.JobId);
+            var jobDetails = await jobRepository.GetJobBookingDetailsForRatingAsync(request.JobId);
 
             // Update job details with new pickup address
             jobDetails.FromId = request.SuburbId;
@@ -2108,7 +2108,7 @@ public class JobController(
             await jobRepository.UpdateBookingPickupAddressUsAsync(request);
 
             // Get job details for rating
-            var jobDetails = await jobRepository.GetJobBookingDetailsForRating(request.JobId);
+            var jobDetails = await jobRepository.GetJobBookingDetailsForRatingAsync(request.JobId);
 
             // Update job details with a new pickup address
             jobDetails.FromZip = request.Address.AddressLine7;
@@ -2136,7 +2136,7 @@ public class JobController(
             await jobRepository.UpdateBookingDeliveryAddressNzAsync(request);
 
             // Get job details for rating
-            var jobDetails = await jobRepository.GetJobBookingDetailsForRating(request.JobId);
+            var jobDetails = await jobRepository.GetJobBookingDetailsForRatingAsync(request.JobId);
 
             // Update job details with a new pickup address
             jobDetails.ToId = request.SuburbId;
@@ -2171,7 +2171,7 @@ public class JobController(
             await jobRepository.UpdateBookingDeliveryAddressUsAsync(request);
 
             // Get job details for rating
-            var jobDetails = await jobRepository.GetJobBookingDetailsForRating(request.JobId);
+            var jobDetails = await jobRepository.GetJobBookingDetailsForRatingAsync(request.JobId);
 
             // Update job details with a new pickup address
             jobDetails.ToZip = request.Address.AddressLine7;

@@ -23,7 +23,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     private readonly ITenantInfoService _infoService = infoService;
     private const string Space = " ";
 
-    public async Task<List<Suggestion>> RelatedJobs(int parentId, int clientId)
+    public async Task<List<Suggestion>> RelatedJobsAsync(int parentId, int clientId)
     {
         return await Context
             .TucJobs.Where(j => (j.ParentId == parentId || j.ParentId == null) && j.UcjbClientId == clientId)
@@ -35,7 +35,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     }
 
     /* Bulk Job Detail*/
-    public async Task<JobViewModel> BulkJobDetail(int bulkJobId)
+    public async Task<JobViewModel> BulkJobDetailAsync(int bulkJobId)
     {
         var today = DateTime.Today.ResetTimeToStartOfDay();
 
@@ -853,7 +853,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     }
 
 
-    public async Task<List<DispatchJobViewModel>> CurrentJobList(int courierId, bool done)
+    public async Task<List<DispatchJobViewModel>> CurrentJobListAsync(int courierId, bool done)
     {
         return await Context
             .TucCouriers.Where(c => c.UccrId == courierId)
@@ -872,7 +872,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         List<int> selectedViewIds,
         ClearListEnvelopeViewModel clearListEnvelope = null)
     {
-        if (isInternal == false && string.IsNullOrEmpty(clientIds))
+        if (!isInternal && string.IsNullOrEmpty(clientIds))
             return [];
 
         return await DespatchQry(
@@ -887,7 +887,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         );
     }
 
-    public async Task DispatchSelectedJobs(int courierId, int dispId, List<int> jobIds)
+    public async Task DispatchSelectedJobsAsync(int courierId, int dispId, List<int> jobIds)
     {
         var jobIdsString = string.Join(",", jobIds);
         await Context.Procedures.DESWEB_stpJob_AutoDespatchSelectedJobsAsync(jobIdsString, courierId, dispId);
@@ -895,16 +895,16 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         foreach (var jobId in jobIds) await Context.Procedures.DES_stpJob_AutoDespatchChildJobsAsync(jobId);
     }
 
-    public async Task SwapPod(string job1, string job2) =>
+    public async Task SwapPodAsync(string job1, string job2) =>
         await Context.Procedures.DESWEB_qdfSwapPODAsync(job1, job2);
 
-    public async Task ReDispatchSelectedJobs(int courierId, int dispId, List<int> jobIds)
+    public async Task ReDispatchSelectedJobsAsync(int courierId, int dispId, List<int> jobIds)
     {
         foreach (var jobId in jobIds) await Context.Procedures.uspRestoreJobAsync(jobId);
-        await DispatchSelectedJobs(courierId, dispId, jobIds);
+        await DispatchSelectedJobsAsync(courierId, dispId, jobIds);
     }
 
-    public async Task ReSendSelectedJobs(string jobIds)
+    public async Task ReSendSelectedJobsAsync(string jobIds)
     {
         if (string.IsNullOrWhiteSpace(jobIds))
             return;
@@ -919,7 +919,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         }
     }
 
-    public async Task ReAssignSelectedJobs(string jobIds)
+    public async Task ReAssignSelectedJobsAsync(string jobIds)
     {
         if (string.IsNullOrWhiteSpace(jobIds))
             return;
@@ -934,12 +934,12 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         }
     }
 
-    public async Task SetFirstJob(int jobId, int courierId) =>
+    public async Task SetFirstJobAsync(int jobId, int courierId) =>
         await Context.Procedures.DES_stpJob_AutoDespatchSelectedJobs_FSCourierIDAsync(jobId, courierId);
 
-    public async Task UpdatePodDetails(UpdatePodDetailsRequest data)
+    public async Task UpdatePodDetailsAsync(UpdatePodDetailsRequest data)
     {
-        // Find if job is in active or archive table
+        // Find if a job is in active or archive table
         var activeJob = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
         var isArchived = activeJob == null;
         int? parentId;
@@ -970,17 +970,17 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                            j.UcjbVoid == false);
 
         // Update job record with completion details
-        await UpdateJobCompletionDetails(
+        await UpdateJobCompletionDetailsAsync(
             data.JobId,
             data.JobStatus,
             data.PodName,
             data.PodTime,
             isArchived);
 
-        // Update parent job if all siblings are complete
+        // Update a parent job if all siblings are complete
         if (!hasUncompletedSiblings && parentId != null)
         {
-            await UpdateParentJobCompletionDetails(
+            await UpdateParentJobCompletionDetailsAsync(
                 parentId.Value,
                 data.JobStatus,
                 data.PodName,
@@ -991,7 +991,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         await Context.SaveChangesAsync();
     }
 
-    private async Task UpdateJobCompletionDetails(
+    private async Task UpdateJobCompletionDetailsAsync(
         int jobId,
         int jobStatus,
         string podName,
@@ -1028,7 +1028,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         }
     }
 
-    private async Task UpdateParentJobCompletionDetails(
+    private async Task UpdateParentJobCompletionDetailsAsync(
         int parentId,
         int jobStatus,
         string podName,
@@ -1067,27 +1067,27 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         }
     }
 
-    public async Task ReSendAllJobs(int courierId) =>
+    public async Task ReSendAllJobsAsync(int courierId) =>
         await Context.Procedures.uspReDespatchJobByCourierIDAsync(courierId);
 
-    public async Task<int> MaxAutoLatePickupAlert()
+    public async Task<int> MaxAutoLatePickupAlertAsync()
     {
         var maxAutoLatePickupAlert = new OutputParameter<int?>();
         await Context.Procedures.GEN_qdfSetting_GetMaxAutoLatePickupAlertAsync(maxAutoLatePickupAlert);
         return maxAutoLatePickupAlert.Value ?? 0;
     }
 
-    public async Task<int> MaxAutoLateDeliveryAlert()
+    public async Task<int> MaxAutoLateDeliveryAlertAsync()
     {
         var maxAutoLateDeliveryAlert = new OutputParameter<int?>();
         await Context.Procedures.GEN_qdfSetting_GetMaxAutoLateDeliveryAlertAsync(maxAutoLateDeliveryAlert);
         return maxAutoLateDeliveryAlert.Value ?? 0;
     }
 
-    public async Task<decimal> PpdExclusiveAmount(int clientId, decimal amount) =>
+    public async Task<decimal> PpdExclusiveAmountAsync(int clientId, decimal amount) =>
         await CalculateAmountAsync(clientId, amount);
 
-    public async Task ResetLateEvent(int jobId, int lateEventType)
+    public async Task ResetLateEventAsync(int jobId, int lateEventType)
     {
         var job = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
 
@@ -1104,7 +1104,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         await Context.SaveChangesAsync();
     }
 
-    public async Task LatePickup(
+    public async Task LatePickupAsync(
         int jobId,
         string bookedSpeed,
         string notifiedSpeed,
@@ -1155,7 +1155,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         await Context.SaveChangesAsync();
     }
 
-    public async Task LateDelivery(
+    public async Task LateDeliveryAsync(
         int jobId,
         string bookedSpeed,
         string notifiedSpeed,
@@ -1208,7 +1208,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         await Context.SaveChangesAsync();
     }
 
-    public async Task RestoreSplitJobs(List<int> jobIds)
+    public async Task RestoreSplitJobsAsync(List<int> jobIds)
     {
         if (jobIds == null || jobIds.Count == 0)
             return;
@@ -1216,7 +1216,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         foreach (var jobId in jobIds) await Context.Procedures.DES_stpJob_SplitJobRestoreAsync(jobId);
     }
 
-    public async Task RestoreJobs(List<int> jobIds)
+    public async Task RestoreJobsAsync(List<int> jobIds)
     {
         if (jobIds == null || jobIds.Count == 0)
             return;
@@ -1224,7 +1224,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         foreach (var jobId in jobIds) await Context.Procedures.uspRestoreJobAsync(jobId);
     }
 
-    public async Task VoidJob(int jobId, string voidReason, bool voidSingleJobOnly = false)
+    public async Task VoidJobAsync(int jobId, string voidReason, bool voidSingleJobOnly = false)
     {
         try
         {
@@ -1305,10 +1305,10 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         return relatedJobIds;
     }
 
-    public async Task SplitJob(int jobId, string user) =>
+    public async Task SplitJobAsync(int jobId, string user) =>
         await Context.Procedures.DES_stpJob_SplitJobAsync(jobId, false, user);
 
-    public async Task<string> UnSplitJob(int jobId)
+    public async Task<string> UnSplitJobAsync(int jobId)
     {
         var message = new OutputParameter<string>();
         var returnValue = new OutputParameter<int>();
@@ -1317,7 +1317,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         return message.Value;
     }
 
-    public async Task UpdateSplitJobAddress(
+    public async Task UpdateSplitJobAddressAsync(
         int jobId,
         int toSuburbId,
         string address,
@@ -1334,10 +1334,10 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         );
     }
 
-    public async Task ReRateSplitJob(int jobId) =>
+    public async Task ReRateSplitJobAsync(int jobId) =>
         await Context.Procedures.DES_stpJob_SplitJob_ReRateAsync(jobId, false);
 
-    public async Task FinishSplitJobProcess(int jobId, string despatcher)
+    public async Task FinishSplitJobProcessAsync(int jobId, string despatcher)
     {
         await Context.Procedures.DES_stpJob_ColsolidateMarsInformationAsync(
             jobId,

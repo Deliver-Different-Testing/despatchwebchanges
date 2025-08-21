@@ -18,7 +18,7 @@ public class NoteController(
         {
             ArgumentNullException.ThrowIfNull(jobId);
 
-            var notes = await jobRepository.GetNotesByJobId(jobId);
+            var notes = await jobRepository.GetNotesByJobIdAsync(jobId);
             return Json(notes);
         }
         catch (Exception ex)
@@ -128,7 +128,7 @@ public class NoteController(
     {
         try
         {
-            await jobRepository.AddNewTucNoteType(noteType);
+            await jobRepository.AddNewTucNoteTypeAsync(noteType);
             return Ok();
         }
         catch (Exception ex)

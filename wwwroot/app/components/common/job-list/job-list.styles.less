@@ -68,85 +68,21 @@
   }
 
   .bulk-actions-bar {
-    background: @primary-color;
-    color: white;
-    padding: 12px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid #2563eb;
-    flex-shrink: 0;
+    height: 10px !important;
     position: sticky;
     top: 0;
     z-index: 50;
+    background: white;
+    color: black;
 
-    .bulk-actions-info {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      font-size: 14px;
-      font-weight: 500;
-
+    .md-toolbar-tools {
       .selected-count {
-        font-weight: 600;
-      }
-
-      .clear-selection-btn {
-        background: none;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        color: white;
-        padding: 4px 12px;
-        border-radius: 4px;
-        font-size: 12px;
-        cursor: pointer;
-        transition: all 0.2s;
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.1);
-          border-color: rgba(255, 255, 255, 0.5);
-        }
-      }
-    }
-
-    .bulk-actions {
-      display: flex;
-      gap: 8px;
-
-      .bulk-action-btn {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        color: white;
-        padding: 8px 16px;
-        border-radius: 4px;
-        font-size: 13px;
-        cursor: pointer;
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.2);
-          border-color: rgba(255, 255, 255, 0.5);
-        }
-
-        &:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-
-          &:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.3);
-          }
-        }
-
-        md-icon {
-          font-size: 20px;
-        }
+        font-weight: 200;
+        margin-right: 16px;
       }
     }
   }
-
+  
   .controls-header {
     background: white;
     border-bottom: 1px solid #e2e8f0;
@@ -320,34 +256,6 @@
           // Remove any margin overrides
           margin: 0;
 
-          .select-all-cell {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 8px;
-            border-right: 1px solid #e2e8f0;
-            min-height: 36px;
-            background: white;
-            box-sizing: border-box;
-
-            .select-all-checkbox.md-checkbox {
-              margin: 0;
-              padding: 0;
-              min-height: auto;
-              min-width: auto;
-
-              .md-container {
-                width: 16px;
-                height: 16px;
-              }
-
-              .md-icon {
-                width: 16px;
-                height: 16px;
-              }
-            }
-          }
-
           .header-cell {
             display: flex;
             align-items: center;
@@ -417,31 +325,6 @@
           position: relative;
           z-index: 1;
 
-          .select-cell {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 8px;
-            border-right: 1px solid #f1f5f9;
-
-            .job-checkbox.md-checkbox {
-              margin: 0;
-              padding: 0;
-              min-height: auto;
-              min-width: auto;
-
-              .md-container {
-                width: 16px;
-                height: 16px;
-              }
-
-              .md-icon {
-                width: 16px;
-                height: 16px;
-              }
-            }
-          }
-
           .job-cell {
             padding: 0 8px;
             border-right: 1px solid #f1f5f9;
@@ -449,6 +332,9 @@
             word-wrap: break-word;
             word-break: break-word;
             hyphens: auto;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
 
             &:last-child {
               border-right: none;
@@ -571,11 +457,6 @@
               box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             }
 
-            &::before,
-            &::after {
-              display: none;
-            }
-
             &:hover {
               background: #f8fafc;
               box-shadow: none;
@@ -590,11 +471,6 @@
               background: #fef2f2;
               border-left: 3px solid #ef4444;
 
-              &::before,
-              &::after {
-                display: none;
-              }
-
               &:hover {
                 background: #fee2e2;
                 box-shadow: none;
@@ -604,10 +480,6 @@
             &.child-job {
               background: #f8fafc;
               border-left: 3px solid #64748b;
-
-              &::after {
-                display: none;
-              }
             }
           }
 
@@ -685,6 +557,8 @@
           .time-cell {
             font-size: 12px;
             line-height: 1.3;
+            flex-direction: column;
+            align-items: flex-start;
 
             .date {
               font-weight: 600;
@@ -705,6 +579,8 @@
           .job-id-cell {
             font-size: 12px;
             line-height: 1.2;
+            flex-direction: column;
+            align-items: flex-start;
 
             .job-id {
               font-weight: 600;
@@ -727,6 +603,8 @@
             font-size: 12px;
             line-height: 1.2;
             position: relative;
+            flex-direction: column;
+            align-items: flex-start;
 
             .address {
               color: #1e293b;
@@ -746,19 +624,6 @@
 
             &.pickup-cell {
               position: relative;
-
-              &::after {
-                content: '';
-                position: absolute;
-                right: -4px;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 0;
-                height: 0;
-                border-left: 6px solid #64748b;
-                border-top: 4px solid transparent;
-                border-bottom: 4px solid transparent;
-              }
             }
 
             &.delivery-cell {
@@ -877,11 +742,6 @@
                 .md-input-container {
                   border: none !important;
                   box-shadow: none !important;
-
-                  &:after,
-                  &:before {
-                    display: none !important;
-                  }
                 }
 
                 /* Style the dropdown panel */
@@ -1019,25 +879,11 @@
           .jobs-header {
             padding: 10px 0;
             font-size: 10px;
-
-            .select-all-cell {
-              padding: 0 6px;
-
-              .select-all-checkbox.md-checkbox {
-                .md-container {
-                  width: 14px;
-                  height: 14px;
-                }
-
-                .md-icon {
-                  width: 14px;
-                  height: 14px;
-                }
-              }
-            }
+            min-height: 32px;
 
             .header-cell {
               padding: 0 6px;
+              min-height: 32px;
             }
           }
 
@@ -1045,24 +891,9 @@
             padding: 8px 0;
             font-size: 12px;
 
-            .select-cell {
-              padding: 0 6px;
-
-              .job-checkbox.md-checkbox {
-                .md-container {
-                  width: 14px;
-                  height: 14px;
-                }
-
-                .md-icon {
-                  width: 14px;
-                  height: 14px;
-                }
-              }
-            }
-
             .job-cell {
               padding: 0 6px;
+              min-height: 32px;
             }
 
             .priority {
@@ -1204,25 +1035,11 @@
           .jobs-header {
             padding: 8px 0;
             font-size: 9px;
-
-            .select-all-cell {
-              padding: 0 4px;
-
-              .select-all-checkbox.md-checkbox {
-                .md-container {
-                  width: 12px;
-                  height: 12px;
-                }
-
-                .md-icon {
-                  width: 12px;
-                  height: 12px;
-                }
-              }
-            }
+            min-height: 28px;
 
             .header-cell {
               padding: 0 4px;
+              min-height: 28px;
             }
           }
 
@@ -1230,24 +1047,9 @@
             padding: 6px 0;
             font-size: 11px;
 
-            .select-cell {
-              padding: 0 4px;
-
-              .job-checkbox.md-checkbox {
-                .md-container {
-                  width: 12px;
-                  height: 12px;
-                }
-
-                .md-icon {
-                  width: 12px;
-                  height: 12px;
-                }
-              }
-            }
-
             .job-cell {
               padding: 0 4px;
+              min-height: 28px;
             }
 
             .priority {
