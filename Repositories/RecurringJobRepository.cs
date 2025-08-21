@@ -15,7 +15,9 @@ namespace DespatchWeb.Repositories;
 public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFactory, ITenantInfoService infoService)
     : BaseJobRepository(contextFactory, infoService), IRecurringJobRepository
 {
-    public async Task<JobViewModel> GetRecurringJobById(int jobId)
+    private readonly ITenantInfoService _infoService = infoService;
+
+    public async Task<JobViewModel> GetRecurringJobByIdAsync(int jobId)
     {
         var jobRecurringViewModel = await Context.TucJobBookings
             .Where(j => j.UcbkId == jobId)
@@ -210,7 +212,7 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
         return prebooks;
     }
 
-    public async Task<PrebookListViewModel> GetPrebookJobById(int jobBookingId)
+    public async Task<PrebookListViewModel> GetPrebookJobByIdAsync(int jobBookingId)
     {
         var prebook = await Context
             .TucJobBookings
@@ -263,7 +265,7 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
         return prebook;
     }
 
-    public async Task UpdateTucJobRecurring(int jobId, JobProperty property, string value)
+    public async Task UpdateTucJobRecurringAsync(int jobId, JobProperty property, string value)
         {
             var job = await Context
                 .TucJobBookings.Where(j => j.UcbkId == jobId)
@@ -277,8 +279,8 @@ public class RecurringJobRepository(IDbContextFactory<DespatchContext> contextFa
 
             ArgumentNullException.ThrowIfNull(job);
 
-            var staffId = infoService.GetStaffId();
-            var currentTenantTime = infoService.GetCurrentTenantTime();
+            var staffId = _infoService.GetStaffId();
+            var currentTenantTime = _infoService.GetCurrentTenantTime();
             
             var updateNote = string.Empty;
             // Update the correct field prop

@@ -15,7 +15,7 @@ export class AutoCompleteDialogController extends BaseController {
         "showRerateOption"
     ];
 
-    searchText: string = '"';
+    searchText?: string;
 
     constructor(
         private $mdDialog: angular.material.IDialogService,
@@ -35,8 +35,8 @@ export class AutoCompleteDialogController extends BaseController {
         try {
             const url: string = this.options.searchUrl;
             return await this.dispatchData.autocompleteSearch(searchTerm, url);
-        } catch (error: any) {
-            this.toastrService.showErrorToast(error.message);
+        } catch (error) {
+            this.toastrService.showErrorToast("An error occurred while searching. Please try again later.");
         }
     }
 

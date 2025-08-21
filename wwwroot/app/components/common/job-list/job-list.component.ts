@@ -1,8 +1,7 @@
 ﻿import "./job-list.styles.less";
 import {
     AddressViewModel,
-    AssignedFlight, IBulkUpdateRequest,
-    IDispatchJob,
+    AssignedFlight, IDispatchJob,
     Suggestion
 } from "../../../interfaces/job.interface";
 import BaseController from "../../base-controller";
@@ -1111,13 +1110,6 @@ class JobsListController extends BaseController {
         }, 100);
     }
 
-    // Select all functions
-    getGridTemplateColumnsWithSelect(): string {
-        const selectColumnWidth = '50px';
-        const existingColumns = this.getGridTemplateColumns();
-        return `${selectColumnWidth} ${existingColumns}`;
-    }
-
     toggleJobSelection(job: IDispatchJob): void {
         if (job.selected) {
             if (this.selectedJobs.indexOf(job) === -1) {
@@ -1204,10 +1196,6 @@ class JobsListController extends BaseController {
         return this.selectedJobs.length > 0;
     }
 
-    canBulkMarkAsRead(): boolean {
-        return this.selectedJobs.some(job => !job.hasBeenRead);
-    }
-
     async bulkAssignCourier($event: MouseEvent): Promise<void> {
         try {
             if (!this.canBulkAssign()) return;
@@ -1255,8 +1243,6 @@ class JobsListController extends BaseController {
 
     async bulkMarkAsRead(): Promise<void> {
         try {
-            if (!this.canBulkMarkAsRead()) return;
-
             const jobsToMarkAsRead = this.selectedJobs.filter(job => !job.hasBeenRead);
             const selectedJobIds = jobsToMarkAsRead.map(job => job.id);
 

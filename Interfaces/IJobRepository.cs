@@ -13,8 +13,8 @@ namespace DespatchWeb.Interfaces;
 
 public interface IJobRepository
 {
-    Task<List<Suggestion>> RelatedJobs(int parentId, int clientId);
-    Task<JobViewModel> BulkJobDetail(int bulkJobId);
+    Task<List<Suggestion>> RelatedJobsAsync(int parentId, int clientId);
+    Task<JobViewModel> BulkJobDetailAsync(int bulkJobId);
 
     Task<Tuple<int, List<JobViewModel>>> BulkSearchAsync(
         int? courierId,
@@ -40,7 +40,7 @@ public interface IJobRepository
         int? clientId
     );
 
-    Task<List<DispatchJobViewModel>> CurrentJobList(int courierId, bool done);
+    Task<List<DispatchJobViewModel>> CurrentJobListAsync(int courierId, bool done);
 
     Task<List<DispatchJobViewModel>> JobListAsync(
         JobQueryParams queryParams,
@@ -50,23 +50,23 @@ public interface IJobRepository
         List<int> selectedViewIds,
         ClearListEnvelopeViewModel clearListEnvelope = null);
 
-    Task DispatchSelectedJobs(int courierId, int dispId, List<int> jobIds);
-    Task SwapPod(string job1, string job2);
-    Task ReDispatchSelectedJobs(int courierId, int dispId, List<int> jobIds);
-    Task ReSendSelectedJobs(string jobIds);
-    Task ReAssignSelectedJobs(string jobIds);
-    Task SetFirstJob(int jobId, int courierId);
+    Task DispatchSelectedJobsAsync(int courierId, int dispId, List<int> jobIds);
+    Task SwapPodAsync(string job1, string job2);
+    Task ReDispatchSelectedJobsAsync(int courierId, int dispId, List<int> jobIds);
+    Task ReSendSelectedJobsAsync(string jobIds);
+    Task ReAssignSelectedJobsAsync(string jobIds);
+    Task SetFirstJobAsync(int jobId, int courierId);
 
-    Task UpdatePodDetails(UpdatePodDetailsRequest data);
+    Task UpdatePodDetailsAsync(UpdatePodDetailsRequest data);
 
-    Task ReSendAllJobs(int courierId);
-    Task<int> MaxAutoLatePickupAlert();
-    Task<int> MaxAutoLateDeliveryAlert();
-    Task<decimal> PpdExclusiveAmount(int clientId, decimal amount);
+    Task ReSendAllJobsAsync(int courierId);
+    Task<int> MaxAutoLatePickupAlertAsync();
+    Task<int> MaxAutoLateDeliveryAlertAsync();
+    Task<decimal> PpdExclusiveAmountAsync(int clientId, decimal amount);
 
-    Task ResetLateEvent(int jobId, int lateEventType);
+    Task ResetLateEventAsync(int jobId, int lateEventType);
 
-    Task LatePickup(
+    Task LatePickupAsync(
         int jobId,
         string bookedSpeed,
         string notifiedSpeed,
@@ -74,7 +74,7 @@ public interface IJobRepository
         bool calculationRequired
     );
 
-    Task LateDelivery(
+    Task LateDeliveryAsync(
         int jobId,
         string bookedSpeed,
         string notifiedSpeed,
@@ -82,13 +82,13 @@ public interface IJobRepository
         bool calculationRequired
     );
 
-    Task RestoreSplitJobs(List<int> jobIds);
-    Task RestoreJobs(List<int> jobIds);
-    Task VoidJob(int jobId, string voidReason, bool voidSingleJobOnly = false);
-    Task SplitJob(int jobId, string user);
-    Task<string> UnSplitJob(int jobId);
+    Task RestoreSplitJobsAsync(List<int> jobIds);
+    Task RestoreJobsAsync(List<int> jobIds);
+    Task VoidJobAsync(int jobId, string voidReason, bool voidSingleJobOnly = false);
+    Task SplitJobAsync(int jobId, string user);
+    Task<string> UnSplitJobAsync(int jobId);
 
-    Task UpdateSplitJobAddress(
+    Task UpdateSplitJobAddressAsync(
         int jobId,
         int toSuburbId,
         string address,
@@ -96,8 +96,8 @@ public interface IJobRepository
         decimal deliveryLng
     );
 
-    Task ReRateSplitJob(int jobId);
-    Task FinishSplitJobProcess(int jobId, string despatcher);
+    Task ReRateSplitJobAsync(int jobId);
+    Task FinishSplitJobProcessAsync(int jobId, string despatcher);
     Task<List<SuburbLookup>> SuburbsAsync();
     Task<List<Suggestion>> SpeedsAsync();
     Task<List<Suggestion>> GetContactsByClientIdAsync(int clientId);
@@ -190,10 +190,10 @@ public interface IJobRepository
 
     Task RateJobUsAsync(RateJobUsDto dto);
 
-    Task<TucJobType> GetJobTypeById(int speedId);
+    Task<TucJobType> GetJobTypeByIdAsync(int speedId);
     Task<TucJobTypeGrouping> GetJobTypeGrouping(int groupingId);
 
-    Task<List<AddressWithAgent>> GetClosestAirports(decimal latitude, decimal longitude);
+    Task<List<AddressWithAgent>> GetClosestAirportsAsync(decimal latitude, decimal longitude);
 
     Task<List<MegaMapResponse>> GetJobsForMegaMapAsync();
     Task UpdatePackagesForJobAsync(int jobId, List<ParcelDimensions> parcels);
@@ -208,15 +208,15 @@ public interface IJobRepository
     Task<TucNoteViewModel> GetNoteByIdAsync(int noteId);
     Task DeleteNoteAsync(int noteId, CancellationToken cancellationToken = default);
     Task<List<NoteTypeViewModel>> GetNoteTypesAsync();
-    Task<List<TucNoteViewModel>> GetNotesByJobId(int jobId);
+    Task<List<TucNoteViewModel>> GetNotesByJobIdAsync(int jobId);
     Task<bool> IsJobParentAsync(int jobId);
     Task<JobLateCallDto> GetJobForLateCallAsync(int jobId);
     Task UpdateJobReadStatusAsync(int jobId, bool hasBeenRead);
-    Task AddNewTucNoteType(NoteTypeViewModel noteType);
-    Task<JobRatingDetailsDto> GetJobDetailsForRating(int jobId);
+    Task AddNewTucNoteTypeAsync(NoteTypeViewModel noteType);
+    Task<JobRatingDetailsDto> GetJobDetailsForRatingAsync(int jobId);
     Task UpdateJobRateAsync(int jobId, decimal rate, string noteText);
     Task<List<TimeZoneSuggestion>> GetTimeZoneOptions();
-    Task<JobRatingDetailsDto> GetJobBookingDetailsForRating(int jobId);
+    Task<JobRatingDetailsDto> GetJobBookingDetailsForRatingAsync(int jobId);
 
     Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId);
     Task<bool> JobNumberExistsAsync(string jobNumber);

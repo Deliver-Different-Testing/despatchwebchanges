@@ -8,7 +8,7 @@ namespace DespatchWeb.Interfaces;
 
 public interface IRecurringJobRepository
 {
-    Task<JobViewModel> GetRecurringJobById(int jobId);
+    Task<JobViewModel> GetRecurringJobByIdAsync(int jobId);
 
     Task<Tuple<int, List<JobViewModel>>> PreBookSearchAsync(
         int? courierId,
@@ -22,8 +22,8 @@ public interface IRecurringJobRepository
     );
 
     Task<List<PrebookListViewModel>> PreBookJobListAsync(bool active);
-    Task<PrebookListViewModel> GetPrebookJobById(int jobBookingId);
+    Task<PrebookListViewModel> GetPrebookJobByIdAsync(int jobBookingId);
 
-    Task UpdateTucJobRecurring(int jobId, JobProperty property, string value);
+    Task UpdateTucJobRecurringAsync(int jobId, JobProperty property, string value);
     Task<List<TucNoteViewModel>> GetRecurringNotesByJobIdAsync(int jobId);
 }

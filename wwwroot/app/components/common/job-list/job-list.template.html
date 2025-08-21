@@ -2,6 +2,42 @@
      ng-if="ctrl.jobs || ctrl.jobs.length > 0"
      ng-class="ctrl.getDensityClass()">
 
+    <!-- Bulk Actions Bar -->
+    <md-toolbar class="md-dense bulk-actions-bar" ng-if="ctrl.selectedJobs.length > 0">
+        <div class="md-toolbar-tools">
+            <span class="selected-count">{{ctrl.selectedJobs.length}} selected</span>
+            <md-button
+                    class="md-raised md-primary"
+                    ng-click="ctrl.clearSelection()">
+                Clear Selection
+            </md-button>
+
+            <div flex></div>
+
+            <md-button
+                    ng-if="ctrl.allowDispatch"
+                    class="md-raised md-primary"
+                    ng-click="ctrl.bulkAssignCourier()"
+                    ng-disabled="!ctrl.canBulkAssign()">
+                <md-icon md-font-set="material-symbols-outlined">assignment_ind</md-icon>
+                Assign Courier
+            </md-button>
+            <md-button
+                    class="md-raised md-primary"
+                    ng-click="ctrl.bulkRestoreJobs()"
+                    ng-disabled="!ctrl.canBulkRestoreStatus()">
+                <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
+                Restore
+            </md-button>
+            <md-button
+                    class="md-raised md-primary"
+                    ng-click="ctrl.bulkMarkAsRead()">
+                <md-icon md-font-set="material-symbols-outlined">mark_email_read</md-icon>
+                Mark as Read
+            </md-button>
+        </div>
+    </md-toolbar>
+
     <!-- Stats Header -->
     <div class="stats-header">
         <div class="stats">
@@ -26,38 +62,6 @@
                 <div class="stat-dot issues"></div>
                 <span>{{ctrl.stats.issues}} Issues</span>
             </div>
-        </div>
-    </div>
-
-    <!-- Bulk Actions Bar -->
-    <div class="bulk-actions-bar" ng-if="ctrl.selectedJobs.length > 0">
-        <div class="bulk-actions-info">
-            <span class="selected-count">{{ctrl.selectedJobs.length}} selected</span>
-            <button class="clear-selection-btn" ng-click="ctrl.clearSelection()">
-                Clear Selection
-            </button>
-        </div>
-        <div class="bulk-actions">
-            <button 
-                    ng-if="ctrl.allowDispatch"
-                    class="bulk-action-btn"
-                    ng-click="ctrl.bulkAssignCourier()"
-                    ng-disabled="!ctrl.canBulkAssign()">
-                <md-icon md-font-set="material-symbols-outlined">assignment_ind</md-icon>
-                Assign Courier
-            </button>
-            <button class="bulk-action-btn"
-                    ng-click="ctrl.bulkRestoreJobs()"
-                    ng-disabled="!ctrl.canBulkRestoreStatus()">
-                <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
-                Restore
-            </button>
-            <button class="bulk-action-btn"
-                    ng-click="ctrl.bulkMarkAsRead()"
-                    ng-disabled="!ctrl.canBulkMarkAsRead()">
-                <md-icon md-font-set="material-symbols-outlined">mark_email_read</md-icon>
-                Mark as Read
-            </button>
         </div>
     </div>
 
@@ -209,7 +213,7 @@
                              'related-job': ctrl.isNationwideList() && ctrl.hasRelatedJobs(job),
                              'warning': ctrl.isWarning(job)
                          }"
-                     ng-style="{'grid-template-columns': ctrl.getGridTemplateColumnsWithSelect()}"
+                     ng-style="{'grid-template-columns': ctrl.getGridTemplateColumns()}"
                      context-menu="ctrl.getJobContextMenuOptions(job)"
                      context-menu-on="contextmenu"
                      context-menu-class="job-context-menu"
@@ -352,7 +356,7 @@
                              'multi-selected': childJob.selected,
                              'unread': !childJob.hasBeenRead
                          }"
-                     ng-style="{'grid-template-columns': ctrl.getGridTemplateColumnsWithSelect()}"
+                     ng-style="{'grid-template-columns': ctrl.getGridTemplateColumns()}"
                      context-menu="ctrl.getJobContextMenuOptions(childJob)"
                      context-menu-on="contextmenu"
                      context-menu-class="job-context-menu"
