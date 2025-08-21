@@ -1,10 +1,8 @@
 import DispatchCoreService from "./dispatch-core.service";
 import ToastrService from "./toastr.service";
-import NoteService from "./notes.service";
 import {EventGroupDialogService} from "../components/dialogs/event-group-dialog/event-group-dialog.service";
 import AddEventDialogService from "../components/dialogs/add-event-dialog/add-event-dialog.service";
-import {IDispatchJob, IJobNote, ILateCallRequest, Suggestion,} from "../interfaces/job.interface";
-import {JobNoteType} from "../enums/job-note-type.enum";
+import {IDispatchJob, ILateCallRequest, Suggestion,} from "../interfaces/job.interface";
 import IContextMenuOption from "../interfaces/context-menu-option.interface";
 import InternalJobStatus from "../enums/job-internal-status.enum";
 import JobInternalStatusEnum from "../enums/job-internal-status.enum";
@@ -24,7 +22,6 @@ class JobContextMenuService implements angular.IServiceProvider {
         "$document",
         "DispatchData",
         "toastrService",
-        "noteService",
         "eventGroupDialogService",
         "addEventDialogService",
         "jobAddStopService",
@@ -39,7 +36,6 @@ class JobContextMenuService implements angular.IServiceProvider {
         private $document: angular.IDocumentService,
         private DispatchData: DispatchCoreService,
         private toastrService: ToastrService,
-        private noteService: NoteService,
         private eventGroupDialogService: EventGroupDialogService,
         private addEventDialogService: AddEventDialogService,
         private jobAddStopService: JobAddStopService,
