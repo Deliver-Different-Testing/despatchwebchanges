@@ -5,7 +5,7 @@ import DispatchCoreService from "../../services/dispatch-core.service";
 import {AppPages} from "../../enums/app-pages.enum";
 import {AppConfig} from "../../interfaces/app-config.interface";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
-import {IAgent, IDispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
+import {IAgent, IDispatchJob, IJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
 import {Coordinates} from "../overview/overview.interfaces";
 import {AssignFlightToJobRequest, IFlightViewModel, StatusChangeEvent} from "./nationwide.interfaces";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
@@ -252,7 +252,7 @@ class NationwideControl extends BaseController {
             this.markJobReadStatus(data.jobId, data.isRead);
         });
 
-        this.watchEvent<IDispatchJob>('jobChanged', (_, newJob) => {
+        this.watchEvent('jobChanged', async (_, newJob: IJob) => {
             if (this.currentJobId === newJob.id) {
                 console.log(`Job ${newJob.jobNo} is already the current job, skipping reload`);
                 return;
@@ -260,27 +260,8 @@ class NationwideControl extends BaseController {
 
             console.log(`Handling job changed event for job ${newJob.jobNo}`);
 
-            // Set critical properties immediately
-            this.currentJob = newJob;
-            this.currentJobId = newJob.id;
-            this.markJobReadStatus(newJob.id, true);
-            this.isDeliveryJobType = this.isDeliveryJob(newJob);
-
-            // Update UI first
-            this.updateUIState(newJob);
-            this.updateCurrentSelection(newJob.jobNo);
-
-            // Then load related data asynchronously
-            this.handleJobSelectionRelatedData(newJob).then(() => {
-                console.log(`Data loaded for job ${newJob.jobNo}`);
-
-                try {
-                    this.displayJobOnMap(newJob);
-                    this.updateUIState(newJob);
-                } catch (e) {
-                    console.log('Scope may be destroyed, ignoring update');
-                }
-            });
+            const job = await this.DispatchData.getDispatchJobDetail(newJob.id);
+            await this.selectJob(job)
         });
 
         this.watchScope(() => this.layout, () => {

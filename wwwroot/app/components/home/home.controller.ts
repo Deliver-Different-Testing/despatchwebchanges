@@ -8,7 +8,7 @@ import {
     AreaClearList,
     ClearListViewModel,
     CourierData,
-    IDispatchJob,
+    IDispatchJob, IJob,
     JobQueryParams,
     Suggestion,
 } from "../../interfaces/job.interface";
@@ -217,8 +217,16 @@ class HomeController extends BaseController {
             }
         }, true);
 
-        this.watchEvent('jobChanged', (_, newJob: IDispatchJob) => {
-            this.currentSelection = ` for Job ${newJob.jobNo}`;
+        this.watchEvent('jobChanged', async (_, newJob: IJob) => {
+            if (this.currentJobId === newJob.id) {
+                console.log(`Job ${newJob.jobNo} is already the current job, skipping reload`);
+                return;
+            }
+
+            console.log(`Handling job changed event for job ${newJob.jobNo}`);
+
+            const job = await this.DispatchData.getDispatchJobDetail(newJob.id);
+            await this.selectJob(job)
         });
 
         this.watchEvent('jobReadChanged', async (_, data: IJobReadChanged) => {
@@ -831,7 +839,7 @@ class HomeController extends BaseController {
             components.push(job.childNotes);
         }
 
-        // Add pickup location indicator
+        // Add a pickup location indicator
         const pickupMap: { [key: number]: string } = {
             1: "R", 2: "D",
         };

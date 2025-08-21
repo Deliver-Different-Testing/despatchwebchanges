@@ -202,13 +202,9 @@ class JobDetailController extends BaseController {
                 this.selectedTabIndex = index;
                 this.jobId = targetJob.id;
 
-                // Load the main job data from the selected job group
                 await this.loadJobData(targetJob.id);
 
-                // Set the selected related job to the current job group
                 this.selectedRelatedJob = targetJobGroup;
-
-                // Important: Reset subjob index but don't autoload a subjob
                 this.selectedSubJobIndex = -1;
             } else {
                 console.log(
