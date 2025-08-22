@@ -91,20 +91,28 @@
         <div
                 class="subjobs-container"
                 ng-if="ctrl.selectedRelatedJob && ctrl.selectedRelatedJob.subJobs && ctrl.selectedRelatedJob.subJobs.length > 0">
-            <md-tabs
-                    md-border-bottom
-                    md-stretch-tabs="always"
-                    md-no-pagination="true"
-                    md-selected="ctrl.selectedSubJobIndex">
-                <!-- Subj ob tabs -->
-                <md-tab
-                        ng-disabled="ctrl.processingTabChange"
-                        ng-repeat="subJob in ctrl.selectedRelatedJob.subJobs track by subJob.id">
-                    <md-tab-label>
-                        <div ng-click="ctrl.switchToSubJob($index)">{{subJob.text}}</div>
-                    </md-tab-label>
-                </md-tab>
-            </md-tabs>
+            <div class="job-ids-container">
+                <md-tabs
+                        md-border-bottom
+                        md-no-pagination="true"
+                        md-stretch-tabs="always"
+                        md-selected="ctrl.selectedSubJobIndex">
+                    <md-tab
+                            ng-disabled="ctrl.processingTabChange"
+                            ng-repeat="subJob in ctrl.selectedRelatedJob.subJobs track by subJob.id">
+                        <md-tab-label>
+                            <div ng-click="ctrl.switchToSubJob($index)">
+                                <span>{{subJob.text}}</span>
+                                <md-icon
+                                        md-font-set="material-symbols-outlined"
+                                        ng-if="subJob.subJobs && subJob.subJobs.length > 0">
+                                    arrow_drop_down
+                                </md-icon>
+                            </div>
+                        </md-tab-label>
+                    </md-tab>
+                </md-tabs>
+            </div>
         </div>
 
         <!-- Timing Section -->

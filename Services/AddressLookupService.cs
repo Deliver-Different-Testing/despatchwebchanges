@@ -68,7 +68,7 @@ public class AddressLookupService(
         }
     }
 
-    public async Task<HereMapsLookupResponse?> GetLocationDetailsByIdAsync(string id)
+    public async Task<HereMapsLookupResponse> GetLocationDetailsByIdAsync(string id)
     {
         try
         {

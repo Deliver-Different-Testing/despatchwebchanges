@@ -1,5 +1,5 @@
 <md-dialog aria-label="{{ ::ctrl.title }}" class="address-edit-dialog">
-    <form ng-cloak>
+    <form ng-cloak name="addressForm" novalidate>
         <md-toolbar class="md-hue-1">
             <div class="md-toolbar-tools">
                 <md-icon class="popup-icon" md-font-set="material-symbols-outlined">
@@ -17,7 +17,7 @@
                 </md-button>
             </div>
         </md-toolbar>
-        
+
         <md-dialog-content class="dialog-content" ng-cloak>
             <div class="content-wrapper">
                 <!-- Address Search Section -->
@@ -147,13 +147,18 @@
                         </md-input-container>
                     </div>
 
-                    <!-- Additional US Fields -->
+                    <!-- Additionally US Fields -->
                     <div class="form-row" ng-if="ctrl.useUsFormat">
                         <md-input-container class="md-block form-field" flex="40">
                             <label for="addressLine1">Company/Building/Complex</label>
                             <input id="addressLine1"
+                                   name="addressLine1"
                                    ng-model="ctrl.addressDetails.addressLine1"
-                                   ng-disabled="ctrl.isAddressLoading"/>
+                                   ng-disabled="ctrl.isAddressLoading"
+                                   required/>
+                            <div ng-messages="addressForm.addressLine1.$error" ng-if="addressForm.addressLine1.$dirty">
+                                <div ng-message="required">Company/Building/Complex is required.</div>
+                            </div>
                         </md-input-container>
 
                         <md-input-container class="md-block form-field" flex="30">
@@ -207,8 +212,13 @@
                             <md-input-container class="md-block form-field" flex="50">
                                 <label for="contactName">Contact Name</label>
                                 <input id="contactName"
+                                       name="contactName"
                                        ng-model="ctrl.shipmentDetails.contactName"
-                                       type="text"/>
+                                       type="text"
+                                       required/>
+                                <div ng-messages="addressForm.contactName.$error" ng-if="addressForm.contactName.$dirty">
+                                    <div ng-message="required">Contact Name is required.</div>
+                                </div>
                             </md-input-container>
 
                             <md-input-container class="md-block form-field" flex="50">
@@ -221,20 +231,32 @@
 
                         <div class="form-row">
                             <md-input-container class="md-block form-field" flex="50">
-                                <label for="weight">Weight (kg)</label>
+                                <label for="weight">Weight ({{ ::ctrl.useUsFormat ? 'lbs' : 'kg' }})</label>
                                 <input id="weight"
+                                       name="weight"
                                        ng-model="ctrl.shipmentDetails.weight"
                                        type="number"
                                        min="0"
-                                       step="0.1"/>
+                                       step="0.1"
+                                       required/>
+                                <div ng-messages="addressForm.weight.$error" ng-if="addressForm.weight.$dirty">
+                                    <div ng-message="required">Weight is required.</div>
+                                    <div ng-message="min">Weight must be greater than 0.</div>
+                                </div>
                             </md-input-container>
 
                             <md-input-container class="md-block form-field" flex="50">
                                 <label for="quantity">Quantity</label>
                                 <input id="quantity"
+                                       name="quantity"
                                        ng-model="ctrl.shipmentDetails.quantity"
                                        type="number"
-                                       min="1"/>
+                                       min="1"
+                                       required/>
+                                <div ng-messages="addressForm.quantity.$error" ng-if="addressForm.quantity.$dirty">
+                                    <div ng-message="required">Quantity is required.</div>
+                                    <div ng-message="min">Quantity must be at least 1.</div>
+                                </div>
                             </md-input-container>
                         </div>
 
@@ -285,7 +307,8 @@
                     </md-button>
                     <md-button
                             class="md-raised md-primary"
-                            ng-click="ctrl.submit(ctrl.addressDetails)">
+                            ng-click="ctrl.submit(ctrl.addressDetails)"
+                            ng-disabled="addressForm.$invalid">
                         <md-icon md-font-set="material-symbols-outlined">save</md-icon>
                         {{ ::ctrl.submitLabel || 'Save Address' }}
                     </md-button>
