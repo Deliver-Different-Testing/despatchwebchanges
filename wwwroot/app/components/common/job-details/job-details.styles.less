@@ -973,65 +973,97 @@
     .subjobs-container {
       overflow-x: auto;
       overflow-y: hidden;
+      border-bottom: 1px solid @outline-variant;
+      background: @surface-container-low;
 
-      md-tabs {
-        min-width: max-content;
+      .job-ids-container {
+        flex: 1;
+        .flex-center();
+        height: 48px;
+        overflow-x: auto;
+        overflow-y: hidden;
 
-        .md-tab {
-          flex: 0 0 auto;
-          white-space: nowrap;
-          min-width: 120px;
-          padding: @spacing @spacing-lg;
-          transition: all @transition-fast;
+        md-tabs {
+          margin: 0;
+          background: transparent;
+          width: 100%;
+          height: 48px;
+          min-width: max-content;
 
-          &:hover:not(.md-active) {
-            background: @hover-color;
+          .md-tab {
+            padding: @spacing @spacing-lg;
+            color: @text-muted;
+            font-size: @font-sm;
+            text-transform: none;
+            font-weight: @weight-normal;
+            height: 48px;
+            line-height: @line-normal;
+            min-width: 120px;
+            flex: 0 0 auto;
+            white-space: nowrap;
+            transition: all @transition-fast;
+
+            &.md-active {
+              color: @text-dark;
+              font-weight: @weight-medium;
+              background: rgba(62, 175, 194, 0.08);
+            }
+
+            &:hover:not(.md-active) {
+              background: @hover-color;
+            }
           }
-        }
 
-        md-pagination-wrapper, md-tabs-canvas {
-          overflow-x: auto;
-          overflow-y: hidden;
-        }
-
-        md-tabs-canvas {
-          &::-webkit-scrollbar {
+          .md-ink-bar {
+            background-color: @primary;
             height: 3px;
           }
 
-          &::-webkit-scrollbar-track {
-            background: transparent;
+          md-pagination-wrapper, md-tabs-canvas {
+            height: 48px;
+            overflow-x: auto;
+            overflow-y: hidden;
           }
 
-          &::-webkit-scrollbar-thumb {
-            background: @scroll-bar-color;
-            border-radius: 2px;
+          md-tabs-canvas {
+            &::-webkit-scrollbar {
+              height: 3px;
+            }
 
-            &:hover {
-              background: darken(@scroll-bar-color, 10%);
+            &::-webkit-scrollbar-track {
+              background: transparent;
+            }
+
+            &::-webkit-scrollbar-thumb {
+              background: @scroll-bar-color;
+              border-radius: 2px;
+
+              &:hover {
+                background: darken(@scroll-bar-color, 10%);
+              }
             }
           }
         }
-      }
 
-      &::after {
-        content: '';
-        position: absolute;
-        right: 0;
-        top: 0;
-        bottom: 0;
-        width: 20px;
-        background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.9));
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity @transition-fast;
-      }
+        &::after {
+          content: '';
+          position: absolute;
+          right: 0;
+          top: 0;
+          bottom: 0;
+          width: 20px;
+          background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.9));
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity @transition-fast;
+        }
 
-      &:hover::after {
-        opacity: 1;
+        &:hover::after {
+          opacity: 1;
+        }
       }
     }
-
+    
     // Professional Timing Section
     .timing-section {
       background: linear-gradient(135deg, @surface-container-low 0%, @surface-container 100%);

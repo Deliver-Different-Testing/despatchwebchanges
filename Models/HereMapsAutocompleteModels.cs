@@ -39,36 +39,24 @@ public class Scoring
 
 public class Address
 {
-    [JsonPropertyName("label")] public string Label { get; set; } = string.Empty;
-
-    [JsonPropertyName("countryCode")] public string CountryCode { get; set; } = string.Empty;
-
-    [JsonPropertyName("countryName")] public string CountryName { get; set; } = string.Empty;
-
-    [JsonPropertyName("stateCode")] public string StateCode { get; set; } = string.Empty;
-
-    [JsonPropertyName("state")] public string State { get; set; } = string.Empty;
-
-    [JsonPropertyName("county")] public string County { get; set; } = string.Empty;
-
-    [JsonPropertyName("city")] public string City { get; set; } = string.Empty;
-
-    [JsonPropertyName("district")] public string District { get; set; } = string.Empty;
-
-    [JsonPropertyName("street")] public string Street { get; set; } = string.Empty;
-
-    [JsonPropertyName("postalCode")] public string PostalCode { get; set; } = string.Empty;
-
-    [JsonPropertyName("houseNumber")] public string HouseNumber { get; set; } = string.Empty;
+    public string Label { get; set; }
+    public string CountryCode { get; set; }
+    public string CountryName { get; set; }
+    public string StateCode { get; set; }
+    public string State { get; set; }
+    public string County { get; set; }
+    public string City { get; set; }
+    public string Street { get; set; }
+    public string PostalCode { get; set; }
+    public string HouseNumber { get; set; }
+    public string District { get; set; }
 }
 
 public class Category
 {
-    [JsonPropertyName("id")] public string Id { get; set; } = string.Empty;
-
-    [JsonPropertyName("name")] public string Name { get; set; } = string.Empty;
-
-    [JsonPropertyName("primary")] public bool? Primary { get; set; }
+    public string Id { get; set; }
+    public string Name { get; set; }
+    public bool Primary { get; set; }
 }
 
 public class FoodType
@@ -115,17 +103,39 @@ public class HereMapsAutocompleteResponse
 
 public class HereMapsLookupResponse
 {
-    [JsonPropertyName("id")] public string? Id { get; set; }
+    public string Title { get; set; }
+    public string Id { get; set; }
+    public string Language { get; set; }
+    public string ResultType { get; set; }
+    public Address Address { get; set; }
+    public Position Position { get; set; }
+    public List<HereMapsAccess> Access { get; set; }
+    public List<Category> Categories { get; set; }
+    public List<HereMapsContact> Contacts { get; set; }
+    public List<HereMapsStreetInfo> StreetInfo { get; set; }
+    public HereMapsCountryInfo CountryInfo { get; set; }
+}
 
-    [JsonPropertyName("resultType")] public string? ResultType { get; set; }
+public class HereMapsContact
+{
+    public List<HereMapsContactPhone> Phone { get; set; }
+    public List<HereMapsContactWebsite> Www { get; set; }
+}
 
-    [JsonPropertyName("address")] public Address? Address { get; set; }
+public class HereMapsContactPhone
+{
+    public string Value { get; set; }
+}
 
-    [JsonPropertyName("position")] public Position? Position { get; set; }
+public class HereMapsContactWebsite
+{
+    public string Value { get; set; }
+}
 
-    [JsonPropertyName("countryInfo")] public HereMapsCountryInfo? CountryInfo { get; set; }
-
-    [JsonPropertyName("streetInfo")] public List<HereMapsStreetInfo>? StreetInfo { get; set; }
+public class HereMapsAccess
+{
+    public double Lat { get; set; }
+    public double Lng { get; set; }
 }
 
 public class HereMapsCountryInfo
@@ -137,7 +147,10 @@ public class HereMapsCountryInfo
 
 public class HereMapsStreetInfo
 {
-    [JsonPropertyName("baseName")] public string? BaseName { get; set; }
-
-    [JsonPropertyName("streetType")] public string? StreetType { get; set; }
+    public string BaseName { get; set; }
+    public string StreetType { get; set; }
+    public bool StreetTypePrecedes { get; set; }
+    public bool StreetTypeAttached { get; set; }
+    public string Prefix { get; set; }
+    public string Language { get; set; }
 }
