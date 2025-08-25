@@ -103,7 +103,7 @@ builder.Services.AddSingleton<IAmazonS3>(_ =>
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {
     // This lambda determines whether user consent for non-essential cookies is needed for a given request.
-    options.CheckConsentNeeded = context => true;
+    options.CheckConsentNeeded = _ => true;
     options.MinimumSameSitePolicy = SameSiteMode.None;
 });
 
@@ -187,9 +187,9 @@ builder.Services.AddAuthentication("Identity.Application")
         options.AccessDeniedPath = "/Forbidden/";
         options.Events = new CookieAuthenticationEvents
         {
-            OnRedirectToLogin = (context) =>
+            OnRedirectToLogin = context =>
             {
-                context.HttpContext.Response.Redirect(Environment.GetEnvironmentVariable("PublicPath") ?? "");
+                context.HttpContext.Response.Redirect(Environment.GetEnvironmentVariable("PublicPath") ?? string.Empty);
                 return Task.CompletedTask;
             }
         };
@@ -247,8 +247,7 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/dist",
     ContentTypeProvider = provider  // Make sure to use the same provider here
 });
-//app.UseRaygun();
-//app.UseHttpsRedirection();
+
 app.UseCookiePolicy();
 app.UseRouting();
 app.UseAuthentication();
@@ -270,7 +269,5 @@ static AWSCredentials LoadSsoCredentials(string profile)
     
     // If the SSO credentials are not found, use FallbackCredentialsFactory to get credentials
     credentials = FallbackCredentialsFactory.GetCredentials();
-    if (credentials == null)
-        throw new Exception($"Failed to find the {profile} profile or any fallback credentials");
-    return credentials;
+    return credentials ?? throw new Exception($"Failed to find the {profile} profile or any fallback credentials");
 }

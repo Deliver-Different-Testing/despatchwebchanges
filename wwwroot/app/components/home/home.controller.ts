@@ -578,7 +578,7 @@ class HomeController extends BaseController {
                 const lastActiveLayout = localStorage.getItem(`lastActiveLayout-${ContactID}`);
 
                 this.layouts = storedLayouts || [this.defaultLayout];
-                this.layouts[0] = this.defaultLayout; // Ensure default is always up-to-date
+                this.layouts[0] = this.defaultLayout; // Ensure default is always up to date
 
                 // Load last active layout or default
                 const layoutToLoad = lastActiveLayout ? this.layouts.findIndex((l: ILayout) => l.name === lastActiveLayout) : 0;
@@ -771,7 +771,7 @@ class HomeController extends BaseController {
         // Save filtered views
         this.saveViewsToStorage(this.selectedViews);
 
-        // Update map bounds for new selection
+        // Update map bounds for a new selection
         this.updateMapForSelectedViews();
 
         // Run both promises in parallel without debouncing
@@ -993,10 +993,11 @@ class HomeController extends BaseController {
 
         // Focus the input field
         this.registerTimeout(() => {
-            const inputField = document.getElementById(`input_${job.id}`) as HTMLInputElement;
-            if (inputField) {
-                inputField.focus();
-                inputField.select();
+            const inputField = angular.element(`#input_${job.id}`);
+            if (inputField.length > 0) {
+                const element = inputField[0] as HTMLInputElement;
+                element.focus();
+                element.select();
             }
         });
     }
@@ -1154,231 +1155,7 @@ class HomeController extends BaseController {
         this.courier = {gpsCourier: data};
         await this.searchCourier();
     }
-
-    async resendJobs() {
-        const activeJobElements = angular.element("#jobList .active");
-        const jobIds: number[] = Array.from(activeJobElements).map(element =>
-            parseInt(angular.element(element).attr("data-jobid") || "0", 10)
-        );
-
-        if (jobIds.length === 0) {
-            return;
-        }
-
-        try {
-            await this.DispatchData.resendJobs(jobIds.filter(id => id !== 0));
-            this.toastrService.showSuccessToast("Jobs resent successfully");
-            await this.getData();
-
-            const lastJobElement = (activeJobElements as any)[activeJobElements.length - 1];
-            const lastJobId = parseInt(angular.element(lastJobElement).attr("data-jobid") || "0", 10);
-            const lastJob = this.jobList.find((job) => job.id === lastJobId);
-
-            if (!lastJob) return;
-            const foundCourier = await this.DispatchData.getCourierById(lastJob.courierData?.courierId ?? 0);
-
-            if (foundCourier) {
-                this.courier = {gpsCourier: foundCourier.id};
-                await this.searchCourier();
-            }
-
-        } catch (error: any) {
-            console.log("Error updating data:", error);
-        }
-    }
-
-    async restoreJob(job: IDispatchJob) {
-        try {
-            const result = await this.dispatchJobService.restoreJob(job);
-            this.courier = {gpsCourier: result.gpsCourier};
-
-            await this.getData();
-
-            if (this.searchCourier) {
-                await this.searchCourier();
-            }
-        } catch (error: any) {
-            console.error("Error restoring job:", error);
-        } finally {
-            this.applyScope();
-        }
-    }
-
-    async restoreAll($event: MouseEvent) {
-        let confirm = this.$mdDialog
-            .confirm()
-            .title("Restore All Jobs")
-            .textContent("Are you sure you wish to restore all jobs for " + this.currentCourier.courier)
-            .targetEvent($event)
-            .ok("Yes")
-            .cancel("No");
-
-        try {
-            await this.$mdDialog.show(confirm);
-
-            let callData = {
-                call: "restoreJobs",
-                jobs: [] as number[],
-                splitJobs: [] as number[],
-                jobNos: [] as string[],
-                courierId: null as number | null,
-            };
-
-            let foundCourier: ActiveCourierViewModel | null = null;
-
-            if (!this.jobsCurrentList) return;
-            for (const job of this.jobsCurrentList) {
-                await this.DispatchData.addRestoreEvent(job.id);
-
-                if (callData.courierId === null) {
-                    callData.courierId = job.courierData?.courierId ?? null;
-                    foundCourier = await this.DispatchData.getCourierById(callData.courierId ?? 0);
-                }
-
-                if (job.displaySplitJobDetail) {
-                    callData.splitJobs.push(job.id);
-                } else {
-                    callData.jobs.push(job.id);
-                }
-            }
-
-            if (callData.splitJobs.length > 0 && foundCourier) {
-                await this.DispatchData.restoreSplitJobs(callData.jobs);
-                console.log("Restore split jobs complete");
-            }
-            if (callData.jobs.length > 0 && foundCourier) {
-                await this.DispatchData.restoreJobs(callData.jobs);
-                console.log("Restore Jobs complete");
-            }
-
-            this.registerTimeout(() => {
-                if (foundCourier) {
-                    this.getCurrentJobs(foundCourier.courierId);
-                    this.getData();
-                }
-            }, 1000);
-        } catch (error: any) {
-            if (error === undefined) {
-                console.log("User canceled dialog");
-            } else {
-                console.error("Error occured restoring jobs");
-            }
-        }
-    }
-
-
-    async redispatchAll($event: MouseEvent) {
-        const confirm = this.$mdDialog
-            .confirm()
-            .title("Restore All Jobs")
-            .textContent("Are you sure you wish to redispatch all jobs for " + this.currentCourier.courier)
-            .targetEvent($event)
-            .ok("Yes")
-            .cancel("No");
-
-        try {
-            await this.$mdDialog.show(confirm);
-            let callData = {
-                call: "redespatchJobs",
-                jobs: [] as number[],
-                splitJobs: [] as number[],
-                jobNos: [] as string[],
-                courierId: this.currentCourier.courierId,
-            };
-
-            let foundCourier = null;
-
-            if (!this.jobsCurrentList) return;
-            for (const job of this.jobsCurrentList) {
-                callData.jobs.push(job.id);
-                foundCourier = await this.DispatchData.getCourierById(callData.courierId);
-            }
-
-            if (callData.jobs.length > 0) {
-                await this.DispatchData.reAllocateJobs(callData.courierId, ContactID, callData.jobs);
-            }
-
-            await this.getData();
-            this.courier = {gpsCourier: foundCourier?.id};
-            await this.searchCourier();
-        } catch {
-            // Cancelled dialog.
-        }
-    }
-
-    async resendAll($event: MouseEvent) {
-        const confirmDialog = this.createResendConfirmDialog($event);
-
-        try {
-            await this.$mdDialog.show(confirmDialog);
-            const resendRequest: ResendJobsRequest = {
-                call: "resendJobs",
-                jobs: [],
-                splitJobs: [],
-                jobNos: [],
-                courierId: this.currentCourier.courierId,
-            };
-
-            this.collectJobIds(resendRequest);
-            const foundCourier = await this.DispatchData.getCourierById(resendRequest.courierId);
-
-            if (resendRequest.jobs.length > 0) {
-                await this.DispatchData.resendAllJobs(resendRequest.courierId);
-            }
-
-            await this.getData();
-            this.courier = {gpsCourier: foundCourier?.id};
-            await this.searchCourier();
-        } catch {
-            // User cancelled the operation
-        }
-    }
-
-    private createResendConfirmDialog($event: MouseEvent) {
-        return this.$mdDialog
-            .confirm()
-            .title("Resend All Jobs")
-            .textContent(`Are you sure you wish to resend all jobs for ${this.currentCourier.courier}`)
-            .targetEvent($event)
-            .ok("Yes")
-            .cancel("No");
-    }
-
-    private collectJobIds(request: ResendJobsRequest) {
-        this.jobsCurrentList?.forEach((job: IDispatchJob) => {
-            request.jobs.push(job.id);
-        });
-    }
-
-    async addRestoreEvent(job: IDispatchJob) {
-        try {
-            await this.DispatchData.addRestoreEvent(job.id);
-            console.log("Restore event added successfully");
-        } catch (error: any) {
-            console.log("Error adding restore event:", error);
-            throw error;
-        }
-    }
-
-    async restoreJobs(callData: any) {
-        const promises = [];
-
-        if (callData.splitJobs.length > 0) {
-            promises.push(this.DispatchData.restoreSplitJobs(callData.splitJobs));
-        }
-        if (callData.jobs.length > 0) {
-            promises.push(this.DispatchData.restoreJobs(callData.jobs));
-        }
-
-        try {
-            await Promise.all(promises);
-            this.toastrService.showSuccessToast("Jobs restored successfully");
-        } catch (error: any) {
-            console.log("Error restoring jobs:", error);
-            throw error;
-        }
-    }
-
+    
     async splitJob($event: MouseEvent, job: IDispatchJob) {
         if (!job.allowSplit) {
             await this.showAlert("Unable to split job", `Can not split ${job.jobNo}.`);
@@ -1837,13 +1614,7 @@ class HomeController extends BaseController {
         this.truckMode = mode;
         await this.getData();
     }
-
-    async handleMarkerClick(job: IDispatchJob) {
-        if (job) {
-            await this.selectJob(job);
-        }
-    }
-
+    
     private initializeJobSearchFields(jobs: IDispatchJob[]) {
         if (!Array.isArray(jobs)) {
             return jobs;

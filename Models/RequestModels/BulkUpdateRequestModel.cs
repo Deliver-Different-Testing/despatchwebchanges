@@ -7,7 +7,7 @@ public class BulkUpdateRequestModel
     public List<int> JobIds { get; set; }
 }
 
-public class BulkStatusUpdateRequestModel : BulkUpdateRequestModel
+public class BulkReadUpdateRequestModel : BulkUpdateRequestModel
 {
-    public int StatusId { get; set; }   
+    public bool ShouldMarkAsRead { get; set; }
 }

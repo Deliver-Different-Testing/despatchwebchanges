@@ -545,3 +545,7 @@ export interface VoidJobRequest {
 export interface IBulkUpdateRequest {
     jobIds: number[];
 }
+
+export interface IBulkReadUpdateRequest extends  IBulkUpdateRequest {
+    shouldMarkAsRead: boolean;
+}

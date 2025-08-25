@@ -363,7 +363,7 @@ class JobsListController extends BaseController {
 
         // For non-structured addresses, parse the 'from' field and start from line 2
         const fromLines = (job.from || '').split(',').map(line => line.trim());
-        return fromLines.slice(1).join(', ');
+        return fromLines.join(', ');
     }
 
     getPickupCityState(job: IDispatchJob): string {
@@ -380,8 +380,8 @@ class JobsListController extends BaseController {
         }
 
         // In normal mode, show the primary address line
-        if (job.pickupAddress?.addressLine1) {
-            return job.pickupAddress.addressLine1;
+        if (job.pickupAddress?.addressLine2) {
+            return job.pickupAddress.addressLine2;
         }
 
         const fromLines = (job.from || '').split(',');
@@ -408,7 +408,7 @@ class JobsListController extends BaseController {
 
         // For non-structured addresses, parse the 'toAddress' field and start from line 2
         const toLines = (job.toAddress || '').split(',').map(line => line.trim());
-        return toLines.slice(1).join(', ');
+        return toLines.join(', ');
     }
 
     getDeliveryCityState(job: IDispatchJob): string {
@@ -425,8 +425,8 @@ class JobsListController extends BaseController {
         }
 
         // In normal mode, show the primary address line
-        if (job.deliveryAddress?.addressLine1) {
-            return job.deliveryAddress.addressLine1;
+        if (job.deliveryAddress?.addressLine2) {
+            return job.deliveryAddress.addressLine2;
         }
 
         const toLines = (job.toAddress || '').split(',');
@@ -699,31 +699,45 @@ class JobsListController extends BaseController {
         }
     }
 
-    selectJob(job: IDispatchJob, event?: MouseEvent): void {
-        // If holding Ctrl/Cmd, toggle selection instead of single select
+    async selectJob(job: IDispatchJob, event?: MouseEvent): Promise<void> {
         if (event && (event.ctrlKey || event.metaKey)) {
+            if (this.selectedJobs.length === 0 && this.selectedJob && !this.selectedJob.selected) {
+                this.selectedJob.selected = true;
+                this.selectedJobs.push(this.selectedJob);
+            }
+
             job.selected = !job.selected;
             this.toggleJobSelection(job);
+
+            if (job.selected) {
+                this.selectedJob = job;
+                this.jobHighlightService.updateHighlightedRelatedJobs(job);
+                if (this.onJobSelect) {
+                    await this.onJobSelect({job});
+                }
+            }
             return;
         }
 
-        // If holding Shift, select range
         if (event && event.shiftKey && this.selectedJob) {
-            this.selectJobRange(this.selectedJob, job);
+            // If we don't have any selected jobs yet, add the current selection to multiselect first
+            if (this.selectedJobs.length === 0 && !this.selectedJob.selected) {
+                this.selectedJob.selected = true;
+                this.selectedJobs.push(this.selectedJob);
+            }
+
+            await this.selectJobRange(this.selectedJob, job);
             return;
         }
 
-        // Normal single selection - clear multi-selection first
         this.clearSelection();
 
-        // Set the selected job
         this.selectedJob = job;
 
-        // Update highlights through the shared service
         this.jobHighlightService.updateHighlightedRelatedJobs(job);
 
         if (this.onJobSelect) {
-            this.onJobSelect({job});
+            await this.onJobSelect({job});
         }
     }
 
@@ -1124,28 +1138,23 @@ class JobsListController extends BaseController {
     }
 
     toggleSelectAll(): void {
-        if (this.selectAllState) {
-            // Select all visible jobs
-            this.filteredJobs?.forEach(job => {
-                job.selected = true;
-                if (this.selectedJobs.indexOf(job) === -1) {
-                    this.selectedJobs.push(job);
-                }
+        // Select all visible jobs
+        this.filteredJobs?.forEach(job => {
+            job.selected = true;
+            if (this.selectedJobs.indexOf(job) === -1) {
+                this.selectedJobs.push(job);
+            }
 
-                // Also select child jobs if expanded
-                if (job._isExpanded && job._groupChildren) {
-                    job._groupChildren.forEach(childJob => {
-                        childJob.selected = true;
-                        if (this.selectedJobs.indexOf(childJob) === -1) {
-                            this.selectedJobs.push(childJob);
-                        }
-                    });
-                }
-            });
-        } else {
-            // Deselect all jobs
-            this.clearSelection();
-        }
+            // Also select child jobs if expanded
+            if (job._isExpanded && job._groupChildren) {
+                job._groupChildren.forEach(childJob => {
+                    childJob.selected = true;
+                    if (this.selectedJobs.indexOf(childJob) === -1) {
+                        this.selectedJobs.push(childJob);
+                    }
+                });
+            }
+        });
     }
 
     clearSelection(): void {
@@ -1162,11 +1171,7 @@ class JobsListController extends BaseController {
 
         if (selectedVisibleJobs.length === 0) {
             this.selectAllState = false;
-        } else if (selectedVisibleJobs.length === visibleJobs.length) {
-            this.selectAllState = true;
-        } else {
-            this.selectAllState = false;
-        }
+        } else this.selectAllState = selectedVisibleJobs.length === visibleJobs.length;
     }
 
     getVisibleJobs(): IDispatchJob[] {
@@ -1251,24 +1256,39 @@ class JobsListController extends BaseController {
 
     async bulkMarkAsRead(): Promise<void> {
         try {
-            const jobsToMarkAsRead = this.selectedJobs.filter(job => !job.hasBeenRead);
-            const selectedJobIds = jobsToMarkAsRead.map(job => job.id);
+            if (this.selectedJobs.length === 0) return;
+
+            // Determine the action based on the selection
+            const readJobs = this.selectedJobs.filter(job => job.hasBeenRead);
+            const unreadJobs = this.selectedJobs.filter(job => !job.hasBeenRead);
+
+            // Gmail logic: if all are read, mark as unread; otherwise mark as read
+            const shouldMarkAsRead = unreadJobs.length > 0;
+            const actionText = shouldMarkAsRead ? 'read' : 'unread';
+            const jobsToUpdate = shouldMarkAsRead ? unreadJobs : readJobs;
+
+            if (jobsToUpdate.length === 0) return;
 
             const confirm = this.$mdDialog.confirm()
-                .title('Bulk Read/Unread')
-                .textContent(`Are you sure you want to mark ${this.selectedJobs.length} jobs as read or unread?`)
-                .ok('Mark As Read/Unread')
+                .title(`Mark as ${actionText}`)
+                .textContent(`Mark ${this.selectedJobs.length} job${this.selectedJobs.length > 1 ? 's' : ''} as ${actionText}?`)
+                .ok(`Mark as ${actionText}`)
                 .cancel('Cancel');
 
             await this.$mdDialog.show(confirm);
 
-            // Update
-            await this.DispatchData.bulkUpdateReadStatus(selectedJobIds);
+            // Get IDs of jobs that actually need updating
+            const jobIdsToUpdate = jobsToUpdate.map(job => job.id);
+            await this.DispatchData.bulkUpdateReadStatus(jobIdsToUpdate, shouldMarkAsRead);
 
-            // Update local state
-            jobsToMarkAsRead.forEach(job => {
-                job.hasBeenRead = true;
+            // Update the local state for all selected jobs
+            this.selectedJobs.forEach(job => {
+                job.hasBeenRead = shouldMarkAsRead;
             });
+
+            // Show a success message
+            const message = `${this.selectedJobs.length} job${this.selectedJobs.length > 1 ? 's' : ''} marked as ${actionText}`;
+            this.toastrService.showSuccessToast(message);
 
             if (this.onRefresh) {
                 await this.onRefresh();
@@ -1277,12 +1297,12 @@ class JobsListController extends BaseController {
             this.clearSelection();
         } catch (error) {
             if (!error) return;
-            console.error("Error in bulk mark as read:", error);
-            this.toastrService.showErrorToast('Error occured while marking jobs as read');
+            console.error("Error in bulk toggle read status:", error);
+            this.toastrService.showErrorToast(`Error occurred while updating jobs read status`);
         }
     }
 
-    selectJobRange(startJob: IDispatchJob, endJob: IDispatchJob): void {
+    async selectJobRange(startJob: IDispatchJob, endJob: IDispatchJob): Promise<void> {
         const visibleJobs = this.getVisibleJobs();
         const startIndex = visibleJobs.indexOf(startJob);
         const endIndex = visibleJobs.indexOf(endJob);
@@ -1292,6 +1312,7 @@ class JobsListController extends BaseController {
         const minIndex = Math.min(startIndex, endIndex);
         const maxIndex = Math.max(startIndex, endIndex);
 
+        // Select all jobs in the range
         for (let i = minIndex; i <= maxIndex; i++) {
             const job = visibleJobs[i];
             if (!job.selected) {
@@ -1300,7 +1321,16 @@ class JobsListController extends BaseController {
             }
         }
 
+        // Set the end job as the primary selection
+        this.selectedJob = endJob;
+        this.jobHighlightService.updateHighlightedRelatedJobs(endJob);
+
         this.updateSelectAllState();
+
+        // Trigger the selection callback
+        if (this.onJobSelect) {
+            await this.onJobSelect({job: endJob});
+        }
     }
 }
 

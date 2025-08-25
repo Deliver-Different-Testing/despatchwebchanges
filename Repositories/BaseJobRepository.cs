@@ -1874,8 +1874,9 @@ public class BaseJobRepository(
         return result ?? 0m;
     }
 
-    public async Task BulkUpdateReadStatusAsync(List<int> jobIds)
+    public async Task BulkUpdateReadStatusAsync(BulkReadUpdateRequestModel data)
     {
+        var jobIds = data.JobIds;
         if (jobIds == null || jobIds.Count == 0) return;
 
         var currentTenantTime = infoService.GetCurrentTenantTime();
@@ -1885,7 +1886,7 @@ public class BaseJobRepository(
         await Context.TucJobReadTrackers
             .Where(t => jobIds.Contains(t.JobId))
             .ExecuteUpdateAsync(setters => setters
-                .SetProperty(t => t.HasBeenRead, t => !t.HasBeenRead)
+                .SetProperty(t => t.HasBeenRead, data.ShouldMarkAsRead)
                 .SetProperty(t => t.ReadTimestamp, currentTenantTime)
                 .SetProperty(t => t.ReadByStaffId, staffId));
 

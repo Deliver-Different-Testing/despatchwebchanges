@@ -3,8 +3,7 @@ import {
     AddressViewModel,
     ClearListViewModel,
     ClientItemsViewModel,
-    EditAddressDialogViewModel, IBulkUpdateRequest,
-    IClearListEnvelope,
+    EditAddressDialogViewModel, IBulkReadUpdateRequest, IClearListEnvelope,
     IDispatchJob,
     IJob,
     ILateCallRequest,
@@ -1148,9 +1147,10 @@ class DispatchCoreService implements angular.IServiceProvider {
         await this.$http.post('job/addEvent', eventData);
     }
 
-    async bulkUpdateReadStatus(jobIds: number[]): Promise<void> {
-        const data: IBulkUpdateRequest = {
-            jobIds
+    async bulkUpdateReadStatus(jobIds: number[], shouldMarkAsRead: boolean): Promise<void> {
+        const data: IBulkReadUpdateRequest = {
+            jobIds,
+            shouldMarkAsRead
         };
 
         await this.$http.post('job/BulkUpdateReadStatus', data);
