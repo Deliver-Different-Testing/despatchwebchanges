@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -40,7 +41,7 @@ public partial class HomeController(
             }
 
             Log.Debug("Found Identity for StaffID:{StaffId}", staffId);
-            var credentials = Environment.GetEnvironmentVariable("SQLCredentials") ?? "";
+            var credentials = Environment.GetEnvironmentVariable("SQLCredentials");
             if (string.IsNullOrEmpty(credentials))
             {
                 throw new InvalidOperationException(
@@ -53,20 +54,28 @@ public partial class HomeController(
             var maskedConnectionString = MaskSensitiveInfo(connectionString + credentials);
             Log.Debug("Connection String Set: {MaskedConnectionString}", maskedConnectionString);
 
-            var clientDetail = await clientRepository.ValidateClientAsync(Convert.ToInt32(contactId));
-            ViewBag.FirstName = clientDetail.FirstName;
-            ViewBag.FullName = clientDetail.FullName;
-            ViewBag.Email = clientDetail.Email;
-            ViewBag.ClientInternal = clientDetail.Internal;
-            ViewBag.ContactID = clientDetail.StaffID ?? int.Parse(contactId);
-            ViewBag.IsUsTenant = isUsTenantFlag ?? false;
-            ViewBag.TimeZone = tenantTimeZone;
+            if (int.TryParse(contactId, out var parsedContactId))
+            {
+                var clientDetail = await clientRepository.ValidateClientAsync(parsedContactId);
+                ViewBag.FirstName = clientDetail.FirstName;
+                ViewBag.FullName = clientDetail.FullName;
+                ViewBag.Email = clientDetail.Email;
+                ViewBag.ClientInternal = clientDetail.Internal;
+                ViewBag.ContactID = clientDetail.StaffID ?? parsedContactId;
+                ViewBag.IsUsTenant = isUsTenantFlag ?? false;
+                ViewBag.TimeZone = tenantTimeZone;
+            }
+            else
+            {
+                throw new ArgumentException($"Invalid contact ID: {contactId}");
+            }
 
             return View();
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error getting client details");
+            var message = ErrorMessageStringFormatter.Format(ex);
+            Log.Error(ex, "{Message}", message);
             return Redirect(Environment.GetEnvironmentVariable("PublicPath") ?? "https://deliverdifferent.com/");
         }
     }
