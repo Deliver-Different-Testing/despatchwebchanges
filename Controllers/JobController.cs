@@ -1652,7 +1652,7 @@ public class JobController(
 
                 result.AddRange(response.S3Objects);
                 request.ContinuationToken = response.NextContinuationToken;
-            } while (response.IsTruncated);
+            } while (response.IsTruncated ?? false);
         }
         catch (AmazonS3Exception e)
         {
@@ -2250,11 +2250,11 @@ public class JobController(
     }  
     
     [HttpPost]
-    public async Task<IActionResult> BulkUpdateReadStatus([FromBody] BulkUpdateRequestModel data)
+    public async Task<IActionResult> BulkUpdateReadStatus([FromBody] BulkReadUpdateRequestModel data)
     {
         try
         {
-            await jobRepository.BulkUpdateReadStatusAsync(data.JobIds);
+            await jobRepository.BulkUpdateReadStatusAsync(data);
             return Ok();
         }
         catch (Exception ex)

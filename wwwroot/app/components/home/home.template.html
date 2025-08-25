@@ -264,48 +264,6 @@
                                     <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
                                 </md-button>
 
-                                <!-- Courier Card Buttons-->
-                                <div class="row-overflow" ng-if="::box.name === 'currentWork' && ctrl.currentCourier">
-                                    <md-fab-speed-dial class="md-scale" md-direction="left"
-                                                       md-open="ctrl.courierListFabIsOpen"
-                                                       ng-class="{ 'md-hover-full': true }"
-                                                       ng-mouseenter="ctrl.courierListFabIsOpen=true"
-                                                       ng-mouseleave="ctrl.courierListFabIsOpen=false">
-                                        <md-fab-trigger>
-                                            <md-button aria-label="menu" class="md-fab md-mini md-primary">
-                                                <md-tooltip md-direction="bottom">Options</md-tooltip>
-                                                <md-icon md-font-set="material-symbols-outlined">page_info</md-icon>
-                                            </md-button>
-                                        </md-fab-trigger>
-
-                                        <md-fab-actions>
-                                            <md-button class="md-fab md-raised md-mini"
-                                                       ng-click="ctrl.truckLoadingStatus($event)"
-                                                       ng-if="::ctrl.truckCourierStatus.length > 0">
-                                                <md-tooltip md-direction="bottom">Truck Loading Status</md-tooltip>
-                                                <md-icon md-font-set="material-symbols-outlined">
-                                                    local_shipping
-                                                </md-icon>
-                                            </md-button>
-                                            <md-button class="md-fab md-raised md-mini"
-                                                       ng-click="ctrl.restoreAll($event)">
-                                                <md-tooltip md-direction="bottom">Restore All</md-tooltip>
-                                                <md-icon md-font-set="material-symbols-outlined">undo</md-icon>
-                                            </md-button>
-                                            <md-button class="md-fab md-raised md-mini"
-                                                       ng-click="ctrl.redispatchAll($event)">
-                                                <md-tooltip md-direction="bottom">Redispatch All</md-tooltip>
-                                                <md-icon md-font-set="material-symbols-outlined">repeat</md-icon>
-                                            </md-button>
-                                            <md-button class="md-fab md-raised md-mini"
-                                                       ng-click="ctrl.resendAll($event)">
-                                                <md-tooltip md-direction="bottom">Resend All Jobs</md-tooltip>
-                                                <md-icon md-font-set="material-symbols-outlined">send</md-icon>
-                                            </md-button>
-                                        </md-fab-actions>
-                                    </md-fab-speed-dial>
-                                </div>
-
                                 <!-- Detail Buttons-->
                                 <div class="row-overflow"
                                      ng-if="ctrl.boxes[box.name].showDetailButtons && ctrl.currentJob">
