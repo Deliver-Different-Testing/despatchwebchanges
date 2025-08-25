@@ -168,4 +168,6 @@ public partial class TblSmppsetting
     public string AgentEmailReplyAddressName { get; set; }
 
     public string AgentFilePath { get; set; }
+
+    public bool Active { get; set; }
 }
