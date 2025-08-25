@@ -75,7 +75,7 @@ public partial class HomeController(
         catch (Exception ex)
         {
             var message = ErrorMessageStringFormatter.Format(ex);
-            Log.Error(ex, "{Message}", message);
+            Log.Error(ex, "Error occured in {FunctionName} : {Message}",  nameof(HomeController) + "/" + nameof(Index),message);
             return Redirect(Environment.GetEnvironmentVariable("PublicPath") ?? "https://deliverdifferent.com/");
         }
     }
