@@ -148,7 +148,7 @@ public class NationwideJobRepository(
                     if(!string.IsNullOrEmpty(requestData.PackageDeliveryNotes))
                     {
                         await SaveNoteAsync(requestData.JobId, requestData.PackageDeliveryNotes, true, false,
-                            NoteType.AgentUpdate);
+                            NoteType.DeliveryNotes);
                     }
                 }
             }
@@ -1270,22 +1270,6 @@ public class NationwideJobRepository(
             : e.EventCode);
 
         return string.Join(",", eventStrings);
-    }
-
-    public async Task<List<Suggestion>> GetWebhookEventsAsListAsync()
-    {
-        var webhookEvents = await Context.FlightWebhookEventTypes
-            .Where(e => e.IsActive && e.IsEnabled)
-            .OrderBy(e => e.EventName)
-            .Select(e => new Suggestion
-            {
-                Id = e.Id,
-                Text = e.EventName
-            })
-            .AsNoTracking()
-            .ToListAsync();
-
-        return webhookEvents;
     }
 
     public async Task<FlightCargoProcessingModel> CalculateCargoReadyTimeAsync(

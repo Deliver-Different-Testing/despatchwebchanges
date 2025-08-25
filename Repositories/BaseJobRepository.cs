@@ -1349,6 +1349,11 @@ public class BaseJobRepository(
         bool isRecurringJob = false, NoteType noteType = NoteType.InternalNote)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(noteText, nameof(noteText));
+        
+        // If note type is not found, default to internal note
+        var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
+        if (!noteTypeExists) noteType = NoteType.InternalNote;
+        
 
         var viewModel = new TucNoteViewModel
         {

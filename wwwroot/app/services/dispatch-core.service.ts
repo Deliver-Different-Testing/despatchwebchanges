@@ -28,9 +28,9 @@ import {TaskTableFiltersRequest, TaskViewModel,} from "../components/task-dashbo
 import {JobProperty} from "../enums/job-property.enum";
 import ConfigService from "./config.service";
 import {UpdatePodDetailsRequest} from "../interfaces/requests.interfaces";
-import dayjs from "dayjs";
 import {JobEventData} from "../components/dialogs/add-event-dialog/add-event-dialog.interfaces";
 import {DeliveryJourneyViewModel} from "../components/common/task-history/task-history.interfaces";
+import {formatFullDate} from "../functions/formatDates";
 
 class DispatchCoreService implements angular.IServiceProvider {
     static $inject = [
@@ -66,7 +66,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         );
         return response.data;
     }
-    
+
     async getEventTypes(): Promise<Suggestion[]> {
         const response = await this.$http.get<Suggestion[]>("job/EventTypeList");
         return response.data;
@@ -92,7 +92,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         const response = await this.$http.get<Suggestion[]>("task/GetStaff");
         return response.data;
     }
-    
+
     async isJobParent(jobId: number): Promise<boolean> {
         const response = await this.$http.get<boolean>(
             "job/IsJobParent", {
@@ -175,7 +175,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async validateSwapPOD(jobNumber: string): Promise<number> {
-       const response = await this.$http.post<number>(
+        const response = await this.$http.post<number>(
             `Job/ValidateSwapPOD`,
             null, {
                 params: {
@@ -183,12 +183,12 @@ class DispatchCoreService implements angular.IServiceProvider {
                 },
             }
         );
-       
-       return response.data;
+
+        return response.data;
     }
 
     async swapPOD(jobNumber1: string, jobNumber2: string): Promise<void> {
-       await this.$http.post(
+        await this.$http.post(
             `Job/SwapPOD`,
             null, {
                 params: {
@@ -197,16 +197,16 @@ class DispatchCoreService implements angular.IServiceProvider {
                 },
             }
         );
-        
+
     }
 
     async voidJob(jobId: number, voidSingleJobOnly: boolean, voidReason?: string) {
-       const data: VoidJobRequest = {
-           jobId,
-           voidSingleJobOnly,
-           voidReason
-       }
-       
+        const data: VoidJobRequest = {
+            jobId,
+            voidSingleJobOnly,
+            voidReason
+        }
+
         await this.$http.post(`job/Void`, data);
     }
 
@@ -381,7 +381,7 @@ class DispatchCoreService implements angular.IServiceProvider {
         );
         return response.data;
     }
-    
+
     async getClientContacts(contactId: number) {
         const response = await this.$http.get(
             `home/ClientContacts`, {
@@ -562,7 +562,7 @@ class DispatchCoreService implements angular.IServiceProvider {
     async updatePODDetail(requestData: UpdatePodDetailsRequest) {
         await this.$http.post("job/UpdatePODDetails", requestData);
     }
-    
+
     async reRateSplitJob(jobId: number) {
         await this.$http.post(`job/ReRateSplitJob`, null, {
             params: {
@@ -694,9 +694,9 @@ class DispatchCoreService implements angular.IServiceProvider {
             initialValue: value,
             preBook: isRecurring,
         });
-        
+
         if (value instanceof Date) {
-            value = dayjs(value).format('YYYY-MM-DD HH:mm:ss');
+            value = formatFullDate(value);
         }
 
         const url: string = isRecurring
@@ -751,7 +751,7 @@ class DispatchCoreService implements angular.IServiceProvider {
                 );
 
                 // Format to YYYY-MM-DD HH:mm:ss
-                value = dayjs(combined).utc().format();
+                value = formatFullDate(combined);
             }
         }
 
@@ -766,7 +766,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             field === JobProperty.NextDue
         ) {
             if (value instanceof Date) {
-                value = dayjs(value).utc().format();
+                value = formatFullDate(value);
             }
         }
 
@@ -804,16 +804,16 @@ class DispatchCoreService implements angular.IServiceProvider {
 
         // Add date filter parameters - handle all options
         if (queryParams.dateCutoff) {
-            params.dateCutoff = dayjs(queryParams.dateCutoff).format();
+            params.dateCutoff = formatFullDate(queryParams.dateCutoff);
         }
 
         // Add start and end date parameters if present
         if (queryParams.startDate) {
-            params.startDate = dayjs(queryParams.startDate).format();
+            params.startDate = formatFullDate(queryParams.startDate);
         }
 
         if (queryParams.endDate) {
-            params.endDate = dayjs(queryParams.endDate).format();
+            params.endDate = formatFullDate(queryParams.endDate);
         }
 
         const response = await this.$http.get<IDispatchJob[]>("job", {
@@ -891,7 +891,7 @@ class DispatchCoreService implements angular.IServiceProvider {
 
         return response.data;
     }
-    
+
     async autocompleteSearch(
         searchTerm: string,
         url: string
@@ -1054,7 +1054,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             return [];
         }
     }
-    
+
     async getDeliveryJourney(jobId: number): Promise<DeliveryJourneyViewModel[]> {
         const response = await this.$http.get<DeliveryJourneyViewModel[]>('/job/GetDeliveryJourney', {
             params: {
@@ -1146,13 +1146,13 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async addEvent(eventData: JobEventData): Promise<void> {
         await this.$http.post('job/addEvent', eventData);
-    }    
-    
+    }
+
     async bulkUpdateReadStatus(jobIds: number[]): Promise<void> {
         const data: IBulkUpdateRequest = {
             jobIds
         };
-        
+
         await this.$http.post('job/BulkUpdateReadStatus', data);
     }
 }

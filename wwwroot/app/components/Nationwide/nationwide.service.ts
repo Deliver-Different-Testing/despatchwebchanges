@@ -1,12 +1,12 @@
 import {IAgent, IAgentInfoDialog, IDispatchJob, JobQueryParams, Suggestion} from "../../interfaces/job.interface";
 import {AssignFlightToJobRequest, IFlightViewModel} from "./nationwide.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
-import dayjs from "dayjs";
 import {
     AddAgentRecoveryRequest,
     RecoveryAgentJobViewModel, RemoveAgentRecoveryRequest, UpdateAgentRecoveryRequest
 } from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.interfaces";
 import IFlightCargoProcessing from "../dialogs/flight-agent-conformation-dialog/interfaces/IFlightCargoProcessing";
+import {formatFullDate} from "../../functions/formatDates";
 
 class NationwideService implements angular.IServiceProvider {
     static $inject = [
@@ -46,8 +46,8 @@ class NationwideService implements angular.IServiceProvider {
             params: {
                 order: queryParams.order ?? defaultParams.order,
                 orderDirection: queryParams.orderDirection ?? defaultParams.orderDirection,
-                startDate: queryParams.startDate ? dayjs(queryParams.startDate).format() : null,
-                dateCutoff: queryParams.dateCutoff ? dayjs(queryParams.dateCutoff).format() : null,
+                startDate: queryParams.startDate ? formatFullDate(queryParams.startDate) : null,
+                dateCutoff: queryParams.dateCutoff ? formatFullDate(queryParams.dateCutoff) : null,
                 isInternal: isInternal,
                 cid: ContactID,
                 clientIds: selectedClients,
@@ -82,7 +82,7 @@ class NationwideService implements angular.IServiceProvider {
         lastDepartureTime: Date | null;
     }> {
         const startTime = performance.now();
-        const formattedDate = dayjs(departureDate).format('YYYY-MM-DDTHH:mm:ss');
+        const formattedDate = formatFullDate(departureDate);
 
         // Create a cache key based on the parameters
         const cacheKey = `flights_${jobId}_${formattedDate}_${airlineId || 'all'}_${departureAirportId || 'default'}`;
@@ -259,17 +259,14 @@ class NationwideService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getEnabledWebhookEvents(): Promise<Suggestion[]> {
-        const response = await this.$http.get<Suggestion[]>("nationwideJob/GetEnabledWebhookEvents");
-        return response.data;
-    }
-
     async calculateCargoReadyTime(jobId: number, carrierFsCode: string, arrivalTime: Date): Promise<IFlightCargoProcessing> {
+        const formattedArrivalTime =  formatFullDate(arrivalTime);
+        console.log('formattedArrivalTime', formattedArrivalTime);
         const response = await this.$http.get<IFlightCargoProcessing>("nationwideJob/CalculateCargoReadyTime", {
             params: {
                 jobId,
                 carrierFsCode,
-                arrivalTime
+                arrivalTime: formattedArrivalTime
             }
         });
         return response.data;

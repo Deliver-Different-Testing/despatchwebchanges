@@ -69,13 +69,16 @@ public class FlightCargoProcessingModel
     private void CalculatePackageReadyTime()
     {
         ArrivalWithProcessingTime = ArrivalTime.AddMinutes(ProcessingTimeMins);
-
+       
+        var arrivalTime = ArrivalWithProcessingTime.TimeOfDay;
+        var openingTime = CargoOpeningTime.TimeOfDay;
+        var closingTime = CargoClosingTime.TimeOfDay;
+        
         // Set the delivery window flag if DeliverByTime is provided
         if (DeliverByTime.HasValue)
         {
             var deliveryTime = DeliverByTime.Value.TimeOfDay;
-            var openingTime = CargoOpeningTime.TimeOfDay;
-            var closingTime = CargoClosingTime.TimeOfDay;
+           
             
             IsDeliveryTimeWithinCargoWindow = deliveryTime >= openingTime && 
                                             deliveryTime <= closingTime;
@@ -85,14 +88,15 @@ public class FlightCargoProcessingModel
             IsDeliveryTimeWithinCargoWindow = null;
         }
 
-        if (ArrivalWithProcessingTime >= CargoOpeningTime && ArrivalWithProcessingTime <= CargoClosingTime)
+        if (arrivalTime >= openingTime && arrivalTime <= closingTime)
         {
             PackageReadyTime = ArrivalWithProcessingTime;
         }
         else
         {
-            PackageReadyTime = ArrivalWithProcessingTime < CargoOpeningTime ? CargoOpeningTime :
-                CargoOpeningTime.AddDays(1);
+            PackageReadyTime = arrivalTime < openingTime ? 
+                ArrivalWithProcessingTime.Date.Add(openingTime) :
+                ArrivalWithProcessingTime.Date.AddDays(1).Add(openingTime);
         }
     }
 

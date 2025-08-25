@@ -467,20 +467,6 @@ public class NationwideJobController(
         }
     }
 
-    public async Task<IActionResult> GetEnabledWebhookEvents()
-    {
-        try
-        {
-            var webhookEvents = await repository.GetWebhookEventsAsListAsync();
-            return Json(webhookEvents);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "An error occured getting the active webhook alerts");
-            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
-        }
-    }
-
     public async Task<IActionResult> CalculateCargoReadyTime(int jobId, string carrierFsCode, DateTime arrivalTime)
     {
         try
