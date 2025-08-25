@@ -8,13 +8,10 @@ import NationwideService from "../../Nationwide/nationwide.service";
 import {AvailableTime, CargoIndicator, CargoStatus} from "./interfaces/ICargoStatus";
 import IFlightCargoProcessing from "./interfaces/IFlightCargoProcessing";
 import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
 import duration from "dayjs/plugin/duration";
 import ToastrService from "../../../services/toastr.service";
+import {formatMins} from "../../../functions/formatDates";
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
 dayjs.extend(duration);
 
 class FlightAgentConformationDialogController extends BaseController {
@@ -38,7 +35,6 @@ class FlightAgentConformationDialogController extends BaseController {
     dgClassName?: string;
     showIncludeStopJobs: boolean = false;
     assignToStopJobs: boolean = false;
-    enabledAlerts?: Suggestion[];
     loadingAlerts: boolean = false;
 
     // Enhanced properties
@@ -100,11 +96,6 @@ class FlightAgentConformationDialogController extends BaseController {
 
         // Configure stop jobs
         this.showIncludeStopJobs = (this.stopJobCount !== undefined && this.stopJobCount > 0);
-
-        // Load flight alerts if this is a flight assignment
-        if (this.flight) {
-            this.getEnabledAlertEvents();
-        }
 
         // Set dangerous goods class name
         if (this.dgClass !== undefined) {
@@ -296,8 +287,8 @@ class FlightAgentConformationDialogController extends BaseController {
         if (!this.cargoProcessing || !this.cargoStatus) return;
 
         // Use dayjs for consistent time formatting
-        const openTime = dayjs(this.cargoProcessing.cargoOpeningTime).format('HH:mm');
-        const closeTime = dayjs(this.cargoProcessing.cargoClosingTime).format('HH:mm');
+        const openTime = formatMins(this.cargoProcessing.cargoOpeningTime);
+        const closeTime = formatMins(this.cargoProcessing.cargoClosingTime);
         this.cargoStatus.hours = `${openTime} - ${closeTime}`;
 
         console.log('Updated cargo hours display using dayjs:', this.cargoStatus.hours);
@@ -360,15 +351,10 @@ class FlightAgentConformationDialogController extends BaseController {
             cargoClosingTime: this.cargoProcessing.cargoClosingTime
         });
 
-        // Use dayjs for reliable time comparison
-        const packageReady = dayjs(this.packageReadyTime);
-        const cargoOpening = dayjs(this.cargoProcessing.cargoOpeningTime);
-        const cargoClosing = dayjs(this.cargoProcessing.cargoClosingTime);
-
         // Compare just the time portions (HH:mm)
-        const packageTime = packageReady.format('HH:mm');
-        const openingTime = cargoOpening.format('HH:mm');
-        const closingTime = cargoClosing.format('HH:mm');
+        const packageTime = formatMins(this.packageReadyTime);
+        const openingTime = formatMins(this.cargoProcessing.cargoOpeningTime);
+        const closingTime = formatMins(this.cargoProcessing.cargoClosingTime);
 
         console.log('Time comparison:', {
             packageTime,
@@ -379,10 +365,7 @@ class FlightAgentConformationDialogController extends BaseController {
 
         return packageTime >= openingTime && packageTime <= closingTime;
     }
-
-    /**
-     * Update cargo status based on package ready time and backend data
-     */
+    
     private updateCargoStatus(isWithinCargoHours: boolean, packageTime: Date): void {
         if (!this.cargoStatus) return;
 
@@ -418,10 +401,7 @@ class FlightAgentConformationDialogController extends BaseController {
             this.setupWarningCard(packageTime);
         }
     }
-
-    /**
-     * Setup warning card for packages ready outside cargo hours
-     */
+    
     private setupWarningCard(packageTime: Date): void {
         if (!this.cargoProcessing) return;
 
@@ -454,9 +434,6 @@ class FlightAgentConformationDialogController extends BaseController {
             .millisecond(0);
     }
 
-    /**
-     * Evaluate delivery scenario and update available time using dayjs
-     */
     private evaluateDeliveryScenario(): void {
         console.log('Evaluating delivery scenario...');
 
@@ -546,10 +523,7 @@ class FlightAgentConformationDialogController extends BaseController {
 
         console.log('Available time updated to:', this.availableTime);
     }
-
-    /**
-     * Update scenario description text using dayjs for time handling
-     */
+    
     private updateScenarioDescription(isWithinCargoHours: boolean): void {
         if (this.isCalculatingTimes) {
             this.currentScenarioDescription = 'Calculating cargo processing times...';
@@ -574,10 +548,7 @@ class FlightAgentConformationDialogController extends BaseController {
 
         console.log('Updated scenario description using dayjs:', this.currentScenarioDescription);
     }
-
-    /**
-     * Debug method to log current state
-     */
+    
     debugCurrentState(): void {
         console.log('=== DEBUG CURRENT STATE ===');
         console.log('cargoStatus:', this.cargoStatus);
@@ -590,27 +561,18 @@ class FlightAgentConformationDialogController extends BaseController {
         console.log('showWarning:', this.showWarning);
         console.log('=== END DEBUG ===');
     }
-
-    /**
-     * Called when any time input changes
-     */
+    
     onTimeChange(): void {
         console.log('onTimeChange called');
         this.evaluateCurrentScenario();
         this.debugCurrentState();
     }
-
-    /**
-     * Toggle edit mode for package time
-     */
+    
     editPackageTime(): void {
         this.packageTimeEditEnabled = !this.packageTimeEditEnabled;
         this.applyScope();
     }
-
-    /**
-     * Set or edit delivery time
-     */
+    
     setDeliveryTime(): void {
         if (!this.deliveryByTime && this.packageReadyTime) {
             // Set a default delivery time (4 hours after package ready) using dayjs
@@ -620,19 +582,17 @@ class FlightAgentConformationDialogController extends BaseController {
                 this.evaluateCurrentScenario();
             }
         }
+        
         this.applyScope();
     }
-
-    /**
-     * Set package ready time to next morning at cargo opening time (using backend data)
-     */
+    
     setNextMorning(): void {
         if (!this.packageReadyTime || !this.cargoProcessing) return;
 
         const packageTime = dayjs(this.packageReadyTime);
         if (!packageTime.isValid()) return;
 
-        // Calculate next morning using helper method with dayjs
+        // Calculate next morning using the helper method with dayjs
         const nextMorning = this.calculateNextMorningTime(packageTime);
         this.packageReadyTime = nextMorning.toDate();
 
@@ -648,40 +608,14 @@ class FlightAgentConformationDialogController extends BaseController {
         this.evaluateCurrentScenario();
         this.applyScope();
     }
-
-    /**
-     * Add baggage carousel pickup instructions
-     */
+    
     setBaggagePickup(): void {
         this.deliveryNotes = 'COLLECT FROM BAGGAGE CAROUSEL - Package available after cargo hours. ' +
             'Check baggage claim area for collection. Contact ground services if assistance needed.';
         this.showWarning = false;
         this.applyScope();
     }
-
-    /**
-     * Get enabled alert events from service
-     */
-    getEnabledAlertEvents(): void {
-        this.loadingAlerts = true;
-
-        this.nationwideService.getEnabledWebhookEvents()
-            .then((alerts: Suggestion[]) => {
-                this.enabledAlerts = alerts;
-            })
-            .catch((error: any) => {
-                console.warn('Failed to load webhook events:', error);
-                this.enabledAlerts = [];
-            })
-            .finally(() => {
-                this.loadingAlerts = false;
-                this.applyScope();
-            });
-    }
-
-    /**
-     * Confirm the assignment with enhanced data
-     */
+    
     confirm(): void {
         const response: FlightAgentConfirmationDialogResult = {
             awb: this.awb,
@@ -708,10 +642,7 @@ class FlightAgentConformationDialogController extends BaseController {
 
         this.$mdDialog.hide(response);
     }
-
-    /**
-     * Cancel the dialog
-     */
+    
     cancel(): void {
         this.$mdDialog.cancel();
     }

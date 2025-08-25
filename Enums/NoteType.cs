@@ -6,5 +6,7 @@ public enum NoteType
     ClientNote = 2,
     FlightUpdate = 3,
     AgentUpdate = 4,
-    ConsignmentNote = 5
+    ConsignmentNote = 5,
+    PickupNotes = 9,
+    DeliveryNotes = 10
 }

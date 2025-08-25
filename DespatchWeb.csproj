@@ -419,6 +419,7 @@
     <TypeScriptCompile Include="wwwroot\app\enums\message-delivery-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\countSubJobs.ts" />
+    <TypeScriptCompile Include="wwwroot\app\functions\formatDates.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\getDangerousGoodsClassName.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\getJobTableRowClass.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\greetUser.ts" />

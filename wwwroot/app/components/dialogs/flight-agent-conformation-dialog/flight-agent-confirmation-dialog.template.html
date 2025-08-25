@@ -1,7 +1,6 @@
 <md-dialog
         aria-label="Assignment Dialog"
-        class="flight-agent-confirmation-dialog"
-        style="width: 70%! important;">
+        class="flight-agent-confirmation-dialog">
     <form ng-cloak>
         <md-toolbar class="md-hue-1">
             <div class="md-toolbar-tools">
@@ -15,12 +14,13 @@
                     airplane_ticket
                 </md-icon>
                 <h2 class="md-title">{{::ctrl.dialogTitle}}</h2>
-                <span class="md-subhead" ng-if="ctrl.flight">
-                        • {{::ctrl.departureAirport}} → {{::ctrl.arrivalAirport}}
+                <span style="margin-left: 5px;" class="md-subhead" ng-if="ctrl.flight">
+                        • {{::ctrl.departureAirport}} → {{::ctrl.arrivalAirport}} • 
                     </span>
                 <span flex></span>
                 <md-button class="md-icon-button" ng-click="ctrl.cancel()" aria-label="Close dialog">
                     <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+                    <md-tooltip md-direction="bottom">Close</md-tooltip>
                 </md-button>
             </div>
         </md-toolbar>
@@ -58,7 +58,8 @@
                         <div class="flight-number-badge">{{::ctrl.flightNumber}}</div>
                         <div class="route-line"></div>
                         <div class="route-arrow">
-                            <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
+                            <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">flight_takeoff
+                            </md-icon>
                         </div>
                     </div>
 
@@ -97,7 +98,9 @@
                             <div class="metric-value" ng-class="ctrl.cargoStatus ? ctrl.cargoStatus.class : 'loading'">
                                 {{ctrl.cargoStatus ? ctrl.cargoStatus.hours : 'Loading...'}}
                             </div>
-                            <div class="metric-description">{{ctrl.cargoStatus ? ctrl.cargoStatus.text : 'Loading cargo information...'}}</div>
+                            <div class="metric-description">
+                                {{ctrl.cargoStatus ? ctrl.cargoStatus.text : 'Loading cargo information...'}}
+                            </div>
                         </div>
                     </div>
 
@@ -144,7 +147,8 @@
                                     </md-icon>
                                 </md-button>
                             </div>
-                            <div class="status-indicator" ng-class="ctrl.cargoIndicator ? ctrl.cargoIndicator.class : 'loading'">
+                            <div class="status-indicator"
+                                 ng-class="ctrl.cargoIndicator ? ctrl.cargoIndicator.class : 'loading'">
                                 <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">
                                     {{ctrl.cargoIndicator ? ctrl.cargoIndicator.icon : 'schedule'}}
                                 </md-icon>
@@ -156,9 +160,11 @@
 
                 <div class="delivery-section">
                     <div class="delivery-grid">
-                        <div class="metric-card delivery-time editable-card" ng-class="{'empty-state': !ctrl.deliveryByTime}">
+                        <div class="metric-card delivery-time editable-card"
+                             ng-class="{'empty-state': !ctrl.deliveryByTime}">
                             <div class="metric-header">
-                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">local_shipping</md-icon>
+                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">local_shipping
+                                </md-icon>
                                 <span class="metric-label">Deliver By</span>
                             </div>
                             <div class="metric-content">
@@ -189,17 +195,21 @@
 
                         <div class="metric-card available-time" ng-class="{'empty-state': !ctrl.deliveryByTime}">
                             <div class="metric-header">
-                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">hourglass_empty</md-icon>
+                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">hourglass_empty
+                                </md-icon>
                                 <span class="metric-label">Available Time</span>
                             </div>
                             <div class="metric-content">
-                                <div class="metric-value large" ng-class="ctrl.availableTime ? ctrl.availableTime.class : 'loading'">
+                                <div class="metric-value large"
+                                     ng-class="ctrl.availableTime ? ctrl.availableTime.class : 'loading'">
                                     <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">
                                         {{ctrl.availableTime ? ctrl.availableTime.icon : 'schedule'}}
                                     </md-icon>
                                     <span>{{ctrl.availableTime ? ctrl.availableTime.text : 'Loading...'}}</span>
                                 </div>
-                                <div class="metric-description">{{ctrl.availableTime ? ctrl.availableTime.subtext : 'Calculating times...'}}</div>
+                                <div class="metric-description">
+                                    {{ctrl.availableTime ? ctrl.availableTime.subtext : 'Calculating times...'}}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -267,55 +277,6 @@
                 </div>
             </div>
 
-            <!-- Alerts and Dangerous Goods -->
-            <div class="alerts-section" ng-if="ctrl.flight || ctrl.dgClassName">
-                <div class="alerts-grid">
-                    <!-- Flight Alerts -->
-                    <div class="alert-card flight-alerts" ng-if="ctrl.flight">
-                        <div class="alert-header">
-                            <div class="alert-icon-wrapper">
-                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">notifications_active</md-icon>
-                            </div>
-                            <div class="alert-content">
-                                <h4 class="alert-title">Flight Alerts</h4>
-                                <p class="alert-subtitle">Active notification events</p>
-                            </div>
-                        </div>
-                        <div class="alert-body">
-                            <div class="alert-chips" ng-if="ctrl.enabledAlerts && ctrl.enabledAlerts.length > 0">
-                                <div class="chip" ng-repeat="alert in ctrl.enabledAlerts track by alert.id">
-                                    <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">check_circle</md-icon>
-                                    <span>{{alert.text}}</span>
-                                </div>
-                            </div>
-                            <div class="empty-state" ng-if="!ctrl.loadingAlerts && (!ctrl.enabledAlerts || ctrl.enabledAlerts.length === 0)">
-                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">notifications_off</md-icon>
-                                <span>No alerts configured</span>
-                            </div>
-                            <div class="loading-state" ng-if="ctrl.loadingAlerts">
-                                <md-progress-circular md-mode="indeterminate" md-diameter="24"></md-progress-circular>
-                                <span>Loading alerts...</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Dangerous Goods -->
-                    <div class="alert-card dangerous-goods" ng-if="ctrl.dgClassName">
-                        <div class="alert-header">
-                            <div class="alert-icon-wrapper danger">
-                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">dangerous</md-icon>
-                            </div>
-                            <div class="alert-content">
-                                <h4 class="alert-title">Dangerous Goods</h4>
-                                <p class="alert-subtitle">
-                                    Class: <span class="danger-class">{{::ctrl.dgClassName}}</span>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Form Sections -->
             <div class="form-section">
                 <div class="form-grid">
@@ -331,10 +292,10 @@
                             <md-input-container class="md-block">
                                 <label for="deliveryNotes">Delivery Notes</label>
                                 <textarea id="deliveryNotes"
-                                          md-maxlength="300"
+                                          md-maxlength="200"
                                           ng-model="ctrl.deliveryNotes"
                                           placeholder="Add delivery instructions for courier/agent collecting the package..."
-                                          rows="4"></textarea>
+                                          rows="1"></textarea>
                             </md-input-container>
                         </div>
                     </div>
@@ -369,6 +330,26 @@
                 </div>
             </div>
 
+            <!-- Alerts and Dangerous Goods -->
+            <div class="alerts-section" ng-if="ctrl.flight || ctrl.dgClassName">
+                <div class="alerts-grid">
+                    <!-- Dangerous Goods -->
+                    <div class="alert-card dangerous-goods" ng-if="ctrl.dgClassName">
+                        <div class="alert-header">
+                            <div class="alert-icon-wrapper danger">
+                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">dangerous</md-icon>
+                            </div>
+                            <div class="alert-content">
+                                <h4 class="alert-title">Dangerous Goods</h4>
+                                <p class="alert-subtitle">
+                                    Class: <span class="danger-class">{{::ctrl.dgClassName}}</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Confirmation Message -->
             <div class="confirmation-section">
                 <div class="confirmation-card">
@@ -382,7 +363,7 @@
             <md-button ng-click="ctrl.cancel()" class="cancel-btn">
                 Cancel
             </md-button>
-            <md-button ng-click="ctrl.confirm()" class="md-raised md-primary confirm-btn">
+            <md-button ng-click="ctrl.confirm()" class="md-raised md-primary">
                 <md-icon md-font-set="material-symbols-outlined">check</md-icon>
                 Confirm Assignment
             </md-button>

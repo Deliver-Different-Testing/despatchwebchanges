@@ -1,9 +1,5 @@
 import { AppConfig } from "./interfaces/app-config.interface";
 
-/**
- * Professional Material Design theme configuration
- * Manages color palettes and theme setup for Angular Material components
- */
 class ThemeConfig {
     private readonly isUsCustomer: boolean;
 

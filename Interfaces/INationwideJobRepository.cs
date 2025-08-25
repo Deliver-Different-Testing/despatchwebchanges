@@ -19,7 +19,7 @@ public interface INationwideJobRepository
 
     Task AddJobNationwideAsync(AssignFlightToJobRequest requestData, AddFlightToJobDto flights,
         List<string> webhookIds);
-    
+
     Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId);
 
     Task<List<AgentViewModel>> GetAgentsAsync(int jobId);
@@ -56,7 +56,9 @@ public interface INationwideJobRepository
     Task RemoveRecoveryAgentAsync(int recoveryId);
     Task<bool> CanAssignAgentToJobAsync(int agentJobId);
     Task<string> GetWebhookEventsAsStringAsync();
-    Task<List<Suggestion>> GetWebhookEventsAsListAsync();
-  Task<FlightCargoProcessingModel> CalculateCargoReadyTimeAsync(int jobId, string carrierFsCode, DateTime flightArrivalTime);
+
+    Task<FlightCargoProcessingModel> CalculateCargoReadyTimeAsync(int jobId, string carrierFsCode,
+        DateTime flightArrivalTime);
+
     Task<List<Suggestion>> GetAllActiveAirportsAsync();
 }
