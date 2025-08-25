@@ -320,6 +320,7 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\auto-complete-dialog\auto-complete-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-conformation-dialog.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\interfaces\ICargoStatus.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\interfaces\IFlightAgentConfirmationDialogLocals.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\interfaces\IFlightCargoProcessing.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.component.ts" />

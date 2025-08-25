@@ -78,7 +78,7 @@ class NationwideControl extends BaseController {
     readonly nationwidePageId: number = AppPages.Domestic;
 
     private readonly refreshDurationIntervalKey: string = `refreshInterval-${AppPages.Domestic}`;
-    
+
     readonly isUsCustomer: boolean = false;
     private tasksLoadingInBackground: boolean = false;
     greeting: string;
@@ -1313,7 +1313,9 @@ class NationwideControl extends BaseController {
                 flightNumber: flight.flightNumber,
                 departureDate: flight.departureTime,
                 flightSegments: flight.flightSegments,
-                overrideDeliverByTime: result.overrideDeliverByTime ?? false
+                packageReadyTime: result.packageReadyTime,
+                packageDeliverByTime: result.packageDeliverByTime,
+                packageDeliveryNotes: result.packageDeliveryNotes
             };
 
             // Pass the full flight data including segments to the service

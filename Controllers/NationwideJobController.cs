@@ -156,15 +156,14 @@ public class NationwideJobController(
             var webhookIds = await CreateWebhooks(flight);
 
             // Save job assignment
-            await repository.AddJobNationwideAsync(request.JobId, flight, webhookIds, request.FromAirportId,
-                request.ToAirportId);
+            await repository.AddJobNationwideAsync(request, flight, webhookIds);
 
             return Ok();
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Unexpected error in AssignFlightToJob");
-           return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -241,7 +240,7 @@ public class NationwideJobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error retrieving agents for JobId: {JobId}", jobId);
-           return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -480,32 +479,18 @@ public class NationwideJobController(
             Log.Error(e, "An error occured getting the active webhook alerts");
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
-    }  
-    
-    public async Task<IActionResult> GetDeliveryByTimeForJob(int jobId)
-    {
-        try
-        {
-            var deliverByTime = await repository.GetDeliverByTimeByJobIdAsync(jobId);
-            return Json(deliverByTime);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "An error occured getting the DeliverByTime for job {JobId}", jobId);
-            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
-        }
     }
-    
-      public async Task<IActionResult> CalculateCargoReadyTime(int airportId, string flightNumber, DateTime arrivalTime)
+
+    public async Task<IActionResult> CalculateCargoReadyTime(int jobId, string carrierFsCode, DateTime arrivalTime)
     {
         try
         {
-            var cargoReadyTime = await repository.CalculateCargoReadyTimeAsync(airportId, flightNumber, arrivalTime);
+            var cargoReadyTime = await repository.CalculateCargoReadyTimeAsync(jobId, carrierFsCode, arrivalTime);
             return Json(cargoReadyTime);
         }
         catch (Exception e)
         {
-            Log.Error(e, "An error occured calculating processing time for airport {AirportId}", airportId);
+            Log.Error(e, "An error occured calculating processing time for airport {AirportId}", jobId);
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }

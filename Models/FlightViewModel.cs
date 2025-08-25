@@ -20,11 +20,6 @@ public class FlightViewModel
     public bool IsCodeShare { get; set; }
     public decimal Amount { get; set; }
     public string CodeShareAirline { get; set; }
-    public int AirlineId {get;set;}
-
-    public string DepartureTimeZone { get; set; }
-    public string ArrivalTimeZone { get; set; }
-
     public bool IsMultiSegment { get; set; }
     public int ElapsedTime { get; set; }
     public int Score { get; set; }
@@ -36,11 +31,13 @@ public class FlightSegmentViewModel: ScheduledFlight
 {
     public int SegmentOrder { get; set; }
     public int StopsInSegment { get; set; }
+    public int DepartureAirportId { get; set; }
     public string DepartureAirportName { get; set; }
     public string DepartureAirportCity { get; set; }
     public string DepartureAirportCountry { get; set; }
     public string DepartureAirportTimeZone { get; set; }
     public int DepartureAirportTimeZoneId { get; set; }
+    public int ArrivalAirportId { get; set; }
     public string ArrivalAirportName { get; set; }
     public string ArrivalAirportCity { get; set; }
     public string ArrivalAirportCountry { get; set; }

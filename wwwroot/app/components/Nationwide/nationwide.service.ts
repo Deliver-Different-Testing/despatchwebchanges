@@ -6,6 +6,7 @@ import {
     AddAgentRecoveryRequest,
     RecoveryAgentJobViewModel, RemoveAgentRecoveryRequest, UpdateAgentRecoveryRequest
 } from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.interfaces";
+import IFlightCargoProcessing from "../dialogs/flight-agent-conformation-dialog/interfaces/IFlightCargoProcessing";
 
 class NationwideService implements angular.IServiceProvider {
     static $inject = [
@@ -263,21 +264,12 @@ class NationwideService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async calculateCargoReadyTime(airportId: number, flightNumber: string, arrivalTime: Date): Promise<IFlightCargoProcessing> {
+    async calculateCargoReadyTime(jobId: number, carrierFsCode: string, arrivalTime: Date): Promise<IFlightCargoProcessing> {
         const response = await this.$http.get<IFlightCargoProcessing>("nationwideJob/CalculateCargoReadyTime", {
             params: {
-                airportId,
-                flightNumber,
+                jobId,
+                carrierFsCode,
                 arrivalTime
-            }
-        });
-        return response.data;
-    }
-
-    async getDeliveryByTimeForJob(jobId: number): Promise<Date | undefined> {
-        const response = await this.$http.get<Date | undefined>("nationwideJob/GetDeliveryByTimeForJob", {
-            params: {
-                jobId
             }
         });
         return response.data;

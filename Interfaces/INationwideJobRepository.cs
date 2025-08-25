@@ -17,8 +17,8 @@ public interface INationwideJobRepository
     Task<List<DispatchJobViewModel>> NationwideJobListAsync(JobQueryParams queryParams, bool isInternal,
         bool isUsTenant, string clientIds, NationwideWidget windowPane, List<int> selectedViewIds);
 
-    Task AddJobNationwideAsync(int jobId, AddFlightToJobDto flights,
-        List<string> webhookIds, int? fromAirportId, int? toAirportId);
+    Task AddJobNationwideAsync(AssignFlightToJobRequest requestData, AddFlightToJobDto flights,
+        List<string> webhookIds);
     
     Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId);
 
@@ -27,7 +27,7 @@ public interface INationwideJobRepository
     Task AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false);
     Task<List<Suggestion>> GetActiveAirlineOptionsAsync();
     Task<List<string>> GetActiveAirlineCodesAsync();
-    Task<string> GetAirlineCodeById(int airlineId);
+    Task<string> GetAirlineCodeByIdAsync(int airlineId);
     Task SendAgentRequestMessageAsync(int agentId, int jobId);
     Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true);
     Task<string> GetSingleAirportCodeByIdAsync(int airportId);
@@ -57,11 +57,6 @@ public interface INationwideJobRepository
     Task<bool> CanAssignAgentToJobAsync(int agentJobId);
     Task<string> GetWebhookEventsAsStringAsync();
     Task<List<Suggestion>> GetWebhookEventsAsListAsync();
-    Task<DateTime?> GetDeliverByTimeByJobIdAsync(int jobId);
-
-    Task<FlightCargoProcessingModel> CalculateCargoReadyTimeAsync(int airportId,
-        string flightNumber, DateTime flightArrivalTime);
-
-    Task<(string fromAirportTimeZone, string toAirportTimeZone)> GetAirportTimeZonesByCodesAsync(string toAirportCode,
-        string fromAirportCode);
+  Task<FlightCargoProcessingModel> CalculateCargoReadyTimeAsync(int jobId, string carrierFsCode, DateTime flightArrivalTime);
+    Task<List<Suggestion>> GetAllActiveAirportsAsync();
 }
