@@ -618,12 +618,12 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(5)
                 .IsUnicode(false)
                 .HasColumnName("ucclCode");
+            entity.Property(e => e.UcclId).HasColumnName("ucclId");
             entity.Property(e => e.UcjbAmount)
                 .HasColumnType("money")
                 .HasColumnName("ucjbAmount");
             entity.Property(e => e.UcjbAttention).HasColumnName("ucjbAttention");
             entity.Property(e => e.UcjbCbd).HasColumnName("ucjbCBD");
-            entity.Property(e => e.UcjbClientId).HasColumnName("ucjbClientID");
             entity.Property(e => e.UcjbClientRefa)
                 .HasMaxLength(20)
                 .IsUnicode(false)
@@ -682,9 +682,6 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("ucjbPODName");
             entity.Property(e => e.UcjbQty).HasColumnName("ucjbQty");
             entity.Property(e => e.UcjbReturn).HasColumnName("ucjbReturn");
-            entity.Property(e => e.UcjbSize).HasColumnName("ucjbSize");
-            entity.Property(e => e.UcjbSpeed).HasColumnName("ucjbSpeed");
-            entity.Property(e => e.UcjbStatus).HasColumnName("ucjbStatus");
             entity.Property(e => e.UcjbTime)
                 .HasColumnType("datetime")
                 .HasColumnName("ucjbTime");
@@ -704,6 +701,8 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(10)
                 .IsUnicode(false)
                 .HasColumnName("ucjsCode");
+            entity.Property(e => e.UcjsId).HasColumnName("ucjsId");
+            entity.Property(e => e.UcjtId).HasColumnName("ucjtId");
             entity.Property(e => e.Udstatus)
                 .HasMaxLength(50)
                 .HasColumnName("UDStatus");
@@ -3130,6 +3129,7 @@ public partial class DespatchContext : DbContext
             entity.ToTable("tblSMPPSettings");
 
             entity.Property(e => e.SettingId).HasColumnName("SettingID");
+            entity.Property(e => e.Active).HasDefaultValue(true);
             entity.Property(e => e.AgentEmailMessage).HasColumnType("ntext");
             entity.Property(e => e.AgentEmailReplyAddress).HasColumnType("ntext");
             entity.Property(e => e.AgentEmailReplyAddressName).HasColumnType("ntext");
