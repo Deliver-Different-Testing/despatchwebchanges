@@ -76,7 +76,7 @@ public class AddAgentRecoveryJobService(
                 ProofOfDelivery = null,
                 ProofOfDeliveryEmail = null,
                 ParentId = parentId,
-                JobRelationshipTypeId = 9,
+                JobRelationshipTypeId = (int)JobRelationshipTypes.SplitChild,
                 PickupFromContact = job.PickupFromContact,
                 PickupFromPhone = job.PickupFromPhone,
                 DeliverToContact = job.DeliverToContact,

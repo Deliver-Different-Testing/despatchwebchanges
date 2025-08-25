@@ -580,13 +580,20 @@ public class BaseJobRepository(
 
     public async Task UpdateJobReadStatusAsync(int jobId, bool hasBeenRead)
     {
-        var data = await Context.TucJobReadTrackers.FirstOrDefaultAsync(x => x.JobId == jobId);
         var staffId = infoService.GetStaffId();
         var currentTenantTime = infoService.GetCurrentTenantTime();
 
-        if (data is null)
+        var rowsAffected = await Context.TucJobReadTrackers
+            .Where(x => x.JobId == jobId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(x => x.HasBeenRead, hasBeenRead)
+                .SetProperty(x => x.ReadByStaffId, staffId)
+                .SetProperty(x => x.ReadTimestamp, currentTenantTime));
+
+        if (rowsAffected == 0)
         {
-            data = new TucJobReadTracker
+            // Record doesn't exist, create a new one
+            var data = new TucJobReadTracker
             {
                 JobId = jobId,
                 HasBeenRead = hasBeenRead,
@@ -594,16 +601,9 @@ public class BaseJobRepository(
                 ReadTimestamp = currentTenantTime
             };
 
-            await Context.TucJobReadTrackers.AddAsync(data);
+            await Context.AddAsync(data);
+            await Context.SaveChangesAsync();
         }
-        else
-        {
-            data.HasBeenRead = hasBeenRead;
-            data.ReadByStaffId = staffId;
-            data.ReadTimestamp = currentTenantTime;
-        }
-
-        await Context.SaveChangesAsync();
     }
 
     public async Task UpdateJobNoteAsync(int jobId, string note)
@@ -612,23 +612,17 @@ public class BaseJobRepository(
         {
             Log.Information("Starting note update for job {JobId}", jobId);
 
-            var job = await Context.TucJobs.Where(j => j.UcjbId == jobId).FirstOrDefaultAsync();
+            var rowsAffected = await Context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.UcjbNotes, note));
 
-            if (job == null)
+            if (rowsAffected == 0)
             {
                 Log.Warning("Job {JobId} not found", jobId);
                 throw new KeyNotFoundException($"Job with ID {jobId} not found");
             }
 
-            Log.Debug(
-                "Updating note for job {JobId}. Previous note length: {PreviousLength}",
-                jobId,
-                job.InternalNotes?.Length ?? 0
-            );
-
-            job.UcjbNotes = note;
-
-            await Context.SaveChangesAsync();
             Log.Information(
                 "Successfully updated note for job {JobId}. New note length: {NewLength}",
                 jobId,
@@ -935,7 +929,6 @@ public class BaseJobRepository(
                             },
                             Flight =
                                 j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
-                                || IsFlightJobNumber(j.UcjbNumber)
                         })
                         .ToList()
                 }
@@ -1148,18 +1141,13 @@ public class BaseJobRepository(
                 JobNumber = j.UcjbNumber,
                 JobStatus = j.UcjbStatus != null ? j.UcjbStatusNavigation.UcjsName : "New",
                 EstimatedDelivery =
-                    (
-                        j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
-                        || IsFlightJobNumber(j.UcjbNumber)
-                    )
+                    j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
                     && j.TucJobNationwides.Count != 0
                         ? j.TucJobNationwides.FirstOrDefault().UcnwEta.Value
                         : j
                             .UcjbDate.Date.Add(j.UcjbTime.Value.TimeOfDay)
                             .AddMinutes(j.UcjbSpeedNavigation.Minutes ?? 180),
-                IsFlightJob =
-                    j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
-                    || IsFlightJobNumber(j.UcjbNumber),
+                IsFlightJob = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight,
                 PickupLocation = new AddressViewModel
                 {
                     Latitude = j.PickUpLatitude ?? 0,
@@ -1203,7 +1191,6 @@ public class BaseJobRepository(
                     : null,
                 FlightInfo =
                     j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
-                    || IsFlightJobNumber(j.UcjbNumber)
                         ? j
                             .TucJobNationwides.Select(n => new AssignedFlight
                             {
@@ -1219,9 +1206,6 @@ public class BaseJobRepository(
 
         return jobs;
     }
-
-    private static bool IsFlightJobNumber(string input) =>
-        !string.IsNullOrEmpty(input) && input.EndsWith('2');
 
     public async Task UpdatePackagesForJobAsync(int jobId, List<ParcelDimensions> parcels)
     {
@@ -1380,12 +1364,9 @@ public class BaseJobRepository(
 
     public async Task DeleteNoteAsync(int noteId, CancellationToken cancellationToken = default)
     {
-        var note = await Context.TucNotes.FindAsync([noteId], cancellationToken);
-        if (note != null)
-        {
-            Context.TucNotes.Remove(note);
-            await Context.SaveChangesAsync(cancellationToken);
-        }
+        await Context.TucNotes
+            .Where(note => note.NoteId == noteId)
+            .ExecuteDeleteAsync(cancellationToken);
     }
 
     // Helper Methods
@@ -1840,12 +1821,12 @@ public class BaseJobRepository(
     {
         try
         {
-            var job = await Context.TucJobs.FindAsync(jobId);
-            ArgumentNullException.ThrowIfNull(job);
+            var rowsAffected = await Context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.UcjbAmount, rate));
 
-            // Update a job with a new rate
-            job.UcjbAmount = rate;
-            await Context.SaveChangesAsync();
+            if (rowsAffected == 0) throw new ArgumentException($"Job with ID {jobId} not found", nameof(jobId));
 
             // Record change in note
             await SaveNoteAsync(jobId, noteText);
@@ -1888,19 +1869,6 @@ public class BaseJobRepository(
         return result ?? 0m;
     }
 
-    public async Task<DateTime?> GetDeliverByTimeByJobIdAsync(int jobId)
-    {
-        var deliverByTime = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Where(j => j.Parent != null)
-            .SelectMany(j => j.Parent.InverseParent)
-            .OrderByDescending(tucJob => tucJob.UcjbId)
-            .Select(tucJob => tucJob.DeliverByTime)
-            .FirstOrDefaultAsync();
-
-        return deliverByTime;
-    }
-
     public async Task BulkUpdateReadStatusAsync(List<int> jobIds)
     {
         if (jobIds == null || jobIds.Count == 0) return;
@@ -1935,7 +1903,7 @@ public class BaseJobRepository(
                 ReadByStaffId = staffId
             });
 
-            Context.TucJobReadTrackers.AddRange(newTrackers);
+            Context.AddRange(newTrackers);
             await Context.SaveChangesAsync();
         }
     }

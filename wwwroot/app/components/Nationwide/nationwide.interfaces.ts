@@ -43,10 +43,12 @@ export interface FlightSegmentViewModel {
     departureAirportCity?: string;
     departureAirportCountry?: string;
     departureAirportTimeZone?: string;
+    departureAirportId?: number;
     arrivalAirportName?: string;
     arrivalAirportCity?: string;
     arrivalAirportCountry?: string;
     arrivalAirportTimeZone?: string;
+    arrivalAirportId?: number;
     aircraftName?: string;
     aircraftType?: string;
     airlineName?: string;
@@ -72,5 +74,7 @@ export interface AssignFlightToJobRequest {
     flightNumber: string;
     departureDate: Date;
     flightSegments: FlightSegmentViewModel[];
-    overrideDeliverByTime: boolean;
+    packageReadyTime?: Date;
+    packageDeliverByTime?: Date;
+    packageDeliveryNotes?: string;
 }

@@ -1988,7 +1988,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             UcjbPaged = false
         };
 
-        await Context.TucJobs.AddAsync(job);
+        await Context.AddAsync(job);
         await Context.SaveChangesAsync();
 
         return job.UcjbId;

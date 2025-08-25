@@ -2,6 +2,7 @@
 import {Suggestion} from "../../../../interfaces/job.interface";
 
 interface IFlightAgentConfirmationDialogLocals {
+    jobId: number;
     jobNumber: string;
     flight?: IFlightViewModel;
     agent?: Suggestion;

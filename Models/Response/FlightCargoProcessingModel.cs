@@ -8,6 +8,7 @@ public class FlightCargoProcessingModel
     private int _processingTimeMins;
     private DateTime _cargoOpeningTime;
     private DateTime _cargoClosingTime;
+    private DateTime? _deliverByTime;
 
     public DateTime ArrivalTime 
     { 
@@ -51,11 +52,38 @@ public class FlightCargoProcessingModel
         }
     }
 
+    public DateTime? DeliverByTime 
+    { 
+        get => _deliverByTime;
+        set 
+        {
+            _deliverByTime = value;
+            CalculatePackageReadyTime();
+        }
+    }
+
+    public bool? IsDeliveryTimeWithinCargoWindow { get; private set; }
+
     public DateTime PackageReadyTime { get; private set; }
 
     private void CalculatePackageReadyTime()
     {
         ArrivalWithProcessingTime = ArrivalTime.AddMinutes(ProcessingTimeMins);
+
+        // Set the delivery window flag if DeliverByTime is provided
+        if (DeliverByTime.HasValue)
+        {
+            var deliveryTime = DeliverByTime.Value.TimeOfDay;
+            var openingTime = CargoOpeningTime.TimeOfDay;
+            var closingTime = CargoClosingTime.TimeOfDay;
+            
+            IsDeliveryTimeWithinCargoWindow = deliveryTime >= openingTime && 
+                                            deliveryTime <= closingTime;
+        }
+        else
+        {
+            IsDeliveryTimeWithinCargoWindow = null;
+        }
 
         if (ArrivalWithProcessingTime >= CargoOpeningTime && ArrivalWithProcessingTime <= CargoClosingTime)
         {
@@ -69,12 +97,14 @@ public class FlightCargoProcessingModel
     }
 
     public FlightCargoProcessingModel(DateTime arrivalTime, int processingTimeMins, 
-                                       DateTime cargoOpeningTime, DateTime cargoClosingTime)
+                                       DateTime cargoOpeningTime, DateTime cargoClosingTime,
+                                       DateTime? deliverByTime = null)
     {
         _arrivalTime = arrivalTime;
         _processingTimeMins = processingTimeMins;
         _cargoOpeningTime = cargoOpeningTime;
         _cargoClosingTime = cargoClosingTime;
+        _deliverByTime = deliverByTime;
         CalculatePackageReadyTime();
     }
 }

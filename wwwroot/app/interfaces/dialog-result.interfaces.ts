@@ -19,4 +19,7 @@ export interface FlightAgentConfirmationDialogResult {
     awb?: string;
     shouldAssignToStopJobs?: boolean;
     overrideDeliverByTime?: boolean;
+    packageReadyTime?: Date;
+    packageDeliverByTime?: Date;
+    packageDeliveryNotes?: string;
 }

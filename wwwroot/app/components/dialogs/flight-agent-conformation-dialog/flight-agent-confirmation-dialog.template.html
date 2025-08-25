@@ -1,13 +1,23 @@
-<md-dialog aria-label="Assignment Dialog" class="md-whiteframe-24dp flight-agent-confirmation-dialog">
+<md-dialog
+        aria-label="Assignment Dialog"
+        class="flight-agent-confirmation-dialog"
+        style="width: 70%! important;">
     <form ng-cloak>
         <md-toolbar class="md-hue-1">
             <div class="md-toolbar-tools">
-                <md-icon ng-if="::ctrl.agent" class="popup-icon" md-font-set="material-symbols-outlined">assignment_ind
+                <md-icon class="popup-icon"
+                         md-font-set="material-symbols-outlined"
+                         ng-if="::ctrl.agent">assignment_ind
                 </md-icon>
-                <md-icon ng-if="::ctrl.flight" class="popup-icon" md-font-set="material-symbols-outlined">
+                <md-icon class="popup-icon"
+                         md-font-set="material-symbols-outlined"
+                         ng-if="::ctrl.flight">
                     airplane_ticket
                 </md-icon>
                 <h2 class="md-title">{{::ctrl.dialogTitle}}</h2>
+                <span class="md-subhead" ng-if="ctrl.flight">
+                        • {{::ctrl.departureAirport}} → {{::ctrl.arrivalAirport}}
+                    </span>
                 <span flex></span>
                 <md-button class="md-icon-button" ng-click="ctrl.cancel()" aria-label="Close dialog">
                     <md-icon md-font-set="material-symbols-outlined">close</md-icon>
@@ -16,141 +26,363 @@
         </md-toolbar>
 
         <md-dialog-content class="dialog-content">
-            <div class="content-section" ng-if="ctrl.flight">
-                <div class="assignment-header">
-                    <div class="assignment-icon-wrapper flight-icon">
-                        <md-icon md-font-set="material-symbols-outlined">flight</md-icon>
+
+            <!-- Flight Route Section -->
+            <div class="flight-route-section" ng-if="ctrl.flight">
+                <div class="section-header">
+                    <div class="section-icon-wrapper flight-icon">
+                        <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">flight</md-icon>
                     </div>
-                    <div class="assignment-text">
-                        <div class="assignment-title">Flight Assignment</div>
-                        <div class="assignment-description">
+                    <div class="section-header-content">
+                        <h3 class="section-title">Flight Assignment</h3>
+                        <p class="section-subtitle">
                             Assigning to Flight <span class="highlight-text">{{::ctrl.flight.flightNumber}}</span>
-                        </div>
+                        </p>
+                    </div>
+                    <div class="section-badge">
+                        <span class="badge-text">{{::ctrl.flight.status || 'ACTIVE'}}</span>
                     </div>
                 </div>
 
-                <div class="flight-route">
-                    <div class="airport-info">
-                        <div class="airport-code">{{::ctrl.flight.departureAirport}}</div>
+                <div class="flight-route-card">
+                    <div class="airport-info departure">
+                        <div class="airport-code">{{::ctrl.departureAirport}}</div>
                         <div class="airport-label">Departure</div>
+                        <div class="flight-details">
+                            <div class="flight-time">{{::ctrl.departureTime | momentFormat:'MM/DD HH:mm' }}</div>
+                            <div class="timezone">{{::ctrl.departureTimeZone | timezoneShort }}</div>
+                        </div>
                     </div>
-                    <div class="route-arrow">
-                        <md-icon md-font-set="material-symbols-outlined">arrow_forward</md-icon>
+
+                    <div class="flight-path">
+                        <div class="flight-number-badge">{{::ctrl.flightNumber}}</div>
+                        <div class="route-line"></div>
+                        <div class="route-arrow">
+                            <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
+                        </div>
                     </div>
-                    <div class="airport-info">
-                        <div class="airport-code">{{::ctrl.flight.arrivalAirport || ctrl.flight.departureAirport}}</div>
+
+                    <div class="airport-info arrival">
+                        <div class="airport-code">{{::ctrl.arrivalAirport}}</div>
                         <div class="airport-label">Arrival</div>
+                        <div class="flight-details">
+                            <div class="flight-time">{{::ctrl.arrivalTime | momentFormat:'MM/DD HH:mm' }}</div>
+                            <div class="timezone">{{::ctrl.arrivalTimeZone | timezoneShort }}</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="content-section" ng-if="ctrl.agent">
-                <div class="assignment-header">
-                    <div class="assignment-icon-wrapper agent-icon">
-                        <md-icon md-font-set="material-symbols-outlined">person</md-icon>
+            <!-- Processing Metrics -->
+            <div class="metrics-section" ng-if="ctrl.flight">
+                <div class="section-header">
+                    <div class="section-icon-wrapper processing-icon">
+                        <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">schedule</md-icon>
                     </div>
-                    <div class="assignment-text">
-                        <div class="assignment-title">Agent Assignment</div>
-                        <div class="assignment-description">
+                    <div class="section-header-content">
+                        <h3 class="section-title">Processing Information</h3>
+                        <p class="section-subtitle">Cargo facility and delivery timing details</p>
+                    </div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card cargo-hours">
+                        <div class="metric-header">
+                            <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">
+                                {{ctrl.cargoStatus ? ctrl.cargoStatus.icon : 'schedule'}}
+                            </md-icon>
+                            <span class="metric-label">Cargo Facility</span>
+                        </div>
+                        <div class="metric-content">
+                            <div class="metric-value" ng-class="ctrl.cargoStatus ? ctrl.cargoStatus.class : 'loading'">
+                                {{ctrl.cargoStatus ? ctrl.cargoStatus.hours : 'Loading...'}}
+                            </div>
+                            <div class="metric-description">{{ctrl.cargoStatus ? ctrl.cargoStatus.text : 'Loading cargo information...'}}</div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card processing-time">
+                        <div class="metric-header">
+                            <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">timer</md-icon>
+                            <span class="metric-label">Processing Time</span>
+                        </div>
+                        <div class="metric-content">
+                            <div class="metric-value">
+                                <span ng-if="ctrl.cargoProcessing">{{ctrl.cargoProcessing.processingTimeMins}} min</span>
+                                <span ng-if="!ctrl.cargoProcessing && !ctrl.isCalculatingTimes">Calculating...</span>
+                            </div>
+                            <div class="metric-description">{{::ctrl.arrivalAirport}} Standard</div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card package-time editable-card">
+                        <div class="metric-header">
+                            <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">inventory</md-icon>
+                            <span class="metric-label">Package Available</span>
+                        </div>
+                        <div class="metric-content">
+                            <div class="datetime-control">
+                                <input mdc-datetime-picker=""
+                                       date="true"
+                                       time="true"
+                                       type="text"
+                                       placeholder="YYYY-MM-DD HH:MM"
+                                       show-todays-date=""
+                                       minutes="true"
+                                       short-time="true"
+                                       edit-input="true"
+                                       show-icon="false"
+                                       ng-model="ctrl.packageReadyTime"
+                                       ng-change="ctrl.onTimeChange()"
+                                       ng-disabled="!ctrl.packageTimeEditEnabled"
+                                       class="datetime-input">
+                                <md-button class="datetime-action-btn"
+                                           ng-class="ctrl.packageTimeEditEnabled ? 'md-warn' : 'md-primary'"
+                                           ng-click="ctrl.editPackageTime()">
+                                    <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">
+                                        {{ctrl.packageTimeEditEnabled ? 'lock_open' : 'edit'}}
+                                    </md-icon>
+                                </md-button>
+                            </div>
+                            <div class="status-indicator" ng-class="ctrl.cargoIndicator ? ctrl.cargoIndicator.class : 'loading'">
+                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">
+                                    {{ctrl.cargoIndicator ? ctrl.cargoIndicator.icon : 'schedule'}}
+                                </md-icon>
+                                <span>{{ctrl.cargoIndicator ? ctrl.cargoIndicator.text : 'Loading...'}}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="delivery-section">
+                    <div class="delivery-grid">
+                        <div class="metric-card delivery-time editable-card" ng-class="{'empty-state': !ctrl.deliveryByTime}">
+                            <div class="metric-header">
+                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">local_shipping</md-icon>
+                                <span class="metric-label">Deliver By</span>
+                            </div>
+                            <div class="metric-content">
+                                <div class="datetime-control">
+                                    <input mdc-datetime-picker=""
+                                           date="true"
+                                           time="true"
+                                           type="text"
+                                           placeholder="Set delivery deadline"
+                                           show-todays-date=""
+                                           minutes="true"
+                                           short-time="true"
+                                           edit-input="true"
+                                           show-icon="false"
+                                           ng-model="ctrl.deliveryByTime"
+                                           ng-change="ctrl.onTimeChange()"
+                                           class="datetime-input">
+                                    <md-button class="datetime-action-btn"
+                                               ng-class="ctrl.deliveryByTime ? 'md-primary' : 'md-accent'"
+                                               ng-click="ctrl.setDeliveryTime()">
+                                        <md-icon md-font-set="material-symbols-outlined">
+                                            {{ctrl.deliveryByTime ? 'edit' : 'add_alarm'}}
+                                        </md-icon>
+                                    </md-button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card available-time" ng-class="{'empty-state': !ctrl.deliveryByTime}">
+                            <div class="metric-header">
+                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">hourglass_empty</md-icon>
+                                <span class="metric-label">Available Time</span>
+                            </div>
+                            <div class="metric-content">
+                                <div class="metric-value large" ng-class="ctrl.availableTime ? ctrl.availableTime.class : 'loading'">
+                                    <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">
+                                        {{ctrl.availableTime ? ctrl.availableTime.icon : 'schedule'}}
+                                    </md-icon>
+                                    <span>{{ctrl.availableTime ? ctrl.availableTime.text : 'Loading...'}}</span>
+                                </div>
+                                <div class="metric-description">{{ctrl.availableTime ? ctrl.availableTime.subtext : 'Calculating times...'}}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div class="loading-section" ng-if="ctrl.isCalculatingTimes">
+                <div class="loading-content">
+                    <md-progress-circular md-mode="indeterminate" md-diameter="32"></md-progress-circular>
+                    <div class="loading-text">
+                        <h4>Calculating Processing Times</h4>
+                        <p>Loading cargo facility information...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Warning Card -->
+            <div class="warning-section" ng-if="ctrl.showWarning">
+                <div class="warning-card" ng-class="ctrl.warningType || 'standard'">
+                    <div class="warning-header">
+                        <div class="warning-icon-wrapper">
+                            <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">warning</md-icon>
+                        </div>
+                        <div class="warning-content">
+                            <h4 class="warning-title">{{ctrl.warningTitle}}</h4>
+                            <p class="warning-message">{{ctrl.warningMessage}}</p>
+                        </div>
+                    </div>
+                    <div class="warning-actions">
+                        <md-button class="warning-btn primary-action" ng-click="ctrl.setNextMorning()">
+                            <div class="btn-content">
+                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">schedule</md-icon>
+                                <div class="btn-text">
+                                    <span class="btn-title">Set to Next Morning</span>
+                                    <span class="btn-subtitle">{{ctrl.nextMorningTime}}</span>
+                                </div>
+                            </div>
+                        </md-button>
+                        <md-button class="warning-btn secondary-action" ng-click="ctrl.setBaggagePickup()">
+                            <div class="btn-content">
+                                <md-icon md-font-set="material-symbols-outlined">luggage</md-icon>
+                                <div class="btn-text">
+                                    <span class="btn-title">Baggage Carousel</span>
+                                    <span class="btn-subtitle">Keep current time, update notes</span>
+                                </div>
+                            </div>
+                        </md-button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agent Assignment -->
+            <div class="assignment-section" ng-if="ctrl.agent">
+                <div class="section-header">
+                    <div class="section-icon-wrapper agent-icon">
+                        <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">person</md-icon>
+                    </div>
+                    <div class="section-header-content">
+                        <h3 class="section-title">Agent Assignment</h3>
+                        <p class="section-subtitle">
                             Assigning to Agent <span class="highlight-text">{{::ctrl.agent.text}}</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alerts and Dangerous Goods -->
+            <div class="alerts-section" ng-if="ctrl.flight || ctrl.dgClassName">
+                <div class="alerts-grid">
+                    <!-- Flight Alerts -->
+                    <div class="alert-card flight-alerts" ng-if="ctrl.flight">
+                        <div class="alert-header">
+                            <div class="alert-icon-wrapper">
+                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">notifications_active</md-icon>
+                            </div>
+                            <div class="alert-content">
+                                <h4 class="alert-title">Flight Alerts</h4>
+                                <p class="alert-subtitle">Active notification events</p>
+                            </div>
+                        </div>
+                        <div class="alert-body">
+                            <div class="alert-chips" ng-if="ctrl.enabledAlerts && ctrl.enabledAlerts.length > 0">
+                                <div class="chip" ng-repeat="alert in ctrl.enabledAlerts track by alert.id">
+                                    <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">check_circle</md-icon>
+                                    <span>{{alert.text}}</span>
+                                </div>
+                            </div>
+                            <div class="empty-state" ng-if="!ctrl.loadingAlerts && (!ctrl.enabledAlerts || ctrl.enabledAlerts.length === 0)">
+                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">notifications_off</md-icon>
+                                <span>No alerts configured</span>
+                            </div>
+                            <div class="loading-state" ng-if="ctrl.loadingAlerts">
+                                <md-progress-circular md-mode="indeterminate" md-diameter="24"></md-progress-circular>
+                                <span>Loading alerts...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dangerous Goods -->
+                    <div class="alert-card dangerous-goods" ng-if="ctrl.dgClassName">
+                        <div class="alert-header">
+                            <div class="alert-icon-wrapper danger">
+                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">dangerous</md-icon>
+                            </div>
+                            <div class="alert-content">
+                                <h4 class="alert-title">Dangerous Goods</h4>
+                                <p class="alert-subtitle">
+                                    Class: <span class="danger-class">{{::ctrl.dgClassName}}</span>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="content-section webhook-alerts-section" ng-if="ctrl.flight">
-                <div class="assignment-header">
-                    <div class="assignment-icon-wrapper webhook-icon">
-                        <md-icon md-font-set="material-symbols-outlined">
-                            notifications
-                            <md-tooltip md-direction="bottom">Flight alerts can be customized in Admin Manager
-                            </md-tooltip>
-                        </md-icon>
-                    </div>
-                    <div class="assignment-text">
-                        <div class="assignment-title">Flight Alerts</div>
-                        <div class="assignment-description">
-                            Active notification events for this flight
-                        </div>
-                    </div>
-                </div>
-
-                <div class="webhook-content" ng-if="ctrl.enabledAlerts && ctrl.enabledAlerts.length > 0">
-                    <div class="alert-chips-container">
-                        <div class="alert-chips-scroll">
-                        <span
-                                class="alert-chip"
-                                ng-repeat="alert in ctrl.enabledAlerts track by alert.id">
-                            <md-icon
-                                    md-font-set="material-symbols-outlined"
-                                    class="chip-icon">check_circle</md-icon>
-                            {{alert.text}}
-                        </span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="webhook-content no-alerts" ng-if="!ctrl.enabledAlerts || ctrl.enabledAlerts.length === 0">
-                    <div class="no-alerts-message">
-                        <md-icon md-font-set="material-symbols-outlined" class="warning-icon">warning</md-icon>
-                        <span>No webhook alerts are currently configured</span>
-                    </div>
-                </div>
-
-                <div class="webhook-loading" ng-if="ctrl.loadingAlerts">
-                    <md-progress-circular md-mode="indeterminate" md-diameter="20"></md-progress-circular>
-                    <span>Loading webhook configuration...</span>
-                </div>
-            </div>
-
-            <div class="content-section danger-goods-section" ng-if="ctrl.dgClassName">
-                <div class="assignment-header">
-                    <div class="assignment-icon-wrapper danger-icon">
-                        <md-icon md-font-set="material-symbols-outlined">dangerous</md-icon>
-                    </div>
-                    <div class="assignment-text">
-                        <div class="assignment-title">Dangerous Goods</div>
-                        <div class="assignment-description">
-                            Class: <span class="highlight-text danger-class">{{::ctrl.dgClassName}}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+            <!-- Form Sections -->
             <div class="form-section">
-                <md-input-container class="md-block awb-input">
-                    <label for="awb">Air Waybill Number (AWB)</label>
-                    <input id="awb"
-                           ng-model="ctrl.awb"
-                           ng-disabled="::ctrl.isAwbDisabled"
-                           type="text"
-                           placeholder="Enter AWB number">
-                </md-input-container>
+                <div class="form-grid">
+                    <!-- Delivery Instructions -->
+                    <div class="form-card notes-card">
+                        <div class="form-header">
+                            <div class="form-icon-wrapper">
+                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">edit_note</md-icon>
+                            </div>
+                            <h4 class="form-title">Delivery Instructions</h4>
+                        </div>
+                        <div class="form-content">
+                            <md-input-container class="md-block">
+                                <label for="deliveryNotes">Delivery Notes</label>
+                                <textarea id="deliveryNotes"
+                                          md-maxlength="300"
+                                          ng-model="ctrl.deliveryNotes"
+                                          placeholder="Add delivery instructions for courier/agent collecting the package..."
+                                          rows="4"></textarea>
+                            </md-input-container>
+                        </div>
+                    </div>
 
-                <div class="checkbox-section" ng-if="::ctrl.showIncludeStopJobs">
-                    <md-checkbox ng-model="ctrl.assignToStopJobs"
-                                 class="md-primary stop-jobs-checkbox"
-                                 aria-label="assign agent to stop jobs">
-                        <span class="checkbox-label">Assign agent to all stop jobs in this job</span>
-                    </md-checkbox>
+                    <!-- AWB Section -->
+                    <div class="form-card awb-card">
+                        <div class="form-header">
+                            <div class="form-icon-wrapper">
+                                <md-icon class="dialog-icon" md-font-set="material-symbols-outlined">qr_code</md-icon>
+                            </div>
+                            <h4 class="form-title">Air Waybill Number</h4>
+                        </div>
+                        <div class="form-content">
+                            <md-input-container class="md-block">
+                                <label for="awb">AWB Number</label>
+                                <input id="awb"
+                                       ng-model="ctrl.awb"
+                                       ng-disabled="::ctrl.isAwbDisabled"
+                                       type="text"
+                                       placeholder="Enter AWB number">
+                            </md-input-container>
+
+                            <div class="form-checkbox" ng-if="::ctrl.showIncludeStopJobs">
+                                <md-checkbox ng-model="ctrl.assignToStopJobs"
+                                             class="md-primary"
+                                             aria-label="assign agent to stop jobs">
+                                    <span>Assign agent to all stop jobs in this job</span>
+                                </md-checkbox>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="confirmation-message">
-                <md-icon md-font-set="material-symbols-outlined" class="info-icon">info</md-icon>
-                <span>Please review the details above and confirm to proceed.</span>
+            <!-- Confirmation Message -->
+            <div class="confirmation-section">
+                <div class="confirmation-card">
+                    <md-icon md-font-set="material-symbols-outlined">info</md-icon>
+                    <span>Please review the details above and confirm to proceed with the assignment.</span>
+                </div>
             </div>
         </md-dialog-content>
 
         <md-dialog-actions class="dialog-actions">
-            <md-button
-                    ng-click="ctrl.cancel()"
-                    class="md-button cancel-btn">
+            <md-button ng-click="ctrl.cancel()" class="cancel-btn">
                 Cancel
             </md-button>
-            <md-button
-                    ng-click="ctrl.confirm()"
-                    class="md-raised md-primary">
+            <md-button ng-click="ctrl.confirm()" class="md-raised md-primary confirm-btn">
                 <md-icon md-font-set="material-symbols-outlined">check</md-icon>
                 Confirm Assignment
             </md-button>

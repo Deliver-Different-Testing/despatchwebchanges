@@ -173,12 +173,13 @@ public class FlightStatsService(
             jobId, departureDateTime);
 
         // Airports
+        var allAirports = await repository.GetAllActiveAirportsAsync();
         var (arrivalAirportCode, departureAirportCode) = await repository.GetAirportCodesByJobIdAsync(jobId);
         if (departureAirportId.HasValue)
-            departureAirportCode = await repository.GetSingleAirportCodeByIdAsync(departureAirportId.Value);
+            departureAirportCode = allAirports.First(a => a.Id == departureAirportId.Value).Text;
         if (arrivalAirportId.HasValue)
-            arrivalAirportCode = await repository.GetSingleAirportCodeByIdAsync(arrivalAirportId.Value);
-
+            arrivalAirportCode =  allAirports.First(a => a.Id == arrivalAirportId.Value).Text;
+        
         var activeAirlineCodes = await repository.GetActiveAirlineCodesAsync();
 
         ArgumentException.ThrowIfNullOrEmpty(departureAirportCode);
@@ -203,7 +204,7 @@ public class FlightStatsService(
         // Filter by specific airline if airlineId is provided
         if (airlineId is > 0)
         {
-            var selectedAirline = await repository.GetAirlineCodeById(airlineId.Value);
+            var selectedAirline = await repository.GetAirlineCodeByIdAsync(airlineId.Value);
             ArgumentNullException.ThrowIfNull(selectedAirline);
 
             Log.Debug("Filtering FlightWebhooks by specific airline: {Carrier}", selectedAirline);
@@ -282,8 +283,10 @@ public class FlightStatsService(
                             DepartureTime = segment.DepartureTime,
                             ArrivalTime =
                                 AdjustArrivalTimeForOvernightFlight(segment.DepartureTime, segment.ArrivalTime),
+                            DepartureAirportId = allAirports.FirstOrDefault(a => a.Text == segment.DepartureAirportFsCode)?.Id ?? 0,
                             DepartureAirportFsCode = segment.DepartureAirportFsCode,
                             DepartureTerminal = segment.DepartureTerminal,
+                            ArrivalAirportId = allAirports.FirstOrDefault(a => a.Text == segment.ArrivalAirportFsCode)?.Id ?? 0,
                             ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
                             ArrivalTerminal = segment.ArrivalTerminal,
                             FlightEquipmentIataCode = segment.FlightEquipmentIataCode,
