@@ -25,7 +25,7 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
                     {
                         Active = client.Active,
                         FirstName = contact.UcctFirstname,
-                        FullName = $"{contact.UcctFirstname} {contact.UcctSurname}",
+                        FullName = contact.UcctFirstname + " " + contact.UcctSurname,
                         Email = contact.UcctEmail,
                         Internal = client.Internal,
                         StaffID = contact.StaffId
