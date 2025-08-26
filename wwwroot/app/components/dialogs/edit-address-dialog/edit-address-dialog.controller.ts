@@ -247,69 +247,6 @@ class EditAddressDialogController extends BaseController {
         }
     }
 
-    async submit(addressDetails: EditAddressDialogViewModel): Promise<void> {
-        console.log("Starting submit with address details:", addressDetails);
-        this.isLoading = true;
-
-        try {
-            console.log("Using US Format:", this.useUsFormat);
-
-            if (this.useUsFormat) {
-                console.log("Processing US address submission");
-                if (!this.validateUsAddress(addressDetails)) {
-                    console.warn("US address validation failed");
-                    this.isLoading = false;
-                    return;
-                }
-
-                // Get the full state name from the abbreviation
-                console.log(
-                    "Getting state info for abbreviation:",
-                    addressDetails.stateAbbreviation
-                );
-
-                if (!addressDetails.stateAbbreviation) {
-                    alert("Please select a valid US state");
-                    return;
-                }
-
-                const stateObj = getStateByAbbreviation(
-                    addressDetails.stateAbbreviation
-                );
-                console.log("Retrieved state object:", stateObj);
-
-                addressDetails.addressLine6 = stateObj?.name ?? "";
-                console.log(
-                    "Updated address details with full state name:",
-                    addressDetails
-                );
-            }
-
-            // Ensure the fullAddress is up to date
-            addressDetails.fullAddress = this.constructFullAddress(addressDetails);
-            console.log("Constructed full address:", addressDetails.fullAddress);
-
-            this.isLoading = false;
-
-            // Add contact info
-            addressDetails.shipmentDetails = this.shipmentDetails;
-
-            // Return a new address
-            this.$mdDialog.hide(addressDetails);
-            console.log("Dialog submission complete");
-        } catch (error) {
-            this.isLoading = false;
-            console.error("Error in submit function:", error);
-            console.error("Error occurred with address details:", addressDetails);
-            this.toastrService.showErrorToast(
-                "Error updating address. Please try again or contact support"
-            );
-            throw error; // Re-throw to maintain an error chain
-        } finally {
-            this.applyScope();
-        }
-    }
-
     constructFullAddress(addressDetails: EditAddressDialogViewModel): string {
         return [
             addressDetails.addressLine1,
@@ -364,11 +301,7 @@ class EditAddressDialogController extends BaseController {
     toggleContactCard(): void {
         this.isContactCardExpanded = !this.isContactCardExpanded;
     }
-
-    cancel(): void {
-        this.$mdDialog.cancel();
-    }
-
+    
     private handleAddressFieldsFromLookup(
         location: HereMapsLookupResponse
     ): void {
@@ -477,6 +410,74 @@ class EditAddressDialogController extends BaseController {
 
         return true;
     }
+
+    async submit(addressDetails: EditAddressDialogViewModel): Promise<void> {
+        console.log("Starting submit with address details:", addressDetails);
+        this.isLoading = true;
+
+        try {
+            console.log("Using US Format:", this.useUsFormat);
+
+            if (this.useUsFormat) {
+                console.log("Processing US address submission");
+                if (!this.validateUsAddress(addressDetails)) {
+                    console.warn("US address validation failed");
+                    this.isLoading = false;
+                    return;
+                }
+
+                // Get the full state name from the abbreviation
+                console.log(
+                    "Getting state info for abbreviation:",
+                    addressDetails.stateAbbreviation
+                );
+
+                if (!addressDetails.stateAbbreviation) {
+                    alert("Please select a valid US state");
+                    return;
+                }
+
+                const stateObj = getStateByAbbreviation(
+                    addressDetails.stateAbbreviation
+                );
+                console.log("Retrieved state object:", stateObj);
+
+                addressDetails.addressLine6 = stateObj?.name ?? "";
+                console.log(
+                    "Updated address details with full state name:",
+                    addressDetails
+                );
+            }
+
+            // Ensure the fullAddress is up to date
+            addressDetails.fullAddress = this.constructFullAddress(addressDetails);
+            console.log("Constructed full address:", addressDetails.fullAddress);
+
+            this.isLoading = false;
+
+            // Add contact info
+            addressDetails.shipmentDetails = this.shipmentDetails;
+
+            // Return a new address
+            this.$mdDialog.hide(addressDetails);
+            console.log("Dialog submission complete");
+        } catch (error) {
+            this.isLoading = false;
+            console.error("Error in submit function:", error);
+            console.error("Error occurred with address details:", addressDetails);
+            this.toastrService.showErrorToast(
+                "Error updating address. Please try again or contact support"
+            );
+            throw error; // Re-throw to maintain an error chain
+        } finally {
+            this.applyScope();
+        }
+    }
+
+    cancel(): void {
+        this.$mdDialog.cancel();
+    }
+
 }
 
 export default EditAddressDialogController;

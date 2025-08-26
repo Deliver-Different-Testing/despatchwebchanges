@@ -259,6 +259,51 @@
                                 </div>
                             </md-input-container>
                         </div>
+                        
+                        <div class="form-row">
+                            <md-input-container class="md-block form-field" flex="33">
+                                <label for="length">Length ({{ ::ctrl.useUsFormat ? 'in' : 'cm' }})</label>
+                                <input id="length"
+                                       name="length"
+                                       ng-model="ctrl.shipmentDetails.length"
+                                       type="number"
+                                       min="0"
+                                       step="0.1"
+                                       required/>
+                                <div ng-messages="addressForm.length.$error" ng-if="addressForm.length.$dirty">
+                                    <div ng-message="required">Length is required.</div>
+                                    <div ng-message="min">Length must be greater than 0.</div>
+                                </div>
+                            </md-input-container>
+
+                            <md-input-container class="md-block form-field" flex="33">
+                                <label for="depth">Width ({{ ::ctrl.useUsFormat ? 'in' : 'cm' }})</label>
+                                <input id="depth"
+                                       name="depth"
+                                       ng-model="ctrl.shipmentDetails.depth"
+                                       type="number"
+                                       min="1"
+                                       required/>
+                                <div ng-messages="addressForm.depth.$error" ng-if="addressForm.depth.$dirty">
+                                    <div ng-message="required">Width is required.</div>
+                                    <div ng-message="min">Width must be at least 1.</div>
+                                </div>
+                            </md-input-container> 
+                            
+                            <md-input-container class="md-block form-field" flex="33">
+                                <label for="height">Height ({{ ::ctrl.useUsFormat ? 'in' : 'cm' }})</label>
+                                <input id="height"
+                                       name="height"
+                                       ng-model="ctrl.shipmentDetails.height"
+                                       type="number"
+                                       min="1"
+                                       required/>
+                                <div ng-messages="addressForm.height.$error" ng-if="addressForm.height.$dirty">
+                                    <div ng-message="required">Height is required.</div>
+                                    <div ng-message="min">Height must be at least 1.</div>
+                                </div>
+                            </md-input-container>
+                        </div>
 
                         <div class="form-row">
                             <md-input-container class="md-block form-field notes-field" flex="100">

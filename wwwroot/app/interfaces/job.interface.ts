@@ -226,6 +226,9 @@ export interface ShipmentDetails {
     contactName?: string;
     contactMobile?: string;
     weight?: number;
+    depth?: number;
+    length?: number;
+    height?: number;
     quantity?: number;
     jobNotes?: string;
 }
