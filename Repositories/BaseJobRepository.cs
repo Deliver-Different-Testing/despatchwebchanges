@@ -1236,7 +1236,7 @@ public class BaseJobRepository(
                 }
                 else
                 {
-                    // Add to list of existing IDs to update
+                    // Add to a list of existing IDs to update
                     existingParcelIds.Add(p.ItemId.Value);
                 }
             }
@@ -1269,7 +1269,8 @@ public class BaseJobRepository(
         }
         catch (Exception e)
         {
-            throw new ApplicationException("Error while updating packages for job", e);
+            Log.Error(e, "Error while updating packages for job {JobId}", jobId);
+            throw;
         }
     }
 

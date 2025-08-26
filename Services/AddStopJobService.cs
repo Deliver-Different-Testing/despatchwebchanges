@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 
 namespace DespatchWeb.Services;
@@ -26,6 +28,7 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         var newStopJobNumber = await GenerateNewStopJobNumberAsync(job.UcjbNumber);
         var parentId = job.ParentId ?? job.UcjbId;
         var extras = request.PickUpAddress?.ShipmentDetails ?? request.DeliveryAddress?.ShipmentDetails;
+        ArgumentNullException.ThrowIfNull(extras);
 
         var newStopJob = new TucJob
         {
@@ -45,7 +48,6 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
             UcjbToSpecial = null,
             UcjbToAddr = AddressFormatter.GetSafeAddress(request.DeliveryAddress?.FullAddress, job.UcjbFromAddr),
             UcjbSize = job.UcjbSize,
-            UcjbQty = extras is { Quantity: not null } ? (short)extras.Quantity : throw new ArgumentNullException("Quanity", nameof(extras) + " must have a quantity"),
             UcjbCbd = false,
             UcjbKm = 0,
             UcjbFlightDetails = null,
@@ -129,6 +131,9 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         await repository.AddEntityAsync(newStopJob);
         await repository.SaveChangesAsync();
 
+        // Add packages to the job
+        await CreateAndAddPackagesToJob(request.JobId, extras);
+        
         var staffId = infoService.GetStaffId();
         var currentDate = infoService.GetCurrentTenantTime();
 
@@ -351,5 +356,24 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
             breakdown.JobId = stopJobId;
 
         return breakdown;
+    }
+
+    private async Task CreateAndAddPackagesToJob(int jobId, ShipmentDetails extras)
+    {
+        // Add parcels
+        var parcels = new List<ParcelDimensions>();
+        for (var x = 0; x < extras.Quantity; x++)
+        {
+            var parcel = new ParcelDimensions
+            {
+                ItemName = $"Package {x}",
+                Depth = extras.Depth,
+                Height = extras.Height,
+                Length = extras.Length
+            };
+            parcels.Add(parcel);
+        }
+
+        await repository.UpdatePackagesForJobAsync(jobId, parcels);
     }
 }
