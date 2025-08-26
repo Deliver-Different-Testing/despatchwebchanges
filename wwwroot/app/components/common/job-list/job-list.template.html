@@ -268,13 +268,13 @@
                     <!-- Pickup Column -->
                     <div class="job-cell route-cell pickup-cell">
                         <div class="address">{{ctrl.getPickupAddress(job)}}</div>
-                        <div class="city-state">{{job.pickupAddress?.addressLine1 || ''}}</div>
+                        <div class="city-state">{{job.pickupAddress && job.pickupAddress.addressLine1 || ''}}</div>
                     </div>
 
                     <!-- Delivery Column -->
                     <div class="job-cell route-cell delivery-cell">
                         <div class="address">{{ctrl.getDeliveryAddress(job)}}</div>
-                        <div class="city-state">{{job.deliveryAddress?.addressLine1 || ''}}</div>
+                        <div class="city-state">{{job.deliveryAddress && job.deliveryAddress.addressLine1 || ''}}</div>
                     </div>
 
                     <!-- Courier Column -->
