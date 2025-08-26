@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -360,20 +360,19 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
 
     private async Task CreateAndAddPackagesToJob(int jobId, ShipmentDetails extras)
     {
-        // Add parcels
-        var parcels = new List<ParcelDimensions>();
-        for (var x = 0; x < extras.Quantity; x++)
-        {
-            var parcel = new ParcelDimensions
+        var quantity = extras.Quantity ?? 0;
+        if (quantity <= 0) return;
+
+        var parcels = Enumerable.Range(0, quantity)
+            .Select(x => new ParcelDimensions
             {
                 ItemName = $"Package {x}",
                 Depth = extras.Depth,
                 Height = extras.Height,
                 Length = extras.Length
-            };
-            parcels.Add(parcel);
-        }
+            })
+            .ToList();
 
-        await repository.UpdatePackagesForJobAsync(jobId, parcels);
+        await repository.AddPackagesToJobAsync(jobId, parcels);
     }
 }

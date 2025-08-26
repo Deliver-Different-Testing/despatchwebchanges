@@ -23,6 +23,12 @@ public class BaseJobRepository(
     ITenantInfoService infoService)
     : BaseRepository(contextFactory)
 {
+    private static void LogError(Exception exception, string methodName, int jobId)
+    {
+        Log.Error(exception, "Error occurred in {ControllerName}/{MethodName} for JobId {JobId}",
+            nameof(BaseJobRepository), methodName, jobId);
+    }
+
     protected async Task<List<DispatchJobViewModel>> DespatchQry(
         AppPage page,
         JobQueryParams queryParams,
@@ -770,10 +776,10 @@ public class BaseJobRepository(
                         ? j.TblBulkJobs.FirstOrDefault().Region.Name
                         : null,
                 Pickup = isUsCustomer
-                    ? j.PickupAddressLine5 + ", " +  j.PickupAddressLine6
+                    ? j.PickupAddressLine5 + ", " + j.PickupAddressLine6
                     : j.UcjbFromAddr,
                 Delivery = isUsCustomer
-                    ? j.DeliveryAddressLine5 + ", " +  j.DeliveryAddressLine6
+                    ? j.DeliveryAddressLine5 + ", " + j.DeliveryAddressLine6
                     : j.UcjbToAddr,
                 Driver =
                     j.UcjbCourier != null
@@ -806,7 +812,7 @@ public class BaseJobRepository(
                                 : null,
                         Pickup = c.PickupAddressLine5 + ", " + c.PickupAddressLine6,
                         Delivery = c.DeliveryAddressLine5 + ", " + c.DeliveryAddressLine6,
-                        Driver = 
+                        Driver =
                             c.UcjbCourier != null
                                 ? c.UcjbCourier.UccrName + ", " + c.UcjbCourier.UccrSurname
                                 : null,
@@ -1209,8 +1215,27 @@ public class BaseJobRepository(
         return jobs;
     }
 
+    public async Task AddPackagesToJobAsync(int jobId, List<ParcelDimensions> parcels)
+    {
+        if (parcels == null || parcels.Count == 0) return;
+
+        try
+        {
+            var newParcels = parcels.Select(parcel => CreateTucJobItem(jobId, parcel)).ToList();
+            await Context.TucJobItems.AddRangeAsync(newParcels);
+            await Context.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            LogError(e, nameof(AddPackagesToJobAsync), jobId);
+            throw;
+        }
+    }
+
     public async Task UpdatePackagesForJobAsync(int jobId, List<ParcelDimensions> parcels)
     {
+        if (parcels == null || parcels.Count == 0) return;
+
         try
         {
             var effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
@@ -1219,59 +1244,63 @@ public class BaseJobRepository(
             var newParcels = new List<TucJobItem>();
             var existingParcelIds = new List<int>();
 
-            foreach (var p in parcels)
+            foreach (var parcel in parcels)
             {
-                if (p.ItemId == null)
-                {
-                    // For new items, don't set ItemId (let DB handle it)
-                    var newItem = new TucJobItem
-                    {
-                        JobId = effectiveJobId,
-                        Height = p.Height ?? 0,
-                        Length = p.Length ?? 0,
-                        Depth = p.Depth ?? 0,
-                        Notes = p.ItemName
-                    };
-                    newParcels.Add(newItem);
-                }
-                else
-                {
-                    // Add to a list of existing IDs to update
-                    existingParcelIds.Add(p.ItemId.Value);
-                }
+                if (parcel.ItemId == null) newParcels.Add(CreateTucJobItem(effectiveJobId, parcel));
+                else existingParcelIds.Add(parcel.ItemId.Value);
             }
 
             // Handle new items
-            if (newParcels.Count > 0)
-            {
-                await Context.TucJobItems.AddRangeAsync(newParcels);
-            }
+            if (newParcels.Count > 0) await Context.TucJobItems.AddRangeAsync(newParcels);
 
             // Handle existing items - fetch them all at once
-            var existingItems = await Context.TucJobItems
-                .Where(i => existingParcelIds.Contains(i.ItemId))
-                .ToListAsync();
-
-            // Update existing items
-            foreach (var p in parcels.Where(p => p.ItemId != null))
+            if (existingParcelIds.Count != 0)
             {
-                var existingItem = existingItems.FirstOrDefault(i => i.ItemId == p.ItemId);
-                if (existingItem == null) continue;
+                var existingItems = await Context.TucJobItems
+                    .Where(i => existingParcelIds.Contains(i.ItemId))
+                    .ToListAsync();
 
-                existingItem.Height = p.Height ?? 0;
-                existingItem.Length = p.Length ?? 0;
-                existingItem.Depth = p.Depth ?? 0;
-                existingItem.Notes = p.ItemName;
-                Context.TucJobItems.Update(existingItem);
+                var existingItemsLookup = existingItems.ToDictionary(i => i.ItemId);
+
+                // Update existing items
+                foreach (var p in parcels.Where(p => p.ItemId != null))
+                {
+                    if (!p.ItemId.HasValue) continue;
+
+                    if (existingItemsLookup.TryGetValue(p.ItemId.Value, out var existingItem))
+                    {
+                        UpdateTucJobItem(existingItem, p);
+                    }
+                }
             }
 
             await Context.SaveChangesAsync();
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error while updating packages for job {JobId}", jobId);
+            LogError(e, nameof(UpdatePackagesForJobAsync), jobId);
             throw;
         }
+    }
+
+    private static TucJobItem CreateTucJobItem(int jobId, ParcelDimensions parcel)
+    {
+        return new TucJobItem
+        {
+            JobId = jobId,
+            Height = parcel.Height ?? 0,
+            Length = parcel.Length ?? 0,
+            Depth = parcel.Depth ?? 0,
+            Notes = parcel.ItemName
+        };
+    }
+
+    private static void UpdateTucJobItem(TucJobItem item, ParcelDimensions parcel)
+    {
+        item.Height = parcel.Height ?? 0;
+        item.Length = parcel.Length ?? 0;
+        item.Depth = parcel.Depth ?? 0;
+        item.Notes = parcel.ItemName;
     }
 
     public async Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(
@@ -1352,11 +1381,11 @@ public class BaseJobRepository(
         bool isRecurringJob = false, NoteType noteType = NoteType.InternalNote)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(noteText, nameof(noteText));
-        
+
         // If note type is not found, default to the internal note
         var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
         if (!noteTypeExists) noteType = NoteType.InternalNote;
-        
+
 
         var viewModel = new TucNoteViewModel
         {
