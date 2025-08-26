@@ -132,7 +132,7 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         await repository.SaveChangesAsync();
 
         // Add packages to the job
-        await CreateAndAddPackagesToJob(request.JobId, extras);
+        await CreateAndAddPackagesToJob(newStopJob.UcjbId, extras);
         
         var staffId = infoService.GetStaffId();
         var currentDate = infoService.GetCurrentTenantTime();
