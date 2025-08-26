@@ -366,28 +366,6 @@ class JobsListController extends BaseController {
         return fromLines.join(', ');
     }
 
-    getPickupCityState(job: IDispatchJob): string {
-        // In dense and ultra-dense modes, show secondary address info
-        if (this.densityMode === DensityMode.Dense || this.densityMode === DensityMode.UltraDense) {
-            if (job.pickupAddress) {
-                const addr = job.pickupAddress;
-                const parts = [addr.addressLine2, addr.our_suburb, addr.addressLine3].filter(Boolean);
-                return parts.join(', ');
-            }
-
-            const fromLines = (job.from || '').split(',').map(line => line.trim());
-            return fromLines.slice(1).join(', ');
-        }
-
-        // In normal mode, show the primary address line
-        if (job.pickupAddress?.addressLine2) {
-            return job.pickupAddress.addressLine2;
-        }
-
-        const fromLines = (job.from || '').split(',');
-        return fromLines[0]?.trim() || '';
-    }
-
     getDeliveryAddress(job: IDispatchJob): string {
         // In normal mode, show the full address starting from line 2
         if (job.deliveryAddress) {
@@ -409,28 +387,6 @@ class JobsListController extends BaseController {
         // For non-structured addresses, parse the 'toAddress' field and start from line 2
         const toLines = (job.toAddress || '').split(',').map(line => line.trim());
         return toLines.join(', ');
-    }
-
-    getDeliveryCityState(job: IDispatchJob): string {
-        // In dense and ultra-dense modes, show secondary address info
-        if (this.densityMode === DensityMode.Dense || this.densityMode === DensityMode.UltraDense) {
-            if (job.deliveryAddress) {
-                const addr = job.deliveryAddress;
-                const parts = [addr.addressLine2, addr.our_suburb, addr.addressLine3].filter(Boolean);
-                return parts.join(', ');
-            }
-
-            const toLines = (job.toAddress || '').split(',').map(line => line.trim());
-            return toLines.slice(1).join(', ');
-        }
-
-        // In normal mode, show the primary address line
-        if (job.deliveryAddress?.addressLine2) {
-            return job.deliveryAddress.addressLine2;
-        }
-
-        const toLines = (job.toAddress || '').split(',');
-        return toLines[0]?.trim() || '';
     }
 
     getCourierInitials(job: IDispatchJob): string {

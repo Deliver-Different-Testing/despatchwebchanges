@@ -6,21 +6,21 @@
     <md-toolbar class="md-dense bulk-actions-bar" ng-if="ctrl.selectedJobs.length > 0">
         <div class="md-toolbar-tools">
             <span class="selected-count">{{ctrl.selectedJobs.length}} selected</span>
-            
+
             <md-button class="md-fab md-primary md-mini"
                        ng-click="ctrl.toggleSelectAll()"
                        aria-label="select all">
                 <md-icon md-font-set="material-symbols-outlined">select_all</md-icon>
                 <md-tooltip md-direction="bottom">Select All {{ ctrl.filteredJobs.length }} Jobs</md-tooltip>
             </md-button>
-            
+
             <md-button class="md-fab md-primary md-mini"
                        ng-click="ctrl.clearSelection()"
                        aria-label="clear selection">
                 <md-icon md-font-set="material-symbols-outlined">clear_all</md-icon>
                 <md-tooltip md-direction="bottom">Clear Selection</md-tooltip>
             </md-button>
-            
+
             <div flex></div>
 
             <md-button class="md-fab md-primary md-mini"
@@ -39,7 +39,7 @@
                 <md-icon md-font-set="material-symbols-outlined">edit</md-icon>
                 <md-tooltip md-direction="bottom">Restore</md-tooltip>
             </md-button>
-            
+
             <md-button class="md-fab md-primary md-mini"
                        ng-click="ctrl.bulkMarkAsRead()"
                        aria-label="bulk mark as read or unread">
@@ -268,13 +268,13 @@
                     <!-- Pickup Column -->
                     <div class="job-cell route-cell pickup-cell">
                         <div class="address">{{ctrl.getPickupAddress(job)}}</div>
-                        <div class="city-state">{{ctrl.getPickupCityState(job)}}</div>
+                        <div class="city-state">{{job.pickupAddress?.addressLine1 || ''}}</div>
                     </div>
 
                     <!-- Delivery Column -->
                     <div class="job-cell route-cell delivery-cell">
                         <div class="address">{{ctrl.getDeliveryAddress(job)}}</div>
-                        <div class="city-state">{{ctrl.getDeliveryCityState(job)}}</div>
+                        <div class="city-state">{{job.deliveryAddress?.addressLine1 || ''}}</div>
                     </div>
 
                     <!-- Courier Column -->
