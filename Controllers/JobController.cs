@@ -1328,13 +1328,13 @@ public class JobController(
 
     public async Task<IActionResult> SuburbList()
     {
-        var data = await jobRepository.SuburbsAsync();
+        var data = await jobRepository.GetSuburbsAsync();
         return Json(data);
     }
 
     public async Task<IActionResult> SpeedList()
     {
-        var data = await jobRepository.SpeedsAsync();
+        var data = await jobRepository.GetSpeedsAsync();
         return Json(data);
     }
 

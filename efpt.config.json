@@ -427,10 +427,6 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[DES_stpJob_DisplayInDespatch]",
-         "ObjectType": 1
-      },
-      {
          "Name": "[dbo].[DES_stpJob_SplitJob_ReRate]",
          "ObjectType": 1
       },
@@ -452,10 +448,6 @@
       },
       {
          "Name": "[dbo].[DESWEB_qdfSwapPOD]",
-         "ObjectType": 1
-      },
-      {
-         "Name": "[dbo].[DESWEB_qryClientsActive]",
          "ObjectType": 1
       },
       {

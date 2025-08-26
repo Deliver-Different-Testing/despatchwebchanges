@@ -92,16 +92,14 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         }
     }
 
-    public async Task<List<AvailableCourierPosition>> GetAvailableCouriers(CourierLocationRequest data)
+    public async Task<List<AvailableCourierPosition>> GetAvailableCouriersAsync(CourierLocationRequest data)
     {
-        return data.IsUsTenant switch
-        {
-            false => await GetNzAvailableCourierPositions(data),
-            _ => await GetUsAvailableCourierPositions(data)
-        };
+        return !data.IsUsTenant
+            ? await GetNzAvailableCourierPositionsAsync(data)
+            : await GetUsAvailableCourierPositionsAsync(data);
     }
 
-    private async Task<List<AvailableCourierPosition>> GetUsAvailableCourierPositions(CourierLocationRequest data)
+    private async Task<List<AvailableCourierPosition>> GetUsAvailableCourierPositionsAsync(CourierLocationRequest data)
     {
         var currentDate = tenantInfoService.GetCurrentTenantTime();
         var uaFleetIds = new[] { 32, 33, 34, 35, 36, 37, 38, 64 };
@@ -161,7 +159,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         return result;
     }
 
-    private async Task<List<AvailableCourierPosition>> GetNzAvailableCourierPositions(CourierLocationRequest data)
+    private async Task<List<AvailableCourierPosition>> GetNzAvailableCourierPositionsAsync(CourierLocationRequest data)
     {
         var couriers = await Context.TucCouriers
             .Where(c => c.CourierLogInOut.LogOutTime == null &&
@@ -231,7 +229,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
     {
         try
         {
-            var results = await GetActiveCouriers();
+            var results = await GetActiveCouriersAsync();
             return results.Select(x => new ActiveCouriersViewModel
             {
                 Code = x.Code,
@@ -342,7 +340,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         {
             Log.Information("Retrieving all active couriers");
 
-            var results = await GetActiveCouriers();
+            var results = await GetActiveCouriersAsync();
             var mappedResults = results.Select(x => new ActiveCouriersViewModel
             {
                 Code = x.Code,
@@ -420,7 +418,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         };
     }
 
-    private async Task<List<ActiveCourierDto>> GetActiveCouriers()
+    private async Task<List<ActiveCourierDto>> GetActiveCouriersAsync()
     {
         var today = tenantInfoService.GetCurrentTenantTime();
 
@@ -470,12 +468,12 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
                 })
                 .ToListAsync();
 
-            var activeCouriers = await GetActiveCouriers();
+            var activeCouriers = await GetActiveCouriersAsync();
 
             var areas = new List<AreaClearList>();
             foreach (var clearList in clearLists)
             {
-                var areaClearList = await BuildClearListViewModel(
+                var areaClearList = await BuildClearListViewModelAsync(
                     activeCouriers,
                     clearList,
                     33
@@ -735,7 +733,7 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
         return result ?? new ClearListEnvelopeViewModel();
     }
 
-    private async Task<AreaClearList> BuildClearListViewModel(
+    private async Task<AreaClearList> BuildClearListViewModelAsync(
         List<ActiveCourierDto> activeCouriers,
         ClearListAreaDto clearList,
         int percentHeight

@@ -99,13 +99,15 @@ public class TaskRepository(
 
     public async Task ReassignEventToUserAsync(int eventId, int staffId)
     {
-        var dfrntEvent = await Context.TucEvents.FindAsync(eventId);
-        ArgumentNullException.ThrowIfNull(dfrntEvent);
-
-        dfrntEvent.UcevStaffIdin = staffId;
-        await Context.SaveChangesAsync();
+        var rowsAffected = await Context.TucEvents
+            .Where(e => e.UcevId == eventId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(e => e.UcevStaffIdin, staffId));
+    
+        if (rowsAffected == 0)
+            throw new ArgumentException($"Event with ID {eventId} not found.");
     }
-
+    
     public async Task<List<Suggestion>> GetEventGroupsAsync()
     {
         var eventGroups = await Context
