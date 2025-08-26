@@ -13,7 +13,7 @@ public interface ICourierRepository
 
     Task<List<TruckCourierStatusViewModel>> TruckCourierStatusAsync(string courierId);
 
-   Task<List<AvailableCourierPosition>> GetAvailableCouriers(CourierLocationRequest data);
+   Task<List<AvailableCourierPosition>> GetAvailableCouriersAsync(CourierLocationRequest data);
 
     Task<List<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId);
 

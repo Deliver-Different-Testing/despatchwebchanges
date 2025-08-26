@@ -1346,10 +1346,18 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             null
         );
 
-        await Context.Procedures.DES_stpJob_DisplayInDespatchAsync(jobId);
+        await UpdateJobDisplayInDespatchAsync(jobId);
+    }
+    
+    private async Task UpdateJobDisplayInDespatchAsync(int jobId)
+    {
+        await Context.TucJobs
+            .Where(j => j.RootParentId == jobId)
+            .ExecuteUpdateAsync(j => j.SetProperty(x => x.DisplayInDespatch, true));
     }
 
-    public async Task<List<SuburbLookup>> SuburbsAsync()
+
+    public async Task<List<SuburbLookup>> GetSuburbsAsync()
     {
         return await Context
             .TucSuburbs.Select(x => new SuburbLookup
@@ -1358,10 +1366,11 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
                 Text = x.UcsuName,
                 Alias = x.GoogleSuburbAlias
             })
+            .AsNoTracking()
             .ToListAsync();
     }
 
-    public async Task<List<Suggestion>> SpeedsAsync()
+    public async Task<List<Suggestion>> GetSpeedsAsync()
     {
         return await Context
             .DesQryAllJobTypes.Select(x => new Suggestion { Id = x.JobTypeId, Text = x.Name })

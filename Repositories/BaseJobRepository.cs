@@ -770,14 +770,14 @@ public class BaseJobRepository(
                         ? j.TblBulkJobs.FirstOrDefault().Region.Name
                         : null,
                 Pickup = isUsCustomer
-                    ? $"{j.PickupAddressLine5},  {j.PickupAddressLine6}"
+                    ? j.PickupAddressLine5 + ", " +  j.PickupAddressLine6
                     : j.UcjbFromAddr,
                 Delivery = isUsCustomer
-                    ? $"{j.DeliveryAddressLine5},  {j.DeliveryAddressLine6}"
+                    ? j.DeliveryAddressLine5 + ", " +  j.DeliveryAddressLine6
                     : j.UcjbToAddr,
                 Driver =
                     j.UcjbCourier != null
-                        ? $"{j.UcjbCourier.UccrName} {j.UcjbCourier.UccrSurname}"
+                        ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
                         : null,
                 Completion = j.InverseParent.Count != 0
                     ? (int)
@@ -804,11 +804,11 @@ public class BaseJobRepository(
                             c.TblBulkJobs.FirstOrDefault() != null
                                 ? c.TblBulkJobs.FirstOrDefault().Region.Name
                                 : null,
-                        Pickup = $"{c.PickupAddressLine5}, {c.PickupAddressLine6}",
-                        Delivery = $"{c.DeliveryAddressLine5}, {c.DeliveryAddressLine6}",
-                        Driver =
+                        Pickup = c.PickupAddressLine5 + ", " + c.PickupAddressLine6,
+                        Delivery = c.DeliveryAddressLine5 + ", " + c.DeliveryAddressLine6,
+                        Driver = 
                             c.UcjbCourier != null
-                                ? $"{c.UcjbCourier.UccrName}, {c.UcjbCourier.UccrSurname}"
+                                ? c.UcjbCourier.UccrName + ", " + c.UcjbCourier.UccrSurname
                                 : null,
                         Completion =
                             c.UcjbJobDone || c.UcjbStatus == (int)JobStatus.Completed ? 100 : 0
@@ -1067,7 +1067,8 @@ public class BaseJobRepository(
     public async Task<TucJobType> GetJobTypeByIdAsync(int speedId)
     {
         var jobType = await Context
-            .TucJobTypes.AsNoTracking()
+            .TucJobTypes
+            .AsNoTracking()
             .FirstOrDefaultAsync(x => x.UcjtId == speedId);
 
         return jobType ?? throw new KeyNotFoundException($"Job type with ID {speedId} not found");
@@ -1076,7 +1077,8 @@ public class BaseJobRepository(
     public async Task<TucJobTypeGrouping> GetJobTypeGrouping(int groupingId)
     {
         var grouping = await Context
-            .TucJobTypeGroupings.AsNoTracking()
+            .TucJobTypeGroupings
+            .AsNoTracking()
             .FirstOrDefaultAsync(x => x.GroupingId == groupingId);
 
         return grouping ?? throw new KeyNotFoundException($"Job type grouping with ID {groupingId} not found");
@@ -1350,7 +1352,7 @@ public class BaseJobRepository(
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(noteText, nameof(noteText));
         
-        // If note type is not found, default to internal note
+        // If note type is not found, default to the internal note
         var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
         if (!noteTypeExists) noteType = NoteType.InternalNote;
         
@@ -1454,10 +1456,7 @@ public class BaseJobRepository(
         if (isArchived)
         {
             var archivedNote = await Context.TucNoteArchives.FindAsync([viewModel.NoteId], cancellationToken);
-            if (archivedNote == null)
-            {
-                throw new ArgumentException($"Note with ID {viewModel.NoteId} not found in archives");
-            }
+            ArgumentNullException.ThrowIfNull(archivedNote);
 
             UpdateNoteProperties(archivedNote, viewModel);
             archivedNote.UpdatedDate = currentTime;

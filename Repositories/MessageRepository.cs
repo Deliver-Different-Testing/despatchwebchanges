@@ -29,7 +29,7 @@ public class MessageRepository(
 
         return unreadCount;
     }
-    
+
     public async Task<List<RecentMessageViewModel>> GetRecentListAsync()
     {
         var staffId = infoService.GetStaffId();
@@ -135,9 +135,9 @@ public class MessageRepository(
         {
             throw new ArgumentException("Must specify exactly one recipient (either SendToStaffId or SendToCourierId)");
         }
-        
+
         ArgumentException.ThrowIfNullOrEmpty(request.Message);
-        
+
         var message = new TucManualMessage
         {
             UcmmDate = currentDate,
@@ -148,7 +148,8 @@ public class MessageRepository(
 
         if (request.SendToCourierId.HasValue)
         {
-            await HandleCourierMessageAsync(message, request.SendToCourierId.Value, request.MessageType, isUsTenant, currentDate.Date);
+            await HandleCourierMessageAsync(message, request.SendToCourierId.Value, request.MessageType, isUsTenant,
+                currentDate.Date);
         }
         else if (request.SendToStaffId.HasValue)
         {
@@ -165,7 +166,7 @@ public class MessageRepository(
         var currentStaffId = infoService.GetStaffId();
         var isUsTenant = infoService.IsUsTenant();
         List<TucManualMessage> messages = [];
-        
+
         foreach (var courierId in request.SendToCourierIds)
         {
             var message = new TucManualMessage
@@ -175,7 +176,7 @@ public class MessageRepository(
                 UcmmAttempts = 0,
                 UcmmMessage = request.Message
             };
-            
+
             await HandleCourierMessageAsync(message, courierId, request.MessageType, isUsTenant, currentDate.Date);
             messages.Add(message);
         }
@@ -189,7 +190,7 @@ public class MessageRepository(
                 UcmmAttempts = 0,
                 UcmmMessage = request.Message
             };
-            
+
             await HandleStaffMessageAsync(message, staffId);
             messages.Add(message);
         }
@@ -210,15 +211,9 @@ public class MessageRepository(
             ? query.Where(m => m.UcmmSendFromCourierId == otherPartyId)
             : query.Where(m => m.UcmmSendFromStaffId == otherPartyId);
 
-        var messages = await query.ToListAsync();
-
-        foreach (var message in messages)
-        {
-            message.Read = true;
-            message.TimeRead = currentDate;
-        }
-
-        await Context.SaveChangesAsync();
+        await query.ExecuteUpdateAsync(setters => setters
+            .SetProperty(m => m.Read, true)
+            .SetProperty(m => m.TimeRead, currentDate));
     }
 
     public async Task<List<Suggestion>> GetSavedQuickResponsesAsync()
@@ -257,17 +252,18 @@ public class MessageRepository(
     public async Task DeleteQuickResponseAsync(int responseId)
     {
         var staffId = infoService.GetStaffId();
-        var response =
-            await Context.UserQuickResponses.FirstOrDefaultAsync(r =>
-                r.StaffId == staffId && r.ResponseId == responseId);
-        ArgumentNullException.ThrowIfNull(response);
 
-        // Softly delete
-        response.IsActive = false;
-        await Context.SaveChangesAsync();
+        var rowsAffected = await Context.UserQuickResponses
+            .Where(r => r.StaffId == staffId && r.ResponseId == responseId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(r => r.IsActive, false));
+
+        if (rowsAffected == 0)
+            throw new ArgumentException($"Quick response with ID {responseId} not found for current staff member.");
     }
 
-    private async Task HandleCourierMessageAsync(TucManualMessage message, int sendToCourierId, int messageType, bool isUsTenant,
+    private async Task HandleCourierMessageAsync(TucManualMessage message, int sendToCourierId, int messageType,
+        bool isUsTenant,
         DateTime currentDate)
     {
         var courierData = await (from courier in Context.TucCouriers
@@ -312,43 +308,47 @@ public class MessageRepository(
             message.Subject = $"SMS to Courier: {courierData.Code}";
         }
     }
-    
+
     public async Task<List<MessageContactOptionViewModel>> GetNewMessageContactOptionsAsync(string searchTerm)
     {
         var currentDate = infoService.GetCurrentTenantTime();
-            var couriers = await Context
-                .TucCouriers.Where(c =>
-                    c.Active == true
-                    && (c.Code + " " + c.UccrName + " " + c.UccrSurname).Contains(searchTerm)
-                )
-                .OrderBy(c => c.Code)
-                .Select(c => new MessageContactOptionViewModel
-                {
-                    Id = Guid.NewGuid(),
-                    RecordId = c.UccrId,
-                    Name = $"{c.UccrName} {c.UccrSurname}",
-                    OtherMessagePartyType = OtherMessagePartyType.Courier,
-                    Status = c.CourierLogInOut.LogOutTime != null && c.CourierLogInOut.LogOutTime < currentDate ? "online" : "offline"
-                })
-                .AsNoTracking()
-                .ToListAsync();
-            
-            var staff = await Context.TucStaffs
-                .Where(s => s.UcstActive == true && (s.UcstFirstName + " " + s.UcstLastName).Contains(searchTerm))
-                .OrderBy(s => s.UcstFirstName)
-                .Select(s => new MessageContactOptionViewModel
-                {
-                    Id = Guid.NewGuid(),
-                    RecordId = s.UcstId,
-                    Name = $"{s.UcstFirstName} {s.UcstLastName}",
-                    OtherMessagePartyType = OtherMessagePartyType.Staff,
-                    Status = "unknown"
-                })
-                .AsNoTracking()
-                .ToListAsync();
-            
-            var results = couriers.Concat(staff).ToList();
-            return results;
+
+        var couriers = await Context
+            .TucCouriers.Where(c =>
+                c.Active == true
+                && EF.Functions.Like(c.Code + " " + c.UccrName + " " + c.UccrSurname, $"%{searchTerm}%")
+            )
+            .OrderBy(c => c.Code)
+            .Select(c => new MessageContactOptionViewModel
+            {
+                Id = Guid.NewGuid(),
+                RecordId = c.UccrId,
+                Name = c.UccrName + " " + c.UccrSurname,
+                OtherMessagePartyType = OtherMessagePartyType.Courier,
+                Status = c.CourierLogInOut.LogOutTime != null && c.CourierLogInOut.LogOutTime < currentDate
+                    ? "online"
+                    : "offline"
+            })
+            .AsNoTracking()
+            .ToListAsync();
+
+        var staff = await Context.TucStaffs
+            .Where(s => s.UcstActive == true
+                        && EF.Functions.Like(s.UcstFirstName + " " + s.UcstLastName, $"%{searchTerm}%"))
+            .OrderBy(s => s.UcstFirstName)
+            .Select(s => new MessageContactOptionViewModel
+            {
+                Id = Guid.NewGuid(),
+                RecordId = s.UcstId,
+                Name = s.UcstFirstName + " " + s.UcstLastName,
+                OtherMessagePartyType = OtherMessagePartyType.Staff,
+                Status = "unknown"
+            })
+            .AsNoTracking()
+            .ToListAsync();
+
+        var results = couriers.Concat(staff).ToList();
+        return results;
     }
 
     private async Task HandleStaffMessageAsync(TucManualMessage message, int sendToStaffId)

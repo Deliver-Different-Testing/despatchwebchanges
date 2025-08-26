@@ -63,7 +63,19 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
 
     public async Task<List<ClientActiveViewModel>> ActiveClientsAsync(string searchTerm)
     {
-        var result = await Context.Procedures.DESWEB_qryClientsActiveAsync(searchTerm);
-        return result.Select(c => new ClientActiveViewModel { ID = c.ID, Text = c.Text }).ToList();
+        var likePattern = $"%{searchTerm}%";
+
+        var results = await Context.TucClients
+            .Where(c => c.UcclActive == true &&
+                        EF.Functions.Like(c.UcclCode + " " + c.UcclName, likePattern))
+            .OrderBy(c => c.UcclCode)
+            .Select(c => new ClientActiveViewModel
+            {
+                ID = c.UcclId,
+                Text = c.UcclCode + " " + c.UcclName
+            })
+            .ToListAsync();
+
+        return results;
     }
 }

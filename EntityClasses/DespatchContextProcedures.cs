@@ -528,32 +528,6 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<List<DES_stpJob_DisplayInDespatchResult>> DES_stpJob_DisplayInDespatchAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
-        {
-            var parameterreturnValue = new SqlParameter
-            {
-                ParameterName = "returnValue",
-                Direction = System.Data.ParameterDirection.Output,
-                SqlDbType = System.Data.SqlDbType.Int,
-            };
-
-            var sqlParameters = new []
-            {
-                new SqlParameter
-                {
-                    ParameterName = "JobID",
-                    Value = jobID ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Int,
-                },
-                parameterreturnValue,
-            };
-            var _ = await _context.SqlQueryAsync<DES_stpJob_DisplayInDespatchResult>("EXEC @returnValue = [dbo].[DES_stpJob_DisplayInDespatch] @JobID = @JobID", sqlParameters, cancellationToken);
-
-            returnValue?.SetValue(parameterreturnValue.Value);
-
-            return _;
-        }
-
         public virtual async Task<List<DES_stpJob_SplitJobResult>> DES_stpJob_SplitJobAsync(int? jobID, bool? preBookJob, string userName, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
@@ -741,33 +715,6 @@ namespace DespatchWeb.EntityClasses
                 parameterreturnValue,
             };
             var _ = await _context.SqlQueryAsync<DESWEB_qdfSwapPODResult>("EXEC @returnValue = [dbo].[DESWEB_qdfSwapPOD] @ucjbNumber1 = @ucjbNumber1, @ucjbNumber2 = @ucjbNumber2", sqlParameters, cancellationToken);
-
-            returnValue?.SetValue(parameterreturnValue.Value);
-
-            return _;
-        }
-
-        public virtual async Task<List<DESWEB_qryClientsActiveResult>> DESWEB_qryClientsActiveAsync(string searchTerm, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
-        {
-            var parameterreturnValue = new SqlParameter
-            {
-                ParameterName = "returnValue",
-                Direction = System.Data.ParameterDirection.Output,
-                SqlDbType = System.Data.SqlDbType.Int,
-            };
-
-            var sqlParameters = new []
-            {
-                new SqlParameter
-                {
-                    ParameterName = "SearchTerm",
-                    Size = 200,
-                    Value = searchTerm ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                parameterreturnValue,
-            };
-            var _ = await _context.SqlQueryAsync<DESWEB_qryClientsActiveResult>("EXEC @returnValue = [dbo].[DESWEB_qryClientsActive] @SearchTerm = @SearchTerm", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 

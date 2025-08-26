@@ -567,6 +567,8 @@ public partial class TblClient
 
     public string PurchaseOrderNumber { get; set; }
 
+    public bool AddressBookOnly { get; set; }
+
     public int ClientId { get; set; }
 
     public string Name { get; set; }

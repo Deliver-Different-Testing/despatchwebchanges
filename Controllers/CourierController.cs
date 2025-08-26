@@ -65,7 +65,7 @@ public class CourierController(
     {
         try
         {
-            var result = await courierRepository.GetAvailableCouriers(request);
+            var result = await courierRepository.GetAvailableCouriersAsync(request);
             return Json(result);
         }
         catch (Exception ex)
