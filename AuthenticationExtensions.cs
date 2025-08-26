@@ -42,7 +42,7 @@ public static class AuthenticationExtensions
     }
 
 
-    internal static string EncryptClaims(string claims, string key)
+    private static string EncryptClaims(string claims, string key)
     {
         using var aesAlg = Aes.Create();
         var keyBytes = Convert.FromBase64String(key);
@@ -62,6 +62,4 @@ public static class AuthenticationExtensions
         }
         return Convert.ToBase64String(msEncrypt.ToArray());
     }
-
-
 }

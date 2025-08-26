@@ -3,25 +3,26 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.Response;
-using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http;
+using Serilog;
 
 namespace DespatchWeb.Services;
 
 public class RateJobService(
     IJobRepository jobRepository,
-    ILogger<RateJobService> logger,
-    IHttpClientFactory httpClientFactory)
+    HttpClient httpClient,
+    IHttpContextAccessor contextAccessor)
     : IRateJobService
 {
-    private readonly HttpClient _httpClient = httpClientFactory.CreateClient("HereMaps");
-
-
-    public async Task<decimal> RateJobAsync(JobRatingDetailsDto jobDetails)
+    public async Task<decimal> RateJobAsync(JobRatingDetailsDtoNz jobDetails)
     {
         try
         {
@@ -32,31 +33,15 @@ public class RateJobService(
             ArgumentNullException.ThrowIfNull(jobDetails.SpeedId);
             ArgumentNullException.ThrowIfNull(jobDetails.SpeedId);
             ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
-            
-            var rate = await jobRepository.RateJobAsync(
-                jobDetails.ClientId.Value,
-                jobDetails.FromId.Value,
-                jobDetails.ToId.Value,
-                jobDetails.SpeedId.Value,
-                jobDetails.IsPedal,
-                jobDetails.IsVan,
-                jobDetails.IsReturnJob,
-                jobDetails.Weight.HasValue ? (int)jobDetails.Weight.Value : 0,
-                jobDetails.SizeId.Value,
-                jobDetails.IncludeFuelSurcharge,
-                jobDetails.OurRef,
-                jobDetails.RefA,
-                jobDetails.RefB,
-                jobDetails.Quantity,
-                jobDetails.BookedDate
-            );
 
-            return rate;
+            var rateResult = await RateUrgentJobAsync(jobDetails);
+            return rateResult.Rate;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error calculating job rate for job ID {JobId}", jobDetails.JobId);
-            throw new ApplicationException($"Failed to calculate job rate for job ID {jobDetails.JobId}", ex);
+            Log.Error(ex, "{ErrorMessage}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(RateJobService), nameof(RateJobUsAsync)));
+            throw;
         }
     }
 
@@ -70,7 +55,7 @@ public class RateJobService(
             ArgumentNullException.ThrowIfNull(jobDetails.SizeId);
             
             // Get distances and airport info
-            var distanceResult = await CalculateJobRateUs(
+            var distanceResult = await CalculateJobRateUsAsync(
                 new JobRateRequest
                 {
                     SpeedId = jobDetails.SpeedId.Value,
@@ -113,15 +98,16 @@ public class RateJobService(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error calculating US job rate for job ID {JobId}", jobDetails.JobId);
-            throw new ApplicationException($"Failed to calculate US job rate for job ID {jobDetails.JobId}", ex);
+            Log.Error(ex, "{ErrorMessage}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(RateJobService), nameof(RateJobUsAsync)));
+            throw;
         }
     }
 
-     private async Task<JobRateResult> CalculateJobRateUs(JobRateRequest request)
+     private async Task<JobRateResult> CalculateJobRateUsAsync(JobRateRequest request)
         {
             var speed = await jobRepository.GetJobTypeByIdAsync(request.SpeedId);
-            var speedGrouping = await jobRepository.GetJobTypeGrouping(speed.GroupingId);
+            var speedGrouping = speed.Grouping;
 
             var result = new JobRateResult
             {
@@ -130,7 +116,7 @@ public class RateJobService(
                 ToMiles = 0
             };
 
-            if (speedGrouping.GroupingName != "Flight")
+            if (speedGrouping.GroupingId != (int)SpeedGrouping.Flight)
             {
                 result.TotalMiles = await CalculateRoadDistance(
                     request.PickupLat,
@@ -204,7 +190,7 @@ public class RateJobService(
 
         try
         {
-            var response = await _httpClient.GetAsync($"routes?{queryString}");
+            var response = await httpClient.GetAsync($"routes?{queryString}");
             response.EnsureSuccessStatusCode();
 
             var result = await response.Content.ReadFromJsonAsync<HereMapRouteResponseV8>();
@@ -212,10 +198,14 @@ public class RateJobService(
         }
         catch (HttpRequestException ex)
         {
+            Log.Error(ex, "{ErrorMessage}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(RateJobService), nameof(RateJobUsAsync)));
             throw new ApplicationException("HERE Maps API request failed", ex);
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "{ErrorMessage}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(RateJobService), nameof(RateJobUsAsync)));
             throw new ApplicationException("Failed to get route from HERE Maps API", ex);
         }
     }
@@ -230,5 +220,143 @@ public class RateJobService(
             .Sum(s => s.Summary.Length);
 
         return Math.Round(totalMeters / 1609.344);
+    }
+
+    public async Task<ApiRerate> RateUrgentJobAsync(JobRatingDetailsDtoNz jobDetails)
+    {
+        try
+        {
+            // Map Job Object
+            var jobObject = MapToUrgentRerateObject(jobDetails);
+        
+            // Generate DFRNT Api Token
+            var connectionString =
+                contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "Connection")?.Value;
+            ArgumentException.ThrowIfNullOrEmpty(connectionString);
+            var tenantId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
+            ArgumentException.ThrowIfNullOrEmpty(tenantId);
+            var timeZone = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
+            ArgumentException.ThrowIfNullOrEmpty(timeZone);
+            var userName = contextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Name)?.Value;
+            ArgumentException.ThrowIfNullOrEmpty(userName);
+        
+            var token = AuthenticationExtensions.CreateApiToken(userName, 
+                int.Parse(tenantId),
+                connectionString,
+                timeZone);
+        
+            // Call DFRNT API
+            var baseUrl = Environment.GetEnvironmentVariable("WebAPIUrl");
+        
+            var request = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/rates/getRerateAmount");
+            request.Headers.Add("Authorization", $"Bearer {token}");
+            request.Content = JsonContent.Create(jobObject);
+        
+            var response = await httpClient.SendAsync(request);
+        
+            if (!response.IsSuccessStatusCode)
+            {
+                Log.Error("Request failed with status code {ResponseStatusCode}", response.StatusCode);
+                Log.Error("Response content: {ReadAsStringAsync}", await response.Content.ReadAsStringAsync());
+            }
+        
+            var rerateResponse = await response.Content.ReadFromJsonAsync<RerateApiResponse>();
+            return rerateResponse.ApiRerate ?? throw new ApplicationException("Failed to get rate from DFRNT API");
+        }
+        catch (Exception e)
+        {
+           Log.Error(e, "{Message}",
+               ErrorMessageStringFormatter.FormatForLogging(e, nameof(RateJobService), nameof(RateUrgentJobAsync)));
+            throw;
+        }
+    }
+    
+    private static UrgentRerateObject MapToUrgentRerateObject(JobRatingDetailsDtoNz dto)
+    {
+        ArgumentNullException.ThrowIfNull(dto);
+
+        return new UrgentRerateObject
+        {
+            SpeedId = dto.SpeedId ?? 0,
+            SizeId = dto.SizeId ?? 0,
+            From = new UrgentRerateAddressObject
+            {
+                CompanyName = dto.FromCompanyName,
+                BuildingName = dto.FromBuildingName,
+                StreetAddress = dto.FromStreetAddress ?? string.Empty,
+                City = dto.FromCity ?? string.Empty,
+                State = dto.FromState,
+                Suburb = dto.FromSuburb,
+                ZipCode = dto.FromZip ?? dto.FromPostCode,
+                PostCode = dto.FromPostCode ?? dto.FromZip,
+                CountryCode = dto.FromCountryCode,
+                Latitude = (double?)dto.PickupLat,
+                Longitude = (double?)dto.PickupLong
+            },
+            To = new UrgentRerateAddressObject
+            {
+                CompanyName = dto.ToCompanyName,
+                BuildingName = dto.ToBuildingName,
+                StreetAddress = dto.ToStreetAddress ?? string.Empty,
+                City = dto.ToCity ?? string.Empty,
+                State = dto.ToState,
+                Suburb = dto.ToSuburb,
+                ZipCode = dto.ToZip ?? dto.ToPostCode,
+                PostCode = dto.ToPostCode ?? dto.ToZip,
+                CountryCode = dto.ToCountryCode,
+                Latitude = (double?)dto.DeliveryLat,
+                Longitude = (double?)dto.DeliveryLong
+            },
+            Packages = MapPackages(dto.Packages),
+            Weight = (int)(dto.Weight ?? 0),
+            Quantity = dto.Quantity,
+            IsDangerousGoods = dto.DangerousGoods,
+            IsPrebook = dto.IsPrebook,
+            DateTime = dto.BookedDate,
+            Van = dto.IsVan ? true : null,
+            Bike = dto.IsPedal ? true : null,
+            Truck = CreateTruckObject(dto),
+            OurReference = dto.OurRef,
+            ClientReferenceA = dto.RefA,
+            ClientReferenceB = dto.RefB
+        };
+    }
+
+    private static IEnumerable<UrgentPackageObject> MapPackages(List<PackageDetailsDto> packages)
+    {
+        if (packages == null || packages.Count == 0) return new List<UrgentPackageObject>();
+
+        return packages.Select(p => new UrgentPackageObject
+        {
+            Name = p.Name,
+            Length = p.Length,
+            Width = p.Width,
+            Height = p.Height,
+            Cubic = p.Cubic,
+            Kg = p.Kg,
+            Type = p.Type,
+            PackageCode = p.PackageCode,
+            Units = p.Units
+        });
+    }
+
+    private static UrgentTruckObject CreateTruckObject(JobRatingDetailsDtoNz dto)
+    {
+        if (dto.PickupTailLift.HasValue || dto.DropoffTailLift.HasValue || dto.PrivateRes.HasValue ||
+            dto.HasDgDocuments.HasValue || !string.IsNullOrEmpty(dto.TruckStartTime) || 
+            dto.TruckHours.HasValue || (!dto.IsPedal && !dto.IsVan))
+        {
+            return new UrgentTruckObject
+            {
+                PickupTailLift = dto.PickupTailLift,
+                DropoffTailLift = dto.DropoffTailLift,
+                PrivateRes = dto.PrivateRes,
+                HasDgDocuments = dto.HasDgDocuments ?? (dto.DangerousGoods ? true : null),
+                TruckStartTime = dto.TruckStartTime,
+                TruckHours = dto.TruckHours ?? (dto.WaitTime > 0 ? dto.WaitTime : null)
+            };
+        }
+
+        return null;
     }
 }

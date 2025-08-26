@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace DespatchWeb.Models.Dto;
 
@@ -53,4 +54,52 @@ public class JobRatingDetailsDto
     
     public bool CalculateDimsOncePerJob { get; set; }
     public decimal? PreviousRate { get; set; }
+}
+
+
+public class JobRatingDetailsDtoNz : JobRatingDetailsDto
+{
+    // Address Details for From location
+    public string FromCompanyName { get; set; }
+    public string FromBuildingName { get; set; }
+    public string FromStreetAddress { get; set; }
+    public string FromCity { get; set; }
+    public string FromState { get; set; }
+    public string FromSuburb { get; set; }
+    public string FromPostCode { get; set; }
+    public string FromCountryCode { get; set; }
+
+    // Address Details for To location
+    public string ToCompanyName { get; set; }
+    public string ToBuildingName { get; set; }
+    public string ToStreetAddress { get; set; }
+    public string ToCity { get; set; }
+    public string ToState { get; set; }
+    public string ToSuburb { get; set; }
+    public string ToPostCode { get; set; }
+    public string ToCountryCode { get; set; }
+
+    // Package Details
+    public List<PackageDetailsDto> Packages { get; set; }
+
+    // Truck-specific properties
+    public bool? PickupTailLift { get; set; }
+    public bool? DropoffTailLift { get; set; }
+    public bool? PrivateRes { get; set; }
+    public bool? HasDgDocuments { get; set; }
+    public string TruckStartTime { get; set; }
+    public int? TruckHours { get; set; }
+}
+
+public class PackageDetailsDto
+{
+    public string Name { get; set; }
+    public double? Length { get; set; }
+    public double? Width { get; set; }
+    public double? Height { get; set; }
+    public double Cubic { get; set; }
+    public double Kg { get; set; }
+    public string Type { get; set; }
+    public string PackageCode { get; set; }
+    public int Units { get; set; }
 }

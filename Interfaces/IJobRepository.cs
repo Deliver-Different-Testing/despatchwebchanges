@@ -191,7 +191,6 @@ public interface IJobRepository
     Task RateJobUsAsync(RateJobUsDto dto);
 
     Task<TucJobType> GetJobTypeByIdAsync(int speedId);
-    Task<TucJobTypeGrouping> GetJobTypeGrouping(int groupingId);
 
     Task<List<AddressWithAgent>> GetClosestAirportsAsync(decimal latitude, decimal longitude);
 
@@ -215,6 +214,8 @@ public interface IJobRepository
     Task UpdateJobReadStatusAsync(int jobId, bool hasBeenRead);
     Task AddNewTucNoteTypeAsync(NoteTypeViewModel noteType);
     Task<JobRatingDetailsDto> GetJobDetailsForRatingAsync(int jobId);
+    Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId);
+    Task<JobRatingDetailsDtoNz> GetJobBookingDetailsForRatingNzAsync(int jobId);
     Task UpdateJobRateAsync(int jobId, decimal rate, string noteText);
     Task<List<TimeZoneSuggestion>> GetTimeZoneOptions();
     Task<JobRatingDetailsDto> GetJobBookingDetailsForRatingAsync(int jobId);

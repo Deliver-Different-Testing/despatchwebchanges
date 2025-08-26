@@ -1394,15 +1394,23 @@ public class JobController(
             // Recalculate job
             var shouldRecalculateRate = ShouldRecalculateRate(field);
             if (!shouldRecalculateRate) return Ok();
-
-            var jobDetails = await jobRepository.GetJobBookingDetailsForRatingAsync(jobId);
-            if (jobDetails.IsManuallyRated) return Ok();
-
+            
             var isUsTenant = infoService.IsUsTenant();
             if (isUsTenant)
+            {
+                var jobDetails = await jobRepository.GetJobBookingDetailsForRatingAsync(jobId);
+                if (jobDetails.IsManuallyRated) return Ok();
+                
                 await rateJobService.RateJobUsAsync(jobDetails);
+            }
             else
+            {
+                var jobDetails = await jobRepository.GetJobDetailsForRatingNzAsync(jobId);
+                if (jobDetails.IsManuallyRated) return Ok();
+                
                 await rateJobService.RateJobAsync(jobDetails);
+            }
+
             return Ok();
         }
         catch (Exception e)
@@ -1430,14 +1438,21 @@ public class JobController(
             var shouldRecalculateRate = ShouldRecalculateRate(field);
             if (!shouldRecalculateRate) return Ok();
 
-            var jobDetails = await jobRepository.GetJobDetailsForRatingAsync(jobId);
-            if (jobDetails.IsManuallyRated) return Ok();
-
             var isUsTenant = infoService.IsUsTenant();
             if (isUsTenant)
+            {
+                var jobDetails = await jobRepository.GetJobBookingDetailsForRatingAsync(jobId);
+                if (jobDetails.IsManuallyRated) return Ok();
+                
                 await rateJobService.RateJobUsAsync(jobDetails);
+            }
             else
+            {
+                var jobDetails = await jobRepository.GetJobDetailsForRatingNzAsync(jobId);
+                if (jobDetails.IsManuallyRated) return Ok();
+                
                 await rateJobService.RateJobAsync(jobDetails);
+            }
 
             return Ok();
         }
@@ -1504,6 +1519,7 @@ public class JobController(
         try
         {
             ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(request.StaffId);
 
             if (!IsValidRequest(request))
                 return StatusCode(
@@ -1669,8 +1685,6 @@ public class JobController(
     public async Task<IActionResult> IsFilesAttachedToJob(int jobId)
     {
         var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-        var tenantId = HttpContext.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")
-            ?.Value;
         var key = $"JobAttachments/{jobId}-";
         Log.Debug("Get S3 Object List for {Key}", key);
         var s3List = await SearchFilesByPatternAsync(bucketName, key);
@@ -1685,8 +1699,6 @@ public class JobController(
         try
         {
             var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            var tenantId = HttpContext.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")
-                ?.Value;
             var key = $"JobAttachments/{jobId}-";
             Log.Debug("Get S3 Object List for {Key}", key);
             var s3List = await SearchFilesByPatternAsync(bucketName, key);
@@ -1788,7 +1800,8 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error uploading file for Job {JobId}", request.JobId);
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(UploadFile)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
@@ -1950,9 +1963,9 @@ public class JobController(
             await jobRepository.UpdateDeliveryAddressNzAsync(request);
 
             // Get job details for rating
-            var jobDetails = await jobRepository.GetJobDetailsForRatingAsync(request.JobId);
+            var jobDetails = await jobRepository.GetJobDetailsForRatingNzAsync(request.JobId);
 
-            // Update job details with new delivery address
+            // Update job details with a new delivery address
             jobDetails.ToId = request.SuburbId;
             jobDetails.DeliveryLat = request.Latitude;
             jobDetails.DeliveryLong = request.Longitude;
@@ -2012,9 +2025,9 @@ public class JobController(
             await jobRepository.UpdatePickupAddressNzAsync(request);
 
             // Get job details for rating
-            var jobDetails = await jobRepository.GetJobDetailsForRatingAsync(request.JobId);
+            var jobDetails = await jobRepository.GetJobDetailsForRatingNzAsync(request.JobId);
 
-            // Update job details with new pickup address
+            // Update job details with a new pickup address
             jobDetails.FromId = request.SuburbId;
             jobDetails.PickupLat = request.Latitude;
             jobDetails.PickupLong = request.Longitude;
@@ -2073,9 +2086,9 @@ public class JobController(
             await jobRepository.UpdateBookingPickupAddressNzAsync(request);
 
             // Get job details for rating
-            var jobDetails = await jobRepository.GetJobBookingDetailsForRatingAsync(request.JobId);
+            var jobDetails = await jobRepository.GetJobBookingDetailsForRatingNzAsync(request.JobId);
 
-            // Update job details with new pickup address
+            // Update job details with a new pickup address
             jobDetails.FromId = request.SuburbId;
             jobDetails.PickupLat = request.Latitude;
             jobDetails.PickupLong = request.Longitude;
@@ -2136,7 +2149,7 @@ public class JobController(
             await jobRepository.UpdateBookingDeliveryAddressNzAsync(request);
 
             // Get job details for rating
-            var jobDetails = await jobRepository.GetJobBookingDetailsForRatingAsync(request.JobId);
+            var jobDetails = await jobRepository.GetJobBookingDetailsForRatingNzAsync(request.JobId);
 
             // Update job details with a new pickup address
             jobDetails.ToId = request.SuburbId;
@@ -2247,8 +2260,8 @@ public class JobController(
             Log.Error(ex, "Error retrieving the delivery journey for Job {JobId}", jobId);
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
-    }  
-    
+    }
+
     [HttpPost]
     public async Task<IActionResult> BulkUpdateReadStatus([FromBody] BulkReadUpdateRequestModel data)
     {
