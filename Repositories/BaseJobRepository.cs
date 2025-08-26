@@ -1072,24 +1072,14 @@ public class BaseJobRepository(
 
     public async Task<TucJobType> GetJobTypeByIdAsync(int speedId)
     {
-        var jobType = await Context
-            .TucJobTypes
+        var jobType = await Context.TucJobTypes
+            .Include(s => s.Grouping)
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.UcjtId == speedId);
 
         return jobType ?? throw new KeyNotFoundException($"Job type with ID {speedId} not found");
     }
-
-    public async Task<TucJobTypeGrouping> GetJobTypeGrouping(int groupingId)
-    {
-        var grouping = await Context
-            .TucJobTypeGroupings
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.GroupingId == groupingId);
-
-        return grouping ?? throw new KeyNotFoundException($"Job type grouping with ID {groupingId} not found");
-    }
-
+    
     public async Task<List<AddressWithAgent>> GetClosestAirportsAsync(
         decimal latitude,
         decimal longitude
@@ -1136,7 +1126,7 @@ public class BaseJobRepository(
 
     public async Task<List<MegaMapResponse>> GetJobsForMegaMapAsync()
     {
-        // Get active jobs to display on map
+        // Get active jobs to display on a map
         var jobs = await Context
             .TucJobs.Where(j =>
                 j.UcjbStatus.HasValue
@@ -1806,6 +1796,119 @@ public class BaseJobRepository(
             throw new ApplicationException($"Failed to retrieve job details for rating: {ex.Message}", ex);
         }
     }
+    
+    
+public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId)
+{
+    try
+    {
+        var jobDetails = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Include(j => j.UcjbClient)
+            .Include(j => j.UcjbSpeedNavigation)
+            .Include(j => j.TucJobItems)
+            .Select(job => new JobRatingDetailsDtoNz
+            {
+                JobId = job.UcjbId,
+                ClientId = job.UcjbClientId,
+                FromId = job.UcjbFrom,
+                ToId = job.UcjbTo,
+                SpeedId = job.UcjbSpeed,
+                IsPedal = job.UcjbCbd,
+                IsVan = job.UcjbVan,
+                IsReturnJob = job.UcjbReturn,
+                Weight = job.UcjbWeight,
+                SizeId = job.UcjbSize,
+                IncludeFuelSurcharge = false,
+                IsDirect = job.Direct,
+                AcceptedJobTypeId = job.AcceptedJobTypeId,
+                OurRef = job.UcjbOurRef,
+                RefA = job.UcjbClientRefa,
+                RefB = job.UcjbClientRefb,
+                Quantity = job.UcjbQty ?? 1,
+                BookedDate = job.UcjbDate,
+
+                // Coordinates
+                PickupLat = job.PickUpLatitude ?? 0,
+                PickupLong = job.PickUpLongitude ?? 0,
+                DeliveryLat = job.DeliveryLatitude ?? 0,
+                DeliveryLong = job.DeliveryLongitude ?? 0,
+
+                // US-specific properties
+                FromZip = job.PickupAddressLine7,
+                ToZip = job.DeliveryAddressLine7,
+                DangerousGoods = job.Dgdocument ?? false,
+                TotalPallets = job.TucJobItems.Count,
+                ExtraStopOffs = 0,
+                DryIceWeight = job.DryIceWeight ?? 0,
+                WaitTime = job.WaitedPickUp ?? 0,
+
+                // Flight-specific properties
+                FromAirportId = job.FromAirportId,
+                ToAirportId = job.ToAirportId,
+                FromAgentId = job.FromAirport != null ? job.FromAirport.AgentId : null,
+                ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
+
+                // Client-specific rate information
+                ClientDiscount = job.UcjbClient != null ? job.UcjbClient.Discount : 0,
+                Cubic = job.TucJobItems.Sum(i => i.Cubic),
+                IsManuallyRated = job.RatedManually,
+                IsPrebook = job.IsRecurringJob,
+
+                // NEW NZ-specific From Address fields
+                FromCompanyName = job.PickupAddressLine1,
+                FromBuildingName = job.PickupAddressLine2,
+                FromStreetAddress = job.PickupAddressLine3 ?? string.Empty,
+                FromCity = job.PickupAddressLine4 ?? string.Empty,
+                FromState = job.PickupAddressLine5,
+                FromSuburb = job.PickupAddressLine6,
+                FromPostCode = job.PickupAddressLine7,
+                FromCountryCode = job.PickupAddressLine8,
+
+                // NEW NZ-specific To Address fields
+                ToCompanyName = job.DeliveryAddressLine1,
+                ToBuildingName = job.DeliveryAddressLine2,
+                ToStreetAddress = job.DeliveryAddressLine3 ?? string.Empty,
+                ToCity = job.DeliveryAddressLine4 ?? string.Empty,
+                ToState = job.DeliveryAddressLine5,
+                ToSuburb = job.DeliveryAddressLine6,
+                ToPostCode = job.DeliveryAddressLine7,
+                ToCountryCode = job.DeliveryAddressLine8,
+
+                // NEW Package Details
+                Packages = job.TucJobItems.Select(item => new PackageDetailsDto
+                {
+                    Name = item.Notes ,
+                    Length = item.Length,
+                    Width = item.Depth,
+                    Height = item.Height,
+                    Cubic = item.Cubic.HasValue ? (double)item.Cubic : 0,
+                    Kg = item.Weight,
+                    Type = null,
+                    PackageCode = null,
+                    Units = job.TucJobItems.Count
+                }).ToList(),
+
+                // NEW Truck-specific properties
+                PickupTailLift = null,
+                DropoffTailLift = null,
+                PrivateRes = job.DeliverToPrivateBusiness == 1,
+                HasDgDocuments = job.Dgdocument,
+                TruckStartTime = job.TruckStartTime.ToString(),
+                TruckHours = (int)job.TruckHours
+            })
+            .FirstOrDefaultAsync();
+
+        ArgumentNullException.ThrowIfNull(jobDetails);
+
+        return jobDetails;
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Error retrieving NZ job details for rating. Job ID: {JobId}", jobId);
+        throw new ApplicationException($"Failed to retrieve NZ job details for rating: {ex.Message}", ex);
+    }
+}
 
     public async Task<JobRatingDetailsDto> GetJobBookingDetailsForRatingAsync(int jobId)
     {
@@ -1876,6 +1979,121 @@ public class BaseJobRepository(
             throw new ApplicationException($"Failed to retrieve job details for rating: {ex.Message}", ex);
         }
     }
+    
+    public async Task<JobRatingDetailsDtoNz> GetJobBookingDetailsForRatingNzAsync(int jobId)
+{
+    try
+    {
+        var jobDetails = await Context.TucJobBookings
+            .Where(j => j.UcbkId == jobId)
+            .Include(j => j.UcbkClient)
+            .Include(j => j.UcbkSpeedNavigation)
+            .Include(j => j.TucJobBookingItems)
+            .Select(job => new JobRatingDetailsDtoNz
+            {
+                // Base properties from JobRatingDetailsDto
+                JobId = job.UcbkId,
+                ClientId = job.UcbkClientId ?? 0,
+                FromId = (int)job.UcbkFrom,
+                ToId = (int)job.UcbkTo,
+                SpeedId = job.UcbkSpeed ?? 0,
+                IsPedal = job.UcbkCbd ?? false,
+                IsVan = job.UcbkVan,
+                IsReturnJob = job.UcbkReturn,
+                Weight = job.UcbkWeight ?? 0,
+                SizeId = job.UcbkSize ?? 0,
+                IncludeFuelSurcharge = false,
+                IsDirect = job.Direct,
+                AcceptedJobTypeId = job.AcceptedJobTypeId ?? 0,
+                OurRef = job.UcbkOurRef,
+                RefA = job.UcbkClientRefa,
+                RefB = job.UcbkClientRefb,
+                Quantity = job.Quantity.HasValue ? (int)job.Quantity : 0,
+                BookedDate = job.UcbkDate ?? DateTime.MinValue,
+                PreviousRate = job.PricingBreakdowns.Sum(p => p.Charged),
+
+                // Coordinates
+                PickupLat = job.PickUpLatitude ?? 0,
+                PickupLong = job.PickUpLongitude ?? 0,
+                DeliveryLat = job.DeliveryLatitude ?? 0,
+                DeliveryLong = job.DeliveryLongitude ?? 0,
+
+                // US-specific properties
+                FromZip = job.PickupAddressLine7,
+                ToZip = job.DeliveryAddressLine7,
+                DangerousGoods = job.Dgdocument ?? false,
+                TotalPallets = job.TucJobBookingItems.Count,
+                ExtraStopOffs = 0,
+                DryIceWeight = job.DryIceWeight ?? 0,
+                WaitTime = 0,
+
+                // Flight-specific properties
+                FromAirportId = job.FromAirportId,
+                ToAirportId = job.ToAirportId,
+                FromAgentId = job.FromAirport != null ? job.FromAirport.AgentId : null,
+                ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
+
+                // Client-specific rate information
+                ClientDiscount = job.UcbkClient != null ? job.UcbkClient.Discount : 0,
+                Cubic = job.TucJobBookingItems.Sum(i => i.Cubic),
+                IsManuallyRated = job.RatedManually,
+                IsPrebook = true,
+                CalculateDimsOncePerJob = job.DimensionsType == 1,
+
+                // NEW NZ-specific From Address fields
+                FromCompanyName = job.PickupAddressLine1,
+                FromBuildingName = job.PickupAddressLine2,
+                FromStreetAddress = job.PickupAddressLine3 ?? string.Empty,
+                FromCity = job.PickupAddressLine4 ?? string.Empty,
+                FromState = job.PickupAddressLine5,
+                FromSuburb = job.PickupAddressLine6,
+                FromPostCode = job.PickupAddressLine7,
+                FromCountryCode = job.PickupAddressLine8,
+
+                // NEW NZ-specific To Address fields
+                ToCompanyName = job.DeliveryAddressLine1,
+                ToBuildingName = job.DeliveryAddressLine2,
+                ToStreetAddress = job.DeliveryAddressLine3 ?? string.Empty,
+                ToCity = job.DeliveryAddressLine4 ?? string.Empty,
+                ToState = job.DeliveryAddressLine5,
+                ToSuburb = job.DeliveryAddressLine6,
+                ToPostCode = job.DeliveryAddressLine7,
+                ToCountryCode = job.DeliveryAddressLine8,
+
+                // NEW Package Details
+                Packages = job.TucJobBookingItems.Select(item => new PackageDetailsDto
+                {
+                    Name = item.Notes,
+                    Length = item.Length,
+                    Width = item.Depth,
+                    Height = item.Height,
+                    Cubic = item.Cubic.HasValue ? (double)item.Cubic : 0,
+                    Kg = item.Weight,
+                    Type = null,
+                    PackageCode = null,
+                    Units = job.TucJobBookingItems.Count
+                }).ToList(),
+
+                // NEW Truck-specific properties
+                PickupTailLift = null,
+                DropoffTailLift = null,
+                PrivateRes = job.DeliverToPrivateBusiness == 1,
+                HasDgDocuments = job.Dgdocument,
+                TruckStartTime = job.TruckStartTime.ToString(),
+                TruckHours = (int)job.TruckHours
+            })
+            .FirstOrDefaultAsync();
+
+        ArgumentNullException.ThrowIfNull(jobDetails);
+
+        return jobDetails;
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Error retrieving NZ job booking details for rating. Job ID: {JobId}", jobId);
+        throw new ApplicationException($"Failed to retrieve NZ job booking details for rating: {ex.Message}", ex);
+    }
+}
 
     public async Task UpdateJobRateAsync(int jobId, decimal rate, string noteText)
     {
