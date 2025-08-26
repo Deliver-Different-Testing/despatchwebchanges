@@ -1221,7 +1221,12 @@ public class BaseJobRepository(
 
         try
         {
-            var newParcels = parcels.Select(parcel => CreateTucJobItem(jobId, parcel)).ToList();
+            // Get the next available ItemId for this job
+            var nextItemId = await GetNextItemIdForJobAsync(jobId);
+        
+            var newParcels = parcels.Select((parcel, index) => 
+                CreateTucJobItem(jobId, parcel, nextItemId + index)).ToList();
+        
             await Context.TucJobItems.AddRangeAsync(newParcels);
             await Context.SaveChangesAsync();
         }
@@ -1244,10 +1249,21 @@ public class BaseJobRepository(
             var newParcels = new List<TucJobItem>();
             var existingParcelIds = new List<int>();
 
+            // Get next ItemId for new parcels
+            var nextItemId = await GetNextItemIdForJobAsync(effectiveJobId);
+            var newParcelCount = 0;
+
             foreach (var parcel in parcels)
             {
-                if (parcel.ItemId == null) newParcels.Add(CreateTucJobItem(effectiveJobId, parcel));
-                else existingParcelIds.Add(parcel.ItemId.Value);
+                if (parcel.ItemId == null) 
+                {
+                    newParcels.Add(CreateTucJobItem(effectiveJobId, parcel, nextItemId + newParcelCount));
+                    newParcelCount++;
+                }
+                else 
+                {
+                    existingParcelIds.Add(parcel.ItemId.Value);
+                }
             }
 
             // Handle new items
@@ -1283,11 +1299,21 @@ public class BaseJobRepository(
         }
     }
 
-    private static TucJobItem CreateTucJobItem(int jobId, ParcelDimensions parcel)
+    private async Task<int> GetNextItemIdForJobAsync(int jobId)
+    {
+        var maxItemId = await Context.TucJobItems
+            .Where(i => i.JobId == jobId)
+            .MaxAsync(i => (int?)i.ItemId);
+    
+        return (maxItemId ?? 0) + 1;
+    }
+    
+    private static TucJobItem CreateTucJobItem(int jobId, ParcelDimensions parcel, int itemId)
     {
         return new TucJobItem
         {
             JobId = jobId,
+            ItemId = itemId,
             Height = parcel.Height ?? 0,
             Length = parcel.Length ?? 0,
             Depth = parcel.Depth ?? 0,
