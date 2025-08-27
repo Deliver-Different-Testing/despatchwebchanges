@@ -19,13 +19,7 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<CargoFacility> CargoFacilities { get; set; }
 
-    public virtual DbSet<ClearListAreaZipPolygon> ClearListAreaZipPolygons { get; set; }
-
-    public virtual DbSet<DeliveryPhoto> DeliveryPhotos { get; set; }
-
     public virtual DbSet<DesQryAllJobType> DesQryAllJobTypes { get; set; }
-
-    public virtual DbSet<DesQrySupportEventsCustomerAndCourier> DesQrySupportEventsCustomerAndCouriers { get; set; }
 
     public virtual DbSet<DespatchViewZoneGroup> DespatchViewZoneGroups { get; set; }
 
@@ -33,15 +27,7 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<DeswebQryDespatchJobViewFilter> DeswebQryDespatchJobViewFilters { get; set; }
 
-    public virtual DbSet<Dfrntapp> Dfrntapps { get; set; }
-
-    public virtual DbSet<DfrntappPage> DfrntappPages { get; set; }
-
-    public virtual DbSet<DfrntappUserViewPermission> DfrntappUserViewPermissions { get; set; }
-
     public virtual DbSet<DfrntpageView> DfrntpageViews { get; set; }
-
-    public virtual DbSet<DfrntuserPageLayout> DfrntuserPageLayouts { get; set; }
 
     public virtual DbSet<ExtraCharge> ExtraCharges { get; set; }
 
@@ -52,8 +38,6 @@ public partial class DespatchContext : DbContext
     public virtual DbSet<FlightWebhookEventType> FlightWebhookEventTypes { get; set; }
 
     public virtual DbSet<FlightZoneCombo> FlightZoneCombos { get; set; }
-
-    public virtual DbSet<GlobalAddressMapping> GlobalAddressMappings { get; set; }
 
     public virtual DbSet<JobDeliveryJourney> JobDeliveryJourneys { get; set; }
 
@@ -318,40 +302,6 @@ public partial class DespatchContext : DbContext
                 .HasConstraintName("FK__CargoFaci__Carri__2F5BAFEC");
         });
 
-        modelBuilder.Entity<ClearListAreaZipPolygon>(entity =>
-        {
-            entity.HasKey(e => e.ClearListAreaZipPolygonId).HasName("PK__ClearLis__92471BFE6D5953EB");
-
-            entity.ToTable("ClearListAreaZipPolygon");
-
-            entity.HasIndex(e => new { e.ClearListAreaId, e.ZipPolygonId }, "UC_ClearListArea_ZipPolygon").IsUnique();
-
-            entity.Property(e => e.ClearListAreaZipPolygonId).HasColumnName("ClearListAreaZipPolygonID");
-            entity.Property(e => e.ClearListAreaId).HasColumnName("ClearListAreaID");
-            entity.Property(e => e.Created).HasColumnType("datetime");
-            entity.Property(e => e.CreatedBy)
-                .IsRequired()
-                .HasMaxLength(100);
-            entity.Property(e => e.LastModified).HasColumnType("datetime");
-            entity.Property(e => e.LastModifiedBy)
-                .IsRequired()
-                .HasMaxLength(100);
-            entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
-        });
-
-        modelBuilder.Entity<DeliveryPhoto>(entity =>
-        {
-            entity.ToTable("DeliveryPhoto");
-
-            entity.HasIndex(e => e.JobId, "IX_DeliveryPhoto");
-
-            entity.Property(e => e.DeliveryPhotoId).HasColumnName("DeliveryPhotoID");
-            entity.Property(e => e.JobId).HasColumnName("JobID");
-            entity.Property(e => e.Photo)
-                .IsRequired()
-                .HasColumnType("image");
-        });
-
         modelBuilder.Entity<DesQryAllJobType>(entity =>
         {
             entity
@@ -364,89 +314,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(50);
-        });
-
-        modelBuilder.Entity<DesQrySupportEventsCustomerAndCourier>(entity =>
-        {
-            entity
-                .HasNoKey()
-                .ToView("DES_qrySupportEvents_CustomerAndCourier");
-
-            entity.Property(e => e.Code).HasMaxLength(50);
-            entity.Property(e => e.CourierFleetId).HasColumnName("CourierFleetID");
-            entity.Property(e => e.DisplayNote).HasMaxLength(1067);
-            entity.Property(e => e.EventDescription)
-                .HasMaxLength(50)
-                .IsUnicode(false);
-            entity.Property(e => e.JobTime).HasColumnType("datetime");
-            entity.Property(e => e.OriginalSpeed).HasMaxLength(50);
-            entity.Property(e => e.RegionFromId).HasColumnName("RegionFromID");
-            entity.Property(e => e.RegionToId).HasColumnName("RegionToID");
-            entity.Property(e => e.Speed).HasMaxLength(50);
-            entity.Property(e => e.SpeedId).HasColumnName("SpeedID");
-            entity.Property(e => e.UcclCode)
-                .IsRequired()
-                .HasMaxLength(50)
-                .HasColumnName("ucclCode");
-            entity.Property(e => e.UcclId).HasColumnName("ucclID");
-            entity.Property(e => e.UcclName)
-                .IsRequired()
-                .HasMaxLength(75)
-                .HasColumnName("ucclName");
-            entity.Property(e => e.UcclPhone)
-                .HasMaxLength(50)
-                .HasColumnName("ucclPhone");
-            entity.Property(e => e.UcevClientId).HasColumnName("ucevClientID");
-            entity.Property(e => e.UcevClosed).HasColumnName("ucevClosed");
-            entity.Property(e => e.UcevContact)
-                .HasMaxLength(30)
-                .IsUnicode(false)
-                .HasColumnName("ucevContact");
-            entity.Property(e => e.UcevCourierId).HasColumnName("ucevCourierID");
-            entity.Property(e => e.UcevDate)
-                .HasColumnType("datetime")
-                .HasColumnName("ucevDate");
-            entity.Property(e => e.UcevDescription)
-                .HasMaxLength(255)
-                .IsUnicode(false)
-                .HasColumnName("ucevDescription");
-            entity.Property(e => e.UcevDespatcher)
-                .HasMaxLength(15)
-                .IsUnicode(false)
-                .HasColumnName("ucevDespatcher");
-            entity.Property(e => e.UcevEtatime)
-                .HasColumnType("datetime")
-                .HasColumnName("ucevETATime");
-            entity.Property(e => e.UcevId).HasColumnName("ucevID");
-            entity.Property(e => e.UcevJobId).HasColumnName("ucevJobID");
-            entity.Property(e => e.UcevJobNumber)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasColumnName("ucevJobNumber");
-            entity.Property(e => e.UcevJobType).HasColumnName("ucevJobType");
-            entity.Property(e => e.UcevLateTime).HasColumnName("ucevLateTime");
-            entity.Property(e => e.UcevNotes)
-                .HasMaxLength(1000)
-                .IsUnicode(false)
-                .HasColumnName("ucevNotes");
-            entity.Property(e => e.UcevOriginator).HasColumnName("ucevOriginator");
-            entity.Property(e => e.UcevPageCourier).HasColumnName("ucevPageCourier");
-            entity.Property(e => e.UcevResponseTime)
-                .HasColumnType("datetime")
-                .HasColumnName("ucevResponseTime");
-            entity.Property(e => e.UcevStaffIdin).HasColumnName("ucevStaffIDIn");
-            entity.Property(e => e.UcevStaffIdout).HasColumnName("ucevStaffIDOut");
-            entity.Property(e => e.UcevTime)
-                .HasColumnType("datetime")
-                .HasColumnName("ucevTime");
-            entity.Property(e => e.UcevType).HasColumnName("ucevType");
-            entity.Property(e => e.UcjbSize).HasColumnName("ucjbSize");
-            entity.Property(e => e.UcjbSpeed).HasColumnName("ucjbSpeed");
-            entity.Property(e => e.UcjbVan).HasColumnName("ucjbVan");
-            entity.Property(e => e.UcstWindowsLogonName)
-                .HasMaxLength(50)
-                .HasColumnName("ucstWindowsLogonName");
-            entity.Property(e => e.VanOk).HasColumnName("VanOK");
         });
 
         modelBuilder.Entity<DespatchViewZoneGroup>(entity =>
@@ -731,69 +598,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcjtId).HasColumnName("ucjtId");
         });
 
-        modelBuilder.Entity<Dfrntapp>(entity =>
-        {
-            entity.HasKey(e => e.AppId).HasName("PK__tblDFRNT__8E2CF7D929ECEF59");
-
-            entity.ToTable("DFRNTApps");
-
-            entity.HasIndex(e => new { e.AppId, e.AppName }, "IX_Dfrntapps_AppId_AppName");
-
-            entity.Property(e => e.AppId).HasColumnName("AppID");
-            entity.Property(e => e.AppName)
-                .IsRequired()
-                .HasMaxLength(100);
-            entity.Property(e => e.Created).HasDefaultValueSql("(getdate())");
-            entity.Property(e => e.CreatedBy).HasMaxLength(50);
-        });
-
-        modelBuilder.Entity<DfrntappPage>(entity =>
-        {
-            entity.HasKey(e => e.PageId).HasName("PK__DFRNTApp__C565B124361DBC14");
-
-            entity.ToTable("DFRNTAppPages");
-
-            entity.HasIndex(e => new { e.PageId, e.AppId }, "IX_DfrntappPages_PageId_AppId");
-
-            entity.Property(e => e.PageId).HasColumnName("PageID");
-            entity.Property(e => e.AppId).HasColumnName("AppID");
-            entity.Property(e => e.Created).HasDefaultValueSql("(getdate())");
-            entity.Property(e => e.CreatedBy)
-                .IsRequired()
-                .HasMaxLength(50);
-            entity.Property(e => e.PageName)
-                .IsRequired()
-                .HasMaxLength(100);
-
-            entity.HasOne(d => d.App).WithMany(p => p.DfrntappPages)
-                .HasForeignKey(d => d.AppId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__DFRNTAppP__AppID__38FA28BF");
-        });
-
-        modelBuilder.Entity<DfrntappUserViewPermission>(entity =>
-        {
-            entity.HasKey(e => e.UserViewPermissionId).HasName("PK__UserDesp__B13A9F177A08D20D");
-
-            entity.ToTable("DFRNTAppUserViewPermissions");
-
-            entity.HasIndex(e => new { e.UserId, e.ViewId, e.IsVisible }, "IX_DfrntappUserViewPermissions_UserId_ViewId_IsVisible");
-
-            entity.Property(e => e.UserViewPermissionId)
-                .ValueGeneratedNever()
-                .HasColumnName("UserViewPermissionID");
-            entity.Property(e => e.UserId).HasColumnName("UserID");
-            entity.Property(e => e.ViewId).HasColumnName("ViewID");
-
-            entity.HasOne(d => d.User).WithMany(p => p.DfrntappUserViewPermissions)
-                .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__DFRNTAppU__UserI__733BD8ED");
-
-            entity.HasOne(d => d.View).WithMany(p => p.DfrntappUserViewPermissions)
-                .HasForeignKey(d => d.ViewId)
-                .HasConstraintName("FK__DFRNTAppU__ViewI__7247B4B4");
-        });
-
         modelBuilder.Entity<DfrntpageView>(entity =>
         {
             entity.HasKey(e => new { e.PageId, e.ViewId }).HasName("PK__DFRNTPag__B486C0E53BD6956A");
@@ -811,47 +615,10 @@ public partial class DespatchContext : DbContext
                 .HasDefaultValue("System");
             entity.Property(e => e.ModifiedBy).HasMaxLength(50);
 
-            entity.HasOne(d => d.Page).WithMany(p => p.DfrntpageViews)
-                .HasForeignKey(d => d.PageId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__DFRNTPage__PageI__3DBEDDDC");
-
             entity.HasOne(d => d.View).WithMany(p => p.DfrntpageViews)
                 .HasForeignKey(d => d.ViewId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__DFRNTPage__ViewI__3EB30215");
-        });
-
-        modelBuilder.Entity<DfrntuserPageLayout>(entity =>
-        {
-            entity.HasKey(e => e.LayoutId).HasName("PK__DFRNTUse__2035851542A27913");
-
-            entity.ToTable("DFRNTUserPageLayouts");
-
-            entity.HasIndex(e => e.UserId, "IX_DFRNTUserPageLayouts_UserId");
-
-            entity.HasIndex(e => e.LayoutName, "IX_UserPageLayouts_Name");
-
-            entity.HasIndex(e => new { e.PageId, e.UserId }, "IX_UserPageLayouts_PageUser");
-
-            entity.Property(e => e.CreatedDate)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.LastModifiedDate)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.Layout).IsRequired();
-            entity.Property(e => e.LayoutName).HasMaxLength(100);
-
-            entity.HasOne(d => d.Page).WithMany(p => p.DfrntuserPageLayouts)
-                .HasForeignKey(d => d.PageId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_UserPageLayouts_Pages");
-
-            entity.HasOne(d => d.User).WithMany(p => p.DfrntuserPageLayouts)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_UserPageLayouts_Users");
         });
 
         modelBuilder.Entity<ExtraCharge>(entity =>
@@ -1052,30 +819,6 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.Carrier).WithMany(p => p.FlightZoneCombos)
                 .HasForeignKey(d => d.CarrierId)
                 .HasConstraintName("FK__FlightZon__Carri__1E2636F2");
-        });
-
-        modelBuilder.Entity<GlobalAddressMapping>(entity =>
-        {
-            entity.HasKey(e => e.GlobalAddressId).HasName("PK__GlobalAd__BC00351761DC42C1");
-
-            entity.ToTable("GlobalAddressMapping");
-
-            entity.Property(e => e.GlobalAddressId).HasColumnName("GlobalAddressID");
-            entity.Property(e => e.AddressComponent)
-                .IsRequired()
-                .HasMaxLength(50);
-            entity.Property(e => e.ClientId).HasColumnName("ClientID");
-            entity.Property(e => e.Country)
-                .IsRequired()
-                .HasMaxLength(100);
-            entity.Property(e => e.Created)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.CreatedBy).HasMaxLength(255);
-            entity.Property(e => e.LastModified)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
         });
 
         modelBuilder.Entity<JobDeliveryJourney>(entity =>
@@ -5805,16 +5548,21 @@ public partial class DespatchContext : DbContext
 
             entity.Property(e => e.BookingId).HasColumnName("BookingID");
             entity.Property(e => e.ItemId).HasColumnName("ItemID");
+            entity.Property(e => e.ChildJobId).HasColumnName("ChildJobID");
             entity.Property(e => e.Cubic).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.Dgclass).HasColumnName("DGClass");
             entity.Property(e => e.Do).HasColumnName("DO");
             entity.Property(e => e.Notes).HasMaxLength(4000);
             entity.Property(e => e.Pu).HasColumnName("PU");
 
-            entity.HasOne(d => d.Booking).WithMany(p => p.TucJobBookingItems)
+            entity.HasOne(d => d.Booking).WithMany(p => p.TucJobBookingItemBookings)
                 .HasForeignKey(d => d.BookingId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_tucBookingItems_tucBooking");
+
+            entity.HasOne(d => d.ChildJob).WithMany(p => p.TucJobBookingItemChildJobs)
+                .HasForeignKey(d => d.ChildJobId)
+                .HasConstraintName("FK_tucJobBookingItems_ChildJobID");
         });
 
         modelBuilder.Entity<TucJobInternalStatus>(entity =>
@@ -5837,16 +5585,18 @@ public partial class DespatchContext : DbContext
         {
             entity.HasKey(e => new { e.JobId, e.ItemId });
 
-            entity.ToTable("tucJobItems");
+            entity.ToTable("tucJobItems", tb =>
+                {
+                    tb.HasTrigger("trg_UpdateLiveJobTotals");
+                    tb.HasTrigger("trg_tucJobItems_AutoIncrement");
+                });
 
             entity.HasIndex(e => e.ChildJobId, "IX_TucJobItems_ChildJob");
 
             entity.HasIndex(e => e.JobId, "IX_TucJobItems_Job");
 
             entity.Property(e => e.JobId).HasColumnName("JobID");
-            entity.Property(e => e.ItemId)
-                .ValueGeneratedOnAdd()
-                .HasColumnName("ItemID");
+            entity.Property(e => e.ItemId).HasColumnName("ItemID");
             entity.Property(e => e.ChildJobId).HasColumnName("ChildJobID");
             entity.Property(e => e.Cubic).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.Dgclass).HasColumnName("DGClass");

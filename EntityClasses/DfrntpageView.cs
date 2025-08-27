@@ -19,7 +19,5 @@ public partial class DfrntpageView
 
     public DateTime? ModifiedDate { get; set; }
 
-    public virtual DfrntappPage Page { get; set; }
-
     public virtual TblDespatchView View { get; set; }
 }

@@ -1882,7 +1882,7 @@ public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId
                     FromZip = job.PickupAddressLine7,
                     ToZip = job.DeliveryAddressLine7,
                     DangerousGoods = job.Dgdocument ?? false,
-                    TotalPallets = job.TucJobBookingItems.Count,
+                    TotalPallets = job.TucJobBookingItemBookings.Count,
                     ExtraStopOffs = 0,
                     DryIceWeight = job.DryIceWeight ?? 0,
                     WaitTime = 0,
@@ -1895,7 +1895,7 @@ public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId
 
                     // Client-specific rate information
                     ClientDiscount = job.UcbkClient.Discount,
-                    Cubic = job.TucJobBookingItems.Sum(i => i.Cubic),
+                    Cubic = job.TucJobBookingItemBookings.Sum(i => i.Cubic),
                     CalculateDimsOncePerJob = job.DimensionsType == 1
                 })
                 .FirstOrDefaultAsync();
@@ -1919,7 +1919,7 @@ public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId
             .Where(j => j.UcbkId == jobId)
             .Include(j => j.UcbkClient)
             .Include(j => j.UcbkSpeedNavigation)
-            .Include(j => j.TucJobBookingItems)
+            .Include(j => j.TucJobBookingItemBookings)
             .Select(job => new JobRatingDetailsDtoNz
             {
                 // Base properties from JobRatingDetailsDto
@@ -1953,7 +1953,7 @@ public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId
                 FromZip = job.PickupAddressLine7,
                 ToZip = job.DeliveryAddressLine7,
                 DangerousGoods = job.Dgdocument ?? false,
-                TotalPallets = job.TucJobBookingItems.Count,
+                TotalPallets = job.TucJobBookingItemBookings.Count,
                 ExtraStopOffs = 0,
                 DryIceWeight = job.DryIceWeight ?? 0,
                 WaitTime = 0,
@@ -1966,7 +1966,7 @@ public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId
 
                 // Client-specific rate information
                 ClientDiscount = job.UcbkClient != null ? job.UcbkClient.Discount : 0,
-                Cubic = job.TucJobBookingItems.Sum(i => i.Cubic),
+                Cubic = job.TucJobBookingItemBookings.Sum(i => i.Cubic),
                 IsManuallyRated = job.RatedManually,
                 IsPrebook = true,
                 CalculateDimsOncePerJob = job.DimensionsType == 1,
@@ -1992,7 +1992,7 @@ public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId
                 ToCountryCode = job.DeliveryAddressLine8,
 
                 // NEW Package Details
-                Packages = job.TucJobBookingItems.Select(item => new PackageDetailsDto
+                Packages = job.TucJobBookingItemBookings.Select(item => new PackageDetailsDto
                 {
                     Name = item.Notes,
                     Length = item.Length,
@@ -2002,7 +2002,7 @@ public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId
                     Kg = item.Weight,
                     Type = null,
                     PackageCode = null,
-                    Units = job.TucJobBookingItems.Count
+                    Units = job.TucJobBookingItemBookings.Count
                 }).ToList(),
 
                 // NEW Truck-specific properties
