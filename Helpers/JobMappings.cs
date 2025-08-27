@@ -436,7 +436,9 @@ public static class JobMappings
         DgClass = j.Dgclass,
         DgDocumentation = j.Dgdocument,
         HasDgDocsString = j.Dgdocument != null ? "Yes" : "No",
-        ParcelDimensions = GetPackagesForJob(j),
+        ParcelDimensions = GetPackagesForJob(j, j.Parent,
+            j.TucJobItemJobs, j.Parent.TucJobItemJobs,
+            j.TucJobItemChildJobs),
 
         // Job status and details
         Done = j.UcjbJobDone,
@@ -1061,27 +1063,30 @@ public static class JobMappings
         };
     }
 
-    private static List<ParcelDimensions> GetPackagesForJob(TucJob job)
+    private static List<ParcelDimensions> GetPackagesForJob(
+        TucJob job,
+        TucJob parent,
+        ICollection<TucJobItem> jobItems,
+        ICollection<TucJobItem> parentJobItems,
+        ICollection<TucJobItem> childJobItems)
     {
-        // Handle child packages case
-        if (job.TucJobItemChildJobs != null && job.TucJobItemChildJobs.Count != 0)
-        {
-            return job.TucJobItemChildJobs
-                .Select(CreateParcelDimensions)
-                .ToList();
-        }
+        // Priority 1: Child items if available
+        if (HasItems(childJobItems))
+            return ConvertToParcelDimensions(childJobItems);
 
-        if (job.Parent == null || job.ParentId == job.UcjbId)
-        {
-            return job.TucJobItemJobs
-                .Select(CreateParcelDimensions)
-                .ToList();
-        }
+        // Priority 2: Job items if this is a root job or self-referencing job
+        if ((parent == null || job.ParentId == job.UcjbId) && HasItems(jobItems))
+            return ConvertToParcelDimensions(jobItems);
 
-        return job.Parent.TucJobItemJobs
-            .Select(CreateParcelDimensions)
-            .ToList();
+        // Priority 3: Parent items as fallback
+        return ConvertToParcelDimensions(parentJobItems);
     }
+
+    private static bool HasItems(ICollection<TucJobItem> items) =>
+        items is { Count: > 0 };
+
+    private static List<ParcelDimensions> ConvertToParcelDimensions(ICollection<TucJobItem> items) =>
+        items?.Select(CreateParcelDimensions).ToList() ?? [];
 
     private static ParcelDimensions CreateParcelDimensions(dynamic item)
     {
