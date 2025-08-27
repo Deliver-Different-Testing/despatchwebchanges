@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
@@ -132,8 +133,8 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         await repository.SaveChangesAsync();
 
         // Add packages to the job
-        await CreateAndAddPackagesToJob(newStopJob.UcjbId, extras);
-        
+        await CreateAndAddPackagesToJob(job.ParentId ?? job.UcjbId, newStopJob.UcjbId, extras);
+
         var staffId = infoService.GetStaffId();
         var currentDate = infoService.GetCurrentTenantTime();
 
@@ -213,7 +214,7 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
             DeliverToPhone = extras?.ContactMobile ?? job.DeliverToPhone,
             Dgclass = job.Dgclass,
             Dgdocument = job.Dgdocument,
-           // RawAmount = await CalculateRawAmountAsync(job),
+            // RawAmount = await CalculateRawAmountAsync(job),
             PickUpLatitude = job.PickUpLatitude,
             PickUpLongitude = job.PickUpLongitude,
             DeliveryLatitude = job.DeliveryLatitude,
@@ -274,7 +275,7 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         await repository.SaveChangesAsync();
 
         return newStopJob.UcbkId;
-    }  
+    }
 
     private async Task<string> GenerateNewStopJobNumberAsync(string baseJobNumber)
     {
@@ -336,9 +337,11 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         };
     }
 
-    private static PricingBreakdown CreatePricingBreakdown(int stopJobId) => CreatePricingBreakdownCore(stopJobId, isRecurring: false);
+    private static PricingBreakdown CreatePricingBreakdown(int stopJobId) =>
+        CreatePricingBreakdownCore(stopJobId, isRecurring: false);
 
-    private static PricingBreakdown CreateBookingPricingBreakdown(int stopJobId) => CreatePricingBreakdownCore(stopJobId, isRecurring: true);
+    private static PricingBreakdown CreateBookingPricingBreakdown(int stopJobId) =>
+        CreatePricingBreakdownCore(stopJobId, isRecurring: true);
 
     private static PricingBreakdown CreatePricingBreakdownCore(int stopJobId, bool isRecurring)
     {
@@ -358,21 +361,24 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         return breakdown;
     }
 
-    private async Task CreateAndAddPackagesToJob(int jobId, ShipmentDetails extras)
+    private async Task CreateAndAddPackagesToJob(int effectiveJobId, int childJobId, ShipmentDetails extras)
     {
         var quantity = extras.Quantity ?? 0;
         if (quantity <= 0) return;
 
-        var parcels = Enumerable.Range(0, quantity)
-            .Select(x => new ParcelDimensions
+        var parcels = new List<ParcelDimensions>();
+        for (var x = 0; x < quantity; x++)
+        {
+            var parcel = new ParcelDimensions
             {
                 ItemName = $"Package {x}",
                 Depth = extras.Depth,
                 Height = extras.Height,
                 Length = extras.Length
-            })
-            .ToList();
-
-        await repository.AddPackagesToJobAsync(jobId, parcels);
+            };
+            parcels.Add(parcel);       
+        }
+        
+        await repository.AddPackagesToJobAsync(effectiveJobId, parcels, childJobId);
     }
 }
