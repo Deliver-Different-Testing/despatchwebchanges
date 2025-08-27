@@ -1071,14 +1071,14 @@ public static class JobMappings
                 .ToList();
         }
 
-        // Handle regular packages case - determine the source job
-        var sourceJob = job.ParentId == null || job.ParentId == job.UcjbId
-            ? job
-            : job.Parent;
+        if (job.Parent == null || job.ParentId == job.UcjbId)
+        {
+            return job.TucJobItemJobs
+                .Select(CreateParcelDimensions)
+                .ToList();
+        }
 
-        if (sourceJob.TucJobItemJobs == null || sourceJob.TucJobItemJobs.Count == 0) return [];
-
-        return sourceJob.TucJobItemJobs
+        return job.Parent.TucJobItemJobs
             .Select(CreateParcelDimensions)
             .ToList();
     }
