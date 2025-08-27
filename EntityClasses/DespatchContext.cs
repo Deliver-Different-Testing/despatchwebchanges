@@ -5837,19 +5837,28 @@ public partial class DespatchContext : DbContext
         {
             entity.HasKey(e => new { e.JobId, e.ItemId });
 
-            entity.ToTable("tucJobItems", tb => tb.HasTrigger("trg_UpdateLiveJobTotals"));
+            entity.ToTable("tucJobItems");
+
+            entity.HasIndex(e => e.ChildJobId, "IX_TucJobItems_ChildJob");
 
             entity.HasIndex(e => e.JobId, "IX_TucJobItems_Job");
 
             entity.Property(e => e.JobId).HasColumnName("JobID");
-            entity.Property(e => e.ItemId).HasColumnName("ItemID");
+            entity.Property(e => e.ItemId)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("ItemID");
+            entity.Property(e => e.ChildJobId).HasColumnName("ChildJobID");
             entity.Property(e => e.Cubic).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.Dgclass).HasColumnName("DGClass");
             entity.Property(e => e.Do).HasColumnName("DO");
             entity.Property(e => e.Notes).HasMaxLength(4000);
             entity.Property(e => e.Pu).HasColumnName("PU");
 
-            entity.HasOne(d => d.Job).WithMany(p => p.TucJobItems)
+            entity.HasOne(d => d.ChildJob).WithMany(p => p.TucJobItemChildJobs)
+                .HasForeignKey(d => d.ChildJobId)
+                .HasConstraintName("FK_tucJobItems_tucJob_Child");
+
+            entity.HasOne(d => d.Job).WithMany(p => p.TucJobItemJobs)
                 .HasForeignKey(d => d.JobId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_tucJobItems_tucJob");

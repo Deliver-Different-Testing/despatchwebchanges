@@ -170,24 +170,6 @@ public interface IJobRepository
 
     Task<OverviewDeliveryMapResponse> GetOverviewLocationDataAsync(int jobId);
 
-    Task<decimal> RateJobAsync(
-        int clientId,
-        int fromId,
-        int toId,
-        int speed,
-        bool pedal,
-        bool van,
-        bool returnJob,
-        int weight,
-        int size,
-        bool includeFuelSurcharge,
-        string ourRef,
-        string refA,
-        string refB,
-        int quantity,
-        DateTime booked
-    );
-
     Task RateJobUsAsync(RateJobUsDto dto);
 
     Task<TucJobType> GetJobTypeByIdAsync(int speedId);

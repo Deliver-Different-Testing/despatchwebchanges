@@ -1,5 +1,7 @@
 using System;
+using System.Runtime.InteropServices.JavaScript;
 using System.Threading.Tasks;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -23,8 +25,9 @@ public class NoteController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error getting notes");
-            return StatusCode(500, "An error occurred while getting the notes.");
+            Log.Error(ex, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(GetNotes)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -39,8 +42,9 @@ public class NoteController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error getting notes");
-            return StatusCode(500, "An error occurred while getting the notes.");
+            Log.Error(ex, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(GetRecurringNotes)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -62,8 +66,9 @@ public class NoteController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error creating note");
-            return StatusCode(500, "An error occurred while creating the note.");
+            Log.Error(ex, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(CreateNote)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -74,7 +79,7 @@ public class NoteController(
         {
             ArgumentNullException.ThrowIfNull(noteViewModel);
 
-            // Check if note exists
+            // Check if a note exists
             var existingNote = await jobRepository.GetNoteByIdAsync(noteViewModel.NoteId);
             if (existingNote == null)
                 return NotFound($"Note with ID {noteViewModel.NoteId} not found.");
@@ -85,8 +90,9 @@ public class NoteController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error updating note {NoteId}", noteViewModel.NoteId);
-            return StatusCode(500, "An error occurred while updating the note.");
+            Log.Error(ex, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(UpdateNote)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -104,8 +110,9 @@ public class NoteController(
         }
         catch (Exception ex)
         {
-           Log.Error(ex, "Error deleting note {NoteId}", noteId);
-            return StatusCode(500, "An error occurred while deleting the note.");
+            Log.Error(ex, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(DeleteNote)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -118,8 +125,9 @@ public class NoteController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error occured getting note types");
-            return StatusCode(500, "An error occurred getting note types.");
+            Log.Error(ex, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(GetNoteTypes)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -133,8 +141,9 @@ public class NoteController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error occured getting note types");
-            return StatusCode(500, ex.Message);
+            Log.Error(ex, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NoteController), nameof(CreateNoteType)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 }

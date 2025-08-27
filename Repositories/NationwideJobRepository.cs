@@ -148,6 +148,9 @@ public class NationwideJobRepository(
                     deliveryJob.UcjbTime = DateTime.Today.Add(packageReadyTime.TimeOfDay);
                     deliveryJob.DeliverByTime = parsedPackageDeliverByTime;
                     
+                    // Set parent deliver by time too
+                    job.Parent.DeliverByTime = parsedPackageDeliverByTime;
+                    
                     // Update Pickup Address With Airport
                     await UpdateJobAddressWithAirportInfoAsync(deliveryJob, arrivalAirportId.Value,
                         lastFlight.ArrivalAirportTimeZone, false);

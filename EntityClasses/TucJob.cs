@@ -493,7 +493,9 @@ public partial class TucJob
 
     public virtual ICollection<TucEvent> TucEvents { get; set; } = new List<TucEvent>();
 
-    public virtual ICollection<TucJobItem> TucJobItems { get; set; } = new List<TucJobItem>();
+    public virtual ICollection<TucJobItem> TucJobItemChildJobs { get; set; } = new List<TucJobItem>();
+
+    public virtual ICollection<TucJobItem> TucJobItemJobs { get; set; } = new List<TucJobItem>();
 
     public virtual ICollection<TucJobNationwide> TucJobNationwides { get; set; } = new List<TucJobNationwide>();
 

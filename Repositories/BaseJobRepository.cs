@@ -945,48 +945,6 @@ public class BaseJobRepository(
         return locations;
     }
 
-    public async Task<decimal> RateJobAsync(
-        int clientId,
-        int fromId,
-        int toId,
-        int speed,
-        bool pedal,
-        bool van,
-        bool returnJob,
-        int weight,
-        int size,
-        bool includeFuelSurcharge,
-        string ourRef,
-        string refA,
-        string refB,
-        int quantity,
-        DateTime booked
-    )
-    {
-        var curAmount = new OutputParameter<decimal?>();
-
-        await Context.Procedures.sp_RateJob2Async(
-            intClientID: clientId,
-            intFromID: fromId,
-            intToID: toId,
-            intSpeed: speed,
-            bolPedal: pedal,
-            bolVan: van,
-            bolReturn: returnJob,
-            intWeight: weight,
-            size: size,
-            includeFuelSurcharge: includeFuelSurcharge,
-            ourRef: ourRef,
-            clientRefA: refA,
-            clientRefB: refB,
-            quantity: quantity,
-            booked: booked,
-            curAmount: curAmount
-        );
-
-        return curAmount.Value ?? 0;
-    }
-
     public async Task RateJobUsAsync(RateJobUsDto dto)
     {
         var rate = new OutputParameter<decimal?>();
@@ -1205,17 +1163,14 @@ public class BaseJobRepository(
         return jobs;
     }
 
-    public async Task AddPackagesToJobAsync(int jobId, List<ParcelDimensions> parcels)
+    public async Task AddPackagesToJobAsync(int jobId, List<ParcelDimensions> parcels, int? childJobId = null)
     {
         if (parcels == null || parcels.Count == 0) return;
 
         try
         {
-            // Get the next available ItemId for this job
-            var nextItemId = await GetNextItemIdForJobAsync(jobId);
-        
-            var newParcels = parcels.Select((parcel, index) => 
-                CreateTucJobItem(jobId, parcel, nextItemId + index)).ToList();
+            var newParcels = parcels.Select(parcel => 
+                CreateTucJobItem(jobId, parcel, childJobId)).ToList();
         
             await Context.TucJobItems.AddRangeAsync(newParcels);
             await Context.SaveChangesAsync();
@@ -1240,26 +1195,14 @@ public class BaseJobRepository(
             var existingParcelIds = new List<int>();
 
             // Get next ItemId for new parcels
-            var nextItemId = await GetNextItemIdForJobAsync(effectiveJobId);
-            var newParcelCount = 0;
-
             foreach (var parcel in parcels)
             {
-                if (parcel.ItemId == null) 
-                {
-                    newParcels.Add(CreateTucJobItem(effectiveJobId, parcel, nextItemId + newParcelCount));
-                    newParcelCount++;
-                }
-                else 
-                {
-                    existingParcelIds.Add(parcel.ItemId.Value);
-                }
+                if (parcel.ItemId == null) newParcels.Add(CreateTucJobItem(effectiveJobId, parcel));
+                else existingParcelIds.Add(parcel.ItemId.Value);
             }
 
-            // Handle new items
             if (newParcels.Count > 0) await Context.TucJobItems.AddRangeAsync(newParcels);
 
-            // Handle existing items - fetch them all at once
             if (existingParcelIds.Count != 0)
             {
                 var existingItems = await Context.TucJobItems
@@ -1272,11 +1215,7 @@ public class BaseJobRepository(
                 foreach (var p in parcels.Where(p => p.ItemId != null))
                 {
                     if (!p.ItemId.HasValue) continue;
-
-                    if (existingItemsLookup.TryGetValue(p.ItemId.Value, out var existingItem))
-                    {
-                        UpdateTucJobItem(existingItem, p);
-                    }
+                    if (existingItemsLookup.TryGetValue(p.ItemId.Value, out var existingItem)) UpdateTucJobItem(existingItem, p);
                 }
             }
 
@@ -1289,21 +1228,12 @@ public class BaseJobRepository(
         }
     }
 
-    private async Task<int> GetNextItemIdForJobAsync(int jobId)
-    {
-        var maxItemId = await Context.TucJobItems
-            .Where(i => i.JobId == jobId)
-            .MaxAsync(i => (int?)i.ItemId);
-    
-        return (maxItemId ?? 0) + 1;
-    }
-    
-    private static TucJobItem CreateTucJobItem(int jobId, ParcelDimensions parcel, int itemId)
+    private static TucJobItem CreateTucJobItem(int jobId, ParcelDimensions parcel, int? childJobId = null)
     {
         return new TucJobItem
         {
             JobId = jobId,
-            ItemId = itemId,
+            ChildJobId = childJobId,
             Height = parcel.Height ?? 0,
             Length = parcel.Length ?? 0,
             Depth = parcel.Depth ?? 0,
@@ -1354,7 +1284,8 @@ public class BaseJobRepository(
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error occurred getting job coordinates. Please see exception.");
+            Log.Error(e, "{Message}", 
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository), nameof(GetJobCoordinatesAsync)));
             throw;
         }
     }
@@ -1398,7 +1329,7 @@ public class BaseJobRepository(
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(noteText, nameof(noteText));
 
-        // If note type is not found, default to the internal note
+        // If a note type is not found, default to the internal note
         var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == (int)noteType);
         if (!noteTypeExists) noteType = NoteType.InternalNote;
 
@@ -1768,7 +1699,7 @@ public class BaseJobRepository(
                     FromZip = job.PickupAddressLine7,
                     ToZip = job.DeliveryAddressLine7,
                     DangerousGoods = job.Dgdocument ?? false,
-                    TotalPallets = job.TucJobItems.Count,
+                    TotalPallets = job.TucJobItemJobs.Count,
                     ExtraStopOffs = 0,
                     DryIceWeight = job.DryIceWeight ?? 0,
                     WaitTime = 0,
@@ -1781,7 +1712,7 @@ public class BaseJobRepository(
 
                     // Client-specific rate information
                     ClientDiscount = job.UcjbClient.Discount,
-                    Cubic = job.TucJobItems.Sum(i => i.Cubic),
+                    Cubic = job.TucJobItemJobs.Sum(i => i.Cubic),
                     IsManuallyRated = job.RatedManually
                 })
                 .FirstOrDefaultAsync();
@@ -1806,7 +1737,7 @@ public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId
             .Where(j => j.UcjbId == jobId)
             .Include(j => j.UcjbClient)
             .Include(j => j.UcjbSpeedNavigation)
-            .Include(j => j.TucJobItems)
+            .Include(j => j.TucJobItemJobs)
             .Select(job => new JobRatingDetailsDtoNz
             {
                 JobId = job.UcjbId,
@@ -1838,7 +1769,7 @@ public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId
                 FromZip = job.PickupAddressLine7,
                 ToZip = job.DeliveryAddressLine7,
                 DangerousGoods = job.Dgdocument ?? false,
-                TotalPallets = job.TucJobItems.Count,
+                TotalPallets = job.TucJobItemJobs.Count,
                 ExtraStopOffs = 0,
                 DryIceWeight = job.DryIceWeight ?? 0,
                 WaitTime = job.WaitedPickUp ?? 0,
@@ -1851,7 +1782,7 @@ public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId
 
                 // Client-specific rate information
                 ClientDiscount = job.UcjbClient != null ? job.UcjbClient.Discount : 0,
-                Cubic = job.TucJobItems.Sum(i => i.Cubic),
+                Cubic = job.TucJobItemJobs.Sum(i => i.Cubic),
                 IsManuallyRated = job.RatedManually,
                 IsPrebook = job.IsRecurringJob,
 
@@ -1876,7 +1807,7 @@ public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId
                 ToCountryCode = job.DeliveryAddressLine8,
 
                 // NEW Package Details
-                Packages = job.TucJobItems.Select(item => new PackageDetailsDto
+                Packages = job.TucJobItemJobs.Select(item => new PackageDetailsDto
                 {
                     Name = item.Notes ,
                     Length = item.Length,
@@ -1886,7 +1817,7 @@ public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId
                     Kg = item.Weight,
                     Type = null,
                     PackageCode = null,
-                    Units = job.TucJobItems.Count
+                    Units = job.TucJobItemJobs.Count
                 }).ToList(),
 
                 // NEW Truck-specific properties

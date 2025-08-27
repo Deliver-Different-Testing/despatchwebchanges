@@ -499,10 +499,6 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[qry_tucJobItems]",
-         "ObjectType": 1
-      },
-      {
          "Name": "[dbo].[sp_RateJob2]",
          "ObjectType": 1
       },

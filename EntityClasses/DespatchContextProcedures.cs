@@ -1307,38 +1307,6 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<List<qry_tucJobItemsResult>> qry_tucJobItemsAsync(int? jobID, int? truckWeightLimit, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
-        {
-            var parameterreturnValue = new SqlParameter
-            {
-                ParameterName = "returnValue",
-                Direction = System.Data.ParameterDirection.Output,
-                SqlDbType = System.Data.SqlDbType.Int,
-            };
-
-            var sqlParameters = new []
-            {
-                new SqlParameter
-                {
-                    ParameterName = "JobID",
-                    Value = jobID ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Int,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "TruckWeightLimit",
-                    Value = truckWeightLimit ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Int,
-                },
-                parameterreturnValue,
-            };
-            var _ = await _context.SqlQueryAsync<qry_tucJobItemsResult>("EXEC @returnValue = [dbo].[qry_tucJobItems] @JobID = @JobID, @TruckWeightLimit = @TruckWeightLimit", sqlParameters, cancellationToken);
-
-            returnValue?.SetValue(parameterreturnValue.Value);
-
-            return _;
-        }
-
         public virtual async Task<int> sp_RateJob2Async(int? intClientID, int? intFromID, int? intToID, int? intSpeed, bool? bolPedal, bool? bolVan, bool? bolReturn, int? intWeight, int? size, bool? includeFuelSurcharge, string ourRef, string clientRefA, string clientRefB, int? quantity, DateTime? booked, OutputParameter<decimal?> curAmount, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parametercurAmount = new SqlParameter
