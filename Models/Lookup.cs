@@ -1,10 +1,7 @@
-﻿using System.Text.Json.Serialization;
-
-namespace DespatchWeb.Models;
+﻿namespace DespatchWeb.Models;
 
 public class Lookup
 {
-    [JsonPropertyName("id")] public int ID { get; set; }
-
+    public int Id { get; set; }
     public string Text { get; set; }
 }

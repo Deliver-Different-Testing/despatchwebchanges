@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Mvc;
@@ -18,8 +19,9 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error getting tasks: {Error}", ex.Message);
-            return StatusCode(500, ex.Message);
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(TaskController), nameof(GetAllTasks)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -33,8 +35,9 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error marking event as closed: {Error}", ex.Message);
-            return StatusCode(500, ex.Message);
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(TaskController), nameof(MarkTaskAsClosed)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -48,8 +51,9 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error updating event date: {Error}", ex.Message);
-            return StatusCode(500, ex.Message);
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(TaskController), nameof(UpdateTaskDate)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -63,8 +67,9 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error updating event date: {Error}", ex.Message);
-            return StatusCode(500, ex.Message);
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(TaskController), nameof(UpdateTaskTime)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -77,8 +82,9 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error updating event type groups: {Error}", ex.Message);
-            return StatusCode(500, ex.Message);
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(TaskController), nameof(GetEventGroups)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -91,8 +97,9 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error updating event type groups: {Error}", ex.Message);
-            return StatusCode(500, ex.Message);
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(TaskController), nameof(GetEventTypeGroups)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -111,8 +118,9 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error adding events for job: {Error}", ex.Message);
-            return StatusCode(500, ex.Message);
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(TaskController), nameof(AddTasks)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -125,8 +133,9 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error getting the list of assignable staff: {Error}", ex.Message);
-            return StatusCode(500, ex.Message);
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(TaskController), nameof(GetStaff)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -140,8 +149,9 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error getting the list of assignable staff: {Error}", ex.Message);
-            return StatusCode(500, ex.Message);
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(TaskController), nameof(ReassignTask)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 }

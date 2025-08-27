@@ -8,11 +8,12 @@
 
                 <span flex></span>
 
-                <md-button aria-label="Open messages window" class="md-icon-button" ng-click="ctrl.openMessagingDialog($event)">
+                <md-button aria-label="Open messages window" class="md-icon-button"
+                           ng-click="ctrl.openMessagingDialog($event)">
                     <md-icon md-font-set="material-symbols-outlined">sms</md-icon>
                     <md-tooltip md-direction="bottom">Messages</md-tooltip>
                 </md-button>
-                
+
                 <md-menu>
                     <md-button aria-label="Open layout options menu" class="md-icon-button"
                                ng-click="$mdMenu.open($event)">
@@ -73,11 +74,13 @@
                                 </span>
 
                                 <div ng-if="box.name == 'eventList'">
-                                    <md-checkbox ng-change="ctrl.refreshData(true)" ng-model="ctrl.followupClient.includeClosed">
+                                    <md-checkbox ng-change="ctrl.refreshData(true)"
+                                                 ng-model="ctrl.followupClient.includeClosed">
                                         Include Closed?
                                     </md-checkbox>
 
-                                    <md-radio-group ng-change="ctrl.refreshData(true)" ng-model="ctrl.followupClient.name"
+                                    <md-radio-group ng-change="ctrl.refreshData(true)"
+                                                    ng-model="ctrl.followupClient.name"
                                                     ng-if="ctrl.isAdmin">
                                         <md-radio-button value="All">
                                             All
@@ -191,7 +194,13 @@
                                             </md-button>
                                         </md-fab-actions>
                                     </md-fab-speed-dial>
-                            </div>
+                                </div>
+
+                                <md-button class="md-icon-button"
+                                           ng-click="ctrl.onRefreshButtonClicked(box.name)"
+                                           ng-if="::ctrl.boxes[box.name].showRefresh">
+                                    <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+                                </md-button>
 
                                 <div class="box-handle md-icon-button">
                                     <md-icon class="md-drag-button" md-font-set="material-symbols-outlined">

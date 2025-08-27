@@ -37,6 +37,14 @@ public class NationwideJobRepository(
             if (flights.FlightSegments.Count == 0)
                 throw new ArgumentException("Flight list cannot be empty", nameof(flights));
 
+            // Parse dates
+            var parsedPackageReadyTime = !string.IsNullOrEmpty(requestData.PackageReadyTime) 
+                ? DateTime.TryParse(requestData.PackageReadyTime, out var readyTime) ? readyTime : (DateTime?)null
+                : null;
+            var parsedPackageDeliverByTime = !string.IsNullOrEmpty(requestData.PackageDeliverByTime) 
+                ? DateTime.TryParse(requestData.PackageDeliverByTime, out var deliverByTime) ? deliverByTime : (DateTime?)null
+                : null;
+            
             // Get the primary flight (first leg)
             var primaryFlight = flights.FlightSegments.OrderBy(f => f.SegmentOrder).First();
             var lastFlight = flights.FlightSegments.OrderBy(f => f.SegmentOrder).Last();
@@ -135,10 +143,10 @@ public class NationwideJobRepository(
                 {
                     var airportProcessingTime = await GetAirportProcessingTimeAsync(arrivalAirportId.Value);
                     
-                    var packageReadyTime = requestData.PackageReadyTime ?? lastFlight.ArrivalTime.AddMinutes(airportProcessingTime);
+                    var packageReadyTime = parsedPackageReadyTime ?? lastFlight.ArrivalTime.AddMinutes(airportProcessingTime);
                     deliveryJob.UcjbDate = packageReadyTime.Date;
                     deliveryJob.UcjbTime = DateTime.Today.Add(packageReadyTime.TimeOfDay);
-                    if(requestData.PackageDeliverByTime.HasValue) deliveryJob.DeliverByTime = requestData.PackageDeliverByTime;
+                    deliveryJob.DeliverByTime = parsedPackageDeliverByTime;
                     
                     // Update Pickup Address With Airport
                     await UpdateJobAddressWithAirportInfoAsync(deliveryJob, arrivalAirportId.Value,

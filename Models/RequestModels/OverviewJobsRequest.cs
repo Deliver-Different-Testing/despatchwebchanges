@@ -13,9 +13,7 @@ public class OverviewJobsRequest : BaseOverviewRequest
     public string OrderDirection { get; set; } = "asc";
 }
 
-public class OpenJobsRequest : BaseOverviewRequest
-{
-}
+public class OpenJobsRequest : BaseOverviewRequest;
 
 public class BaseOverviewRequest
 {

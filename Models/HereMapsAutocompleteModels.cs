@@ -23,7 +23,7 @@ public class MapView
 
 public class FieldScore
 {
-    [JsonPropertyName("streets")] public double[]? Streets { get; set; }
+    [JsonPropertyName("streets")] public double[] Streets { get; set; }
 
     [JsonPropertyName("houseNumber")] public double? HouseNumber { get; set; }
 
@@ -34,7 +34,7 @@ public class Scoring
 {
     [JsonPropertyName("queryScore")] public double QueryScore { get; set; }
 
-    [JsonPropertyName("fieldScore")] public FieldScore? FieldScore { get; set; }
+    [JsonPropertyName("fieldScore")] public FieldScore FieldScore { get; set; }
 }
 
 public class Address
@@ -76,7 +76,7 @@ public class HereMapsLocationResult
 
     [JsonPropertyName("resultType")] public string ResultType { get; set; } = string.Empty;
 
-    [JsonPropertyName("houseNumberType")] public string? HouseNumberType { get; set; }
+    [JsonPropertyName("houseNumberType")] public string HouseNumberType { get; set; }
 
     [JsonPropertyName("address")] public Address Address { get; set; } = new();
 
@@ -91,14 +91,14 @@ public class HereMapsLocationResult
 
     [JsonPropertyName("scoring")] public Scoring Scoring { get; set; } = new();
 
-    [JsonPropertyName("categories")] public List<Category>? Categories { get; set; }
+    [JsonPropertyName("categories")] public List<Category> Categories { get; set; }
 
-    [JsonPropertyName("foodTypes")] public List<FoodType>? FoodTypes { get; set; }
+    [JsonPropertyName("foodTypes")] public List<FoodType> FoodTypes { get; set; }
 }
 
 public class HereMapsAutocompleteResponse
 {
-    [JsonPropertyName("items")] public List<HereMapsLocationResult>? Items { get; set; }
+    [JsonPropertyName("items")] public List<HereMapsLocationResult> Items { get; set; }
 }
 
 public class HereMapsLookupResponse
@@ -140,9 +140,9 @@ public class HereMapsAccess
 
 public class HereMapsCountryInfo
 {
-    [JsonPropertyName("alpha2")] public string? Alpha2 { get; set; }
+    [JsonPropertyName("alpha2")] public string Alpha2 { get; set; }
 
-    [JsonPropertyName("alpha3")] public string? Alpha3 { get; set; }
+    [JsonPropertyName("alpha3")] public string Alpha3 { get; set; }
 }
 
 public class HereMapsStreetInfo

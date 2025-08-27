@@ -18,12 +18,12 @@ import JobSearchBoxes from "./enums/jobSearchBoxes";
 import {IDeliveryHistoryConfig} from "../common/task-history/task-history.interfaces";
 import DensityMode from "../../enums/densityMode";
 import ISearchCriteria from "./interfaces/ISearchCriteria";
+import dayjs from "dayjs";
 
 class JobSearchController extends BaseController {
     static $inject = [
         '$scope',
         'uCSData',
-        '$state',
         '$filter',
         '$mdDialog',
         '$document',
@@ -47,7 +47,6 @@ class JobSearchController extends BaseController {
     jobDetailFabIsOpen: boolean = false;
     dateSearchRange: number;
     searchBox: any;
-    selectedEvents: any;
     maxSize: number;
     totalCount: number;
     pageIndex: number;
@@ -80,17 +79,14 @@ class JobSearchController extends BaseController {
     layout?: { columns: IColumn[] };
 
     timeZone: string = TimeZone;
-    userName: any;
     selectJob: any;
     jobList?: IJob[];
     pickRegions?: Suggestion[];
     currentJob?: IJob;
     jobListLoading: any;
     bulkJobList: any;
-    cancelledSelected: any;
     currentSelection?: string;
     currentJobId?: number;
-    selected: any;
     boxSortableOptions: {
         handle: string;
         connectWith: string;
@@ -112,9 +108,8 @@ class JobSearchController extends BaseController {
     isBulkJobListLoading: boolean = false;
 
     constructor(
-        private $scope: angular.IScope,
+        $scope: angular.IScope,
         private uCSData: JobSearchService,
-        private $state: angular.ui.IStateService,
         private $filter: angular.IFilterService,
         private $mdDialog: angular.material.IDialogService,
         private $document: angular.IDocumentService,
@@ -131,7 +126,7 @@ class JobSearchController extends BaseController {
     ) {
         super();
 
-        this.initServices($timeout, $interval, this.$scope);
+        this.initServices($timeout, $interval, $scope);
 
         this.isUsCustomer = appConfig.US_Customer;
         this.isAdmin = ClientInternal;
@@ -147,7 +142,6 @@ class JobSearchController extends BaseController {
         this.dateSearchRange = 1; // Set to a fortnight
 
         this.searchBox = "";
-        this.selectedEvents = [];
         this.maxSize = 5;
         this.totalCount = 0;
         this.pageIndex = 1;
@@ -160,16 +154,14 @@ class JobSearchController extends BaseController {
         this.jobRecordSearchText = "";
         this.sort = [];
 
-        const now = new Date();
-        let sevenDaysBefore = new Date();
-        sevenDaysBefore.setDate(now.getDate() - 7);
-        let sevenDaysAfter = new Date();
-        sevenDaysAfter.setDate(now.getDate() + 7);
+        const now = dayjs();
+        const sevenDaysBefore = now.subtract(7, 'day');
+        const sevenDaysAfter = now.add(7, 'day');
 
         this.searchCriteria = {
-            date: now,
-            from_date: sevenDaysBefore,
-            to_date: sevenDaysAfter,
+            date: now.toDate(),
+            from_date: sevenDaysBefore.toDate(),
+            to_date: sevenDaysAfter.toDate(),
             followupClient: "All",
             includeClosed: true
         };
@@ -244,43 +236,50 @@ class JobSearchController extends BaseController {
                 "title": "Filters",
                 "icon": "filter_list",
                 "templateUrl": "app/components/jobSearch/partials/pickDate.html",
-                "showSearch": 0
+                "showSearch": 0,
+                "showRefresh": 0
             },
             [JobSearchBoxes.JobList]: {
                 "title": "Live Job Data",
                 "icon": "list_alt",
                 "templateUrl": "app/components/jobSearch/partials/jobList.html",
                 "showSearch": 1,
+                "showRefresh": 1
             },
             [JobSearchBoxes.BulkJobList]: {
                 "title": "Bulk Job Data",
                 "icon": "format_list_bulleted",
                 "templateUrl": "app/components/jobSearch/partials/bulkJobList.html",
                 "showSearch": 1,
+                "showRefresh": 1
             },
             [JobSearchBoxes.JobDetail]: {
                 "title": "Detail",
                 "icon": "assignment",
                 "templateUrl": "app/components/jobSearch/partials/jobDetail.html",
                 "showSearch": 0,
-                "showDetailButtons": 1
+                "showDetailButtons": 1,
+                "showRefresh": 1
             },
             [JobSearchBoxes.ScanList]: {
                 "title": "Scan Detail",
                 "icon": "document_scanner",
                 "templateUrl": "app/components/jobSearch/partials/scanList.html",
                 "showSearch": 0,
+                "showRefresh": 0
             },
             [JobSearchBoxes.Map]: {
                 "title": "Map",
                 "icon": "pin_drop",
                 "templateUrl": "app/components/jobSearch/partials/map.html",
-                "showSearch": 0
+                "showSearch": 0,
+                "showRefresh": 0
             },
             [JobSearchBoxes.DeliveryJourney]: {
                 "title": "Delivery Journey",
                 "icon": "rocket_launch",
                 "templateUrl": "app/components/jobSearch/partials/jobHistory.html",
+                "showRefresh": 0
             }
         };
 
@@ -323,15 +322,15 @@ class JobSearchController extends BaseController {
                 angular.element(e.target).removeClass('ui-sortable-active');
             },
 
-            // When drag operation stops
+            // When the drag operation stops
             stop: (_: JQueryEventObject, ui: any) => {
                 angular.element(this.$document[0]).off('mousemove.sortable');
                 angular.element('#draggingItems').css('display', 'none');
                 ui.item.removeClass('dragging');
                 angular.element('.column-sortable').removeClass('ui-sortable-active');
 
-                this._updateBoxMetrics();
-                this._saveCurrentLayout()
+                this.updateBoxMetrics();
+                this.saveCurrentLayout()
             }
         };
 
@@ -349,7 +348,7 @@ class JobSearchController extends BaseController {
         this.initLayoutSystem(ContactID);
     }
 
-    private _updateBoxMetrics() {
+    private updateBoxMetrics() {
         if (!this.layout || !this.layout.columns) return;
 
         this.layout.columns.forEach((column: IColumn) => {
@@ -369,12 +368,12 @@ class JobSearchController extends BaseController {
         });
     }
 
-    private _saveCurrentLayout() {
+    private saveCurrentLayout() {
         if (!this.currentLayoutName || this.currentLayoutName === 'Default') {
             return;
         }
 
-        this._updateBoxMetrics();
+        this.updateBoxMetrics();
 
         const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
         if (index !== -1) {
@@ -435,7 +434,7 @@ class JobSearchController extends BaseController {
                 const lastActiveLayout = localStorage.getItem(`lastActiveLayoutCS-${ContactID}`);
 
                 this.layouts = storedLayouts || [this.defaultLayout];
-                this.layouts[0] = this.defaultLayout; // Ensure default is always up-to-date
+                this.layouts[0] = this.defaultLayout; // Ensure default is always up to date
 
                 // Load last active layout or default
                 const layoutToLoad = lastActiveLayout ? this.layouts.findIndex((l: ILayout) => l.name === lastActiveLayout) : 0;
@@ -450,7 +449,7 @@ class JobSearchController extends BaseController {
         }
 
         // Auto-save changes
-        this.$scope.$watch("layout", (newValue: { columns: IColumn[] }, oldValue: { columns: IColumn[] }) => {
+        this.watchScope("layout", (newValue: { columns: IColumn[] }, oldValue: { columns: IColumn[] }) => {
             if (newValue !== oldValue && this.currentLayoutName) {
                 const index = this.layouts.findIndex((l: ILayout) => l.name === this.currentLayoutName);
                 if (index !== -1) {
@@ -470,7 +469,7 @@ class JobSearchController extends BaseController {
 
         // Apply dimensions on next digest cycle
         this.registerTimeout(() => {
-            this._applyLayoutDimensions();
+            this.applyLayoutDimensions();
 
             if (Modernizr.localstorage) {
                 localStorage.setItem(`lastActiveLayoutCS-${ContactID}`, layout.name);
@@ -478,7 +477,7 @@ class JobSearchController extends BaseController {
         });
     }
 
-    private _applyLayoutDimensions() {
+    private applyLayoutDimensions() {
         if (!this.layout || !this.layout.columns) return;
 
         this.layout.columns.forEach((column: IColumn) => {
@@ -717,21 +716,28 @@ class JobSearchController extends BaseController {
         }
     }
 
-    goToRunViewer() {
-        console.log("goToRunViewer.");
-        this.$state.go('home');
-    }
-
     //Column Sorting
-    orderList(list: string | number, prop: string): void {
+    orderList(list: string, prop: string): void {
+        const targetList = list === 'jobList' ? this.jobList : this.bulkJobList;
+
+        if (!targetList) return; // Guard against undefined
+
         if (this.sort[list] !== prop) {
             this.sort[list] = prop;
-            // @ts-ignore
-            this.$scope[list] = this.$filter('orderBy')(this.$scope[list], prop);
+            const sortedList = this.$filter('orderBy')(targetList, prop);
+            this.updateList(list, sortedList);
         } else {
             this.sort[list] = "d-" + prop;
-            // @ts-ignore
-            this.$scope[list] = this.$filter('orderBy')(this.$scope[list], "-" + prop);
+            const sortedList = this.$filter('orderBy')(targetList, "-" + prop);
+            this.updateList(list, sortedList);
+        }
+    }
+
+    private updateList(listName: string, sortedList: any[]) {
+        if (listName === 'jobList') {
+            this.jobList = sortedList;
+        } else if (listName === 'bulkJobList') {
+            this.bulkJobList = sortedList;
         }
     }
 
@@ -890,11 +896,11 @@ class JobSearchController extends BaseController {
             await this.refreshData();
 
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
-    private _handleError(error: any) {
+    private handleError(error: any) {
         if (!error) return;
 
         console.error("Error in _handleError:", error);
@@ -935,7 +941,7 @@ class JobSearchController extends BaseController {
                 .ok('OK'));
 
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         }
     }
 
@@ -962,7 +968,7 @@ class JobSearchController extends BaseController {
             this.jobList = data.item2;
             this.totalCount = data.item1;
         } catch (error) {
-            this._handleError(error);
+            this.handleError(error);
         } finally {
             this.isJobListLoading = false;
         }
@@ -1063,31 +1069,7 @@ class JobSearchController extends BaseController {
             fileElement.val(null);
         }
     }
-
-    showItems(job: IDispatchJob) {
-        if (job.client !== "Other") {
-            if (this.cancelledSelected) {
-                return true;
-            } else {
-                return job.status !== "Cancelled";
-            }
-        } else {
-            return false;
-        }
-    }
-
-    async loadRelatedJobDetail(jobId: number, jobNumber: string) {
-        try {
-            this.currentJob = await this.DispatchData.getJobDetail(jobId);
-            this.currentSelection = " for Job " + jobNumber;
-
-            // Ensure the view is updated
-
-        } catch (error) {
-            console.error('Error loading job detail:', error);
-        }
-    }
-
+    
     async selectJobDetail(jobId: number) {
         try {
             console.log("select Job  " + jobId);
@@ -1096,7 +1078,7 @@ class JobSearchController extends BaseController {
             this.currentJobId = jobId;
             this.currentSelection = " for Job " + this.currentJob?.jobNo;
 
-            // Update map with just this job
+            // Update the map with just this job
             if (this.currentJob.pickupAddress?.latitude && this.currentJob.pickupAddress?.longitude) {
                 this.mapCenter = {
                     lat: this.currentJob.pickupAddress.latitude,
@@ -1194,44 +1176,26 @@ class JobSearchController extends BaseController {
         await this.refreshAllData();
     }
 
-    highlightEvent() {
-        this.registerTimeout(() => {
-            this.selectedEvents = this.selected || [];
-        }, 10);
-    }
-
     onSearchRangeChange(dateRangeOption: number) {
         try {
-            let now = new Date();
-            now.setHours(0, 0, 0, 0);
-
-            let firstDayOfMonth = new Date();
-            firstDayOfMonth.setDate(1);
-            firstDayOfMonth.setHours(0, 0, 0, 0);
-
-            let lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-            lastDayOfMonth.setHours(0, 0, 0, 0);
-
-            let oneWeekAgo = new Date();
-            oneWeekAgo.setDate(now.getDate() - 7);
-            oneWeekAgo.setHours(0, 0, 0, 0);
-
-            let oneWeekAhead = new Date();
-            oneWeekAhead.setDate(now.getDate() + 7);
-            oneWeekAhead.setHours(0, 0, 0, 0);
+            const now = dayjs().startOf('day');
+            const firstDayOfMonth = now.startOf('month');
+            const lastDayOfMonth = now.endOf('month').startOf('day');
+            const oneWeekAgo = now.subtract(7, 'day');
+            const oneWeekAhead = now.add(7, 'day');
 
             switch (dateRangeOption) {
                 case 1:
-                    this.searchCriteria.from_date = oneWeekAgo;
-                    this.searchCriteria.to_date = oneWeekAhead;
+                    this.searchCriteria.from_date = oneWeekAgo.toDate();
+                    this.searchCriteria.to_date = oneWeekAhead.toDate();
                     break;
                 case 2:
-                    this.searchCriteria.from_date = now;
-                    this.searchCriteria.to_date = now;
+                    this.searchCriteria.from_date = now.toDate();
+                    this.searchCriteria.to_date = now.toDate();
                     break;
                 case 3:
-                    this.searchCriteria.from_date = firstDayOfMonth;
-                    this.searchCriteria.to_date = lastDayOfMonth;
+                    this.searchCriteria.from_date = firstDayOfMonth.toDate();
+                    this.searchCriteria.to_date = lastDayOfMonth.toDate();
                     break;
                 case 4:
                     // This option is empty as ng-if is used on the page to show custom date range options
@@ -1258,6 +1222,28 @@ class JobSearchController extends BaseController {
 
     async openMessagingDialog($event: MouseEvent) {
         await this.messagingDialogService.openMessagingDialog($event);
+    }
+
+    async onRefreshButtonClicked(boxName: string) {
+        switch (boxName) {
+            case JobSearchBoxes.JobList:
+                await this.refreshData();
+                break;
+            case JobSearchBoxes.BulkJobList:
+                await this.refreshBulkData();
+                break;
+            case JobSearchBoxes.JobDetail:
+                if(!this.currentJobId) return;
+                
+                // Clear job
+                const jobIdToRefresh = this.currentJobId;
+                this.currentJobId = undefined;
+                this.currentJob = undefined;
+                
+                // Reselect to trigger refresh
+                await this.selectJobDetail(jobIdToRefresh);
+                break;
+        }
     }
 }
 

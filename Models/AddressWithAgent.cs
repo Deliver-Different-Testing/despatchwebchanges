@@ -12,7 +12,7 @@ public class AddressWithAgent
     /// <summary>
     /// 3 letter airport code to identify this airport
     /// </summary>
-    public string? AirportCode { get; set; }
+    public string AirportCode { get; set; }
 
     /// <summary>
     /// Property identifier
