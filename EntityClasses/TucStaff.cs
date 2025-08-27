@@ -97,10 +97,6 @@ public partial class TucStaff
 
     public string AddressLine8 { get; set; }
 
-    public virtual ICollection<DfrntappUserViewPermission> DfrntappUserViewPermissions { get; set; } = new List<DfrntappUserViewPermission>();
-
-    public virtual ICollection<DfrntuserPageLayout> DfrntuserPageLayouts { get; set; } = new List<DfrntuserPageLayout>();
-
     public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneys { get; set; } = new List<JobDeliveryJourney>();
 
     public virtual ICollection<JobRecoveryAgent> JobRecoveryAgentCreatedByNavigations { get; set; } = new List<JobRecoveryAgent>();

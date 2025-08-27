@@ -392,7 +392,9 @@ public partial class TucJobBooking
 
     public virtual TblAirport ToAirport { get; set; }
 
-    public virtual ICollection<TucJobBookingItem> TucJobBookingItems { get; set; } = new List<TucJobBookingItem>();
+    public virtual ICollection<TucJobBookingItem> TucJobBookingItemBookings { get; set; } = new List<TucJobBookingItem>();
+
+    public virtual ICollection<TucJobBookingItem> TucJobBookingItemChildJobs { get; set; } = new List<TucJobBookingItem>();
 
     public virtual ICollection<TucJobNationwide> TucJobNationwides { get; set; } = new List<TucJobNationwide>();
 

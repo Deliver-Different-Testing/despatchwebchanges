@@ -572,7 +572,9 @@ public static class JobMappings
             ScheduleName = j.ScheduleName,
             FollowupTime = j.FollowupTime,
             Void = j.UcjbVoid,
-            LoggedInContactName = j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname,
+            LoggedInContactName = j.LoggedInContact != null
+                ? j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname
+                : string.Empty,
 
             PickupTime = null,
             DeliveryTime = null,
@@ -887,7 +889,7 @@ public static class JobMappings
 
         ParcelDimensions =
             j.BookingParent == null || j.ParentId == j.UcbkId
-                ? j.TucJobBookingItems.Select(p => new ParcelDimensions
+                ? j.TucJobBookingItemBookings.Select(p => new ParcelDimensions
                     {
                         ItemId = p.ItemId,
                         ItemName = p.Notes,
@@ -896,7 +898,7 @@ public static class JobMappings
                         Length = p.Length
                     })
                     .ToList()
-                : j.BookingParent.TucJobBookingItems.Select(p => new ParcelDimensions
+                : j.BookingParent.TucJobBookingItemBookings.Select(p => new ParcelDimensions
                     {
                         ItemId = p.ItemId,
                         ItemName = p.Notes,
@@ -1062,7 +1064,7 @@ public static class JobMappings
     private static List<ParcelDimensions> GetPackagesForJob(TucJob job)
     {
         // Handle child packages case
-        if (job.TucJobItemChildJobs.Count != 0)
+        if (job.TucJobItemChildJobs != null && job.TucJobItemChildJobs.Count != 0)
         {
             return job.TucJobItemChildJobs
                 .Select(CreateParcelDimensions)
@@ -1070,10 +1072,12 @@ public static class JobMappings
         }
 
         // Handle regular packages case - determine the source job
-        var sourceJob = job.ParentId == null || job.ParentId == job.UcjbId 
-            ? job 
+        var sourceJob = job.ParentId == null || job.ParentId == job.UcjbId
+            ? job
             : job.Parent;
-        
+
+        if (sourceJob.TucJobItemJobs == null || sourceJob.TucJobItemJobs.Count == 0) return [];
+
         return sourceJob.TucJobItemJobs
             .Select(CreateParcelDimensions)
             .ToList();
