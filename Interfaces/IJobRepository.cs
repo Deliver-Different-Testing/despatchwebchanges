@@ -177,7 +177,7 @@ public interface IJobRepository
     Task<List<AddressWithAgent>> GetClosestAirportsAsync(decimal latitude, decimal longitude);
 
     Task<List<MegaMapResponse>> GetJobsForMegaMapAsync();
-    Task AddPackagesToJobAsync(int jobId, List<ParcelDimensions> parcels);
+    Task AddPackagesToJobAsync(int jobId, List<ParcelDimensions> parcels, int? childJobId = null);
     Task UpdatePackagesForJobAsync(int jobId, List<ParcelDimensions> parcels);
 
     Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds);
