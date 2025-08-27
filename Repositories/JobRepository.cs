@@ -1362,7 +1362,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         return await Context
             .TucSuburbs.Select(x => new SuburbLookup
             {
-                ID = x.UcsuId,
+                Id = x.UcsuId,
                 Text = x.UcsuName,
                 Alias = x.GoogleSuburbAlias
             })
@@ -1401,7 +1401,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
         return await Context
             .TblJobLeaveNotHomes
             .OrderBy(l => l.Sequence)
-            .Select(x => new Lookup { ID = x.LeaveNotHomeId, Text = x.Name })
+            .Select(x => new Lookup { Id = x.LeaveNotHomeId, Text = x.Name })
             .ToListAsync();
     }
 
@@ -1411,7 +1411,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             .TblUndeliverableLocations.OrderBy(u => u.Name)
             .Select(x => new UndeliverableLocation
             {
-                ID = x.UndeliverableLocationId,
+                Id = x.UndeliverableLocationId,
                 Text = x.Name,
                 JobStatusId = x.JobTypeId
             })
@@ -1426,7 +1426,7 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
             .OrderBy(u => u.Tcis)
             .Select(x => new InternalStatus
             {
-                ID = x.Tcis,
+                Id = x.Tcis,
                 Text = x.TcisName,
                 DefaultSchedule = x.DefaultSchedule,
                 DefaultMins = x.DefaultMinutes

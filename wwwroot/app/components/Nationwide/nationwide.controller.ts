@@ -40,6 +40,7 @@ import TasksService from "../../services/tasks.service";
 import JobListType from "../common/job-list/enums/jobListType";
 import RecoveryAgentManagementService
     from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.service";
+import {formatFullDate} from "../../functions/formatDates";
 
 class NationwideControl extends BaseController {
     static $inject = [
@@ -1311,12 +1312,14 @@ class NationwideControl extends BaseController {
                 fromAirportId: this.selectedOutboundAirport?.id,
                 toAirportId: this.selectedInboundAirport?.id,
                 flightNumber: flight.flightNumber,
-                departureDate: flight.departureTime,
+                departureDate: formatFullDate(flight.departureTime),
                 flightSegments: flight.flightSegments,
-                packageReadyTime: result.packageReadyTime,
-                packageDeliverByTime: result.packageDeliverByTime,
+                packageReadyTime: result.packageReadyTime ? formatFullDate(result.packageReadyTime) : undefined,
+                packageDeliverByTime: result.packageDeliverByTime ? formatFullDate(result.packageDeliverByTime) : undefined,
                 packageDeliveryNotes: result.packageDeliveryNotes
             };
+            
+            console.log('Assigning flight to job:', requestData);
 
             // Pass the full flight data including segments to the service
             await this.nationwideService.assignFlightToJob(requestData);

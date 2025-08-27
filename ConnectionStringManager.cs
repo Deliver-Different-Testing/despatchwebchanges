@@ -9,7 +9,7 @@ namespace DespatchWeb;
 public interface IConnectionStringManager
 {
     Task SetConnectionStringAsync(string tenantAppCacheKey, string connectionString);
-    Task<string?> GetConnectionStringAsync(string tenantAppCacheKey);
+    Task<string> GetConnectionStringAsync(string tenantAppCacheKey);
 
 }
 
@@ -18,7 +18,7 @@ public class ConnectionStringManager(IDistributedCache cache, ILogger<Connection
 {
 
     private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
-    private string? _tenantAppCacheKey;
+    private string _tenantAppCacheKey;
 
     public async Task SetConnectionStringAsync(string tenantAppCacheKey, string connectionString)
     {
@@ -40,7 +40,7 @@ public class ConnectionStringManager(IDistributedCache cache, ILogger<Connection
         }
     }
 
-    public async Task<string?> GetConnectionStringAsync(string tenantAppCacheKey)
+    public async Task<string> GetConnectionStringAsync(string tenantAppCacheKey)
     {
         await _semaphore.WaitAsync();
         try

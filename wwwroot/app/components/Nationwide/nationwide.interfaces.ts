@@ -72,9 +72,9 @@ export interface AssignFlightToJobRequest {
     fromAirportId?: number;
     toAirportId?: number;
     flightNumber: string;
-    departureDate: Date;
+    departureDate: Date | string;
     flightSegments: FlightSegmentViewModel[];
-    packageReadyTime?: Date;
-    packageDeliverByTime?: Date;
+    packageReadyTime?: Date | string;
+    packageDeliverByTime?: Date | string;
     packageDeliveryNotes?: string;
 }

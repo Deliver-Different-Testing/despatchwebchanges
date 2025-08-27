@@ -20,10 +20,3 @@ public class OpenJobResponse
     public string PackageType { get; set; }
     public decimal Mileage { get; set; }
 }
-
-public class DriverStats
-{
-    public string DriverName { get; set; }
-    public int CompletedToday { get; set; }
-    public DateTime? LastCompleted { get; set; }
-}
