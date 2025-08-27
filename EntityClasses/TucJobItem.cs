@@ -33,5 +33,9 @@ public partial class TucJobItem
 
     public decimal? Cubic { get; set; }
 
+    public int? ChildJobId { get; set; }
+
+    public virtual TucJob ChildJob { get; set; }
+
     public virtual TucJob Job { get; set; }
 }

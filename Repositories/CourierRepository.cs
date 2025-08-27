@@ -64,21 +64,21 @@ public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory
                     MaxPayLoad = c.MaxPayload,
                     CurrentPallets = c
                         .TucJobUcjbCouriers.Where(d => !d.UcjbJobDone && !d.UcjbVoid)
-                        .SelectMany(d => d.TucJobItems)
+                        .SelectMany(d => d.TucJobItemJobs)
                         .Sum(i => i.Items),
                     CurrentWeight = c
                         .TucJobUcjbCouriers.Where(d => !d.UcjbJobDone && !d.UcjbVoid)
-                        .SelectMany(d => d.TucJobItems)
+                        .SelectMany(d => d.TucJobItemJobs)
                         .Sum(i => i.Items * i.Weight),
                     AvailablePallets =
                         c.MaxPallets
                         * c.TucJobUcjbCouriers.Where(d => !d.UcjbJobDone && !d.UcjbVoid)
-                            .SelectMany(d => d.TucJobItems)
+                            .SelectMany(d => d.TucJobItemJobs)
                             .Sum(i => i.Items),
                     AvailablePalletCapacity =
                         c.MaxPayload
                         * c.TucJobUcjbCouriers.Where(d => !d.UcjbJobDone && !d.UcjbVoid)
-                            .SelectMany(d => d.TucJobItems)
+                            .SelectMany(d => d.TucJobItemJobs)
                             .Sum(i => i.Items * i.Weight)
                 })
                 .OrderBy(c => c.CourierCode)

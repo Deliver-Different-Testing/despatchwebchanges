@@ -26,7 +26,7 @@ public class FlightRateService(INationwideJobRepository repository, ITenantInfoS
             CarrierCode = carrierCode,
             TotalWeight = job.UcjbWeight.HasValue ? (decimal)job.UcjbWeight.Value : 0,
             Quantity = job.UcjbQty ?? 0,
-            TotalPallets = job.TucJobItems.Count,
+            TotalPallets = job.TucJobItemJobs.Count,
             ExtraStopOffs = extraStopOffs ? 1 : 0,
             BookTime = bookTime,
             VehicleSizeId = job.UcjbSize ?? 0,

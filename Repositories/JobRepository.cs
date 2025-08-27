@@ -1649,24 +1649,6 @@ public partial class JobRepository(IDbContextFactory<DespatchContext> contextFac
     public async Task VoidPrebookJobAsync(int jobId, string despatcher, int staffId) =>
         await Context.Procedures.DESWEB_stpVoidPrebookJobAsync(jobId, despatcher, staffId);
 
-    public async Task<TruckItemsSummary> TruckJobItemsAsync(int jobId, int truckWeightLimit)
-    {
-        var result = await Context.Procedures.qry_tucJobItemsAsync(jobId, truckWeightLimit);
-        return result
-            .Select(item => new TruckItemsSummary
-            {
-                intQuantity = item.intQuantity,
-                intWeight = item.intWeight,
-                TotalWeight = item.totalWeight,
-                intPU = item.intPU,
-                intDO = item.intDO,
-                intOverSizeItems = item.intOversizeItems,
-                intOverWeightItems = item.intOverWeightItems,
-                DGClass = item.DGClass
-            })
-            .FirstOrDefault() ?? new TruckItemsSummary();
-    }
-
     public async Task UpdateDeliveryAddressNzAsync(UpdateAddressRequestNz request)
     {
         try

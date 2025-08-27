@@ -436,28 +436,7 @@ public static class JobMappings
         DgClass = j.Dgclass,
         DgDocumentation = j.Dgdocument,
         HasDgDocsString = j.Dgdocument != null ? "Yes" : "No",
-        ParcelDimensions =
-            j.ParentId == null || j.ParentId == j.UcjbId
-                ? j
-                    .TucJobItems.Select(p => new ParcelDimensions
-                    {
-                        ItemId = p.ItemId,
-                        ItemName = p.Notes,
-                        Height = p.Height,
-                        Depth = p.Depth,
-                        Length = p.Length
-                    })
-                    .ToList()
-                : j
-                    .Parent.TucJobItems.Select(p => new ParcelDimensions
-                    {
-                        ItemId = p.ItemId,
-                        ItemName = p.Notes,
-                        Height = p.Height,
-                        Depth = p.Depth,
-                        Length = p.Length
-                    })
-                    .ToList(),
+        ParcelDimensions = GetPackagesForJob(j),
 
         // Job status and details
         Done = j.UcjbJobDone,
@@ -509,7 +488,7 @@ public static class JobMappings
 
         // Job items
         PalletInfo = j
-            .TucJobItems.Select(i => new PalletInfo
+            .TucJobItemJobs.Select(i => new PalletInfo
             {
                 Id = i.JobId,
                 Quantity = i.Items,
@@ -1077,6 +1056,38 @@ public static class JobMappings
             LateEventType.Delivery => "Delivery",
             LateEventType.ThirdParty => "3rd-Party",
             _ => "Pickup"
+        };
+    }
+
+    private static List<ParcelDimensions> GetPackagesForJob(TucJob job)
+    {
+        // Handle child packages case
+        if (job.TucJobItemChildJobs.Count != 0)
+        {
+            return job.TucJobItemChildJobs
+                .Select(CreateParcelDimensions)
+                .ToList();
+        }
+
+        // Handle regular packages case - determine the source job
+        var sourceJob = job.ParentId == null || job.ParentId == job.UcjbId 
+            ? job 
+            : job.Parent;
+        
+        return sourceJob.TucJobItemJobs
+            .Select(CreateParcelDimensions)
+            .ToList();
+    }
+
+    private static ParcelDimensions CreateParcelDimensions(dynamic item)
+    {
+        return new ParcelDimensions
+        {
+            ItemId = item.ItemId,
+            ItemName = item.Notes,
+            Height = item.Height,
+            Depth = item.Depth,
+            Length = item.Length
         };
     }
 }
