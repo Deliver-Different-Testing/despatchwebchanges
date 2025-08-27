@@ -23,12 +23,6 @@ public class BaseJobRepository(
     ITenantInfoService infoService)
     : BaseRepository(contextFactory)
 {
-    private static void LogError(Exception exception, string methodName, int jobId)
-    {
-        Log.Error(exception, "Error occurred in {ControllerName}/{MethodName} for JobId {JobId}",
-            nameof(BaseJobRepository), methodName, jobId);
-    }
-
     protected async Task<List<DispatchJobViewModel>> DespatchQry(
         AppPage page,
         JobQueryParams queryParams,
@@ -1163,21 +1157,23 @@ public class BaseJobRepository(
         return jobs;
     }
 
-    public async Task AddPackagesToJobAsync(int jobId, List<ParcelDimensions> parcels, int? childJobId = null)
+    public async Task AddPackagesToJobAsync(int effectiveJobId, List<ParcelDimensions> parcels, int? childJobId = null)
     {
+        ArgumentNullException.ThrowIfNull(effectiveJobId);
         if (parcels == null || parcels.Count == 0) return;
 
         try
         {
             var newParcels = parcels.Select(parcel => 
-                CreateTucJobItem(jobId, parcel, childJobId)).ToList();
+                CreateTucJobItem(effectiveJobId, parcel, childJobId)).ToList();
         
-            await Context.TucJobItems.AddRangeAsync(newParcels);
+            await Context.AddRangeAsync(newParcels);
             await Context.SaveChangesAsync();
         }
         catch (Exception e)
         {
-            LogError(e, nameof(AddPackagesToJobAsync), jobId);
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository), nameof(AddPackagesToJobAsync)));       
             throw;
         }
     }
@@ -1189,6 +1185,7 @@ public class BaseJobRepository(
         try
         {
             var effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
+            var childJobId = await IsStopJob(jobId) ? jobId : (int?)null;
 
             // Process existing and new parcels separately
             var newParcels = new List<TucJobItem>();
@@ -1197,7 +1194,7 @@ public class BaseJobRepository(
             // Get next ItemId for new parcels
             foreach (var parcel in parcels)
             {
-                if (parcel.ItemId == null) newParcels.Add(CreateTucJobItem(effectiveJobId, parcel));
+                if (parcel.ItemId == null) newParcels.Add(CreateTucJobItem(effectiveJobId, parcel, childJobId));
                 else existingParcelIds.Add(parcel.ItemId.Value);
             }
 
@@ -1223,9 +1220,22 @@ public class BaseJobRepository(
         }
         catch (Exception e)
         {
-            LogError(e, nameof(UpdatePackagesForJobAsync), jobId);
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository), nameof(UpdatePackagesForJobAsync)));       
             throw;
         }
+    }
+    
+    private async Task<bool> IsStopJob(int jobId)
+    {
+        var jobNumber = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => j.UcjbNumber)
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+        
+        ArgumentNullException.ThrowIfNull(jobNumber);
+        return char.IsLetter(jobNumber.Last());
     }
 
     private static TucJobItem CreateTucJobItem(int jobId, ParcelDimensions parcel, int? childJobId = null)
