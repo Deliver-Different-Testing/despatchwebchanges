@@ -389,12 +389,11 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
                 Depth = extras.Depth,
                 Height = extras.Height,
                 Length = extras.Length,
-                Weight = extras.Weight,
+                Weight = extras.Weight
             };
             parcels.Add(parcel);
         }
 
-        await repository.AddEntityRangeAsync(parcels);
-        await repository.SaveChangesAsync();
+        await repository.AddPackagesToJobAsync(effectiveJobId, parcels);
     }
 }
