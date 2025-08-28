@@ -9,10 +9,12 @@ import {AvailableTime, CargoIndicator, CargoStatus} from "./interfaces/ICargoSta
 import IFlightCargoProcessing from "./interfaces/IFlightCargoProcessing";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import isBetween from "dayjs/plugin/isBetween";
 import ToastrService from "../../../services/toastr.service";
 import {formatMins} from "../../../functions/formatDates";
 
 dayjs.extend(duration);
+dayjs.extend(isBetween);
 
 class FlightAgentConformationDialogController extends BaseController {
     static $inject = [
@@ -35,7 +37,6 @@ class FlightAgentConformationDialogController extends BaseController {
     dgClassName?: string;
     showIncludeStopJobs: boolean = false;
     assignToStopJobs: boolean = false;
-    loadingAlerts: boolean = false;
 
     // Enhanced properties
     packageReadyTime?: Date;
@@ -177,7 +178,8 @@ class FlightAgentConformationDialogController extends BaseController {
 
     private async calculateCargoProcessingTimes(lastFlight: FlightSegmentViewModel): Promise<void> {
         if (!lastFlight.arrivalAirportId) {
-            console.warn('No arrival airport ID found for cargo processing calculation');
+            this.toastrService.showWarningToast('No arrival airport ID found for cargo processing calculation')
+            console.warn();
             return;
         }
 
@@ -208,19 +210,26 @@ class FlightAgentConformationDialogController extends BaseController {
                 return;
             }
 
+            const arrivalTime = dayjs(cargoProcessing.arrivalTime);
+            const arrivalWithProcessingTime = arrivalTime.add(cargoProcessing.processingTimeMins, 'minute');
+
             this.cargoProcessing = {
                 ...cargoProcessing,
-                arrivalTime: dayjs(cargoProcessing.arrivalTime).toDate(),
-                arrivalWithProcessingTime: dayjs(cargoProcessing.arrivalWithProcessingTime).toDate(),
+                arrivalTime: arrivalTime.toDate(),
                 cargoOpeningTime: dayjs(cargoProcessing.cargoOpeningTime).toDate(),
                 cargoClosingTime: dayjs(cargoProcessing.cargoClosingTime).toDate(),
-                packageReadyTime: dayjs(cargoProcessing.packageReadyTime).toDate(),
                 deliverByTime: cargoProcessing.deliverByTime ?
                     dayjs(cargoProcessing.deliverByTime).toDate() : undefined
             };
 
-            this.packageReadyTime = this.cargoProcessing.packageReadyTime;
+            // Calculate package ready time based on arrival + processing time vs cargo opening time
+            const cargoOpeningTime = dayjs(this.cargoProcessing.cargoOpeningTime);
+            const packageReadyTime = arrivalWithProcessingTime.isAfter(cargoOpeningTime) ?
+                arrivalWithProcessingTime : cargoOpeningTime;
 
+            this.packageReadyTime = packageReadyTime.toDate();
+
+            // Only set deliveryByTime from backend data, don't modify it
             if (this.cargoProcessing.deliverByTime) {
                 this.deliveryByTime = this.cargoProcessing.deliverByTime;
             }
@@ -234,7 +243,8 @@ class FlightAgentConformationDialogController extends BaseController {
                 cargoIndicator: this.cargoIndicator,
                 availableTime: this.availableTime,
                 packageReadyTime: this.packageReadyTime,
-                deliveryByTime: this.deliveryByTime
+                deliveryByTime: this.deliveryByTime,
+                arrivalWithProcessingTime: arrivalWithProcessingTime.toDate()
             });
 
         } catch (error) {
@@ -245,7 +255,7 @@ class FlightAgentConformationDialogController extends BaseController {
             this.applyScope();
         }
     }
-
+    
     private handleCargoProcessingError(): void {
         this.cargoStatus = {
             class: 'cargo-error',
@@ -332,20 +342,25 @@ class FlightAgentConformationDialogController extends BaseController {
             cargoClosingTime: this.cargoProcessing.cargoClosingTime
         });
 
-        const packageTime = formatMins(this.packageReadyTime);
-        const openingTime = formatMins(this.cargoProcessing.cargoOpeningTime);
-        const closingTime = formatMins(this.cargoProcessing.cargoClosingTime);
+        const packageTime = dayjs(this.packageReadyTime);
+        const packageDate = packageTime.format('YYYY-MM-DD');
+
+        // Create opening and closing times for the same date as package ready time
+        const openingTimeOnPackageDate = dayjs(`${packageDate} ${dayjs(this.cargoProcessing.cargoOpeningTime).format('HH:mm:ss')}`);
+        const closingTimeOnPackageDate = dayjs(`${packageDate} ${dayjs(this.cargoProcessing.cargoClosingTime).format('HH:mm:ss')}`);
+
+        const isWithinHours = packageTime.isBetween(openingTimeOnPackageDate, closingTimeOnPackageDate, null, '[]');
 
         console.log('Time comparison:', {
-            packageTime,
-            openingTime,
-            closingTime,
-            isWithinHours: packageTime >= openingTime && packageTime <= closingTime
+            packageTime: packageTime.format('YYYY-MM-DD HH:mm'),
+            openingTime: openingTimeOnPackageDate.format('YYYY-MM-DD HH:mm'),
+            closingTime: closingTimeOnPackageDate.format('YYYY-MM-DD HH:mm'),
+            isWithinHours
         });
 
-        return packageTime >= openingTime && packageTime <= closingTime;
+        return isWithinHours;
     }
-
+    
     private updateCargoStatus(isWithinCargoHours: boolean, packageTime: Date): void {
         if (!this.cargoStatus) return;
 
@@ -549,15 +564,7 @@ class FlightAgentConformationDialogController extends BaseController {
 
         const nextMorning = this.calculateNextMorningTime(packageTime);
         this.packageReadyTime = nextMorning.toDate();
-
-        if (this.deliveryByTime) {
-            const deliveryTime = dayjs(this.deliveryByTime);
-            if (deliveryTime.isValid()) {
-                const timeDiffMs = deliveryTime.diff(packageTime, 'millisecond');
-                this.deliveryByTime = nextMorning.add(timeDiffMs, 'millisecond').toDate();
-            }
-        }
-
+        
         this.evaluateCurrentScenario();
         this.applyScope();
     }
