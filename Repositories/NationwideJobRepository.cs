@@ -1288,12 +1288,13 @@ public class NationwideJobRepository(
         string carrierFsCode,
         DateTime flightArrivalTime)
     {
-        var data = await Context.TucJobs
+        var cargoModel = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
-            .Select(j => new CargoFacilityDto
+            .Select(j => new FlightCargoProcessingModel
             {
+                ArrivalTime = flightArrivalTime,
                 DeliverByTime = j.DeliverByTime,
-                ProcessingTime = j.ToAirport.ProcessingTime ?? 0,
+                ProcessingTimeMins = j.ToAirport.ProcessingTime ?? 0,
                 CargoOpeningTime = j.ToAirport.CargoFacilities
                                        .FirstOrDefault(c => c.Carrier.CarrierCode == carrierFsCode).OpeningTime ??
                                    DateTime.Now.ResetTimeToStartOfDay(),
@@ -1303,10 +1304,7 @@ public class NationwideJobRepository(
             })
             .AsNoTracking()
             .FirstOrDefaultAsync();
-
-        var cargoModel = new FlightCargoProcessingModel(flightArrivalTime, data.ProcessingTime,
-            data.CargoOpeningTime, data.CargoClosingTime, data.DeliverByTime);
-
+        
         return cargoModel;
     }
 

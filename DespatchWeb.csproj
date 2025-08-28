@@ -259,6 +259,11 @@
     <_ContentIncludedByDefault Remove="wwwroot\app\components\overview\mega-map\loading-dialog\loading-dialog.interface.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\overview\mega-map\loading-dialog\loading-dialog.styles.less" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\overview\mega-map\loading-dialog\loading-dialog.template.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.layout.less" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.service.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.template.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-conformation-dialog.controller.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-conformation-dialog.interfaces.ts" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="wwwroot\app\components\common\side-nav\side-nav.template.html" />
