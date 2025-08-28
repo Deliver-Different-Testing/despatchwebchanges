@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +15,7 @@ public class BaseRepository(IDbContextFactory<DespatchContext> contextFactory) :
     public void Dispose() => _context?.Dispose();
 
     public async Task AddEntityAsync<T>(T entity)
-        where T : class => await Context.Set<T>().AddAsync(entity);
+        where T : class => await Context.Set<T>().AddAsync(entity);  
 
     public async Task<T> GetByIdAsync<T>(int id) where T : class => await Context.Set<T>().FindAsync(id);
 

@@ -305,12 +305,8 @@
                   </span>
 
                   <span ng-if="::box.name == 'flightAgentDataTable'">
-                                     <!--{{::ctrl.isDeliveryJobType ? 'Agents' : 'Flights'}}-->
                         Flights/Agents</span>
                 </span>
-
-                                <!--<div flex></div>-->
-
                                 <md-button
                                         class="md-icon-button"
                                         ng-click="ctrl.refreshAction(box.name)"
@@ -525,17 +521,3 @@
 
     <div id="draggingItems"></div>
 </md-content>
-
-<style>
-    table.md-table:not(.md-row-select)
-    td.md-cell:nth-child(n + 2):nth-last-child(n + 2),
-    table.md-table:not(.md-row-select)
-    th.md-column:nth-child(n + 2):nth-last-child(n + 2) {
-        padding: 0 !important;
-    }
-
-    table.md-table:not(.md-row-select) td.md-cell:first-child,
-    table.md-table:not(.md-row-select) th.md-column:first-child {
-        padding: 0 !important;
-    }
-</style>

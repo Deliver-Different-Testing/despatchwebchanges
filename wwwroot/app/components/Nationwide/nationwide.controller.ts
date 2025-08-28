@@ -399,7 +399,7 @@ class NationwideControl extends BaseController {
                 "title": "Detail",
                 "icon": "assignment",
                 "templateUrl": "app/components/Nationwide/partials/jobDetail.html",
-                "showRefresh": 0,
+                "showRefresh": 1,
                 "showDetailButtons": 1
             }, [NationwideBoxes.Map]: {
                 "title": "Map",
@@ -909,10 +909,6 @@ class NationwideControl extends BaseController {
         }
     }
 
-    selectJobDetail(job: IDispatchJob) {
-        this.currentJob = job;
-    }
-
     async loadRelatedJobDetail(jobId: number, jobNumber: string) {
         try {
             console.log(`Loading related job detail for ID: ${jobId}, Number: ${jobNumber}`);
@@ -931,8 +927,7 @@ class NationwideControl extends BaseController {
             console.error("Error in loadRelatedJobDetail:", error);
         }
     }
-
-
+    
     async sendQuoteRequest($event: MouseEvent, agent: IAgent, job: IDispatchJob) {
         try {
             // Show confirmation dialog
@@ -1903,6 +1898,18 @@ class NationwideControl extends BaseController {
             case NationwideBoxes.PodJobs:
                 await this.getJobList(JobDataType.POD);
                 break;
+            case NationwideBoxes.JobDetail:
+                if(!this.currentJobId) return;
+
+                // Clear job
+                const jobIdToRefresh = this.currentJobId;
+                this.currentJobId = undefined;
+                this.currentJob = undefined;
+
+                // Reselect to trigger refresh
+                const job = await this.DispatchData.getDispatchJobDetail(jobIdToRefresh);
+                await this.selectJob(job);
+                break;
             default:
                 break;
         }
@@ -1928,18 +1935,14 @@ class NationwideControl extends BaseController {
             setLoadingState(true);
 
             const newStopJobId = await this.jobAddStopService.addNewStop(job, $event);
-
-            if (newStopJobId) {
-                let newStopJob = this.findJobInLocalLists(newStopJobId) ||
-                    await this.DispatchData.getDispatchJobDetail(newStopJobId);
-
-                if (newStopJob) {
-                    await this.selectJob(newStopJob);
-                }
-            } else {
-                this.currentJobId = job.id;
-                this.currentJob = job;
+            if(!newStopJobId) {
+                setLoadingState(false);
+                this.toastrService.showWarningToast("Failed to add stop to job");
+                return;
             }
+            
+            const newStopJob = await this.DispatchData.getDispatchJobDetail(newStopJobId);
+            await this.selectJob(newStopJob);
         } catch (error: any) {
             console.error('Error in addStopToJob:', error);
             this.toastrService.showErrorToast(
