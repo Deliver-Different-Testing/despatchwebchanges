@@ -1156,6 +1156,19 @@ public class BaseJobRepository(
 
         return jobs;
     }
+    
+    private async Task<int> GetJobItemCount(int effectiveJobId) => 
+        await Context.TucJobItems.Where(i => i.JobId == effectiveJobId).CountAsync();
+
+    public async Task AddPackagesToJobAsync(int effectiveJobId, List<TucJobItem> items)
+    {
+        var existingCount = await GetJobItemCount(effectiveJobId);
+    
+        for (var i = 0; i < items.Count; i++) items[i].ItemId = existingCount + i + 1;
+    
+        await Context.TucJobItems.AddRangeAsync(items);
+        await Context.SaveChangesAsync();
+    }
 
     public async Task UpdatePackagesForJobAsync(int jobId, List<ParcelDimensions> parcels)
     {
@@ -1170,10 +1183,26 @@ public class BaseJobRepository(
             var newParcels = new List<TucJobItem>();
             var existingParcelIds = new List<int>();
 
+            var existingCount = await GetJobItemCount(effectiveJobId);
+            
             // Get next ItemId for new parcels
             foreach (var parcel in parcels)
             {
-                if (parcel.ItemId == null) newParcels.Add(CreateTucJobItem(effectiveJobId, parcel, childJobId));
+                if (parcel.ItemId == null) 
+                {
+                    var newItem = new TucJobItem
+                    {
+                        JobId = effectiveJobId,
+                        ChildJobId = childJobId,
+                        Height = parcel.Height ?? 0,
+                        Length = parcel.Length ?? 0,
+                        Depth = parcel.Depth ?? 0,
+                        Notes = parcel.ItemName,
+                        ItemId = existingCount + newParcels.Count + 1 
+                    };
+
+                    newParcels.Add(newItem);
+                }
                 else existingParcelIds.Add(parcel.ItemId.Value);
             }
 
@@ -1216,20 +1245,7 @@ public class BaseJobRepository(
         ArgumentNullException.ThrowIfNull(jobNumber);
         return char.IsLetter(jobNumber.Last());
     }
-
-    private static TucJobItem CreateTucJobItem(int jobId, ParcelDimensions parcel, int? childJobId = null)
-    {
-        return new TucJobItem
-        {
-            JobId = jobId,
-            ChildJobId = childJobId,
-            Height = parcel.Height ?? 0,
-            Length = parcel.Length ?? 0,
-            Depth = parcel.Depth ?? 0,
-            Notes = parcel.ItemName
-        };
-    }
-
+    
     private static void UpdateTucJobItem(TucJobItem item, ParcelDimensions parcel)
     {
         item.Height = parcel.Height ?? 0;

@@ -215,4 +215,5 @@ public interface IJobRepository
     Task SaveChangesAsync();
     Task<List<DeliveryJourneyViewModel>> GetDeliveryJourneyForJobAsync(int jobId);
     Task BulkUpdateReadStatusAsync(BulkReadUpdateRequestModel data);
+   Task AddPackagesToJobAsync(int effectiveJobId, List<TucJobItem> items);
 }
