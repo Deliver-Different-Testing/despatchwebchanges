@@ -129,12 +129,14 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
                 TotalDistance = null,
                 RatedManually = true,
                 DisplayInDespatch = false,
-                TucJobItemChildJobs = CreatePackages(job.ParentId ?? job.UcjbId, extras)
             };
 
             // Insert the new job stop
             await repository.AddEntityAsync(newStopJob);
             await repository.SaveChangesAsync();
+            
+            // Save packages
+            await CreateAndAddPackagesToJob(job.ParentId ?? job.UcjbId, newStopJob.UcjbId, extras);
             
             var staffId = infoService.GetStaffId();
             var currentDate = infoService.GetCurrentTenantTime();
@@ -370,22 +372,29 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         return breakdown;
     }
     
-    private static List<TucJobItem> CreatePackages(int effectiveJobId, ShipmentDetails extras)
+    private async Task CreateAndAddPackagesToJob(int effectiveJobId, int stopJobId, ShipmentDetails extras)
     {
         var quantity = extras.Quantity ?? 0;
-        if (quantity <= 0) 
-            return [];
+        if (quantity <= 0) return;
 
-        return [.. Enumerable.Range(1, quantity)
-            .Select(packageNumber => new TucJobItem
+        var parcels = new List<TucJobItem>();
+        for (var x = 1; x < quantity + 1; x++)
+        {
+            var parcel = new TucJobItem
             {
                 JobId = effectiveJobId,
-                Notes = $"Package {packageNumber}",
+                ChildJobId = stopJobId,
+                Notes = $"Package {x}",
                 Items = 1,
                 Depth = extras.Depth,
                 Height = extras.Height,
                 Length = extras.Length,
-                Weight = extras.Weight
-            })];
+                Weight = extras.Weight,
+            };
+            parcels.Add(parcel);
+        }
+
+        await repository.AddEntityRangeAsync(parcels);
+        await repository.SaveChangesAsync();
     }
 }
