@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -128,15 +129,13 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
                 TotalDistance = null,
                 RatedManually = true,
                 DisplayInDespatch = false,
+                TucJobItemChildJobs = CreatePackages(job.ParentId ?? job.UcjbId, extras)
             };
 
             // Insert the new job stop
             await repository.AddEntityAsync(newStopJob);
             await repository.SaveChangesAsync();
-
-            // Add packages to the job
-            await CreateAndAddPackagesToJob(job.ParentId ?? job.UcjbId, newStopJob.UcjbId, extras);
-
+            
             var staffId = infoService.GetStaffId();
             var currentDate = infoService.GetCurrentTenantTime();
 
@@ -370,25 +369,23 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
 
         return breakdown;
     }
-
-    private async Task CreateAndAddPackagesToJob(int effectiveJobId, int childJobId, ShipmentDetails extras)
+    
+    private static List<TucJobItem> CreatePackages(int effectiveJobId, ShipmentDetails extras)
     {
         var quantity = extras.Quantity ?? 0;
-        if (quantity <= 0) return;
+        if (quantity <= 0) 
+            return [];
 
-        var parcels = new List<ParcelDimensions>();
-        for (var x = 0; x < quantity; x++)
-        {
-            var parcel = new ParcelDimensions
+        return [.. Enumerable.Range(1, quantity)
+            .Select(packageNumber => new TucJobItem
             {
-                ItemName = $"Package {x}",
+                JobId = effectiveJobId,
+                Notes = $"Package {packageNumber}",
+                Items = 1,
                 Depth = extras.Depth,
                 Height = extras.Height,
-                Length = extras.Length
-            };
-            parcels.Add(parcel);
-        }
-
-        await repository.AddPackagesToJobAsync(effectiveJobId, parcels, childJobId);
+                Length = extras.Length,
+                Weight = extras.Weight
+            })];
     }
 }

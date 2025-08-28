@@ -1157,27 +1157,6 @@ public class BaseJobRepository(
         return jobs;
     }
 
-    public async Task AddPackagesToJobAsync(int effectiveJobId, List<ParcelDimensions> parcels, int? childJobId = null)
-    {
-        ArgumentNullException.ThrowIfNull(effectiveJobId);
-        if (parcels == null || parcels.Count == 0) return;
-
-        try
-        {
-            var newParcels = parcels.Select(parcel => 
-                CreateTucJobItem(effectiveJobId, parcel, childJobId)).ToList();
-        
-            await Context.AddRangeAsync(newParcels);
-            await Context.SaveChangesAsync();
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository), nameof(AddPackagesToJobAsync)));       
-            throw;
-        }
-    }
-
     public async Task UpdatePackagesForJobAsync(int jobId, List<ParcelDimensions> parcels)
     {
         if (parcels == null || parcels.Count == 0) return;
