@@ -648,13 +648,22 @@ class NationwideControl extends BaseController {
         }
     }
 
+    async selectAllViews() {
+        this.views.forEach((view: DfrntPageViewModel) => {
+            view.selected = true;
+        });
+
+        this.selectedViews = this.views;
+        this.saveViewsToStorage(this.selectedViews);
+        await this.getData();
+    }
+    
     async clearAllViews() {
         this.views.forEach((view: DfrntPageViewModel) => {
             view.selected = false;
         });
 
         this.selectedViews = [];
-
         this.saveViewsToStorage(this.selectedViews);
         await this.getData();
     }
