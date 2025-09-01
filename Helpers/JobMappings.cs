@@ -11,8 +11,6 @@ namespace DespatchWeb.Helpers;
 
 public static class JobMappings
 {
-    private static readonly int[] SourceArray = [41, 42, 43, 51, 52];
-
     public static readonly Expression<Func<TucJob, DispatchJobViewModel>> JobDispatchMapping =
         j => new DispatchJobViewModel
         {
@@ -21,6 +19,11 @@ public static class JobMappings
             HasBeenRead = j.TucJobReadTracker != null && j.TucJobReadTracker.HasBeenRead,
             IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.UcjbId,
             ParentId = j.ParentId,
+            
+            // For remain time calculation
+            DeliverByTime = j.DeliverByTime,
+            RequiredDeliveryTime = j.RequiredDeliveryTime,
+            JobTypeMins = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.Minutes : null,
 
             InternalStatusId = j.InternalStatus,
             SpeedId = j.UcjbSpeed,
@@ -29,7 +32,6 @@ public static class JobMappings
             StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
             Time = j.UcjbTime,
             Booked = CombineDateAndTime(j.UcjbDate, j.UcjbTime),
-            Remain = CalculateRemainTime(j, j.UcjbSpeedNavigation),
             IsFlightJob = j.UcjbSpeedNavigation != null
                           && j.UcjbSpeedNavigation.Grouping != null
                           && j.UcjbSpeedNavigation.Grouping.GroupingId == (int)SpeedGrouping.Flight,
@@ -403,7 +405,6 @@ public static class JobMappings
         PrivateRes = (j.DeliverToPrivateBusiness ?? 0) == 1,
         Return = j.UcjbReturn,
         SaturdayDelivery = j.SaturdayDelivery,
-        Remain = CalculateRemainTime(j, j.UcjbSpeedNavigation),
         CompletedTime = j.UcjbComplTime,
         UdStatus = j.UndeliverableLocation != null ? j.UndeliverableLocation.Name : string.Empty,
         SigNotRequired = j.DeliverToLeave != null ? j.DeliverToLeave.Name : string.Empty,
@@ -412,6 +413,7 @@ public static class JobMappings
 
         // Location data
         PickUpLatitude = j.PickUpLatitude,
+        
         PickUpLongitude = j.PickUpLongitude,
         DeliveryLatitude = j.DeliveryLatitude,
         DeliveryLongitude = j.DeliveryLongitude,
@@ -962,7 +964,6 @@ public static class JobMappings
         {
             Id = j.UcjbId,
             ClientId = j.UcjbClientId ?? 0,
-            MinutesRemaining = CalculateRemainTime(j, j.UcjbSpeedNavigation) ?? 0,
             PickupTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.PickupTime ?? 0 : 0,
             DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime ?? 0 : 0,
             AlertLatePickup = j.UcjbClient != null ? j.UcjbClient.AlertLatePickUp : 0,
@@ -974,61 +975,7 @@ public static class JobMappings
                 : string.Empty
         };
 
-    private static int? CalculateRemainTime(TucJob job, TucJobType jobType)
-    {
-        if (job == null || jobType == null)
-            return null;
-
-        var now = DateTime.Now;
-
-        var jobDateTime = new DateTime(
-            job.UcjbDate.Year,
-            job.UcjbDate.Month,
-            job.UcjbDate.Day,
-            job.UcjbTime?.Hour ?? 0,
-            job.UcjbTime?.Minute ?? 0,
-            job.UcjbTime?.Second ?? 0
-        );
-
-        if (job.UcjbSpeed == 36)
-        {
-            if (job.DeliverByTime == null) return null;
-
-            var deliverBy = job.DeliverByTime.Value;
-            var economyDeliveryDateTime = new DateTime(
-                job.UcjbDate.Year,
-                job.UcjbDate.Month,
-                job.UcjbDate.Day,
-                deliverBy.Hour,
-                deliverBy.Minute,
-                deliverBy.Second
-            );
-            return (int)(economyDeliveryDateTime - now).TotalMinutes;
-        }
-
-        var speedValue = job.UcjbSpeed ?? 0;
-        if (job.UcjbSpeed != null
-            && SourceArray.Contains(speedValue)
-            && job.RequiredDeliveryTime != null)
-        {
-            var requiredDelivery = job.RequiredDeliveryTime.Value;
-            var requiredDeliveryDateTime = new DateTime(
-                job.UcjbDate.Year,
-                job.UcjbDate.Month,
-                job.UcjbDate.Day,
-                requiredDelivery.Hour,
-                requiredDelivery.Minute,
-                requiredDelivery.Second
-            );
-            return (int)(requiredDeliveryDateTime - now).TotalMinutes;
-        }
-
-        var minutesToAdd = jobType.Minutes ?? 0;
-        if (jobType.Minutes == null) return null;
-
-        var standardDeliveryDateTime = jobDateTime.AddMinutes(minutesToAdd);
-        return (int)(standardDeliveryDateTime - now).TotalMinutes;
-    }
+    
 
     private static string FormatDate(DateTime? date)
     {

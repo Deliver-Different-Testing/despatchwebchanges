@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,12 +10,9 @@ using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
-using DespatchWeb.Models.Dto;
-using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
-using CourierLocation = DespatchWeb.Models.Response.CourierLocation;
 
 namespace DespatchWeb.Repositories;
 
@@ -23,6 +21,8 @@ public class BaseJobRepository(
     ITenantInfoService infoService)
     : BaseRepository(contextFactory)
 {
+    protected const string Space = " ";
+
     protected async Task<List<DispatchJobViewModel>> DespatchQry(
         AppPage page,
         JobQueryParams queryParams,
@@ -84,6 +84,9 @@ public class BaseJobRepository(
                 .Select(JobMappings.JobDispatchMapping)
                 .AsNoTracking()
                 .ToListAsync();
+
+            // Calculate remain times
+            foreach (var job in jobs) job.Remain = CalculateRemainTime(job);
 
             return jobs;
         }
@@ -519,65 +522,6 @@ public class BaseJobRepository(
             : query.OrderByDescending(j => j.UcjbCourier.UccrName);
     }
 
-    public async Task<JobViewModel> GetJobByIdAsync(int jobId)
-    {
-        try
-        {
-            // Mark the job as ready
-            await MarkJobAsReadAsync(jobId);
-
-            // Check for a live job first
-            var isLiveJob = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
-            if (isLiveJob)
-            {
-                var liveJob = await Context.TucJobs
-                    .Where(j => j.UcjbId == jobId)
-                    .Select(JobMappings.JobMapping)
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync();
-                return liveJob;
-            }
-
-            // Check for an archived job
-            var archivedJob = await Context.TucJobArchives
-                .Where(j => j.UcjbId == jobId)
-                .Select(JobMappings.JobArchiveMapping)
-                .AsNoTracking()
-                .FirstOrDefaultAsync();
-            ArgumentNullException.ThrowIfNull(archivedJob);
-
-            return archivedJob;
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Error occurred getting job {JobId}. Please see exception.", jobId);
-            throw;
-        }
-    }
-
-    private async Task MarkJobAsReadAsync(int jobId)
-    {
-        var alreadyOpened = await Context.TucJobReadTrackers.AnyAsync(x => x.JobId == jobId);
-        if (alreadyOpened) return;
-
-        var isLiveJob = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
-        if (!isLiveJob) return;
-
-        var staffId = infoService.GetStaffId();
-        var currentTenantTime = infoService.GetCurrentTenantTime();
-
-        var readTracker = new TucJobReadTracker
-        {
-            JobId = jobId,
-            HasBeenRead = true,
-            ReadByStaffId = staffId,
-            ReadTimestamp = currentTenantTime
-        };
-
-        await Context.TucJobReadTrackers.AddAsync(readTracker);
-        await Context.SaveChangesAsync();
-    }
-
     public async Task UpdateJobReadStatusAsync(int jobId, bool hasBeenRead)
     {
         var staffId = infoService.GetStaffId();
@@ -606,45 +550,6 @@ public class BaseJobRepository(
         }
     }
 
-    public async Task UpdateJobNoteAsync(int jobId, string note)
-    {
-        try
-        {
-            Log.Information("Starting note update for job {JobId}", jobId);
-
-            var rowsAffected = await Context.TucJobs
-                .Where(j => j.UcjbId == jobId)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(j => j.UcjbNotes, note));
-
-            if (rowsAffected == 0)
-            {
-                Log.Warning("Job {JobId} not found", jobId);
-                throw new KeyNotFoundException($"Job with ID {jobId} not found");
-            }
-
-            Log.Information(
-                "Successfully updated note for job {JobId}. New note length: {NewLength}",
-                jobId,
-                note?.Length ?? 0
-            );
-        }
-        catch (KeyNotFoundException ex)
-        {
-            Log.Error(ex, "Job not found when updating note for job {JobId}", jobId);
-            throw;
-        }
-        catch (DbUpdateException ex)
-        {
-            Log.Error(ex, "Database error occurred while updating note for job {JobId}", jobId);
-            throw;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Unexpected error updating note for job {JobId}", jobId);
-            throw;
-        }
-    }
 
     public async Task<OverviewStatsViewModel> GetOverviewStatsAsync()
     {
@@ -677,351 +582,6 @@ public class BaseJobRepository(
                };
     }
 
-    public async Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(
-        JobStatusGroup statusGroup,
-        OverviewJobsRequest parameters
-    )
-    {
-        // Base query
-        var query = Context.TucJobs.Where(j => j.InverseParent.Count != 0);
-
-        // Apply a status group
-        query = statusGroup switch
-        {
-            JobStatusGroup.Active => query.Where(j =>
-                j.UcjbStatus.HasValue
-                && JobStatusGroups.Active.Contains(j.UcjbStatus.Value)
-                && !j.UcjbVoid
-            ),
-
-            JobStatusGroup.Completed => query.Where(j =>
-                j.UcjbStatus.HasValue
-                && JobStatusGroups.Completed.Contains(j.UcjbStatus.Value)
-                && !j.UcjbVoid
-            ),
-
-            JobStatusGroup.Inactive => query.Where(j => j.UcjbVoid),
-
-            _ => query
-        };
-
-        // Apply region filter if provided
-        if (parameters.Regions.Count > 0)
-        {
-            query = query.Where(j =>
-                j.TblBulkJobs.Any(b => parameters.Regions.Contains(b.Region.BulkRegionId))
-            );
-        }
-
-        // Apply speed filter if provided
-        if (parameters.Speeds.Count > 0)
-        {
-            query = query.Where(j => parameters.Speeds.Contains(j.UcjbSpeedNavigation.UcjtId));
-        }
-
-        // Apply search filter if provided
-        if (!string.IsNullOrWhiteSpace(parameters.Search))
-        {
-            var search = parameters.Search.ToLower().Trim();
-            query = query.Where(j =>
-                EF.Functions.Like(j.UcjbNumber.ToLower(), $"%{search}%")
-                || EF.Functions.Like(j.UcjbStatusNavigation.UcjsName.ToLower(), $"%{search}%")
-                || j.TblBulkJobs.Any(b => EF.Functions.Like(b.Region.Name.ToLower(), $"%{search}%"))
-                || EF.Functions.Like(j.PickupAddressLine5.ToLower(), $"%{search}%")
-                || EF.Functions.Like(j.PickupAddressLine6.ToLower(), $"%{search}%")
-                || EF.Functions.Like(j.DeliveryAddressLine5.ToLower(), $"%{search}%")
-                || EF.Functions.Like(j.DeliveryAddressLine6.ToLower(), $"%{search}%")
-                || (
-                    j.UcjbCourier != null
-                    && (
-                        EF.Functions.Like(j.UcjbCourier.UccrName.ToLower(), $"%{search}%")
-                        || EF.Functions.Like(j.UcjbCourier.UccrSurname.ToLower(), $"%{search}%")
-                    )
-                )
-            );
-        }
-
-        // Apply date range filter
-        if (parameters.StartDate.HasValue)
-            query = query.Where(j => j.UcjbDate >= parameters.StartDate);
-        if (parameters.EndDate.HasValue)
-            query = query.Where(j => j.UcjbDate <= parameters.EndDate);
-
-        // Apply sorting
-        query = ApplySorting(query, parameters.OrderBy, parameters.OrderDirection);
-
-        // Get total count for pagination
-        var total = await query.CountAsync();
-        var pages = (int)Math.Ceiling(total / (double)parameters.Limit);
-
-        var isUsCustomer = infoService.IsUsTenant();
-
-        // Apply pagination
-        var jobs = await query
-            .Skip((parameters.Page - 1) * parameters.Limit)
-            .Take(parameters.Limit)
-            .Select(j => new DeliveryJob
-            {
-                JobId = j.UcjbId,
-                JobName = j.UcjbNumber,
-                Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : "Unknown",
-                Region =
-                    j.TblBulkJobs.FirstOrDefault() != null
-                        ? j.TblBulkJobs.FirstOrDefault().Region.Name
-                        : null,
-                Pickup = isUsCustomer
-                    ? j.PickupAddressLine5 + ", " + j.PickupAddressLine6
-                    : j.UcjbFromAddr,
-                Delivery = isUsCustomer
-                    ? j.DeliveryAddressLine5 + ", " + j.DeliveryAddressLine6
-                    : j.UcjbToAddr,
-                Driver =
-                    j.UcjbCourier != null
-                        ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
-                        : null,
-                Completion = j.InverseParent.Count != 0
-                    ? (int)
-                    Math.Round(
-                        (double)
-                        j.InverseParent.Count(c =>
-                            c.UcjbJobDone
-                            || (
-                                c.UcjbStatus.HasValue
-                                && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value)
-                            )
-                        )
-                        / j.InverseParent.Count
-                        * 100
-                    )
-                    : 0,
-                ChildJobs = j
-                    .InverseParent.Select(c => new ChildDeliveryJob
-                    {
-                        JobId = c.UcjbId,
-                        JobName = c.UcjbNumber,
-                        Status = c.UcjbStatusNavigation != null ? c.UcjbStatusNavigation.UcjsName : "Unknown",
-                        Region =
-                            c.TblBulkJobs.FirstOrDefault() != null
-                                ? c.TblBulkJobs.FirstOrDefault().Region.Name
-                                : null,
-                        Pickup = c.PickupAddressLine5 + ", " + c.PickupAddressLine6,
-                        Delivery = c.DeliveryAddressLine5 + ", " + c.DeliveryAddressLine6,
-                        Driver =
-                            c.UcjbCourier != null
-                                ? c.UcjbCourier.UccrName + ", " + c.UcjbCourier.UccrSurname
-                                : null,
-                        Completion =
-                            c.UcjbJobDone || c.UcjbStatus == (int)JobStatus.Completed ? 100 : 0
-                    })
-                    .ToList()
-            })
-            .AsNoTracking()
-            .ToListAsync();
-
-        return new PaginatedResponse<DeliveryJob>
-        {
-            Items = jobs,
-            Total = total,
-            Page = parameters.Page,
-            Pages = pages
-        };
-    }
-
-    private static IQueryable<TucJob> ApplySorting(
-        IQueryable<TucJob> query,
-        string orderBy,
-        string orderDirection
-    )
-    {
-        var isAscending = !orderDirection.Equals("desc", StringComparison.CurrentCultureIgnoreCase);
-
-        query = orderBy?.ToLower() switch
-        {
-            "jobname" => isAscending
-                ? query.OrderBy(j => j.UcjbNumber)
-                : query.OrderByDescending(j => j.UcjbNumber),
-
-            "status" => isAscending
-                ? query.OrderBy(j => j.UcjbStatusNavigation.UcjsName)
-                : query.OrderByDescending(j => j.UcjbStatusNavigation.UcjsName),
-
-            "completion" => isAscending
-                ? query.OrderBy(j =>
-                    j.InverseParent.Count(c =>
-                        c.UcjbJobDone
-                        || (
-                            c.UcjbStatus.HasValue
-                            && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value)
-                        )
-                    )
-                    / (double)j.InverseParent.Count
-                    * 100
-                )
-                : query.OrderByDescending(j =>
-                    j.InverseParent.Count(c =>
-                        c.UcjbJobDone
-                        || (
-                            c.UcjbStatus.HasValue
-                            && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value)
-                        )
-                    )
-                    / (double)j.InverseParent.Count
-                    * 100
-                ),
-
-            "pickup" => isAscending
-                ? query.OrderBy(j => j.PickupAddressLine5)
-                : query.OrderByDescending(j => j.PickupAddressLine5),
-
-            "delivery" => isAscending
-                ? query.OrderBy(j => j.DeliveryAddressLine5)
-                : query.OrderByDescending(j => j.DeliveryAddressLine5),
-
-            "driver" => isAscending
-                ? query.OrderBy(j => j.UcjbCourier.UccrName)
-                : query.OrderByDescending(j => j.UcjbCourier.UccrName),
-
-            "region" => isAscending
-                ? query.OrderBy(j => j.TblBulkJobs.FirstOrDefault().Region.Name)
-                : query.OrderByDescending(j => j.TblBulkJobs.FirstOrDefault().Region.Name),
-
-            _ => query.OrderBy(j => j.UcjbNumber) // Default sort
-        };
-
-        return query;
-    }
-
-    public async Task<OverviewDeliveryMapResponse> GetOverviewLocationDataAsync(int jobId)
-    {
-        var locations = await Context
-            .TucJobs.Where(j => j.UcjbId == jobId)
-            .Select(j => new OverviewDeliveryMapResponse
-            {
-                Center = new Coordinates { Lat = (decimal)39.8097343, Lng = (decimal)-98.5556199 },
-                Zoom = 5,
-                SelectedJobIndex = 0,
-                Job = new OverviewJobLocation
-                {
-                    Id = j.UcjbId,
-                    Pickup = new Coordinates
-                    {
-                        Lat = j.PickUpLatitude ?? 0,
-                        Lng = j.PickUpLongitude ?? 0
-                    },
-                    Delivery = new Coordinates
-                    {
-                        Lat = j.DeliveryLatitude ?? 0,
-                        Lng = j.DeliveryLongitude ?? 0
-                    },
-                    ChildJobs = j
-                        .InverseParent.Select(c => new OverviewChildJobLocation
-                        {
-                            Id = c.UcjbId,
-                            Pickup = new Coordinates
-                            {
-                                Lat = c.PickUpLatitude ?? 0,
-                                Lng = c.PickUpLongitude ?? 0
-                            },
-                            Delivery = new Coordinates
-                            {
-                                Lat = c.DeliveryLatitude ?? 0,
-                                Lng = c.DeliveryLongitude ?? 0
-                            },
-                            Flight =
-                                j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
-                        })
-                        .ToList()
-                }
-            })
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
-
-        return locations;
-    }
-
-    public async Task RateJobUsAsync(RateJobUsDto dto)
-    {
-        var rate = new OutputParameter<decimal?>();
-        var description = new OutputParameter<string>();
-        var returnValue = new OutputParameter<int>();
-
-        await Context.Procedures.DD_stpJob_Rate_DescribedAsync(
-            clientID: dto.ClientId,
-            speedID: dto.Speed,
-            fromZipCode: string.IsNullOrEmpty(dto.FromZip) ? null : int.Parse(dto.FromZip),
-            fromState: null,
-            toZipCode: string.IsNullOrEmpty(dto.ToZip) ? null : int.Parse(dto.ToZip),
-            toState: null,
-            totalDistance: dto.TotalMiles,
-            fromMiles: dto.FromMiles,
-            toMiles: dto.ToMiles,
-            totalWeight: dto.Weight,
-            quantity: dto.Quantity,
-            cubic: dto.Cubic,
-            totalPallets: dto.TotalPallets,
-            extraStopOffs: dto.ExtraStopOffs,
-            booked: dto.Booked,
-            vehicleSizeID: dto.Size,
-            dangerousGoods: dto.DangerousGoods,
-            dryIceWeight: dto.DryIceWeight,
-            waitTime: dto.WaitTime,
-            fromAgentId: dto.FromAgentId,
-            fromAirportId: dto.FromAirportId,
-            toAgentId: dto.ToAgentId,
-            toAirportId: dto.ToAirportId,
-            isFromAddressAirport: await DoesAddressMatchAirportAsync(dto.JobId, true),
-            isToAddressAirport: await DoesAddressMatchAirportAsync(dto.JobId, false),
-            dimensionsType: dto.CalculateDimsOncePerJob ? 1 : 0,
-            description: description,
-            rate: rate,
-            returnValue: returnValue
-        );
-
-        if (dto.PreviousRate == rate.Value)
-        {
-            Log.Information("Price is unchanged. Not updating job {Job}", dto.JobId);
-            return;
-        }
-
-        Log.Information("Pricing breakdown is: {DescriptionValue}", description.Value);
-
-        if (dto.IsPrebook)
-        {
-            var effectiveJobBookingId = await GetJobBookingRelationshipInfoAsync(dto.JobId);
-            await Context.Procedures.DD_InsertPricingBreakdownAsync(
-                jobID: null,
-                prebookJobID: effectiveJobBookingId,
-                pricingBreakdown: description.Value,
-                returnValue: returnValue
-            );
-        }
-        else
-        {
-            var effectiveJobId = await GetJobRelationshipInfoAsync(dto.JobId);
-            await Context.Procedures.DD_InsertPricingBreakdownAsync(
-                jobID: effectiveJobId,
-                prebookJobID: null,
-                pricingBreakdown: description.Value,
-                returnValue: returnValue
-            );
-        }
-
-        var printableRate = rate.Value ?? 0;
-        await SaveNoteAsync(dto.JobId, $"Repriced from {dto.PreviousRate} to {printableRate}", true);
-    }
-
-    private async Task<bool> DoesAddressMatchAirportAsync(int jobId, bool isPickupAddress)
-    {
-        var hasMatchingAirport = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Where(j => Context.TblAirports
-                .Any(a => a.AddressLine2 == (isPickupAddress ? j.PickupAddressLine2 : j.DeliveryAddressLine2)))
-            .AsNoTracking()
-            .AnyAsync();
-
-        return hasMatchingAirport;
-    }
-
     public async Task<TucJobType> GetJobTypeByIdAsync(int speedId)
     {
         var jobType = await Context.TucJobTypes
@@ -1031,228 +591,7 @@ public class BaseJobRepository(
 
         return jobType ?? throw new KeyNotFoundException($"Job type with ID {speedId} not found");
     }
-    
-    public async Task<List<AddressWithAgent>> GetClosestAirportsAsync(
-        decimal latitude,
-        decimal longitude
-    )
-    {
-        try
-        {
-            var latRad = (double)latitude / 57.3;
 
-            var closestAirports = await Context
-                .TblAirports.Where(a => a.Active)
-                .Select(a => new AddressWithAgent
-                {
-                    AirportId = a.AirportId,
-                    AirportCode = a.AirportCode,
-                    StreetAddress = a.StreetAddress,
-                    City = a.Name,
-                    AgentId = a.AgentId ?? 0,
-                    Latitude = a.Latitude,
-                    Longitude = a.Longitude,
-                    Distance = (decimal)
-                        Math.Sqrt(
-                            Math.Pow(110.574 * ((double)latitude - (double)a.Latitude), 2)
-                            + Math.Pow(
-                                110.574
-                                * ((double)a.Longitude - (double)longitude)
-                                * Math.Cos(latRad),
-                                2
-                            )
-                        )
-                })
-                .OrderBy(a => a.Distance)
-                .Take(3)
-                .AsNoTracking()
-                .ToListAsync();
-
-            return closestAirports;
-        }
-        catch (Exception ex)
-        {
-            throw new ApplicationException("Error while fetching closest airports", ex);
-        }
-    }
-
-    public async Task<List<MegaMapResponse>> GetJobsForMegaMapAsync()
-    {
-        // Get active jobs to display on a map
-        var jobs = await Context
-            .TucJobs.Where(j =>
-                j.UcjbStatus.HasValue
-                && JobStatusGroups.Active.Contains(j.UcjbStatus.Value)
-                && !j.UcjbVoid
-            )
-            .Select(j => new MegaMapResponse
-            {
-                JobId = j.UcjbId,
-                JobNumber = j.UcjbNumber,
-                JobStatus = j.UcjbStatus != null ? j.UcjbStatusNavigation.UcjsName : "New",
-                EstimatedDelivery =
-                    j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
-                    && j.TucJobNationwides.Count != 0
-                        ? j.TucJobNationwides.FirstOrDefault().UcnwEta.Value
-                        : j
-                            .UcjbDate.Date.Add(j.UcjbTime.Value.TimeOfDay)
-                            .AddMinutes(j.UcjbSpeedNavigation.Minutes ?? 180),
-                IsFlightJob = j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight,
-                PickupLocation = new AddressViewModel
-                {
-                    Latitude = j.PickUpLatitude ?? 0,
-                    Longitude = j.PickUpLongitude ?? 0,
-                    AddressLine1 = j.PickupAddressLine1,
-                    AddressLine2 = j.PickupAddressLine2,
-                    AddressLine3 = j.PickupAddressLine3,
-                    AddressLine4 = j.PickupAddressLine4,
-                    AddressLine5 = j.PickupAddressLine5,
-                    AddressLine6 = j.PickupAddressLine6,
-                    AddressLine7 = j.PickupAddressLine7,
-                    AddressLine8 = j.PickupAddressLine8
-                },
-                DeliveryLocation = new AddressViewModel
-                {
-                    Latitude = j.DeliveryLatitude ?? 0,
-                    Longitude = j.DeliveryLongitude ?? 0,
-                    AddressLine1 = j.DeliveryAddressLine1,
-                    AddressLine2 = j.DeliveryAddressLine2,
-                    AddressLine3 = j.DeliveryAddressLine3,
-                    AddressLine4 = j.DeliveryAddressLine4,
-                    AddressLine5 = j.DeliveryAddressLine5,
-                    AddressLine6 = j.DeliveryAddressLine6,
-                    AddressLine7 = j.DeliveryAddressLine7,
-                    AddressLine8 = j.DeliveryAddressLine8
-                },
-                CourierLocation = j.UcjbCourierId.HasValue
-                    ? new CourierLocation
-                    {
-                        CourierId = j.UcjbCourier.UccrId,
-                        CourierName =
-                            $"{j.UcjbCourier.UccrName} {j.UcjbCourier.UccrSurname}".Trim(),
-                        Coordinates = j.UcjbCourier.CourierGpsid.HasValue
-                            ? new Coordinates
-                            {
-                                Lat = (decimal)j.UcjbCourier.CourierGps.Latitude,
-                                Lng = (decimal)j.UcjbCourier.CourierGps.Longitude
-                            }
-                            : null
-                    }
-                    : null,
-                FlightInfo =
-                    j.UcjbSpeedNavigation.GroupingId == (int)SpeedGrouping.Flight
-                        ? j
-                            .TucJobNationwides.Select(n => new AssignedFlight
-                            {
-                                FlightNumber = n.UcnwFlightNo,
-                                ExpectedArrival = n.UcnwEta,
-                                ExpectedDeparture = n.UcnwEtd
-                            })
-                            .FirstOrDefault()
-                        : null
-            })
-            .AsNoTracking()
-            .ToListAsync();
-
-        return jobs;
-    }
-    
-    private async Task<int> GetJobItemCount(int effectiveJobId) => 
-        await Context.TucJobItems.Where(i => i.JobId == effectiveJobId).CountAsync();
-
-    public async Task AddPackagesToJobAsync(int effectiveJobId, List<TucJobItem> items)
-    {
-        var existingCount = await GetJobItemCount(effectiveJobId);
-    
-        for (var i = 0; i < items.Count; i++) items[i].ItemId = existingCount + i + 1;
-    
-        await Context.TucJobItems.AddRangeAsync(items);
-        await Context.SaveChangesAsync();
-    }
-
-    public async Task UpdatePackagesForJobAsync(int jobId, List<ParcelDimensions> parcels)
-    {
-        if (parcels == null || parcels.Count == 0) return;
-
-        try
-        {
-            var effectiveJobId = await GetJobRelationshipInfoAsync(jobId);
-            var childJobId = await IsStopJob(jobId) ? jobId : (int?)null;
-
-            // Process existing and new parcels separately
-            var newParcels = new List<TucJobItem>();
-            var existingParcelIds = new List<int>();
-
-            var existingCount = await GetJobItemCount(effectiveJobId);
-            
-            // Get next ItemId for new parcels
-            foreach (var parcel in parcels)
-            {
-                if (parcel.ItemId == null) 
-                {
-                    var newItem = new TucJobItem
-                    {
-                        JobId = effectiveJobId,
-                        ChildJobId = childJobId,
-                        Height = parcel.Height ?? 0,
-                        Length = parcel.Length ?? 0,
-                        Depth = parcel.Depth ?? 0,
-                        Notes = parcel.ItemName,
-                        ItemId = existingCount + newParcels.Count + 1 
-                    };
-
-                    newParcels.Add(newItem);
-                }
-                else existingParcelIds.Add(parcel.ItemId.Value);
-            }
-
-            if (newParcels.Count > 0) await Context.TucJobItems.AddRangeAsync(newParcels);
-
-            if (existingParcelIds.Count != 0)
-            {
-                var existingItems = await Context.TucJobItems
-                    .Where(i => existingParcelIds.Contains(i.ItemId))
-                    .ToListAsync();
-
-                var existingItemsLookup = existingItems.ToDictionary(i => i.ItemId);
-
-                // Update existing items
-                foreach (var p in parcels.Where(p => p.ItemId != null))
-                {
-                    if (!p.ItemId.HasValue) continue;
-                    if (existingItemsLookup.TryGetValue(p.ItemId.Value, out var existingItem)) UpdateTucJobItem(existingItem, p);
-                }
-            }
-
-            await Context.SaveChangesAsync();
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository), nameof(UpdatePackagesForJobAsync)));       
-            throw;
-        }
-    }
-    
-    private async Task<bool> IsStopJob(int jobId)
-    {
-        var jobNumber = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Select(j => j.UcjbNumber)
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
-        
-        ArgumentNullException.ThrowIfNull(jobNumber);
-        return char.IsLetter(jobNumber.Last());
-    }
-    
-    private static void UpdateTucJobItem(TucJobItem item, ParcelDimensions parcel)
-    {
-        item.Height = parcel.Height ?? 0;
-        item.Length = parcel.Length ?? 0;
-        item.Depth = parcel.Depth ?? 0;
-        item.Notes = parcel.ItemName;
-    }
 
     public async Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(
         List<int> selectedViewIds)
@@ -1289,8 +628,9 @@ public class BaseJobRepository(
         }
         catch (Exception e)
         {
-            Log.Error(e, "{Message}", 
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository), nameof(GetJobCoordinatesAsync)));
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository),
+                    nameof(GetJobCoordinatesAsync)));
             throw;
         }
     }
@@ -1564,49 +904,13 @@ public class BaseJobRepository(
 
                 // Staff information
                 CreatedBy = note.CreatedBy,
-                CreatedByName = cs != null ? cs.UcstFirstName + " " + cs.UcstLastName : null,
+                CreatedByName = cs != null ? cs.UcstFirstName + Space + cs.UcstLastName : null,
                 UpdatedBy = note.UpdatedBy,
-                UpdatedByName = us != null ? us.UcstFirstName + " " + us.UcstLastName : null,
+                UpdatedByName = us != null ? us.UcstFirstName + Space + us.UcstLastName : null,
 
                 // Job information
                 JobNumber = j != null ? j.UcjbNumber : null
             };
-    }
-
-    public async Task<List<NoteTypeViewModel>> GetNoteTypesAsync()
-    {
-        var noteTypes = await Context.TucNoteTypes
-            .Where(x => x.IsActive)
-            .Select(x => new NoteTypeViewModel
-            {
-                Id = x.NoteTypeId,
-                Text = x.NoteTypeName,
-                IsPublic = x.IsPublic
-            })
-            .AsNoTracking()
-            .ToListAsync();
-
-        return noteTypes;
-    }
-
-    public async Task<bool> IsJobParentAsync(int jobId)
-    {
-        var jobInfo = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Select(j => new { HasParent = j.ParentId.HasValue })
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
-
-        if (jobInfo != null)
-            return jobInfo.HasParent;
-
-        var bookingInfo = await Context.TucJobBookings
-            .Where(j => j.UcbkId == jobId)
-            .Select(j => new { HasParent = j.ParentId.HasValue })
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
-
-        return bookingInfo?.HasParent ?? false;
     }
 
     protected async Task<int> GetJobRelationshipInfoAsync(int jobId)
@@ -1650,476 +954,63 @@ public class BaseJobRepository(
         };
     }
 
-    public async Task AddNewTucNoteTypeAsync(NoteTypeViewModel noteType)
-    {
-        var newType = new TucNoteType
-        {
-            IsActive = true,
-            IsPublic = noteType.IsPublic,
-            NoteTypeName = noteType.Text,
-            Description = noteType.Description
-        };
+    private static readonly int[] CriticalSpeedIds = [41, 42, 43, 51, 52];
 
-        await Context.TucNoteTypes.AddAsync(newType);
-        await Context.SaveChangesAsync();
-    }
-
-    public async Task<JobRatingDetailsDto> GetJobDetailsForRatingAsync(int jobId)
+    private double? CalculateRemainTime(DispatchJobViewModel job)
     {
         try
         {
-            var jobDetails = await Context.TucJobs
-                .Where(j => j.UcjbId == jobId)
-                .Include(j => j.UcjbClient)
-                .Include(j => j.UcjbSpeedNavigation)
-                .Select(job => new JobRatingDetailsDto
-                {
-                    // Map the entity properties to our model
-                    JobId = job.UcjbId,
-                    ClientId = job.UcjbClientId,
-                    FromId = job.UcjbFrom,
-                    ToId = job.UcjbTo,
-                    SpeedId = job.UcjbSpeed,
-                    IsPedal = job.UcjbCbd,
-                    IsVan = job.UcjbVan,
-                    IsReturnJob = job.UcjbReturn,
-                    Weight = job.UcjbWeight,
-                    SizeId = job.UcjbSize,
-                    IncludeFuelSurcharge = false,
-                    IsDirect = job.Direct,
-                    AcceptedJobTypeId = job.AcceptedJobTypeId,
-                    OurRef = job.UcjbOurRef,
-                    RefA = job.UcjbClientRefa,
-                    RefB = job.UcjbClientRefb,
-                    Quantity = job.UcjbQty ?? 1,
-                    BookedDate = job.UcjbDate,
+            ArgumentNullException.ThrowIfNull(job);
+            ArgumentNullException.ThrowIfNull(job.Booked);
 
-                    // Coordinates
-                    PickupLat = job.PickUpLatitude ?? 0,
-                    PickupLong = job.PickUpLongitude ?? 0,
-                    DeliveryLat = job.DeliveryLatitude ?? 0,
-                    DeliveryLong = job.DeliveryLongitude ?? 0,
+            var now = infoService.GetCurrentTenantTime();
+            var jobDateTime = job.Booked.Value;
 
-                    // US-specific properties
-                    FromZip = job.PickupAddressLine7,
-                    ToZip = job.DeliveryAddressLine7,
-                    DangerousGoods = job.Dgdocument ?? false,
-                    TotalPallets = job.TucJobItemJobs.Count,
-                    ExtraStopOffs = 0,
-                    DryIceWeight = job.DryIceWeight ?? 0,
-                    WaitTime = 0,
-
-                    // Flight-specific properties
-                    FromAirportId = job.FromAirportId,
-                    ToAirportId = job.ToAirportId,
-                    FromAgentId = job.FromAirport != null ? job.FromAirport.AgentId : null,
-                    ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
-
-                    // Client-specific rate information
-                    ClientDiscount = job.UcjbClient.Discount,
-                    Cubic = job.TucJobItemJobs.Sum(i => i.Cubic),
-                    IsManuallyRated = job.RatedManually
-                })
-                .FirstOrDefaultAsync();
-
-            ArgumentNullException.ThrowIfNull(jobDetails);
-
-            return jobDetails;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error retrieving job details for rating. Job ID: {JobId}", jobId);
-            throw new ApplicationException($"Failed to retrieve job details for rating: {ex.Message}", ex);
-        }
-    }
-    
-    
-public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId)
-{
-    try
-    {
-        var jobDetails = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Include(j => j.UcjbClient)
-            .Include(j => j.UcjbSpeedNavigation)
-            .Include(j => j.TucJobItemJobs)
-            .Select(job => new JobRatingDetailsDtoNz
+            if (job.SpeedId == 36)
             {
-                JobId = job.UcjbId,
-                ClientId = job.UcjbClientId,
-                FromId = job.UcjbFrom,
-                ToId = job.UcjbTo,
-                SpeedId = job.UcjbSpeed,
-                IsPedal = job.UcjbCbd,
-                IsVan = job.UcjbVan,
-                IsReturnJob = job.UcjbReturn,
-                Weight = job.UcjbWeight,
-                SizeId = job.UcjbSize,
-                IncludeFuelSurcharge = false,
-                IsDirect = job.Direct,
-                AcceptedJobTypeId = job.AcceptedJobTypeId,
-                OurRef = job.UcjbOurRef,
-                RefA = job.UcjbClientRefa,
-                RefB = job.UcjbClientRefb,
-                Quantity = job.UcjbQty ?? 1,
-                BookedDate = job.UcjbDate,
+                if (!job.DeliverByTime.HasValue) return null;
 
-                // Coordinates
-                PickupLat = job.PickUpLatitude ?? 0,
-                PickupLong = job.PickUpLongitude ?? 0,
-                DeliveryLat = job.DeliveryLatitude ?? 0,
-                DeliveryLong = job.DeliveryLongitude ?? 0,
+                var deliverBy = job.DeliverByTime.Value;
+                var economyDeliveryDateTime = new DateTime(
+                    job.Booked.Value.Year,
+                    job.Booked.Value.Month,
+                    job.Booked.Value.Day,
+                    deliverBy.Hour,
+                    deliverBy.Minute,
+                    deliverBy.Second
+                );
+                return (economyDeliveryDateTime - now).TotalMinutes;
+            }
 
-                // US-specific properties
-                FromZip = job.PickupAddressLine7,
-                ToZip = job.DeliveryAddressLine7,
-                DangerousGoods = job.Dgdocument ?? false,
-                TotalPallets = job.TucJobItemJobs.Count,
-                ExtraStopOffs = 0,
-                DryIceWeight = job.DryIceWeight ?? 0,
-                WaitTime = job.WaitedPickUp ?? 0,
-
-                // Flight-specific properties
-                FromAirportId = job.FromAirportId,
-                ToAirportId = job.ToAirportId,
-                FromAgentId = job.FromAirport != null ? job.FromAirport.AgentId : null,
-                ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
-
-                // Client-specific rate information
-                ClientDiscount = job.UcjbClient != null ? job.UcjbClient.Discount : 0,
-                Cubic = job.TucJobItemJobs.Sum(i => i.Cubic),
-                IsManuallyRated = job.RatedManually,
-                IsPrebook = job.IsRecurringJob,
-
-                // NEW NZ-specific From Address fields
-                FromCompanyName = job.PickupAddressLine1,
-                FromBuildingName = job.PickupAddressLine2,
-                FromStreetAddress = job.PickupAddressLine3 ?? string.Empty,
-                FromCity = job.PickupAddressLine4 ?? string.Empty,
-                FromState = job.PickupAddressLine5,
-                FromSuburb = job.PickupAddressLine6,
-                FromPostCode = job.PickupAddressLine7,
-                FromCountryCode = job.PickupAddressLine8,
-
-                // NEW NZ-specific To Address fields
-                ToCompanyName = job.DeliveryAddressLine1,
-                ToBuildingName = job.DeliveryAddressLine2,
-                ToStreetAddress = job.DeliveryAddressLine3 ?? string.Empty,
-                ToCity = job.DeliveryAddressLine4 ?? string.Empty,
-                ToState = job.DeliveryAddressLine5,
-                ToSuburb = job.DeliveryAddressLine6,
-                ToPostCode = job.DeliveryAddressLine7,
-                ToCountryCode = job.DeliveryAddressLine8,
-
-                // NEW Package Details
-                Packages = job.TucJobItemJobs.Select(item => new PackageDetailsDto
-                {
-                    Name = item.Notes ,
-                    Length = item.Length,
-                    Width = item.Depth,
-                    Height = item.Height,
-                    Cubic = item.Cubic.HasValue ? (double)item.Cubic : 0,
-                    Kg = item.Weight,
-                    Type = null,
-                    PackageCode = null,
-                    Units = job.TucJobItemJobs.Count
-                }).ToList(),
-
-                // NEW Truck-specific properties
-                PickupTailLift = null,
-                DropoffTailLift = null,
-                PrivateRes = job.DeliverToPrivateBusiness == 1,
-                HasDgDocuments = job.Dgdocument,
-                TruckStartTime = job.TruckStartTime.ToString(),
-                TruckHours = (int)job.TruckHours
-            })
-            .FirstOrDefaultAsync();
-
-        ArgumentNullException.ThrowIfNull(jobDetails);
-
-        return jobDetails;
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "Error retrieving NZ job details for rating. Job ID: {JobId}", jobId);
-        throw new ApplicationException($"Failed to retrieve NZ job details for rating: {ex.Message}", ex);
-    }
-}
-
-    public async Task<JobRatingDetailsDto> GetJobBookingDetailsForRatingAsync(int jobId)
-    {
-        try
-        {
-            var jobDetails = await Context.TucJobBookings
-                .Where(j => j.UcbkId == jobId)
-                .Include(j => j.UcbkClient) // Include client info
-                .Include(j => j.UcbkSpeedNavigation) // Include job type info
-                .Select(job => new JobRatingDetailsDto
-                {
-                    // Map the entity properties to our model
-                    JobId = job.UcbkId,
-                    ClientId = job.UcbkClientId ?? 0,
-                    FromId = (int)job.UcbkFrom,
-                    ToId = (int)job.UcbkTo,
-                    SpeedId = job.UcbkSpeed ?? 0,
-                    IsPedal = job.UcbkCbd ?? false,
-                    IsVan = job.UcbkVan,
-                    IsReturnJob = job.UcbkReturn,
-                    Weight = job.UcbkWeight ?? 0,
-                    SizeId = job.UcbkSize ?? 0,
-                    IncludeFuelSurcharge = false,
-                    IsDirect = job.Direct,
-                    AcceptedJobTypeId = job.AcceptedJobTypeId ?? 0,
-                    OurRef = job.UcbkOurRef,
-                    RefA = job.UcbkClientRefa,
-                    RefB = job.UcbkClientRefb,
-                    Quantity = job.Quantity.HasValue ? (int)job.Quantity : 0,
-                    BookedDate = job.UcbkDate ?? DateTime.MinValue,
-                    PreviousRate = job.PricingBreakdowns.Sum(p => p.Charged),
-
-                    // Coordinates
-                    PickupLat = job.PickUpLatitude ?? 0,
-                    PickupLong = job.PickUpLongitude ?? 0,
-                    DeliveryLat = job.DeliveryLatitude ?? 0,
-                    DeliveryLong = job.DeliveryLongitude ?? 0,
-
-                    // US-specific properties
-                    FromZip = job.PickupAddressLine7,
-                    ToZip = job.DeliveryAddressLine7,
-                    DangerousGoods = job.Dgdocument ?? false,
-                    TotalPallets = job.TucJobBookingItemBookings.Count,
-                    ExtraStopOffs = 0,
-                    DryIceWeight = job.DryIceWeight ?? 0,
-                    WaitTime = 0,
-
-                    // Flight-specific properties
-                    FromAirportId = job.FromAirportId,
-                    ToAirportId = job.ToAirportId,
-                    FromAgentId = job.FromAirport != null ? job.FromAirport.AgentId : null,
-                    ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
-
-                    // Client-specific rate information
-                    ClientDiscount = job.UcbkClient.Discount,
-                    Cubic = job.TucJobBookingItemBookings.Sum(i => i.Cubic),
-                    CalculateDimsOncePerJob = job.DimensionsType == 1
-                })
-                .FirstOrDefaultAsync();
-
-            ArgumentNullException.ThrowIfNull(jobDetails);
-
-            return jobDetails;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error retrieving job details for rating. Job ID: {JobId}", jobId);
-            throw new ApplicationException($"Failed to retrieve job details for rating: {ex.Message}", ex);
-        }
-    }
-    
-    public async Task<JobRatingDetailsDtoNz> GetJobBookingDetailsForRatingNzAsync(int jobId)
-{
-    try
-    {
-        var jobDetails = await Context.TucJobBookings
-            .Where(j => j.UcbkId == jobId)
-            .Include(j => j.UcbkClient)
-            .Include(j => j.UcbkSpeedNavigation)
-            .Include(j => j.TucJobBookingItemBookings)
-            .Select(job => new JobRatingDetailsDtoNz
+            var speedValue = job.SpeedId ?? 0;
+            if (job.SpeedId.HasValue
+                && CriticalSpeedIds.Contains(speedValue)
+                && job.RequiredDeliveryTime.HasValue)
             {
-                // Base properties from JobRatingDetailsDto
-                JobId = job.UcbkId,
-                ClientId = job.UcbkClientId ?? 0,
-                FromId = (int)job.UcbkFrom,
-                ToId = (int)job.UcbkTo,
-                SpeedId = job.UcbkSpeed ?? 0,
-                IsPedal = job.UcbkCbd ?? false,
-                IsVan = job.UcbkVan,
-                IsReturnJob = job.UcbkReturn,
-                Weight = job.UcbkWeight ?? 0,
-                SizeId = job.UcbkSize ?? 0,
-                IncludeFuelSurcharge = false,
-                IsDirect = job.Direct,
-                AcceptedJobTypeId = job.AcceptedJobTypeId ?? 0,
-                OurRef = job.UcbkOurRef,
-                RefA = job.UcbkClientRefa,
-                RefB = job.UcbkClientRefb,
-                Quantity = job.Quantity.HasValue ? (int)job.Quantity : 0,
-                BookedDate = job.UcbkDate ?? DateTime.MinValue,
-                PreviousRate = job.PricingBreakdowns.Sum(p => p.Charged),
+                var requiredDelivery = job.RequiredDeliveryTime.Value;
+                var requiredDeliveryDateTime = new DateTime(
+                    job.Booked.Value.Year,
+                    job.Booked.Value.Month,
+                    job.Booked.Value.Day,
+                    requiredDelivery.Hour,
+                    requiredDelivery.Minute,
+                    requiredDelivery.Second
+                );
+                return (requiredDeliveryDateTime - now).TotalMinutes;
+            }
+            
+            if (!job.JobTypeMins.HasValue) return null;
+            var minutesToAdd = job.JobTypeMins ?? 0;
 
-                // Coordinates
-                PickupLat = job.PickUpLatitude ?? 0,
-                PickupLong = job.PickUpLongitude ?? 0,
-                DeliveryLat = job.DeliveryLatitude ?? 0,
-                DeliveryLong = job.DeliveryLongitude ?? 0,
-
-                // US-specific properties
-                FromZip = job.PickupAddressLine7,
-                ToZip = job.DeliveryAddressLine7,
-                DangerousGoods = job.Dgdocument ?? false,
-                TotalPallets = job.TucJobBookingItemBookings.Count,
-                ExtraStopOffs = 0,
-                DryIceWeight = job.DryIceWeight ?? 0,
-                WaitTime = 0,
-
-                // Flight-specific properties
-                FromAirportId = job.FromAirportId,
-                ToAirportId = job.ToAirportId,
-                FromAgentId = job.FromAirport != null ? job.FromAirport.AgentId : null,
-                ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
-
-                // Client-specific rate information
-                ClientDiscount = job.UcbkClient != null ? job.UcbkClient.Discount : 0,
-                Cubic = job.TucJobBookingItemBookings.Sum(i => i.Cubic),
-                IsManuallyRated = job.RatedManually,
-                IsPrebook = true,
-                CalculateDimsOncePerJob = job.DimensionsType == 1,
-
-                // NEW NZ-specific From Address fields
-                FromCompanyName = job.PickupAddressLine1,
-                FromBuildingName = job.PickupAddressLine2,
-                FromStreetAddress = job.PickupAddressLine3 ?? string.Empty,
-                FromCity = job.PickupAddressLine4 ?? string.Empty,
-                FromState = job.PickupAddressLine5,
-                FromSuburb = job.PickupAddressLine6,
-                FromPostCode = job.PickupAddressLine7,
-                FromCountryCode = job.PickupAddressLine8,
-
-                // NEW NZ-specific To Address fields
-                ToCompanyName = job.DeliveryAddressLine1,
-                ToBuildingName = job.DeliveryAddressLine2,
-                ToStreetAddress = job.DeliveryAddressLine3 ?? string.Empty,
-                ToCity = job.DeliveryAddressLine4 ?? string.Empty,
-                ToState = job.DeliveryAddressLine5,
-                ToSuburb = job.DeliveryAddressLine6,
-                ToPostCode = job.DeliveryAddressLine7,
-                ToCountryCode = job.DeliveryAddressLine8,
-
-                // NEW Package Details
-                Packages = job.TucJobBookingItemBookings.Select(item => new PackageDetailsDto
-                {
-                    Name = item.Notes,
-                    Length = item.Length,
-                    Width = item.Depth,
-                    Height = item.Height,
-                    Cubic = item.Cubic.HasValue ? (double)item.Cubic : 0,
-                    Kg = item.Weight,
-                    Type = null,
-                    PackageCode = null,
-                    Units = job.TucJobBookingItemBookings.Count
-                }).ToList(),
-
-                // NEW Truck-specific properties
-                PickupTailLift = null,
-                DropoffTailLift = null,
-                PrivateRes = job.DeliverToPrivateBusiness == 1,
-                HasDgDocuments = job.Dgdocument,
-                TruckStartTime = job.TruckStartTime.ToString(),
-                TruckHours = (int)job.TruckHours
-            })
-            .FirstOrDefaultAsync();
-
-        ArgumentNullException.ThrowIfNull(jobDetails);
-
-        return jobDetails;
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "Error retrieving NZ job booking details for rating. Job ID: {JobId}", jobId);
-        throw new ApplicationException($"Failed to retrieve NZ job booking details for rating: {ex.Message}", ex);
-    }
-}
-
-    public async Task UpdateJobRateAsync(int jobId, decimal rate, string noteText)
-    {
-        try
-        {
-            var rowsAffected = await Context.TucJobs
-                .Where(j => j.UcjbId == jobId)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(j => j.UcjbAmount, rate));
-
-            if (rowsAffected == 0) throw new ArgumentException($"Job with ID {jobId} not found", nameof(jobId));
-
-            // Record change in note
-            await SaveNoteAsync(jobId, noteText);
+            var standardDeliveryDateTime = jobDateTime.AddMinutes(minutesToAdd);
+            return (standardDeliveryDateTime - now).TotalMinutes;
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            Log.Error(ex, "An error occurred updating the rate for job {JobId}", jobId);
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository),
+                    nameof(CalculateRemainTime)));
             throw;
-        }
-    }
-
-    public async Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId)
-    {
-        var job = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Select(JobMappings.JobDispatchMapping)
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
-        return job;
-    }
-
-    public async Task<bool> JobNumberExistsAsync(string jobNumber) =>
-        await Context.TucJobs.AnyAsync(j => j.UcjbNumber == jobNumber);
-
-    public async Task<decimal> GetNationwideServiceRawPriceAsync(int? clientId, int? fromSuburbId,
-        int? toSuburbId, int? speed, int? size, float? weight, int? quantity, int? type)
-    {
-        var result = await Context.TucJobs
-            .Select(j => DespatchContext.UTL_fncS_GetNationwideService_RawPrice(
-                clientId,
-                fromSuburbId,
-                toSuburbId,
-                speed,
-                size,
-                weight,
-                quantity,
-                type))
-            .FirstOrDefaultAsync();
-
-        return result ?? 0m;
-    }
-
-    public async Task BulkUpdateReadStatusAsync(BulkReadUpdateRequestModel data)
-    {
-        var jobIds = data.JobIds;
-        if (jobIds == null || jobIds.Count == 0) return;
-
-        var currentTenantTime = infoService.GetCurrentTenantTime();
-        var staffId = infoService.GetStaffId();
-
-        // Use ExecuteUpdate for existing records - single SQL statement, no entity tracking
-        await Context.TucJobReadTrackers
-            .Where(t => jobIds.Contains(t.JobId))
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(t => t.HasBeenRead, data.ShouldMarkAsRead)
-                .SetProperty(t => t.ReadTimestamp, currentTenantTime)
-                .SetProperty(t => t.ReadByStaffId, staffId));
-
-        // Get job IDs that already have trackers to exclude from insert
-        var existingJobIds = await Context.TucJobReadTrackers
-            .Where(t => jobIds.Contains(t.JobId))
-            .Select(t => t.JobId)
-            .ToListAsync();
-
-        var newJobIds = jobIds.Except(existingJobIds).ToList();
-
-        // Bulk insert new records if any
-        if (newJobIds.Count != 0)
-        {
-            var newTrackers = newJobIds.Select(jobId => new TucJobReadTracker
-            {
-                JobId = jobId,
-                HasBeenRead = true,
-                ReadTimestamp = currentTenantTime,
-                ReadByStaffId = staffId
-            });
-
-            Context.AddRange(newTrackers);
-            await Context.SaveChangesAsync();
         }
     }
 }

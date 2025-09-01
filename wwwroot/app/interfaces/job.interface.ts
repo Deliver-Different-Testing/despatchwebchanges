@@ -423,7 +423,7 @@ export interface IDispatchJob {
     status?: string;
     time?: Date;
     booked: Date;
-    remain?: string;
+    remain?: number;
 
     // Courier information
     courier?: string;

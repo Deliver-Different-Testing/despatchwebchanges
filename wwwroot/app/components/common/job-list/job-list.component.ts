@@ -75,10 +75,13 @@ class JobsListController extends BaseController {
     private defaultColumnWidths = {
         priority: 80,
         time: 120,
+        speed: 80, 
+        vehicle: 100,
         jobNo: 100,
         pickup: 250,
         delivery: 250,
         courier: 150,
+        remaining: 90,
         status: 100
     };
     columnWidths = {...this.defaultColumnWidths};
@@ -912,8 +915,12 @@ class JobsListController extends BaseController {
         }
     }
 
+    getGridTemplateColumnsWithSelect(): string {
+        return this.getGridTemplateColumns();
+    }
+    
     getGridTemplateColumns(): string {
-        return `${this.columnWidths.priority}px ${this.columnWidths.time}px ${this.columnWidths.jobNo}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.status}px`;
+        return `${this.columnWidths.priority}px ${this.columnWidths.time}px ${this.columnWidths.speed}px ${this.columnWidths.vehicle}px ${this.columnWidths.jobNo}px ${this.columnWidths.pickup}px ${this.columnWidths.delivery}px ${this.columnWidths.courier}px ${this.columnWidths.remaining}px ${this.columnWidths.status}px`;
     }
 
     startResize(event: MouseEvent, column: string): void {
@@ -936,8 +943,10 @@ class JobsListController extends BaseController {
 
         const event = eventObject.originalEvent as MouseEvent;
         const deltaX = event.clientX - this.startX;
-        // Minimum width of 50 px
         this.columnWidths[this.resizingColumn as keyof typeof this.columnWidths] = Math.max(50, this.startWidth + deltaX);
+
+        const headerElement = angular.element('.jobs-header');
+        if (headerElement.length) headerElement.css('grid-template-columns', this.getGridTemplateColumns());
         this.applyScope();
     };
 
@@ -957,6 +966,9 @@ class JobsListController extends BaseController {
     resetColumnWidths(): void {
         this.columnWidths = {...this.defaultColumnWidths};
         this.saveColumnWidths();
+        
+        const headerElement = angular.element('.jobs-header');
+        if (headerElement.length) headerElement.css('grid-template-columns', this.getGridTemplateColumns());
         this.applyScope();
     }
 
@@ -1003,6 +1015,10 @@ class JobsListController extends BaseController {
         switch (column) {
             case 'time':
                 return job.time ? dayjs(job.time).valueOf() : (job.booked ? dayjs(job.booked).valueOf() : 0);
+            case 'speed':
+                return job.speed || '';
+            case 'vehicle':
+                return job.vehicle?.text || '';
             case 'jobNo':
                 return job.jobNo || '';
             case 'pickup':
@@ -1011,6 +1027,10 @@ class JobsListController extends BaseController {
                 return this.getDeliveryAddress(job) || '';
             case 'courier':
                 return this.getCourierName(job) || '';
+            case 'remaining':
+                const now = dayjs();
+                const deliveryTime = dayjs(job.time || job.booked);
+                return deliveryTime.diff(now, 'minutes');
             case 'status':
                 return job.status || job.statusName || '';
             case 'priority':
@@ -1067,13 +1087,11 @@ class JobsListController extends BaseController {
             const headerElement = angular.element('.jobs-header');
 
             if (headerElement.length) {
-                // Force recalculation of sticky positioning
                 headerElement.css('position', 'relative');
                 headerElement.css('position', 'sticky');
                 headerElement.css('z-index', '49');
                 headerElement.css('background', 'white');
 
-                // Force grid template columns to be applied
                 headerElement.css('grid-template-columns', this.getGridTemplateColumns());
             }
         }, 100);

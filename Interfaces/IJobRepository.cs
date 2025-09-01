@@ -158,8 +158,6 @@ public interface IJobRepository
     Task<IList<OpenJobResponse>> GetOpenJobsAsync(OpenJobsRequest parameters);
 
     Task AddEntityAsync<T>(T entity) where T : class;
-    Task AddEntityRangeAsync<T>(List<T> entities)
-        where T : class;
 
     Task<JobViewModel> GetJobByIdAsync(int jobId);
     Task UpdateJobNoteAsync(int jobId, string note);

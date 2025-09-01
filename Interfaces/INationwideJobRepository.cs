@@ -30,7 +30,6 @@ public interface INationwideJobRepository
     Task<string> GetAirlineCodeByIdAsync(int airlineId);
     Task SendAgentRequestMessageAsync(int agentId, int jobId);
     Task<List<Suggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true);
-    Task<string> GetSingleAirportCodeByIdAsync(int airportId);
     Task RestoreNationwideJobAsync(int jobId);
     Task<List<Suggestion>> GetAllAgentOptionsBySearchAsync(string searchTerm);
     Task<List<string>> GetFlightWebhookIdByJobIdAsync(int jobId);
