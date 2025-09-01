@@ -756,6 +756,22 @@ class HomeController extends BaseController {
         }
     }
 
+    async clearAllViews() {
+        this.views.forEach((view: DfrntPageViewModel) => {
+            view.selected = false;
+        });
+
+        this.selectedViews = [];
+
+        this.saveViewsToStorage(this.selectedViews);
+        this.updateMapForSelectedViews(); 
+
+        await Promise.all([
+            this.getData(),
+            this.fetchDriverLocations()
+        ]);
+    }
+    
     async toggleView(view: DfrntPageViewModel) {
         if (view.selected) {
             if (!this.selectedViews.some((v: DfrntPageViewModel) => v.id === view.id)) {

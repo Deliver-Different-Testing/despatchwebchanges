@@ -29,7 +29,7 @@
                         <md-icon md-font-set="material-symbols-outlined">calendar_today</md-icon>
                         <md-tooltip md-direction="bottom">Date</md-tooltip>
                     </md-button>
-                    
+
                     <md-menu-content style="width: 300px; overflow: hidden;">
                         <div md-prevent-menu-close>
                             <md-toolbar class="md-hue-1" style="margin-top: -10px;">
@@ -91,30 +91,50 @@
                 </md-menu>
 
                 <md-menu>
-                    <md-button aria-label="Open views menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
+                    <md-button aria-label="Open views menu"
+                               class="md-icon-button"
+                               ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.views">view_list</md-icon>
                         <md-tooltip md-direction="bottom">Views</md-tooltip>
-                        <md-progress-circular md-diameter="18" md-mode="indeterminate"
+                        <md-progress-circular md-diameter="18"
+                                              md-mode="indeterminate"
                                               ng-if="!ctrl.views"></md-progress-circular>
                     </md-button>
-                    <md-menu-content width="4">
-                        <md-menu-item ng-if="ctrl.views && ctrl.views.length === 0">
-                            <p>No views available.</p>
-                        </md-menu-item>
-                        <md-menu-item ng-if="ctrl.views && ctrl.views.length > 0" ng-repeat="view in ctrl.views">
-                            <md-checkbox
-                                    aria-label="{{view.name}}"
-                                    class="md-primary"
-                                    ng-change="ctrl.toggleView(view)"
-                                    ng-model="view.selected">
-                                {{view.name}}
-                            </md-checkbox>
-                        </md-menu-item>
+                    <md-menu-content class="professional-menu-content" width="4">
+                        <div ng-if="ctrl.views && ctrl.views.length === 0" class="empty-state">
+                            <md-icon class="empty-icon" md-font-set="material-symbols-outlined">visibility_off</md-icon>
+                            <p class="empty-text">No views available to display</p>
+                        </div>
+
+                        <div ng-if="ctrl.views && ctrl.views.length > 0">
+                            <div class="menu-header">
+                                <md-button aria-label="Clear all views" class="clear-button"
+                                           ng-click="ctrl.clearAllViews()">
+                                    <md-icon class="clear-icon" md-font-set="material-symbols-outlined">clear_all</md-icon>
+                                    Clear All Views
+                                </md-button>
+                            </div>
+
+                            <md-divider class="menu-divider"></md-divider>
+
+                            <div class="view-list">
+                                <md-menu-item class="view-item" ng-repeat="view in ctrl.views track by view.id">
+                                    <md-checkbox
+                                            class="md-primary"
+                                            aria-label="Toggle {{view.name}} view"
+                                            ng-change="ctrl.toggleView(view)"
+                                            ng-model="view.selected">
+                                        {{view.name}}
+                                    </md-checkbox>
+                                </md-menu-item>
+                            </div>
+                        </div>
                     </md-menu-content>
                 </md-menu>
 
                 <md-menu>
-                    <md-button aria-label="Open layout options menu" class="md-icon-button"
+                    <md-button aria-label="Open layout options menu"
+                               class="md-icon-button"
                                ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined">grid_view</md-icon>
                         <md-tooltip md-direction="bottom">Layouts</md-tooltip>
@@ -130,7 +150,7 @@
                         <md-menu-item ng-repeat="lo in ctrl.layouts track by $index">
                             <md-button>
                                 <md-icon md-font-set="material-symbols-outlined" ng-click="ctrl.deleteLayout($index)"
-                                         ng-if="lo.name != 'Default'">
+                                         ng-if="::lo.name != 'Default'">
                                     delete
                                 </md-icon>
                                 <md-icon md-font-set="material-symbols-outlined" ng-if="lo.name == 'Default'">

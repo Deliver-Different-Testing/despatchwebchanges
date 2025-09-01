@@ -648,8 +648,18 @@ class NationwideControl extends BaseController {
         }
     }
 
+    async clearAllViews() {
+        this.views.forEach((view: DfrntPageViewModel) => {
+            view.selected = false;
+        });
+
+        this.selectedViews = [];
+
+        this.saveViewsToStorage(this.selectedViews);
+        await this.getData();
+    }
+    
     async toggleView(view: DfrntPageViewModel) {
-        // Update the selectedViews array immediately instead of in a timeout
         if (view.selected) {
             if (!this.selectedViews.some((v: DfrntPageViewModel) => v.id === view.id)) {
                 this.selectedViews.push(view);
@@ -661,10 +671,7 @@ class NationwideControl extends BaseController {
             }
         }
 
-        // Save to storage after the changes
         this.saveViewsToStorage(this.selectedViews);
-
-        // Now get data with the updated selectedViews
         await this.getData();
     }
 
