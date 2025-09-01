@@ -979,7 +979,7 @@ public class BaseJobRepository(
                     deliverBy.Minute,
                     deliverBy.Second
                 );
-                return (economyDeliveryDateTime - now).TotalMinutes;
+                return Math.Round((economyDeliveryDateTime - now).TotalMinutes);
             }
 
             var speedValue = job.SpeedId ?? 0;
@@ -1003,7 +1003,7 @@ public class BaseJobRepository(
             var minutesToAdd = job.JobTypeMins ?? 0;
 
             var standardDeliveryDateTime = jobDateTime.AddMinutes(minutesToAdd);
-            return (standardDeliveryDateTime - now).TotalMinutes;
+            return Math.Round((standardDeliveryDateTime - now).TotalMinutes);
         }
         catch (Exception e)
         {
